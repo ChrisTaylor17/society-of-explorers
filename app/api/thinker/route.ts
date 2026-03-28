@@ -7,7 +7,8 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { thinkerId, message, history, isReaction, walletMemberId } = body
+  const { message, history, isReaction, walletMemberId } = body
+  const thinkerId = body.thinkerId ?? body.thinker
 
   const supabase = await createClient()
   const svc = createServiceClient()

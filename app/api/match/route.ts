@@ -1,15 +1,31 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const svc = createServiceClient()
 
-  const { query, memberProfiles, seekerName } = await req.json()
+  const { query, memberProfiles, seekerName, walletMemberId } = await req.json()
+
+  let member = null
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data } = await supabase.from('members')
+      .select('id,display_name')
+      .eq('supabase_auth_id', user.id).single()
+    member = data
+  } else if (walletMemberId) {
+    const { data } = await svc.from('members')
+      .select('id,display_name')
+      .eq('id', walletMemberId).single()
+    member = data
+  }
+
+  if (!member) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
