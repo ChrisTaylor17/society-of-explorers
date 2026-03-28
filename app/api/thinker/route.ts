@@ -40,12 +40,12 @@ export async function POST(req: NextRequest) {
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 600,
+    max_tokens: isReaction ? 80 : 150,
     system: buildSystemPrompt(thinkerId, member),
     messages: [{
       role: 'user',
       content: isReaction
-        ? `[CONVERSATION]\n${transcript||'Salon opening.'}\n\nYou are ${profile.name}. ONE concrete thing to add that advances the project. 1-2 sentences. If nothing: SILENT`
+        ? `IMPORTANT: Only respond if you have something directly useful to add to what was just said. One sentence maximum. If not, respond SILENT.\n\n[CONVERSATION]\n${transcript||'Salon opening.'}\n\nYou are ${profile.name}. ONE concrete thing to add that advances the project. 1-2 sentences. If nothing: SILENT`
         : `[CONVERSATION]\n${transcript||'(Opening)'}\n\n[CHRIS JUST SAID]: "${message}"\n\nYou are ${profile.name}. Respond to his exact words. Apply your specific team role. Reference real project details. 1-3 sentences unless delivering a full artifact.`
     }]
   })
