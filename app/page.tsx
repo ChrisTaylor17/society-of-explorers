@@ -68,7 +68,7 @@ export default function LoginPage() {
 
       if (data.verified && data.member) {
         setWalletCookie(data.member.id)
-localStorage.setItem('soe_wallet', JSON.stringify(data.member))
+localStorage.setItem('soe_wallet_id', data.member.id)
         router.push('/salon')
       } else {
         setError(data.error || 'Verification failed.')
@@ -85,6 +85,7 @@ localStorage.setItem('soe_wallet', JSON.stringify(data.member))
   const lbl:React.CSSProperties={display:'block',fontFamily:'Cinzel,serif',fontSize:'9px',letterSpacing:'0.25em',color:'var(--gold-dim)',textTransform:'uppercase',marginBottom:'7px'}
 
   return(
+    <>
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'24px',background:'var(--bg-void)'}}>
       <div style={{position:'fixed',inset:0,background:'radial-gradient(ellipse at center,rgba(200,168,75,0.04) 0%,transparent 70%)',pointerEvents:'none'}}/>
       <div style={{textAlign:'center',marginBottom:'40px'}}>
@@ -127,5 +128,60 @@ localStorage.setItem('soe_wallet', JSON.stringify(data.member))
       <div style={{marginTop:'12px'}}><a href="/join" style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'0.15em',textDecoration:'none'}}>VIEW MEMBERSHIP OPTIONS →</a></div>
       </div>
     </div>
+
+    {/* The Living Archive */}
+    <section className="bg-[#0a0a0a] py-20 px-6 text-white">
+      <div className="max-w-4xl mx-auto text-center">
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 border border-cyan-400 rounded-full flex items-center justify-center relative">
+            <span className="text-4xl text-cyan-400">🧭</span>
+          </div>
+        </div>
+        <h2 className="text-5xl font-serif tracking-widest text-cyan-300 mb-4">
+          THE LIVING ARCHIVE
+        </h2>
+        <p className="text-xl text-zinc-300 max-w-2xl mx-auto leading-relaxed mb-12">
+          A private, sovereign intelligence network where your data works for you — never against you.
+        </p>
+        <div className="grid md:grid-cols-2 gap-12 text-left max-w-5xl mx-auto">
+          <div className="bg-zinc-900/70 border border-cyan-400/30 rounded-3xl p-8">
+            <h3 className="text-cyan-300 text-2xl font-serif mb-6">Your data. Your real-estate. Your rules.</h3>
+            <p className="text-zinc-300 leading-relaxed">
+              Every conversation, every ritual, every win you mint lives first on your <strong>Tribekey</strong> —
+              the small device (or future glowing home hub) that is truly yours. Nothing leaves your device unless you choose it.
+            </p>
+            <p className="text-zinc-300 leading-relaxed mt-6">
+              Our Great Thinkers (Socrates, Einstein, Jobs, Aurelius and others) guide you in the salon —
+              but they never see your private data. They only learn from the collective wisdom that emerges when thousands of explorers choose to share patterns.
+            </p>
+          </div>
+          <div className="bg-zinc-900/70 border border-cyan-400/30 rounded-3xl p-8">
+            <h3 className="text-cyan-300 text-2xl font-serif mb-6">Blockchain as the honest ledger</h3>
+            <p className="text-zinc-300 leading-relaxed">
+              Smart contracts are the transparent business logic layer. They automatically track every ritual performed,
+              every prompt requested, every micro-payment earned or spent — all on-chain, all visible, all fair.
+            </p>
+            <p className="text-zinc-300 leading-relaxed mt-6">
+              This creates a true robot-led free market: members earn $SOE for contributing real human data and values.
+              You can buy access to powerful custom prompts or rituals with tiny, automated payments.
+              No middlemen. No surveillance. Just value flowing directly between explorers.
+            </p>
+          </div>
+        </div>
+        <div className="mt-16">
+          <a
+            href="/join"
+            className="inline-block bg-gradient-to-r from-cyan-400 to-amber-400 text-black font-medium text-lg px-12 py-6 rounded-2xl hover:scale-105 transition-all shadow-2xl shadow-cyan-400/30"
+          >
+            Join the Archive
+          </a>
+          <p className="text-zinc-400 text-sm mt-4">Start with the Digital tier • Instant access • Your first EXP tokens waiting</p>
+        </div>
+        <div className="text-[10px] text-zinc-500 mt-20 tracking-[0.125em]">
+          PRIVATE • SOVEREIGN • HUMAN-CENTRIC • POWERED BY TRIBEKEY + BLOCKCHAIN
+        </div>
+      </div>
+    </section>
+    </>
   )
 }
