@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       try {
         const anthropicStream = anthropic.messages.stream({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: isReaction ? 80 : 400,
+          max_tokens: isReaction ? 80 : 150,
           system: buildSystemPrompt(thinkerId, member),
           messages: [{
             role: 'user',
