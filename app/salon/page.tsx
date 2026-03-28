@@ -53,7 +53,33 @@ export default function SalonPage(){
     const text=input.trim();setInput('');setIsLoading(true)
     lastActivityRef.current=Date.now();bgCountRef.current=0
     await supabase.from('salon_messages').insert({sender_type:'member',sender_name:member?.display_name||'You',sender_id:member?.id,content:text})
-    await fetch('/api/thinker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thinkerId:selectedThinker.id,message:text,history:messages.slice(-12),isReaction:false,walletMemberId:member?.id})})
+
+    const streamId=`streaming-${selectedThinker.id}`
+    setMessages(prev=>[...prev,{id:streamId,created_at:new Date().toISOString(),sender_type:'thinker',sender_name:selectedThinker.name,thinker_id:selectedThinker.id,content:''}])
+
+    const res=await fetch('/api/thinker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thinkerId:selectedThinker.id,message:text,history:messages.slice(-12),isReaction:false,walletMemberId:member?.id})})
+    const reader=res.body!.getReader()
+    const dec=new TextDecoder()
+    let buf=''
+    while(true){
+      const{done,value}=await reader.read()
+      if(done)break
+      buf+=dec.decode(value,{stream:true})
+      const lines=buf.split('\n')
+      buf=lines.pop()??''
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue
+        try{
+          const evt=JSON.parse(line.slice(6))
+          if(evt.delta){
+            setMessages(prev=>prev.map(m=>m.id===streamId?{...m,content:m.content+evt.delta}:m))
+          } else if(evt.done){
+            setMessages(prev=>prev.filter(m=>m.id!==streamId))
+          }
+        }catch{}
+      }
+    }
+
     if(messages.length>4){
       const others=THINKERS.filter(t=>t.id!==selectedThinker.id)
       const second=others[Math.floor(Math.random()*others.length)]
