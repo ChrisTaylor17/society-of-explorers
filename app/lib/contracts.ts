@@ -14,7 +14,6 @@ import {
   parseUnits,
   formatUnits,
   type Address,
-  type PublicClient,
 } from 'viem'
 import { baseSepolia } from 'viem/chains'
 
@@ -237,7 +236,7 @@ export const MOCK_RITUALS: RitualInfo[] = Object.entries(RITUAL_CATALOGUE).map((
 //  viem clients
 // ─────────────────────────────────────────────────────────────
 
-function getPublicClient(): PublicClient {
+function getPublicClient() {
   return createPublicClient({ chain: baseSepolia, transport: http() })
 }
 
