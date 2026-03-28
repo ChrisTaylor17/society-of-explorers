@@ -39,7 +39,7 @@ export default function SalonPage(){
 
   const triggerBg=useCallback(async()=>{
     const idle=(Date.now()-lastActivityRef.current)/1000
-    if(isLoading||idle<45||messages.length<2||bgCountRef.current>=2)return
+    if(isLoading||idle<120||messages.length<2||bgCountRef.current>=2)return
     const recent=messages.slice(-4).map(m=>m.sender_name)
     const avail=THINKERS.filter(t=>!recent.includes(t.name))
     if(!avail.length)return
@@ -80,11 +80,6 @@ export default function SalonPage(){
       }
     }
 
-    if(messages.length>4){
-      const others=THINKERS.filter(t=>t.id!==selectedThinker.id)
-      const second=others[Math.floor(Math.random()*others.length)]
-      setTimeout(()=>fetch('/api/thinker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thinkerId:second.id,message:null,history:messages.slice(-12),isReaction:true,walletMemberId:member?.id})}),2800)
-    }
     if(member){const{data}=await supabase.from('members').select('exp_tokens,member_rank').eq('id',member.id).single();if(data)setMember(p=>p?{...p,...data}:p)}
     setIsLoading(false)
   }
