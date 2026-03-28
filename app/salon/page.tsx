@@ -4,6 +4,7 @@ import{createClient}from '@/lib/supabase/client'
 import{useRouter}from 'next/navigation'
 import{THINKER_PROFILES}from '@/lib/claude/thinkers'
 import{getMemberSession,clearWalletCookie}from '@/lib/auth/getSession'
+import{fetchRituals,runRitual,type RitualInfo}from '@/app/lib/contracts'
 interface Message{id:string;created_at:string;sender_type:'member'|'thinker'|'system';sender_name:string;thinker_id?:string;content:string}
 interface Member{id:string;display_name:string;exp_tokens:number;member_rank:string}
 const THINKERS=Object.values(THINKER_PROFILES)
@@ -16,6 +17,11 @@ export default function SalonPage(){
   const[authReady,setAuthReady]=useState(false)
   const[mobileView,setMobileView]=useState<'thinkers'|'chat'|'exp'>('chat')
   const[showThinkers,setShowThinkers]=useState(false)
+  // ── Marketplace state ──────────────────────────────────────
+  const[showMarket,setShowMarket]=useState(false)
+  const[rituals,setRituals]=useState<RitualInfo[]>([])
+  const[ritualsLoading,setRitualsLoading]=useState(false)
+  const[ritualTx,setRitualTx]=useState<{status:'idle'|'approving'|'pending'|'success'|'error';hash?:string;error?:string;ritual?:RitualInfo}>({status:'idle'})
   const endRef=useRef<HTMLDivElement>(null)
   const lastActivityRef=useRef(Date.now())
   const bgCountRef=useRef(0)
@@ -36,6 +42,13 @@ export default function SalonPage(){
     return()=>{supabase.removeChannel(ch)}
   },[])
   useEffect(()=>{endRef.current?.scrollIntoView({behavior:'smooth'})},[messages])
+
+  // Load rituals when marketplace opens
+  useEffect(()=>{
+    if(!showMarket||rituals.length>0)return
+    setRitualsLoading(true)
+    fetchRituals().then(r=>{setRituals(r);setRitualsLoading(false)}).catch(()=>setRitualsLoading(false))
+  },[showMarket])
 
   const triggerBg=useCallback(async()=>{
     const idle=(Date.now()-lastActivityRef.current)/1000
@@ -92,6 +105,28 @@ export default function SalonPage(){
     router.push('/')
   }
 
+  // ── Run ritual ─────────────────────────────────────────────
+  async function handleRunRitual(ritual:RitualInfo){
+    if(!member)return
+    setRitualTx({status:'approving',ritual})
+    try{
+      // If contract is deployed, this goes on-chain.
+      // With placeholder address, runRitual will throw "No wallet" or tx error
+      // which we surface gracefully.
+      const hash=await runRitual(ritual,member.id as `0x${string}`)
+      setRitualTx({status:'success',hash,ritual})
+      // Post a system message in the salon announcing the ritual
+      await supabase.from('salon_messages').insert({
+        sender_type:'system',
+        sender_name:'system',
+        content:`⬡ ${member.display_name} invoked <strong>${ritual.name}</strong> — the ritual is open.`
+      })
+    }catch(err:unknown){
+      const msg=err instanceof Error?err.message:'Transaction failed'
+      setRitualTx({status:'error',error:msg,ritual})
+    }
+  }
+
   function rank(e:number){if(e>=2000)return'Elder';if(e>=1000)return'Master';if(e>=600)return'Fellow';if(e>=300)return'Scholar';if(e>=100)return'Seeker';return'Initiate'}
 
   if(!authReady)return(<div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg-void)'}}><div style={{fontFamily:'Cinzel,serif',fontSize:'12px',letterSpacing:'0.3em',color:'var(--gold-dim)'}}>ENTERING THE SALON...</div></div>)
@@ -104,13 +139,14 @@ export default function SalonPage(){
         <div style={{fontFamily:'Cinzel,serif',fontSize:'13px',letterSpacing:'0.2em',color:'var(--gold)'}}>Society of Explorers</div>
         <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
           <button onClick={()=>setShowThinkers(!showThinkers)} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>MINDS</button>
+          <button onClick={()=>{setShowMarket(true);setRitualTx({status:'idle'})}} style={{background:showMarket?'var(--glow)':'none',border:`1px solid ${showMarket?'var(--gold)':'var(--border)'}`,color:showMarket?'var(--gold)':'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>MARKET</button>
           <button onClick={()=>router.push('/members')} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>MEMBERS</button>
           <button onClick={()=>router.push('/book')} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>BOOK</button>
           <button onClick={signOut} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>LEAVE</button>
         </div>
       </div>
 
-      {/* THINKER DROPDOWN - mobile */}
+      {/* THINKER DROPDOWN */}
       {showThinkers&&(
         <div style={{position:'absolute',top:'52px',left:0,right:0,background:'var(--bg-panel)',borderBottom:'1px solid var(--border)',zIndex:20,padding:'8px 0'}}>
           {THINKERS.map(t=>(
@@ -119,6 +155,76 @@ export default function SalonPage(){
               <span style={{fontSize:'10px',color:'var(--ivory-muted)'}}>{t.era.split('·')[0].trim()}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── MARKETPLACE PANEL ─────────────────────────────── */}
+      {showMarket&&(
+        <div style={{position:'absolute',inset:0,top:'52px',background:'var(--bg-void)',zIndex:30,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+          {/* Panel header */}
+          <div style={{padding:'14px 16px',borderBottom:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',background:'var(--bg-deep)',flexShrink:0}}>
+            <div>
+              <div style={{fontFamily:'Cinzel,serif',fontSize:'13px',color:'var(--gold-light)',letterSpacing:'0.12em'}}>Ritual Marketplace</div>
+              <div style={{fontSize:'11px',color:'var(--ivory-muted)',fontStyle:'italic',marginTop:'1px',fontFamily:'Cormorant Garamond,serif'}}>Pay $SOE · Unlock wisdom · Own your access</div>
+            </div>
+            <button onClick={()=>{setShowMarket(false);setRitualTx({status:'idle'})}} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>CLOSE</button>
+          </div>
+
+          {/* Ritual list */}
+          <div style={{flex:1,overflowY:'auto',padding:'16px',display:'flex',flexDirection:'column',gap:'12px'}}>
+            {ritualsLoading&&(
+              <div style={{textAlign:'center',padding:'40px',fontFamily:'Cormorant Garamond,serif',fontStyle:'italic',fontSize:'14px',color:'var(--text-muted)'}}>Loading rituals from the chain...</div>
+            )}
+            {!ritualsLoading&&rituals.map(ritual=>{
+              const isRunning=ritualTx.ritual?.id===ritual.id&&(ritualTx.status==='approving'||ritualTx.status==='pending')
+              const isSuccess=ritualTx.ritual?.id===ritual.id&&ritualTx.status==='success'
+              const isError=ritualTx.ritual?.id===ritual.id&&ritualTx.status==='error'
+              return(
+                <div key={ritual.id} style={{background:'var(--bg-elevated)',border:`1px solid ${isSuccess?'var(--gold)':'var(--border)'}`,borderRadius:'4px',padding:'16px',transition:'border-color 0.2s'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'12px'}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:'Cinzel,serif',fontSize:'12px',color:'var(--gold-light)',letterSpacing:'0.08em',marginBottom:'4px'}}>{ritual.name||`Ritual #${ritual.id}`}</div>
+                      {ritual.thinker&&<div style={{fontSize:'10px',color:'var(--gold-dim)',letterSpacing:'0.1em',fontFamily:'Cinzel,serif',marginBottom:'6px'}}>with {ritual.thinker}</div>}
+                      {ritual.tagline&&<div style={{fontFamily:'Cormorant Garamond,serif',fontSize:'14px',color:'var(--ivory-muted)',fontStyle:'italic',lineHeight:1.5}}>{ritual.tagline}</div>}
+                    </div>
+                    <div style={{textAlign:'right',flexShrink:0}}>
+                      <div style={{fontFamily:'Cinzel,serif',fontSize:'14px',color:'var(--gold)'}}>{ritual.priceDisplay} $SOE</div>
+                      <div style={{fontSize:'9px',color:'var(--ivory-muted)',letterSpacing:'0.1em',marginTop:'2px'}}>{Number(ritual.accessCount)} accessed</div>
+                    </div>
+                  </div>
+                  <div style={{marginTop:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
+                    <button
+                      onClick={()=>handleRunRitual(ritual)}
+                      disabled={isRunning||isSuccess}
+                      style={{
+                        background:isSuccess?'var(--glow)':isRunning?'transparent':'linear-gradient(135deg,#1c1500,#2a1e00)',
+                        border:`1px solid ${isSuccess?'var(--gold)':isRunning?'var(--gold-dim)':'var(--gold-dim)'}`,
+                        color:isSuccess?'var(--gold)':'var(--gold)',
+                        fontFamily:'Cinzel,serif',fontSize:'10px',letterSpacing:'0.15em',
+                        padding:'6px 14px',cursor:isRunning||isSuccess?'not-allowed':'pointer',borderRadius:'2px',
+                        opacity:isRunning?0.6:1,transition:'all 0.2s'
+                      }}>
+                      {isSuccess?'⬡ ACCESS GRANTED':isRunning?'CONFIRMING...':'⬡ RUN RITUAL'}
+                    </button>
+                    {ritual.requiresTribekey&&<span style={{fontSize:'9px',color:'var(--gold-dim)',letterSpacing:'0.08em',fontFamily:'Cinzel,serif'}}>TRIBEKEY REQUIRED</span>}
+                  </div>
+                  {isError&&<div style={{marginTop:'8px',fontSize:'11px',color:'#e07070',fontFamily:'Cormorant Garamond,serif',fontStyle:'italic'}}>{ritualTx.error}</div>}
+                  {isSuccess&&ritualTx.hash&&(
+                    <div style={{marginTop:'8px',fontSize:'10px',color:'var(--gold-dim)',fontFamily:'Cinzel,serif',letterSpacing:'0.04em'}}>
+                      tx: {ritualTx.hash.slice(0,10)}…{ritualTx.hash.slice(-6)}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Protocol note */}
+          <div style={{padding:'10px 16px',borderTop:'1px solid var(--border)',background:'var(--bg-deep)',flexShrink:0}}>
+            <div style={{fontSize:'10px',color:'var(--text-muted)',fontFamily:'Cormorant Garamond,serif',fontStyle:'italic',textAlign:'center',lineHeight:1.6}}>
+              All payments settle on-chain. 70% to creators · 2% to the Society. You own your access record forever.
+            </div>
+          </div>
         </div>
       )}
 
@@ -141,7 +247,8 @@ export default function SalonPage(){
           {messages.length===0&&(
             <div style={{textAlign:'center',padding:'32px 16px',fontFamily:'Cormorant Garamond,serif',fontStyle:'italic',fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>
               Welcome to the Salon.<br/>
-              <span style={{fontSize:'13px',color:'var(--gold-dim)'}}>Tap MINDS to choose a thinker, then speak.</span>
+              <span style={{fontSize:'13px',color:'var(--gold-dim)'}}>Tap MINDS to choose a thinker, then speak.</span><br/>
+              <span style={{fontSize:'12px',color:'var(--gold-dim)',display:'block',marginTop:'8px'}}>Open MARKET to access rituals with $SOE.</span>
             </div>
           )}
           {messages.map(msg=>(
@@ -158,6 +265,18 @@ export default function SalonPage(){
                     <div style={{background:msg.sender_type==='member'?'linear-gradient(135deg,#1a2030,#12182a)':'var(--bg-elevated)',border:`1px solid ${msg.sender_type==='member'?'rgba(80,120,180,0.25)':'var(--border)'}`,borderRadius:msg.sender_type==='member'?'12px 2px 12px 12px':'2px 12px 12px 12px',padding:'10px 14px',fontSize:'15px',lineHeight:1.65,color:msg.sender_type==='member'?'#c8d8f0':'var(--text-primary)',whiteSpace:'pre-wrap'}}>
                       {msg.content}
                     </div>
+                    {/* Run Ritual shortcut on thinker messages */}
+                    {msg.sender_type==='thinker'&&msg.content&&(
+                      <button
+                        onClick={()=>{
+                          // Find ritual matching this thinker, open marketplace
+                          setShowMarket(true)
+                          setRitualTx({status:'idle'})
+                        }}
+                        style={{marginTop:'5px',background:'none',border:'none',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.1em',cursor:'pointer',padding:'0',opacity:0.7}}>
+                        ⬡ Run Ritual with {msg.sender_name}
+                      </button>
+                    )}
                     <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'4px',fontStyle:'italic'}}>{new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
                   </div>
                 </>
