@@ -16,18 +16,17 @@ import {
   type Address,
   type PublicClient,
 } from 'viem'
-import { mainnet } from 'viem/chains'
+import { baseSepolia } from 'viem/chains'
 
 // ─────────────────────────────────────────────────────────────
-//  Contract addresses
-//  Replace these placeholders once contracts are deployed.
+//  Contract addresses — Base Sepolia (chainId 84532)
 // ─────────────────────────────────────────────────────────────
 
 export const RITUAL_MARKETPLACE_ADDRESS: Address =
-  '0x0000000000000000000000000000000000000000' // TODO: replace after deploy
+  (process.env.NEXT_PUBLIC_RITUAL_MARKETPLACE_ADDRESS ?? '0x16d70AdbB2eE47Ed8bD7bb342ae08b9C048e7B10') as Address
 
 export const SOE_TOKEN_ADDRESS: Address =
-  '0x0000000000000000000000000000000000000000' // TODO: replace after deploy
+  (process.env.NEXT_PUBLIC_MOCK_SOE_ADDRESS ?? '0xa17CB63a572EBc20Ff2Ed8b9F2067eba80E12E7F') as Address
 
 // ─────────────────────────────────────────────────────────────
 //  Minimal ABI — only the functions the frontend needs
@@ -239,7 +238,7 @@ export const MOCK_RITUALS: RitualInfo[] = Object.entries(RITUAL_CATALOGUE).map((
 // ─────────────────────────────────────────────────────────────
 
 function getPublicClient(): PublicClient {
-  return createPublicClient({ chain: mainnet, transport: http() })
+  return createPublicClient({ chain: baseSepolia, transport: http() })
 }
 
 function getWalletClient() {
@@ -247,7 +246,7 @@ function getWalletClient() {
     throw new Error('No wallet detected. Please connect MetaMask or a compatible wallet.')
   }
   return createWalletClient({
-    chain: mainnet,
+    chain: baseSepolia,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     transport: custom(window.ethereum as any),
   })

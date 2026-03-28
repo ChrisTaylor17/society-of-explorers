@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# foundry
+/out/
+/cache/
+/lib/
+broadcast/*/31337/
+
