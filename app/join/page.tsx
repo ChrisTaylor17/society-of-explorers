@@ -60,7 +60,7 @@ export default function JoinPage() {
       </div>
 
       <div style={{textAlign: 'center', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.8}}>
-        <div>Questions? Email <span style={{color: 'var(--gold-dim)'}}>christaylor17@icloud.com</span></div>
+        <div>Questions? Email <span style={{color: 'var(--gold-dim)'}}>chris@societyofexplorers.com</span></div>
         <div style={{marginTop: '8px'}}>92B South St · Downtown Boston · <a href="/salon" style={{color: 'var(--gold-dim)', textDecoration: 'none'}}>Enter the Salon →</a></div>
       </div>
     </div>
