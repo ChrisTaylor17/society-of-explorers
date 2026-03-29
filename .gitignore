@@ -40,9 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# foundry
+# foundry (ignore Foundry lib deps only, not Next.js lib/ source files)
 /out/
 /cache/
-/lib/
+/lib/openzeppelin-contracts/
+/lib/forge-std/
 broadcast/*/31337/
 
