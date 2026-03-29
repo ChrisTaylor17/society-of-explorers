@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 // ============================================================
-//  DeployNFT.s.sol — Deploy SocietyNFT to Base Sepolia
+//  DeployNFT.s.sol - Deploy SocietyNFT to Base Sepolia
 //
 //  Usage:
 //    forge script script/DeployNFT.s.sol \
@@ -31,7 +31,7 @@ contract DeployNFT is Script {
         address soeToken           = vm.envAddress("SOE_TOKEN_ADDRESS");
 
         console.log("=================================================");
-        console.log("  SocietyNFT — Base Sepolia Deployment");
+        console.log("  SocietyNFT - Base Sepolia Deployment");
         console.log("=================================================");
         console.log("Deployer  :", deployer);
         console.log("SOE Token :", soeToken);

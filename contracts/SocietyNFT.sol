@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 // ============================================================
-//  SocietyNFT.sol — Society of Explorers Artifact Collection
+//  SocietyNFT.sol - Society of Explorers Artifact Collection
 //
 //  ERC-721 Enumerable NFTs with:
 //    - On-chain SVG art (no IPFS dependency)
@@ -21,7 +21,7 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 contract SocietyNFT is ERC721Enumerable, Ownable {
     using Strings for uint256;
 
-    // ── State ─────────────────────────────────────────────────
+    // -- State -------------------------------------------------
     IERC20  public immutable soeToken;
     uint256 public mintPrice;      // in $SOE (18 decimals)
     uint256 private _nextTokenId;
@@ -32,7 +32,7 @@ contract SocietyNFT is ERC721Enumerable, Ownable {
     }
     mapping(uint256 => ArtifactData) private _artifacts;
 
-    // ── Static data ───────────────────────────────────────────
+    // -- Static data -------------------------------------------
     string[8] private ARTIFACT_NAMES = [
         "The Cartographer's Compass",
         "Scroll of First Principles",
@@ -48,10 +48,10 @@ contract SocietyNFT is ERC721Enumerable, Ownable {
     string[4] private ARTIFACT_COLORS  = ["#c9a84c", "#8ab0d8", "#7c9e8a", "#c4956a"];
     string[4] private ARTIFACT_SYMBOLS = [unicode"⬡", unicode"◎", unicode"△", unicode"✦"];
 
-    // ── Events ────────────────────────────────────────────────
+    // -- Events ------------------------------------------------
     event ArtifactMinted(address indexed to, uint256 indexed tokenId, string name, uint8 artifactType);
 
-    // ── Constructor ───────────────────────────────────────────
+    // -- Constructor -------------------------------------------
     constructor(
         address _soeToken,
         address _initialOwner,
@@ -64,21 +64,21 @@ contract SocietyNFT is ERC721Enumerable, Ownable {
         mintPrice = _mintPrice;
     }
 
-    // ── Public mint (costs $SOE) ──────────────────────────────
+    // -- Public mint (costs $SOE) ------------------------------
     function mint() external returns (uint256 tokenId) {
         if (mintPrice > 0) {
             bool ok = soeToken.transferFrom(msg.sender, address(this), mintPrice);
-            require(ok, "SocietyNFT: SOE transfer failed — approve first");
+            require(ok, "SocietyNFT: SOE transfer failed - approve first");
         }
         tokenId = _mintTo(msg.sender);
     }
 
-    // ── Owner free-mint ───────────────────────────────────────
+    // -- Owner free-mint ---------------------------------------
     function ownerMint(address to) external onlyOwner returns (uint256) {
         return _mintTo(to);
     }
 
-    // ── Internal mint ─────────────────────────────────────────
+    // -- Internal mint -----------------------------------------
     function _mintTo(address to) internal returns (uint256 tokenId) {
         tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
@@ -90,7 +90,7 @@ contract SocietyNFT is ERC721Enumerable, Ownable {
         emit ArtifactMinted(to, tokenId, _artifacts[tokenId].name, aType);
     }
 
-    // ── Token URI (fully on-chain) ────────────────────────────
+    // -- Token URI (fully on-chain) ----------------------------
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         _requireOwned(tokenId);
         ArtifactData memory art = _artifacts[tokenId];
@@ -123,7 +123,7 @@ contract SocietyNFT is ERC721Enumerable, Ownable {
 
         string memory json = string(abi.encodePacked(
             '{"name":"', art.name,
-            '","description":"A rare artifact of the Society of Explorers — minted on Base Sepolia. Held by an Explorer who seeks truth across time.',
+            '","description":"A rare artifact of the Society of Explorers - minted on Base Sepolia. Held by an Explorer who seeks truth across time.',
             '","image":"', imageURI,
             '","attributes":[',
             '{"trait_type":"Type","value":"', typeName, '"},',
@@ -136,7 +136,7 @@ contract SocietyNFT is ERC721Enumerable, Ownable {
         ));
     }
 
-    // ── Admin ─────────────────────────────────────────────────
+    // -- Admin -------------------------------------------------
     function setMintPrice(uint256 _price) external onlyOwner {
         mintPrice = _price;
     }
