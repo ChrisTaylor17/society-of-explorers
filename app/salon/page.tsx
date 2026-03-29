@@ -4,10 +4,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getMemberSession, clearWalletCookie } from '@/lib/auth/getSession';
 import { useAccount, useWriteContract } from 'wagmi';
-import { ritualMarketplaceABI } from '@/lib/contracts';
+import { ritualMarketplaceABI, erc20ABI, RITUAL_MARKETPLACE_ADDRESS, MOCK_SOE_ADDRESS } from '@/lib/contracts';
 import { parseUnits } from 'viem';
-
-const RITUAL_MARKETPLACE_ADDRESS = '0x16d70AdbB2eE47Ed8bD7bb342ae08b9C048e7B10' as `0x${string}`;
 
 const THINKERS = [
   { id: 'socrates',  name: 'Socrates',  avatar: 'SO', era: 'Ancient Greece · 470 BC' },
@@ -151,18 +149,37 @@ export default function SalonPage() {
     setIsLoading(false);
   }
 
-  // ── Run ritual ────────────────────────────────────────────────────
+  // ── Run ritual (ERC-20 approve → accessRitual) ───────────────────
   async function handleRunRitual(ritual: typeof RITUALS[0]) {
     if (!address) { alert('Connect your wallet first'); return; }
+
+    const amount = parseUnits(ritual.price.toString(), 18);
+
+    // Step 1 — approve RitualMarketplace to spend $SOE
     setRitualTx({ status: 'approving', ritualId: ritual.id });
+    try {
+      await writeContract({
+        address: MOCK_SOE_ADDRESS,
+        abi: erc20ABI,
+        functionName: 'approve',
+        args: [RITUAL_MARKETPLACE_ADDRESS, amount],
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Approval rejected';
+      setRitualTx({ status: 'error', error: msg, ritualId: ritual.id });
+      return;
+    }
+
+    // Step 2 — call accessRitual
+    setRitualTx({ status: 'pending', ritualId: ritual.id });
     try {
       const hash = await writeContract({
         address: RITUAL_MARKETPLACE_ADDRESS,
         abi: ritualMarketplaceABI,
         functionName: 'accessRitual',
         args: [BigInt(ritual.id)],
-        value: parseUnits(ritual.price.toString(), 18),
       }) as unknown as string;
+
       setRitualTx({ status: 'success', hash: hash ?? undefined, ritualId: ritual.id });
       await supabase.from('salon_messages').insert({
         sender_type: 'system', sender_name: 'system',
@@ -324,7 +341,7 @@ export default function SalonPage() {
                         padding: '6px 14px', cursor: isRunning || isSuccess ? 'not-allowed' : 'pointer',
                         borderRadius: '2px', opacity: isRunning ? 0.6 : 1, transition: 'all 0.2s',
                       }}>
-                      {isSuccess ? '⬡ ACCESS GRANTED' : isRunning ? 'CONFIRMING...' : '⬡ RUN RITUAL'}
+                      {isSuccess ? '⬡ ACCESS GRANTED' : ritualTx.status === 'approving' && ritualTx.ritualId === ritual.id ? 'APPROVING $SOE...' : ritualTx.status === 'pending' && ritualTx.ritualId === ritual.id ? 'CONFIRMING...' : '⬡ RUN RITUAL'}
                     </button>
                   </div>
 
