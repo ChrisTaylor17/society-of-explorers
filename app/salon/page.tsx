@@ -43,7 +43,7 @@ export default function SalonPage() {
       sender_name: member?.display_name || 'Explorer',
       content: newMessage,
     });
-    setMessages(prev => [...prev, { sender_type: 'member', sender_name: member?.display_name || 'Explorer', content: newMessage }]);
+    setMessages(prev => [...prev, { sender_type: 'member', sender_name: member?.display_name || 'Explorer', content: newMessage, created_at: new Date().toISOString() }]);
     setNewMessage('');
     loadMessages();
   }
@@ -67,48 +67,61 @@ export default function SalonPage() {
     }
   }
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex">
-      <div className="w-72 bg-[#111827] p-4 flex flex-col">
-        <h1 className="text-2xl font-serif text-cyan-400 mb-8">Society of Explorers</h1>
-        <div className="space-y-1">
-          <button onClick={() => setMarketOpen(false)} className={`w-full text-left px-4 py-3 rounded-xl ${!marketOpen ? 'bg-cyan-500' : 'hover:bg-zinc-800'}`}># general</button>
-          <button onClick={() => setMarketOpen(true)} className={`w-full text-left px-4 py-3 rounded-xl ${marketOpen ? 'bg-amber-500' : 'hover:bg-zinc-800'}`}>MARKET</button>
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex font-serif">
+      {/* Sidebar */}
+      <div className="w-72 bg-[#111827] p-6 flex flex-col border-r border-gold/20">
+        <h1 className="text-3xl tracking-widest text-cyan-400 mb-12">SOCIETY OF EXPLORERS</h1>
+        <div className="space-y-2">
+          <button onClick={() => setMarketOpen(false)} className={`w-full text-left px-6 py-4 rounded-2xl transition-all ${!marketOpen ? 'bg-cyan-500 text-white' : 'hover:bg-zinc-800'}`}># general</button>
+          <button onClick={() => setMarketOpen(true)} className={`w-full text-left px-6 py-4 rounded-2xl transition-all ${marketOpen ? 'bg-amber-500 text-white' : 'hover:bg-zinc-800'}`}>MARKET</button>
         </div>
       </div>
+      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        <div className="p-4 border-b border-zinc-800 flex justify-between items-center">
-          <div className="font-medium">{marketOpen ? 'Ritual Marketplace' : '# general • Live Thinker Salon'}</div>
-          {address && <div className="text-xs text-zinc-400">Connected: {address.slice(0,6)}...{address.slice(-4)}</div>}
+        <div className="px-8 py-6 border-b border-gold/10 flex justify-between items-center">
+          <div className="text-xl font-light text-gold">
+            {marketOpen ? 'Ritual Marketplace' : 'The Salon of Great Minds'}
+          </div>
+          {address && <div className="text-xs text-zinc-400">Connected • {address.slice(0,6)}...{address.slice(-4)}</div>}
         </div>
         {marketOpen ? (
-          <div className="p-6 grid grid-cols-2 gap-4 overflow-auto">
-            {rituals.map(r => (
-              <div key={r.id} className="bg-zinc-900 border border-zinc-700 rounded-2xl p-5 hover:border-amber-400 transition-colors">
-                <div className="text-amber-400 text-sm mb-1">{r.thinker}</div>
-                <div className="font-serif text-xl mb-2">{r.name}</div>
-                <div className="text-zinc-400 text-sm mb-4">{r.desc}</div>
-                <button onClick={() => runRitual(r)} className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 py-3 rounded-xl font-medium hover:brightness-110">
+          <div className="flex-1 p-8 grid grid-cols-2 gap-6 overflow-auto">
+            {rituals.map((r) => (
+              <div key={r.id} className="bg-zinc-900 border border-gold/30 rounded-3xl p-6 hover:border-amber-400 transition-all">
+                <div className="text-amber-400 text-sm mb-2">{r.thinker}</div>
+                <div className="text-2xl font-light mb-3">{r.name}</div>
+                <div className="text-zinc-400 mb-6">{r.desc}</div>
+                <button
+                  onClick={() => runRitual(r)}
+                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-2xl font-medium text-lg hover:brightness-110 transition"
+                >
                   Run Ritual • {r.price} $SOE
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex-1 overflow-auto p-6 space-y-6" id="chat">
+          <div className="flex-1 p-8 overflow-auto space-y-8" id="chat">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.sender_type === 'member' ? 'justify-end' : ''}`}>
-                <div className={`max-w-[70%] px-5 py-3 rounded-3xl ${m.sender_type === 'member' ? 'bg-cyan-600' : 'bg-zinc-800'}`}>
-                  <span className="text-xs opacity-70">{m.sender_name || 'Thinker'}</span>
-                  <div>{m.content}</div>
+                <div className={`max-w-[75%] px-6 py-4 rounded-3xl ${m.sender_type === 'member' ? 'bg-cyan-600' : 'bg-zinc-800 border border-gold/20'}`}>
+                  <div className="text-xs opacity-60 mb-1">{m.sender_name || 'Thinker'} • {new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                  <div className="leading-relaxed">{m.content}</div>
                 </div>
               </div>
             ))}
           </div>
         )}
         {!marketOpen && (
-          <div className="p-4 border-t border-zinc-800 flex gap-3">
-            <input value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} className="flex-1 bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-4 focus:outline-none" placeholder="Message the salon..." />
-            <button onClick={sendMessage} className="bg-cyan-500 px-8 rounded-3xl">Send</button>
+          <div className="p-6 border-t border-gold/10 flex gap-4">
+            <input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              className="flex-1 bg-zinc-900 border border-gold/30 rounded-3xl px-6 py-5 focus:outline-none text-lg"
+              placeholder="Speak to the salon..."
+            />
+            <button onClick={sendMessage} className="bg-cyan-500 px-10 rounded-3xl font-medium">Send</button>
           </div>
         )}
       </div>
