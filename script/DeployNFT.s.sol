@@ -23,8 +23,6 @@ import "../contracts/SocietyNFT.sol";
 
 contract DeployNFT is Script {
     // 10 $SOE per mint (18 decimals)
-    uint256 constant MINT_PRICE = 10 * 1e18;
-
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer           = vm.addr(deployerPrivateKey);
@@ -40,9 +38,8 @@ contract DeployNFT is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         SocietyNFT nft = new SocietyNFT(
-            soeToken,    // _soeToken
-            deployer,    // _initialOwner
-            MINT_PRICE   // _mintPrice (10 $SOE)
+            soeToken,  // _soeToken
+            deployer   // _initialOwner (mintPrice hardcoded to 10 $SOE in contract)
         );
 
         console.log("SocietyNFT deployed at:", address(nft));
