@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20; // pinned to match OpenZeppelin v5 + foundry solc setting
+pragma solidity ^0.8.24;
 
 // ============================================================
 //  SocietyNFT.sol — Society of Explorers Artifact Collection
