@@ -71,11 +71,13 @@ export default function SalonPage() {
   }, []);
 
   // ── Load + subscribe ──────────────────────────────────────────────
-  useEffect(() => {
-    supabase.from('salon_messages').select('*')
-      .order('created_at', { ascending: true }).limit(60)
-      .then(({ data }) => { if (data) setMessages(data); });
-  }, []);
+  async function loadMessages() {
+    const { data } = await supabase.from('salon_messages').select('*')
+      .order('created_at', { ascending: true }).limit(60);
+    if (data) setMessages(data);
+  }
+
+  useEffect(() => { loadMessages(); }, []);
 
   useEffect(() => {
     const ch = supabase.channel('salon')
@@ -152,42 +154,38 @@ export default function SalonPage() {
   // ── Run ritual (ERC-20 approve → accessRitual) ───────────────────
   async function handleRunRitual(ritual: typeof RITUALS[0]) {
     if (!address) { alert('Connect your wallet first'); return; }
-
-    const amount = parseUnits(ritual.price.toString(), 18);
-
-    // Step 1 — approve RitualMarketplace to spend $SOE
     setRitualTx({ status: 'approving', ritualId: ritual.id });
     try {
+      // Step 1 — approve $SOE spend
       await writeContract({
         address: MOCK_SOE_ADDRESS,
         abi: erc20ABI,
         functionName: 'approve',
-        args: [RITUAL_MARKETPLACE_ADDRESS, amount],
+        args: [RITUAL_MARKETPLACE_ADDRESS, parseUnits(ritual.price.toString(), 18)],
       });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Approval rejected';
-      setRitualTx({ status: 'error', error: msg, ritualId: ritual.id });
-      return;
-    }
-
-    // Step 2 — call accessRitual
-    setRitualTx({ status: 'pending', ritualId: ritual.id });
-    try {
-      const hash = await writeContract({
+      // Step 2 — access the ritual
+      setRitualTx({ status: 'pending', ritualId: ritual.id });
+      await writeContract({
         address: RITUAL_MARKETPLACE_ADDRESS,
         abi: ritualMarketplaceABI,
         functionName: 'accessRitual',
         args: [BigInt(ritual.id)],
-      }) as unknown as string;
-
-      setRitualTx({ status: 'success', hash: hash ?? undefined, ritualId: ritual.id });
-      await supabase.from('salon_messages').insert({
-        sender_type: 'system', sender_name: 'system',
-        content: `⬡ ${member?.display_name || 'Explorer'} invoked <strong>${ritual.name}</strong> with ${ritual.thinker} — the ritual is open.`,
       });
+      // Post system message immediately and refresh
+      const systemMsg = {
+        sender_type: 'system' as const,
+        sender_name: 'system',
+        content: `🪄 ${ritual.thinker} Ritual activated for ${ritual.price} $SOE`,
+        created_at: new Date().toISOString(),
+      };
+      await supabase.from('salon_messages').insert(systemMsg);
+      setMessages(prev => [...prev, { ...systemMsg, id: `ritual-${Date.now()}` }]);
+      setRitualTx({ status: 'success', ritualId: ritual.id });
+      loadMessages();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Transaction failed';
+      const msg = err instanceof Error ? err.message : 'Transaction failed or rejected';
       setRitualTx({ status: 'error', error: msg, ritualId: ritual.id });
+      alert(msg);
     }
   }
 
