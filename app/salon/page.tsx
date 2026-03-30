@@ -172,11 +172,17 @@ export default function SalonPage() {
           let image = '';
           let color = '#c9a84c';
           try {
-            const jsonStr = atob(uri.replace('data:application/json;base64,', ''));
-            const meta = JSON.parse(jsonStr);
+            let meta: { name?: string; image?: string; attributes?: { trait_type: string; value: string }[] };
+            if (uri.startsWith('data:application/json;base64,')) {
+              const jsonStr = atob(uri.replace('data:application/json;base64,', ''));
+              meta = JSON.parse(jsonStr);
+            } else {
+              const res = await fetch(uri);
+              meta = await res.json();
+            }
             name = meta.name ?? name;
             image = meta.image ?? '';
-            const typeAttr = meta.attributes?.find((a: { trait_type: string; value: string }) => a.trait_type === 'Type');
+            const typeAttr = meta.attributes?.find((a) => a.trait_type === 'Type');
             if (typeAttr) artifactType = typeAttr.value;
             const typeColors: Record<string, string> = {
               Explorer: '#c9a84c', Scholar: '#8ab0d8', Thinker: '#7c9e8a', Sage: '#c4956a',
