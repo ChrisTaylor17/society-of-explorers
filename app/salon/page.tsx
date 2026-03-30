@@ -132,30 +132,21 @@ export default function SalonPage() {
     if (!address || !NFT_DEPLOYED) return;
     setNftLoading(true);
     try {
-      const logs = await publicClient.getLogs({
+      const total = await publicClient.readContract({
         address: SOCIETY_NFT_ADDRESS,
-        event: {
-          type: 'event',
-          name: 'Transfer',
-          inputs: [
-            { type: 'address', name: 'from', indexed: true },
-            { type: 'address', name: 'to', indexed: true },
-            { type: 'uint256', name: 'tokenId', indexed: true },
-          ],
-        },
-        args: { to: address },
-        fromBlock: 39500000n,
-      });
+        abi: societyNFTABI,
+        functionName: 'totalMinted',
+        args: [],
+      }) as bigint;
 
       const tokens: NFTToken[] = [];
-      for (const log of logs) {
-        const tokenId = log.args.tokenId as bigint;
+      for (let i = 1n; i <= total; i++) {
         try {
           const owner = await publicClient.readContract({
             address: SOCIETY_NFT_ADDRESS,
             abi: societyNFTABI,
             functionName: 'ownerOf',
-            args: [tokenId],
+            args: [i],
           }) as string;
           if (owner.toLowerCase() !== address.toLowerCase()) continue;
 
@@ -163,11 +154,10 @@ export default function SalonPage() {
             address: SOCIETY_NFT_ADDRESS,
             abi: societyNFTABI,
             functionName: 'tokenURI',
-            args: [tokenId],
+            args: [i],
           }) as string;
 
-          // Decode on-chain JSON
-          let name = `Artifact #${tokenId}`;
+          let name = `Artifact #${i}`;
           let artifactType = 'Explorer';
           let image = '';
           let color = '#c9a84c';
@@ -190,10 +180,8 @@ export default function SalonPage() {
             color = typeColors[artifactType] ?? '#c9a84c';
           } catch {}
 
-          tokens.push({ id: tokenId, name, artifactType, color, image });
-        } catch {
-          // skip tokens that error (burned, etc.)
-        }
+          tokens.push({ id: i, name, artifactType, color, image });
+        } catch { /* skip */ }
       }
       setNftTokens(tokens);
     } catch (e) {

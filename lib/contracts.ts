@@ -66,6 +66,14 @@ export const societyNFTABI = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
+  // ── Supply ───────────────────────────────────────────────
+  {
+    name: "totalMinted",
+    type: "function",
+    inputs:  [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
   // ── Ownership ────────────────────────────────────────────
   {
     name: "ownerOf",
