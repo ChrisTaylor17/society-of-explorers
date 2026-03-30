@@ -13,6 +13,7 @@ import {
   http,
   parseUnits,
   formatUnits,
+  getAddress,
   type Address,
 } from 'viem'
 import { baseSepolia } from 'viem/chains'
@@ -21,16 +22,19 @@ import { baseSepolia } from 'viem/chains'
 //  Contract addresses — Base Sepolia (chainId 84532)
 // ─────────────────────────────────────────────────────────────
 
-export const RITUAL_MARKETPLACE_ADDRESS: Address =
-  (process.env.NEXT_PUBLIC_RITUAL_MARKETPLACE_ADDRESS ?? '0x16d70AdbB2eE47Ed8bD7bb342ae08b9C048e7B10') as Address
+export const RITUAL_MARKETPLACE_ADDRESS: Address = getAddress(
+  process.env.NEXT_PUBLIC_RITUAL_MARKETPLACE_ADDRESS ?? '0x16d70AdbB2eE47Ed8bD7bb342ae08b9C048e7B10'
+)
 
-export const SOE_TOKEN_ADDRESS: Address =
-  (process.env.NEXT_PUBLIC_MOCK_SOE_ADDRESS ?? '0xa17CB63a572EBc20Ff2Ed8b9F2067eba80E12E7F') as Address
+export const SOE_TOKEN_ADDRESS: Address = getAddress(
+  process.env.NEXT_PUBLIC_MOCK_SOE_ADDRESS ?? '0xa17CB63a572EBc20Ff2Ed8b9F2067eba80E12E7F'
+)
 
 export const MOCK_SOE_ADDRESS: Address = SOE_TOKEN_ADDRESS
 
-export const SOCIETY_NFT_ADDRESS: Address =
-  (process.env.NEXT_PUBLIC_SOCIETY_NFT_ADDRESS ?? '0x299DB7571c93fa42633df7A720ba3Af86e81fD1C') as Address
+export const SOCIETY_NFT_ADDRESS: Address = getAddress(
+  process.env.NEXT_PUBLIC_SOCIETY_NFT_ADDRESS ?? '0x299db7571c93fa42633df7a720ba3af86e81fd1c'
+)
 
 // ─────────────────────────────────────────────────────────────
 //  Minimal ABI — only the functions the frontend needs
