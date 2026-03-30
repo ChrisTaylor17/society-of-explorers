@@ -144,7 +144,7 @@ export default function SalonPage() {
           ],
         },
         args: { to: address },
-        fromBlock: 0n,
+        fromBlock: 39500000n,
       });
 
       const tokens: NFTToken[] = [];
