@@ -96,7 +96,7 @@ export default function SalonPage() {
   const router   = useRouter();
   const supabase = createClient();
   const { address }           = useAccount();
-  const { writeContract }     = useWriteContract();
+  const { writeContract, writeContractAsync } = useWriteContract();
   const { switchChainAsync }  = useSwitchChain();
 
   // ── Auth ─────────────────────────────────────────────────────
@@ -289,26 +289,29 @@ export default function SalonPage() {
   async function handleMintNFT() {
     if (!address) { alert('Connect your wallet first'); return; }
     if (!NFT_DEPLOYED) { alert('NFT contract not yet deployed'); return; }
-    await switchChainAsync({ chainId: 84532 });
     setMintTx({ status: 'approving' });
     try {
-      // Step 1 — approve $SOE
-      await writeContract({
+      await switchChainAsync({ chainId: 84532 });
+
+      // Step 1 — approve $SOE spend, wait for confirmation
+      const approveTx = await writeContractAsync({
         address: MOCK_SOE_ADDRESS,
         abi: erc20ABI,
         functionName: 'approve',
         args: [SOCIETY_NFT_ADDRESS, parseUnits(NFT_MINT_PRICE.toString(), 18)],
       });
+      await publicClient.waitForTransactionReceipt({ hash: approveTx });
+
       // Step 2 — mint
       setMintTx({ status: 'minting' });
-      await writeContract({
+      await writeContractAsync({
         address: SOCIETY_NFT_ADDRESS,
         abi: societyNFTABI,
         functionName: 'mint',
         args: [],
       });
+
       setMintTx({ status: 'success' });
-      // Post system message
       const systemMsg = {
         sender_type: 'system' as const,
         sender_name: 'system',
@@ -316,7 +319,6 @@ export default function SalonPage() {
         created_at: new Date().toISOString(),
       };
       await supabase.from('salon_messages').insert(systemMsg);
-      // Reload gallery
       await loadNFTs();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Mint failed or rejected';
