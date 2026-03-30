@@ -150,36 +150,12 @@ export default function SalonPage() {
           }) as string;
           if (owner.toLowerCase() !== address.toLowerCase()) continue;
 
-          const uri = await publicClient.readContract({
-            address: SOCIETY_NFT_ADDRESS,
-            abi: societyNFTABI,
-            functionName: 'tokenURI',
-            args: [i],
-          }) as string;
-
-          let name = `Artifact #${i}`;
-          let artifactType = 'Explorer';
-          let image = '';
-          let color = '#c9a84c';
-          try {
-            let meta: { name?: string; image?: string; attributes?: { trait_type: string; value: string }[] };
-            if (uri.startsWith('data:application/json;base64,')) {
-              const jsonStr = atob(uri.replace('data:application/json;base64,', ''));
-              meta = JSON.parse(jsonStr);
-            } else {
-              const res = await fetch(uri);
-              meta = await res.json();
-            }
-            name = meta.name ?? name;
-            image = meta.image ?? '';
-            const typeAttr = meta.attributes?.find((a) => a.trait_type === 'Type');
-            if (typeAttr) artifactType = typeAttr.value;
-            const typeColors: Record<string, string> = {
-              Explorer: '#c9a84c', Scholar: '#8ab0d8', Thinker: '#7c9e8a', Sage: '#c4956a',
-            };
-            color = typeColors[artifactType] ?? '#c9a84c';
-          } catch {}
-
+          const res = await fetch(`https://www.societyofexplorers.com/api/nft/${i}`);
+          const meta = await res.json();
+          const name = meta.name ?? `Artifact #${i}`;
+          const image = meta.image ?? '';
+          const artifactType = 'Explorer';
+          const color = '#c9a84c';
           tokens.push({ id: i, name, artifactType, color, image });
         } catch { /* skip */ }
       }
