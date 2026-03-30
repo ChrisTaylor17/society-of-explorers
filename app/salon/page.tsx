@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getMemberSession, clearWalletCookie } from '@/lib/auth/getSession';
-import { useAccount, useWriteContract } from 'wagmi';
+import { useAccount, useWriteContract, useSwitchChain } from 'wagmi';
 import {
   ritualMarketplaceABI, erc20ABI, societyNFTABI,
   RITUAL_MARKETPLACE_ADDRESS, MOCK_SOE_ADDRESS, SOCIETY_NFT_ADDRESS,
@@ -95,8 +95,9 @@ export default function SalonPage() {
   const endRef   = useRef<HTMLDivElement>(null);
   const router   = useRouter();
   const supabase = createClient();
-  const { address }       = useAccount();
-  const { writeContract } = useWriteContract();
+  const { address }           = useAccount();
+  const { writeContract }     = useWriteContract();
+  const { switchChainAsync }  = useSwitchChain();
 
   // ── Auth ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -251,6 +252,7 @@ export default function SalonPage() {
   // ── Run ritual ────────────────────────────────────────────────
   async function handleRunRitual(ritual: typeof RITUALS[0]) {
     if (!address) { alert('Connect your wallet first'); return; }
+    await switchChainAsync({ chainId: 84532 });
     setRitualTx({ status: 'approving', ritualId: ritual.id });
     try {
       await writeContract({
@@ -287,6 +289,7 @@ export default function SalonPage() {
   async function handleMintNFT() {
     if (!address) { alert('Connect your wallet first'); return; }
     if (!NFT_DEPLOYED) { alert('NFT contract not yet deployed'); return; }
+    await switchChainAsync({ chainId: 84532 });
     setMintTx({ status: 'approving' });
     try {
       // Step 1 — approve $SOE
