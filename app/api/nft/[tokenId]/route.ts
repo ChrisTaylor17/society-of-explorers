@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
@@ -11,7 +11,7 @@ export async function GET(
   const metadata = {
     name: `Society Artifact #${tokenId}`,
     description: "A unique on-chain artifact minted by a member of the Society of Explorers.",
-    image: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`,
+    image: `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
     attributes: [
       { trait_type: "Rarity", value: "Common" },
       { trait_type: "Type", value: "Explorer" }
