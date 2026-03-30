@@ -129,8 +129,9 @@ export default function SalonPage() {
 
   // ── Load wallet NFTs ──────────────────────────────────────────
   const loadNFTs = useCallback(async () => {
-    if (!address || !NFT_DEPLOYED) return;
+    if (!address || !NFT_DEPLOYED) { setNftTokens([]); return; }
     setNftLoading(true);
+    setNftTokens([]);
     try {
       const total = await publicClient.readContract({
         address: SOCIETY_NFT_ADDRESS,
@@ -151,12 +152,17 @@ export default function SalonPage() {
           if (owner.toLowerCase() !== address.toLowerCase()) continue;
 
           const res = await fetch(`https://www.societyofexplorers.com/api/nft/${i}`);
+          if (!res.ok) continue;
           const meta = await res.json();
-          const name = meta.name ?? `Artifact #${i}`;
-          const image = meta.image ?? '';
-          const artifactType = 'Explorer';
-          const color = '#c9a84c';
-          tokens.push({ id: i, name, artifactType, color, image });
+          const name: string = meta.name ?? `Society Artifact #${i}`;
+          const image: string = meta.image ?? '';
+          const thinker: string = meta.attributes?.find((a: { trait_type: string }) => a.trait_type === 'Thinker')?.value ?? 'Explorer';
+          const accentMap: Record<string, string> = {
+            Socrates: '#C9A84C', Plato: '#7B9FD4', Nietzsche: '#C0392B',
+            'Marcus Aurelius': '#8E7CC3', Einstein: '#5DADE2', 'Steve Jobs': '#ABEBC6',
+          };
+          const color = accentMap[thinker] ?? '#c9a84c';
+          tokens.push({ id: i, name, artifactType: thinker, color, image });
         } catch { /* skip */ }
       }
       setNftTokens(tokens);
@@ -273,9 +279,9 @@ export default function SalonPage() {
   async function handleMintNFT() {
     if (!address) { alert('Connect your wallet first'); return; }
     if (!NFT_DEPLOYED) { alert('NFT contract not yet deployed'); return; }
-    setMintTx({ status: 'approving' });
     try {
       await switchChainAsync({ chainId: 84532 });
+      setMintTx({ status: 'approving' });
 
       // Step 1 — approve $SOE spend, wait for confirmation
       const approveTx = await writeContractAsync({
@@ -283,17 +289,20 @@ export default function SalonPage() {
         abi: erc20ABI,
         functionName: 'approve',
         args: [SOCIETY_NFT_ADDRESS, parseUnits(NFT_MINT_PRICE.toString(), 18)],
+        gas: 100_000n,
       });
       await publicClient.waitForTransactionReceipt({ hash: approveTx });
 
-      // Step 2 — mint
+      // Step 2 — mint with explicit gas to prevent over-estimation revert
       setMintTx({ status: 'minting' });
-      await writeContractAsync({
+      const mintTxHash = await writeContractAsync({
         address: SOCIETY_NFT_ADDRESS,
         abi: societyNFTABI,
         functionName: 'mint',
         args: [],
+        gas: 300_000n,
       });
+      await publicClient.waitForTransactionReceipt({ hash: mintTxHash });
 
       setMintTx({ status: 'success' });
       const systemMsg = {
