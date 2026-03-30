@@ -279,28 +279,38 @@ export default function SalonPage() {
   async function handleMintNFT() {
     if (!address) { alert('Connect your wallet first'); return; }
     if (!NFT_DEPLOYED) { alert('NFT contract not yet deployed'); return; }
+
     try {
       await switchChainAsync({ chainId: 84532 });
       setMintTx({ status: 'approving' });
 
-      // Step 1 — approve $SOE spend, wait for confirmation
-      const approveTx = await writeContractAsync({
+      // Step 1: Approve only if allowance is insufficient
+      const allowance = await publicClient.readContract({
         address: MOCK_SOE_ADDRESS,
         abi: erc20ABI,
-        functionName: 'approve',
-        args: [SOCIETY_NFT_ADDRESS, parseUnits(NFT_MINT_PRICE.toString(), 18)],
-        gas: 100_000n,
-      });
-      await publicClient.waitForTransactionReceipt({ hash: approveTx });
+        functionName: 'allowance',
+        args: [address, SOCIETY_NFT_ADDRESS],
+      }) as bigint;
 
-      // Step 2 — mint with explicit gas to prevent over-estimation revert
+      if (allowance < parseUnits(NFT_MINT_PRICE.toString(), 18)) {
+        const approveTx = await writeContractAsync({
+          address: MOCK_SOE_ADDRESS,
+          abi: erc20ABI,
+          functionName: 'approve',
+          args: [SOCIETY_NFT_ADDRESS, parseUnits(NFT_MINT_PRICE.toString(), 18)],
+          gas: 100_000n,
+        });
+        await publicClient.waitForTransactionReceipt({ hash: approveTx });
+      }
+
+      // Step 2: Mint with higher gas ceiling
       setMintTx({ status: 'minting' });
       const mintTxHash = await writeContractAsync({
         address: SOCIETY_NFT_ADDRESS,
         abi: societyNFTABI,
         functionName: 'mint',
         args: [],
-        gas: 300_000n,
+        gas: 400_000n,
       });
       await publicClient.waitForTransactionReceipt({ hash: mintTxHash });
 
@@ -314,7 +324,8 @@ export default function SalonPage() {
       await supabase.from('salon_messages').insert(systemMsg);
       await loadNFTs();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Mint failed or rejected';
+      console.error('Mint error:', err);
+      const msg = err instanceof Error ? err.message : 'Mint failed';
       setMintTx({ status: 'error', error: msg });
       alert(msg);
     }
@@ -477,6 +488,18 @@ export default function SalonPage() {
                 <div style={{ fontFamily: 'Cinzel,serif', fontSize: '16px', color: 'var(--gold)' }}>{NFT_MINT_PRICE} $SOE</div>
                 <div style={{ fontSize: '9px', color: 'var(--ivory-muted)', letterSpacing: '0.12em' }}>per artifact</div>
               </div>
+              <button
+                onClick={() => loadNFTs()}
+                disabled={nftLoading}
+                style={{
+                  background: 'none', border: '1px solid var(--border)',
+                  color: 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px',
+                  letterSpacing: '0.12em', padding: '8px 12px', borderRadius: '2px',
+                  cursor: nftLoading ? 'not-allowed' : 'pointer', opacity: nftLoading ? 0.4 : 0.7,
+                  whiteSpace: 'nowrap',
+                }}>
+                {nftLoading ? '...' : '↻ REFRESH'}
+              </button>
               <button
                 onClick={handleMintNFT}
                 disabled={mintTx.status === 'approving' || mintTx.status === 'minting' || !NFT_DEPLOYED}
