@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import HubOverlay from './HubOverlay';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getMemberSession, clearWalletCookie } from '@/lib/auth/getSession';
@@ -77,6 +78,7 @@ export default function SalonPage() {
   const [showThinkers,  setShowThinkers]  = useState(false);
   const [showMarket,    setShowMarket]    = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
+  const [showHub,       setShowHub]       = useState(false);
 
   // ── Ritual tx state ─────────────────────────────────────────
   const [ritualTx, setRitualTx] = useState<{
@@ -353,6 +355,7 @@ export default function SalonPage() {
     setShowMarket(false);
     setShowArtifacts(false);
     setShowThinkers(false);
+    setShowHub(false);
   }
 
   // ── Loading guard ─────────────────────────────────────────────
@@ -383,8 +386,9 @@ export default function SalonPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {([
             { label: 'MINDS',     action: () => { closeAllOverlays(); setShowThinkers(v => !v); }, active: showThinkers },
-            { label: 'MARKET',    action: () => { setShowThinkers(false); setShowArtifacts(false); setShowMarket(v => !v); setRitualTx({ status: 'idle' }); }, active: showMarket },
-            { label: 'ARTIFACTS', action: () => { setShowThinkers(false); setShowMarket(false); setShowArtifacts(v => !v); setMintTx({ status: 'idle' }); }, active: showArtifacts },
+            { label: 'MARKET',    action: () => { closeAllOverlays(); setShowMarket(v => !v); setRitualTx({ status: 'idle' }); }, active: showMarket },
+            { label: 'ARTIFACTS', action: () => { closeAllOverlays(); setShowArtifacts(v => !v); setMintTx({ status: 'idle' }); }, active: showArtifacts },
+            { label: 'HUB',       action: () => { closeAllOverlays(); setShowHub(v => !v); },  active: showHub },
             { label: 'MEMBERS',   action: () => router.push('/members'), active: false },
             { label: 'BOOK',      action: () => router.push('/book'),    active: false },
             { label: 'LEAVE',     action: signOut,                       active: false },
@@ -588,6 +592,11 @@ export default function SalonPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ════ HUB OVERLAY ════ */}
+      {showHub && member && (
+        <HubOverlay member={member} onClose={() => setShowHub(false)} />
       )}
 
       {/* ════ CHAT AREA ════ */}
