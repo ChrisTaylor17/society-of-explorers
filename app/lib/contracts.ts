@@ -30,7 +30,7 @@ export const SOE_TOKEN_ADDRESS: Address =
 export const MOCK_SOE_ADDRESS: Address = SOE_TOKEN_ADDRESS
 
 export const SOCIETY_NFT_ADDRESS: Address =
-  (process.env.NEXT_PUBLIC_SOCIETY_NFT_ADDRESS ?? '0x299db7571c93fa42633df7a720ba3af86e81fd1c') as Address
+  (process.env.NEXT_PUBLIC_SOCIETY_NFT_ADDRESS ?? '0x299DB7571c93fa42633df7A720ba3Af86e81fD1C') as Address
 
 // ─────────────────────────────────────────────────────────────
 //  Minimal ABI — only the functions the frontend needs
