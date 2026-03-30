@@ -27,6 +27,11 @@ export const RITUAL_MARKETPLACE_ADDRESS: Address =
 export const SOE_TOKEN_ADDRESS: Address =
   (process.env.NEXT_PUBLIC_MOCK_SOE_ADDRESS ?? '0xa17CB63a572EBc20Ff2Ed8b9F2067eba80E12E7F') as Address
 
+export const MOCK_SOE_ADDRESS: Address = SOE_TOKEN_ADDRESS
+
+export const SOCIETY_NFT_ADDRESS: Address =
+  (process.env.NEXT_PUBLIC_SOCIETY_NFT_ADDRESS ?? '0x299db7571c93fa42633df7a720ba3af86e81fd1c') as Address
+
 // ─────────────────────────────────────────────────────────────
 //  Minimal ABI — only the functions the frontend needs
 // ─────────────────────────────────────────────────────────────
@@ -152,6 +157,78 @@ export const ERC20_ABI = [
     stateMutability: 'view',
     inputs: [{ name: 'account', type: 'address' }],
     outputs: [{ name: '', type: 'uint256' }],
+  },
+] as const
+
+export const erc20ABI = ERC20_ABI
+
+// ─────────────────────────────────────────────────────────────
+//  SocietyNFT ABI — mint, query, and ownership functions
+// ─────────────────────────────────────────────────────────────
+
+export const societyNFTABI = [
+  {
+    name: 'mint',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: 'mintPrice',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'totalMinted',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'tokenURI',
+    type: 'function',
+    stateMutability: 'pure',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'string' }],
+  },
+  {
+    name: 'balanceOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'ownerOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'soeToken',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'setMintPrice',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: '_price', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    name: 'withdrawSOE',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'to', type: 'address' }],
+    outputs: [],
   },
 ] as const
 
