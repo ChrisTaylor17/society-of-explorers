@@ -66,19 +66,12 @@ export const societyNFTABI = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
-  // ── ERC-721 Enumerable ───────────────────────────────────
+  // ── Ownership ────────────────────────────────────────────
   {
-    name: "tokenOfOwnerByIndex",
+    name: "ownerOf",
     type: "function",
-    inputs:  [{ name: "owner", type: "address" }, { name: "index", type: "uint256" }],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    name: "totalSupply",
-    type: "function",
-    inputs:  [],
-    outputs: [{ name: "", type: "uint256" }],
+    inputs:  [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
     stateMutability: "view",
   },
   // ── Metadata ─────────────────────────────────────────────

@@ -132,48 +132,62 @@ export default function SalonPage() {
     if (!address || !NFT_DEPLOYED) return;
     setNftLoading(true);
     try {
-      const balance = await publicClient.readContract({
+      const logs = await publicClient.getLogs({
         address: SOCIETY_NFT_ADDRESS,
-        abi: societyNFTABI,
-        functionName: 'balanceOf',
-        args: [address],
-      }) as bigint;
+        event: {
+          type: 'event',
+          name: 'Transfer',
+          inputs: [
+            { type: 'address', name: 'from', indexed: true },
+            { type: 'address', name: 'to', indexed: true },
+            { type: 'uint256', name: 'tokenId', indexed: true },
+          ],
+        },
+        args: { to: address },
+        fromBlock: 0n,
+      });
 
       const tokens: NFTToken[] = [];
-      for (let i = 0n; i < balance; i++) {
-        const tokenId = await publicClient.readContract({
-          address: SOCIETY_NFT_ADDRESS,
-          abi: societyNFTABI,
-          functionName: 'tokenOfOwnerByIndex',
-          args: [address, i],
-        }) as bigint;
-
-        const uri = await publicClient.readContract({
-          address: SOCIETY_NFT_ADDRESS,
-          abi: societyNFTABI,
-          functionName: 'tokenURI',
-          args: [tokenId],
-        }) as string;
-
-        // Decode on-chain JSON
-        let name = `Artifact #${tokenId}`;
-        let artifactType = 'Explorer';
-        let image = '';
-        let color = '#c9a84c';
+      for (const log of logs) {
+        const tokenId = log.args.tokenId as bigint;
         try {
-          const jsonStr = atob(uri.replace('data:application/json;base64,', ''));
-          const meta = JSON.parse(jsonStr);
-          name = meta.name ?? name;
-          image = meta.image ?? '';
-          const typeAttr = meta.attributes?.find((a: any) => a.trait_type === 'Type');
-          if (typeAttr) artifactType = typeAttr.value;
-          const typeColors: Record<string, string> = {
-            Explorer: '#c9a84c', Scholar: '#8ab0d8', Thinker: '#7c9e8a', Sage: '#c4956a',
-          };
-          color = typeColors[artifactType] ?? '#c9a84c';
-        } catch {}
+          const owner = await publicClient.readContract({
+            address: SOCIETY_NFT_ADDRESS,
+            abi: societyNFTABI,
+            functionName: 'ownerOf',
+            args: [tokenId],
+          }) as string;
+          if (owner.toLowerCase() !== address.toLowerCase()) continue;
 
-        tokens.push({ id: tokenId, name, artifactType, color, image });
+          const uri = await publicClient.readContract({
+            address: SOCIETY_NFT_ADDRESS,
+            abi: societyNFTABI,
+            functionName: 'tokenURI',
+            args: [tokenId],
+          }) as string;
+
+          // Decode on-chain JSON
+          let name = `Artifact #${tokenId}`;
+          let artifactType = 'Explorer';
+          let image = '';
+          let color = '#c9a84c';
+          try {
+            const jsonStr = atob(uri.replace('data:application/json;base64,', ''));
+            const meta = JSON.parse(jsonStr);
+            name = meta.name ?? name;
+            image = meta.image ?? '';
+            const typeAttr = meta.attributes?.find((a: { trait_type: string; value: string }) => a.trait_type === 'Type');
+            if (typeAttr) artifactType = typeAttr.value;
+            const typeColors: Record<string, string> = {
+              Explorer: '#c9a84c', Scholar: '#8ab0d8', Thinker: '#7c9e8a', Sage: '#c4956a',
+            };
+            color = typeColors[artifactType] ?? '#c9a84c';
+          } catch {}
+
+          tokens.push({ id: tokenId, name, artifactType, color, image });
+        } catch {
+          // skip tokens that error (burned, etc.)
+        }
       }
       setNftTokens(tokens);
     } catch (e) {
