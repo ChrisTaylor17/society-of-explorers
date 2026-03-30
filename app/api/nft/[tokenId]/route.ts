@@ -18,5 +18,10 @@ export async function GET(
     ]
   };
 
-  return NextResponse.json(metadata);
+  return NextResponse.json(metadata, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+    },
+  });
 }
