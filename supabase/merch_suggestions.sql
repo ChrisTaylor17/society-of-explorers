@@ -28,3 +28,7 @@ create index if not exists idx_merch_suggestions_created   on merch_suggestions(
 -- Migration: add printful_product_id column (run if table already exists)
 alter table merch_suggestions
   add column if not exists printful_product_id bigint;
+
+-- Migration: add image_url for AI-generated mockups
+alter table merch_suggestions
+  add column if not exists image_url text;
