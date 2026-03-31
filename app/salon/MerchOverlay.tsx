@@ -27,6 +27,14 @@ interface ShippingForm {
   zip:          string;
 }
 
+interface GeneratedProduct {
+  name:        string;
+  type:        string;
+  tagline:     string;
+  price:       number;
+  description: string;
+}
+
 // ── Products ───────────────────────────────────────────────────────────────────
 // printfulVariantId: replace with real IDs from Printful Dashboard →
 //   Stores → your store → Sync products → click product → variant ID column.
@@ -335,113 +343,63 @@ const SUGGEST_THINKERS = [
 
 function AISuggestPanel({ onClose }: { onClose: () => void }) {
   const supabase = createClient();
-  const [thinker,       setThinker]       = useState(SUGGEST_THINKERS[0]);
-  const [suggestion,    setSuggestion]    = useState('');
-  const [mockupBrief,   setMockupBrief]   = useState('');
-  const [loading,       setLoading]       = useState(false);
-  const [mockupLoading,  setMockupLoading]  = useState(false);
-  const [saving,         setSaving]         = useState(false);
-  const [saved,          setSaved]          = useState(false);
-  const [saveError,      setSaveError]      = useState('');
-  const [savedId,        setSavedId]        = useState<string | null>(null);
-  const abortRef       = useRef<AbortController | null>(null);
-  const mockupAbortRef = useRef<AbortController | null>(null);
-
-  async function streamFrom(prompt: string, onDelta: (d: string) => void, abortCtrl: AbortController) {
-    const res = await fetch('/api/thinker', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: abortCtrl.signal,
-      body: JSON.stringify({ thinkerId: thinker.id, message: prompt, history: [], isReaction: false, maxTokens: 800 }),
-    });
-    const reader = res.body!.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop() ?? '';
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        try { const evt = JSON.parse(line.slice(6)); if (evt.delta) onDelta(evt.delta); } catch {}
-      }
-    }
-  }
+  const [thinker,    setThinker]    = useState(SUGGEST_THINKERS[0]);
+  const [theme,      setTheme]      = useState('');
+  const [products,   setProducts]   = useState<GeneratedProduct[]>([]);
+  const [loading,    setLoading]    = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [saved,      setSaved]      = useState(false);
+  const [saveError,  setSaveError]  = useState('');
+  const [genError,   setGenError]   = useState('');
 
   async function generate() {
     setLoading(true);
-    setSuggestion('');
-    setMockupBrief('');
+    setProducts([]);
     setSaved(false);
     setSaveError('');
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
+    setGenError('');
     try {
-      await streamFrom(
-        'Suggest 3 new Society of Explorers merchandise product ideas. For each give: product type (mug/poster/shirt/tote/etc), a name, a tagline (one sentence), and a price in USD. Be specific to your philosophy and era. Format as a numbered list.',
-        d => setSuggestion(prev => prev + d),
-        abortRef.current,
-      );
+      const res = await fetch('/api/merch/generate-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ thinkerId: thinker.id, theme: theme.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.products) throw new Error(data.error ?? 'Generation failed');
+      setProducts(data.products);
     } catch (e: unknown) {
-      if (e instanceof Error && e.name !== 'AbortError') setSuggestion('Generation failed — try again.');
+      setGenError(e instanceof Error ? e.message : 'Generation failed — try again.');
     } finally {
       setLoading(false);
     }
   }
 
-  async function generateMockup() {
-    if (!suggestion || loading) return;
-    setMockupLoading(true);
-    setMockupBrief('');
-    mockupAbortRef.current?.abort();
-    mockupAbortRef.current = new AbortController();
-    try {
-      await streamFrom(
-        `Based on these product ideas:\n\n${suggestion}\n\nWrite a visual design brief for a product mockup in the Society of Explorers aesthetic. Include: color palette (dark/gold), central symbol or imagery, typography style, background treatment, and mood. One paragraph per product. This brief will be sent to an image generation model.`,
-        d => setMockupBrief(prev => prev + d),
-        mockupAbortRef.current,
-      );
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name !== 'AbortError') setMockupBrief('Mockup generation failed.');
-    } finally {
-      setMockupLoading(false);
-    }
-  }
-
   async function saveToStore() {
-    if (!suggestion) return;
+    if (!products.length) return;
     setSaving(true);
     setSaveError('');
-    const { data, error } = await supabase.from('merch_suggestions').insert({
+    const rows = products.map(p => ({
       thinker_id:     thinker.id,
-      product_type:   'ai-generated',
-      name:           (() => {
-        // Skip intro lines ("Here are 3 ideas..."), find first numbered/bulleted product line
-        const lines = suggestion.split('\n').map(l => l.trim()).filter(Boolean);
-        const productLine = lines.find(l => /^[1-9*•\-]/.test(l)) ?? lines[0] ?? '';
-        return productLine.replace(/^[0-9.\-*•\s]+/, '').replace(/[:—–].+$/, '').trim().slice(0, 120) || 'AI Suggestion';
-      })(),
-      tagline:        suggestion.slice(0, 200),
-      price:          0,
-      raw_suggestion: suggestion,
-      mockup_prompt:  mockupBrief || null,
+      product_type:   p.type,
+      name:           p.name,
+      tagline:        p.tagline,
+      price:          p.price,
+      raw_suggestion: p.description,
       status:         'pending',
       suggested_by:   'ai',
-    }).select('id').single();
+    }));
+    const { error } = await supabase.from('merch_suggestions').insert(rows);
     setSaving(false);
     if (error) { setSaveError(error.message); return; }
     setSaved(true);
-    setSavedId(data?.id ?? null);
   }
 
-  const done = !loading && !!suggestion;
+  const done = !loading && products.length > 0;
 
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
-      onClick={e => { if (e.target === e.currentTarget) { abortRef.current?.abort(); mockupAbortRef.current?.abort(); onClose(); } }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{ width: '500px', maxWidth: '100vw', height: '100%', background: 'var(--bg-deep)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
@@ -450,7 +408,7 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
             <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold-dim)', letterSpacing: '0.12em' }}>AI PRODUCT GENERATOR</div>
             <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--gold-light)', marginTop: '2px' }}>Let a thinker design your next product</div>
           </div>
-          <button onClick={() => { abortRef.current?.abort(); mockupAbortRef.current?.abort(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
         </div>
 
         {/* Thinker selector */}
@@ -458,52 +416,42 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
           <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--gold-dim)', letterSpacing: '0.12em', marginBottom: '10px' }}>SELECT MIND</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {SUGGEST_THINKERS.map(t => (
-              <button key={t.id} onClick={() => { setThinker(t); setSuggestion(''); setMockupBrief(''); setSaved(false); }}
+              <button key={t.id} onClick={() => { setThinker(t); setProducts([]); setSaved(false); }}
                 style={{ background: thinker.id === t.id ? 'var(--glow)' : 'transparent', border: `1px solid ${thinker.id === t.id ? t.accent : 'var(--border)'}`, color: thinker.id === t.id ? t.accent : 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
                 {t.name.toUpperCase()}
               </button>
             ))}
           </div>
+          {/* Theme input */}
+          <input
+            type="text"
+            placeholder="Optional theme (e.g. mortality, courage, beauty)"
+            value={theme}
+            onChange={e => setTheme(e.target.value)}
+            style={{ marginTop: '10px', width: '100%', background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory)', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', padding: '6px 10px', outline: 'none', borderRadius: '2px', boxSizing: 'border-box' }}
+          />
         </div>
 
         {/* Output */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {suggestion ? (
-            <>
-              {/* Product ideas */}
-              <div>
-                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: thinker.accent, letterSpacing: '0.12em', marginBottom: '8px', opacity: 0.7 }}>PRODUCT IDEAS</div>
-                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--ivory)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                  {suggestion}
-                  {loading && <span style={{ color: thinker.accent }}>▍</span>}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {genError && (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>
+              {genError}
+            </div>
+          )}
+
+          {products.length > 0 ? products.map((p, i) => (
+            <div key={i} style={{ border: '1px solid var(--border)', borderRadius: '4px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '12px', color: thinker.accent, letterSpacing: '0.08em' }}>{p.name}</div>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '10px', color: 'var(--gold-dim)', whiteSpace: 'nowrap' }}>
+                  {p.type.toUpperCase()} · ${p.price}
                 </div>
               </div>
-
-              {/* Mockup brief (if generated) */}
-              {mockupBrief && (
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                  <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: thinker.accent, letterSpacing: '0.12em', marginBottom: '8px', opacity: 0.7 }}>VISUAL BRIEF</div>
-                  <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontStyle: 'italic' }}>
-                    {mockupBrief}
-                    {mockupLoading && <span style={{ color: thinker.accent }}>▍</span>}
-                  </div>
-                </div>
-              )}
-
-              {/* Save status */}
-              {saved && (
-                <div style={{ background: '#0d1a0d', border: '1px solid #4a8a4a55', borderRadius: '4px', padding: '10px 14px', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#7fc87f', fontStyle: 'italic' }}>
-                  ⬡ Saved to merch_suggestions — review in REVIEW panel to approve and publish.
-                </div>
-              )}
-              {saveError && (
-                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>
-                  Save failed: {saveError}
-                </div>
-              )}
-
-            </>
-          ) : (
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory)', fontStyle: 'italic', lineHeight: 1.5 }}>{p.tagline}</div>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.6 }}>{p.description}</div>
+            </div>
+          )) : !loading && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', textAlign: 'center' }}>
               <div style={{ fontFamily: 'Cinzel,serif', fontSize: '32px', color: thinker.accent, opacity: 0.4 }}>⬡</div>
               <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', lineHeight: 1.6 }}>
@@ -511,31 +459,30 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           )}
+
+          {saved && (
+            <div style={{ background: '#0d1a0d', border: '1px solid #4a8a4a55', borderRadius: '4px', padding: '10px 14px', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#7fc87f', fontStyle: 'italic' }}>
+              ⬡ {products.length} products saved — review in REVIEW panel to approve and publish.
+            </div>
+          )}
+          {saveError && (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>
+              Save failed: {saveError}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
         <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {/* Secondary actions — visible after generation */}
-          {done && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button
-                onClick={generateMockup}
-                disabled={mockupLoading}
-                style={{ background: 'transparent', border: `1px solid ${thinker.accent}55`, color: thinker.accent, opacity: mockupLoading ? 0.5 : 1, fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '8px 0', cursor: mockupLoading ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
-              >
-                {mockupLoading ? 'GENERATING...' : '⬡ GENERATE MOCKUP BRIEF'}
-              </button>
-              <button
-                onClick={saveToStore}
-                disabled={saving || saved}
-                style={{ background: saved ? 'var(--glow)' : 'transparent', border: `1px solid ${saved ? thinker.accent : thinker.accent + '55'}`, color: thinker.accent, opacity: saving ? 0.5 : 1, fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '8px 0', cursor: saving || saved ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
-              >
-                {saved ? '⬡ SAVED TO STORE' : saving ? 'SAVING...' : '⬡ SAVE TO STORE'}
-              </button>
-            </div>
+          {done && !saved && (
+            <button
+              onClick={saveToStore}
+              disabled={saving}
+              style={{ width: '100%', background: 'transparent', border: `1px solid ${thinker.accent}88`, color: thinker.accent, opacity: saving ? 0.5 : 1, fontFamily: 'Cinzel,serif', fontSize: '10px', letterSpacing: '0.12em', padding: '10px 0', cursor: saving ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
+            >
+              {saving ? 'SAVING...' : `⬡ SAVE ALL ${products.length} TO STORE`}
+            </button>
           )}
-
-          {/* Primary generate button */}
           <button
             onClick={generate}
             disabled={loading}
