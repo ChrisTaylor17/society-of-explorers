@@ -414,8 +414,6 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     if (!suggestion) return;
     setSaving(true);
     setSaveError('');
-    setRunwayError('');
-    setRunwayImage(null);
     const { data, error } = await supabase.from('merch_suggestions').insert({
       thinker_id:     thinker.id,
       product_type:   'ai-generated',
