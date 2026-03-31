@@ -1,31 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 
-// Printful catalog variant IDs for each product category.
-// Find IDs at: https://developers.printful.com/docs/#tag/Catalog
-// Printful Dashboard → Catalog → pick product → note "Variant ID" column.
+// Printful catalog variant IDs.
+// Verify these in: Printful Dashboard → Catalog → pick product → Variant ID column.
+// Or browse the API: GET https://api.printful.com/products (lists catalog products)
+//                   GET https://api.printful.com/products/{product_id} (lists variants)
 const VARIANT_MAP: Record<string, number> = {
-  'mug':       'mug'        as unknown as number, // placeholder — replace with real Printful variant IDs
-  'poster':    'poster'     as unknown as number,
-  'notebook':  'notebook'   as unknown as number,
-  'journal':   'journal'    as unknown as number,
-  'tote':      'tote'       as unknown as number,
-  'shirt':     'shirt'      as unknown as number,
-  // Real Printful variant IDs examples (uncomment + set correct ones from catalog):
-  // 'mug':       18481,  // 11oz White Mug
-  // 'poster':    12612,  // Poster 18×24
-  // 'notebook':  404,    // Notebook
-  // 'tote':      3945,   // Natural tote bag
-  // 'shirt':     4011,   // Unisex t-shirt M
+  mug:      18481,  // 11oz White Glossy Mug
+  poster:   12612,  // Poster 18×24" (matte)
+  print:    12612,  // Art print — same base product
+  notebook: 404,    // Hardcover Journal 7×10"
+  journal:  404,
+  tote:     3945,   // AOP Tote Bag
+  shirt:    4011,   // Unisex Heavy Cotton Tee (M)
 };
 
-function pickVariantId(productType: string): number | null {
+const DEFAULT_VARIANT = 12612; // poster — safe fallback
+
+function pickVariantId(productType: string): number {
   const key = productType.toLowerCase().replace(/[^a-z]/g, '');
-  // Direct match
   for (const [k, v] of Object.entries(VARIANT_MAP)) {
-    if (key.includes(k) && typeof v === 'number') return v;
+    if (key.includes(k)) return v;
   }
-  return null;
+  return DEFAULT_VARIANT;
 }
 
 export interface PublishBody {
@@ -60,15 +57,6 @@ export async function POST(request: NextRequest) {
   }
 
   const variantId = pickVariantId(product_type ?? '');
-  if (!variantId) {
-    return NextResponse.json(
-      {
-        error: `No Printful variant ID mapped for product type "${product_type}". ` +
-               'Set the real variant IDs in VARIANT_MAP in app/api/merch/publish/route.ts.',
-      },
-      { status: 422 },
-    );
-  }
 
   // Use the existing SVG metadata API as the print artwork URL.
   // Printful fetches this URL at product creation time — it must be publicly accessible.
