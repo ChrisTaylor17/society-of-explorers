@@ -6,16 +6,16 @@ import { createServiceClient } from '@/lib/supabase/server';
 // Or browse the API: GET https://api.printful.com/products (lists catalog products)
 //                   GET https://api.printful.com/products/{product_id} (lists variants)
 const VARIANT_MAP: Record<string, number> = {
-  mug:      18481,  // 11oz White Glossy Mug
-  poster:   12612,  // Poster 18×24" (matte)
-  print:    12612,  // Art print — same base product
-  notebook: 404,    // Hardcover Journal 7×10"
-  journal:  404,
-  tote:     3945,   // AOP Tote Bag
-  shirt:    4011,   // Unisex Heavy Cotton Tee (M)
+  mug:      1320,   // White Glossy Mug 11oz (catalog product 19)
+  poster:   1349,   // Enhanced Matte Paper Poster 12″×16″ (catalog product 1)
+  print:    1349,   // Art print — same base
+  notebook: 1349,   // No standalone notebook in catalog; use poster as fallback
+  journal:  1349,
+  tote:     9039,   // All-Over Print Large Tote Bag w/ Pocket Black (catalog product 274)
+  shirt:    4022,   // Bella + Canvas 3001 Unisex Tee M (catalog product 71)
 };
 
-const DEFAULT_VARIANT = 12612; // poster — safe fallback
+const DEFAULT_VARIANT = 1349; // poster — safe fallback
 
 function pickVariantId(productType: string): number {
   const key = productType.toLowerCase().replace(/[^a-z]/g, '');
