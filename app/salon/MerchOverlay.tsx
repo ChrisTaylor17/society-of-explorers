@@ -682,7 +682,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
             const isUpdating = updating === row.id;
             const statusColor = row.status === 'approved' ? '#7fc87f' : row.status === 'rejected' ? '#e07070' : accent;
             return (
-              <div key={row.id} style={{ background: 'var(--bg-elevated)', border: `1px solid ${accent}22`, borderRadius: '4px', overflow: 'hidden' }}>
+              <div key={row.id} style={{ background: 'var(--bg-elevated)', border: `1px solid ${accent}22`, borderRadius: '4px' }}>
                 {/* Row header */}
                 <div style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -723,7 +723,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                     {row.mockup_prompt && (
                       <div style={{ background: '#0d0d0d', border: `1px solid ${accent}18`, borderRadius: '3px', padding: '10px 12px' }}>
                         <div style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.1em', opacity: 0.6, marginBottom: '6px' }}>VISUAL BRIEF</div>
-                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap', maxHeight: '160px', overflowY: 'auto' }}>
                           {row.mockup_prompt}
                         </div>
                       </div>
