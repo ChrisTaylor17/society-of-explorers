@@ -11,42 +11,33 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. Create task
-    const createRes = await fetch('https://api.runwayml.com/v1/tasks', {
+    // 1. Create task (correct dev hostname)
+    const createRes = await fetch('https://api.dev.runwayml.com/v1/tasks', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${RUNWAY_API_KEY}`,
         'Content-Type': 'application/json',
-        'X-Runway-Version': '2024-09-13',
       },
       body: JSON.stringify({
-        model:      'gen3a_turbo',
-        prompt:     visual_brief,
-        width:      1024,
-        height:     1024,
+        model: 'gen3a_turbo',
+        prompt: visual_brief,
+        width: 1024,
+        height: 1024,
         num_images: 1,
       }),
     });
 
     const task = await createRes.json();
-    if (!createRes.ok) {
-      console.error('Runway create error:', task);
-      throw new Error(task?.error ?? task?.message ?? 'Runway task creation failed');
-    }
-
     const taskId = task.id;
-    if (!taskId) throw new Error('No task ID returned from Runway');
+    if (!taskId) throw new Error('No task ID from Runway');
 
-    // 2. Poll until complete (max ~90s)
+    // 2. Poll
     let imageUrl: string | null = null;
     for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 3000));
 
-      const pollRes = await fetch(`https://api.runwayml.com/v1/tasks/${taskId}`, {
-        headers: {
-          'Authorization': `Bearer ${RUNWAY_API_KEY}`,
-          'X-Runway-Version': '2024-09-13',
-        },
+      const pollRes = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
+        headers: { 'Authorization': `Bearer ${RUNWAY_API_KEY}` },
       });
       const status = await pollRes.json();
 
@@ -54,21 +45,17 @@ export async function POST(req: NextRequest) {
         imageUrl = status.output?.[0] ?? status.output?.images?.[0]?.url ?? null;
         break;
       }
-      if (status.status === 'FAILED') {
-        throw new Error(status.failure ?? status.failureCode ?? status.error ?? 'Runway task failed');
-      }
+      if (status.status === 'FAILED') throw new Error(status.error ?? 'Runway failed');
     }
 
     if (!imageUrl) throw new Error('Timeout waiting for Runway image');
 
-    // 3. Save URL back to the suggestion row
-    if (suggestionId) {
-      const supabase = createServiceClient();
-      await supabase
-        .from('merch_suggestions')
-        .update({ image_url: imageUrl })
-        .eq('id', suggestionId);
-    }
+    // 3. Save image URL
+    const supabase = createServiceClient();
+    await supabase
+      .from('merch_suggestions')
+      .update({ image_url: imageUrl })
+      .eq('id', suggestionId);
 
     return NextResponse.json({ success: true, image_url: imageUrl });
   } catch (err: unknown) {
