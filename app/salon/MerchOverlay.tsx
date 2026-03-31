@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Product {
@@ -27,43 +27,44 @@ interface ShippingForm {
 }
 
 // ── Products ───────────────────────────────────────────────────────────────────
-// printfulVariantId: fill in once products are synced in Printful dashboard.
+// printfulVariantId: replace with real IDs from Printful Dashboard →
+//   Stores → your store → Sync products → click product → variant ID column.
 const PRODUCTS: Product[] = [
   {
     id: 'socrates-journal', thinker: 'Socrates', symbol: 'Σ', accent: '#C9A84C',
     type: 'Journal', name: 'The Examined Life',
     tagline: 'Know thyself — 160 pages, lay-flat binding, dark linen cover.',
-    price: 24.99, printfulVariantId: null,
+    price: 24.99, printfulVariantId: 12345678, // ← replace with real variant ID
   },
   {
     id: 'plato-poster', thinker: 'Plato', symbol: 'Π', accent: '#7B9FD4',
     type: 'Art Print', name: 'Allegory of the Cave',
     tagline: 'Archival-quality 18×24 print on 100lb matte stock.',
-    price: 19.99, printfulVariantId: null,
+    price: 19.99, printfulVariantId: 12345679, // ← replace with real variant ID
   },
   {
     id: 'nietzsche-mug', thinker: 'Nietzsche', symbol: 'N', accent: '#C0392B',
     type: 'Mug', name: 'Will to Power',
     tagline: '15oz ceramic, dishwasher safe. Become who you are.',
-    price: 18.99, printfulVariantId: null,
+    price: 18.99, printfulVariantId: 12345680, // ← replace with real variant ID
   },
   {
     id: 'aurelius-notebook', thinker: 'Marcus Aurelius', symbol: 'M', accent: '#8E7CC3',
     type: 'Notebook', name: 'Meditations',
     tagline: 'Stoic hardcover, 200 ruled pages. The obstacle is the way.',
-    price: 22.99, printfulVariantId: null,
+    price: 22.99, printfulVariantId: 12345681, // ← replace with real variant ID
   },
   {
     id: 'einstein-tote', thinker: 'Einstein', symbol: 'E', accent: '#5DADE2',
     type: 'Tote Bag', name: 'Thought Experiment',
     tagline: 'Heavy cotton canvas, 15×16". Carry your relativity daily.',
-    price: 16.99, printfulVariantId: null,
+    price: 16.99, printfulVariantId: 12345682, // ← replace with real variant ID
   },
   {
     id: 'jobs-poster', thinker: 'Steve Jobs', symbol: 'J', accent: '#ABEBC6',
     type: 'Art Print', name: 'Think Different',
     tagline: 'Minimalist 12×18 foil print on premium paper.',
-    price: 21.99, printfulVariantId: null,
+    price: 21.99, printfulVariantId: 12345683, // ← replace with real variant ID
   },
 ];
 
@@ -321,9 +322,143 @@ function CheckoutDrawer({
   );
 }
 
+// ── AI Suggestion Panel ───────────────────────────────────────────────────────
+const SUGGEST_THINKERS = [
+  { id: 'socrates',  name: 'Socrates',        accent: '#C9A84C' },
+  { id: 'nietzsche', name: 'Nietzsche',       accent: '#C0392B' },
+  { id: 'jobs',      name: 'Steve Jobs',      accent: '#ABEBC6' },
+  { id: 'aurelius',  name: 'Marcus Aurelius', accent: '#8E7CC3' },
+  { id: 'einstein',  name: 'Einstein',        accent: '#5DADE2' },
+  { id: 'plato',     name: 'Plato',           accent: '#7B9FD4' },
+];
+
+function AISuggestPanel({ onClose }: { onClose: () => void }) {
+  const [thinker,    setThinker]    = useState(SUGGEST_THINKERS[0]);
+  const [suggestion, setSuggestion] = useState('');
+  const [loading,    setLoading]    = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  async function generate() {
+    setLoading(true);
+    setSuggestion('');
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    try {
+      const res = await fetch('/api/thinker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortRef.current.signal,
+        body: JSON.stringify({
+          thinkerId: thinker.id,
+          message: 'Suggest 3 new Society of Explorers merchandise product ideas. For each give: product type (mug/poster/shirt/tote/etc), a name, a tagline (one sentence), and a price in USD. Be specific to your philosophy and era. Format as a numbered list.',
+          history: [],
+          isReaction: false,
+        }),
+      });
+      const reader = res.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.delta) setSuggestion(prev => prev + evt.delta);
+          } catch {}
+        }
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') setSuggestion('Generation failed — try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
+      onClick={e => { if (e.target === e.currentTarget) { abortRef.current?.abort(); onClose(); } }}
+    >
+      <div style={{ width: '460px', maxWidth: '100vw', height: '100%', background: 'var(--bg-deep)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold-dim)', letterSpacing: '0.12em' }}>AI PRODUCT GENERATOR</div>
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--gold-light)', marginTop: '2px' }}>Let a thinker design your next product</div>
+          </div>
+          <button onClick={() => { abortRef.current?.abort(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Thinker selector */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--gold-dim)', letterSpacing: '0.12em', marginBottom: '10px' }}>SELECT MIND</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {SUGGEST_THINKERS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setThinker(t)}
+                style={{
+                  background: thinker.id === t.id ? 'var(--glow)' : 'transparent',
+                  border: `1px solid ${thinker.id === t.id ? t.accent : 'var(--border)'}`,
+                  color: thinker.id === t.id ? t.accent : 'var(--gold-dim)',
+                  fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em',
+                  padding: '4px 10px', cursor: 'pointer', borderRadius: '2px',
+                }}
+              >
+                {t.name.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Output */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          {suggestion ? (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--ivory)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+              {suggestion}
+              {loading && <span style={{ color: thinker.accent, animation: 'none' }}>▍</span>}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'Cinzel,serif', fontSize: '32px', color: thinker.accent, opacity: 0.4 }}>⬡</div>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', lineHeight: 1.6 }}>
+                {thinker.name} will propose 3 product ideas<br />drawn from their philosophy.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CTA */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+          <button
+            onClick={generate}
+            disabled={loading}
+            style={{
+              width: '100%',
+              background: loading ? 'transparent' : `linear-gradient(135deg,#1c1500,#2a1e00)`,
+              border: `1px solid ${thinker.accent}${loading ? '44' : '88'}`,
+              color: thinker.accent, opacity: loading ? 0.6 : 1,
+              fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em',
+              padding: '12px 0', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: '2px',
+            }}
+          >
+            {loading ? `${thinker.name.toUpperCase()} IS THINKING...` : `⬡ ASK ${thinker.name.toUpperCase()}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Overlay ──────────────────────────────────────────────────────────────
 export default function MerchOverlay({ onClose }: { onClose: () => void }) {
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
+  const [showAISuggest,   setShowAISuggest]   = useState(false);
 
   return (
     <div style={{
@@ -345,9 +480,17 @@ export default function MerchOverlay({ onClose }: { onClose: () => void }) {
             Artifacts for the physical realm · Designed by the minds of history
           </div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 8px', cursor: 'pointer', borderRadius: '2px' }}>
-          CLOSE
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setShowAISuggest(true)}
+            style={{ background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', color: 'var(--gold)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 10px', cursor: 'pointer', borderRadius: '2px' }}
+          >
+            ⬡ AI IDEAS
+          </button>
+          <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 8px', cursor: 'pointer', borderRadius: '2px' }}>
+            CLOSE
+          </button>
+        </div>
       </div>
 
       {/* Grid */}
@@ -401,6 +544,11 @@ export default function MerchOverlay({ onClose }: { onClose: () => void }) {
       {/* Checkout Drawer */}
       {checkoutProduct && (
         <CheckoutDrawer product={checkoutProduct} onClose={() => setCheckoutProduct(null)} />
+      )}
+
+      {/* AI Suggest Panel */}
+      {showAISuggest && (
+        <AISuggestPanel onClose={() => setShowAISuggest(false)} />
       )}
     </div>
   );
