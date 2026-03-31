@@ -542,21 +542,25 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
 }
 
 // ── Review Panel ──────────────────────────────────────────────────────────────
-type SuggestionStatus = 'pending' | 'approved' | 'rejected';
+type SuggestionStatus = 'pending' | 'approved' | 'rejected' | 'live';
 
 interface MerchSuggestion {
   id: string;
   thinker_id: string;
   name: string;
+  product_type: string | null;
+  price: number;
   raw_suggestion: string | null;
   mockup_prompt: string | null;
   status: SuggestionStatus;
+  printful_product_id: number | null;
   created_at: string;
 }
 
 const STATUS_FILTERS: { label: string; value: SuggestionStatus | 'all' }[] = [
   { label: 'PENDING',  value: 'pending'  },
   { label: 'APPROVED', value: 'approved' },
+  { label: 'LIVE',     value: 'live'     },
   { label: 'REJECTED', value: 'rejected' },
   { label: 'ALL',      value: 'all'      },
 ];
@@ -568,17 +572,18 @@ const THINKER_ACCENT: Record<string, string> = {
 
 function ReviewPanel({ onClose }: { onClose: () => void }) {
   const supabase = createClient();
-  const [rows,       setRows]       = useState<MerchSuggestion[]>([]);
-  const [filter,     setFilter]     = useState<SuggestionStatus | 'all'>('pending');
-  const [loading,    setLoading]    = useState(true);
-  const [expanded,   setExpanded]   = useState<string | null>(null);
-  const [updating,   setUpdating]   = useState<string | null>(null);
+  const [rows,        setRows]        = useState<MerchSuggestion[]>([]);
+  const [filter,      setFilter]      = useState<SuggestionStatus | 'all'>('pending');
+  const [loading,     setLoading]     = useState(true);
+  const [expanded,    setExpanded]    = useState<string | null>(null);
+  const [updating,    setUpdating]    = useState<string | null>(null);
+  const [publishErr,  setPublishErr]  = useState<Record<string, string>>({});
 
   async function load() {
     setLoading(true);
     const q = supabase
       .from('merch_suggestions')
-      .select('id,thinker_id,name,raw_suggestion,mockup_prompt,status,created_at')
+      .select('id,thinker_id,name,product_type,price,raw_suggestion,mockup_prompt,status,printful_product_id,created_at')
       .order('created_at', { ascending: false });
     const { data, error } = filter === 'all' ? await q : await q.eq('status', filter);
     if (!error) setRows((data as MerchSuggestion[]) ?? []);
@@ -592,6 +597,42 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
     await supabase.from('merch_suggestions').update({ status }).eq('id', id);
     setUpdating(null);
     setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r).filter(r => filter === 'all' || r.status === filter));
+  }
+
+  async function approveAndPublish(row: MerchSuggestion) {
+    setUpdating(row.id);
+    setPublishErr(prev => { const n = {...prev}; delete n[row.id]; return n; });
+    try {
+      const res = await fetch('/api/merch/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          suggestionId: row.id,
+          name:         row.name,
+          tagline:      row.raw_suggestion?.slice(0, 200) ?? '',
+          price:        row.price || 24.99,
+          thinker_id:   row.thinker_id,
+          product_type: row.product_type ?? 'poster',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPublishErr(prev => ({ ...prev, [row.id]: data.error ?? 'Publish failed' }));
+        // Still mark approved in Supabase even if Printful isn't ready yet
+        await setStatus(row.id, 'approved');
+        return;
+      }
+      // Success: mark live in the local list
+      setRows(prev =>
+        prev.map(r => r.id === row.id ? { ...r, status: 'live', printful_product_id: data.printful_product_id } : r)
+            .filter(r => filter === 'all' || r.status === filter),
+      );
+    } catch {
+      setPublishErr(prev => ({ ...prev, [row.id]: 'Network error — check Printful config' }));
+      await setStatus(row.id, 'approved');
+    } finally {
+      setUpdating(null);
+    }
   }
 
   return (
@@ -685,15 +726,27 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                   </div>
                 )}
 
+                {/* Publish error */}
+                {publishErr[row.id] && (
+                  <div style={{ padding: '8px 14px', background: '#1a0808', borderTop: `1px solid #e0707022` }}>
+                    <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '12px', color: '#e07070', fontStyle: 'italic', lineHeight: 1.5 }}>
+                      Printful: {publishErr[row.id]}
+                    </div>
+                    <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
+                      Marked approved — fix variant IDs then retry.
+                    </div>
+                  </div>
+                )}
+
                 {/* Action bar */}
                 {row.status === 'pending' && (
                   <div style={{ borderTop: `1px solid ${accent}18`, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                     <button
-                      onClick={() => setStatus(row.id, 'approved')}
+                      onClick={() => approveAndPublish(row)}
                       disabled={isUpdating}
                       style={{ background: 'transparent', border: 'none', borderRight: `1px solid ${accent}18`, color: '#7fc87f', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '10px 0', cursor: isUpdating ? 'not-allowed' : 'pointer', opacity: isUpdating ? 0.5 : 1 }}
                     >
-                      {isUpdating ? '...' : '⬡ APPROVE & PUBLISH'}
+                      {isUpdating ? 'PUBLISHING...' : '⬡ APPROVE & PUBLISH'}
                     </button>
                     <button
                       onClick={() => setStatus(row.id, 'rejected')}
@@ -704,7 +757,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                     </button>
                   </div>
                 )}
-                {row.status === 'approved' && (
+                {(row.status === 'approved') && (
                   <div style={{ borderTop: `1px solid ${accent}18`, display: 'flex' }}>
                     <button
                       onClick={() => setStatus(row.id, 'pending')}
@@ -713,6 +766,17 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                     >
                       MOVE BACK TO PENDING
                     </button>
+                  </div>
+                )}
+                {row.status === 'live' && (
+                  <div style={{ borderTop: `1px solid ${accent}18`, padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: '#7fc87f', letterSpacing: '0.1em' }}>
+                      ⬡ LIVE IN PRINTFUL {row.printful_product_id ? `· #${row.printful_product_id}` : ''}
+                    </span>
+                    <a href="https://www.printful.com/dashboard/products" target="_blank" rel="noopener noreferrer"
+                      style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.08em', textDecoration: 'none', opacity: 0.7 }}>
+                      VIEW IN PRINTFUL ↗
+                    </a>
                   </div>
                 )}
               </div>

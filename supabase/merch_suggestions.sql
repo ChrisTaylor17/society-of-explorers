@@ -24,3 +24,7 @@ create policy "merch_suggestions_open"
 create index if not exists idx_merch_suggestions_status    on merch_suggestions(status);
 create index if not exists idx_merch_suggestions_thinker   on merch_suggestions(thinker_id);
 create index if not exists idx_merch_suggestions_created   on merch_suggestions(created_at desc);
+
+-- Migration: add printful_product_id column (run if table already exists)
+alter table merch_suggestions
+  add column if not exists printful_product_id bigint;
