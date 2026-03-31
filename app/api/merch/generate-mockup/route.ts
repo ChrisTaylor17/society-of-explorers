@@ -1,68 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 
-const RUNWAY_API_KEY = process.env.RUNWAY_API_KEY;
-const RUNWAY_BASE    = 'https://api.dev.runwayml.com';
+const FAL_API_KEY = process.env.FAL_API_KEY;
 
 export async function POST(req: NextRequest) {
   const { visual_brief, suggestionId } = await req.json();
 
-  if (!RUNWAY_API_KEY) {
-    return NextResponse.json({ error: 'RUNWAY_API_KEY not configured' }, { status: 500 });
+  if (!FAL_API_KEY) {
+    return NextResponse.json({ error: 'FAL_API_KEY not configured' }, { status: 500 });
   }
 
+  const prompt = `${visual_brief}\n\nphotorealistic product mockup, dark charcoal base, gold accents, matte finish`;
+
+  let imageUrl: string | null = null;
+
   try {
-    // 1. Create text-to-image task
-    const createRes = await fetch(`${RUNWAY_BASE}/v1/text_to_image`, {
+    const res = await fetch('https://fal.run/fal-ai/flux-pro', {
       method: 'POST',
       headers: {
-        'Authorization':   `Bearer ${RUNWAY_API_KEY}`,
-        'Content-Type':    'application/json',
-        'X-Runway-Version': '2024-11-06',
+        'Authorization': `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        promptText: visual_brief.slice(0, 900),
-        model:      'gen4_image',
-        ratio:      '1:1',
-        outputType: 'jpeg',
+        prompt: prompt.slice(0, 2000),
+        image_size: 'square_hd',
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_images: 1,
       }),
     });
 
-    const task = await createRes.json();
-    console.log('Runway create response:', JSON.stringify(task));
+    const data = await res.json();
+    console.log('fal.ai response:', JSON.stringify(data).slice(0, 500));
 
-    if (!createRes.ok) {
-      throw new Error(task?.error ?? task?.message ?? `Runway error ${createRes.status}`);
+    if (!res.ok) {
+      throw new Error(data?.detail ?? data?.error ?? `fal.ai error ${res.status}`);
     }
 
-    const taskId = task.id;
-    if (!taskId) throw new Error(`No task ID. Runway said: ${JSON.stringify(task)}`);
+    imageUrl = data?.images?.[0]?.url ?? null;
+    if (!imageUrl) throw new Error(`No image in fal.ai response: ${JSON.stringify(data).slice(0, 200)}`);
 
-    // 2. Poll GET /v1/tasks/{id}
-    let imageUrl: string | null = null;
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 4000));
-      const pollRes = await fetch(`${RUNWAY_BASE}/v1/tasks/${taskId}`, {
-        headers: {
-          'Authorization':   `Bearer ${RUNWAY_API_KEY}`,
-          'X-Runway-Version': '2024-11-06',
-        },
-      });
-      const status = await pollRes.json();
-      console.log(`Runway poll ${i}:`, status.status);
-
-      if (status.status === 'SUCCEEDED') {
-        imageUrl = status.output?.[0] ?? null;
-        break;
-      }
-      if (status.status === 'FAILED') {
-        throw new Error(status.failure ?? status.failureCode ?? 'Runway task failed');
-      }
-    }
-
-    if (!imageUrl) throw new Error('Runway timed out');
-
-    // 3. Persist image URL to suggestion row
+    // Persist to suggestion row if provided
     if (suggestionId) {
       const supabase = createServiceClient();
       await supabase
@@ -73,8 +51,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, image_url: imageUrl });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Runway error';
-    console.error('Runway error:', msg);
+    const msg = err instanceof Error ? err.message : 'fal.ai error';
+    console.error('fal.ai error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

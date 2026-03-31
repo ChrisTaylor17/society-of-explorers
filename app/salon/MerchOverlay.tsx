@@ -341,16 +341,23 @@ const SUGGEST_THINKERS = [
   { id: 'plato',     name: 'Plato',           accent: '#7B9FD4' },
 ];
 
+function stripMd(s: string) {
+  return s.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+}
+
 function AISuggestPanel({ onClose }: { onClose: () => void }) {
   const supabase = createClient();
-  const [thinker,    setThinker]    = useState(SUGGEST_THINKERS[0]);
-  const [theme,      setTheme]      = useState('');
-  const [products,   setProducts]   = useState<GeneratedProduct[]>([]);
-  const [loading,    setLoading]    = useState(false);
-  const [saving,     setSaving]     = useState(false);
-  const [saved,      setSaved]      = useState(false);
-  const [saveError,  setSaveError]  = useState('');
-  const [genError,   setGenError]   = useState('');
+  const [thinker,       setThinker]       = useState(SUGGEST_THINKERS[0]);
+  const [theme,         setTheme]         = useState('');
+  const [products,      setProducts]      = useState<GeneratedProduct[]>([]);
+  const [loading,       setLoading]       = useState(false);
+  const [saving,        setSaving]        = useState(false);
+  const [saved,         setSaved]         = useState(false);
+  const [saveError,     setSaveError]     = useState('');
+  const [genError,      setGenError]      = useState('');
+  const [mockupImages,  setMockupImages]  = useState<Record<number, string>>({});
+  const [mockupLoading, setMockupLoading] = useState<number | null>(null);
+  const [mockupErrors,  setMockupErrors]  = useState<Record<number, string>>({});
 
   async function generate() {
     setLoading(true);
@@ -358,6 +365,8 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     setSaved(false);
     setSaveError('');
     setGenError('');
+    setMockupImages({});
+    setMockupErrors({});
     try {
       const res = await fetch('/api/merch/generate-products', {
         method: 'POST',
@@ -374,17 +383,38 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     }
   }
 
+  async function generateMockup(p: GeneratedProduct, i: number) {
+    setMockupLoading(i);
+    setMockupErrors(prev => { const n = {...prev}; delete n[i]; return n; });
+    try {
+      const brief = `${p.name} — ${p.type}. ${p.description} Thinker: ${thinker.name}. Style: Society of Explorers, philosophical luxury brand.`;
+      const res = await fetch('/api/merch/generate-mockup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visual_brief: brief }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.image_url) throw new Error(data.error ?? 'Mockup failed');
+      setMockupImages(prev => ({ ...prev, [i]: data.image_url }));
+    } catch (e: unknown) {
+      setMockupErrors(prev => ({ ...prev, [i]: e instanceof Error ? e.message : 'Mockup failed' }));
+    } finally {
+      setMockupLoading(null);
+    }
+  }
+
   async function saveToStore() {
     if (!products.length) return;
     setSaving(true);
     setSaveError('');
-    const rows = products.map(p => ({
+    const rows = products.map((p, i) => ({
       thinker_id:     thinker.id,
       product_type:   p.type,
-      name:           p.name,
-      tagline:        p.tagline,
+      name:           stripMd(p.name),
+      tagline:        stripMd(p.tagline),
       price:          p.price,
-      raw_suggestion: p.description,
+      raw_suggestion: stripMd(p.description).slice(0, 500),
+      image_url:      mockupImages[i] ?? null,
       status:         'pending',
       suggested_by:   'ai',
     }));
@@ -416,13 +446,12 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
           <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--gold-dim)', letterSpacing: '0.12em', marginBottom: '10px' }}>SELECT MIND</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {SUGGEST_THINKERS.map(t => (
-              <button key={t.id} onClick={() => { setThinker(t); setProducts([]); setSaved(false); }}
+              <button key={t.id} onClick={() => { setThinker(t); setProducts([]); setSaved(false); setMockupImages({}); setMockupErrors({}); }}
                 style={{ background: thinker.id === t.id ? 'var(--glow)' : 'transparent', border: `1px solid ${thinker.id === t.id ? t.accent : 'var(--border)'}`, color: thinker.id === t.id ? t.accent : 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
                 {t.name.toUpperCase()}
               </button>
             ))}
           </div>
-          {/* Theme input */}
           <input
             type="text"
             placeholder="Optional theme (e.g. mortality, courage, beauty)"
@@ -441,15 +470,35 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
           )}
 
           {products.length > 0 ? products.map((p, i) => (
-            <div key={i} style={{ border: '1px solid var(--border)', borderRadius: '4px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div key={i} style={{ border: '1px solid var(--border)', borderRadius: '4px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Product info */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '12px', color: thinker.accent, letterSpacing: '0.08em' }}>{p.name}</div>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '12px', color: thinker.accent, letterSpacing: '0.08em' }}>{stripMd(p.name)}</div>
                 <div style={{ fontFamily: 'Cinzel,serif', fontSize: '10px', color: 'var(--gold-dim)', whiteSpace: 'nowrap' }}>
                   {p.type.toUpperCase()} · ${p.price}
                 </div>
               </div>
-              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory)', fontStyle: 'italic', lineHeight: 1.5 }}>{p.tagline}</div>
-              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.6 }}>{p.description}</div>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory)', fontStyle: 'italic', lineHeight: 1.5 }}>{stripMd(p.tagline)}</div>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.6, maxHeight: '80px', overflowY: 'auto' }}>{stripMd(p.description)}</div>
+
+              {/* Mockup image */}
+              {mockupImages[i] && (
+                <img src={mockupImages[i]} alt={p.name} style={{ width: '100%', borderRadius: '4px', display: 'block' }} />
+              )}
+              {mockupErrors[i] && (
+                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '12px', color: '#e07070', fontStyle: 'italic' }}>
+                  {mockupErrors[i]}
+                </div>
+              )}
+
+              {/* Mockup button */}
+              <button
+                onClick={() => generateMockup(p, i)}
+                disabled={mockupLoading === i}
+                style={{ alignSelf: 'flex-start', background: 'transparent', border: `1px solid ${thinker.accent}55`, color: thinker.accent, fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.1em', padding: '4px 10px', cursor: mockupLoading === i ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: mockupLoading === i ? 0.5 : 1 }}
+              >
+                {mockupLoading === i ? 'GENERATING MOCKUP...' : mockupImages[i] ? '⬡ REGENERATE MOCKUP' : '⬡ GENERATE MOCKUP'}
+              </button>
             </div>
           )) : !loading && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', textAlign: 'center' }}>
