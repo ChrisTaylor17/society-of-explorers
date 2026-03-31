@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Product {
@@ -333,45 +334,55 @@ const SUGGEST_THINKERS = [
 ];
 
 function AISuggestPanel({ onClose }: { onClose: () => void }) {
-  const [thinker,    setThinker]    = useState(SUGGEST_THINKERS[0]);
-  const [suggestion, setSuggestion] = useState('');
-  const [loading,    setLoading]    = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const supabase = createClient();
+  const [thinker,       setThinker]       = useState(SUGGEST_THINKERS[0]);
+  const [suggestion,    setSuggestion]    = useState('');
+  const [mockupBrief,   setMockupBrief]   = useState('');
+  const [loading,       setLoading]       = useState(false);
+  const [mockupLoading, setMockupLoading] = useState(false);
+  const [saving,        setSaving]        = useState(false);
+  const [saved,         setSaved]         = useState(false);
+  const [saveError,     setSaveError]     = useState('');
+  const abortRef       = useRef<AbortController | null>(null);
+  const mockupAbortRef = useRef<AbortController | null>(null);
+
+  async function streamFrom(prompt: string, onDelta: (d: string) => void, abortCtrl: AbortController) {
+    const res = await fetch('/api/thinker', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: abortCtrl.signal,
+      body: JSON.stringify({ thinkerId: thinker.id, message: prompt, history: [], isReaction: false }),
+    });
+    const reader = res.body!.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try { const evt = JSON.parse(line.slice(6)); if (evt.delta) onDelta(evt.delta); } catch {}
+      }
+    }
+  }
 
   async function generate() {
     setLoading(true);
     setSuggestion('');
+    setMockupBrief('');
+    setSaved(false);
+    setSaveError('');
     abortRef.current?.abort();
     abortRef.current = new AbortController();
     try {
-      const res = await fetch('/api/thinker', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: abortRef.current.signal,
-        body: JSON.stringify({
-          thinkerId: thinker.id,
-          message: 'Suggest 3 new Society of Explorers merchandise product ideas. For each give: product type (mug/poster/shirt/tote/etc), a name, a tagline (one sentence), and a price in USD. Be specific to your philosophy and era. Format as a numbered list.',
-          history: [],
-          isReaction: false,
-        }),
-      });
-      const reader = res.body!.getReader();
-      const dec = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() ?? '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const evt = JSON.parse(line.slice(6));
-            if (evt.delta) setSuggestion(prev => prev + evt.delta);
-          } catch {}
-        }
-      }
+      await streamFrom(
+        'Suggest 3 new Society of Explorers merchandise product ideas. For each give: product type (mug/poster/shirt/tote/etc), a name, a tagline (one sentence), and a price in USD. Be specific to your philosophy and era. Format as a numbered list.',
+        d => setSuggestion(prev => prev + d),
+        abortRef.current,
+      );
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') setSuggestion('Generation failed — try again.');
     } finally {
@@ -379,37 +390,69 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     }
   }
 
+  async function generateMockup() {
+    if (!suggestion || loading) return;
+    setMockupLoading(true);
+    setMockupBrief('');
+    mockupAbortRef.current?.abort();
+    mockupAbortRef.current = new AbortController();
+    try {
+      await streamFrom(
+        `Based on these product ideas:\n\n${suggestion}\n\nWrite a visual design brief for a product mockup in the Society of Explorers aesthetic. Include: color palette (dark/gold), central symbol or imagery, typography style, background treatment, and mood. One paragraph per product. This brief will be sent to an image generation model.`,
+        d => setMockupBrief(prev => prev + d),
+        mockupAbortRef.current,
+      );
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') setMockupBrief('Mockup generation failed.');
+    } finally {
+      setMockupLoading(false);
+    }
+  }
+
+  async function saveToStore() {
+    if (!suggestion) return;
+    setSaving(true);
+    setSaveError('');
+    const { error } = await supabase.from('merch_suggestions').insert({
+      thinker_id:     thinker.id,
+      product_type:   'ai-generated',
+      name:           suggestion.slice(0, 120).split('\n')[0].replace(/^[0-9.\s*#]+/, '').trim() || 'AI Suggestion',
+      tagline:        suggestion.slice(0, 200),
+      price:          0,
+      raw_suggestion: suggestion,
+      mockup_prompt:  mockupBrief || null,
+      status:         'pending',
+      suggested_by:   'ai',
+    });
+    setSaving(false);
+    if (error) { setSaveError(error.message); return; }
+    setSaved(true);
+  }
+
+  const done = !loading && !!suggestion;
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
-      onClick={e => { if (e.target === e.currentTarget) { abortRef.current?.abort(); onClose(); } }}
+      onClick={e => { if (e.target === e.currentTarget) { abortRef.current?.abort(); mockupAbortRef.current?.abort(); onClose(); } }}
     >
-      <div style={{ width: '460px', maxWidth: '100vw', height: '100%', background: 'var(--bg-deep)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ width: '500px', maxWidth: '100vw', height: '100%', background: 'var(--bg-deep)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
             <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold-dim)', letterSpacing: '0.12em' }}>AI PRODUCT GENERATOR</div>
             <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--gold-light)', marginTop: '2px' }}>Let a thinker design your next product</div>
           </div>
-          <button onClick={() => { abortRef.current?.abort(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
+          <button onClick={() => { abortRef.current?.abort(); mockupAbortRef.current?.abort(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
         </div>
 
         {/* Thinker selector */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--gold-dim)', letterSpacing: '0.12em', marginBottom: '10px' }}>SELECT MIND</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {SUGGEST_THINKERS.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setThinker(t)}
-                style={{
-                  background: thinker.id === t.id ? 'var(--glow)' : 'transparent',
-                  border: `1px solid ${thinker.id === t.id ? t.accent : 'var(--border)'}`,
-                  color: thinker.id === t.id ? t.accent : 'var(--gold-dim)',
-                  fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em',
-                  padding: '4px 10px', cursor: 'pointer', borderRadius: '2px',
-                }}
-              >
+              <button key={t.id} onClick={() => { setThinker(t); setSuggestion(''); setMockupBrief(''); setSaved(false); }}
+                style={{ background: thinker.id === t.id ? 'var(--glow)' : 'transparent', border: `1px solid ${thinker.id === t.id ? t.accent : 'var(--border)'}`, color: thinker.id === t.id ? t.accent : 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
                 {t.name.toUpperCase()}
               </button>
             ))}
@@ -417,12 +460,41 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Output */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {suggestion ? (
-            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--ivory)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-              {suggestion}
-              {loading && <span style={{ color: thinker.accent, animation: 'none' }}>▍</span>}
-            </div>
+            <>
+              {/* Product ideas */}
+              <div>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: thinker.accent, letterSpacing: '0.12em', marginBottom: '8px', opacity: 0.7 }}>PRODUCT IDEAS</div>
+                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--ivory)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                  {suggestion}
+                  {loading && <span style={{ color: thinker.accent }}>▍</span>}
+                </div>
+              </div>
+
+              {/* Mockup brief (if generated) */}
+              {mockupBrief && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                  <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: thinker.accent, letterSpacing: '0.12em', marginBottom: '8px', opacity: 0.7 }}>VISUAL BRIEF</div>
+                  <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontStyle: 'italic' }}>
+                    {mockupBrief}
+                    {mockupLoading && <span style={{ color: thinker.accent }}>▍</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Save status */}
+              {saved && (
+                <div style={{ background: '#0d1a0d', border: '1px solid #4a8a4a55', borderRadius: '4px', padding: '10px 14px', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#7fc87f', fontStyle: 'italic' }}>
+                  ⬡ Saved to merch_suggestions — review in Supabase dashboard to approve and list.
+                </div>
+              )}
+              {saveError && (
+                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>
+                  Save failed: {saveError}
+                </div>
+              )}
+            </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', textAlign: 'center' }}>
               <div style={{ fontFamily: 'Cinzel,serif', fontSize: '32px', color: thinker.accent, opacity: 0.4 }}>⬡</div>
@@ -433,21 +505,35 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {/* CTA */}
-        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+        {/* Actions */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Secondary actions — visible after generation */}
+          {done && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button
+                onClick={generateMockup}
+                disabled={mockupLoading}
+                style={{ background: 'transparent', border: `1px solid ${thinker.accent}55`, color: thinker.accent, opacity: mockupLoading ? 0.5 : 1, fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '8px 0', cursor: mockupLoading ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
+              >
+                {mockupLoading ? 'GENERATING...' : '⬡ GENERATE MOCKUP BRIEF'}
+              </button>
+              <button
+                onClick={saveToStore}
+                disabled={saving || saved}
+                style={{ background: saved ? 'var(--glow)' : 'transparent', border: `1px solid ${saved ? thinker.accent : thinker.accent + '55'}`, color: thinker.accent, opacity: saving ? 0.5 : 1, fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '8px 0', cursor: saving || saved ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
+              >
+                {saved ? '⬡ SAVED TO STORE' : saving ? 'SAVING...' : '⬡ SAVE TO STORE'}
+              </button>
+            </div>
+          )}
+
+          {/* Primary generate button */}
           <button
             onClick={generate}
             disabled={loading}
-            style={{
-              width: '100%',
-              background: loading ? 'transparent' : `linear-gradient(135deg,#1c1500,#2a1e00)`,
-              border: `1px solid ${thinker.accent}${loading ? '44' : '88'}`,
-              color: thinker.accent, opacity: loading ? 0.6 : 1,
-              fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em',
-              padding: '12px 0', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: '2px',
-            }}
+            style={{ width: '100%', background: loading ? 'transparent' : `linear-gradient(135deg,#1c1500,#2a1e00)`, border: `1px solid ${thinker.accent}${loading ? '44' : '88'}`, color: thinker.accent, opacity: loading ? 0.6 : 1, fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em', padding: '12px 0', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
           >
-            {loading ? `${thinker.name.toUpperCase()} IS THINKING...` : `⬡ ASK ${thinker.name.toUpperCase()}`}
+            {loading ? `${thinker.name.toUpperCase()} IS THINKING...` : done ? `⬡ REGENERATE` : `⬡ ASK ${thinker.name.toUpperCase()}`}
           </button>
         </div>
       </div>
