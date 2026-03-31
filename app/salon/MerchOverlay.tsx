@@ -504,6 +504,7 @@ interface MerchSuggestion {
   thinker_id: string;
   name: string;
   product_type: string | null;
+  tagline: string | null;
   price: number;
   raw_suggestion: string | null;
   mockup_prompt: string | null;
@@ -538,7 +539,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
     setLoading(true);
     const q = supabase
       .from('merch_suggestions')
-      .select('id,thinker_id,name,product_type,price,raw_suggestion,mockup_prompt,status,printful_product_id,created_at')
+      .select('id,thinker_id,name,product_type,tagline,price,raw_suggestion,mockup_prompt,status,printful_product_id,created_at')
       .order('created_at', { ascending: false });
     const { data, error } = filter === 'all' ? await q : await q.eq('status', filter);
     if (!error) setRows((data as MerchSuggestion[]) ?? []);
@@ -564,7 +565,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           suggestionId: row.id,
           name:         row.name,
-          tagline:      row.raw_suggestion?.slice(0, 200) ?? '',
+          tagline:      row.tagline ?? row.raw_suggestion?.slice(0, 200) ?? '',
           price:        row.price || 24.99,
           thinker_id:   row.thinker_id,
           product_type: row.product_type ?? 'poster',
@@ -665,7 +666,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                     {row.raw_suggestion && (
                       <div style={{ background: '#0d0d0d', border: `1px solid ${accent}18`, borderRadius: '3px', padding: '10px 12px' }}>
                         <div style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.1em', opacity: 0.6, marginBottom: '6px' }}>FULL SUGGESTION</div>
-                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
                           {row.raw_suggestion}
                         </div>
                       </div>
