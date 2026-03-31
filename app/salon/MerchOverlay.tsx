@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -541,10 +541,201 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── Review Panel ──────────────────────────────────────────────────────────────
+type SuggestionStatus = 'pending' | 'approved' | 'rejected';
+
+interface MerchSuggestion {
+  id: string;
+  thinker_id: string;
+  name: string;
+  raw_suggestion: string | null;
+  mockup_prompt: string | null;
+  status: SuggestionStatus;
+  created_at: string;
+}
+
+const STATUS_FILTERS: { label: string; value: SuggestionStatus | 'all' }[] = [
+  { label: 'PENDING',  value: 'pending'  },
+  { label: 'APPROVED', value: 'approved' },
+  { label: 'REJECTED', value: 'rejected' },
+  { label: 'ALL',      value: 'all'      },
+];
+
+const THINKER_ACCENT: Record<string, string> = {
+  socrates: '#C9A84C', plato: '#7B9FD4', nietzsche: '#C0392B',
+  aurelius: '#8E7CC3', einstein: '#5DADE2', jobs: '#ABEBC6',
+};
+
+function ReviewPanel({ onClose }: { onClose: () => void }) {
+  const supabase = createClient();
+  const [rows,       setRows]       = useState<MerchSuggestion[]>([]);
+  const [filter,     setFilter]     = useState<SuggestionStatus | 'all'>('pending');
+  const [loading,    setLoading]    = useState(true);
+  const [expanded,   setExpanded]   = useState<string | null>(null);
+  const [updating,   setUpdating]   = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    const q = supabase
+      .from('merch_suggestions')
+      .select('id,thinker_id,name,raw_suggestion,mockup_prompt,status,created_at')
+      .order('created_at', { ascending: false });
+    const { data, error } = filter === 'all' ? await q : await q.eq('status', filter);
+    if (!error) setRows((data as MerchSuggestion[]) ?? []);
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, [filter]);
+
+  async function setStatus(id: string, status: SuggestionStatus) {
+    setUpdating(id);
+    await supabase.from('merch_suggestions').update({ status }).eq('id', id);
+    setUpdating(null);
+    setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r).filter(r => filter === 'all' || r.status === filter));
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: '540px', maxWidth: '100vw', height: '100%', background: 'var(--bg-deep)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold-dim)', letterSpacing: '0.12em' }}>AI ARMY — REVIEW QUEUE</div>
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--gold-light)', marginTop: '2px' }}>Approve ideas to publish them to the store</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Filter tabs */}
+        <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '6px', flexShrink: 0 }}>
+          {STATUS_FILTERS.map(f => (
+            <button key={f.value} onClick={() => setFilter(f.value)}
+              style={{ background: filter === f.value ? 'var(--glow)' : 'transparent', border: `1px solid ${filter === f.value ? 'var(--gold)' : 'var(--border)'}`, color: filter === f.value ? 'var(--gold)' : 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* List */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {loading ? (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', textAlign: 'center', paddingTop: '40px' }}>
+              Loading suggestions...
+            </div>
+          ) : rows.length === 0 ? (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', textAlign: 'center', paddingTop: '40px', lineHeight: 1.7 }}>
+              No {filter === 'all' ? '' : filter} suggestions yet.<br />
+              <span style={{ fontSize: '12px', color: 'var(--gold-dim)' }}>Generate ideas in the AI IDEAS panel first.</span>
+            </div>
+          ) : rows.map(row => {
+            const accent = THINKER_ACCENT[row.thinker_id] ?? '#C9A84C';
+            const isExpanded = expanded === row.id;
+            const isUpdating = updating === row.id;
+            const statusColor = row.status === 'approved' ? '#7fc87f' : row.status === 'rejected' ? '#e07070' : accent;
+            return (
+              <div key={row.id} style={{ background: 'var(--bg-elevated)', border: `1px solid ${accent}22`, borderRadius: '4px', overflow: 'hidden' }}>
+                {/* Row header */}
+                <div style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', color: accent, border: `1px solid ${accent}44`, padding: '1px 6px', borderRadius: '2px', flexShrink: 0 }}>
+                        {row.thinker_id.toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em', color: statusColor, opacity: 0.8 }}>
+                        {row.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {row.name}
+                    </div>
+                    <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', letterSpacing: '0.05em' }}>
+                      {new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setExpanded(isExpanded ? null : row.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '12px', padding: '2px 6px', flexShrink: 0 }}
+                  >
+                    {isExpanded ? '▲' : '▼'}
+                  </button>
+                </div>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {row.raw_suggestion && (
+                      <div style={{ background: '#0d0d0d', border: `1px solid ${accent}18`, borderRadius: '3px', padding: '10px 12px' }}>
+                        <div style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.1em', opacity: 0.6, marginBottom: '6px' }}>FULL SUGGESTION</div>
+                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                          {row.raw_suggestion}
+                        </div>
+                      </div>
+                    )}
+                    {row.mockup_prompt && (
+                      <div style={{ background: '#0d0d0d', border: `1px solid ${accent}18`, borderRadius: '3px', padding: '10px 12px' }}>
+                        <div style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.1em', opacity: 0.6, marginBottom: '6px' }}>VISUAL BRIEF</div>
+                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                          {row.mockup_prompt}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action bar */}
+                {row.status === 'pending' && (
+                  <div style={{ borderTop: `1px solid ${accent}18`, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                    <button
+                      onClick={() => setStatus(row.id, 'approved')}
+                      disabled={isUpdating}
+                      style={{ background: 'transparent', border: 'none', borderRight: `1px solid ${accent}18`, color: '#7fc87f', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '10px 0', cursor: isUpdating ? 'not-allowed' : 'pointer', opacity: isUpdating ? 0.5 : 1 }}
+                    >
+                      {isUpdating ? '...' : '⬡ APPROVE & PUBLISH'}
+                    </button>
+                    <button
+                      onClick={() => setStatus(row.id, 'rejected')}
+                      disabled={isUpdating}
+                      style={{ background: 'transparent', border: 'none', color: '#e07070', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '10px 0', cursor: isUpdating ? 'not-allowed' : 'pointer', opacity: isUpdating ? 0.5 : 0.7 }}
+                    >
+                      REJECT
+                    </button>
+                  </div>
+                )}
+                {row.status === 'approved' && (
+                  <div style={{ borderTop: `1px solid ${accent}18`, display: 'flex' }}>
+                    <button
+                      onClick={() => setStatus(row.id, 'pending')}
+                      disabled={isUpdating}
+                      style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', padding: '10px 0', cursor: isUpdating ? 'not-allowed' : 'pointer', opacity: isUpdating ? 0.5 : 0.6 }}
+                    >
+                      MOVE BACK TO PENDING
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-deep)', flexShrink: 0 }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', textAlign: 'center' }}>
+            Approved ideas → next step: auto-create as Printful products via API
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Overlay ──────────────────────────────────────────────────────────────
 export default function MerchOverlay({ onClose }: { onClose: () => void }) {
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
   const [showAISuggest,   setShowAISuggest]   = useState(false);
+  const [showReview,      setShowReview]      = useState(false);
 
   return (
     <div style={{
@@ -572,6 +763,12 @@ export default function MerchOverlay({ onClose }: { onClose: () => void }) {
             style={{ background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', color: 'var(--gold)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 10px', cursor: 'pointer', borderRadius: '2px' }}
           >
             ⬡ AI IDEAS
+          </button>
+          <button
+            onClick={() => setShowReview(true)}
+            style={{ background: 'none', border: '1px solid var(--gold-dim)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 10px', cursor: 'pointer', borderRadius: '2px' }}
+          >
+            REVIEW
           </button>
           <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 8px', cursor: 'pointer', borderRadius: '2px' }}>
             CLOSE
@@ -635,6 +832,11 @@ export default function MerchOverlay({ onClose }: { onClose: () => void }) {
       {/* AI Suggest Panel */}
       {showAISuggest && (
         <AISuggestPanel onClose={() => setShowAISuggest(false)} />
+      )}
+
+      {/* Review Panel */}
+      {showReview && (
+        <ReviewPanel onClose={() => setShowReview(false)} />
       )}
     </div>
   );
