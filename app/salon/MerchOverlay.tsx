@@ -344,9 +344,6 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
   const [saved,          setSaved]          = useState(false);
   const [saveError,      setSaveError]      = useState('');
   const [savedId,        setSavedId]        = useState<string | null>(null);
-  const [runwayLoading,  setRunwayLoading]  = useState(false);
-  const [runwayImage,    setRunwayImage]    = useState<string | null>(null);
-  const [runwayError,    setRunwayError]    = useState('');
   const abortRef       = useRef<AbortController | null>(null);
   const mockupAbortRef = useRef<AbortController | null>(null);
 
@@ -422,7 +419,12 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     const { data, error } = await supabase.from('merch_suggestions').insert({
       thinker_id:     thinker.id,
       product_type:   'ai-generated',
-      name:           suggestion.slice(0, 120).split('\n')[0].replace(/^[0-9.\s*#]+/, '').trim() || 'AI Suggestion',
+      name:           (() => {
+        // Skip intro lines ("Here are 3 ideas..."), find first numbered/bulleted product line
+        const lines = suggestion.split('\n').map(l => l.trim()).filter(Boolean);
+        const productLine = lines.find(l => /^[1-9*•\-]/.test(l)) ?? lines[0] ?? '';
+        return productLine.replace(/^[0-9.\-*•\s]+/, '').replace(/[:—–].+$/, '').trim().slice(0, 120) || 'AI Suggestion';
+      })(),
       tagline:        suggestion.slice(0, 200),
       price:          0,
       raw_suggestion: suggestion,
@@ -433,27 +435,7 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     setSaving(false);
     if (error) { setSaveError(error.message); return; }
     setSaved(true);
-    const newId = data?.id ?? null;
-    setSavedId(newId);
-
-    // Auto-generate Runway mockup image if we have a visual brief
-    if (mockupBrief && newId) {
-      setRunwayLoading(true);
-      try {
-        const res = await fetch('/api/merch/generate-mockup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ visual_brief: mockupBrief, suggestionId: newId }),
-        });
-        const result = await res.json();
-        if (!res.ok) { setRunwayError(result.error ?? 'Mockup generation failed'); return; }
-        setRunwayImage(result.image_url);
-      } catch {
-        setRunwayError('Network error generating mockup');
-      } finally {
-        setRunwayLoading(false);
-      }
-    }
+    setSavedId(data?.id ?? null);
   }
 
   const done = !loading && !!suggestion;
@@ -522,33 +504,6 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
                 </div>
               )}
 
-              {/* Runway mockup image */}
-              {runwayLoading && (
-                <div style={{ background: '#0d0d0d', border: `1px solid ${thinker.accent}22`, borderRadius: '4px', padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: thinker.accent, letterSpacing: '0.12em', marginBottom: '8px', opacity: 0.7 }}>GENERATING MOCKUP IMAGE</div>
-                  <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', fontStyle: 'italic' }}>
-                    Runway is rendering your product — this takes ~30s...
-                  </div>
-                </div>
-              )}
-              {runwayImage && (
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                  <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: thinker.accent, letterSpacing: '0.12em', marginBottom: '8px', opacity: 0.7 }}>AI-GENERATED MOCKUP</div>
-                  <img
-                    src={runwayImage}
-                    alt="AI product mockup"
-                    style={{ width: '100%', borderRadius: '4px', border: `1px solid ${thinker.accent}33`, display: 'block' }}
-                  />
-                  <div style={{ marginTop: '6px', fontFamily: 'Cormorant Garamond,serif', fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
-                    Saved to suggestion · use as print artwork in Printful
-                  </div>
-                </div>
-              )}
-              {runwayError && (
-                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>
-                  Mockup: {runwayError}
-                </div>
-              )}
             </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', textAlign: 'center' }}>
@@ -828,7 +783,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                     <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: '#7fc87f', letterSpacing: '0.1em' }}>
                       ⬡ LIVE IN PRINTFUL {row.printful_product_id ? `· #${row.printful_product_id}` : ''}
                     </span>
-                    <a href="https://www.printful.com/dashboard/products" target="_blank" rel="noopener noreferrer"
+                    <a href={row.printful_product_id ? `https://www.printful.com/dashboard/products/${row.printful_product_id}` : 'https://www.printful.com/dashboard/products'} target="_blank" rel="noopener noreferrer"
                       style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.08em', textDecoration: 'none', opacity: 0.7 }}>
                       VIEW IN PRINTFUL ↗
                     </a>
