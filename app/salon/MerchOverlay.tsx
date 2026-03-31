@@ -571,6 +571,43 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── Buy Now Button ────────────────────────────────────────────────────────────
+function BuyNowButton({ productId, price, accent }: { productId: string; price: number; accent: string }) {
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function handleBuy() {
+    setLoading(true);
+    setErr('');
+    try {
+      const res = await fetch('/api/merch/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity: 1 }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error ?? 'Checkout failed');
+      window.location.href = data.url;
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Checkout failed');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ padding: '0 14px 10px' }}>
+      <button
+        onClick={handleBuy}
+        disabled={loading}
+        style={{ width: '100%', background: loading ? 'transparent' : `linear-gradient(135deg,#0d1a0d,#1a2e0d)`, border: `1px solid ${accent}88`, color: accent, fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.14em', padding: '9px 0', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, borderRadius: '2px' }}
+      >
+        {loading ? 'REDIRECTING...' : `⬡ BUY NOW · $${price}`}
+      </button>
+      {err && <div style={{ marginTop: '4px', fontFamily: 'Cormorant Garamond,serif', fontSize: '11px', color: '#e07070', fontStyle: 'italic' }}>{err}</div>}
+    </div>
+  );
+}
+
 // ── Review Panel ──────────────────────────────────────────────────────────────
 type SuggestionStatus = 'pending' | 'approved' | 'rejected' | 'live';
 
@@ -800,14 +837,17 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                   </div>
                 )}
                 {row.status === 'live' && (
-                  <div style={{ borderTop: `1px solid ${accent}18`, padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: '#7fc87f', letterSpacing: '0.1em' }}>
-                      ⬡ LIVE IN PRINTFUL {row.printful_product_id ? `· #${row.printful_product_id}` : ''}
-                    </span>
-                    <a href={row.printful_product_id ? `https://www.printful.com/dashboard/sync?store=17946118` : 'https://www.printful.com/dashboard/products'} target="_blank" rel="noopener noreferrer"
-                      style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.08em', textDecoration: 'none', opacity: 0.7 }}>
-                      VIEW IN PRINTFUL ↗
-                    </a>
+                  <div style={{ borderTop: `1px solid ${accent}18` }}>
+                    <div style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: '#7fc87f', letterSpacing: '0.1em' }}>
+                        ⬡ LIVE {row.printful_product_id ? `· #${row.printful_product_id}` : ''}
+                      </span>
+                      <a href="https://www.printful.com/dashboard/sync?store=17946118" target="_blank" rel="noopener noreferrer"
+                        style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.08em', textDecoration: 'none', opacity: 0.7 }}>
+                        VIEW IN PRINTFUL ↗
+                      </a>
+                    </div>
+                    <BuyNowButton productId={row.id} price={row.price} accent={accent} />
                   </div>
                 )}
               </div>
@@ -818,7 +858,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
         {/* Footer */}
         <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-deep)', flexShrink: 0 }}>
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', textAlign: 'center' }}>
-            Approved ideas → next step: auto-create as Printful products via API
+            Live products are purchasable via Stripe → auto-fulfilled by Printful
           </div>
         </div>
       </div>

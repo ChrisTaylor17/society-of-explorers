@@ -139,12 +139,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  console.log('Printful product created:', printfulProductId);
+  // Extract sync_variant_id — needed for creating Printful orders on purchase.
+  const syncVariantId: number | null = printfulData.result?.sync_variants?.[0]?.id ?? null;
+  console.log('Printful product created:', printfulProductId, '| sync_variant_id:', syncVariantId);
 
-  // Mark suggestion as 'live' in Supabase and store the Printful product ID.
+  // Mark suggestion as 'live' in Supabase and store both IDs.
   const { error: dbError } = await supabase
     .from('merch_suggestions')
-    .update({ status: 'live', printful_product_id: printfulProductId })
+    .update({ status: 'live', printful_product_id: printfulProductId, sync_variant_id: syncVariantId })
     .eq('id', suggestionId);
 
   if (dbError) {

@@ -1,91 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { createServiceClient } from '@/lib/supabase/server';
 
-// Printful create-order endpoint (v1 API).
-// Docs: https://developers.printful.com/docs/#operation/createOrder
+// Stripe checkout session for merch purchases.
+// On success, Stripe fires checkout.session.completed → /api/webhooks/stripe
+// which creates the Printful fulfillment order.
 //
-// Required env var: PRINTFUL_API_KEY  (Printful → Dashboard → Stores → API Access)
-// Orders are created as drafts (confirm: false) so no shipment fires until you
-// review and confirm them in the Printful dashboard or via PATCH /orders/{id}/confirm.
+// Required env vars:
+//   STRIPE_SECRET_KEY        (Stripe Dashboard → Developers → API keys)
+//   NEXT_PUBLIC_SITE_URL     (e.g. https://www.societyofexplorers.com)
 
-export interface CheckoutBody {
-  variantId: number;        // Printful variant ID (from your store's sync products)
-  quantity:  number;        // default 1
-  recipient: {
-    name:         string;
-    email:        string;
-    address1:     string;
-    city:         string;
-    state_code:   string;   // e.g. "TX"
-    country_code: string;   // e.g. "US"
-    zip:          string;
-  };
-}
-
-export async function POST(request: NextRequest) {
-  const apiKey = process.env.PRINTFUL_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: 'PRINTFUL_API_KEY is not configured. Add it to .env.local and Vercel env vars.' },
-      { status: 503 },
-    );
+export async function POST(req: NextRequest) {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) {
+    return NextResponse.json({ error: 'STRIPE_SECRET_KEY not configured' }, { status: 503 });
   }
 
-  let body: CheckoutBody;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  const { productId, quantity = 1 } = await req.json();
+  if (!productId) {
+    return NextResponse.json({ error: 'productId is required' }, { status: 400 });
   }
 
-  const { variantId, quantity = 1, recipient } = body;
+  // Fetch the published product from merch_suggestions.
+  const supabase = createServiceClient();
+  const { data: product, error } = await supabase
+    .from('merch_suggestions')
+    .select('id, name, tagline, price, image_url, thinker_id, sync_variant_id')
+    .eq('id', productId)
+    .eq('status', 'live')
+    .single();
 
-  if (!variantId || variantId <= 0) {
-    return NextResponse.json(
-      { error: 'variantId is required. Set the Printful variant ID in MerchOverlay PRODUCTS.' },
-      { status: 400 },
-    );
+  if (error || !product) {
+    return NextResponse.json({ error: 'Product not found or not live' }, { status: 404 });
   }
-  if (!recipient?.name || !recipient?.address1 || !recipient?.city || !recipient?.zip) {
-    return NextResponse.json({ error: 'Incomplete shipping address' }, { status: 400 });
-  }
 
-  const printfulBody = {
-    // confirm: false → draft order. Won't ship until confirmed in Printful dashboard.
-    confirm: false,
-    recipient,
-    items: [{ variant_id: variantId, quantity }],
-  };
+  const stripe = new Stripe(stripeKey, { apiVersion: '2026-03-25.dahlia' });
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.societyofexplorers.com';
 
-  let res: Response;
-  try {
-    res = await fetch('https://api.printful.com/orders', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [{
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: product.name,
+          description: product.tagline ?? undefined,
+          ...(product.image_url ? { images: [product.image_url] } : {}),
+        },
+        unit_amount: Math.round((product.price ?? 24) * 100),
       },
-      body: JSON.stringify(printfulBody),
-    });
-  } catch (err) {
-    console.error('Printful network error:', err);
-    return NextResponse.json({ error: 'Could not reach Printful API' }, { status: 502 });
-  }
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    console.error('Printful error response:', data);
-    return NextResponse.json(
-      { error: data?.error?.message ?? data?.result ?? 'Printful error' },
-      { status: res.status },
-    );
-  }
-
-  const order = data.result;
-  return NextResponse.json({
-    orderId:    order.id,
-    status:     order.status,          // "draft"
-    costs:      order.costs,           // { subtotal, shipping, tax, total, currency }
-    shipTo:     order.recipient?.name,
+      quantity,
+    }],
+    mode: 'payment',
+    shipping_address_collection: { allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR'] },
+    success_url: `${baseUrl}/?merch_success=1&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url:  `${baseUrl}/`,
+    metadata: {
+      productId,
+      quantity:        String(quantity),
+      sync_variant_id: product.sync_variant_id ? String(product.sync_variant_id) : '',
+    },
   });
+
+  return NextResponse.json({ url: session.url });
 }
