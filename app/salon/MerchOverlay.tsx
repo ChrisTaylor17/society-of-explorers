@@ -624,7 +624,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
       }
       // Success: mark live in the local list
       setRows(prev =>
-        prev.map(r => r.id === row.id ? { ...r, status: 'live', printful_product_id: data.printful_product_id } : r)
+        prev.map(r => r.id === row.id ? { ...r, status: 'live' as const, printful_product_id: data.printful_product_id as number } : r)
             .filter(r => filter === 'all' || r.status === filter),
       );
     } catch {
