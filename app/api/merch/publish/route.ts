@@ -56,6 +56,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'suggestionId and name are required' }, { status: 400 });
   }
 
+  console.log('Publish called with suggestionId:', suggestionId, '| name:', name, '| type:', product_type);
+
   const variantId = pickVariantId(product_type ?? '');
 
   // Fetch the Flux mockup image URL saved by the AI generator (if any).
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
     .eq('id', suggestionId)
     .single();
   const mockupImageUrl: string | null = suggestion?.image_url ?? null;
+  console.log('Fetched image_url:', mockupImageUrl ?? '(none)');
 
   // Use the existing SVG metadata API as the print artwork URL.
   // Printful fetches this URL at product creation time — it must be publicly accessible.
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
     sync_product: {
       name,
       description: tagline,
-      // Flux mockup image shown as the product thumbnail in Printful dashboard/store.
+      // Flux mockup shown as the product thumbnail in Printful dashboard/store.
       ...(mockupImageUrl ? { thumbnail_url: mockupImageUrl } : {}),
     },
     sync_variants: [
@@ -99,6 +102,8 @@ export async function POST(request: NextRequest) {
     ],
   };
 
+  console.log('Printful payload:', JSON.stringify(printfulBody));
+
   let printfulRes: Response;
   try {
     printfulRes = await fetch('https://api.printful.com/store/products', {
@@ -115,9 +120,10 @@ export async function POST(request: NextRequest) {
   }
 
   const printfulData = await printfulRes.json();
+  console.log('Printful response:', JSON.stringify(printfulData).slice(0, 500));
 
   if (!printfulRes.ok) {
-    console.error('Printful error:', printfulData);
+    console.error('Printful create failed:', printfulData);
     return NextResponse.json(
       { error: printfulData?.error?.message ?? printfulData?.result ?? 'Printful error' },
       { status: printfulRes.status },
@@ -125,6 +131,15 @@ export async function POST(request: NextRequest) {
   }
 
   const printfulProductId: number = printfulData.result?.id;
+  if (!printfulProductId) {
+    console.error('Printful create failed — no product ID:', printfulData);
+    return NextResponse.json(
+      { error: `Printful error: no product ID returned. Response: ${JSON.stringify(printfulData).slice(0, 200)}` },
+      { status: 500 },
+    );
+  }
+
+  console.log('Printful product created:', printfulProductId);
 
   // Mark suggestion as 'live' in Supabase and store the Printful product ID.
   const { error: dbError } = await supabase
@@ -138,8 +153,8 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    success:            true,
+    success:             true,
     printful_product_id: printfulProductId,
-    printful_url:       `https://www.printful.com/dashboard/products`,
+    printful_url:        `https://www.printful.com/dashboard/products/${printfulProductId}`,
   });
 }
