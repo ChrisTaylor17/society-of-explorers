@@ -355,7 +355,7 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: abortCtrl.signal,
-      body: JSON.stringify({ thinkerId: thinker.id, message: prompt, history: [], isReaction: false }),
+      body: JSON.stringify({ thinkerId: thinker.id, message: prompt, history: [], isReaction: false, maxTokens: 800 }),
     });
     const reader = res.body!.getReader();
     const dec = new TextDecoder();

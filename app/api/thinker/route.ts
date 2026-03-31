@@ -7,7 +7,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { message, history, isReaction, walletMemberId } = body
+  const { message, history, isReaction, walletMemberId, maxTokens } = body
   const thinkerId = body.thinkerId ?? body.thinker
 
   const supabase = await createClient()
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       try {
         const anthropicStream = anthropic.messages.stream({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: isReaction ? 80 : 150,
+          max_tokens: isReaction ? 80 : (maxTokens ?? 150),
           system: buildSystemPrompt(thinkerId, member),
           messages: [{
             role: 'user',
