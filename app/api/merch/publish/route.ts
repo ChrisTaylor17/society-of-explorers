@@ -58,6 +58,15 @@ export async function POST(request: NextRequest) {
 
   const variantId = pickVariantId(product_type ?? '');
 
+  // Fetch the Flux mockup image URL saved by the AI generator (if any).
+  const supabase = createServiceClient();
+  const { data: suggestion } = await supabase
+    .from('merch_suggestions')
+    .select('image_url')
+    .eq('id', suggestionId)
+    .single();
+  const mockupImageUrl: string | null = suggestion?.image_url ?? null;
+
   // Use the existing SVG metadata API as the print artwork URL.
   // Printful fetches this URL at product creation time — it must be publicly accessible.
   const baseUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.societyofexplorers.com';
@@ -71,6 +80,8 @@ export async function POST(request: NextRequest) {
     sync_product: {
       name,
       description: tagline,
+      // Flux mockup image shown as the product thumbnail in Printful dashboard/store.
+      ...(mockupImageUrl ? { thumbnail_url: mockupImageUrl } : {}),
     },
     sync_variants: [
       {
@@ -81,6 +92,8 @@ export async function POST(request: NextRequest) {
             type: 'default',
             url:  artworkUrl,
           },
+          // Include the Flux image as a preview mockup file if available.
+          ...(mockupImageUrl ? [{ type: 'preview', url: mockupImageUrl }] : []),
         ],
       },
     ],
@@ -114,7 +127,6 @@ export async function POST(request: NextRequest) {
   const printfulProductId: number = printfulData.result?.id;
 
   // Mark suggestion as 'live' in Supabase and store the Printful product ID.
-  const supabase = createServiceClient();
   const { error: dbError } = await supabase
     .from('merch_suggestions')
     .update({ status: 'live', printful_product_id: printfulProductId })
