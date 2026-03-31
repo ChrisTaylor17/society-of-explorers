@@ -778,7 +778,7 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
                     <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: '#7fc87f', letterSpacing: '0.1em' }}>
                       ⬡ LIVE IN PRINTFUL {row.printful_product_id ? `· #${row.printful_product_id}` : ''}
                     </span>
-                    <a href={row.printful_product_id ? `https://www.printful.com/dashboard/products/${row.printful_product_id}` : 'https://www.printful.com/dashboard/products'} target="_blank" rel="noopener noreferrer"
+                    <a href={row.printful_product_id ? `https://www.printful.com/dashboard/sync?store=17946118` : 'https://www.printful.com/dashboard/products'} target="_blank" rel="noopener noreferrer"
                       style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.08em', textDecoration: 'none', opacity: 0.7 }}>
                       VIEW IN PRINTFUL ↗
                     </a>

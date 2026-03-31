@@ -155,6 +155,6 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success:             true,
     printful_product_id: printfulProductId,
-    printful_url:        `https://www.printful.com/dashboard/products/${printfulProductId}`,
+    printful_url:        `https://www.printful.com/dashboard/sync?store=17946118`,
   });
 }
