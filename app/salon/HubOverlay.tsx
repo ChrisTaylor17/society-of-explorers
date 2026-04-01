@@ -18,6 +18,15 @@ const THINKERS = [
   { id: 'jobs',      name: 'Steve Jobs',      symbol: 'J' },
 ];
 
+const gold = '#c9a84c';
+const goldDim = 'rgba(201,168,76,0.6)';
+const goldBorder = 'rgba(201,168,76,0.2)';
+const bg = '#0a0a0a';
+const bgCard = '#0f0f0f';
+const bgElevated = '#141410';
+const ivory = '#e8e0d0';
+const muted = '#7a7060';
+
 export default function HubOverlay({ member, onClose }: { member: any; onClose: () => void }) {
   const supabase = createClient();
   const [tasks,         setTasks]         = useState<HubTask[]>([]);
@@ -29,111 +38,203 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
 
   const loadTasks = useCallback(async () => {
     if (!member?.id) return;
-    setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('hub_tasks')
       .select('*')
       .eq('member_id', member.id)
-      .order('created_at', { ascending: false });
-    if (error) console.error(error);
-    else setTasks(data || []);
+      .order('created_at', { ascending: true });
+    setTasks(data ?? []);
     setLoading(false);
-  }, [member?.id]);
+  }, [member?.id, supabase]);
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
 
-  const addTask = async () => {
+  async function addTask() {
     if (!newTitle.trim() || !member?.id) return;
-    const { error } = await supabase.from('hub_tasks').insert({
-      member_id: member.id,
+    await supabase.from('hub_tasks').insert({
       title: newTitle.trim(),
       status: 'todo',
       agent_id: selectedAgent,
+      member_id: member.id,
     });
-    if (error) alert('Add failed — check console');
-    else {
-      setNewTitle('');
-      loadTasks();
-    }
-  };
+    setNewTitle('');
+    loadTasks();
+  }
 
-  const askAgent = async () => {
+  async function askAgent() {
     if (!tasks.length) return alert('Add some tasks first!');
     setAskLoading(true);
     setResponse('');
-    try {
-      const taskList = tasks.map(t => `${t.status.toUpperCase()}: ${t.title}`).join('\n');
-      const thinker = THINKERS.find(t => t.id === selectedAgent) || THINKERS[0];
-      const fakeStream = `Thinking as ${thinker.name}...\n\nYour current tasks:\n${taskList}\n\nFocus on finishing whatever is in DOING first. Then tackle the top TODO. Want me to break one down into subtasks?`;
-      for (const char of fakeStream) {
-        setResponse(prev => prev + char);
-        await new Promise(r => setTimeout(r, 15));
+    const taskList = tasks.map(t => `- [${t.status}] ${t.title}`).join('\n');
+    const res = await fetch('/api/thinker', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        thinkerId: selectedAgent,
+        message: `Here are my current tasks:\n${taskList}\n\nWhat should I focus on and why?`,
+        history: [],
+      }),
+    });
+    const reader = res.body!.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try { const evt = JSON.parse(line.slice(6)); if (evt.delta) setResponse(p => p + evt.delta); } catch {}
       }
-    } catch (err) {
-      console.error(err);
-      alert('ASK failed');
-    } finally {
-      setAskLoading(false);
     }
-  };
+    setAskLoading(false);
+  }
+
+  async function moveTask(id: string, status: HubTask['status']) {
+    await supabase.from('hub_tasks').update({ status }).eq('id', id);
+    loadTasks();
+  }
+
+  async function deleteTask(id: string) {
+    await supabase.from('hub_tasks').delete().eq('id', id);
+    loadTasks();
+  }
+
+  const cols: { key: HubTask['status']; label: string }[] = [
+    { key: 'todo',  label: 'TO DO'  },
+    { key: 'doing', label: 'DOING'  },
+    { key: 'done',  label: 'DONE'   },
+  ];
+
+  const selectedThinker = THINKERS.find(t => t.id === selectedAgent) ?? THINKERS[0];
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}} onClick={(e)=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{background:"#111827",border:"1px solid rgba(201,168,76,0.3)",width:"100%",maxWidth:"1100px",height:"88vh",borderRadius:"16px",overflow:"hidden",display:"flex",flexDirection:"column"}} onClick={(e)=>e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="px-8 py-4 border-b border-[#c9a84c]/20 flex justify-between items-center">
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{ background: bg, border: `1px solid ${goldBorder}`, width: '100%', maxWidth: '1100px', height: '88vh', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: `0 0 60px rgba(201,168,76,0.08)` }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* HEADER */}
+        <div style={{ padding: '20px 28px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: bgCard }}>
           <div>
-            <h2 className="text-2xl font-serif text-[#f0d080]">PRODUCTIVITY HUB</h2>
-            <p className="text-xs text-[#c9a84c]/70 tracking-widest">Your private workspace · guided by the minds of history</p>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.6, marginBottom: '4px' }}>SOCIETY OF EXPLORERS</div>
+            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', fontWeight: 300, letterSpacing: '0.2em', color: gold, margin: 0 }}>PRODUCTIVITY HUB</h2>
+            <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: muted, margin: '2px 0 0', fontStyle: 'italic' }}>Your private workspace — guided by the minds of history</p>
           </div>
-          <button onClick={onClose} className="text-[#c9a84c]/70 hover:text-[#f0d080]">CLOSE</button>
+          <button
+            onClick={onClose}
+            style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: goldDim, background: 'none', border: `1px solid ${goldBorder}`, padding: '6px 14px', cursor: 'pointer' }}
+          >
+            CLOSE
+          </button>
         </div>
 
-        {/* Controls */}
-        <div className="px-8 py-4 flex gap-3 border-b border-[#c9a84c]/20">
+        {/* INPUT BAR */}
+        <div style={{ padding: '16px 28px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0, background: bgCard }}>
           <input
-            type="text"
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addTask()}
             placeholder="What needs to be done?"
-            className="flex-1 bg-[#1f2937] border border-[#c9a84c]/30 rounded px-4 py-3 text-white placeholder:text-[#c9a84c]/50 focus:outline-none"
+            style={{ flex: 1, background: bgElevated, border: `1px solid ${goldBorder}`, borderRadius: '2px', padding: '9px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none' }}
           />
-          <button onClick={addTask} className="bg-[#c9a84c] hover:bg-[#f0d080] text-black px-6 py-3 rounded font-medium">+ ADD</button>
-          <select value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)} className="bg-[#1f2937] border border-[#c9a84c]/30 text-white px-4 py-3 rounded">
-            {THINKERS.map(t => <option key={t.id} value={t.id}>{t.symbol} {t.name}</option>)}
+          <button
+            onClick={addTask}
+            style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', background: gold, color: '#000', border: 'none', padding: '9px 18px', cursor: 'pointer', borderRadius: '2px', whiteSpace: 'nowrap' }}
+          >
+            + ADD
+          </button>
+          <select
+            value={selectedAgent}
+            onChange={e => setSelectedAgent(e.target.value)}
+            style={{ background: bgElevated, border: `1px solid ${goldBorder}`, color: gold, padding: '9px 12px', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', borderRadius: '2px', cursor: 'pointer' }}
+          >
+            {THINKERS.map(t => <option key={t.id} value={t.id}>{t.name.toUpperCase()}</option>)}
           </select>
-          <button onClick={askAgent} disabled={askLoading} className="bg-[#c9a84c]/90 hover:bg-[#f0d080] text-black px-8 py-3 rounded font-medium disabled:opacity-40">
-            {askLoading ? 'THINKING...' : `ASK ${selectedAgent.toUpperCase()}`}
+          <button
+            onClick={askAgent}
+            disabled={askLoading}
+            style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', background: askLoading ? bgElevated : `rgba(201,168,76,0.12)`, color: gold, border: `1px solid ${goldBorder}`, padding: '9px 18px', cursor: askLoading ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: askLoading ? 0.5 : 1, whiteSpace: 'nowrap' }}
+          >
+            {askLoading ? 'THINKING...' : `ASK ${selectedThinker.name.toUpperCase()}`}
           </button>
         </div>
 
-        {/* Response area */}
-        {response && (
-          <div className="mx-8 mt-4 p-6 bg-[#1f2937] border border-[#c9a84c]/20 rounded text-[#c9a84c]/90 text-sm leading-relaxed max-h-40 overflow-auto whitespace-pre-wrap flex-shrink-0">
-            {response}
-          </div>
-        )}
-
-        {/* Kanban */}
-        <div className="flex-1 p-8 grid grid-cols-3 gap-6 overflow-auto">
-          {(['todo', 'doing', 'done'] as const).map(status => (
-            <div key={status} className="flex flex-col">
-              <div className="uppercase text-xs tracking-widest text-[#c9a84c]/60 mb-3">
-                {status === 'todo' ? 'TO DO' : status === 'doing' ? 'DOING' : 'DONE'} · {tasks.filter(t => t.status === status).length}
+        {/* MAIN CONTENT */}
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+          {/* KANBAN BOARD */}
+          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1px', background: goldBorder, overflow: 'hidden' }}>
+            {cols.map(col => (
+              <div key={col.key} style={{ background: bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: goldDim }}>{col.label}</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: goldBorder }}>
+                    {tasks.filter(t => t.status === col.key).length}
+                  </span>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+                  {loading ? (
+                    <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: muted, fontStyle: 'italic', textAlign: 'center', paddingTop: '20px' }}>loading...</div>
+                  ) : tasks.filter(t => t.status === col.key).length === 0 ? (
+                    <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: muted, fontStyle: 'italic', textAlign: 'center', paddingTop: '20px', opacity: 0.5 }}>empty</div>
+                  ) : (
+                    tasks.filter(t => t.status === col.key).map(task => {
+                      const thinker = THINKERS.find(t2 => t2.id === task.agent_id);
+                      return (
+                        <div
+                          key={task.id}
+                          style={{ background: bgCard, border: `1px solid ${goldBorder}`, borderRadius: '2px', padding: '12px 14px', marginBottom: '8px' }}
+                        >
+                          <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: ivory, lineHeight: 1.5, marginBottom: '10px' }}>{task.title}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold, opacity: 0.5 }}>{thinker?.symbol} {thinker?.name.toUpperCase()}</span>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              {col.key !== 'todo'  && <button onClick={() => moveTask(task.id, 'todo')}  style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, background: 'none', border: `1px solid ${goldBorder}`, padding: '3px 7px', cursor: 'pointer' }}>TODO</button>}
+                              {col.key !== 'doing' && <button onClick={() => moveTask(task.id, 'doing')} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, background: 'none', border: `1px solid ${goldBorder}`, padding: '3px 7px', cursor: 'pointer' }}>DOING</button>}
+                              {col.key !== 'done'  && <button onClick={() => moveTask(task.id, 'done')}  style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: gold, background: 'none', border: `1px solid ${goldBorder}`, padding: '3px 7px', cursor: 'pointer' }}>DONE</button>}
+                              <button onClick={() => deleteTask(task.id)} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: '#7a3030', background: 'none', border: `1px solid rgba(120,48,48,0.3)`, padding: '3px 7px', cursor: 'pointer' }}>✕</button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-              <div className="flex-1 bg-[#1f2937]/50 rounded p-4 space-y-3">
-                {tasks.filter(t => t.status === status).map(task => (
-                  <div key={task.id} className="bg-[#111827] p-4 rounded text-sm text-[#f0e8d5]">
-                    {task.title}
-                  </div>
-                ))}
-                {tasks.filter(t => t.status === status).length === 0 && (
-                  <div className="text-[#c9a84c]/30 italic text-xs">empty</div>
-                )}
+            ))}
+          </div>
+
+          {/* THINKER RESPONSE PANEL */}
+          {response && (
+            <div style={{ width: '320px', borderLeft: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ padding: '14px 18px', borderBottom: `1px solid ${goldBorder}`, flexShrink: 0 }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.6 }}>
+                  {selectedThinker.symbol} {selectedThinker.name.toUpperCase()} SPEAKS
+                </div>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '18px', fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: ivory, lineHeight: 1.8 }}>
+                {response}
+                {askLoading && <span style={{ color: gold }}>▍</span>}
               </div>
             </div>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div style={{ padding: '10px 28px', borderTop: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0, background: bgCard }}>
+          {THINKERS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setSelectedAgent(t.id)}
+              style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: selectedAgent === t.id ? gold : muted, background: 'none', border: 'none', cursor: 'pointer', opacity: selectedAgent === t.id ? 1 : 0.5, padding: '4px 0' }}
+            >
+              {t.symbol} {t.name.toUpperCase()}
+            </button>
           ))}
         </div>
       </div>
