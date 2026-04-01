@@ -606,7 +606,7 @@ export default function SalonPage() {
       {/* ════ HUB OVERLAY ════ */}
       {showHub && member && (
         <div
-          style={{ position: 'absolute', inset: 0, top: '52px', background: 'rgba(0,0,0,0.94)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.94)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
           onClick={() => setShowHub(false)}
         >
           <div
