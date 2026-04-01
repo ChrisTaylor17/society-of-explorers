@@ -372,6 +372,7 @@ export default function SalonPage() {
 
   // ── Render ────────────────────────────────────────────────────
   return (
+    <>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-void)', overflow: 'hidden' }}>
 
       {/* ════ TOPBAR ════ */}
@@ -700,5 +701,18 @@ export default function SalonPage() {
         </div>
       </div>
     </div>
+
+    {/* Prominent Labyrinth Button */}
+    <div className="fixed bottom-8 right-8 z-50">
+      <a
+        href="/labyrinth"
+        className="group flex items-center gap-x-3 bg-black border-2 border-amber-300 text-amber-300 px-8 py-5 text-xl font-light tracking-widest hover:bg-amber-300 hover:text-black transition-all shadow-2xl"
+        style={{ fontFamily: 'Cinzel, serif' }}
+      >
+        ⬡ ENTER THE LABYRINTH
+        <span className="text-3xl group-hover:translate-x-2 transition-transform duration-300">→</span>
+      </a>
+    </div>
+    </>
   );
 }
