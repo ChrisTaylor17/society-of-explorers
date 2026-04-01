@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-03-25.dahlia',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { 
+  apiVersion: '2026-03-25.dahlia' 
 });
 
 const supabase = createClient(
@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
   try {
     const { productId, quantity = 1 } = await req.json();
 
-    // Fetch the product from Supabase (image_url is the actual column name)
     const { data: product, error } = await supabase
       .from('merch_suggestions')
       .select('name, price, image_url, sync_variant_id')
@@ -27,8 +26,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
+    // TEMPORARY: allow checkout even if sync_variant_id is missing (for testing)
     if (!product.sync_variant_id) {
-      return NextResponse.json({ error: 'Product not fully published to Printful yet' }, { status: 400 });
+      console.warn(`⚠️ Product ${productId} has no sync_variant_id — proceeding anyway for testing`);
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: {
+          product_data: { 
             name: product.name,
             images: product.image_url ? [product.image_url] : [],
           },
@@ -45,14 +45,13 @@ export async function POST(req: NextRequest) {
         quantity,
       }],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/?merch_success=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/`,
-      metadata: {
-        productId:     productId.toString(),
-        quantity:      quantity.toString(),
-        sync_variant_id: product.sync_variant_id.toString(),
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/merch/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/salon`,
+      metadata: { 
+        productId: productId.toString(), 
+        quantity: quantity.toString()
       },
-      shipping_address_collection: { allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR'] },
+      shipping_address_collection: { allowed_countries: ['US'] },
     });
 
     return NextResponse.json({ url: session.url });
