@@ -78,8 +78,8 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-      <div className="bg-[#111827] border border-[#c9a84c]/30 w-full max-w-5xl h-[88vh] rounded-2xl overflow-hidden flex flex-col">
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}} onClick={(e)=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:"#111827",border:"1px solid rgba(201,168,76,0.3)",width:"100%",maxWidth:"1100px",height:"88vh",borderRadius:"16px",overflow:"hidden",display:"flex",flexDirection:"column"}} onClick={(e)=>e.stopPropagation()}>
 
         {/* Header */}
         <div className="px-8 py-4 border-b border-[#c9a84c]/20 flex justify-between items-center">
