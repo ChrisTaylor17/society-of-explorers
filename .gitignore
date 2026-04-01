@@ -47,3 +47,4 @@ next-env.d.ts
 /lib/forge-std/
 broadcast/*/31337/
 
+.env*.local
