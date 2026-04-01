@@ -73,6 +73,7 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
         thinkerId: selectedAgent,
         message: `Here are my current tasks:\n${taskList}\n\nWhat should I focus on and why?`,
         history: [],
+        walletMemberId: member.id,
       }),
     });
     const reader = res.body!.getReader();
