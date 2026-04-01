@@ -146,12 +146,11 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
 
   return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column' }}
       onClick={onClose}
     >
       <div
-        style={{ background: '#0a0a0a', border: '4px solid #c9a84c', width: '100%', maxWidth: '1200px', height: '90vh', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 0 80px rgba(201,168,76,0.15)' }}
-        onClick={e => e.stopPropagation()}
+        style={{ background: '#0a0a0a', borderTop: '2px solid #c9a84c', width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
       >
     <>
         {/* HEADER */}
