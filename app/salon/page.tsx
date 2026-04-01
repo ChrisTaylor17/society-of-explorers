@@ -395,6 +395,7 @@ export default function SalonPage() {
             { label: 'HUB',       action: () => { closeAllOverlays(); setShowHub(v => !v); },   active: showHub },
             { label: 'MERCH',     action: () => { closeAllOverlays(); setShowMerch(v => !v); }, active: showMerch },
             { label: 'MEMBERS',   action: () => router.push('/members'), active: false },
+            { label: 'TRIBEKEY',  action: () => router.push('/tribekey'), active: false },
             { label: 'BOOK',      action: () => router.push('/book'),    active: false },
             { label: 'LABYRINTH', action: () => router.push('/labyrinth'), active: false },
             { label: 'LEAVE',     action: signOut,                       active: false },
