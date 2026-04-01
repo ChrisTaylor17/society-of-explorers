@@ -396,6 +396,7 @@ export default function SalonPage() {
             { label: 'MERCH',     action: () => { closeAllOverlays(); setShowMerch(v => !v); }, active: showMerch },
             { label: 'MEMBERS',   action: () => router.push('/members'), active: false },
             { label: 'BOOK',      action: () => router.push('/book'),    active: false },
+            { label: 'LABYRINTH', action: () => router.push('/labyrinth'), active: false },
             { label: 'LEAVE',     action: signOut,                       active: false },
           ] as const).map(btn => (
             <button key={btn.label} onClick={btn.action} style={{
@@ -703,14 +704,14 @@ export default function SalonPage() {
     </div>
 
     {/* Prominent Labyrinth Button */}
-    <div className="fixed bottom-8 right-8 z-50">
+    <div className="fixed bottom-8 right-8 z-[9999]">
       <a
         href="/labyrinth"
-        className="group flex items-center gap-x-3 bg-black border-2 border-amber-300 text-amber-300 px-8 py-5 text-xl font-light tracking-widest hover:bg-amber-300 hover:text-black transition-all shadow-2xl"
+        className="group flex items-center gap-x-3 bg-black border-2 border-amber-400 hover:border-amber-300 text-amber-400 hover:text-amber-200 px-8 py-5 text-xl font-light tracking-widest shadow-2xl transition-all"
         style={{ fontFamily: 'Cinzel, serif' }}
       >
-        ⬡ ENTER THE LABYRINTH
-        <span className="text-3xl group-hover:translate-x-2 transition-transform duration-300">→</span>
+        ⬡ ENTER THE LABYRINTH OF BECOMING
+        <span className="text-4xl group-hover:translate-x-2 transition-transform duration-300">→</span>
       </a>
     </div>
     </>
