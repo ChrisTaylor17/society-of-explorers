@@ -181,9 +181,14 @@ localStorage.setItem('soe_wallet_id', data.member.id)
         <div className="text-[10px] text-zinc-500 mt-20 tracking-[0.125em]">
           PRIVATE • SOVEREIGN • HUMAN-CENTRIC • POWERED BY TRIBEKEY + BLOCKCHAIN
         </div>
-        <div className="mt-8">
-          <a href="/labyrinth" className="text-amber-400 text-xs tracking-[0.2em] hover:text-amber-300 transition-colors" style={{ fontFamily: 'Cinzel, serif' }}>
+        <div className="mt-12 flex justify-center">
+          <a
+            href="/labyrinth"
+            className="group inline-flex items-center gap-x-4 px-12 py-6 text-xl font-light tracking-[0.15em] border-2 border-amber-300 text-amber-300 hover:bg-amber-300 hover:text-black transition-all duration-500"
+            style={{ fontFamily: 'Cinzel, serif' }}
+          >
             ⬡ ENTER THE LABYRINTH OF BECOMING
+            <span className="text-2xl group-hover:translate-x-2 transition-transform duration-300">→</span>
           </a>
         </div>
       </div>
