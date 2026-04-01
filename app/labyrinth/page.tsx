@@ -189,8 +189,34 @@ export default function Labyrinth() {
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
             <a href="https://en.wikipedia.org/wiki/Christopher_Lynch_(political_scientist)" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: CHRISTOPHER LYNCH ↗</a>
             <a href="https://www.carthage.edu/academics/departments-programs/philosophy/" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: PROFESSOR MAGURSHAK ↗</a>
-                    <SecretPassage roomNumber={4} />
           </div>
+
+          {/* THE GOD PROTOCOL */}
+          <div style={{ margin: '4rem 0 2rem', border: `1px solid ${gold}33`, background: '#111', padding: '3rem', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: `linear-gradient(90deg, transparent, ${gold}, transparent)` }} />
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '1.5rem', textAlign: 'center' }}>FROM THE FOUNDER</div>
+            <h3 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 3vw, 2.2rem)', fontWeight: 300, letterSpacing: '0.12em', color: gold, textAlign: 'center', marginBottom: '1.5rem', lineHeight: 1.3 }}>
+              THE GOD PROTOCOL
+            </h3>
+            <div style={{ width: '40px', height: '1px', background: gold, margin: '0 auto 2rem', opacity: 0.4 }} />
+            <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', color: dim, lineHeight: 2, textAlign: 'center', maxWidth: '600px', margin: '0 auto 1.5rem' }}>
+              The philosophical foundation of the Society of Explorers — where Heidegger meets blockchain, where imago Dei meets the Singularity, where ancient wisdom meets the technology that will define what it means to be human. This is the book that started everything.
+            </p>
+            <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '0.95rem', color: muted, fontStyle: 'italic', textAlign: 'center', marginBottom: '2.5rem' }}>
+              By Christopher Taylor · Published via Draft2Digital · Available wherever fine books are sold
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href="https://www.barnesandnoble.com/w/the-god-protocol-chris-t/1143602240" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '0.9rem 2rem', textDecoration: 'none', display: 'inline-block' }}>
+                BARNES &amp; NOBLE
+              </a>
+              <a href="https://books.apple.com/us/book/the-god-protocol/id6449949738" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}`, padding: '0.9rem 2rem', textDecoration: 'none', display: 'inline-block' }}>
+                APPLE BOOKS
+              </a>
+            </div>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1px', background: `linear-gradient(90deg, transparent, ${gold}44, transparent)` }} />
+          </div>
+
+          <SecretPassage roomNumber={4} />
         </div>
       </section>
 
