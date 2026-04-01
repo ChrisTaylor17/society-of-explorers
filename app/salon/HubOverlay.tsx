@@ -140,14 +140,7 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
   const responseThinker = THINKERS.find(t => t.id === responseAgent) ?? THINKERS[0];
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        style={{ background: bg, border: `1px solid ${goldBorder}`, width: '100%', maxWidth: '1200px', height: '90vh', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: `0 0 80px rgba(201,168,76,0.06)` }}
-        onClick={e => e.stopPropagation()}
-      >
+    <>
         {/* HEADER */}
         <div style={{ padding: '16px 24px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: bgCard }}>
           <div>
@@ -315,7 +308,6 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
             guided by the minds of history
           </div>
         </div>
-      </div>
 
       <style>{`
         @keyframes pulse {
@@ -323,6 +315,6 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
           50% { opacity: 0.8; transform: scale(1.2); }
         }
       `}</style>
-    </div>
+    </>
   );
 }
