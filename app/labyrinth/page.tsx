@@ -73,15 +73,19 @@ export default function Labyrinth() {
 
       {/* ART WALL I */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px', margin: '0 0 0 0' }}>
-        {['Radioactive Rihanna', 'Prometheus', 'Little Wings'].map(title => (
-          <div key={title} style={{ aspectRatio: '4/3', background: 'linear-gradient(135deg, #0d0d0a, #1a1505)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: `1px solid ${gold}22`, borderBottom: `1px solid ${gold}22` }}>
-            <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.4, marginBottom: '0.5rem' }}>GIOVANNI DECUNTO · GOD SERIES</div>
-              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem', color: dim, fontStyle: 'italic' }}>{title}</div>
-              <div style={{ marginTop: '0.75rem', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: gold, opacity: 0.3 }}>116 SOUTH ST · BOSTON</div>
-            </div>
-          </div>
-        ))}
+        {[
+            { title: 'Radioactive Rihanna', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Radioactive-Rihanna-600x591.jpg', link: 'https://www.giovannidecunto.com/product/radioactive-rihanna/' },
+            { title: 'Prometheus', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Prometheus-600x591.jpg', link: 'https://www.giovannidecunto.com/product/prometheus/' },
+            { title: 'Solar Energy', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/solar-energy-600x591.jpg', link: 'https://www.giovannidecunto.com/product/solar-energy/' },
+          ].map(({ title, url, link }) => (
+            <a key={title} href={link} target="_blank" rel="noopener noreferrer" style={{ aspectRatio: '4/3', display: 'block', position: 'relative', overflow: 'hidden', borderTop: `1px solid ${gold}22`, borderBottom: `1px solid ${gold}22`, textDecoration: 'none' }}>
+              <img src={url} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'brightness(0.85)' }} onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1rem', background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.7, marginBottom: '0.25rem' }}>GIOVANNI DECUNTO · GOD SERIES</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '0.95rem', color: '#e8e0d0', fontStyle: 'italic' }}>{title}</div>
+              </div>
+            </a>
+          ))}
       </div>
       <div style={{ textAlign: 'center', padding: '1rem', background: '#030303' }}>
         <a href="https://giovannidecunto.com" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.5, textDecoration: 'none' }}>VIEW GIOVANNI DECUNTO&apos;S WORK AT GIOVANNIDECUNTO.COM ↗</a>
@@ -241,14 +245,19 @@ export default function Labyrinth() {
 
       {/* ART WALL II */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
-        {['The Covenant', 'Infinity Loop', 'Divine Geometry'].map(title => (
-          <div key={title} style={{ aspectRatio: '4/3', background: 'linear-gradient(135deg, #050810, #0d0a1a)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${gold}11` }}>
-            <div style={{ textAlign: 'center', padding: '1rem' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.4, marginBottom: '0.5rem' }}>GIOVANNI DECUNTO · GOD SERIES</div>
-              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem', color: dim, fontStyle: 'italic' }}>{title}</div>
-            </div>
-          </div>
-        ))}
+        {[
+            { title: 'DATA', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/DATA-600x591.jpg', link: 'https://www.giovannidecunto.com/product/data/' },
+            { title: 'Little Wings', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Little-Wings-600x591.jpg', link: 'https://www.giovannidecunto.com/product/little-wings/' },
+            { title: 'Overpopulation', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Overpopulation-600x591.jpg', link: 'https://www.giovannidecunto.com/product/overpopulation/' },
+          ].map(({ title, url, link }) => (
+            <a key={title} href={link} target="_blank" rel="noopener noreferrer" style={{ aspectRatio: '4/3', display: 'block', position: 'relative', overflow: 'hidden', border: `1px solid ${gold}11`, textDecoration: 'none' }}>
+              <img src={url} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'brightness(0.85)' }} onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1rem', background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.7, marginBottom: '0.25rem' }}>GIOVANNI DECUNTO · GOD SERIES</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '0.95rem', color: '#e8e0d0', fontStyle: 'italic' }}>{title}</div>
+              </div>
+            </a>
+          ))}
       </div>
 
       {/* ═══ ROOM VI: TRUTH IN BEAUTY ═══ */}
