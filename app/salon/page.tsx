@@ -602,7 +602,7 @@ export default function SalonPage() {
 
       {/* ════ HUB OVERLAY ════ */}
       {showHub && member && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:9999,display:showHub?"flex":"none",alignItems:"center",justifyContent:"center"}} onClick={(e)=>{if(e.target===e.currentTarget)setShowHub(false)}}><div style={{width:"92%",maxWidth:"1100px",maxHeight:"92vh",background:"#111",border:"3px solid #c9a84c",borderRadius:"6px",overflow:"hidden"}}><HubOverlay onClose={()=>setShowHub(false)} /></div></div> setShowHub(false)} />
+        <HubOverlay member={member} onClose={() => setShowHub(false)} />
       )}
 
       {/* ════ MERCH OVERLAY ════ */}
