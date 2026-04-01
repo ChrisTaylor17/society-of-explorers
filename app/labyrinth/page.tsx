@@ -1,9 +1,6 @@
-import { Metadata } from 'next';
+'use client';
+import SecretPassage from './SecretPassage';
 
-export const metadata: Metadata = {
-  title: 'The Labyrinth of Becoming | Society of Explorers',
-  description: 'A guide to existence, creation, and the future of being human. Step through the doors.',
-};
 
 export default function Labyrinth() {
   const gold = '#c9a84c';
@@ -68,6 +65,7 @@ export default function Labyrinth() {
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
           <a href="https://plato.stanford.edu/entries/heidegger/" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: HEIDEGGER (STANFORD) ↗</a>
           <a href="https://www.amazon.com/Being-Time-Martin-Heidegger/dp/0061575593" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: BEING &amp; TIME ↗</a>
+                <SecretPassage roomNumber={1} />
         </div>
       </section>
 
@@ -122,6 +120,7 @@ export default function Labyrinth() {
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '3rem' }}>
             <a href="https://thenewatlantis.com/publications/understanding-heidegger-on-technology" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: red, border: `1px solid ${red}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: THE NEW ATLANTIS ON HEIDEGGER ↗</a>
             <a href="https://www.amazon.com/Question-Concerning-Technology-Essays/dp/0062290703" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: red, border: `1px solid ${red}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: THE QUESTION CONCERNING TECHNOLOGY ↗</a>
+                    <SecretPassage roomNumber={2} />
           </div>
         </div>
       </section>
@@ -151,6 +150,7 @@ export default function Labyrinth() {
           <a href="https://plato.stanford.edu/entries/plato-timaeus/" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: PLATO&apos;S TIMAEUS ↗</a>
           <a href="https://www.biblegateway.com/passage/?search=Genesis+1%3A26-28&version=NIV" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: GENESIS 1:26-28 ↗</a>
           <a href="https://www.amazon.com/Dhammapada-Easwaran-Nilgiri-Press/dp/1586380206" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: THE DHAMMAPADA ↗</a>
+                <SecretPassage roomNumber={3} />
         </div>
       </section>
 
@@ -189,6 +189,7 @@ export default function Labyrinth() {
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
             <a href="https://en.wikipedia.org/wiki/Christopher_Lynch_(political_scientist)" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: CHRISTOPHER LYNCH ↗</a>
             <a href="https://www.carthage.edu/academics/departments-programs/philosophy/" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: PROFESSOR MAGURSHAK ↗</a>
+                    <SecretPassage roomNumber={4} />
           </div>
         </div>
       </section>
@@ -240,6 +241,7 @@ export default function Labyrinth() {
             <a href="https://bitcoin.org/bitcoin.pdf" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: BITCOIN WHITEPAPER ↗</a>
             <a href="https://ethereum.org/en/whitepaper/" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: ETHEREUM WHITEPAPER ↗</a>
           </div>
+                <SecretPassage roomNumber={5} />
         </div>
       </section>
 
@@ -282,6 +284,7 @@ export default function Labyrinth() {
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '3rem' }}>
             <a href="https://giovannidecunto.com" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>EXPLORE: GIOVANNI DECUNTO ↗</a>
             <a href="https://www.poetryfoundation.org/poems/44477/ode-on-a-grecian-urn" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: KEATS — ODE ON A GRECIAN URN ↗</a>
+                    <SecretPassage roomNumber={6} />
           </div>
         </div>
       </section>
