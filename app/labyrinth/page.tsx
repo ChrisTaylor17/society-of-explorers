@@ -74,9 +74,9 @@ export default function Labyrinth() {
       {/* ART WALL I */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px', margin: '0 0 0 0' }}>
         {[
-            { title: 'Radioactive Rihanna', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Radioactive-Rihanna-600x591.jpg', link: 'https://www.giovannidecunto.com/product/radioactive-rihanna/' },
-            { title: 'Prometheus', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Prometheus-600x591.jpg', link: 'https://www.giovannidecunto.com/product/prometheus/' },
-            { title: 'Solar Energy', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/solar-energy-600x591.jpg', link: 'https://www.giovannidecunto.com/product/solar-energy/' },
+            { title: 'Radioactive Rihanna', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Radioactive_Rihanna.jpg', link: 'https://www.giovannidecunto.com/product/radioactive-rihanna/' },
+            { title: 'Prometheus', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Prometheus.jpg', link: 'https://www.giovannidecunto.com/product/prometheus/' },
+            { title: 'Solar Energy', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/solar-energy.jpg', link: 'https://www.giovannidecunto.com/product/solar-energy/' },
           ].map(({ title, url, link }) => (
             <a key={title} href={link} target="_blank" rel="noopener noreferrer" style={{ aspectRatio: '4/3', display: 'block', position: 'relative', overflow: 'hidden', borderTop: `1px solid ${gold}22`, borderBottom: `1px solid ${gold}22`, textDecoration: 'none' }}>
               <div style={{ width: '100%', height: '100%', backgroundImage: `url(/api/image-proxy?url=${encodeURIComponent(url)})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.85)' }} />
@@ -246,9 +246,9 @@ export default function Labyrinth() {
       {/* ART WALL II */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
         {[
-            { title: 'DATA', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/DATA-600x591.jpg', link: 'https://www.giovannidecunto.com/product/data/' },
-            { title: 'Little Wings', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Little-Wings-600x591.jpg', link: 'https://www.giovannidecunto.com/product/little-wings/' },
-            { title: 'Overpopulation', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Overpopulation-600x591.jpg', link: 'https://www.giovannidecunto.com/product/overpopulation/' },
+            { title: 'DATA', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/DATA.jpg', link: 'https://www.giovannidecunto.com/product/data/' },
+            { title: 'Little Wings', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Giovanni-DeCunto-Little-Wings-compressed-600x596.jpg', link: 'https://www.giovannidecunto.com/product/little-wings/' },
+            { title: 'Overpopulation', url: 'https://www.giovannidecunto.com/wp-content/uploads/2019/07/Overpopulation.jpg', link: 'https://www.giovannidecunto.com/product/overpopulation/' },
           ].map(({ title, url, link }) => (
             <a key={title} href={link} target="_blank" rel="noopener noreferrer" style={{ aspectRatio: '4/3', display: 'block', position: 'relative', overflow: 'hidden', border: `1px solid ${gold}11`, textDecoration: 'none' }}>
               <div style={{ width: '100%', height: '100%', backgroundImage: `url(/api/image-proxy?url=${encodeURIComponent(url)})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.85)' }} />
