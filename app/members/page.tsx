@@ -135,6 +135,16 @@ export default function MembersPage() {
       body: JSON.stringify({ senderId: currentMember.id, recipientId: selectedMember.id, content: msg })
     })
     if (!res.ok) console.error('sendMessage failed:', await res.text())
+    // Fire-and-forget email notification
+    fetch('/api/notify/dm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipientId: selectedMember.id,
+        senderName: currentMember.display_name || 'An Explorer',
+        preview: msg,
+      }),
+    }).catch(() => {})
     setSending(false)
     await loadMessages()
     inputRef.current?.focus()
