@@ -151,6 +151,7 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
     >
       <div
         style={{ background: '#0a0a0a', borderTop: '2px solid #c9a84c', width: '100%', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
       >
     <>
         {/* HEADER */}
