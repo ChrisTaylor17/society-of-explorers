@@ -6,6 +6,7 @@ import SalonOnboarding from './SalonOnboarding';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 import { speakText, stopSpeaking } from '@/lib/tts';
 import { initAudioUnlock } from '@/lib/audioUnlock';
+import ArtifactGenerator from '@/components/ArtifactGenerator';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getMemberSession, clearWalletCookie } from '@/lib/auth/getSession';
@@ -984,6 +985,16 @@ export default function SalonPage() {
             <button onClick={() => send()} disabled={isLoading} style={{ padding: '10px 16px', height: '44px', background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', borderRadius: '4px', color: 'var(--gold)', fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em', cursor: isLoading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
               SPEAK
             </button>
+          </div>
+          {/* Artifact Generator */}
+          <div style={{ padding: '0 16px 12px' }}>
+            <ArtifactGenerator
+              thinkerId={selectedThinker.id}
+              memberName={member?.display_name || 'Explorer'}
+              memberId={member?.id || ''}
+              memberProject={(member as any)?.project_description}
+              recentMessages={messages.slice(-10)}
+            />
           </div>
         </div>
       </div>
