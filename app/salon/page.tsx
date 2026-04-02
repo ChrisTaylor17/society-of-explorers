@@ -150,7 +150,16 @@ export default function SalonPage() {
         p => {
           const msg = p.new as Message;
           if (sid === 'general' && msg.salon_id && msg.salon_id !== 'general') return;
-          setMessages(prev => [...prev, msg]);
+          // Deduplicate: skip if this message ID is already in state,
+          // or if it matches an optimistic/streaming message
+          setMessages(prev => {
+            if (msg.id && prev.some(m => m.id === msg.id)) return prev;
+            // Also skip if we have a recent optimistic member message with same content
+            if (msg.sender_type === 'member' && prev.some(m =>
+              m.sender_type === 'member' && m.content === msg.content && m.id?.startsWith('member-')
+            )) return prev;
+            return [...prev, msg];
+          });
         })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -306,8 +315,13 @@ export default function SalonPage() {
               setMessages(prev => prev.map(m =>
                 m.id === streamId ? { ...m, content: m.content + evt.delta } : m));
             } else if (evt.done) {
-              setMessages(prev => prev.filter(m => m.id !== streamId));
               if (evt.response) responseFullText = evt.response;
+              // Keep the streamed message with final content instead of removing it
+              setMessages(prev => prev.map(m =>
+                m.id === streamId
+                  ? { ...m, content: responseFullText || m.content }
+                  : m
+              ));
             }
           } catch {}
         }
