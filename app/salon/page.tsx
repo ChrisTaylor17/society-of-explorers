@@ -6,6 +6,7 @@ import SalonOnboarding from './SalonOnboarding';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 import { speakText, stopSpeaking } from '@/lib/tts';
 import { initAudioUnlock } from '@/lib/audioUnlock';
+import { startRecording, stopRecording, isRecordingNow } from '@/lib/voiceRecorder';
 import ArtifactGenerator from '@/components/ArtifactGenerator';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -88,7 +89,6 @@ export default function SalonPage() {
   const [ritualArtifact,  setRitualArtifact]  = useState<{title: string, thinker: string} | null>(null);
   const [voiceMode,       setVoiceMode]       = useState(false);
   const [isListening,     setIsListening]     = useState(false);
-  const [recognition,     setRecognition]     = useState<any>(null);
   const [interimText,     setInterimText]     = useState('');
   const [toasts,          setToasts]          = useState<{id: number; text: string}[]>([]);
 
@@ -179,19 +179,10 @@ export default function SalonPage() {
     return () => clearTimeout(timer);
   }, [toasts]);
 
-  // ── Speech recognition + audio unlock init ───────────────────
+  // ── Audio unlock init ────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
     initAudioUnlock();
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SR) {
-      const rec = new SR();
-      rec.continuous = false;
-      rec.interimResults = true;
-      rec.maxAlternatives = 1;
-      rec.lang = 'en-US';
-      setRecognition(rec);
-    }
   }, []);
 
   // ── First-visit onboarding detection ─────────────────────────
@@ -252,32 +243,30 @@ export default function SalonPage() {
   }, [showArtifacts, loadNFTs]);
 
   // ── Send chat message ─────────────────────────────────────────
-  function startListening() {
-    if (!recognition) return;
-    setIsListening(true);
-    setInterimText('');
-    recognition.onresult = (event: any) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final = transcript;
-        } else {
-          interim = transcript;
-        }
-      }
-      if (interim) setInterimText(interim);
-      if (final.trim()) {
+  async function handleMicPress() {
+    if (isRecordingNow()) {
+      setIsListening(false);
+      setInterimText('transcribing...');
+      try {
+        const text = await stopRecording();
         setInterimText('');
-        setInput(final);
-        setTimeout(() => send(final), 500);
-        setIsListening(false);
+        if (text.trim()) {
+          setInput(text);
+          if (voiceMode) setTimeout(() => send(text), 300);
+        }
+      } catch (err) {
+        setInterimText('');
+        console.error('Transcription failed:', err);
       }
-    };
-    recognition.onerror = () => { setIsListening(false); setInterimText(''); };
-    recognition.onend = () => { setIsListening(false); setInterimText(''); };
-    recognition.start();
+    } else {
+      try {
+        await startRecording();
+        setIsListening(true);
+        setInterimText('listening...');
+      } catch {
+        alert('Microphone access denied. Please allow mic access in your browser settings.');
+      }
+    }
   }
 
   async function send(directText?: string) {
@@ -370,7 +359,7 @@ export default function SalonPage() {
     // Auto-TTS in voice mode
     if (voiceMode && responseFullText) {
       speakText(responseFullText, selectedThinker.id)
-        .then(() => { if (voiceMode) setTimeout(() => startListening(), 300); })
+        .then(() => { if (voiceMode) setTimeout(() => handleMicPress(), 300); })
         .catch(() => {});
     }
 
@@ -1009,22 +998,20 @@ export default function SalonPage() {
               rows={1}
               style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '6px', padding: '10px 14px', fontFamily: 'EB Garamond,serif', fontSize: '16px', color: 'var(--ivory)', resize: 'none', outline: 'none', minHeight: '44px', maxHeight: '100px', lineHeight: 1.5 }}
             />
-            {recognition && (
-              <button
-                onClick={() => isListening ? recognition.abort() : startListening()}
-                style={{
-                  background: isListening ? 'rgba(201,168,76,0.15)' : 'none',
-                  border: `1px solid ${isListening ? 'rgba(201,168,76,0.4)' : 'var(--border)'}`,
-                  color: isListening ? '#c9a84c' : 'var(--text-muted)',
-                  padding: '10px 14px', height: '44px', cursor: 'pointer',
-                  fontFamily: 'Cinzel,serif', fontSize: '10px', letterSpacing: '0.1em',
-                  transition: 'all 0.3s ease', flexShrink: 0,
-                  animation: isListening ? 'pulse 1.5s infinite' : 'none',
-                }}
-              >
-                {isListening ? '⬡ ...' : '⬡ MIC'}
-              </button>
-            )}
+            <button
+              onClick={handleMicPress}
+              style={{
+                background: isListening ? 'rgba(191,64,64,0.15)' : 'none',
+                border: `1px solid ${isListening ? 'rgba(191,64,64,0.5)' : 'var(--border)'}`,
+                color: isListening ? '#BF4040' : 'var(--text-muted)',
+                padding: '10px 14px', height: '44px', cursor: 'pointer',
+                fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em',
+                transition: 'all 0.3s ease', flexShrink: 0,
+                animation: isListening ? 'pulse 1.5s infinite' : 'none',
+              }}
+            >
+              {isListening ? '⬡ TAP TO SEND' : '⬡ MIC'}
+            </button>
             <button onClick={() => send()} disabled={isLoading} style={{ padding: '10px 16px', height: '44px', background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', borderRadius: '4px', color: 'var(--gold)', fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em', cursor: isLoading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
               SPEAK
             </button>
