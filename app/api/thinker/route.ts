@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
+import { parseActions, executeThinkerAction } from '@/lib/thinkerActions';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -195,14 +196,26 @@ export async function POST(req: NextRequest) {
             return;
           }
 
-          // --- SAVE THINKER RESPONSE ---
+          // --- PARSE ACTIONS ---
+          const { cleanText, actions } = parseActions(fullText);
+
+          // --- SAVE THINKER RESPONSE (clean text only, no action JSON) ---
           await supabaseAdmin.from('salon_messages').insert({
             salon_id: salonId,
             member_id: null,
             thinker_id: thinkerId,
-            content: fullText,
+            content: cleanText,
             message_type: 'thinker',
           });
+
+          // --- EXECUTE ACTIONS ---
+          for (const action of actions) {
+            try {
+              await executeThinkerAction(action, memberId!, thinkerId);
+            } catch (e) {
+              console.error('Action execution failed:', action.type, e);
+            }
+          }
 
           // --- AWARD EXP TOKENS ---
           const expAmount = isReaction ? 4 : 8;
@@ -233,10 +246,16 @@ export async function POST(req: NextRequest) {
           recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
             .catch(err => console.error('Memory update failed:', err));
 
+          // --- SEND DONE + ACTIONS TO CLIENT ---
+          if (actions.length > 0) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', actions })}\n\n`));
+          }
+
           const doneData = JSON.stringify({
             done: true,
-            response: fullText,
+            response: cleanText,
             expAwarded: expAmount,
+            actions: actions.length > 0 ? actions : undefined,
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();

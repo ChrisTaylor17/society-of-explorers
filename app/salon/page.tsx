@@ -90,6 +90,7 @@ export default function SalonPage() {
   const [isListening,     setIsListening]     = useState(false);
   const [recognition,     setRecognition]     = useState<any>(null);
   const [interimText,     setInterimText]     = useState('');
+  const [toasts,          setToasts]          = useState<{id: number; text: string}[]>([]);
 
   // ── Nav overlays ────────────────────────────────────────────
   const [showThinkers,  setShowThinkers]  = useState(false);
@@ -170,6 +171,13 @@ export default function SalonPage() {
   }, [privateMode, member?.id]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // ── Toast auto-dismiss ───────────────────────────────────────
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const timer = setTimeout(() => setToasts(prev => prev.slice(1)), 3000);
+    return () => clearTimeout(timer);
+  }, [toasts]);
 
   // ── Speech recognition + audio unlock init ───────────────────
   useEffect(() => {
@@ -332,12 +340,25 @@ export default function SalonPage() {
               responseFullText += evt.delta;
               setMessages(prev => prev.map(m =>
                 m.id === streamId ? { ...m, content: m.content + evt.delta } : m));
+            } else if (evt.type === 'actions' && evt.actions?.length > 0) {
+              // Show toast for each action
+              const actionMessages: Record<string, string> = {
+                create_task: '⬡ Task added to your Hub',
+                save_note: '⬡ Insight saved',
+                update_goal: '⬡ Goal updated',
+                create_artifact_prompt: '⬡ Artifact queued',
+                schedule_ritual: '⬡ Ritual scheduled',
+              };
+              for (const action of evt.actions) {
+                setToasts(prev => [...prev, { id: Date.now() + Math.random(), text: actionMessages[action.type] || '⬡ Action taken' }]);
+              }
             } else if (evt.done) {
-              if (evt.response) responseFullText = evt.response;
-              // Keep the streamed message with final content instead of removing it
+              // Use clean response (actions stripped server-side)
+              const cleanResponse = (evt.response || responseFullText).split('|||ACTIONS|||')[0].trim();
+              if (evt.response) responseFullText = cleanResponse;
               setMessages(prev => prev.map(m =>
                 m.id === streamId
-                  ? { ...m, content: responseFullText || m.content }
+                  ? { ...m, content: cleanResponse || m.content }
                   : m
               ));
             }
@@ -1021,6 +1042,21 @@ export default function SalonPage() {
         </div>
       </div>
     </div>
+
+    {/* Action toasts */}
+    {toasts.length > 0 && (
+      <div style={{ position: 'fixed', bottom: '120px', right: '20px', zIndex: 200, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {toasts.map(toast => (
+          <div key={toast.id} style={{
+            padding: '10px 16px', background: 'rgba(10,10,10,0.95)',
+            border: '1px solid rgba(201,168,76,0.5)', color: '#C9A84C',
+            fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '2px',
+          }}>
+            {toast.text}
+          </div>
+        ))}
+      </div>
+    )}
 
     {/* Prominent Labyrinth Button */}
     <div className="fixed bottom-8 right-8 z-[9999]">
