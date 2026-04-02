@@ -1,6 +1,6 @@
 // app/api/thinker/route.ts
 // Society of Explorers — Thinker API
-// SSE streaming, Supabase + wallet auth, message history, EXP rewards
+// SSE streaming, Supabase + wallet auth, member profile injection, EXP rewards
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
@@ -17,8 +17,35 @@ const supabaseAdmin = createClient(
 );
 
 const DIRECT_MAX_TOKENS = 400;
+const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
 const HISTORY_LIMIT = 14;
+
+// Keywords that signal the member wants a produced artifact (draft, plan, etc.)
+const ARTIFACT_KEYWORDS = ['draft', 'write', 'plan', 'outline', 'create', 'build', 'design', 'manifesto', 'pitch', 'letter', 'framework', 'strategy', 'proposal'];
+
+function isArtifactRequest(message: string): boolean {
+  const lower = message.toLowerCase();
+  return ARTIFACT_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+// Build a context string from member profile data
+function buildMemberContext(m: any): string {
+  const name = m.display_name && !m.display_name.startsWith('0x')
+    ? m.display_name
+    : 'Anonymous Explorer';
+  return [
+    `The member speaking is ${name}.`,
+    m.bio ? `Bio: ${m.bio}` : null,
+    m.discipline ? `Discipline: ${m.discipline}` : null,
+    m.skills?.length ? `Skills: ${m.skills.join(', ')}` : null,
+    m.project_description ? `Building: ${m.project_description}` : null,
+    m.seeking ? `Seeking: ${m.seeking}` : null,
+    m.philosophy ? `Philosophy: ${m.philosophy}` : null,
+  ].filter(Boolean).join('\n');
+}
+
+const MEMBER_SELECT = 'id, display_name, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens';
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,9 +64,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- AUTH ---
+    // --- AUTH + FULL PROFILE FETCH ---
     let memberId: string | null = null;
     let memberName: string | null = null;
+    let memberContext: string | null = null;
+    let memberExpTokens: number = 0;
 
     const authHeader = req.headers.get('authorization');
 
@@ -55,25 +84,30 @@ export async function POST(req: NextRequest) {
       if (user) {
         const { data: member } = await supabaseAdmin
           .from('members')
-          .select('id, display_name')
+          .select(MEMBER_SELECT)
           .eq('supabase_auth_id', user.id)
           .single();
         if (member) {
           memberId = member.id;
           memberName = member.display_name;
+          memberExpTokens = member.exp_tokens || 0;
+          memberContext = buildMemberContext(member);
         }
       }
     }
 
+    // Wallet fallback — same full profile fetch
     if (!memberId && walletMemberId) {
       const { data: member } = await supabaseAdmin
         .from('members')
-        .select('id, display_name')
+        .select(MEMBER_SELECT)
         .eq('id', walletMemberId)
         .single();
       if (member) {
         memberId = member.id;
         memberName = member.display_name;
+        memberExpTokens = member.exp_tokens || 0;
+        memberContext = buildMemberContext(member);
       }
     }
 
@@ -101,24 +135,33 @@ export async function POST(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(HISTORY_LIMIT);
 
+    // Include thinker identity so thinkers know who said what
     const conversationHistory = (history || [])
       .reverse()
       .map((msg) => ({
         role: msg.message_type === 'user' ? 'user' as const : 'assistant' as const,
-        content: msg.content,
+        content: msg.thinker_id && msg.message_type === 'thinker'
+          ? `[${msg.thinker_id}]: ${msg.content}`
+          : msg.content,
       }));
 
     // --- BUILD SYSTEM PROMPT ---
     const systemPrompt = buildSystemPrompt(thinkerId);
-    const maxTokens = isReaction ? REACTION_MAX_TOKENS : DIRECT_MAX_TOKENS;
 
-    const contextPrefix = memberName
-      ? `The member speaking is ${memberName}.`
-      : 'A member is speaking.';
+    // Determine max tokens: artifact requests get more room
+    let maxTokens = isReaction ? REACTION_MAX_TOKENS : DIRECT_MAX_TOKENS;
+    if (!isReaction && isArtifactRequest(message)) {
+      maxTokens = ARTIFACT_MAX_TOKENS;
+    }
+
+    // Build context with member profile
+    const contextPrefix = memberContext
+      ? memberContext
+      : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
 
     const fullSystemPrompt = `${systemPrompt}\n\n${contextPrefix}${
       isReaction
-        ? ' You are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.'
+        ? '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.'
         : ''
     }`;
 
@@ -173,23 +216,16 @@ export async function POST(req: NextRequest) {
               : `Conversation with ${thinkerId}`,
           });
 
+          // Try RPC first, fallback to manual increment
           const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
             member_id_input: memberId,
             amount_input: expAmount,
           });
           if (rpcError) {
-            // Fallback: manual increment
-            const { data: memberData } = await supabaseAdmin
+            await supabaseAdmin
               .from('members')
-              .select('exp_tokens')
-              .eq('id', memberId)
-              .single();
-            if (memberData) {
-              await supabaseAdmin
-                .from('members')
-                .update({ exp_tokens: (memberData.exp_tokens || 0) + expAmount })
-                .eq('id', memberId);
-            }
+              .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
+              .eq('id', memberId);
           }
 
           const doneData = JSON.stringify({
