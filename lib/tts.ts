@@ -1,5 +1,5 @@
 // lib/tts.ts
-// iOS-safe TTS playback via Web Audio API (bypasses HTMLAudioElement autoplay restrictions)
+// iOS-safe TTS with sentence chunking to prevent ElevenLabs cutoff
 
 const VOICE_IDS: Record<string, string> = {
   socrates: 'pNInz6obpgDQGcFmaJgB',
@@ -10,63 +10,95 @@ const VOICE_IDS: Record<string, string> = {
   jobs: 'g5CIjZEefAph4nQFvHAz',
 };
 
-// Persistent AudioContext — iOS closes contexts that aren't reused
 let audioCtx: AudioContext | null = null;
 let currentSource: AudioBufferSourceNode | null = null;
+let stopRequested = false;
 let playing = false;
 
 function getAudioContext(): AudioContext {
-  if (!audioCtx) {
+  if (!audioCtx || audioCtx.state === 'closed') {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
     audioCtx = new AC();
   }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
 
-export async function speakText(text: string, thinkerId: string): Promise<void> {
-  stopSpeaking();
+function splitIntoChunks(text: string, maxChars = 400): string[] {
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const chunks: string[] = [];
+  let current = '';
 
-  const voiceId = VOICE_IDS[thinkerId] || VOICE_IDS.socrates;
+  for (const sentence of sentences) {
+    if ((current + sentence).length > maxChars && current) {
+      chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current += sentence;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
+export async function speakText(text: string, thinkerId: string): Promise<void> {
+  stopRequested = false;
+  stopSpeaking();
 
   const cleanText = text
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/#{1,6}\s/g, '')
     .replace(/⬡/g, '')
-    .replace(/\[(.*?)\]/g, '$1')
-    .slice(0, 500);
+    .replace(/\[.*?\]/g, '')
+    .replace(/\|\|\|ACTIONS\|\|\|[\s\S]*/g, '')
+    .trim();
 
-  const response = await fetch('/api/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: cleanText, voiceId }),
-  });
+  if (!cleanText) return;
 
-  if (!response.ok) throw new Error('TTS fetch failed');
-
-  const arrayBuffer = await response.arrayBuffer();
-
+  const chunks = splitIntoChunks(cleanText, 400);
   const ctx = getAudioContext();
-  if (ctx.state === 'suspended') await ctx.resume();
-
-  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-  const source = ctx.createBufferSource();
-  source.buffer = audioBuffer;
-  source.connect(ctx.destination);
-
-  currentSource = source;
   playing = true;
 
-  return new Promise((resolve) => {
-    source.onended = () => {
-      currentSource = null;
-      playing = false;
-      resolve();
-    };
-    source.start(0);
-  });
+  for (const chunk of chunks) {
+    if (stopRequested) break;
+
+    try {
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: chunk, thinkerId }),
+      });
+
+      if (!response.ok || stopRequested) continue;
+
+      const arrayBuffer = await response.arrayBuffer();
+      if (stopRequested) break;
+
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      if (stopRequested) break;
+
+      await new Promise<void>((resolve) => {
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.onended = () => {
+          currentSource = null;
+          resolve();
+        };
+        currentSource = source;
+        source.start(0);
+      });
+    } catch (err) {
+      console.warn('TTS chunk failed:', err);
+    }
+  }
+
+  playing = false;
+  currentSource = null;
 }
 
 export function stopSpeaking() {
+  stopRequested = true;
   if (currentSource) {
     try { currentSource.stop(); } catch {}
     currentSource = null;
