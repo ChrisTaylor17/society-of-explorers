@@ -120,6 +120,8 @@ export async function POST(req: NextRequest) {
       thinker_id: null,
       content: message,
       message_type: 'user',
+      sender_type: 'member',
+      sender_name: memberName || 'Explorer',
     });
 
     // --- FETCH MESSAGE HISTORY ---
@@ -200,12 +202,18 @@ export async function POST(req: NextRequest) {
           const { cleanText, actions } = parseActions(fullText);
 
           // --- SAVE THINKER RESPONSE (clean text only, no action JSON) ---
+          const thinkerDisplayNames: Record<string, string> = {
+            socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
+            aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
+          };
           await supabaseAdmin.from('salon_messages').insert({
             salon_id: salonId,
             member_id: null,
             thinker_id: thinkerId,
             content: cleanText,
             message_type: 'thinker',
+            sender_type: 'thinker',
+            sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
           });
 
           // --- EXECUTE ACTIONS ---

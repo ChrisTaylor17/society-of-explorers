@@ -142,7 +142,15 @@ export default function SalonPage() {
       query = query.or('salon_id.eq.general,salon_id.is.null');
     }
     const { data } = await query;
-    if (data) setMessages(data);
+    if (data) {
+      // Normalize: old messages may have message_type but not sender_type
+      const normalized = data.map((m: any) => ({
+        ...m,
+        sender_type: m.sender_type || (m.message_type === 'user' ? 'member' : m.message_type === 'thinker' ? 'thinker' : 'system'),
+        sender_name: m.sender_name || m.thinker_id || 'Explorer',
+      }));
+      setMessages(normalized);
+    }
   }
 
   useEffect(() => { loadMessages(); }, [privateMode, member?.id]);
@@ -247,6 +255,8 @@ export default function SalonPage() {
     if (isRecordingNow()) {
       setIsListening(false);
       setInterimText('transcribing...');
+      // Stop live preview recognition
+      try { (window as any).__soePreviewRec?.stop(); } catch {}
       try {
         const text = await stopRecording();
         setInterimText('');
@@ -265,6 +275,28 @@ export default function SalonPage() {
         await startRecording();
         setIsListening(true);
         setInterimText('listening...');
+        // Start Web Speech API in parallel for live preview (best effort)
+        try {
+          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+          if (SR) {
+            const rec = new SR();
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.lang = 'en-US';
+            rec.onresult = (e: any) => {
+              let interim = '';
+              for (let i = e.resultIndex; i < e.results.length; i++) {
+                interim = e.results[i][0].transcript;
+              }
+              if (interim) setInterimText(interim);
+            };
+            rec.onerror = () => {};
+            rec.onend = () => {};
+            rec.start();
+            // Store ref so we can stop it
+            (window as any).__soePreviewRec = rec;
+          }
+        } catch {}
       } catch {
         alert('Microphone access denied. Please allow mic access in your browser settings.');
       }
@@ -902,7 +934,7 @@ export default function SalonPage() {
             </div>
           )}
 
-          {messages.map((msg, i) => (
+          {messages.filter(msg => msg.content?.trim()).map((msg, i) => (
             <div key={msg.id || i} style={{ display: 'flex', gap: '10px', flexDirection: msg.sender_type === 'member' ? 'row-reverse' : 'row', justifyContent: msg.sender_type === 'system' ? 'center' : undefined }}>
               {msg.sender_type === 'system' ? (
                 <div style={{ fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '11px', color: 'var(--gold-dim)', padding: '4px 12px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--glow)', textAlign: 'center' }}
