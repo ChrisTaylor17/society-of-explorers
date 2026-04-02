@@ -83,6 +83,9 @@ export default function SalonPage() {
   const [ritualStream,    setRitualStream]    = useState('');
   const [ritualActive,    setRitualActive]    = useState<string | null>(null);
   const [ritualArtifact,  setRitualArtifact]  = useState<{title: string, thinker: string} | null>(null);
+  const [voiceMode,       setVoiceMode]       = useState(false);
+  const [isListening,     setIsListening]     = useState(false);
+  const [recognition,     setRecognition]     = useState<any>(null);
 
   // ── Nav overlays ────────────────────────────────────────────
   const [showThinkers,  setShowThinkers]  = useState(false);
@@ -155,6 +158,19 @@ export default function SalonPage() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  // ── Speech recognition init ──────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SR) {
+      const rec = new SR();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-US';
+      setRecognition(rec);
+    }
+  }, []);
+
   // ── First-visit onboarding detection ─────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -213,9 +229,25 @@ export default function SalonPage() {
   }, [showArtifacts, loadNFTs]);
 
   // ── Send chat message ─────────────────────────────────────────
-  async function send() {
-    if (!input.trim() || isLoading) return;
-    const text = input.trim();
+  function startListening() {
+    if (!recognition) return;
+    setIsListening(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript.trim()) {
+        setInput(transcript);
+        setTimeout(() => send(transcript), 500);
+      }
+      setIsListening(false);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
+  }
+
+  async function send(directText?: string) {
+    const text = (directText ?? input).trim();
+    if (!text || isLoading) return;
     setInput('');
     setIsLoading(true);
 
@@ -244,6 +276,7 @@ export default function SalonPage() {
       thinker_id: selectedThinker.id, content: '',
     }]);
 
+    let responseFullText = '';
     try {
       const res = await fetch('/api/thinker', {
         method: 'POST',
@@ -269,15 +302,36 @@ export default function SalonPage() {
           try {
             const evt = JSON.parse(line.slice(6));
             if (evt.delta) {
+              responseFullText += evt.delta;
               setMessages(prev => prev.map(m =>
                 m.id === streamId ? { ...m, content: m.content + evt.delta } : m));
             } else if (evt.done) {
               setMessages(prev => prev.filter(m => m.id !== streamId));
+              if (evt.response) responseFullText = evt.response;
             }
           } catch {}
         }
       }
     } catch {}
+
+    // Auto-TTS in voice mode
+    if (voiceMode && responseFullText) {
+      try {
+        const ttsRes = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: responseFullText, thinkerId: selectedThinker.id }),
+        });
+        if (ttsRes.ok) {
+          const blob = await ttsRes.blob();
+          const audio = new Audio(URL.createObjectURL(blob));
+          audio.onended = () => {
+            if (voiceMode) setTimeout(() => startListening(), 300);
+          };
+          audio.play();
+        }
+      } catch {}
+    }
 
     if (member) {
       const { data } = await supabase.from('members')
@@ -884,7 +938,25 @@ export default function SalonPage() {
             >
               {privateMode ? '⬡ PRIVATE SESSION' : '⬡ GENERAL SALON'}
             </button>
+            <button
+              onClick={() => setVoiceMode(!voiceMode)}
+              style={{
+                fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em',
+                color: voiceMode ? '#c9a84c' : '#5a5040',
+                background: voiceMode ? 'rgba(201,168,76,0.08)' : 'transparent',
+                border: `1px solid ${voiceMode ? 'rgba(201,168,76,0.3)' : 'rgba(201,168,76,0.1)'}`,
+                padding: '0.4rem 0.8rem', cursor: 'pointer', transition: 'all 0.3s ease',
+                marginLeft: '8px',
+              }}
+            >
+              {voiceMode ? '⬡ VOICE ON' : '⬡ VOICE OFF'}
+            </button>
           </div>
+          {voiceMode && !isListening && !isLoading && (
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.2em', color: '#c9a84c', opacity: 0.3, textAlign: 'center', padding: '4px' }}>
+              TAP MIC OR SPEAK TO BEGIN
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
             <textarea
               value={input}
@@ -895,7 +967,23 @@ export default function SalonPage() {
               rows={1}
               style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '6px', padding: '10px 14px', fontFamily: 'EB Garamond,serif', fontSize: '16px', color: 'var(--ivory)', resize: 'none', outline: 'none', minHeight: '44px', maxHeight: '100px', lineHeight: 1.5 }}
             />
-            <button onClick={send} disabled={isLoading} style={{ padding: '10px 16px', height: '44px', background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', borderRadius: '4px', color: 'var(--gold)', fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em', cursor: isLoading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
+            {recognition && (
+              <button
+                onClick={() => isListening ? recognition.abort() : startListening()}
+                style={{
+                  background: isListening ? 'rgba(201,168,76,0.15)' : 'none',
+                  border: `1px solid ${isListening ? 'rgba(201,168,76,0.4)' : 'var(--border)'}`,
+                  color: isListening ? '#c9a84c' : 'var(--text-muted)',
+                  padding: '10px 14px', height: '44px', cursor: 'pointer',
+                  fontFamily: 'Cinzel,serif', fontSize: '10px', letterSpacing: '0.1em',
+                  transition: 'all 0.3s ease', flexShrink: 0,
+                  animation: isListening ? 'pulse 1.5s infinite' : 'none',
+                }}
+              >
+                {isListening ? '⬡ ...' : '⬡ MIC'}
+              </button>
+            )}
+            <button onClick={() => send()} disabled={isLoading} style={{ padding: '10px 16px', height: '44px', background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', borderRadius: '4px', color: 'var(--gold)', fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em', cursor: isLoading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
               SPEAK
             </button>
           </div>
