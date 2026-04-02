@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import HubOverlay from './HubOverlay';
 import MerchOverlay from './MerchOverlay';
+import SalonOnboarding from './SalonOnboarding';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getMemberSession, clearWalletCookie } from '@/lib/auth/getSession';
@@ -74,6 +75,7 @@ export default function SalonPage() {
   const [member,          setMember]          = useState<Member | null>(null);
   const [isLoading,       setIsLoading]       = useState(false);
   const [authReady,       setAuthReady]       = useState(false);
+  const [showOnboarding,  setShowOnboarding]  = useState(false);
 
   // ── Nav overlays ────────────────────────────────────────────
   const [showThinkers,  setShowThinkers]  = useState(false);
@@ -130,6 +132,13 @@ export default function SalonPage() {
   }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // ── First-visit onboarding detection ─────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const done = localStorage.getItem('soe_onboarding_complete');
+    if (!done) setShowOnboarding(true);
+  }, []);
 
   // ── Load wallet NFTs ──────────────────────────────────────────
   const loadNFTs = useCallback(async () => {
@@ -361,6 +370,12 @@ export default function SalonPage() {
     setShowMerch(false);
   }
 
+  function handleOnboardingSelect(thinkerId: string) {
+    setShowOnboarding(false);
+    const match = THINKERS.find(t => t.id === thinkerId);
+    if (match) setSelectedThinker(match);
+  }
+
   // ── Loading guard ─────────────────────────────────────────────
   if (!authReady) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-void)' }}>
@@ -373,6 +388,12 @@ export default function SalonPage() {
   // ── Render ────────────────────────────────────────────────────
   return (
     <>
+    {showOnboarding && (
+      <SalonOnboarding
+        onSelectThinker={handleOnboardingSelect}
+        memberName={member?.display_name}
+      />
+    )}
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-void)', overflow: 'hidden' }}>
 
       {/* ════ TOPBAR ════ */}
