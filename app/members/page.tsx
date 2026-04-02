@@ -54,7 +54,10 @@ export default function MembersPage() {
   const [messages, setMessages] = useState<DM[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [view, setView] = useState<'directory' | 'chat' | 'match'>('directory')
+  const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile'>('directory')
+  const [profileDraft, setProfileDraft] = useState({ bio: '', discipline: '', skills: '', project_description: '', seeking: '', philosophy: '' })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
   const [matchQuery, setMatchQuery] = useState('')
   const [matchResult, setMatchResult] = useState('')
   const [matchLoading, setMatchLoading] = useState(false)
@@ -71,6 +74,15 @@ export default function MembersPage() {
     getMemberSession().then(session => {
       if (!session) { router.push('/'); return }
       setCurrentMember(session.member)
+      const m = session.member as any
+      setProfileDraft({
+        bio: m.bio || '',
+        discipline: m.discipline || '',
+        skills: Array.isArray(m.skills) ? m.skills.join(', ') : (m.skills || ''),
+        project_description: m.project_description || '',
+        seeking: m.seeking || '',
+        philosophy: m.philosophy || '',
+      })
     })
     supabase.from('members').select('*').order('exp_tokens', { ascending: false })
       .then(({ data }) => { if (data) setMembers(data) })
@@ -196,11 +208,32 @@ export default function MembersPage() {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: matchQuery, memberProfiles, seekerName: currentMember?.display_name, walletMemberId: currentMember?.id })
+      body: JSON.stringify({ query: matchQuery, memberProfiles, seekerName: currentMember?.display_name, walletMemberId: currentMember?.id, seekerProfile: currentMember })
     })
     const data = await res.json()
     setMatchResult(data.result || 'No matches found.')
     setMatchLoading(false)
+  }
+
+  async function saveProfile() {
+    if (!currentMember) return
+    setProfileSaving(true)
+    const skillsArr = profileDraft.skills.split(',').map(s => s.trim()).filter(Boolean)
+    const { error } = await supabase.from('members').update({
+      bio: profileDraft.bio || null,
+      discipline: profileDraft.discipline || null,
+      skills: skillsArr.length ? skillsArr : null,
+      project_description: profileDraft.project_description || null,
+      seeking: profileDraft.seeking || null,
+      philosophy: profileDraft.philosophy || null,
+    }).eq('id', currentMember.id)
+    if (!error) {
+      setProfileSaved(true)
+      setTimeout(() => setProfileSaved(false), 2000)
+      const { data } = await supabase.from('members').select('*').eq('id', currentMember.id).single()
+      if (data) setCurrentMember(data as any)
+    }
+    setProfileSaving(false)
   }
 
   function openChat(member: Member) {
@@ -221,7 +254,7 @@ export default function MembersPage() {
       <div style={{ height: '52px', background: bgCard, borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.25em', color: gold }}>SOCIETY OF EXPLORERS</div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {(['directory', 'chat', 'match'] as const).map(v => (
+          {(['directory', 'chat', 'match', 'profile'] as const).map(v => (
             <button key={v} onClick={() => setView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
               {v === 'chat' && unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#c05050', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif' }}>{unreadCount}</span>
@@ -438,6 +471,46 @@ export default function MembersPage() {
                   <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: ivory, lineHeight: 1.9 }}>{matchResult}</div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+      {/* PROFILE VIEW */}
+        {view === 'profile' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '3rem 2rem' }}>
+            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '1rem' }}>YOUR IDENTITY</div>
+              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', color: gold, marginBottom: '0.5rem' }}>EDIT YOUR PROFILE</h2>
+              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem', color: muted, fontStyle: 'italic', lineHeight: 1.7, marginBottom: '2.5rem' }}>
+                Your profile is only visible to the Oracle and to other members. The more you reveal, the more profound the connections the Oracle can find.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {[
+                  { key: 'discipline', label: 'YOUR FIELD', placeholder: 'e.g. Blockchain architect, philosopher, builder, artist...' },
+                  { key: 'bio', label: 'WHO YOU ARE', placeholder: 'A few sentences about yourself — what drives you, what you believe, where you came from...' },
+                  { key: 'project_description', label: 'WHAT YOU ARE BUILDING', placeholder: 'Describe your current project or mission...' },
+                  { key: 'seeking', label: 'WHAT YOU SEEK', placeholder: 'What kind of collaborator, conversation, or connection are you looking for?' },
+                  { key: 'philosophy', label: 'YOUR PHILOSOPHY', placeholder: 'What do you believe about existence, technology, beauty, truth? What books changed you? What questions haunt you?' },
+                  { key: 'skills', label: 'YOUR SKILLS', placeholder: 'Comma-separated: e.g. Solidity, product design, Heidegger, go-to-market, writing...' },
+                ].map(field => (
+                  <div key={field.key}>
+                    <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>{field.label}</label>
+                    <textarea
+                      value={(profileDraft as any)[field.key]}
+                      onChange={e => setProfileDraft(d => ({ ...d, [field.key]: e.target.value }))}
+                      rows={field.key === 'philosophy' ? 4 : 2}
+                      placeholder={field.placeholder}
+                      style={{ width: '100%', background: bgCard, border: '1px solid ' + goldBorder, padding: '0.9rem 1rem', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box' }}
+                    />
+                  </div>
+                ))}
+                <button
+                  onClick={saveProfile}
+                  disabled={profileSaving}
+                  style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em', color: '#000', background: profileSaved ? '#4a7a4a' : (profileSaving ? gold + '88' : gold), border: 'none', padding: '1rem 2rem', cursor: profileSaving ? 'not-allowed' : 'pointer', alignSelf: 'flex-start' }}
+                >
+                  {profileSaved ? '✓ SAVED' : profileSaving ? 'SAVING...' : 'SAVE PROFILE'}
+                </button>
+              </div>
             </div>
           </div>
         )}
