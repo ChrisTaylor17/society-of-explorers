@@ -196,7 +196,7 @@ export default function MembersPage() {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: matchQuery, memberProfiles, seekerName: currentMember?.display_name })
+      body: JSON.stringify({ query: matchQuery, memberProfiles, seekerName: currentMember?.display_name, walletMemberId: currentMember?.id })
     })
     const data = await res.json()
     setMatchResult(data.result || 'No matches found.')
