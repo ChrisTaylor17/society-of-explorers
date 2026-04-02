@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Society of Explorers <notifications@societyofexplorers.com>',
+        from: 'Society of Explorers <onboarding@resend.dev>',
         to: email,
         subject: `${senderName} sent you a message`,
         html: `
