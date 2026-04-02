@@ -362,12 +362,11 @@ export default function SalonPage() {
       }
     } catch {}
 
-    // Auto-TTS in voice mode — speak the response, then re-open mic
+    // Auto-TTS in voice mode — speak the response (user presses mic when ready)
     if (voiceMode && responseFullText) {
       const cleanResponse = responseFullText.split('|||ACTIONS|||')[0].trim();
       if (cleanResponse) {
         speakText(cleanResponse, selectedThinker.id)
-          .then(() => { if (voiceMode) setTimeout(() => handleMicPress(), 300); })
           .catch(err => console.error('Auto-TTS failed:', err));
       }
     }
