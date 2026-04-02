@@ -4,6 +4,8 @@ import HubOverlay from './HubOverlay';
 import MerchOverlay from './MerchOverlay';
 import SalonOnboarding from './SalonOnboarding';
 import { renderMarkdown } from '@/lib/renderMarkdown';
+import { speakText, stopSpeaking } from '@/lib/tts';
+import { initAudioUnlock } from '@/lib/audioUnlock';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getMemberSession, clearWalletCookie } from '@/lib/auth/getSession';
@@ -167,9 +169,10 @@ export default function SalonPage() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  // ── Speech recognition init ──────────────────────────────────
+  // ── Speech recognition + audio unlock init ───────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    initAudioUnlock();
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SR) {
       const rec = new SR();
@@ -330,21 +333,9 @@ export default function SalonPage() {
 
     // Auto-TTS in voice mode
     if (voiceMode && responseFullText) {
-      try {
-        const ttsRes = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: responseFullText, thinkerId: selectedThinker.id }),
-        });
-        if (ttsRes.ok) {
-          const blob = await ttsRes.blob();
-          const audio = new Audio(URL.createObjectURL(blob));
-          audio.onended = () => {
-            if (voiceMode) setTimeout(() => startListening(), 300);
-          };
-          audio.play();
-        }
-      } catch {}
+      speakText(responseFullText, selectedThinker.id)
+        .then(() => { if (voiceMode) setTimeout(() => startListening(), 300); })
+        .catch(() => {});
     }
 
     if (member) {
@@ -592,6 +583,7 @@ export default function SalonPage() {
                     { label: 'TRANSPARENCY', action: () => router.push('/transparency') },
                     { label: 'TRIBEKEY',  action: () => router.push('/tribekey') },
                     { label: 'BOOK',      action: () => router.push('/book') },
+                    { label: 'HALL',      action: () => router.push('/hall') },
                   ]).map(item => (
                     <button key={item.label} onClick={() => { item.action(); setShowMoreNav(false); }} style={{
                       display: 'block', width: '100%', textAlign: 'left',
@@ -893,20 +885,7 @@ export default function SalonPage() {
                           ⬡ Run Ritual with {msg.sender_name}
                         </button>
                         <button
-                          onClick={async () => {
-                            try {
-                              const res = await fetch('/api/tts', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ text: msg.content, thinkerId: msg.thinker_id }),
-                              });
-                              if (res.ok) {
-                                const blob = await res.blob();
-                                const audio = new Audio(URL.createObjectURL(blob));
-                                audio.play();
-                              }
-                            } catch {}
-                          }}
+                          onClick={() => speakText(msg.content, msg.thinker_id || 'socrates').catch(() => {})}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', padding: '0', opacity: 0.5 }}
                         >
                           ⬡ LISTEN
@@ -953,7 +932,12 @@ export default function SalonPage() {
               {privateMode ? '⬡ PRIVATE SESSION' : '⬡ GENERAL SALON'}
             </button>
             <button
-              onClick={() => setVoiceMode(!voiceMode)}
+              onClick={() => {
+                if (!voiceMode) {
+                  try { const s = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='); s.volume = 0; s.play().catch(() => {}); } catch {}
+                } else { stopSpeaking(); }
+                setVoiceMode(!voiceMode);
+              }}
               style={{
                 fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em',
                 color: voiceMode ? '#c9a84c' : '#5a5040',

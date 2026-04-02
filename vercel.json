@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/ritual-drops",
+      "schedule": "0 7 * * *"
+    }
+  ]
+}
