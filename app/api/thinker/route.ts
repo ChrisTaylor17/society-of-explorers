@@ -1,11 +1,8 @@
-// app/api/thinker/route.ts
-// Society of Explorers — Thinker API
-// SSE streaming, Supabase + wallet auth, member profile injection, EXP rewards
-
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
+import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -21,7 +18,6 @@ const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
 const HISTORY_LIMIT = 14;
 
-// Keywords that signal the member wants a produced artifact (draft, plan, etc.)
 const ARTIFACT_KEYWORDS = ['draft', 'write', 'plan', 'outline', 'create', 'build', 'design', 'manifesto', 'pitch', 'letter', 'framework', 'strategy', 'proposal'];
 
 function isArtifactRequest(message: string): boolean {
@@ -29,7 +25,6 @@ function isArtifactRequest(message: string): boolean {
   return ARTIFACT_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-// Build a context string from member profile data
 function buildMemberContext(m: any): string {
   const name = m.display_name && !m.display_name.startsWith('0x')
     ? m.display_name
@@ -96,7 +91,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Wallet fallback — same full profile fetch
     if (!memberId && walletMemberId) {
       const { data: member } = await supabaseAdmin
         .from('members')
@@ -135,7 +129,6 @@ export async function POST(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(HISTORY_LIMIT);
 
-    // Include thinker identity so thinkers know who said what
     const conversationHistory = (history || [])
       .reverse()
       .map((msg) => ({
@@ -145,25 +138,30 @@ export async function POST(req: NextRequest) {
           : msg.content,
       }));
 
+    // --- FETCH THINKER MEMORY ---
+    const memory = await getMemory(memberId, thinkerId);
+
     // --- BUILD SYSTEM PROMPT ---
     const systemPrompt = buildSystemPrompt(thinkerId);
 
-    // Determine max tokens: artifact requests get more room
     let maxTokens = isReaction ? REACTION_MAX_TOKENS : DIRECT_MAX_TOKENS;
     if (!isReaction && isArtifactRequest(message)) {
       maxTokens = ARTIFACT_MAX_TOKENS;
     }
 
-    // Build context with member profile
     const contextPrefix = memberContext
       ? memberContext
       : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
 
-    const fullSystemPrompt = `${systemPrompt}\n\n${contextPrefix}${
-      isReaction
-        ? '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.'
-        : ''
-    }`;
+    let fullSystemPrompt = `${systemPrompt}\n\n${contextPrefix}`;
+
+    if (memory) {
+      fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference past conversations when relevant — "Last time we talked about X" or "You mentioned Y before." Don't announce that you have memory. Just know what you know, the way a trusted advisor remembers.`;
+    }
+
+    if (isReaction) {
+      fullSystemPrompt += '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.';
+    }
 
     // --- STREAM RESPONSE ---
     const encoder = new TextEncoder();
@@ -216,7 +214,6 @@ export async function POST(req: NextRequest) {
               : `Conversation with ${thinkerId}`,
           });
 
-          // Try RPC first, fallback to manual increment
           const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
             member_id_input: memberId,
             amount_input: expAmount,
@@ -227,6 +224,14 @@ export async function POST(req: NextRequest) {
               .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
               .eq('id', memberId);
           }
+
+          // --- UPDATE THINKER MEMORY (fire-and-forget) ---
+          const thinkerNames: Record<string, string> = {
+            socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
+            aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
+          };
+          recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
+            .catch(err => console.error('Memory update failed:', err));
 
           const doneData = JSON.stringify({
             done: true,
