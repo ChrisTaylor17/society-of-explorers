@@ -45,6 +45,7 @@ const NFT_MINT_PRICE = 10; // $SOE
 interface Message {
   id?: string;
   created_at: string;
+  salon_id?: string;
   sender_type: 'member' | 'thinker' | 'system';
   sender_name: string;
   thinker_id?: string;
@@ -77,6 +78,7 @@ export default function SalonPage() {
   const [authReady,       setAuthReady]       = useState(false);
   const [showOnboarding,  setShowOnboarding]  = useState(false);
   const [showMoreNav,     setShowMoreNav]     = useState(false);
+  const [privateMode,     setPrivateMode]     = useState(false);
 
   // ── Nav overlays ────────────────────────────────────────────
   const [showThinkers,  setShowThinkers]  = useState(false);
@@ -116,21 +118,36 @@ export default function SalonPage() {
   }, []);
 
   // ── Messages ─────────────────────────────────────────────────
+  const currentSalonId = privateMode ? `private-${member?.id}` : 'general';
+
   async function loadMessages() {
-    const { data } = await supabase.from('salon_messages').select('*')
+    const sid = privateMode ? `private-${member?.id}` : 'general';
+    let query = supabase.from('salon_messages').select('*')
       .order('created_at', { ascending: true }).limit(60);
+    if (sid !== 'general') {
+      query = query.eq('salon_id', sid);
+    } else {
+      query = query.or('salon_id.eq.general,salon_id.is.null');
+    }
+    const { data } = await query;
     if (data) setMessages(data);
   }
 
-  useEffect(() => { loadMessages(); }, []);
+  useEffect(() => { loadMessages(); }, [privateMode, member?.id]);
 
   useEffect(() => {
-    const ch = supabase.channel('salon')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'salon_messages' },
-        p => setMessages(prev => [...prev, p.new as Message]))
+    const sid = privateMode ? `private-${member?.id}` : 'general';
+    const ch = supabase.channel(`salon-${sid}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'salon_messages',
+        filter: sid !== 'general' ? `salon_id=eq.${sid}` : undefined },
+        p => {
+          const msg = p.new as Message;
+          if (sid === 'general' && msg.salon_id && msg.salon_id !== 'general') return;
+          setMessages(prev => [...prev, msg]);
+        })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [privateMode, member?.id]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -199,6 +216,7 @@ export default function SalonPage() {
     setIsLoading(true);
 
     await supabase.from('salon_messages').insert({
+      salon_id: currentSalonId,
       sender_type: 'member',
       sender_name: member?.display_name || 'You',
       content: text,
@@ -219,6 +237,7 @@ export default function SalonPage() {
           thinkerId: selectedThinker.id, message: text,
           history: messages.slice(-12), isReaction: false,
           walletMemberId: member?.id,
+          salonId: currentSalonId,
         }),
       });
       const reader = res.body!.getReader();
@@ -273,6 +292,7 @@ export default function SalonPage() {
         args: [BigInt(ritual.id)],
       });
       const systemMsg = {
+        salon_id: currentSalonId,
         sender_type: 'system' as const,
         sender_name: 'system',
         content: `🪄 ${ritual.thinker} Ritual activated for ${ritual.price} $SOE`,
@@ -330,6 +350,7 @@ export default function SalonPage() {
 
       setMintTx({ status: 'success' });
       const systemMsg = {
+        salon_id: currentSalonId,
         sender_type: 'system' as const,
         sender_name: 'system',
         content: `✦ ${member?.display_name || 'An Explorer'} minted a Society Artifact — a new relic enters the collection.`,
@@ -691,6 +712,13 @@ export default function SalonPage() {
           </div>
         </div>
 
+        {/* Private mode indicator */}
+        {privateMode && (
+          <div style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.2em', color: '#c9a84c', opacity: 0.4, textAlign: 'center', padding: '0.5rem', borderBottom: '1px solid rgba(201,168,76,0.1)', flexShrink: 0 }}>
+            PRIVATE SESSION · ONLY YOU AND THE THINKERS
+          </div>
+        )}
+
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-deep)' }}>
           {messages.length === 0 && (
@@ -749,6 +777,20 @@ export default function SalonPage() {
 
         {/* ════ INPUT ════ */}
         <div style={{ paddingTop: '12px', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '16px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'linear-gradient(0deg,#070600,var(--bg-deep))' }}>
+          <div style={{ marginBottom: '8px' }}>
+            <button
+              onClick={() => setPrivateMode(!privateMode)}
+              style={{
+                fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em',
+                color: privateMode ? '#c9a84c' : '#5a5040',
+                background: privateMode ? 'rgba(201,168,76,0.08)' : 'transparent',
+                border: `1px solid ${privateMode ? 'rgba(201,168,76,0.3)' : 'rgba(201,168,76,0.1)'}`,
+                padding: '0.4rem 0.8rem', cursor: 'pointer', transition: 'all 0.3s ease',
+              }}
+            >
+              {privateMode ? '⬡ PRIVATE SESSION' : '⬡ GENERAL SALON'}
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
             <textarea
               value={input}
