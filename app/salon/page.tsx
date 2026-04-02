@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import HubOverlay from './HubOverlay';
 import MerchOverlay from './MerchOverlay';
 import SalonOnboarding from './SalonOnboarding';
+import { renderMarkdown } from '@/lib/renderMarkdown';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getMemberSession, clearWalletCookie } from '@/lib/auth/getSession';
@@ -592,8 +593,8 @@ export default function SalonPage() {
                   ⬡ {ritualArtifact.title.toUpperCase()}
                 </div>
               )}
-              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: '#d4c9a8', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                {ritualStream}
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: '#d4c9a8', lineHeight: 1.8 }}>
+                <div dangerouslySetInnerHTML={{ __html: renderMarkdown(ritualStream) }} />
                 {!ritualArtifact && ritualStream && <span style={{ color: '#c9a84c' }}>▍</span>}
               </div>
               {ritualArtifact && (
@@ -803,7 +804,9 @@ export default function SalonPage() {
                       {msg.sender_name}
                     </div>
                     <div style={{ background: msg.sender_type === 'member' ? 'linear-gradient(135deg,#1a2030,#12182a)' : 'var(--bg-elevated)', border: `1px solid ${msg.sender_type === 'member' ? 'rgba(80,120,180,0.25)' : 'var(--border)'}`, borderRadius: msg.sender_type === 'member' ? '12px 2px 12px 12px' : '2px 12px 12px 12px', padding: '10px 14px', fontSize: '15px', lineHeight: 1.65, color: msg.sender_type === 'member' ? '#c8d8f0' : 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
-                      {msg.content}
+                      {msg.sender_type === 'thinker'
+                        ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                        : msg.content}
                     </div>
                     {msg.sender_type === 'thinker' && msg.content && (
                       <button onClick={() => { setShowMarket(true); setRitualTx({ status: 'idle' }); setShowArtifacts(false); }} style={{ marginTop: '5px', background: 'none', border: 'none', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', cursor: 'pointer', padding: '0', opacity: 0.7 }}>

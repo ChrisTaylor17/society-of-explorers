@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { renderMarkdown } from '@/lib/renderMarkdown';
 import { createClient } from '@/lib/supabase/client';
 
 interface HubTask {
@@ -288,8 +289,8 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
                       <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: muted, fontStyle: 'italic' }}>speaks</div>
                     </div>
                   </div>
-                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: ivory, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>
-                    {response}
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: ivory, lineHeight: 1.9 }}>
+                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(response) }} />
                     {askLoading && <span style={{ color: gold }}>▍</span>}
                   </div>
                   <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: `1px solid ${goldBorder}` }}>
