@@ -141,8 +141,10 @@ export default function SalonPage() {
     } else {
       query = query.or('salon_id.eq.general,salon_id.is.null');
     }
-    const { data } = await query;
+    const { data, error: loadError } = await query;
+    if (loadError) console.error('loadMessages error:', loadError);
     if (data) {
+      console.log('loadMessages:', data.length, 'messages loaded, types:', [...new Set(data.map((m: any) => m.sender_type))]);
       // Normalize: old messages may have message_type but not sender_type
       const normalized = data.map((m: any) => ({
         ...m,

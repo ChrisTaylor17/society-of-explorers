@@ -114,20 +114,20 @@ export async function POST(req: NextRequest) {
     }
 
     // --- SAVE USER MESSAGE ---
-    await supabaseAdmin.from('salon_messages').insert({
+    // Save user message — use same columns as /api/salon-message (which works)
+    const { error: userMsgError } = await supabaseAdmin.from('salon_messages').insert({
       salon_id: salonId,
-      member_id: memberId,
-      thinker_id: null,
-      content: message,
-      message_type: 'user',
       sender_type: 'member',
       sender_name: memberName || 'Explorer',
+      thinker_id: null,
+      content: message,
     });
+    if (userMsgError) console.error('USER MSG SAVE FAILED:', userMsgError);
 
     // --- FETCH MESSAGE HISTORY ---
     const { data: history } = await supabaseAdmin
       .from('salon_messages')
-      .select('content, message_type, thinker_id, member_id')
+      .select('content, sender_type, thinker_id')
       .eq('salon_id', salonId)
       .order('created_at', { ascending: false })
       .limit(HISTORY_LIMIT);
@@ -135,8 +135,8 @@ export async function POST(req: NextRequest) {
     const conversationHistory = (history || [])
       .reverse()
       .map((msg) => ({
-        role: msg.message_type === 'user' ? 'user' as const : 'assistant' as const,
-        content: msg.thinker_id && msg.message_type === 'thinker'
+        role: msg.sender_type === 'member' ? 'user' as const : 'assistant' as const,
+        content: msg.thinker_id && msg.sender_type === 'thinker'
           ? `[${msg.thinker_id}]: ${msg.content}`
           : msg.content,
       }));
@@ -206,15 +206,15 @@ export async function POST(req: NextRequest) {
             socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
             aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
           };
-          await supabaseAdmin.from('salon_messages').insert({
+          const { error: saveError } = await supabaseAdmin.from('salon_messages').insert({
             salon_id: salonId,
-            member_id: null,
-            thinker_id: thinkerId,
-            content: cleanText,
-            message_type: 'thinker',
             sender_type: 'thinker',
             sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
+            thinker_id: thinkerId,
+            content: cleanText,
           });
+          if (saveError) console.error('THINKER SAVE FAILED:', saveError);
+          else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
 
           // --- EXECUTE ACTIONS ---
           for (const action of actions) {
