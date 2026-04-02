@@ -219,6 +219,17 @@ export default function SalonPage() {
     setInput('');
     setIsLoading(true);
 
+    // Optimistically add member message to state
+    const memberMsg: Message = {
+      id: `member-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      salon_id: currentSalonId,
+      sender_type: 'member',
+      sender_name: member?.display_name || 'You',
+      content: text,
+    };
+    setMessages(prev => [...prev, memberMsg]);
+
     await supabase.from('salon_messages').insert({
       salon_id: currentSalonId,
       sender_type: 'member',
