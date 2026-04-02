@@ -76,6 +76,7 @@ export default function SalonPage() {
   const [isLoading,       setIsLoading]       = useState(false);
   const [authReady,       setAuthReady]       = useState(false);
   const [showOnboarding,  setShowOnboarding]  = useState(false);
+  const [showMoreNav,     setShowMoreNav]     = useState(false);
 
   // ── Nav overlays ────────────────────────────────────────────
   const [showThinkers,  setShowThinkers]  = useState(false);
@@ -411,17 +412,9 @@ export default function SalonPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {([
             { label: 'MINDS',     action: () => { closeAllOverlays(); setShowThinkers(v => !v); }, active: showThinkers },
-            { label: 'MARKET',    action: () => { closeAllOverlays(); setShowMarket(v => !v); setRitualTx({ status: 'idle' }); }, active: showMarket },
-            { label: 'ARTIFACTS', action: () => { closeAllOverlays(); setShowArtifacts(v => !v); setMintTx({ status: 'idle' }); }, active: showArtifacts },
             { label: 'HUB',       action: () => { closeAllOverlays(); setShowHub(v => !v); },   active: showHub },
-            { label: 'MERCH',     action: () => { closeAllOverlays(); setShowMerch(v => !v); }, active: showMerch },
             { label: 'MEMBERS',   action: () => router.push('/members'), active: false },
-            { label: 'TOKENS',       action: () => router.push('/tokens'),       active: false },
-            { label: 'TRANSPARENCY', action: () => router.push('/transparency'), active: false },
-            { label: 'TRIBEKEY',  action: () => router.push('/tribekey'), active: false },
-            { label: 'BOOK',      action: () => router.push('/book'),    active: false },
             { label: 'LABYRINTH', action: () => router.push('/labyrinth'), active: false },
-            { label: 'LEAVE',     action: signOut,                       active: false },
           ] as const).map(btn => (
             <button key={btn.label} onClick={btn.action} style={{
               background: btn.active ? 'var(--glow)' : 'none',
@@ -431,7 +424,54 @@ export default function SalonPage() {
               padding: '3px 8px', cursor: 'pointer', borderRadius: '2px',
             }}>{btn.label}</button>
           ))}
+          {/* ⬡ More menu */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowMoreNav(v => !v)}
+              style={{
+                background: showMoreNav ? 'var(--glow)' : 'none',
+                border: `1px solid ${showMoreNav ? 'var(--gold)' : 'var(--border)'}`,
+                color: showMoreNav ? 'var(--gold)' : 'var(--gold-dim)',
+                fontSize: '12px', fontFamily: 'Cinzel,serif',
+                padding: '2px 8px', cursor: 'pointer', borderRadius: '2px',
+              }}
+            >⬡</button>
+            {showMoreNav && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setShowMoreNav(false)} />
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: '6px',
+                  background: '#0a0a0a', border: '1px solid rgba(201,168,76,0.2)',
+                  zIndex: 50, minWidth: '160px', padding: '4px 0',
+                }}>
+                  {([
+                    { label: 'MARKET',    action: () => { closeAllOverlays(); setShowMarket(v => !v); setRitualTx({ status: 'idle' }); } },
+                    { label: 'ARTIFACTS', action: () => { closeAllOverlays(); setShowArtifacts(v => !v); setMintTx({ status: 'idle' }); } },
+                    { label: 'MERCH',     action: () => { closeAllOverlays(); setShowMerch(v => !v); } },
+                    { label: 'TOKENS',    action: () => router.push('/tokens') },
+                    { label: 'TRANSPARENCY', action: () => router.push('/transparency') },
+                    { label: 'TRIBEKEY',  action: () => router.push('/tribekey') },
+                    { label: 'BOOK',      action: () => router.push('/book') },
+                  ]).map(item => (
+                    <button key={item.label} onClick={() => { item.action(); setShowMoreNav(false); }} style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      background: 'none', border: 'none', borderBottom: '1px solid rgba(201,168,76,0.08)',
+                      color: 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '8px',
+                      letterSpacing: '0.15em', padding: '10px 16px', cursor: 'pointer',
+                    }}>{item.label}</button>
+                  ))}
+                  <div style={{ height: '1px', background: 'rgba(201,168,76,0.15)', margin: '2px 0' }} />
+                  <button onClick={() => { signOut(); setShowMoreNav(false); }} style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    background: 'none', border: 'none',
+                    color: '#7a4040', fontFamily: 'Cinzel,serif', fontSize: '8px',
+                    letterSpacing: '0.15em', padding: '10px 16px', cursor: 'pointer',
+                  }}>LEAVE</button>
+                </div>
+              </>
+            )}
         </div>
+      </div>
       </div>
 
       {/* ════ THINKER DROPDOWN ════ */}
