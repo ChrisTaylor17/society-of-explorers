@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getThinkerProfile } from '@/lib/claude/thinkers';
+
+const DEFAULT_VOICE = 'pNInz6obpgDQGcFmaJgB';
 
 export async function POST(req: NextRequest) {
   try {
@@ -6,17 +9,9 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'TTS not configured' }, { status: 503 });
 
-    // Support both voiceId directly and thinkerId lookup
-    const VOICE_MAP: Record<string, string> = {
-      socrates: 'pNInz6obpgDQGcFmaJgB',
-      plato: 'ErXwobaYiN019PkySvjV',
-      nietzsche: 'VR6AewLTigWG4xSOukaG',
-      aurelius: 'pqHfZKP75CvOlQylNhV4',
-      einstein: 'SOYHLrjzK2X1ezoPC6cr',
-      jobs: 'g5CIjZEefAph4nQFvHAz',
-    };
-
-    const resolvedVoiceId = voiceId || VOICE_MAP[thinkerId] || 'pNInz6obpgDQGcFmaJgB';
+    // Resolve voice: explicit voiceId > profile lookup > default
+    const profile = thinkerId ? getThinkerProfile(thinkerId) : null;
+    const resolvedVoiceId = voiceId || profile?.voiceId || DEFAULT_VOICE;
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${resolvedVoiceId}`,

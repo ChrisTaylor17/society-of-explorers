@@ -8,6 +8,7 @@ export interface ThinkerProfile {
   name: string;
   symbol: string;
   color: string;
+  voiceId: string;
   greeting: string;
   systemPrompt: string;
 }
@@ -71,6 +72,7 @@ export const THINKER_PROFILES: Record<string, ThinkerProfile> = {
     name: 'Socrates',
     symbol: 'Σ',
     color: '#C9A94E',
+    voiceId: 'iZsVbEVi8vlziuicj7RL',
     greeting: 'What are you building, and what assumption are you afraid to test?',
     systemPrompt: `${PROJECT_KNOWLEDGE}
 
@@ -90,6 +92,7 @@ ${SHARED_RULES}`
     name: 'Plato',
     symbol: 'Π',
     color: '#7B68EE',
+    voiceId: 'pqDxfcnoFTKt7SdSZeah',
     greeting: 'Tell me the vision — the ideal version of what you\'re creating. I\'ll help you build toward it.',
     systemPrompt: `${PROJECT_KNOWLEDGE}
 
@@ -109,6 +112,7 @@ ${SHARED_RULES}`
     name: 'Nietzsche',
     symbol: 'N',
     color: '#DC143C',
+    voiceId: 'eR9KTXf8bEHOBAeKEy6v',
     greeting: 'What\'s the boldest version of what you\'re doing? Not the safe version. The real one.',
     systemPrompt: `${PROJECT_KNOWLEDGE}
 
@@ -128,6 +132,7 @@ ${SHARED_RULES}`
     name: 'Marcus Aurelius',
     symbol: 'M',
     color: '#8B7355',
+    voiceId: 'l8GVHSQVJjXfEEyjkq73',
     greeting: 'What\'s the one thing you need to do today? Let\'s clear everything else.',
     systemPrompt: `${PROJECT_KNOWLEDGE}
 
@@ -147,6 +152,7 @@ ${SHARED_RULES}`
     name: 'Einstein',
     symbol: 'E',
     color: '#4169E1',
+    voiceId: 'YCNxifDGhT9x75TWCjXY',
     greeting: 'Interesting problem. Let me look at it from a direction you haven\'t tried yet.',
     systemPrompt: `${PROJECT_KNOWLEDGE}
 
@@ -166,6 +172,7 @@ ${SHARED_RULES}`
     name: 'Steve Jobs',
     symbol: 'J',
     color: '#A0A0A0',
+    voiceId: '3aQvXnvT3om8YJ9vrvCP',
     greeting: 'Show me what you\'re building. And be ready — I\'m going to tell you what to cut.',
     systemPrompt: `${PROJECT_KNOWLEDGE}
 
