@@ -286,11 +286,15 @@ export default function SalonPage() {
     };
     setMessages(prev => [...prev, memberMsg]);
 
-    await supabase.from('salon_messages').insert({
-      salon_id: currentSalonId,
-      sender_type: 'member',
-      sender_name: member?.display_name || 'You',
-      content: text,
+    await fetch('/api/salon-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        salon_id: currentSalonId,
+        sender_type: 'member',
+        sender_name: member?.display_name || 'You',
+        content: text,
+      }),
     });
 
     const streamId = `streaming-${Date.now()}`;
@@ -432,7 +436,11 @@ export default function SalonPage() {
         content: `🪄 ${ritual.thinker} Ritual activated for ${ritual.price} $SOE`,
         created_at: new Date().toISOString(),
       };
-      await supabase.from('salon_messages').insert(systemMsg);
+      await fetch('/api/salon-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(systemMsg),
+      });
       setMessages(prev => [...prev, { ...systemMsg, id: `ritual-${Date.now()}` }]);
       setRitualTx({ status: 'success', ritualId: ritual.id });
       runRitualExperience(ritual.id);
@@ -491,7 +499,11 @@ export default function SalonPage() {
         content: `✦ ${member?.display_name || 'An Explorer'} minted a Society Artifact — a new relic enters the collection.`,
         created_at: new Date().toISOString(),
       };
-      await supabase.from('salon_messages').insert(systemMsg);
+      await fetch('/api/salon-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(systemMsg),
+      });
       await loadNFTs();
     } catch (err: unknown) {
       console.error('Mint error:', err);
@@ -911,7 +923,12 @@ export default function SalonPage() {
                           ⬡ Run Ritual with {msg.sender_name}
                         </button>
                         <button
-                          onClick={() => speakText(msg.content, msg.thinker_id || 'socrates').catch(() => {})}
+                          onClick={() => {
+                            const text = msg.content?.trim();
+                            if (!text) { console.warn('LISTEN: no content'); return; }
+                            speakText(text, msg.thinker_id || 'socrates')
+                              .catch(err => console.error('LISTEN TTS error:', err));
+                          }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', padding: '0', opacity: 0.5 }}
                         >
                           ⬡ LISTEN
