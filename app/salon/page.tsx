@@ -79,6 +79,9 @@ export default function SalonPage() {
   const [showOnboarding,  setShowOnboarding]  = useState(false);
   const [showMoreNav,     setShowMoreNav]     = useState(false);
   const [privateMode,     setPrivateMode]     = useState(false);
+  const [ritualStream,    setRitualStream]    = useState('');
+  const [ritualActive,    setRitualActive]    = useState<string | null>(null);
+  const [ritualArtifact,  setRitualArtifact]  = useState<{title: string, thinker: string} | null>(null);
 
   // ── Nav overlays ────────────────────────────────────────────
   const [showThinkers,  setShowThinkers]  = useState(false);
@@ -273,6 +276,41 @@ export default function SalonPage() {
   }
 
   // ── Run ritual ────────────────────────────────────────────────
+  async function runRitualExperience(ritualId: number) {
+    if (!member?.id) return;
+    setRitualActive(String(ritualId));
+    setRitualStream('');
+    setRitualArtifact(null);
+    try {
+      const res = await fetch('/api/ritual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ritualId, memberId: member.id }),
+      });
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.delta) setRitualStream(prev => prev + data.delta);
+            if (data.done && data.artifact) setRitualArtifact(data.artifact);
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.error('Ritual error:', err);
+      setRitualStream('The ritual could not be completed. Please try again.');
+    }
+  }
+
   async function handleRunRitual(ritual: typeof RITUALS[0]) {
     if (!address) { alert('Connect your wallet first'); return; }
     await switchChainAsync({ chainId: 84532 });
@@ -301,6 +339,7 @@ export default function SalonPage() {
       await supabase.from('salon_messages').insert(systemMsg);
       setMessages(prev => [...prev, { ...systemMsg, id: `ritual-${Date.now()}` }]);
       setRitualTx({ status: 'success', ritualId: ritual.id });
+      runRitualExperience(ritual.id);
       loadMessages();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Transaction failed or rejected';
@@ -545,6 +584,26 @@ export default function SalonPage() {
               );
             })}
           </div>
+          {/* Ritual Result */}
+          {ritualActive && (
+            <div style={{ margin: '0 16px 16px', padding: '24px', background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', flexShrink: 0, maxHeight: '50vh', overflowY: 'auto' }}>
+              {ritualArtifact && (
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.2em', color: '#c9a84c', marginBottom: '16px' }}>
+                  ⬡ {ritualArtifact.title.toUpperCase()}
+                </div>
+              )}
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: '#d4c9a8', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                {ritualStream}
+                {!ritualArtifact && ritualStream && <span style={{ color: '#c9a84c' }}>▍</span>}
+              </div>
+              {ritualArtifact && (
+                <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(201,168,76,0.1)', fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#6a6050' }}>
+                  SAVED TO YOUR ARTIFACTS · {ritualArtifact.thinker.toUpperCase()}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-deep)', flexShrink: 0 }}>
             <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.6 }}>
               All payments settle on-chain. 70% to creators · 2% to the Society. You own your access record forever.
