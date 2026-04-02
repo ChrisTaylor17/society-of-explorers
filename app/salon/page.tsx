@@ -809,9 +809,30 @@ export default function SalonPage() {
                         : msg.content}
                     </div>
                     {msg.sender_type === 'thinker' && msg.content && (
-                      <button onClick={() => { setShowMarket(true); setRitualTx({ status: 'idle' }); setShowArtifacts(false); }} style={{ marginTop: '5px', background: 'none', border: 'none', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', cursor: 'pointer', padding: '0', opacity: 0.7 }}>
-                        ⬡ Run Ritual with {msg.sender_name}
-                      </button>
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '5px' }}>
+                        <button onClick={() => { setShowMarket(true); setRitualTx({ status: 'idle' }); setShowArtifacts(false); }} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', cursor: 'pointer', padding: '0', opacity: 0.7 }}>
+                          ⬡ Run Ritual with {msg.sender_name}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/tts', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ text: msg.content, thinkerId: msg.thinker_id }),
+                              });
+                              if (res.ok) {
+                                const blob = await res.blob();
+                                const audio = new Audio(URL.createObjectURL(blob));
+                                audio.play();
+                              }
+                            } catch {}
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', padding: '0', opacity: 0.5 }}
+                        >
+                          ⬡ LISTEN
+                        </button>
+                      </div>
                     )}
                     <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', fontStyle: 'italic' }}>
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
