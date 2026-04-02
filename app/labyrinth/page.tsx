@@ -238,7 +238,7 @@ export default function Labyrinth() {
           </p>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
             <a href="https://www.amazon.com/Singularity-Near-Humans-Transcend-Biology/dp/0143037889" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>READ: THE SINGULARITY IS NEAR ↗</a>
-            <a href="https://humanityplus.org" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>EXPLORE: HUMANITY+ ↗</a>
+            <a href="https://nickbostrom.com/" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0.6rem 1.2rem', textDecoration: 'none', opacity: 0.8 }}>EXPLORE: NICK BOSTROM ↗</a>
           </div>
         </div>
 
