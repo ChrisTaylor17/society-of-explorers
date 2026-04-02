@@ -1,5 +1,5 @@
 // lib/tts.ts
-// iOS-safe TTS playback via ElevenLabs proxy
+// iOS-safe TTS playback via Web Audio API (bypasses HTMLAudioElement autoplay restrictions)
 
 const VOICE_IDS: Record<string, string> = {
   socrates: 'pNInz6obpgDQGcFmaJgB',
@@ -10,14 +10,21 @@ const VOICE_IDS: Record<string, string> = {
   jobs: 'g5CIjZEefAph4nQFvHAz',
 };
 
-let currentAudio: HTMLAudioElement | null = null;
+// Persistent AudioContext — iOS closes contexts that aren't reused
+let audioCtx: AudioContext | null = null;
+let currentSource: AudioBufferSourceNode | null = null;
+let playing = false;
+
+function getAudioContext(): AudioContext {
+  if (!audioCtx) {
+    const AC = window.AudioContext || (window as any).webkitAudioContext;
+    audioCtx = new AC();
+  }
+  return audioCtx;
+}
 
 export async function speakText(text: string, thinkerId: string): Promise<void> {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.src = '';
-    currentAudio = null;
-  }
+  stopSpeaking();
 
   const voiceId = VOICE_IDS[thinkerId] || VOICE_IDS.socrates;
 
@@ -36,31 +43,37 @@ export async function speakText(text: string, thinkerId: string): Promise<void> 
 
   if (!response.ok) throw new Error('TTS fetch failed');
 
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
+  const arrayBuffer = await response.arrayBuffer();
 
-  const audio = new Audio();
-  audio.preload = 'auto';
-  audio.setAttribute('playsinline', '');
-  audio.setAttribute('webkit-playsinline', '');
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') await ctx.resume();
 
-  currentAudio = audio;
-  audio.src = url;
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  const source = ctx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(ctx.destination);
 
-  return new Promise((resolve, reject) => {
-    audio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(); };
-    audio.onerror = (e) => { URL.revokeObjectURL(url); currentAudio = null; reject(e); };
-    const playPromise = audio.play();
-    if (playPromise) {
-      playPromise.catch(err => { console.warn('Audio play failed (iOS gate):', err); reject(err); });
-    }
+  currentSource = source;
+  playing = true;
+
+  return new Promise((resolve) => {
+    source.onended = () => {
+      currentSource = null;
+      playing = false;
+      resolve();
+    };
+    source.start(0);
   });
 }
 
 export function stopSpeaking() {
-  if (currentAudio) { currentAudio.pause(); currentAudio.src = ''; currentAudio = null; }
+  if (currentSource) {
+    try { currentSource.stop(); } catch {}
+    currentSource = null;
+  }
+  playing = false;
 }
 
 export function isSpeaking(): boolean {
-  return currentAudio !== null && !currentAudio.paused;
+  return playing;
 }

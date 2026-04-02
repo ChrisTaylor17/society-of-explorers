@@ -89,6 +89,7 @@ export default function SalonPage() {
   const [voiceMode,       setVoiceMode]       = useState(false);
   const [isListening,     setIsListening]     = useState(false);
   const [recognition,     setRecognition]     = useState<any>(null);
+  const [interimText,     setInterimText]     = useState('');
 
   // ── Nav overlays ────────────────────────────────────────────
   const [showThinkers,  setShowThinkers]  = useState(false);
@@ -178,7 +179,8 @@ export default function SalonPage() {
     if (SR) {
       const rec = new SR();
       rec.continuous = false;
-      rec.interimResults = false;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
       rec.lang = 'en-US';
       setRecognition(rec);
     }
@@ -245,16 +247,28 @@ export default function SalonPage() {
   function startListening() {
     if (!recognition) return;
     setIsListening(true);
+    setInterimText('');
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      if (transcript.trim()) {
-        setInput(transcript);
-        setTimeout(() => send(transcript), 500);
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final = transcript;
+        } else {
+          interim = transcript;
+        }
       }
-      setIsListening(false);
+      if (interim) setInterimText(interim);
+      if (final.trim()) {
+        setInterimText('');
+        setInput(final);
+        setTimeout(() => send(final), 500);
+        setIsListening(false);
+      }
     };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => { setIsListening(false); setInterimText(''); };
+    recognition.onend = () => { setIsListening(false); setInterimText(''); };
     recognition.start();
   }
 
@@ -935,6 +949,8 @@ export default function SalonPage() {
             <button
               onClick={() => {
                 if (!voiceMode) {
+                  const isMetaMaskBrowser = /MetaMaskMobile/i.test(navigator.userAgent) || (typeof (window as any).ethereum !== 'undefined' && /Mobile/i.test(navigator.userAgent) && !/Safari/i.test(navigator.userAgent));
+                  if (isMetaMaskBrowser) { alert('Voice mode works best in Safari or Chrome. MetaMask browser has limited mic support — open societyofexplorers.com in Safari for full voice.'); return; }
                   try { const s = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='); s.volume = 0; s.play().catch(() => {}); } catch {}
                 } else { stopSpeaking(); }
                 setVoiceMode(!voiceMode);
@@ -954,6 +970,11 @@ export default function SalonPage() {
           {voiceMode && !isListening && !isLoading && (
             <div style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.2em', color: '#c9a84c', opacity: 0.3, textAlign: 'center', padding: '4px' }}>
               TAP MIC OR SPEAK TO BEGIN
+            </div>
+          )}
+          {isListening && interimText && (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--gold-dim)', fontStyle: 'italic', padding: '0 0 6px', opacity: 0.7 }}>
+              👂 {interimText}
             </div>
           )}
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
