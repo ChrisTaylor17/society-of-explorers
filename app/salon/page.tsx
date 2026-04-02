@@ -259,6 +259,8 @@ export default function SalonPage() {
         console.error('Transcription failed:', err);
       }
     } else {
+      // Interrupt any playing TTS first
+      stopSpeaking();
       try {
         await startRecording();
         setIsListening(true);
@@ -360,11 +362,14 @@ export default function SalonPage() {
       }
     } catch {}
 
-    // Auto-TTS in voice mode
+    // Auto-TTS in voice mode — speak the response, then re-open mic
     if (voiceMode && responseFullText) {
-      speakText(responseFullText, selectedThinker.id)
-        .then(() => { if (voiceMode) setTimeout(() => handleMicPress(), 300); })
-        .catch(() => {});
+      const cleanResponse = responseFullText.split('|||ACTIONS|||')[0].trim();
+      if (cleanResponse) {
+        speakText(cleanResponse, selectedThinker.id)
+          .then(() => { if (voiceMode) setTimeout(() => handleMicPress(), 300); })
+          .catch(err => console.error('Auto-TTS failed:', err));
+      }
     }
 
     if (member) {
@@ -925,6 +930,7 @@ export default function SalonPage() {
                         <button
                           onClick={() => {
                             const text = msg.content?.trim();
+                            console.log('LISTEN clicked', { hasContent: !!text, thinkerId: msg.thinker_id, contentLen: text?.length });
                             if (!text) { console.warn('LISTEN: no content'); return; }
                             speakText(text, msg.thinker_id || 'socrates')
                               .catch(err => console.error('LISTEN TTS error:', err));

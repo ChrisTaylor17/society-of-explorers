@@ -42,8 +42,13 @@ function splitIntoChunks(text: string, maxChars = 400): string[] {
 }
 
 export async function speakText(text: string, thinkerId: string): Promise<void> {
+  // Stop any current playback first, then reset the flag
+  if (currentSource) {
+    try { currentSource.stop(); } catch {}
+    currentSource = null;
+  }
   stopRequested = false;
-  stopSpeaking();
+  playing = false;
 
   const cleanText = text
     .replace(/\*\*(.*?)\*\*/g, '$1')
