@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 600,
+    max_tokens: 250,
     messages: [{
       role: 'user',
       content: `You are the Oracle of the Society of Explorers — a philosophical intelligence that finds destiny-level connections between people, not surface-level skill matches.
@@ -69,7 +69,7 @@ Format your response as:
 
 Also: acknowledge that the Oracle grows more powerful as members reveal more of themselves. The depth of connection found equals the depth of truth shared.`}
 
-Be poetic but precise. Speak as an Oracle — ancient, knowing, slightly unsettling in how accurate you are.`
+Maximum 150 words. Be sharp and direct. No purple prose. The Oracle earns its reputation through precision, not performance.`
     }]
   })
 

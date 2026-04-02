@@ -1,102 +1,228 @@
-import Anthropic from '@anthropic-ai/sdk'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { buildSystemPrompt, THINKER_PROFILES } from '@/lib/claude/thinkers'
-import { NextRequest } from 'next/server'
+// app/api/thinker/route.ts
+// Society of Explorers — Thinker API
+// SSE streaming, Supabase + wallet auth, message history, EXP rewards
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import { NextRequest } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
+import { buildSystemPrompt } from '@/lib/claude/thinkers';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const DIRECT_MAX_TOKENS = 400;
+const REACTION_MAX_TOKENS = 80;
+const HISTORY_LIMIT = 14;
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { message, history, isReaction, walletMemberId, maxTokens } = body
-  const thinkerId = body.thinkerId ?? body.thinker
+  try {
+    const body = await req.json();
 
-  const supabase = await createClient()
-  const svc = createServiceClient()
+    const thinkerId = body.thinkerId ?? body.thinker;
+    const message = body.message;
+    const isReaction = body.isReaction ?? false;
+    const walletMemberId = body.walletMemberId;
+    const salonId = body.salonId ?? 'general';
 
-  // Auth: try Supabase session first, then wallet member ID
-  let member = null
-  const { data: { user } } = await supabase.auth.getUser()
+    if (!thinkerId || !message) {
+      return new Response(
+        JSON.stringify({ error: 'thinkerId and message are required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-  if (user) {
-    const { data } = await supabase.from('members')
-      .select('id,display_name,discipline,project_description,exp_tokens')
-      .eq('supabase_auth_id', user.id).single()
-    member = data
-  } else if (walletMemberId) {
-    // Wallet auth — trust the member ID passed from client
-    const { data } = await svc.from('members')
-      .select('id,display_name,discipline,project_description,exp_tokens')
-      .eq('id', walletMemberId).single()
-    member = data
-  }
+    // --- AUTH ---
+    let memberId: string | null = null;
+    let memberName: string | null = null;
 
-  if (!member) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    const authHeader = req.headers.get('authorization');
 
-  const profile = THINKER_PROFILES[thinkerId]
-  if (!profile) return new Response(JSON.stringify({ error: 'Unknown thinker' }), { status: 400 })
-
-  const transcript = (history||[]).slice(-14)
-    .map((m:any) => m.sender_type==='member' ? `[CHRIS]: ${m.content}` : `[${m.sender_name.toUpperCase()}]: ${m.content}`)
-    .join('\n\n')
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const enc = new TextEncoder()
-      let fullText = ''
-
-      try {
-        const anthropicStream = anthropic.messages.stream({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: isReaction ? 80 : (maxTokens ?? 150),
-          system: buildSystemPrompt(thinkerId, member),
-          messages: [{
-            role: 'user',
-            content: isReaction
-              ? `IMPORTANT: Only respond if you have something directly useful to add. One sentence maximum. If not, respond SILENT.\n\n[CONVERSATION]\n${transcript||'Salon opening.'}\n\nYou are ${profile.name}. ONE concrete thing to add that advances the project. 1-2 sentences. If nothing: SILENT`
-              : `[CONVERSATION]\n${transcript||'(Opening)'}\n\n[CHRIS JUST SAID]: "${message}"\n\nYou are ${profile.name}. Respond to his exact words. Apply your specific team role. If he is asking you to write, draft, or create something — produce the COMPLETE artifact right now, do not stop early. Otherwise 1-3 sentences.`
-          }]
-        })
-
-        for await (const event of anthropicStream) {
-          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-            const delta = event.delta.text
-            fullText += delta
-            controller.enqueue(enc.encode(`data: ${JSON.stringify({ delta })}\n\n`))
-          }
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const { createClient: createServerClient } = await import('@supabase/supabase-js');
+      const supabaseAuth = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { headers: { Authorization: `Bearer ${token}` } } }
+      );
+      const { data: { user } } = await supabaseAuth.auth.getUser();
+      if (user) {
+        const { data: member } = await supabaseAdmin
+          .from('members')
+          .select('id, display_name')
+          .eq('supabase_auth_id', user.id)
+          .single();
+        if (member) {
+          memberId = member.id;
+          memberName = member.display_name;
         }
-
-        fullText = fullText.trim()
-
-        if (!fullText || fullText.toUpperCase().startsWith('SILENT')) {
-          controller.enqueue(enc.encode(`data: ${JSON.stringify({ done: true, response: null })}\n\n`))
-          controller.close()
-          return
-        }
-
-        await svc.from('salon_messages').insert({
-          sender_type: 'thinker', sender_name: profile.name, thinker_id: thinkerId, content: fullText
-        })
-
-        if (member?.id) {
-          const exp = isReaction ? 4 : 8
-          await svc.from('exp_events').insert({ member_id: member.id, amount: exp, reason: `${profile.name} responded` })
-          await svc.from('members').update({ exp_tokens: (member.exp_tokens||0) + exp }).eq('id', member.id)
-        }
-
-        controller.enqueue(enc.encode(`data: ${JSON.stringify({ done: true, response: fullText })}\n\n`))
-      } catch (err) {
-        controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`))
       }
-
-      controller.close()
     }
-  })
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+    if (!memberId && walletMemberId) {
+      const { data: member } = await supabaseAdmin
+        .from('members')
+        .select('id, display_name')
+        .eq('id', walletMemberId)
+        .single();
+      if (member) {
+        memberId = member.id;
+        memberName = member.display_name;
+      }
     }
-  })
+
+    if (!memberId) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // --- SAVE USER MESSAGE ---
+    await supabaseAdmin.from('salon_messages').insert({
+      salon_id: salonId,
+      member_id: memberId,
+      thinker_id: null,
+      content: message,
+      message_type: 'user',
+    });
+
+    // --- FETCH MESSAGE HISTORY ---
+    const { data: history } = await supabaseAdmin
+      .from('salon_messages')
+      .select('content, message_type, thinker_id, member_id')
+      .eq('salon_id', salonId)
+      .order('created_at', { ascending: false })
+      .limit(HISTORY_LIMIT);
+
+    const conversationHistory = (history || [])
+      .reverse()
+      .map((msg) => ({
+        role: msg.message_type === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.content,
+      }));
+
+    // --- BUILD SYSTEM PROMPT ---
+    const systemPrompt = buildSystemPrompt(thinkerId);
+    const maxTokens = isReaction ? REACTION_MAX_TOKENS : DIRECT_MAX_TOKENS;
+
+    const contextPrefix = memberName
+      ? `The member speaking is ${memberName}.`
+      : 'A member is speaking.';
+
+    const fullSystemPrompt = `${systemPrompt}\n\n${contextPrefix}${
+      isReaction
+        ? ' You are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.'
+        : ''
+    }`;
+
+    // --- STREAM RESPONSE ---
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          let fullText = '';
+
+          const anthropicStream = anthropic.messages.stream({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: maxTokens,
+            system: fullSystemPrompt,
+            messages: conversationHistory.length > 0
+              ? conversationHistory
+              : [{ role: 'user', content: message }],
+          });
+
+          anthropicStream.on('text', (text) => {
+            fullText += text;
+            const data = JSON.stringify({ delta: text });
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          });
+
+          await anthropicStream.finalMessage();
+
+          if (fullText.trim().toUpperCase().startsWith('SILENT')) {
+            const doneData = JSON.stringify({ done: true, response: '', silent: true });
+            controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
+            controller.close();
+            return;
+          }
+
+          // --- SAVE THINKER RESPONSE ---
+          await supabaseAdmin.from('salon_messages').insert({
+            salon_id: salonId,
+            member_id: null,
+            thinker_id: thinkerId,
+            content: fullText,
+            message_type: 'thinker',
+          });
+
+          // --- AWARD EXP TOKENS ---
+          const expAmount = isReaction ? 4 : 8;
+          await supabaseAdmin.from('exp_events').insert({
+            member_id: memberId,
+            amount: expAmount,
+            reason: isReaction
+              ? `Thinker reaction from ${thinkerId}`
+              : `Conversation with ${thinkerId}`,
+          });
+
+          const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
+            member_id_input: memberId,
+            amount_input: expAmount,
+          });
+          if (rpcError) {
+            // Fallback: manual increment
+            const { data: memberData } = await supabaseAdmin
+              .from('members')
+              .select('exp_tokens')
+              .eq('id', memberId)
+              .single();
+            if (memberData) {
+              await supabaseAdmin
+                .from('members')
+                .update({ exp_tokens: (memberData.exp_tokens || 0) + expAmount })
+                .eq('id', memberId);
+            }
+          }
+
+          const doneData = JSON.stringify({
+            done: true,
+            response: fullText,
+            expAwarded: expAmount,
+          });
+          controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
+          controller.close();
+        } catch (err) {
+          console.error('Thinker stream error:', err);
+          const errorData = JSON.stringify({
+            error: 'Stream failed',
+            done: true,
+          });
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  } catch (err) {
+    console.error('Thinker API error:', err);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 }
