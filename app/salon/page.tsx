@@ -134,24 +134,21 @@ export default function SalonPage() {
 
   async function loadMessages() {
     const sid = privateMode ? `private-${member?.id}` : 'general';
-    let query = supabase.from('salon_messages').select('*')
-      .order('created_at', { ascending: true }).limit(60);
-    if (sid !== 'general') {
-      query = query.eq('salon_id', sid);
-    } else {
-      query = query.or('salon_id.eq.general,salon_id.is.null');
-    }
-    const { data, error: loadError } = await query;
-    if (loadError) console.error('loadMessages error:', loadError);
-    if (data) {
-      console.log('loadMessages:', data.length, 'messages loaded, types:', [...new Set(data.map((m: any) => m.sender_type))]);
-      // Normalize: old messages may have message_type but not sender_type
-      const normalized = data.map((m: any) => ({
-        ...m,
-        sender_type: m.sender_type || (m.message_type === 'user' ? 'member' : m.message_type === 'thinker' ? 'thinker' : 'system'),
-        sender_name: m.sender_name || m.thinker_id || 'Explorer',
-      }));
-      setMessages(normalized);
+    try {
+      const res = await fetch(`/api/salon-message/load?salonId=${encodeURIComponent(sid)}`);
+      const { messages: data, error: loadError } = await res.json();
+      if (loadError) console.error('loadMessages error:', loadError);
+      if (data && data.length > 0) {
+        console.log('loadMessages:', data.length, 'messages, types:', [...new Set(data.map((m: any) => m.sender_type))]);
+        const normalized = data.map((m: any) => ({
+          ...m,
+          sender_type: m.sender_type || (m.message_type === 'user' ? 'member' : m.message_type === 'thinker' ? 'thinker' : 'system'),
+          sender_name: m.sender_name || m.thinker_id || 'Explorer',
+        }));
+        setMessages(normalized);
+      }
+    } catch (err) {
+      console.error('loadMessages fetch error:', err);
     }
   }
 
