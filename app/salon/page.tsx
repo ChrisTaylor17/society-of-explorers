@@ -599,6 +599,7 @@ export default function SalonPage() {
                     { label: 'TRIBEKEY',  action: () => router.push('/tribekey') },
                     { label: 'BOOK',      action: () => router.push('/book') },
                     { label: 'HALL',      action: () => router.push('/hall') },
+                    { label: 'TEMPLE',    action: () => router.push('/temple') },
                   ]).map(item => (
                     <button key={item.label} onClick={() => { item.action(); setShowMoreNav(false); }} style={{
                       display: 'block', width: '100%', textAlign: 'left',
