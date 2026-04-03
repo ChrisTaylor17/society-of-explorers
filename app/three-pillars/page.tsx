@@ -50,10 +50,10 @@ export default function ThreePillars() {
             <div style={{ fontSize: '18px', marginBottom: '4px' }}>&#x2B21;</div>LLC
           </div>
           <div style={{ position: 'absolute', left: '50%', top: '0', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: purple, textAlign: 'center', width: '100px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '4px' }}>&loz;</div>CONCILIENCE
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>◊</div>CONCILIENCE
           </div>
           <div style={{ position: 'absolute', left: 'calc(50% + 130px)', top: '0', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: warmGold, textAlign: 'center', width: '100px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '4px' }}>&triangle;</div>NONPROFIT
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>△</div>NONPROFIT
           </div>
           {/* Root label */}
           <div style={{ position: 'absolute', left: '50%', bottom: '-30px', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: muted }}>THE VISION</div>
