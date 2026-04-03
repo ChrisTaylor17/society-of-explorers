@@ -131,6 +131,8 @@ export default function BookReader() {
   }
 
   async function readAloud(startIdx: number) {
+    stopSpeaking();
+    await new Promise(r => setTimeout(r, 100));
     setIsReading(true);
     const BATCH = 3;
     const end = Math.min(startIdx + BATCH, paragraphs.length);
@@ -147,6 +149,8 @@ export default function BookReader() {
   }
 
   async function readFromParagraph(idx: number) {
+    stopSpeaking();
+    await new Promise(r => setTimeout(r, 100));
     setIsReading(true);
     const text = paragraphs.slice(idx, idx + 3).join(' ');
     try {
