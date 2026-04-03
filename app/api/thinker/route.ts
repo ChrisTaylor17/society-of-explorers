@@ -159,7 +159,13 @@ export async function POST(req: NextRequest) {
       ? memberContext
       : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
 
+    // Resolve a usable name for the member
+    const usableName = (memberName && !memberName.startsWith('0x')) ? memberName : null;
+
     let fullSystemPrompt = `${systemPrompt}\n\n${contextPrefix}`;
+    if (usableName) {
+      fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. Use their name naturally in your response. Never call them "Anonymous Explorer" or just "Explorer."`;
+    }
 
     if (memory) {
       fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference past conversations when relevant — "Last time we talked about X" or "You mentioned Y before." Don't announce that you have memory. Just know what you know, the way a trusted advisor remembers.`;
@@ -204,7 +210,12 @@ export async function POST(req: NextRequest) {
           // --- PARSE ACTIONS ---
           const { cleanText: rawClean, actions } = parseActions(fullText);
           // Strip any "[thinkerId]: " prefix that Claude may echo from history
-          const cleanText = rawClean.replace(/^\[[\w-]+\]:\s*/i, '');
+          // Strip any "[thinkerId]: " prefix that Claude echoes from conversation history
+          const cleanText = rawClean
+            .replace(/^\[[\w-]+\]:\s*/i, '')
+            .replace(/^\[[\w-]+\]\s*/i, '')
+            .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
+            .trim();
 
           // --- SAVE THINKER RESPONSE (clean text only, no action JSON) ---
           const thinkerDisplayNames: Record<string, string> = {

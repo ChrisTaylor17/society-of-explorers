@@ -142,6 +142,7 @@ export default function SalonPage() {
         console.log('loadMessages:', data.length, 'messages, types:', [...new Set(data.map((m: any) => m.sender_type))]);
         const normalized = data.map((m: any) => ({
           ...m,
+          content: (m.content || '').replace(/^\[[\w-]+\]:\s*/i, '').replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, ''),
           sender_type: m.sender_type || (m.message_type === 'user' ? 'member' : m.message_type === 'thinker' ? 'thinker' : 'system'),
           sender_name: m.sender_name || m.thinker_id || 'Explorer',
         }));
@@ -397,7 +398,7 @@ export default function SalonPage() {
               }
             } else if (evt.done) {
               // Use clean response (actions stripped server-side)
-              const cleanResponse = (evt.response || responseFullText).split('|||ACTIONS|||')[0].trim();
+              const cleanResponse = (evt.response || responseFullText).split('|||ACTIONS|||')[0].replace(/^\[[\w-]+\]:\s*/i, '').replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '').trim();
               if (evt.response) responseFullText = cleanResponse;
               setMessages(prev => prev.map(m =>
                 m.id === streamId
@@ -658,11 +659,11 @@ export default function SalonPage() {
             >⬡</button>
             {showMoreNav && (
               <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setShowMoreNav(false)} />
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setShowMoreNav(false)} />
                 <div style={{
                   position: 'absolute', top: '100%', right: 0, marginTop: '6px',
                   background: '#0a0a0a', border: '1px solid rgba(201,168,76,0.2)',
-                  zIndex: 50, minWidth: '160px', padding: '4px 0',
+                  zIndex: 9999, minWidth: '160px', padding: '4px 0',
                 }}>
                   {([
                     { label: 'MARKET',    action: () => { closeAllOverlays(); setShowMarket(v => !v); setRitualTx({ status: 'idle' }); } },
@@ -712,7 +713,7 @@ export default function SalonPage() {
 
       {/* ════ MARKETPLACE OVERLAY ════ */}
       {showMarket && (
-        <div style={{ position: 'absolute', inset: 0, top: '52px', background: 'var(--bg-void)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, top: '52px', background: 'var(--bg-void)', zIndex: 40, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-deep)', flexShrink: 0 }}>
             <div>
               <div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.12em' }}>Ritual Marketplace</div>
@@ -777,7 +778,7 @@ export default function SalonPage() {
 
       {/* ════ ARTIFACTS OVERLAY ════ */}
       {showArtifacts && (
-        <div style={{ position: 'absolute', inset: 0, top: '52px', background: 'var(--bg-void)', zIndex: 30, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, top: '52px', background: 'var(--bg-void)', zIndex: 40, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
           {/* Header */}
           <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-deep)', flexShrink: 0 }}>
