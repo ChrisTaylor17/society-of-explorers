@@ -50,7 +50,7 @@ export default function ThreePillars() {
             <div style={{ fontSize: '18px', marginBottom: '4px' }}>&#x2B21;</div>LLC
           </div>
           <div style={{ position: 'absolute', left: '50%', top: '0', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: purple, textAlign: 'center', width: '100px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '4px' }}>◊</div>CONCILIENCE
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>◊</div>CONSILIENCE
           </div>
           <div style={{ position: 'absolute', left: 'calc(50% + 130px)', top: '0', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: warmGold, textAlign: 'center', width: '100px' }}>
             <div style={{ fontSize: '18px', marginBottom: '4px' }}>△</div>NONPROFIT
@@ -83,12 +83,12 @@ export default function ThreePillars() {
             {[
               {
                 symbol: '⬡', title: 'SOCIETY OF EXPLORERS LLC', subtitle: 'The Membership Community', accent: gold,
-                desc: 'The living temple. This is where members gather, where the thinkers speak, where artifacts are forged and salons convene. The LLC holds the technology platform, the subscription revenue, the merch pipeline, and the physical space at 92B South St. It is the engine — built to sustain itself through membership dues, product sales, and the value it creates for its members. Revenue funds operations. Surplus flows to the nonprofit and to Concilience.',
+                desc: 'The living temple. This is where members gather, where the thinkers speak, where artifacts are forged and salons convene. The LLC holds the technology platform, the subscription revenue, the merch pipeline, and the physical space at 92B South St. It is the engine — built to sustain itself through membership dues, product sales, and the value it creates for its members. Revenue funds operations. Surplus flows to the nonprofit and to Consilience.',
                 functions: ['Membership platform', 'AI thinker system', 'Great Books program', 'Merch and artifacts', 'Physical space operations', '$EXP token economy'],
               },
               {
-                symbol: '◊', title: 'CONCILIENCE', subtitle: 'The Vision Entity', accent: purple,
-                desc: 'The philosophical compass. Concilience exists to hold the long-term vision that no single product cycle can contain. It publishes the papers. It convenes the thinkers — not the AI ones, but the human ones. It asks the questions that take decades to answer: How should AI and humans co-create? What does sovereign identity mean in practice? How do we build technology that makes humans more human, not less? Concilience does not sell anything. It thinks, writes, and convenes.',
+                symbol: '◊', title: 'CONSILIENCE', subtitle: 'The Vision Entity', accent: purple,
+                desc: 'The philosophical compass. Consilience exists to hold the long-term vision that no single product cycle can contain. It publishes the papers. It convenes the thinkers — not the AI ones, but the human ones. It asks the questions that take decades to answer: How should AI and humans co-create? What does sovereign identity mean in practice? How do we build technology that makes humans more human, not less? Consilience does not sell anything. It thinks, writes, and convenes.',
                 functions: ['White papers and research', 'Philosophical framework', 'Advisory council', 'Long-term technology vision', 'Partnerships with universities and think tanks'],
               },
               {
@@ -126,7 +126,7 @@ export default function ThreePillars() {
         <div style={{ position: 'relative', width: '300px', height: '260px', margin: '0 auto 3rem' }}>
           {/* Three hexagons */}
           <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: '80px', height: '80px', border: `1px solid ${purple}`, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: purple }}>CONCILIENCE</span>
+            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: purple }}>CONSILIENCE</span>
           </div>
           <div style={{ position: 'absolute', left: 0, bottom: 0, width: '80px', height: '80px', border: `1px solid ${gold}`, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
             <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: gold }}>LLC</span>
@@ -148,7 +148,7 @@ export default function ThreePillars() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {[
             { from: 'LLC Revenue', arrow: '→', to: 'Nonprofit Grants', color: gold },
-            { from: 'Concilience Vision', arrow: '→', to: 'LLC Product Direction', color: purple },
+            { from: 'Consilience Vision', arrow: '→', to: 'LLC Product Direction', color: purple },
             { from: 'Nonprofit Education', arrow: '→', to: 'LLC Member Pipeline', color: warmGold },
           ].map((flow, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
@@ -160,7 +160,7 @@ export default function ThreePillars() {
         </div>
 
         <p style={{ fontSize: '1.1rem', lineHeight: 1.9, marginTop: '3rem', textAlign: 'center', color: muted }}>
-          Revenue from the LLC funds the nonprofit&apos;s educational mission. Research from Concilience guides the LLC&apos;s product direction. Education from the nonprofit creates the next generation of members. The three pillars are not separate organizations — they are one organism with three expressions.
+          Revenue from the LLC funds the nonprofit&apos;s educational mission. Research from Consilience guides the LLC&apos;s product direction. Education from the nonprofit creates the next generation of members. The three pillars are not separate organizations — they are one organism with three expressions.
         </p>
       </section>
 
