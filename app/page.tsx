@@ -47,8 +47,17 @@ export default function HomePage() {
   const router = useRouter()
   const supabase = createClient()
 
+  const [authed, setAuthed] = useState(false)
+
+  // Check auth — redirect or update CTA
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('soe_taste_used')) setTasteUsed(true)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setAuthed(true)
+    })
+    // Also check wallet auth
+    const walletId = localStorage.getItem('soe_wallet_id')
+    if (walletId) setAuthed(true)
   }, [])
 
   useEffect(() => {
@@ -140,8 +149,8 @@ export default function HomePage() {
             Six AI thinkers — Socrates, Nietzsche, Einstein, and more — who remember you, challenge you, and help you build. A living community of modern philosophers.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.25em', color: '#000', background: gold, padding: '14px 36px', textDecoration: 'none' }}>ENTER THE SALON</a>
-            <button onClick={() => setShowAuth(true)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.25em', color: gold, background: 'transparent', border: `1px solid ${gold}44`, padding: '14px 36px', cursor: 'pointer' }}>SIGN IN</button>
+            <a href={authed ? '/salon' : '/join'} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.25em', color: '#000', background: gold, padding: '14px 36px', textDecoration: 'none' }}>{authed ? 'GO TO SALON' : 'ENTER THE SALON'}</a>
+            {!authed && <button onClick={() => setShowAuth(true)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.25em', color: gold, background: 'transparent', border: `1px solid ${gold}44`, padding: '14px 36px', cursor: 'pointer' }}>SIGN IN</button>}
           </div>
         </div>
       </section>
