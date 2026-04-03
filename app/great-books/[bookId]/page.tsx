@@ -43,8 +43,10 @@ export default function BookReader() {
   const [activeNote, setActiveNote] = useState<{ passage: string; text: string } | null>(null);
   const [marginNotes, setMarginNotes] = useState<MarginNote[]>([]);
 
-  // Member ID for progress saving
+  // Member ID for progress saving + EXP
   const [memberId, setMemberId] = useState<string | null>(null);
+  const [bookExp, setBookExp] = useState(0);
+  const [expToast, setExpToast] = useState('');
 
   const readerRef = useRef<HTMLDivElement>(null);
   const paragraphRefs = useRef<(HTMLParagraphElement | null)[]>([]);
@@ -168,8 +170,24 @@ export default function BookReader() {
       setMarginNotes(prev => [...prev, {
         id: `n-${Date.now()}`, passage, annotation: fullResponse, thinkerId: activeThinker,
       }]);
+      awardExp(3, 'great_books_annotation');
     }
     setAnnotating(false);
+  }
+
+  async function awardExp(amount: number, reason: string) {
+    if (!memberId) return;
+    try {
+      const res = await fetch('/api/exp/award', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, amount, reason, bookId, section: currentSection }),
+      });
+      if (res.ok) {
+        setBookExp(prev => prev + amount);
+        setExpToast(`+${amount} EXP — ${reason === 'great_books_section' ? 'Section completed' : 'Annotation earned'}`);
+        setTimeout(() => setExpToast(''), 3000);
+      }
+    } catch {}
   }
 
   async function readAloud(startIdx: number) {
@@ -236,6 +254,9 @@ export default function BookReader() {
             <a href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>← LIBRARY</a>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.12em', color: parchment, marginTop: '2px' }}>{book.title}</div>
             <div style={{ fontSize: '11px', color: muted, fontStyle: 'italic' }}>{book.author} · {book.year}</div>
+            {bookExp > 0 && (
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.6, marginTop: '2px' }}>⬡ {bookExp} EXP earned</div>
+            )}
           </div>
 
           {/* Section hex dots */}
@@ -326,7 +347,7 @@ export default function BookReader() {
               <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>
                 SECTION {currentSection}{totalSections > 1 ? ` OF ${totalSections}` : ''}
               </span>
-              <button onClick={() => currentSection < totalSections && setCurrentSection(currentSection + 1)} disabled={currentSection >= totalSections}
+              <button onClick={() => { if (currentSection < totalSections) { awardExp(5, 'great_books_section'); setCurrentSection(currentSection + 1); } }} disabled={currentSection >= totalSections}
                 style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: currentSection < totalSections ? gold : `${gold}30`, background: 'none', border: 'none', cursor: currentSection < totalSections ? 'pointer' : 'default' }}>
                 NEXT SECTION →
               </button>
@@ -422,6 +443,13 @@ export default function BookReader() {
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '3px', background: `${gold}10`, zIndex: 50 }}>
         <div style={{ height: '100%', background: gold, width: `${(currentSection / Math.max(totalSections, 1)) * 100}%`, transition: 'width 0.5s ease' }} />
       </div>
+
+      {/* EXP toast */}
+      {expToast && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', padding: '10px 16px', background: 'rgba(10,10,10,0.95)', border: `1px solid ${gold}50`, color: gold, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', zIndex: 100 }}>
+          ⬡ {expToast}
+        </div>
+      )}
 
       <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>

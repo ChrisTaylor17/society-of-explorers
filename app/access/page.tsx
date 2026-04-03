@@ -178,6 +178,30 @@ export default function AccessPage() {
         </div>
       </section>
 
+      {/* Section 2.5: LEARNING LEDGER */}
+      {safeData && (
+        <section style={{ padding: '4rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>LEARNING LEDGER</div>
+          <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d', padding: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1px', background: `${gold}11`, marginBottom: '1.5rem' }}>
+              {[
+                { label: 'EXP FROM READING', value: safeData.exp },
+                { label: 'BOOKS STARTED', value: safeData.booksStarted },
+                { label: 'BOOKS COMPLETED', value: safeData.booksCompleted },
+              ].map(item => (
+                <div key={item.label} style={{ background: '#0a0a0a', padding: '1.25rem', textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '20px', color: gold, marginBottom: '0.5rem' }}>{item.value}</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.95rem', color: muted, lineHeight: 1.7, fontStyle: 'italic', textAlign: 'center' }}>
+              Your learning is recorded. When ETH ID launches, this history becomes part of your sovereign identity on-chain.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Section 3: DATA SOVEREIGNTY */}
       <section style={{ padding: '4rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>III.</div>

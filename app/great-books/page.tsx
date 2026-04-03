@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
 
 const gold = '#c9a84c';
@@ -13,6 +13,23 @@ const THINKER_COLORS: Record<string, string> = {
 
 export default function GreatBooksLibrary() {
   const [filter, setFilter] = useState('all');
+  const [progress, setProgress] = useState<Record<string, { section_id?: string }>>({});
+
+  useEffect(() => {
+    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
+      getMemberSession().then(s => {
+        if (s?.member?.id) {
+          fetch(`/api/great-books/progress?memberId=${s.member.id}`)
+            .then(r => r.json())
+            .then(d => {
+              const map: Record<string, any> = {};
+              (d.progress || []).forEach((p: any) => { map[p.book_id] = p; });
+              setProgress(map);
+            }).catch(() => {});
+        }
+      });
+    });
+  }, []);
 
   const filtered = filter === 'all' ? GREAT_BOOKS : GREAT_BOOKS.filter(b => b.recommended_thinker === filter);
 
@@ -67,8 +84,13 @@ export default function GreatBooksLibrary() {
               <p style={{ fontSize: '13px', color: 'rgba(212,201,168,0.7)', lineHeight: 1.6, marginBottom: '1rem' }}>
                 {book.description}
               </p>
-              <div style={{ marginTop: '1rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: accent, opacity: 0.5 }}>
-                READ NOW →
+              {progress[book.id] && (
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: gold, opacity: 0.6, marginTop: '0.5rem' }}>
+                  Section {progress[book.id].section_id || '1'} · In progress
+                </div>
+              )}
+              <div style={{ marginTop: '0.75rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: accent, opacity: 0.5 }}>
+                {progress[book.id] ? 'CONTINUE READING →' : 'READ NOW →'}
               </div>
             </a>
           );
