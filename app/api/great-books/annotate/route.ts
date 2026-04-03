@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
           let fullText = '';
           const anthropicStream = anthropic.messages.stream({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 400,
+            max_tokens: 150,
             messages: [{ role: 'user', content: prompt }],
           });
 
