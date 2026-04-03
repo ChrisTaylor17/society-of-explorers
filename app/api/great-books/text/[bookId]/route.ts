@@ -139,12 +139,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
     supabaseAdmin.from('great_books').update({ total_sections: sections.length }).eq('id', bookId)
       .then(({ error }) => { if (error) console.error('Book update error:', error); });
 
-    // Return all paragraphs for the reader
+    // Return section-paginated paragraphs
+    const totalSects = sections.length;
+    const reqSection = sectionNumber || 1;
+    const startIdx = (reqSection - 1) * SECTION_SIZE;
+    const sectionParagraphs = allParagraphs.slice(startIdx, startIdx + SECTION_SIZE);
+
     return NextResponse.json({
       bookId, title: book.title, author: book.author,
-      totalSections: sections.length,
+      totalSections: totalSects,
+      currentSection: reqSection,
       totalParagraphs: allParagraphs.length,
-      text: allParagraphs,
+      text: sectionParagraphs,
     });
   } catch (err) {
     console.error('Gutenberg fetch error:', err);

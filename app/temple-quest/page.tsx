@@ -383,17 +383,24 @@ export default function TempleQuest() {
     return () => cancelAnimationFrame(animId);
   }, [dialog, victory, collected, solved, exp, collidesWithWall, findRoom, roomLabel]);
 
+  // Store solved/dialog in refs for the event handler
+  const solvedRef = useRef(solved);
+  const dialogRef = useRef(dialog);
+  useEffect(() => { solvedRef.current = solved; }, [solved]);
+  useEffect(() => { dialogRef.current = dialog; }, [dialog]);
+
   // Space to interact
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== ' ') return;
       e.preventDefault();
-      if (dialog) return;
+      if (dialogRef.current) return;
       const p = playerRef.current;
       for (const room of ROOMS) {
-        if (!room.npc || solved.has(room.npc.thinkerId)) continue;
+        if (!room.npc || solvedRef.current.has(room.npc.thinkerId)) continue;
         const nx = room.x + room.npc.x, ny = room.y + room.npc.y;
-        if (Math.hypot(p.x - nx, p.y - ny) < INTERACT_DIST) {
+        const dist = Math.hypot(p.x - nx, p.y - ny);
+        if (dist < INTERACT_DIST) {
           setDialog({ thinkerId: room.npc.thinkerId, phase: 'question' });
           break;
         }
@@ -401,7 +408,7 @@ export default function TempleQuest() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [dialog, solved]);
+  }, []);
 
   // Handle answer
   function handleAnswer(answerIdx: number) {

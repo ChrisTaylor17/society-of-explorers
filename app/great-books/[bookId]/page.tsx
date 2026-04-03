@@ -54,7 +54,7 @@ export default function BookReader() {
   const loadSection = useCallback(async (section: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/great-books/text/${bookId}${totalSections > 0 ? `?section=${section}` : ''}`);
+      const res = await fetch(`/api/great-books/text/${bookId}?section=${section}`);
       const data = await res.json();
       if (data.text) {
         setParagraphs(Array.isArray(data.text) ? data.text : [data.text]);
@@ -166,6 +166,8 @@ export default function BookReader() {
       }
     } catch { setAnnotation('Failed. Try again.'); }
 
+    // Strip any thinker prefix from annotation
+    fullResponse = fullResponse.replace(/^\[[\w-]+\]:\s*/i, '').replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs):\s*/i, '').trim();
     if (fullResponse) {
       setMarginNotes(prev => [...prev, {
         id: `n-${Date.now()}`, passage, annotation: fullResponse, thinkerId: activeThinker,
@@ -323,7 +325,7 @@ export default function BookReader() {
             paragraphs.map((p, i) => (
               <p key={i}
                 ref={el => { paragraphRefs.current[i] = el; }}
-                onClick={() => readFromParagraph(i)}
+                onClick={() => { if (isReading) { stopReading(); } else { readFromParagraph(i); } }}
                 style={{
                   marginBottom: '1.5rem', textIndent: i > 0 && readingParagraphIdx !== i ? '2rem' : 0,
                   cursor: 'pointer', paddingLeft: '12px',

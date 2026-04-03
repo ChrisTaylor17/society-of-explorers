@@ -26,6 +26,7 @@ export default function WaddleForge() {
   const [reacting, setReacting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [feed, setFeed] = useState<any[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
 
@@ -246,9 +247,13 @@ export default function WaddleForge() {
               }}>
                 {saved ? '✓ SAVED' : saving ? 'SAVING...' : '⬡ SAVE TO ARCHIVE'}
               </button>
-              <button onClick={() => { navigator.clipboard.writeText(`"${transcription}" — recorded at the Waddle Forge, societyofexplorers.com/waddle`); }} style={{
-                fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, background: 'none', border: `1px solid ${gold}33`, padding: '8px 16px', cursor: 'pointer',
-              }}>⬡ SHARE</button>
+              <button onClick={() => {
+                const text = `"${transcription}" — recorded in the Society of Explorers temple. societyofexplorers.com/waddle`;
+                try { navigator.clipboard.writeText(text); } catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+                setCopied(true); setTimeout(() => setCopied(false), 2000);
+              }} style={{
+                fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: copied ? '#6B9E6B' : gold, background: 'none', border: `1px solid ${copied ? '#6B9E6B' : gold}33`, padding: '8px 16px', cursor: 'pointer',
+              }}>{copied ? '⬡ COPIED!' : '⬡ SHARE'}</button>
               <button style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, background: 'none', border: `1px solid ${gold}15`, padding: '8px 16px', cursor: 'default', opacity: 0.5 }}>
                 ⬡ MINT NFT (SOON)
               </button>
