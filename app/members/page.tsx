@@ -15,6 +15,27 @@ interface Member {
   bio?: string
   exp_tokens: number
   wallet_address?: string
+  tier?: string
+  philosophy?: string
+  email?: string
+}
+
+function displayName(m: Member): string {
+  if (m.display_name && !m.display_name.startsWith('0x')) return m.display_name
+  if (m.email) return m.email.split('@')[0]
+  if (m.wallet_address) return `${m.wallet_address.slice(0, 6)}...${m.wallet_address.slice(-4)}`
+  if (m.display_name?.startsWith('0x')) return `${m.display_name.slice(0, 6)}...${m.display_name.slice(-4)}`
+  return 'Explorer'
+}
+
+function tierLabel(tier?: string): string {
+  const labels: Record<string, string> = { free: 'Explorer', member: 'Member', patron: 'Patron', founding: 'Founding Member' }
+  return labels[tier || 'free'] || 'Explorer'
+}
+
+function avatarLetter(m: Member): string {
+  const name = displayName(m)
+  return name.charAt(0).toUpperCase()
 }
 
 interface DM {
@@ -228,18 +249,24 @@ export default function MembersPage() {
   async function saveProfile() {
     if (!currentMember) return
     setProfileSaving(true)
-    const skillsArr = profileDraft.skills.split(',').map(s => s.trim()).filter(Boolean)
-    const { error } = await supabase.from('members').update({
-      bio: profileDraft.bio || null,
-      discipline: profileDraft.discipline || null,
-      skills: skillsArr.length ? skillsArr : null,
-      project_description: profileDraft.project_description || null,
-      seeking: profileDraft.seeking || null,
-      philosophy: profileDraft.philosophy || null,
-    }).eq('id', currentMember.id)
-    if (!error) {
+    const res = await fetch('/api/members/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        memberId: currentMember.id,
+        display_name: profileDraft.discipline ? undefined : undefined, // preserve existing
+        bio: profileDraft.bio || null,
+        discipline: profileDraft.discipline || null,
+        skills: profileDraft.skills,
+        project_description: profileDraft.project_description || null,
+        seeking: profileDraft.seeking || null,
+        philosophy: profileDraft.philosophy || null,
+      }),
+    })
+    if (res.ok) {
       setProfileSaved(true)
       setTimeout(() => setProfileSaved(false), 2000)
+      // Refresh member data
       const { data } = await supabase.from('members').select('*').eq('id', currentMember.id).single()
       if (data) setCurrentMember(data as any)
     }
@@ -284,15 +311,20 @@ export default function MembersPage() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '2rem' }}>
-                {members.length} EXPLORERS
+                {members.length} MEMBERS
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: goldBorder }}>
                 {members.map(m => (
                   <div key={m.id} style={{ background: bgCard, padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                      <div>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.1em', color: gold, marginBottom: '2px' }}>{m.display_name}</div>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted }}>{m.discipline || 'EXPLORER'}</div>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: `${gold}22`, border: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '12px', color: gold, flexShrink: 0 }}>
+                          {avatarLetter(m)}
+                        </div>
+                        <div>
+                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.1em', color: gold, marginBottom: '2px' }}>{displayName(m)}</div>
+                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted }}>{tierLabel(m.tier)} {m.discipline ? `· ${m.discipline}` : ''}</div>
+                        </div>
                       </div>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: goldDim }}>{m.exp_tokens} ⬡</div>
                     </div>
@@ -332,8 +364,8 @@ export default function MembersPage() {
                     onClick={() => openChat(m)}
                     style={{ padding: '14px 16px', cursor: 'pointer', borderLeft: `2px solid ${selectedMember?.id === m.id ? gold : 'transparent'}`, background: selectedMember?.id === m.id ? 'rgba(201,168,76,0.06)' : 'transparent', borderBottom: `1px solid ${goldBorder}` }}
                   >
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: selectedMember?.id === m.id ? gold : ivory }}>{m.display_name}</div>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{m.discipline || 'EXPLORER'}</div>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: selectedMember?.id === m.id ? gold : ivory }}>{displayName(m)}</div>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{tierLabel(m.tier)}</div>
                   </div>
                 ))}
               </div>
@@ -351,8 +383,8 @@ export default function MembersPage() {
                   {/* Chat header */}
                   <div style={{ padding: '14px 20px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: bgCard, flexShrink: 0 }}>
                     <div>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold }}>{selectedMember.display_name}</div>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{selectedMember.discipline || 'EXPLORER'}</div>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold }}>{displayName(selectedMember)}</div>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{tierLabel(selectedMember.tier)}{selectedMember.discipline ? ` · ${selectedMember.discipline}` : ''}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <div style={{ position: 'relative' }}>
@@ -406,7 +438,7 @@ export default function MembersPage() {
                             </div>
                           ) : (
                             <div style={{ maxWidth: '65%' }}>
-                              {!isMe && <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginBottom: '4px' }}>{selectedMember.display_name}</div>}
+                              {!isMe && <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginBottom: '4px' }}>{displayName(selectedMember)}</div>}
                               <div style={{ background: isMe ? 'rgba(201,168,76,0.1)' : bgCard, border: `1px solid ${isMe ? goldBorder : 'rgba(255,255,255,0.06)'}`, borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px', padding: '10px 14px' }}>
                                 <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, lineHeight: 1.6 }}>{msg.content}</div>
                               </div>
@@ -426,7 +458,7 @@ export default function MembersPage() {
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                      placeholder={`Message ${selectedMember.display_name}...`}
+                      placeholder={`Message ${displayName(selectedMember)}...`}
                       style={{ flex: 1, background: bgElevated, border: `1px solid ${goldBorder}`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', borderRadius: '4px' }}
                     />
                     <button
