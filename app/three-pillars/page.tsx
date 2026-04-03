@@ -177,19 +177,19 @@ export default function ThreePillars() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}12` }}>
             {[
-              { title: 'WHITE PAPER', name: 'The Convergence Thesis', desc: 'The philosophical foundation. Why AI, blockchain, and ancient wisdom must converge. The Heidegger framework. The case for poiesis over Gestell.', status: 'COMING SOON' },
-              { title: 'BUSINESS PLAN', name: 'Society of Explorers — Business Plan', desc: 'Revenue model, growth strategy, membership tiers, technology roadmap, financial projections. The commercial engine.', status: 'COMING SOON' },
-              { title: 'GREEN PAPER', name: 'The Educational Framework', desc: 'The Great Books curriculum. The salon methodology. How AI thinkers facilitate philosophical education. The nonprofit\u2019s mission and programs.', status: 'COMING SOON' },
-              { title: 'BLACK PAPER', name: 'The Technical Architecture', desc: 'The data layer. Soulbound NFTs. Decentralized compute. $EXP tokenomics. ExploreOS. The full technical specification.', status: 'COMING SOON' },
+              { title: 'WHITE PAPER', name: 'The Convergence Thesis', desc: 'The philosophical foundation. Why AI, blockchain, and ancient wisdom must converge. The Heidegger framework. The case for poiesis over Gestell.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/white-paper.pdf' },
+              { title: 'BUSINESS PLAN', name: 'Society of Explorers — Business Plan', desc: 'Revenue model, growth strategy, membership tiers, technology roadmap, financial projections. The commercial engine.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/business-plan.pdf' },
+              { title: 'GREEN PAPER', name: 'The Educational Framework', desc: 'The Great Books curriculum. The salon methodology. How AI thinkers facilitate philosophical education. The nonprofit\u2019s mission and programs.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/green-paper.pdf' },
+              { title: 'BLACK PAPER', name: 'The Technical Architecture', desc: 'The data layer. Soulbound NFTs. Decentralized compute. $EXP tokenomics. ExploreOS. The full technical specification.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/black-paper.pdf' },
             ].map(paper => (
               <div key={paper.title} style={{ background: bgCard, padding: '2.5rem 2rem', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '1rem', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.15em', color: bgCard, background: gold, padding: '2px 8px', opacity: 0.6 }}>{paper.status}</div>
+                <div style={{ position: 'absolute', top: '1rem', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.15em', color: bgCard, background: gold, padding: '2px 8px' }}>DOWNLOAD PDF</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.25em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>{paper.title}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.08em', color: text, marginBottom: '1rem', lineHeight: 1.3 }}>{paper.name}</div>
                 <p style={{ fontSize: '0.95rem', color: muted, lineHeight: 1.7, marginBottom: '1.5rem' }}>{paper.desc}</p>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: `${gold}40`, cursor: 'default' }}>
-                  DOWNLOAD PDF &rarr;
-                </span>
+                <a href={paper.url} target="_blank" rel="noopener noreferrer" download style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
+                  DOWNLOAD PDF →
+                </a>
               </div>
             ))}
           </div>
