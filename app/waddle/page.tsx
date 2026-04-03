@@ -27,6 +27,7 @@ export default function WaddleForge() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [cardStatus, setCardStatus] = useState<'idle' | 'generating' | 'done'>('idle');
   const [feed, setFeed] = useState<any[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
 
@@ -143,6 +144,127 @@ export default function WaddleForge() {
     fetch('/api/waddle').then(r => r.json()).then(d => setFeed(d.waddles || [])).catch(() => {});
   }
 
+  function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, maxW: number, lineH: number, maxLines: number): string[] {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let current = '';
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width > maxW && current) {
+        lines.push(current);
+        current = word;
+        if (lines.length >= maxLines) { lines[lines.length - 1] += '...'; current = ''; break; }
+      } else { current = test; }
+    }
+    if (current && lines.length < maxLines) lines.push(current);
+    return lines;
+  }
+
+  function drawHexagon(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 3) * i - Math.PI / 6;
+      i === 0 ? ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a)) : ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    }
+    ctx.closePath();
+  }
+
+  async function generateCard(mode: 'download' | 'clipboard') {
+    setCardStatus('generating');
+    const W = 1080, H = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+
+    // Background
+    ctx.fillStyle = '#0A0A0A';
+    ctx.fillRect(0, 0, W, H);
+
+    // Gold border
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(20, 20, W - 40, H - 40);
+
+    // Corner hexagons
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 1;
+    for (const [cx, cy] of [[60, 60], [W - 60, 60], [60, H - 60], [W - 60, H - 60]]) {
+      drawHexagon(ctx, cx, cy, 25);
+      ctx.stroke();
+      drawHexagon(ctx, cx, cy, 40);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Header
+    ctx.fillStyle = gold;
+    ctx.font = '600 20px serif';
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '6px';
+    ctx.fillText('SOCIETY OF EXPLORERS', W / 2, 100);
+    (ctx as any).letterSpacing = '0px';
+
+    // Transcription
+    ctx.fillStyle = '#E8DCC8';
+    ctx.font = '36px serif';
+    const transLines = wrapText(ctx, `"${transcription}"`, W / 2, W - 160, 48, 4);
+    const transY = 300 - (transLines.length * 48) / 2;
+    transLines.forEach((line, i) => ctx.fillText(line, W / 2, transY + i * 48));
+
+    // Gold rule
+    const ruleY = transY + transLines.length * 48 + 40;
+    ctx.strokeStyle = gold;
+    ctx.globalAlpha = 0.4;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(W / 2 - 100, ruleY); ctx.lineTo(W / 2 + 100, ruleY); ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Thinker reaction
+    if (thinkerReaction) {
+      ctx.fillStyle = '#9a8f7a';
+      ctx.font = 'italic 28px serif';
+      const reactLines = wrapText(ctx, thinkerReaction, W / 2, W - 180, 40, 4);
+      const reactY = ruleY + 50;
+      reactLines.forEach((line, i) => ctx.fillText(line, W / 2, reactY + i * 40));
+
+      // Thinker name
+      const nameY = reactY + reactLines.length * 40 + 40;
+      ctx.fillStyle = gold;
+      ctx.font = '600 18px serif';
+      ctx.fillText(`${activeThinker.symbol}  ${activeThinker.name.toUpperCase()}`, W / 2, nameY);
+    }
+
+    // Footer
+    ctx.fillStyle = gold;
+    ctx.globalAlpha = 0.4;
+    ctx.font = '16px serif';
+    ctx.fillText('societyofexplorers.com/waddle', W / 2, H - 50);
+    ctx.globalAlpha = 1;
+
+    // Export
+    canvas.toBlob(async (blob) => {
+      if (!blob) { setCardStatus('idle'); return; }
+      if (mode === 'download') {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `waddle-${Date.now()}.png`; a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        } catch { /* fallback: download instead */
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = `waddle-${Date.now()}.png`; a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+      setCardStatus('done');
+      setTimeout(() => setCardStatus('idle'), 2000);
+    }, 'image/png');
+  }
+
   const progressPct = (elapsed / MAX_SECONDS) * 100;
   const activeThinker = THINKERS.find(t => t.id === selectedThinker) || THINKERS[0];
 
@@ -254,6 +376,21 @@ export default function WaddleForge() {
               }} style={{
                 fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: copied ? '#6B9E6B' : gold, background: 'none', border: `1px solid ${copied ? '#6B9E6B' : gold}33`, padding: '8px 16px', cursor: 'pointer',
               }}>{copied ? '⬡ COPIED!' : '⬡ SHARE'}</button>
+              {thinkerReaction && (
+                <>
+                  <button onClick={() => generateCard('download')} disabled={cardStatus === 'generating'} style={{
+                    fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
+                    color: cardStatus === 'done' ? '#6B9E6B' : gold, background: 'none',
+                    border: `1px solid ${cardStatus === 'done' ? '#6B9E6B' : gold}33`, padding: '8px 16px', cursor: 'pointer',
+                  }}>
+                    {cardStatus === 'generating' ? '⬡ CREATING...' : cardStatus === 'done' ? '⬡ DOWNLOADED!' : '⬡ CREATE CARD'}
+                  </button>
+                  <button onClick={() => generateCard('clipboard')} style={{
+                    fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
+                    color: muted, background: 'none', border: `1px solid ${gold}15`, padding: '8px 16px', cursor: 'pointer',
+                  }}>⬡ COPY IMAGE</button>
+                </>
+              )}
               <button style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, background: 'none', border: `1px solid ${gold}15`, padding: '8px 16px', cursor: 'default', opacity: 0.5 }}>
                 ⬡ MINT NFT (SOON)
               </button>
