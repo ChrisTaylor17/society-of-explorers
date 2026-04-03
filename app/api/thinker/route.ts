@@ -116,16 +116,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- SAVE USER MESSAGE ---
-    // Save user message — use same columns as /api/salon-message (which works)
-    const { error: userMsgError } = await supabaseAdmin.from('salon_messages').insert({
-      salon_id: salonId,
-      sender_type: 'member',
-      sender_name: memberName || 'Explorer',
-      thinker_id: null,
-      content: message,
-    });
-    if (userMsgError) console.error('USER MSG SAVE FAILED:', userMsgError);
+    // --- SAVE USER MESSAGE (skip system-generated prompts) ---
+    const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
+      message.startsWith('You have been invited into a private conversation') ||
+      message.startsWith('Here are my current tasks:') ||
+      (message.includes('Respond as ') && message.includes(' — in character, direct'));
+
+    if (!isSystemPrompt) {
+      const { error: userMsgError } = await supabaseAdmin.from('salon_messages').insert({
+        salon_id: salonId,
+        sender_type: 'member',
+        sender_name: memberName || 'Explorer',
+        thinker_id: null,
+        content: message,
+      });
+      if (userMsgError) console.error('USER MSG SAVE FAILED:', userMsgError);
+    }
 
     // --- FETCH MESSAGE HISTORY ---
     const { data: history } = await supabaseAdmin

@@ -201,7 +201,7 @@ export default function MembersPage() {
         body: JSON.stringify({
           senderId: currentMember.id,
           recipientId: selectedMember.id,
-          content: `${thinker.symbol} ${thinker.name.toUpperCase()} SPEAKS: ${fullResponse}`
+          content: `${thinker.symbol} ${thinker.name.toUpperCase()} SPEAKS: ${fullResponse.replace(/^\[?\w[\w-]*\]?:\s*/i, '')}`
         })
       })
       await loadMessages()

@@ -1016,7 +1016,18 @@ export default function SalonPage() {
             </div>
           )}
 
-          {messages.filter(msg => msg.content?.trim()).map((msg, i) => (
+          {messages.filter(msg => {
+            if (!msg.content?.trim()) return false;
+            // Hide system-generated prompts that leaked into visible chat
+            if (msg.sender_type === 'member') {
+              const c = msg.content;
+              if (c.startsWith('A member recorded a 15-second Waddle')) return false;
+              if (c.startsWith('You have been invited into a private conversation')) return false;
+              if (c.startsWith('Here are my current tasks:')) return false;
+              if (c.includes('Respond as ') && c.includes(' — in character, direct')) return false;
+            }
+            return true;
+          }).map((msg, i) => (
             <div key={msg.id || i} style={{ display: 'flex', gap: '10px', flexDirection: msg.sender_type === 'member' ? 'row-reverse' : 'row', justifyContent: msg.sender_type === 'system' ? 'center' : undefined }}>
               {msg.sender_type === 'system' ? (
                 <div style={{ fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '11px', color: 'var(--gold-dim)', padding: '4px 12px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--glow)', textAlign: 'center' }}
@@ -1032,7 +1043,7 @@ export default function SalonPage() {
                     </div>
                     <div style={{ background: msg.sender_type === 'member' ? 'linear-gradient(135deg,#1a2030,#12182a)' : 'var(--bg-elevated)', border: `1px solid ${msg.sender_type === 'member' ? 'rgba(80,120,180,0.25)' : 'var(--border)'}`, borderRadius: msg.sender_type === 'member' ? '12px 2px 12px 12px' : '2px 12px 12px 12px', padding: '10px 14px', fontSize: '15px', lineHeight: 1.65, color: msg.sender_type === 'member' ? '#c8d8f0' : 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
                       {msg.sender_type === 'thinker'
-                        ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                        ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown((msg.content || '').replace(/^\[?\w[\w-]*\]?:\s*/i, '')) }} />
                         : msg.content}
                     </div>
                     {msg.sender_type === 'thinker' && msg.content && (
