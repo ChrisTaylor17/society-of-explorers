@@ -725,6 +725,7 @@ export default function SalonPage() {
                     { label: 'BOOK',      action: () => router.push('/book') },
                     { label: 'HALL',      action: () => router.push('/hall') },
                     { label: 'TEMPLE',    action: () => router.push('/temple') },
+                    { label: 'DATA LAYER', action: () => router.push('/data-layer') },
                   ]).map(item => (
                     <button key={item.label} onClick={() => { item.action(); setShowMoreNav(false); }} style={{
                       display: 'block', width: '100%', textAlign: 'left',
