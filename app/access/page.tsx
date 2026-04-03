@@ -52,6 +52,7 @@ export default function AccessPage() {
   const supabase = createClient();
   const [memberId, setMemberId] = useState<string | null>(null);
   const [memberName, setMemberName] = useState('');
+  const [memberTier, setMemberTier] = useState('free');
   const [safeData, setSafeData] = useState<SafeData | null>(null);
   const [loadingSafe, setLoadingSafe] = useState(false);
 
@@ -61,6 +62,7 @@ export default function AccessPage() {
         if (s?.member) {
           setMemberId(s.member.id);
           setMemberName(s.member.display_name || 'Explorer');
+          setMemberTier((s.member as any).tier || 'free');
           setLoadingSafe(true);
           fetch(`/api/safe?memberId=${s.member.id}`)
             .then(r => r.json())
@@ -104,10 +106,15 @@ export default function AccessPage() {
         </h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}12` }}>
-          {TIERS.map(tier => (
-            <div key={tier.name} style={{ background: '#0d0d0d', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column' }}>
+          {TIERS.map(tier => {
+            const tierMap: Record<string, string> = { OPEN: 'free', LOCKED: 'member', SEALED: 'patron' };
+            const isCurrentTier = memberTier === tierMap[tier.name] || (tier.name === 'OPEN' && memberTier === 'free');
+            const isUnlocked = memberId && !tier.locked;
+            return (
+            <div key={tier.name} style={{ background: isCurrentTier ? '#111' : '#0d0d0d', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', borderTop: isCurrentTier ? `2px solid ${gold}` : '2px solid transparent' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '2.5rem', color: gold, opacity: tier.locked ? 0.3 : 0.7, marginBottom: '0.75rem' }}>{tier.icon}</div>
+                {isCurrentTier && <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>YOUR TIER</div>}
+                <div style={{ fontSize: '2.5rem', color: gold, opacity: tier.locked && !isCurrentTier ? 0.3 : 0.7, marginBottom: '0.75rem' }}>{tier.icon}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold }}>{tier.name}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginTop: '0.25rem' }}>{tier.subtitle}</div>
               </div>
@@ -120,7 +127,7 @@ export default function AccessPage() {
                 ))}
               </div>
             </div>
-          ))}
+          ); })}
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>

@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { getBook, GREAT_BOOKS } from '@/lib/books/catalog';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 import { speakText, stopSpeaking } from '@/lib/tts';
+import { hasAccess } from '@/lib/auth/checkAccess';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -45,6 +46,7 @@ export default function BookReader() {
 
   // Member ID for progress saving + EXP
   const [memberId, setMemberId] = useState<string | null>(null);
+  const [memberTier, setMemberTier] = useState<string>('free');
   const [bookExp, setBookExp] = useState(0);
   const [expToast, setExpToast] = useState('');
 
@@ -78,6 +80,7 @@ export default function BookReader() {
       getMemberSession().then(session => {
         if (session?.member?.id) {
           setMemberId(session.member.id);
+          setMemberTier((session.member as any).tier || 'free');
           // Load saved progress
           fetch(`/api/great-books/progress?memberId=${session.member.id}&bookId=${bookId}`)
             .then(r => r.json())
@@ -112,7 +115,7 @@ export default function BookReader() {
   function handleMouseUp(e: React.MouseEvent) {
     const sel = window.getSelection();
     const text = sel?.toString().trim();
-    if (text && text.length > 15) {
+    if (text && text.length > 15 && hasAccess(memberTier, 'member')) {
       const range = sel!.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       const containerRect = readerRef.current?.getBoundingClientRect();
@@ -434,7 +437,10 @@ export default function BookReader() {
             <div style={{ textAlign: 'center', paddingTop: '4rem' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: thinker.color, opacity: 0.1, marginBottom: '1.5rem' }}>{thinker.symbol}</div>
               <div style={{ fontSize: '13px', color: muted, fontStyle: 'italic', lineHeight: 1.8 }}>
-                Select any passage.<br /><span style={{ color: thinker.color, opacity: 0.6 }}>{thinker.name}</span> will speak in the margin.
+                {hasAccess(memberTier, 'member')
+                  ? <>Select any passage.<br /><span style={{ color: thinker.color, opacity: 0.6 }}>{thinker.name}</span> will speak in the margin.</>
+                  : <>Annotations require a membership.<br /><a href="/join" style={{ color: gold, textDecoration: 'none' }}>Upgrade to annotate →</a></>
+                }
               </div>
             </div>
           )}

@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 
+import { hasAccess } from '@/lib/auth/checkAccess';
+
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
 const muted = '#9a8f7a';
@@ -30,6 +32,7 @@ export default function WaddleForge() {
   const [cardStatus, setCardStatus] = useState<'idle' | 'generating' | 'done'>('idle');
   const [feed, setFeed] = useState<any[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
+  const [memberTier, setMemberTier] = useState('free');
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -41,7 +44,7 @@ export default function WaddleForge() {
   // Load member + feed
   useEffect(() => {
     import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => { if (s?.member?.id) setMemberId(s.member.id); });
+      getMemberSession().then(s => { if (s?.member?.id) { setMemberId(s.member.id); setMemberTier((s.member as any).tier || 'free'); } });
     });
     fetch('/api/waddle').then(r => r.json()).then(d => setFeed(d.waddles || [])).catch(() => {});
   }, []);
@@ -288,6 +291,13 @@ export default function WaddleForge() {
 
       {/* Recorder */}
       <div style={{ maxWidth: '500px', margin: '0 auto', padding: '0 2rem 4rem', textAlign: 'center' }}>
+        {!hasAccess(memberTier, 'member') && !transcription && (
+          <div style={{ padding: '2rem', border: `1px solid ${gold}22`, background: '#0d0d0d', marginBottom: '2rem' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1rem' }}>⬡</div>
+            <p style={{ fontSize: '1rem', color: muted, marginBottom: '1rem' }}>Recording requires a membership.</p>
+            <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '8px 20px', textDecoration: 'none' }}>UPGRADE TO RECORD</a>
+          </div>
+        )}
         {/* Record button with progress ring */}
         <div style={{ position: 'relative', width: '120px', height: '120px', margin: '2rem auto' }}>
           <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, transform: 'rotate(-90deg)' }}>
@@ -298,8 +308,8 @@ export default function WaddleForge() {
               style={{ transition: 'stroke-dashoffset 0.3s' }} />
           </svg>
           <button
-            onMouseDown={startRecording} onMouseUp={() => isRecording && stopRecording()}
-            onTouchStart={startRecording} onTouchEnd={() => isRecording && stopRecording()}
+            onMouseDown={() => hasAccess(memberTier, 'member') && startRecording()} onMouseUp={() => isRecording && stopRecording()}
+            onTouchStart={() => hasAccess(memberTier, 'member') && startRecording()} onTouchEnd={() => isRecording && stopRecording()}
             style={{
               position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
               width: '80px', height: '80px', borderRadius: '50%',
