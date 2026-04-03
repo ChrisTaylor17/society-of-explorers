@@ -11,12 +11,12 @@ const muted = '#9a8f7a'
 const bg = '#0A0A0A'
 
 const THINKERS = [
-  { symbol: 'Σ', name: 'Socrates', line: 'Will dismantle everything you think you know. Bring questions.' },
-  { symbol: 'Π', name: 'Plato', line: 'Sees the ideal version of what you are building — and architects toward it.' },
-  { symbol: 'N', name: 'Nietzsche', line: 'Names the bold version you are afraid to commit to. No half-measures.' },
-  { symbol: 'M', name: 'Marcus Aurelius', line: 'Cuts everything that does not matter. Hands you the one thing that does.' },
-  { symbol: 'E', name: 'Einstein', line: 'Looks at your problem from a direction you have not tried yet.' },
-  { symbol: 'J', name: 'Steve Jobs', line: 'Tells you what to cut. Makes what remains insanely great.' },
+  { symbol: 'Σ', name: 'Socrates', line: 'Will dismantle everything you think you know.' },
+  { symbol: 'Π', name: 'Plato', line: 'Sees the form behind every shadow.' },
+  { symbol: 'N', name: 'Nietzsche', line: 'Demands you become who you are.' },
+  { symbol: 'M', name: 'Marcus Aurelius', line: 'Turns obstacles into the path forward.' },
+  { symbol: 'E', name: 'Einstein', line: 'Makes the complex beautifully simple.' },
+  { symbol: 'J', name: 'Steve Jobs', line: 'Ships ideas that change everything.' },
 ]
 
 const FEATURES = [
@@ -49,16 +49,15 @@ export default function HomePage() {
 
   const [authed, setAuthed] = useState(false)
 
-  // Check auth — redirect or update CTA
+  // Check auth — auto-redirect to salon if authenticated
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('soe_taste_used')) setTasteUsed(true)
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setAuthed(true)
+      if (user) { router.push('/salon'); return }
     })
-    // Also check wallet auth
     const walletId = localStorage.getItem('soe_wallet_id')
-    if (walletId) setAuthed(true)
-  }, [])
+    if (walletId) { router.push('/salon'); return }
+  }, [router, supabase])
 
   useEffect(() => {
     if (!tasteResponse) return
@@ -200,10 +199,12 @@ export default function HomePage() {
           <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', textAlign: 'center', marginBottom: '3rem' }}>SIX MINDS. YOUR ADVISORS.</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: `${gold}12` }}>
             {THINKERS.map(t => (
-              <div key={t.symbol} style={{ background: '#0d0d0d', padding: '2rem' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.8rem', color: gold, opacity: 0.3, marginBottom: '0.75rem' }}>{t.symbol}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>{t.name.toUpperCase()}</div>
-                <p style={{ fontSize: '14px', color: muted, lineHeight: 1.7 }}>{t.line}</p>
+              <div key={t.symbol} style={{ background: '#0d0d0d', padding: '2rem', border: `1px solid ${gold}11`, transition: 'border-color 0.3s, box-shadow 0.3s', cursor: 'default' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${gold}44`; (e.currentTarget as HTMLElement).style.boxShadow = `0 0 30px ${gold}10` }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = `${gold}11`; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2.5rem', color: gold, opacity: 0.3, marginBottom: '1rem', textAlign: 'center' }}>{t.symbol}</div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem', textAlign: 'center' }}>{t.name.toUpperCase()}</div>
+                <p style={{ fontSize: '14px', color: muted, lineHeight: 1.7, textAlign: 'center' }}>{t.line}</p>
               </div>
             ))}
           </div>
