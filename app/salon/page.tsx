@@ -128,12 +128,44 @@ export default function SalonPage() {
 
   // ── Auth ─────────────────────────────────────────────────────
   useEffect(() => {
-    getMemberSession().then(session => {
-      if (!session) { router.push('/'); return; }
-      setMember(session.member);
-      setAuthReady(true);
-    });
-  }, []);
+    async function checkAuth() {
+      // First try getMemberSession (handles both Supabase + wallet)
+      const session = await getMemberSession();
+      if (session) {
+        setMember(session.member);
+        setAuthReady(true);
+        return;
+      }
+
+      // If getMemberSession failed but there IS a Supabase user (e.g. RLS blocked the member query),
+      // try creating the member via ensure-member before giving up
+      const supabaseClient = (await import('@/lib/supabase/client')).createClient();
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        try {
+          const res = await fetch('/api/auth/ensure-member', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              supabaseAuthId: user.id,
+              displayName: user.user_metadata?.full_name || user.user_metadata?.name,
+              email: user.email,
+            }),
+          });
+          const data = await res.json();
+          if (data.member) {
+            setMember(data.member);
+            setAuthReady(true);
+            return;
+          }
+        } catch {}
+      }
+
+      // Genuinely not authed — redirect to homepage
+      router.push('/');
+    }
+    checkAuth();
+  }, [router]);
 
   // ── Messages ─────────────────────────────────────────────────
   const currentSalonId = privateMode ? `private-${member?.id}` : 'general';

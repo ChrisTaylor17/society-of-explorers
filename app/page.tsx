@@ -49,15 +49,15 @@ export default function HomePage() {
 
   const [authed, setAuthed] = useState(false)
 
-  // Check auth — auto-redirect to salon if authenticated
+  // Check auth state (no redirect — just update CTA buttons)
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('soe_taste_used')) setTasteUsed(true)
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) { router.push('/salon'); return }
+      if (user) setAuthed(true)
     })
     const walletId = localStorage.getItem('soe_wallet_id')
-    if (walletId) { router.push('/salon'); return }
-  }, [router, supabase])
+    if (walletId) setAuthed(true)
+  }, [supabase])
 
   useEffect(() => {
     if (!tasteResponse) return

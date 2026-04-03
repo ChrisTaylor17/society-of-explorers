@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // Check if member exists
     const { data: existing } = await supabaseAdmin
       .from('members')
-      .select('id, display_name')
+      .select('*')
       .eq('supabase_auth_id', supabaseAuthId)
       .single();
 
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
         supabase_auth_id: supabaseAuthId,
         display_name: displayName || email?.split('@')[0] || 'Explorer',
         exp_tokens: 0,
+        tier: 'free',
       })
       .select()
       .single();
