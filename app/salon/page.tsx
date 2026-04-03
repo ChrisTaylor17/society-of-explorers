@@ -729,6 +729,7 @@ export default function SalonPage() {
                     { label: 'TEMPLE',    action: () => router.push('/temple') },
                     { label: 'DATA LAYER', action: () => router.push('/data-layer') },
                     { label: 'WADDLE',        action: () => router.push('/waddle') },
+                    { label: 'DASHBOARD',     action: () => router.push('/dashboard') },
                     { label: 'LOCK & SAFE',   action: () => router.push('/access') },
                     { label: 'THREE PILLARS', action: () => router.push('/three-pillars') },
                   ]).map(item => (
