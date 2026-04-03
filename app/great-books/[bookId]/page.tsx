@@ -135,10 +135,26 @@ export default function BookReader() {
     const BATCH = 3;
     const end = Math.min(startIdx + BATCH, paragraphs.length);
     for (let i = startIdx; i < end; i++) {
-      if (!isReading) break; // check won't work mid-await but stopSpeaking handles it
-      try { await speakText(paragraphs[i], readVoice); } catch { break; }
+      try {
+        await speakText(paragraphs[i], readVoice);
+      } catch (err) {
+        console.error('Read aloud failed at paragraph', i, err);
+        break;
+      }
     }
     setReadFromIdx(end);
+    setIsReading(false);
+  }
+
+  async function readFromParagraph(idx: number) {
+    setIsReading(true);
+    const text = paragraphs.slice(idx, idx + 3).join(' ');
+    try {
+      await speakText(text, readVoice);
+    } catch (err) {
+      console.error('Paragraph read failed:', err);
+    }
+    setReadFromIdx(idx + 3);
     setIsReading(false);
   }
 
@@ -232,7 +248,12 @@ export default function BookReader() {
             </div>
           ) : (
             paragraphs.map((p, i) => (
-              <p key={i} style={{ marginBottom: '1.5rem', textIndent: i > 0 ? '2rem' : 0 }}>{p}</p>
+              <p key={i}
+                onClick={() => readFromParagraph(i)}
+                style={{ marginBottom: '1.5rem', textIndent: i > 0 ? '2rem' : 0, cursor: 'pointer', transition: 'color 0.2s', borderLeft: '2px solid transparent', paddingLeft: '12px' }}
+                onMouseEnter={e => { (e.target as HTMLElement).style.borderLeftColor = `${gold}40`; }}
+                onMouseLeave={e => { (e.target as HTMLElement).style.borderLeftColor = 'transparent'; }}
+              >{p}</p>
             ))
           )}
 
@@ -281,17 +302,17 @@ export default function BookReader() {
             <div style={{ marginBottom: '2rem', animation: 'fadeIn 0.4s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
                 <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: thinker.color, opacity: 0.8 }}>{thinker.symbol}</span>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: thinker.color, opacity: 0.7 }}>{thinker.name.toUpperCase()}</span>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: thinker.color, opacity: 0.7 }}>{thinker.name.toUpperCase()}</span>
               </div>
-              <div style={{ fontSize: '12px', color: muted, fontStyle: 'italic', borderLeft: `2px solid ${gold}30`, paddingLeft: '10px', marginBottom: '1rem', lineHeight: 1.6 }}>
+              <div style={{ fontSize: '14px', color: muted, fontStyle: 'italic', borderLeft: `2px solid ${gold}30`, paddingLeft: '10px', marginBottom: '1rem', lineHeight: 1.7 }}>
                 &ldquo;{activeNote?.passage.slice(0, 120)}...&rdquo;
               </div>
               {annotating && !annotation && (
-                <div style={{ fontSize: '12px', color: muted, fontStyle: 'italic' }}>{thinker.name} is reading...</div>
+                <div style={{ fontSize: '14px', color: muted, fontStyle: 'italic' }}>{thinker.name} is reading...</div>
               )}
               {annotation && (
                 <div>
-                  <div style={{ fontSize: '14px', color: parchment, lineHeight: 1.8 }}>
+                  <div style={{ fontSize: '16px', color: parchment, lineHeight: 1.9 }}>
                     <div dangerouslySetInnerHTML={{ __html: renderMarkdown(annotation) }} />
                   </div>
                   <button onClick={() => speakText(annotation, activeThinker).catch(() => {})} style={{
@@ -312,10 +333,10 @@ export default function BookReader() {
                   <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: nt.color, opacity: 0.6 }}>{nt.symbol}</span>
                   <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: nt.color, opacity: 0.5 }}>{nt.name.toUpperCase()}</span>
                 </div>
-                <div style={{ fontSize: '11px', color: muted, fontStyle: 'italic', marginBottom: '0.5rem', lineHeight: 1.5 }}>
+                <div style={{ fontSize: '13px', color: muted, fontStyle: 'italic', marginBottom: '0.5rem', lineHeight: 1.6 }}>
                   &ldquo;{note.passage.slice(0, 80)}...&rdquo;
                 </div>
-                <div style={{ fontSize: '13px', color: `${parchment}cc`, lineHeight: 1.7 }}>
+                <div style={{ fontSize: '15px', color: `${parchment}cc`, lineHeight: 1.8 }}>
                   <div dangerouslySetInnerHTML={{ __html: renderMarkdown(note.annotation) }} />
                 </div>
                 <button onClick={() => speakText(note.annotation, note.thinkerId).catch(() => {})} style={{

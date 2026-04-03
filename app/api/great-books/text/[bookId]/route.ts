@@ -64,36 +64,43 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
     if (!res.ok) throw new Error(`Gutenberg returned ${res.status}`);
     let rawText = await res.text();
 
-    // Strip Gutenberg header/footer
-    const startMarker = '*** START OF';
-    const endMarker = '*** END OF';
-    const startIdx = rawText.indexOf(startMarker);
-    const endIdx = rawText.indexOf(endMarker);
-    if (startIdx > -1) rawText = rawText.slice(rawText.indexOf('\n', startIdx) + 1);
-    if (endIdx > -1) rawText = rawText.slice(0, endIdx);
+    // Strip Gutenberg header (multiple marker formats)
+    const startMatch = rawText.match(/\*\*\* ?START OF (THE |THIS )?PROJECT GUTENBERG/i);
+    if (startMatch) {
+      const idx = rawText.indexOf(startMatch[0]);
+      rawText = rawText.slice(rawText.indexOf('\n', idx) + 1);
+    }
 
-    // Strip boilerplate lines (translator notes, Gutenberg credits, etc.)
-    const boilerplatePatterns = /^.*(GUTENBERG|PROJECT|LICENSE|PRODUCED BY|TRANSCRIBER|EDITOR'S NOTE|TRANSLATED BY|PUBLISHED|FREDERICK STREET|ARRANGEMENT|EBOOK|POSTING DATE|RELEASE DATE|CHARSET|ENCODING).*/gim;
-    rawText = rawText.replace(boilerplatePatterns, '');
+    // Strip Gutenberg footer
+    const endMatch = rawText.match(/\*\*\* ?END OF (THE |THIS )?PROJECT GUTENBERG/i);
+    if (endMatch) {
+      rawText = rawText.slice(0, rawText.indexOf(endMatch[0]));
+    }
 
-    // Strip leading translator/editor credits (first lines before actual content)
+    // Strip leading boilerplate (translator notes, editor credits, etc.)
     const lines = rawText.split('\n');
     let contentStart = 0;
-    for (let i = 0; i < Math.min(lines.length, 30); i++) {
-      const line = lines[i].trim().toUpperCase();
+    for (let i = 0; i < Math.min(lines.length, 50); i++) {
+      const line = lines[i].trim();
+      const upper = line.toUpperCase();
       if (line.length === 0) continue;
-      // Skip lines that look like metadata
-      if (/^(BY |TRANSLATED|EDITED|WITH |INTRODUCTION|PREFACE BY|PUBLISHED|COPYRIGHT|\d{4}|FIRST|SECOND|THIRD|CONTENTS|TABLE OF)/.test(line) && line.length < 120) {
+      // Known boilerplate keywords
+      if (/TRANSLATED BY|EDITOR|PRODUCED BY|TRANSCRIBER|FREDERICK STREET|PUBLISHED BY|HORACE|SAMUEL/i.test(line) && line.length < 150) {
         contentStart = i + 1;
         continue;
       }
-      // If we hit a line that looks like actual content (lowercase, long), stop stripping
-      if (lines[i].trim().length > 40 && /[a-z]/.test(lines[i])) break;
-      // ALL CAPS short lines at the start are usually titles/credits
-      if (line === line.toUpperCase() && line.length < 80) {
+      // Skip metadata lines
+      if (/^(BY |WITH |INTRODUCTION|PREFACE BY|COPYRIGHT|\d{4}$|FIRST EDITION|SECOND EDITION|CONTENTS$|TABLE OF)/i.test(upper) && line.length < 120) {
         contentStart = i + 1;
         continue;
       }
+      // ALL CAPS short lines at start are usually titles/credits — skip
+      if (upper === line && line.length < 80 && line.length > 2) {
+        contentStart = i + 1;
+        continue;
+      }
+      // If we hit actual content (mixed case, 40+ chars), stop stripping
+      if (line.length > 40 && /[a-z]/.test(line)) break;
     }
     if (contentStart > 0 && contentStart < 30) {
       rawText = lines.slice(contentStart).join('\n');
