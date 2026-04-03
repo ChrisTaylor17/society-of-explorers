@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getBook, GREAT_BOOKS } from '@/lib/books/catalog';
 import { renderMarkdown } from '@/lib/renderMarkdown';
-import { speakText } from '@/lib/tts';
+import { speakText, stopSpeaking } from '@/lib/tts';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -28,6 +28,11 @@ export default function BookReader() {
   const [totalSections, setTotalSections] = useState(0);
   const [currentSection, setCurrentSection] = useState(1);
   const [activeThinker, setActiveThinker] = useState(book?.recommended_thinker || 'socrates');
+
+  // Read aloud
+  const [isReading, setIsReading] = useState(false);
+  const [readFromIdx, setReadFromIdx] = useState(0);
+  const readVoice = book?.authorThinkerId || 'socrates';
 
   // Selection popup
   const [popup, setPopup] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -125,6 +130,23 @@ export default function BookReader() {
     setAnnotating(false);
   }
 
+  async function readAloud(startIdx: number) {
+    setIsReading(true);
+    const BATCH = 3;
+    const end = Math.min(startIdx + BATCH, paragraphs.length);
+    for (let i = startIdx; i < end; i++) {
+      if (!isReading) break; // check won't work mid-await but stopSpeaking handles it
+      try { await speakText(paragraphs[i], readVoice); } catch { break; }
+    }
+    setReadFromIdx(end);
+    setIsReading(false);
+  }
+
+  function stopReading() {
+    stopSpeaking();
+    setIsReading(false);
+  }
+
   if (!book) return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', color: gold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', letterSpacing: '0.2em' }}>
       Book not found
@@ -159,6 +181,22 @@ export default function BookReader() {
               }} title={`Section ${i + 1}`} />
             ))}
           </div>
+
+          {/* Read aloud */}
+          {isReading ? (
+            <button onClick={stopReading} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: '#c05050', background: 'rgba(192,80,80,0.1)', border: '1px solid rgba(192,80,80,0.4)', padding: '6px 12px', cursor: 'pointer' }}>
+              ⬡ STOP
+            </button>
+          ) : (
+            <button onClick={() => readAloud(readFromIdx)} disabled={loading || paragraphs.length === 0} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, background: `${gold}11`, border: `1px solid ${gold}33`, padding: '6px 12px', cursor: 'pointer', opacity: loading ? 0.3 : 1 }}>
+              ⬡ READ
+            </button>
+          )}
+          {!isReading && readFromIdx > 0 && readFromIdx < paragraphs.length && (
+            <button onClick={() => readAloud(readFromIdx)} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold, background: 'none', border: `1px solid ${gold}22`, padding: '5px 10px', cursor: 'pointer', opacity: 0.7 }}>
+              CONTINUE ⬡
+            </button>
+          )}
 
           {/* Thinker selector */}
           <div style={{ display: 'flex', gap: '6px' }}>

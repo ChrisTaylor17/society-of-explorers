@@ -8,6 +8,7 @@ export interface Book {
   year: string;
   gutenberg_id: string;
   recommended_thinker: string;
+  authorThinkerId?: string;
   description: string;
 }
 
@@ -19,6 +20,7 @@ export const GREAT_BOOKS: Book[] = [
     year: '~380 BC',
     gutenberg_id: '1497',
     recommended_thinker: 'plato',
+    authorThinkerId: 'plato',
     description: 'The blueprint for every utopia and every tyranny. What is justice? Who should rule? Plato answers — and the answers are dangerous.',
   },
   {
@@ -28,6 +30,7 @@ export const GREAT_BOOKS: Book[] = [
     year: '~170 AD',
     gutenberg_id: '2680',
     recommended_thinker: 'aurelius',
+    authorThinkerId: 'aurelius',
     description: 'Private journals of a Roman emperor at war. Not philosophy for the academy — philosophy for survival.',
   },
   {
@@ -37,6 +40,7 @@ export const GREAT_BOOKS: Book[] = [
     year: '1887',
     gutenberg_id: '52319',
     recommended_thinker: 'nietzsche',
+    authorThinkerId: 'nietzsche',
     description: 'Where did "good" and "evil" come from? Nietzsche traces the bloodline and finds something disturbing.',
   },
   {
@@ -46,6 +50,7 @@ export const GREAT_BOOKS: Book[] = [
     year: '~399 BC',
     gutenberg_id: '1656',
     recommended_thinker: 'socrates',
+    authorThinkerId: 'plato',
     description: 'Socrates on trial for his life. His defense is not a defense — it is an attack on everyone in the room.',
   },
   {
@@ -82,6 +87,7 @@ export const GREAT_BOOKS: Book[] = [
     year: '1916',
     gutenberg_id: '5001',
     recommended_thinker: 'einstein',
+    authorThinkerId: 'einstein',
     description: 'Einstein explains his own revolution — in plain language, for anyone willing to think carefully.',
   },
 ];

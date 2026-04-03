@@ -72,7 +72,34 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
     if (startIdx > -1) rawText = rawText.slice(rawText.indexOf('\n', startIdx) + 1);
     if (endIdx > -1) rawText = rawText.slice(0, endIdx);
 
-    // Split into paragraphs (sections of ~2000 words each for manageable chunks)
+    // Strip boilerplate lines (translator notes, Gutenberg credits, etc.)
+    const boilerplatePatterns = /^.*(GUTENBERG|PROJECT|LICENSE|PRODUCED BY|TRANSCRIBER|EDITOR'S NOTE|TRANSLATED BY|PUBLISHED|FREDERICK STREET|ARRANGEMENT|EBOOK|POSTING DATE|RELEASE DATE|CHARSET|ENCODING).*/gim;
+    rawText = rawText.replace(boilerplatePatterns, '');
+
+    // Strip leading translator/editor credits (first lines before actual content)
+    const lines = rawText.split('\n');
+    let contentStart = 0;
+    for (let i = 0; i < Math.min(lines.length, 30); i++) {
+      const line = lines[i].trim().toUpperCase();
+      if (line.length === 0) continue;
+      // Skip lines that look like metadata
+      if (/^(BY |TRANSLATED|EDITED|WITH |INTRODUCTION|PREFACE BY|PUBLISHED|COPYRIGHT|\d{4}|FIRST|SECOND|THIRD|CONTENTS|TABLE OF)/.test(line) && line.length < 120) {
+        contentStart = i + 1;
+        continue;
+      }
+      // If we hit a line that looks like actual content (lowercase, long), stop stripping
+      if (lines[i].trim().length > 40 && /[a-z]/.test(lines[i])) break;
+      // ALL CAPS short lines at the start are usually titles/credits
+      if (line === line.toUpperCase() && line.length < 80) {
+        contentStart = i + 1;
+        continue;
+      }
+    }
+    if (contentStart > 0 && contentStart < 30) {
+      rawText = lines.slice(contentStart).join('\n');
+    }
+
+    // Split into paragraphs
     const allParagraphs = rawText
       .split(/\n\n+/)
       .map(p => p.replace(/\r/g, '').replace(/\n/g, ' ').trim())
