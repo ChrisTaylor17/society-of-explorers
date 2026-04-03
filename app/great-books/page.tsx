@@ -32,6 +32,10 @@ export default function GreatBooksLibrary() {
           The foundational texts of civilization — read alongside Socrates, Nietzsche, Aurelius, and the council. Highlight any passage. A thinker responds in the margin.
         </p>
 
+        <a href="/book-salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '10px 24px', textDecoration: 'none', display: 'inline-block', marginBottom: '2rem' }}>
+          JOIN A BOOK SALON →
+        </a>
+
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
           {['all', 'socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs'].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
