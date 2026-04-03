@@ -192,6 +192,7 @@ export default function DataLayer() {
           <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>THE SALON</a>
           <a href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>GREAT BOOKS</a>
           <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>JOIN</a>
+          <a href="/three-pillars" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>THREE PILLARS</a>
           <a href="/labyrinth" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>LABYRINTH</a>
         </div>
         <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '12px', color: muted, opacity: 0.5 }}>chris@societyofexplorers.com</div>

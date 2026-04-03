@@ -257,6 +257,11 @@ export default function JoinPage() {
               </div>
             ))}
           </div>
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <a href="/three-pillars" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.6 }}>
+              READ ABOUT OUR THREE-PILLAR STRUCTURE &rarr;
+            </a>
+          </div>
         </div>
       </section>
 
