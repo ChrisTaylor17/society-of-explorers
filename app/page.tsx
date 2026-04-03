@@ -62,14 +62,14 @@ export default function HomePage() {
   async function signInWithGoogle() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/salon' },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/salon` },
     })
   }
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError(''); setMessage('')
     if (isSignUp) {
-      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: 'https://societyofexplorers.com/salon' } })
+      const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/salon` } })
       if (error) setError(error.message); else setMessage('Check your email to confirm, then sign in.')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
