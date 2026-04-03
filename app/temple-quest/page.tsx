@@ -20,31 +20,36 @@ interface Room {
   artifacts: { x: number; y: number }[];
 }
 
+// Layout: rooms share walls so doors align perfectly
+// Row 1: Entrance (centered)
+// Row 2: Socrates | Plato (share wall, entrance door connects to both via corridor)
+// Row 3: Nietzsche | Aurelius | Einstein (share walls)
+// Row 4: Sanctum (below Einstein)
 const ROOMS: Room[] = [
-  { id: 'entrance', name: 'ENTRANCE HALL', x: 300, y: 0, w: 200, h: 150,
-    doors: [{ side: 's', pos: 100 }],
+  { id: 'entrance', name: 'ENTRANCE HALL', x: 200, y: 0, w: 200, h: 150,
+    doors: [{ side: 's', pos: 50 }, { side: 's', pos: 150 }],
     artifacts: [{ x: 50, y: 50 }, { x: 150, y: 100 }] },
-  { id: 'socrates', name: 'HALL OF SOCRATES', x: 100, y: 200, w: 200, h: 150,
-    doors: [{ side: 'n', pos: 100 }, { side: 'e', pos: 75 }],
+  { id: 'socrates', name: 'HALL OF SOCRATES', x: 100, y: 150, w: 200, h: 150,
+    doors: [{ side: 'n', pos: 150 }, { side: 'e', pos: 75 }, { side: 's', pos: 100 }],
     npc: { x: 100, y: 80, symbol: 'Σ', color: '#C9A94E', thinkerId: 'socrates' },
     artifacts: [{ x: 40, y: 40 }, { x: 160, y: 120 }, { x: 30, y: 110 }] },
-  { id: 'plato', name: 'HALL OF PLATO', x: 350, y: 200, w: 200, h: 150,
-    doors: [{ side: 'w', pos: 75 }, { side: 's', pos: 100 }, { side: 'n', pos: 100 }],
+  { id: 'plato', name: 'HALL OF PLATO', x: 300, y: 150, w: 200, h: 150,
+    doors: [{ side: 'n', pos: 50 }, { side: 'w', pos: 75 }, { side: 's', pos: 100 }],
     npc: { x: 100, y: 80, symbol: 'Π', color: '#7B68EE', thinkerId: 'plato' },
     artifacts: [{ x: 50, y: 30 }, { x: 150, y: 110 }] },
-  { id: 'nietzsche', name: 'HALL OF NIETZSCHE', x: 0, y: 400, w: 200, h: 150,
+  { id: 'nietzsche', name: 'HALL OF NIETZSCHE', x: 0, y: 300, w: 200, h: 150,
     doors: [{ side: 'n', pos: 100 }, { side: 'e', pos: 75 }],
     npc: { x: 100, y: 80, symbol: 'N', color: '#DC143C', thinkerId: 'nietzsche' },
     artifacts: [{ x: 40, y: 30 }, { x: 160, y: 120 }, { x: 100, y: 50 }] },
-  { id: 'aurelius', name: 'HALL OF AURELIUS', x: 250, y: 400, w: 200, h: 150,
+  { id: 'aurelius', name: 'HALL OF AURELIUS', x: 200, y: 300, w: 200, h: 150,
     doors: [{ side: 'w', pos: 75 }, { side: 'e', pos: 75 }, { side: 'n', pos: 100 }],
     npc: { x: 100, y: 80, symbol: 'M', color: '#8B7355', thinkerId: 'aurelius' },
     artifacts: [{ x: 50, y: 40 }, { x: 150, y: 100 }] },
-  { id: 'einstein', name: 'HALL OF EINSTEIN', x: 500, y: 400, w: 200, h: 150,
-    doors: [{ side: 'w', pos: 75 }, { side: 's', pos: 100 }],
+  { id: 'einstein', name: 'HALL OF EINSTEIN', x: 400, y: 300, w: 200, h: 150,
+    doors: [{ side: 'w', pos: 75 }, { side: 's', pos: 100 }, { side: 'n', pos: 100 }],
     npc: { x: 100, y: 80, symbol: 'E', color: '#4169E1', thinkerId: 'einstein' },
     artifacts: [{ x: 40, y: 30 }, { x: 160, y: 120 }] },
-  { id: 'sanctum', name: 'THE INNER SANCTUM', x: 500, y: 600, w: 200, h: 150,
+  { id: 'sanctum', name: 'THE INNER SANCTUM', x: 400, y: 450, w: 200, h: 150,
     doors: [{ side: 'n', pos: 100 }],
     artifacts: [{ x: 100, y: 75 }] },
 ];
@@ -115,7 +120,7 @@ const PUZZLES: Record<string, Puzzle> = {
 export default function TempleQuest() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keysRef = useRef<Set<string>>(new Set());
-  const playerRef = useRef({ x: 400, y: 60 }); // Spawn in entrance
+  const playerRef = useRef({ x: 300, y: 60 }); // Spawn in entrance (x=200..400, y=0..150)
   const [collected, setCollected] = useState<Set<string>>(new Set());
   const [solved, setSolved] = useState<Set<string>>(new Set());
   const [exp, setExp] = useState(0);

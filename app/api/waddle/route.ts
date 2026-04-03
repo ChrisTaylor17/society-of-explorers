@@ -4,12 +4,23 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 export async function GET() {
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('waddles')
-    .select('*, members(display_name)')
+    .select('*, members!waddles_member_id_fkey(display_name)')
     .eq('is_public', true)
     .order('created_at', { ascending: false })
     .limit(20);
+
+  if (error) {
+    // Fallback: query without join if foreign key doesn't exist
+    const { data: fallback } = await supabaseAdmin
+      .from('waddles')
+      .select('*')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    return NextResponse.json({ waddles: fallback || [] });
+  }
 
   return NextResponse.json({ waddles: data || [] });
 }
