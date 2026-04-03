@@ -27,11 +27,14 @@ function isArtifactRequest(message: string): boolean {
 }
 
 function buildMemberContext(m: any): string {
-  const name = m.display_name && !m.display_name.startsWith('0x')
-    ? m.display_name
-    : 'Anonymous Explorer';
+  let name = 'Explorer';
+  if (m.display_name && !m.display_name.startsWith('0x')) {
+    name = m.display_name;
+  } else if (m.display_name?.startsWith('0x')) {
+    name = `Explorer (wallet ${m.display_name.slice(0, 6)}...)`;
+  }
   return [
-    `The member speaking is ${name}.`,
+    `The member speaking is ${name}. Address them by name.`,
     m.bio ? `Bio: ${m.bio}` : null,
     m.discipline ? `Discipline: ${m.discipline}` : null,
     m.skills?.length ? `Skills: ${m.skills.join(', ')}` : null,
@@ -199,7 +202,9 @@ export async function POST(req: NextRequest) {
           }
 
           // --- PARSE ACTIONS ---
-          const { cleanText, actions } = parseActions(fullText);
+          const { cleanText: rawClean, actions } = parseActions(fullText);
+          // Strip any "[thinkerId]: " prefix that Claude may echo from history
+          const cleanText = rawClean.replace(/^\[[\w-]+\]:\s*/i, '');
 
           // --- SAVE THINKER RESPONSE (clean text only, no action JSON) ---
           const thinkerDisplayNames: Record<string, string> = {

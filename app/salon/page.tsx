@@ -165,11 +165,28 @@ export default function SalonPage() {
           // Deduplicate: skip if this message ID is already in state,
           // or if it matches an optimistic/streaming message
           setMessages(prev => {
+            // Skip if DB id already in state
             if (msg.id && prev.some(m => m.id === msg.id)) return prev;
-            // Also skip if we have a recent optimistic member message with same content
+            // Skip duplicate optimistic member messages
             if (msg.sender_type === 'member' && prev.some(m =>
               m.sender_type === 'member' && m.content === msg.content && m.id?.startsWith('member-')
             )) return prev;
+            // Skip thinker messages that match a streamed response already in state
+            if (msg.sender_type === 'thinker' && msg.thinker_id && prev.some(m =>
+              m.sender_type === 'thinker' && m.thinker_id === msg.thinker_id &&
+              m.content === msg.content
+            )) return prev;
+            // For streamed thinker messages (temp id), replace with DB version
+            if (msg.sender_type === 'thinker' && msg.thinker_id) {
+              const streamedIdx = prev.findIndex(m =>
+                m.id?.startsWith('streaming-') && m.thinker_id === msg.thinker_id
+              );
+              if (streamedIdx >= 0) {
+                const updated = [...prev];
+                updated[streamedIdx] = { ...msg, sender_type: msg.sender_type, sender_name: msg.sender_name || msg.thinker_id };
+                return updated;
+              }
+            }
             return [...prev, msg];
           });
         })
