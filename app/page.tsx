@@ -366,6 +366,15 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Quest link */}
+      <a href="/temple-quest" style={{
+        position: 'relative', zIndex: 1, marginTop: '2rem',
+        fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
+        color: gold, textDecoration: 'none', opacity: 0.5,
+      }}>
+        ⬡ PLAY THE TEMPLE QUEST
+      </a>
+
       {/* Footer */}
       <div style={{
         position: 'absolute',

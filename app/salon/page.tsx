@@ -685,6 +685,7 @@ export default function SalonPage() {
             { label: 'HUB',       action: () => { closeAllOverlays(); setShowHub(v => !v); },   active: showHub },
             { label: 'MEMBERS',   action: () => router.push('/members'), active: false },
             { label: 'BOOKS',     action: () => router.push('/great-books'), active: false },
+            { label: 'QUEST',     action: () => router.push('/temple-quest'), active: false },
             { label: 'LABYRINTH', action: () => router.push('/labyrinth'), active: false },
           ] as const).map(btn => (
             <button key={btn.label} onClick={btn.action} style={{
