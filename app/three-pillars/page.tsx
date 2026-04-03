@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'The Three Pillars | Society of Explorers',
-  description: 'One vision. Three vessels. A structure designed for convergence.',
+  description: 'Consilience Systems LLC, Society of Explorers, and the SOE Nonprofit — the organizational architecture.',
 };
 
 export default function ThreePillars() {
@@ -19,7 +19,7 @@ export default function ThreePillars() {
     <div style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
 
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>&larr; RETURN TO THE SALON</a>
+        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← RETURN TO THE SALON</a>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5 }}>SOCIETY OF EXPLORERS</div>
       </nav>
 
@@ -30,33 +30,37 @@ export default function ThreePillars() {
           THE THREE PILLARS
         </h1>
         <p style={{ fontSize: '1.2rem', color: muted, fontStyle: 'italic', lineHeight: 1.8, maxWidth: '550px', marginBottom: '4rem' }}>
-          One vision. Three vessels. A structure designed for convergence.
+          One vision. Three vessels. A hierarchy designed for convergence.
         </p>
 
-        {/* CSS Tree Diagram */}
-        <div style={{ position: 'relative', width: '320px', height: '220px' }}>
-          {/* Trunk */}
-          <div style={{ position: 'absolute', left: '50%', bottom: 0, width: '2px', height: '80px', background: gold, transform: 'translateX(-50%)' }} />
-          {/* Left branch */}
-          <div style={{ position: 'absolute', left: '50%', bottom: '80px', width: '130px', height: '2px', background: gold, transform: 'translateX(-100%)' }} />
-          <div style={{ position: 'absolute', left: 'calc(50% - 130px)', bottom: '80px', width: '2px', height: '60px', background: gold }} />
-          {/* Right branch */}
-          <div style={{ position: 'absolute', left: '50%', bottom: '80px', width: '130px', height: '2px', background: gold }} />
-          <div style={{ position: 'absolute', left: 'calc(50% + 130px)', bottom: '80px', width: '2px', height: '60px', background: gold }} />
-          {/* Center branch */}
-          <div style={{ position: 'absolute', left: '50%', bottom: '80px', width: '2px', height: '80px', background: gold, transform: 'translateX(-50%)' }} />
-          {/* Labels */}
-          <div style={{ position: 'absolute', left: 'calc(50% - 130px)', top: '0', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, textAlign: 'center', width: '100px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '4px' }}>&#x2B21;</div>LLC
+        {/* Hierarchy Tree — Consilience at top, branching down */}
+        <div style={{ position: 'relative', width: '340px', height: '200px' }}>
+          {/* Root: Consilience */}
+          <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: purple, marginBottom: '4px' }}>◊</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: purple }}>CONSILIENCE</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>PARENT DAC</div>
           </div>
-          <div style={{ position: 'absolute', left: '50%', top: '0', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: purple, textAlign: 'center', width: '100px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '4px' }}>◊</div>CONSILIENCE
+          {/* Trunk down from Consilience */}
+          <div style={{ position: 'absolute', left: '50%', top: '55px', width: '2px', height: '40px', background: gold, transform: 'translateX(-50%)' }} />
+          {/* Horizontal bar */}
+          <div style={{ position: 'absolute', left: 'calc(50% - 120px)', top: '95px', width: '240px', height: '2px', background: gold }} />
+          {/* Left branch down to SoE LLC */}
+          <div style={{ position: 'absolute', left: 'calc(50% - 120px)', top: '95px', width: '2px', height: '40px', background: gold }} />
+          {/* Right branch down to Nonprofit */}
+          <div style={{ position: 'absolute', left: 'calc(50% + 120px)', top: '95px', width: '2px', height: '40px', background: gold }} />
+          {/* SoE LLC label */}
+          <div style={{ position: 'absolute', left: 'calc(50% - 120px)', top: '140px', transform: 'translateX(-50%)', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: gold, marginBottom: '4px' }}>⬡</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: gold }}>SOE LLC</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>DAO / COMMUNITY</div>
           </div>
-          <div style={{ position: 'absolute', left: 'calc(50% + 130px)', top: '0', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: warmGold, textAlign: 'center', width: '100px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '4px' }}>△</div>NONPROFIT
+          {/* Nonprofit label */}
+          <div style={{ position: 'absolute', left: 'calc(50% + 120px)', top: '140px', transform: 'translateX(-50%)', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: warmGold, marginBottom: '4px' }}>△</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: warmGold }}>SOE NONPROFIT</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>501(c)(3)</div>
           </div>
-          {/* Root label */}
-          <div style={{ position: 'absolute', left: '50%', bottom: '-30px', transform: 'translateX(-50%)', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: muted }}>THE VISION</div>
         </div>
       </section>
 
@@ -64,10 +68,13 @@ export default function ThreePillars() {
       <section style={{ padding: '8rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>I.</div>
         <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '2rem', borderBottom: `1px solid ${border}`, paddingBottom: '1rem' }}>
-          WHY THREE
+          WHY THIS STRUCTURE
         </h2>
-        <p style={{ fontSize: '1.15rem', lineHeight: 1.9 }}>
-          A single entity cannot hold what we are building. Commerce needs freedom to move. Vision needs freedom to think. Education needs freedom to give. If you collapse all three into one, the commercial pressures corrupt the vision, the vision delays the commerce, and the education becomes marketing. The three-pillar structure is not bureaucracy — it is architecture. Each entity exists to protect the others from its own temptations.
+        <p style={{ fontSize: '1.15rem', lineHeight: 1.9, marginBottom: '2rem' }}>
+          A single entity cannot hold what we are building. Infrastructure needs freedom to build. Community needs freedom to gather. Education needs freedom to give. Consilience Systems is the root — the decentralized autonomous corporation that builds the technology backbone. From it, two branches extend: the Society of Explorers LLC, which runs the community and membership experience, and the SOE Nonprofit, which ensures the mission reaches everyone.
+        </p>
+        <p style={{ fontSize: '1.15rem', lineHeight: 1.9, color: muted }}>
+          The hierarchy is intentional. Consilience holds the IP, the infrastructure, and the long-term vision. The Society operates as a DAO under Consilience, running the salon, the thinkers, and the membership tiers. The nonprofit channels the educational mission — free salons, scholarships, and the Living Archive as a public good. Each pillar protects the others from its own temptations.
         </p>
       </section>
 
@@ -80,37 +87,56 @@ export default function ThreePillars() {
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}12` }}>
-            {[
-              {
-                symbol: '⬡', title: 'SOCIETY OF EXPLORERS LLC', subtitle: 'The Membership Community', accent: gold,
-                desc: 'The living temple. This is where members gather, where the thinkers speak, where artifacts are forged and salons convene. The LLC holds the technology platform, the subscription revenue, the merch pipeline, and the physical space at 92B South St. It is the engine — built to sustain itself through membership dues, product sales, and the value it creates for its members. Revenue funds operations. Surplus flows to the nonprofit and to Consilience.',
-                functions: ['Membership platform', 'AI thinker system', 'Great Books program', 'Merch and artifacts', 'Physical space operations', '$EXP token economy'],
-              },
-              {
-                symbol: '◊', title: 'CONSILIENCE', subtitle: 'The Vision Entity', accent: purple,
-                desc: 'The philosophical compass. Consilience exists to hold the long-term vision that no single product cycle can contain. It publishes the papers. It convenes the thinkers — not the AI ones, but the human ones. It asks the questions that take decades to answer: How should AI and humans co-create? What does sovereign identity mean in practice? How do we build technology that makes humans more human, not less? Consilience does not sell anything. It thinks, writes, and convenes.',
-                functions: ['White papers and research', 'Philosophical framework', 'Advisory council', 'Long-term technology vision', 'Partnerships with universities and think tanks'],
-              },
-              {
-                symbol: '△', title: 'SOE NONPROFIT', subtitle: 'The Educational Foundation', accent: warmGold,
-                desc: "The gift. The nonprofit ensures that the Society's ideas reach people who cannot pay for them. It funds scholarships to the Great Books program. It runs free public salons. It creates educational content — the thinker guides, the onboarding paths, the philosophical curriculum. It accepts grants and donations and channels them into making philosophy and technology education accessible to anyone with the courage to think. The nonprofit is the Society's promise that this is not a gated garden.",
-                functions: ['Scholarships and grants', 'Free educational content', 'Public salons and events', 'Curriculum development', 'Community outreach', 'Tax-deductible donations'],
-              },
-            ].map(entity => (
-              <div key={entity.title} style={{ background: bgCard, padding: '3rem 2.5rem', borderTop: `3px solid ${entity.accent}` }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: entity.accent, opacity: 0.25, marginBottom: '1rem' }}>{entity.symbol}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: entity.accent, marginBottom: '0.25rem' }}>{entity.title}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>{entity.subtitle.toUpperCase()}</div>
-                <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>{entity.desc}</p>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: entity.accent, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
-                {entity.functions.map((f, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
-                    <div style={{ color: entity.accent, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>&#x2B21;</div>
-                    <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
-                  </div>
-                ))}
-              </div>
-            ))}
+            {/* Consilience — Parent */}
+            <div style={{ background: bgCard, padding: '3rem 2.5rem', borderTop: `3px solid ${purple}` }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: purple, opacity: 0.25, marginBottom: '1rem' }}>◊</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: purple, marginBottom: '0.25rem' }}>CONSILIENCE SYSTEMS LLC</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>THE PARENT DAC — TECHNOLOGY BACKBONE</div>
+              <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
+                The Decentralized Autonomous Corporation. Consilience builds the infrastructure that everything else runs on — blockchain systems, AI platforms, data sovereignty tools, the Living Archive, TwiddleTwattle, ExploreOS. Located at 92B South St in downtown Boston. It provides services, IP licensing, and technical infrastructure to the Society of Explorers and the Nonprofit. Consilience is the root. It asks the questions that take decades to answer and builds the tools that make the answers possible.
+              </p>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: purple, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
+              {['Blockchain and AI infrastructure', 'Living Archive platform', 'ExploreOS development', 'TwiddleTwattle social layer', 'IP licensing and services', 'Data sovereignty tools', '92B South St operations'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
+                  <div style={{ color: purple, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>⬡</div>
+                  <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Society of Explorers LLC — Subsidiary */}
+            <div style={{ background: bgCard, padding: '3rem 2.5rem', borderTop: `3px solid ${gold}` }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: gold, opacity: 0.25, marginBottom: '1rem' }}>⬡</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.25rem' }}>SOCIETY OF EXPLORERS LLC</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>SUBSIDIARY DAO — COMMUNITY + MEMBERSHIP</div>
+              <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
+                The living temple. The front-end community where members gather, thinkers speak, artifacts are forged, and salons convene. Functions as a DAO with tiered memberships — $10 Digital, $100 Salon, $1,000 Patron, $10,000 Founding. Managed under the Consilience umbrella. Revenue from membership dues, product sales, and the $EXP token economy funds operations. Surplus flows to the nonprofit.
+              </p>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
+              {['Membership platform and DAO governance', 'AI thinker salon', 'Great Books reading program', 'Merch and artifact marketplace', '$EXP token economy', 'Events and salon evenings', 'Book salons and cohorts'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
+                  <div style={{ color: gold, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>⬡</div>
+                  <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* SOE Nonprofit — 501(c)(3) */}
+            <div style={{ background: bgCard, padding: '3rem 2.5rem', borderTop: `3px solid ${warmGold}` }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: warmGold, opacity: 0.25, marginBottom: '1rem' }}>△</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: warmGold, marginBottom: '0.25rem' }}>SOE NONPROFIT</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>501(c)(3) — EDUCATIONAL FOUNDATION</div>
+              <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
+                The gift. The nonprofit ensures the Society&apos;s ideas reach people who cannot pay for them. It maintains the Living Archive as a public-good resource. It funds scholarships to the Great Books program, runs free public salons, and creates educational content. It accepts grants and donations and channels them into making philosophy and technology education accessible to anyone with the courage to think. The nonprofit is the promise that this is not a gated garden.
+              </p>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: warmGold, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
+              {['Living Archive as public resource', 'Scholarships and grants', 'Free educational content', 'Public salons and events', 'Curriculum development', 'Community outreach', 'Tax-deductible donations'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
+                  <div style={{ color: warmGold, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>⬡</div>
+                  <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -119,48 +145,26 @@ export default function ThreePillars() {
       <section style={{ padding: '8rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>III.</div>
         <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '3rem', textAlign: 'center', borderBottom: `1px solid ${border}`, paddingBottom: '1rem' }}>
-          THE CONVERGENCE
+          HOW THEY CONNECT
         </h2>
 
-        {/* Triangle diagram */}
-        <div style={{ position: 'relative', width: '300px', height: '260px', margin: '0 auto 3rem' }}>
-          {/* Three hexagons */}
-          <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: '80px', height: '80px', border: `1px solid ${purple}`, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: purple }}>CONSILIENCE</span>
-          </div>
-          <div style={{ position: 'absolute', left: 0, bottom: 0, width: '80px', height: '80px', border: `1px solid ${gold}`, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: gold }}>LLC</span>
-          </div>
-          <div style={{ position: 'absolute', right: 0, bottom: 0, width: '80px', height: '80px', border: `1px solid ${warmGold}`, display: 'flex', alignItems: 'center', justifyContent: 'center', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: warmGold }}>NONPROFIT</span>
-          </div>
-          {/* Connecting lines */}
-          <svg style={{ position: 'absolute', inset: 0 }} viewBox="0 0 300 260">
-            <line x1="150" y1="70" x2="50" y2="180" stroke={gold} strokeWidth="0.5" opacity="0.3" />
-            <line x1="150" y1="70" x2="250" y2="180" stroke={gold} strokeWidth="0.5" opacity="0.3" />
-            <line x1="50" y1="200" x2="250" y2="200" stroke={gold} strokeWidth="0.5" opacity="0.3" />
-          </svg>
-          {/* Center label */}
-          <div style={{ position: 'absolute', left: '50%', top: '55%', transform: 'translate(-50%, -50%)', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: muted }}>THE VISION</div>
-        </div>
-
-        {/* Flow descriptions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
           {[
-            { from: 'LLC Revenue', arrow: '→', to: 'Nonprofit Grants', color: gold },
-            { from: 'Consilience Vision', arrow: '→', to: 'LLC Product Direction', color: purple },
-            { from: 'Nonprofit Education', arrow: '→', to: 'LLC Member Pipeline', color: warmGold },
+            { from: 'Consilience Infrastructure', arrow: '→', to: 'SoE LLC Platform + Nonprofit Tools', color: purple },
+            { from: 'SoE LLC Revenue', arrow: '→', to: 'Nonprofit Grants + Consilience R&D', color: gold },
+            { from: 'Nonprofit Education', arrow: '→', to: 'SoE LLC Member Pipeline', color: warmGold },
+            { from: 'Consilience IP', arrow: '→', to: 'Licensed to Both Subsidiaries', color: purple },
           ].map((flow, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: flow.color }}>{flow.from}</span>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: flow.color, minWidth: '180px', textAlign: 'right' }}>{flow.from}</span>
               <span style={{ color: `${gold}40`, fontSize: '14px' }}>{flow.arrow}</span>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: muted }}>{flow.to}</span>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: muted, minWidth: '180px' }}>{flow.to}</span>
             </div>
           ))}
         </div>
 
-        <p style={{ fontSize: '1.1rem', lineHeight: 1.9, marginTop: '3rem', textAlign: 'center', color: muted }}>
-          Revenue from the LLC funds the nonprofit&apos;s educational mission. Research from Consilience guides the LLC&apos;s product direction. Education from the nonprofit creates the next generation of members. The three pillars are not separate organizations — they are one organism with three expressions.
+        <p style={{ fontSize: '1.1rem', lineHeight: 1.9, textAlign: 'center', color: muted }}>
+          Consilience builds the infrastructure that powers everything. The Society of Explorers LLC operates the community experience on that infrastructure. The Nonprofit ensures the mission reaches beyond paying members. Revenue flows up to fund R&D; technology flows down to power the community; education flows outward to grow the network. Three pillars, one organism.
         </p>
       </section>
 
@@ -178,7 +182,7 @@ export default function ThreePillars() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}12` }}>
             {[
               { title: 'WHITE PAPER', name: 'The Convergence Thesis', desc: 'The philosophical foundation. Why AI, blockchain, and ancient wisdom must converge. The Heidegger framework. The case for poiesis over Gestell.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/white-paper.pdf' },
-              { title: 'BUSINESS PLAN', name: 'Society of Explorers — Business Plan', desc: 'Revenue model, growth strategy, membership tiers, technology roadmap, financial projections. The commercial engine.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/business-plan.pdf' },
+              { title: 'BUSINESS PLAN', name: 'Consilience Systems — Business Plan', desc: 'Revenue model, growth strategy, membership tiers, technology roadmap, financial projections. The commercial engine.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/business-plan.pdf' },
               { title: 'GREEN PAPER', name: 'The Educational Framework', desc: 'The Great Books curriculum. The salon methodology. How AI thinkers facilitate philosophical education. The nonprofit\u2019s mission and programs.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/green-paper.pdf' },
               { title: 'BLACK PAPER', name: 'The Technical Architecture', desc: 'The data layer. Soulbound NFTs. Decentralized compute. $EXP tokenomics. ExploreOS. The full technical specification.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/black-paper.pdf' },
             ].map(paper => (
@@ -212,7 +216,7 @@ export default function ThreePillars() {
           ))}
         </div>
         <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '12px', color: muted, opacity: 0.5 }}>chris@societyofexplorers.com</div>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.3, marginTop: '0.75rem' }}>92B SOUTH ST &middot; DOWNTOWN BOSTON</div>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.3, marginTop: '0.75rem' }}>CONSILIENCE SYSTEMS · 92B SOUTH ST · DOWNTOWN BOSTON</div>
       </section>
     </div>
   );
