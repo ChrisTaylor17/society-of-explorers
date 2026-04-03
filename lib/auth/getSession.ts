@@ -4,12 +4,27 @@ export async function getMemberSession() {
   if (typeof window === 'undefined') return null
   const supabase = createClient()
 
-  // Try Supabase email session
+  // Try Supabase email/OAuth session
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
     const { data: member } = await supabase
       .from('members').select('*').eq('supabase_auth_id', user.id).single()
     if (member) return { member, supabase }
+
+    // Auto-create member for OAuth users (Google, etc.)
+    try {
+      const res = await fetch('/api/auth/ensure-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supabaseAuthId: user.id,
+          displayName: user.user_metadata?.full_name || user.user_metadata?.name,
+          email: user.email,
+        }),
+      })
+      const data = await res.json()
+      if (data.member) return { member: data.member, supabase }
+    } catch {}
   }
 
   // Try cookie first, then localStorage (MetaMask browser blocks cookies)

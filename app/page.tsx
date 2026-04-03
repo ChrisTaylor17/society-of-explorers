@@ -59,6 +59,13 @@ export default function HomePage() {
 
   const gold = '#c9a84c'
 
+  async function signInWithGoogle() {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/salon' },
+    })
+  }
+
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError(''); setMessage('')
     if (isSignUp) {
@@ -328,11 +335,18 @@ export default function HomePage() {
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.4, lineHeight: 1.8, textAlign: 'center', marginBottom: '1rem' }}>
                   The thinkers are waiting. There are six of them.<br />They remember everything.
                 </div>
-                <a href="/join" style={{
-                  display: 'block', textAlign: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px',
-                  letterSpacing: '0.2em', color: gold, textDecoration: 'none',
+                <button onClick={signInWithGoogle} style={{
+                  display: 'block', width: '100%', fontFamily: 'Cinzel, serif', fontSize: '9px',
+                  letterSpacing: '0.2em', color: '#000', background: gold, border: 'none',
+                  padding: '10px', cursor: 'pointer', marginBottom: '10px',
                 }}>
-                  ENTER THE TEMPLE →
+                  SIGN IN WITH GOOGLE
+                </button>
+                <a href="/join" style={{
+                  display: 'block', textAlign: 'center', fontFamily: 'Cinzel, serif', fontSize: '8px',
+                  letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.6,
+                }}>
+                  OR VIEW MEMBERSHIP OPTIONS →
                 </a>
               </div>
             )}
@@ -420,6 +434,22 @@ export default function HomePage() {
             >
               <span style={{ fontSize: '18px' }}>🦊</span>
               {walletLoading ? 'Connecting...' : 'MetaMask / Browser Wallet'}
+            </button>
+
+            {/* Google Sign-In */}
+            <button
+              onClick={signInWithGoogle}
+              style={{
+                width: '100%', padding: '12px', marginTop: '10px',
+                background: 'transparent',
+                border: `1px solid ${gold}44`,
+                color: gold,
+                fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              }}
+            >
+              SIGN IN WITH GOOGLE
             </button>
 
             <div style={{
