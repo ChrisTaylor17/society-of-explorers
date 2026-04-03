@@ -14,7 +14,7 @@ const THINKER_COLORS: Record<string, string> = {
 export default function GreatBooksLibrary() {
   const [filter, setFilter] = useState('all');
 
-  const filtered = filter === 'all' ? GREAT_BOOKS : GREAT_BOOKS.filter(b => b.thinkerAffinity === filter);
+  const filtered = filter === 'all' ? GREAT_BOOKS : GREAT_BOOKS.filter(b => b.recommended_thinker === filter);
 
   return (
     <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: 'Cormorant Garamond, serif' }}>
@@ -48,11 +48,11 @@ export default function GreatBooksLibrary() {
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 2rem 4rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: `${gold}15` }}>
         {filtered.map(book => {
-          const accent = THINKER_COLORS[book.thinkerAffinity] || gold;
+          const accent = THINKER_COLORS[book.recommended_thinker] || gold;
           return (
             <a key={book.id} href={`/great-books/${book.id}`} style={{ background: '#0a0a0a', padding: '2rem', textDecoration: 'none', display: 'block', transition: 'background 0.3s' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: accent, opacity: 0.6, marginBottom: '0.75rem' }}>
-                {book.thinkerAffinity.toUpperCase()} RECOMMENDS
+                {book.recommended_thinker.toUpperCase()} RECOMMENDS
               </div>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', letterSpacing: '0.1em', color: '#f5f0e8', marginBottom: '0.25rem' }}>
                 {book.title}
@@ -63,13 +63,8 @@ export default function GreatBooksLibrary() {
               <p style={{ fontSize: '13px', color: 'rgba(212,201,168,0.7)', lineHeight: 1.6, marginBottom: '1rem' }}>
                 {book.description}
               </p>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {book.themes.slice(0, 3).map(t => (
-                  <span key={t} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, border: `1px solid rgba(201,168,76,0.15)`, padding: '2px 6px' }}>{t.toUpperCase()}</span>
-                ))}
-              </div>
               <div style={{ marginTop: '1rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: accent, opacity: 0.5 }}>
-                {book.sections.length} SECTIONS · READ NOW →
+                READ NOW →
               </div>
             </a>
           );

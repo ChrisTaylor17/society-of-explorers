@@ -25,7 +25,7 @@ export default function BookReader() {
   const [selectedText, setSelectedText] = useState('');
   const [annotation, setAnnotation] = useState('');
   const [annotating, setAnnotating] = useState(false);
-  const [activeThinker, setActiveThinker] = useState(book?.thinkerAffinity || 'socrates');
+  const [activeThinker, setActiveThinker] = useState(book?.recommended_thinker || 'socrates');
   const [showThinkerPicker, setShowThinkerPicker] = useState(false);
   const [question, setQuestion] = useState('');
   const readerRef = useRef<HTMLDivElement>(null);

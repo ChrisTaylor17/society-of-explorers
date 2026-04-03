@@ -9,9 +9,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
   const sectionId = req.nextUrl.searchParams.get('section');
 
   // For Gutenberg books, fetch from Project Gutenberg
-  if (book.gutenbergId) {
+  if (book.gutenberg_id) {
     try {
-      const url = `https://www.gutenberg.org/cache/epub/${book.gutenbergId}/pg${book.gutenbergId}.txt`;
+      const url = `https://www.gutenberg.org/cache/epub/${book.gutenberg_id}/pg${book.gutenberg_id}.txt`;
       const res = await fetch(url, { next: { revalidate: 86400 } }); // cache 24h
       if (!res.ok) throw new Error('Gutenberg fetch failed');
       let text = await res.text();
