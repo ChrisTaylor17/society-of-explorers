@@ -32,7 +32,9 @@ export default function BookReader() {
   // Read aloud
   const [isReading, setIsReading] = useState(false);
   const [readFromIdx, setReadFromIdx] = useState(0);
+  const [readingParagraphIdx, setReadingParagraphIdx] = useState<number | null>(null);
   const readVoice = book?.authorThinkerId || 'socrates';
+  const readingLockRef = useRef(0);
 
   // Selection popup
   const [popup, setPopup] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -41,7 +43,11 @@ export default function BookReader() {
   const [activeNote, setActiveNote] = useState<{ passage: string; text: string } | null>(null);
   const [marginNotes, setMarginNotes] = useState<MarginNote[]>([]);
 
+  // Member ID for progress saving
+  const [memberId, setMemberId] = useState<string | null>(null);
+
   const readerRef = useRef<HTMLDivElement>(null);
+  const paragraphRefs = useRef<(HTMLParagraphElement | null)[]>([]);
 
   const loadSection = useCallback(async (section: number) => {
     setLoading(true);
@@ -63,6 +69,42 @@ export default function BookReader() {
   }, [bookId, totalSections]);
 
   useEffect(() => { loadSection(currentSection); }, [currentSection, loadSection]);
+
+  // Resolve member + load progress
+  useEffect(() => {
+    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
+      getMemberSession().then(session => {
+        if (session?.member?.id) {
+          setMemberId(session.member.id);
+          // Load saved progress
+          fetch(`/api/great-books/progress?memberId=${session.member.id}&bookId=${bookId}`)
+            .then(r => r.json())
+            .then(d => {
+              const p = d.progress?.[0];
+              if (p?.section_id) setCurrentSection(Number(p.section_id) || 1);
+            })
+            .catch(() => {});
+        }
+      });
+    });
+  }, [bookId]);
+
+  // Save progress when section changes
+  useEffect(() => {
+    if (!memberId || !bookId) return;
+    fetch('/api/great-books/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId, bookId, sectionId: String(currentSection), paragraphIndex: 0 }),
+    }).catch(() => {});
+  }, [currentSection, memberId, bookId]);
+
+  // Scroll to highlighted paragraph
+  useEffect(() => {
+    if (readingParagraphIdx !== null && paragraphRefs.current[readingParagraphIdx]) {
+      paragraphRefs.current[readingParagraphIdx]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [readingParagraphIdx]);
 
   // Handle text selection — show gold popup
   function handleMouseUp(e: React.MouseEvent) {
@@ -131,40 +173,46 @@ export default function BookReader() {
   }
 
   async function readAloud(startIdx: number) {
+    const thisRead = ++readingLockRef.current;
     stopSpeaking();
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 150));
+    if (readingLockRef.current !== thisRead) return;
     setIsReading(true);
     const BATCH = 3;
     const end = Math.min(startIdx + BATCH, paragraphs.length);
     for (let i = startIdx; i < end; i++) {
+      if (readingLockRef.current !== thisRead) break;
+      setReadingParagraphIdx(i);
       try {
         await speakText(paragraphs[i], readVoice);
-      } catch (err) {
-        console.error('Read aloud failed at paragraph', i, err);
-        break;
-      }
+      } catch { break; }
     }
+    setReadingParagraphIdx(null);
     setReadFromIdx(end);
     setIsReading(false);
   }
 
   async function readFromParagraph(idx: number) {
+    const thisRead = ++readingLockRef.current;
     stopSpeaking();
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 150));
+    if (readingLockRef.current !== thisRead) return;
     setIsReading(true);
+    setReadingParagraphIdx(idx);
     const text = paragraphs.slice(idx, idx + 3).join(' ');
     try {
       await speakText(text, readVoice);
-    } catch (err) {
-      console.error('Paragraph read failed:', err);
-    }
+    } catch {}
+    setReadingParagraphIdx(null);
     setReadFromIdx(idx + 3);
     setIsReading(false);
   }
 
   function stopReading() {
+    readingLockRef.current++;
     stopSpeaking();
     setIsReading(false);
+    setReadingParagraphIdx(null);
   }
 
   if (!book) return (
@@ -253,10 +301,17 @@ export default function BookReader() {
           ) : (
             paragraphs.map((p, i) => (
               <p key={i}
+                ref={el => { paragraphRefs.current[i] = el; }}
                 onClick={() => readFromParagraph(i)}
-                style={{ marginBottom: '1.5rem', textIndent: i > 0 ? '2rem' : 0, cursor: 'pointer', transition: 'color 0.2s', borderLeft: '2px solid transparent', paddingLeft: '12px' }}
-                onMouseEnter={e => { (e.target as HTMLElement).style.borderLeftColor = `${gold}40`; }}
-                onMouseLeave={e => { (e.target as HTMLElement).style.borderLeftColor = 'transparent'; }}
+                style={{
+                  marginBottom: '1.5rem', textIndent: i > 0 && readingParagraphIdx !== i ? '2rem' : 0,
+                  cursor: 'pointer', paddingLeft: '12px',
+                  background: readingParagraphIdx === i ? 'rgba(197,165,90,0.06)' : 'transparent',
+                  borderLeft: readingParagraphIdx === i ? `2px solid ${gold}` : '2px solid transparent',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={e => { if (readingParagraphIdx !== i) (e.target as HTMLElement).style.borderLeftColor = `${gold}40`; }}
+                onMouseLeave={e => { if (readingParagraphIdx !== i) (e.target as HTMLElement).style.borderLeftColor = 'transparent'; }}
               >{p}</p>
             ))
           )}
