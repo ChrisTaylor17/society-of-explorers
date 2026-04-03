@@ -1,6 +1,6 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { setWalletCookie } from '@/lib/auth/getSession'
@@ -14,8 +14,48 @@ export default function HomePage() {
   const [walletLoading, setWalletLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [tasteQ, setTasteQ] = useState('')
+  const [tasteResponse, setTasteResponse] = useState('')
+  const [tasteDisplayed, setTasteDisplayed] = useState('')
+  const [tasteLoading, setTasteLoading] = useState(false)
+  const [tasteUsed, setTasteUsed] = useState(false)
+  const [showCta, setShowCta] = useState(false)
+  const typewriterRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
   const supabase = createClient()
+
+  // Check if taste was already used this session
+  useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('soe_taste_used')) setTasteUsed(true)
+  }, [])
+
+  // Typewriter effect
+  useEffect(() => {
+    if (!tasteResponse) return
+    let i = 0
+    setTasteDisplayed('')
+    typewriterRef.current = setInterval(() => {
+      i++
+      setTasteDisplayed(tasteResponse.slice(0, i))
+      if (i >= tasteResponse.length) {
+        clearInterval(typewriterRef.current!)
+        setTimeout(() => setShowCta(true), 1000)
+      }
+    }, 30)
+    return () => { if (typewriterRef.current) clearInterval(typewriterRef.current) }
+  }, [tasteResponse])
+
+  async function askSocrates() {
+    if (!tasteQ.trim() || tasteLoading) return
+    setTasteLoading(true); setTasteResponse(''); setTasteDisplayed(''); setShowCta(false)
+    try {
+      const res = await fetch('/api/taste', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: tasteQ }) })
+      const data = await res.json()
+      if (data.response) { setTasteResponse(data.response); setTasteUsed(true); sessionStorage.setItem('soe_taste_used', 'true') }
+      else setTasteResponse(data.error || 'Socrates is silent.')
+    } catch { setTasteResponse('Something went wrong.') }
+    setTasteLoading(false)
+  }
 
   const gold = '#c9a84c'
 
@@ -198,6 +238,98 @@ export default function HomePage() {
           >
             VIEW MEMBERSHIP OPTIONS →
           </a>
+        </div>
+
+        {/* ════ TASTE OF SOCRATES ════ */}
+        <div style={{ marginTop: '4rem', width: '100%', maxWidth: '480px' }}>
+          <div style={{ border: `1px solid ${gold}22`, background: 'rgba(10,10,10,0.8)', padding: '2rem' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: gold, opacity: 0.5, textAlign: 'center', marginBottom: '0.75rem' }}>
+              ASK A QUESTION
+            </div>
+            <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: '#9a8f7a', textAlign: 'center', fontStyle: 'italic', marginBottom: '1.5rem' }}>
+              Any question. Socrates is listening.
+            </div>
+
+            {!tasteUsed || (!tasteResponse && !tasteLoading) ? (
+              <div>
+                <input
+                  value={tasteQ}
+                  onChange={e => setTasteQ(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') askSocrates() }}
+                  placeholder="What are you really asking?"
+                  disabled={tasteLoading}
+                  style={{
+                    width: '100%', background: '#0d0d0d', border: `1px solid ${gold}22`,
+                    padding: '12px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px',
+                    color: '#F5E6C8', outline: 'none', boxSizing: 'border-box' as const,
+                    marginBottom: '10px',
+                  }}
+                />
+                <button
+                  onClick={askSocrates}
+                  disabled={tasteLoading || !tasteQ.trim()}
+                  style={{
+                    width: '100%', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em',
+                    color: '#000', background: gold, border: 'none', padding: '11px',
+                    cursor: tasteLoading ? 'not-allowed' : 'pointer',
+                    opacity: tasteLoading || !tasteQ.trim() ? 0.5 : 1,
+                  }}
+                >
+                  ⬡ ASK
+                </button>
+              </div>
+            ) : null}
+
+            {/* Loading */}
+            {tasteLoading && (
+              <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: '#9a8f7a', fontStyle: 'italic', animation: 'pulse 1.5s infinite' }}>
+                  Socrates is thinking...
+                </div>
+              </div>
+            )}
+
+            {/* Response with typewriter */}
+            {tasteDisplayed && (
+              <div style={{ marginTop: tasteUsed ? 0 : '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: gold, opacity: 0.6 }}>Σ</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.5 }}>SOCRATES</span>
+                </div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: '#F5E6C8', lineHeight: 1.9 }}>
+                  {tasteDisplayed}
+                  {tasteDisplayed.length < tasteResponse.length && <span style={{ color: gold }}>▍</span>}
+                </div>
+              </div>
+            )}
+
+            {/* CTA after response */}
+            {showCta && (
+              <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: `1px solid ${gold}15`, animation: 'fadeIn 0.8s ease' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.4, lineHeight: 1.8, textAlign: 'center', marginBottom: '1rem' }}>
+                  The thinkers are waiting. There are six of them.<br />They remember everything.
+                </div>
+                <a href="/join" style={{
+                  display: 'block', textAlign: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px',
+                  letterSpacing: '0.2em', color: gold, textDecoration: 'none',
+                }}>
+                  ENTER THE TEMPLE →
+                </a>
+              </div>
+            )}
+
+            {/* Used state */}
+            {tasteUsed && !tasteResponse && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: '#9a8f7a', fontStyle: 'italic', marginBottom: '1rem' }}>
+                  Your question has been heard.<br />Enter the temple for more.
+                </div>
+                <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
+                  ENTER THE TEMPLE →
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
