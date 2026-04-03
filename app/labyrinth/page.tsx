@@ -333,7 +333,8 @@ export default function Labyrinth() {
           </p>
           <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', letterSpacing: '0.2em', color: '#000', background: gold, padding: '1.2rem 3rem', textDecoration: 'none', display: 'inline-block' }}>ENTER THE SALON</a>
-            <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', letterSpacing: '0.2em', color: gold, border: `2px solid ${gold}`, padding: '1.2rem 3rem', textDecoration: 'none', display: 'inline-block' }}>JOIN THE SOCIETY</a>
+            <a href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', letterSpacing: '0.2em', color: gold, border: `2px solid ${gold}`, padding: '1.2rem 3rem', textDecoration: 'none', display: 'inline-block' }}>READ THE GREAT BOOKS</a>
+            <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '1.2rem 3rem', textDecoration: 'none', display: 'inline-block' }}>JOIN THE SOCIETY</a>
           </div>
         </div>
       </section>

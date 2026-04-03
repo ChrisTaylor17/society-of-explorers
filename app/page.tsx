@@ -226,6 +226,25 @@ export default function HomePage() {
           </button>
 
           <a
+            href="/great-books"
+            style={{
+              fontFamily: 'Cinzel, serif',
+              fontSize: '10px',
+              letterSpacing: '0.25em',
+              color: gold,
+              background: 'transparent',
+              border: `1px solid ${gold}22`,
+              padding: '1.1rem 3rem',
+              textDecoration: 'none',
+              display: 'inline-block',
+              minWidth: '280px',
+              textAlign: 'center',
+            }}
+          >
+            READ THE GREAT BOOKS
+          </a>
+
+          <a
             href="/join"
             style={{
               fontFamily: 'Cinzel, serif',

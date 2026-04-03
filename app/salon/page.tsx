@@ -635,6 +635,7 @@ export default function SalonPage() {
             { label: 'MINDS',     action: () => { closeAllOverlays(); setShowThinkers(v => !v); }, active: showThinkers },
             { label: 'HUB',       action: () => { closeAllOverlays(); setShowHub(v => !v); },   active: showHub },
             { label: 'MEMBERS',   action: () => router.push('/members'), active: false },
+            { label: 'BOOKS',     action: () => router.push('/great-books'), active: false },
             { label: 'LABYRINTH', action: () => router.push('/labyrinth'), active: false },
           ] as const).map(btn => (
             <button key={btn.label} onClick={btn.action} style={{
@@ -675,7 +676,6 @@ export default function SalonPage() {
                     { label: 'BOOK',      action: () => router.push('/book') },
                     { label: 'HALL',      action: () => router.push('/hall') },
                     { label: 'TEMPLE',    action: () => router.push('/temple') },
-                    { label: 'BOOKS',     action: () => router.push('/great-books') },
                   ]).map(item => (
                     <button key={item.label} onClick={() => { item.action(); setShowMoreNav(false); }} style={{
                       display: 'block', width: '100%', textAlign: 'left',

@@ -124,6 +124,7 @@ export default function JoinPage() {
                   'All 6 thinker agents — Socrates, Nietzsche, Jobs and more',
                   'Productivity Hub with AI-guided task management',
                   'Full Labyrinth access — all 6 rooms',
+                  'Great Books program — read with the thinkers',
                   'Member directory + messaging',
                   '$EXP token earning',
                   'Salon conversation history',
@@ -247,7 +248,7 @@ export default function JoinPage() {
             {[
               { symbol: 'Σ', label: 'THE SALON', desc: 'Six thinkers from history, ready to counsel you. Socrates. Nietzsche. Einstein. Jobs. Not chatbots — philosophical agents built to provoke, challenge, and reveal.' },
               { symbol: '⬡', label: 'THE LABYRINTH', desc: 'A guided journey through existence, creation, technology, and beauty. Rooms that open into rooms. Secret passages for those who are ready.' },
-              { symbol: '◈', label: 'THE ARTIFACTS', desc: 'Physical books with blockchain souls. The Tribekey. Merch as talismans. Everything designed to be beautiful and meaningful.' },
+              { symbol: '◈', label: 'THE GREAT BOOKS', desc: 'Read Plato, Nietzsche, Homer, and Shakespeare alongside AI thinkers who annotate in the margin. Highlight any passage — a mind responds.' },
             ].map(item => (
               <div key={item.label} style={{ background: bgCard, padding: '2.5rem 2rem', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: gold, opacity: 0.3, marginBottom: '1rem' }}>{item.symbol}</div>
