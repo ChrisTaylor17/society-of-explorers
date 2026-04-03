@@ -90,6 +90,11 @@ export default function SalonPage() {
   const [voiceMode,       setVoiceMode]       = useState(false);
   const [isListening,     setIsListening]     = useState(false);
   const [interimText,     setInterimText]     = useState('');
+
+  // Sentence-level TTS streaming
+  const sentenceQueueRef = useRef<string[]>([]);
+  const ttsBufferRef = useRef('');
+  const isSpeakingRef = useRef(false);
   const [toasts,          setToasts]          = useState<{id: number; text: string}[]>([]);
 
   // ── Nav overlays ────────────────────────────────────────────
@@ -268,6 +273,43 @@ export default function SalonPage() {
   }, [showArtifacts, loadNFTs]);
 
   // ── Send chat message ─────────────────────────────────────────
+  // Process TTS sentence queue — speaks sentences as they arrive
+  async function processSentenceQueue(thinkerId: string) {
+    if (isSpeakingRef.current) return;
+    isSpeakingRef.current = true;
+    while (sentenceQueueRef.current.length > 0) {
+      const sentence = sentenceQueueRef.current.shift()!;
+      try { await speakText(sentence, thinkerId); } catch { break; }
+    }
+    isSpeakingRef.current = false;
+  }
+
+  function pushSentenceFromBuffer(thinkerId: string) {
+    const buf = ttsBufferRef.current;
+    const match = buf.match(/^(.*?[.!?])\s(.*)$/s);
+    if (match) {
+      sentenceQueueRef.current.push(match[1].trim());
+      ttsBufferRef.current = match[2];
+      processSentenceQueue(thinkerId);
+    }
+  }
+
+  function flushTtsBuffer(thinkerId: string) {
+    const remaining = ttsBufferRef.current.trim();
+    if (remaining) {
+      sentenceQueueRef.current.push(remaining);
+      ttsBufferRef.current = '';
+      processSentenceQueue(thinkerId);
+    }
+  }
+
+  function clearTtsQueue() {
+    sentenceQueueRef.current = [];
+    ttsBufferRef.current = '';
+    isSpeakingRef.current = false;
+    stopSpeaking();
+  }
+
   async function handleMicPress() {
     if (isRecordingNow()) {
       setIsListening(false);
@@ -286,8 +328,8 @@ export default function SalonPage() {
         console.error('Transcription failed:', err);
       }
     } else {
-      // Interrupt any playing TTS first
-      stopSpeaking();
+      // Interrupt any playing TTS and clear queue
+      clearTtsQueue();
       try {
         await startRecording();
         setIsListening(true);
@@ -356,6 +398,11 @@ export default function SalonPage() {
     }]);
 
     let responseFullText = '';
+    // Reset TTS sentence queue for new response
+    if (voiceMode) {
+      sentenceQueueRef.current = [];
+      ttsBufferRef.current = '';
+    }
     try {
       const res = await fetch('/api/thinker', {
         method: 'POST',
@@ -384,6 +431,11 @@ export default function SalonPage() {
               responseFullText += evt.delta;
               setMessages(prev => prev.map(m =>
                 m.id === streamId ? { ...m, content: m.content + evt.delta } : m));
+              // Feed sentence queue for voice mode
+              if (voiceMode) {
+                ttsBufferRef.current += evt.delta;
+                pushSentenceFromBuffer(selectedThinker.id);
+              }
             } else if (evt.type === 'actions' && evt.actions?.length > 0) {
               // Show toast for each action
               const actionMessages: Record<string, string> = {
@@ -411,13 +463,10 @@ export default function SalonPage() {
       }
     } catch {}
 
-    // Auto-TTS in voice mode — speak the response (user presses mic when ready)
-    if (voiceMode && responseFullText) {
-      const cleanResponse = responseFullText.split('|||ACTIONS|||')[0].trim();
-      if (cleanResponse) {
-        speakText(cleanResponse, selectedThinker.id)
-          .catch(err => console.error('Auto-TTS failed:', err));
-      }
+    // Voice mode: flush remaining buffer (sentences that didn't end with .!?)
+    if (voiceMode) {
+      flushTtsBuffer(selectedThinker.id);
+      ttsBufferRef.current = '';
     }
 
     if (member) {
