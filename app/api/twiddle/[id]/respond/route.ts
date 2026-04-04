@@ -60,13 +60,63 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
+    // Fetch relationship context — recent twiddles + past thinker responses to this user
+    let relationshipContext = '';
+    if (memberId) {
+      try {
+        // Get auth user id for the member
+        const { data: memberAuth } = await supabaseAdmin.from('members').select('supabase_auth_id').eq('id', memberId).single();
+        const authId = memberAuth?.supabase_auth_id;
+
+        if (authId) {
+          // User's 5 most recent twiddles
+          const { data: recentTwiddles } = await supabaseAdmin
+            .from('twiddles')
+            .select('content, twiddle_type, thinker_tags, created_at')
+            .eq('author_id', authId)
+            .eq('is_thinker_response', false)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          // This thinker's last 3 responses to this user
+          const { data: pastResponses } = await supabaseAdmin
+            .from('twiddles')
+            .select('content, created_at')
+            .eq('is_thinker_response', true)
+            .eq('thinker_key', thinker_key)
+            .order('created_at', { ascending: false })
+            .limit(3);
+
+          const recentPosts = (recentTwiddles || []).map(t =>
+            `- "${(t.content || '').slice(0, 120)}" (${t.twiddle_type}${t.thinker_tags?.length ? ', tagged: ' + t.thinker_tags.join(', ') : ''})`
+          ).join('\n');
+
+          const pastReplies = (pastResponses || []).map(t =>
+            `- You said: "${(t.content || '').slice(0, 120)}"`
+          ).join('\n');
+
+          if (recentPosts || pastReplies) {
+            relationshipContext = '\n\nRELATIONSHIP CONTEXT — what you know about this person from TwiddleTwattle:';
+            if (recentPosts) relationshipContext += `\n\nTheir recent posts:\n${recentPosts}`;
+            if (pastReplies) relationshipContext += `\n\nYour recent responses to them:\n${pastReplies}`;
+            relationshipContext += '\n\nUse this context to build on previous exchanges. Reference their patterns, recurring themes, or evolution of thinking. This is an ongoing intellectual friendship, not a first encounter.';
+          }
+        }
+      } catch (err) {
+        console.warn('Relationship context fetch failed:', err);
+      }
+    }
+
     // Build system prompt
     let systemPrompt = buildSystemPrompt(thinker_key);
     systemPrompt += `\n\n${memberContext}`;
     if (memory) {
-      systemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER:\n${memory}\n\nUse this memory naturally.`;
+      systemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from salon conversations):\n${memory}`;
     }
-    systemPrompt += `\n\nYou are responding to a TwiddleTwattle post — a short-form philosophical social post. Keep your response to 2-4 sentences. Be sharp, specific to what they said, and in character.`;
+    if (relationshipContext) {
+      systemPrompt += relationshipContext;
+    }
+    systemPrompt += `\n\nYou are responding to a TwiddleTwattle post — a short-form philosophical social post. Keep your response to 2-4 sentences. Be sharp, specific to what they said, and in character. If you have context from previous interactions, weave it in naturally — "You keep circling back to X" or "Last time you were wrestling with Y, and now I see Z." Don't force it. Only reference history when it genuinely deepens the response.`;
 
     // Call Claude
     const response = await anthropic.messages.create({
