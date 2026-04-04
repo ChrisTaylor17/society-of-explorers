@@ -5,7 +5,11 @@ export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
 
-  console.log('Auth callback:', { hasCode: !!code, url: req.url })
+  console.log('=== AUTH CALLBACK HIT ===', {
+    fullUrl: req.url,
+    code: code ? code.substring(0, 10) + '...' : 'none',
+    incomingCookies: req.cookies.getAll().map(c => c.name),
+  })
 
   if (code) {
     // Create the redirect response FIRST, then set cookies ON it
@@ -38,7 +42,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/?auth_error=true', origin))
     }
 
-    console.log('OAuth code exchanged, session cookies set, redirecting to /salon')
+    console.log('=== EXCHANGE RESULT ===', {
+      error: 'none',
+      cookiesSet: response.cookies.getAll().map(c => c.name),
+    })
     return response
   }
 

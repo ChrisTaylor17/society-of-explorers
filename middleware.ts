@@ -4,18 +4,20 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Protected routes
-  const protected_routes = ['/salon', '/members', '/book']
-  if (!protected_routes.some(r => pathname.startsWith(r))) {
+  const protectedRoutes = ['/salon', '/members', '/book']
+  if (!protectedRoutes.some(r => pathname.startsWith(r))) {
     return NextResponse.next()
   }
 
-  // Check Supabase session cookie
-  const supabaseSession = req.cookies.get('sb-woqvlkeluxkxplpgzdgv-auth-token')
+  // Check Supabase session cookie — supports both chunked (v0.9+) and non-chunked formats
+  const hasSupabaseSession = req.cookies.getAll().some(c =>
+    c.name.startsWith('sb-') && c.name.includes('-auth-token')
+  )
 
   // Check wallet cookie
   const walletId = req.cookies.get('soe_wallet_id')
 
-  if (!supabaseSession && !walletId) {
+  if (!hasSupabaseSession && !walletId) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
