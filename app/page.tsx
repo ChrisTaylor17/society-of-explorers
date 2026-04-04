@@ -273,9 +273,10 @@ export default function HomePage() {
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
             {[
-              { label: 'Salon', href: '/salon' }, { label: 'Library', href: '/great-books' },
-              { label: 'Temple Quest', href: '/temple-quest' }, { label: 'Waddle', href: '/waddle' },
-              { label: 'Join', href: '/join' }, { label: 'Three Pillars', href: '/three-pillars' },
+              { label: 'Salon', href: '/salon' }, { label: 'Twiddle', href: '/twiddle' },
+              { label: 'Library', href: '/great-books' }, { label: 'Temple Quest', href: '/temple-quest' },
+              { label: 'Waddle', href: '/waddle' }, { label: 'Join', href: '/join' },
+              { label: 'Structure', href: '/structure' }, { label: 'Three Pillars', href: '/three-pillars' },
               { label: 'Data Layer', href: '/data-layer' }, { label: 'Labyrinth', href: '/labyrinth' },
             ].map(l => (
               <a key={l.href} href={l.href} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', opacity: 0.4 }}>{l.label.toUpperCase()}</a>

@@ -774,6 +774,7 @@ export default function SalonPage() {
                     { label: 'WADDLE',        action: () => router.push('/waddle') },
                     { label: 'DASHBOARD',     action: () => router.push('/dashboard') },
                     { label: 'LOCK & SAFE',   action: () => router.push('/access') },
+                    { label: 'STRUCTURE',     action: () => router.push('/structure') },
                     { label: 'THREE PILLARS', action: () => router.push('/three-pillars') },
                   ]).map(item => (
                     <button key={item.label} onClick={() => { item.action(); setShowMoreNav(false); }} style={{
