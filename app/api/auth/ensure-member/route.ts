@@ -20,6 +20,36 @@ export async function POST(req: NextRequest) {
 
     if (existing) return NextResponse.json({ member: existing, created: false });
 
+    // Fallback: look up by email (handles members created before OAuth)
+    if (email) {
+      // Check auth.users for matching email to find their member record
+      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const matchingAuth = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase() && u.id !== supabaseAuthId);
+      if (matchingAuth) {
+        const { data: emailMember } = await supabaseAdmin
+          .from('members')
+          .select('*')
+          .eq('supabase_auth_id', matchingAuth.id)
+          .single();
+        if (emailMember) {
+          // Link existing member to new OAuth identity
+          await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', emailMember.id);
+          return NextResponse.json({ member: { ...emailMember, supabase_auth_id: supabaseAuthId }, created: false });
+        }
+      }
+
+      // Also check if a member exists with this email as display_name (wallet users who set email)
+      const { data: byEmail } = await supabaseAdmin
+        .from('members')
+        .select('*')
+        .ilike('display_name', email)
+        .single();
+      if (byEmail && !byEmail.supabase_auth_id) {
+        await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', byEmail.id);
+        return NextResponse.json({ member: { ...byEmail, supabase_auth_id: supabaseAuthId }, created: false });
+      }
+    }
+
     // Create new member from Google/OAuth data
     const { data: member, error } = await supabaseAdmin
       .from('members')
