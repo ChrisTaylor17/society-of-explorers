@@ -15,9 +15,11 @@ const supabaseAdmin = createClient(
 );
 
 const DIRECT_MAX_TOKENS = 400;
+const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
 const HISTORY_LIMIT = 14;
+const DEMO_MESSAGE_LIMIT = 7;
 
 const ARTIFACT_KEYWORDS = ['draft', 'write', 'plan', 'outline', 'create', 'build', 'design', 'manifesto', 'pitch', 'letter', 'framework', 'strategy', 'proposal'];
 
@@ -50,6 +52,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    const isDemo = body.demo === true;
     const thinkerId = body.thinkerId ?? body.thinker;
     const message = body.message;
     const isReaction = body.isReaction ?? false;
@@ -63,28 +66,54 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- AUTH + FULL PROFILE FETCH ---
+    // --- DEMO MODE: Socrates only, limited messages, no auth ---
+    if (isDemo) {
+      if (thinkerId !== 'socrates') {
+        return Response.json({ error: 'Demo only available with Socrates' }, { status: 403 });
+      }
+      if (body.messages && body.messages.length > DEMO_MESSAGE_LIMIT) {
+        return Response.json({ error: 'Demo limit reached' }, { status: 429 });
+      }
+    }
+
+    // --- AUTH + FULL PROFILE FETCH (skip for demo) ---
     let memberId: string | null = null;
     let memberName: string | null = null;
     let memberContext: string | null = null;
     let memberExpTokens: number = 0;
 
-    const authHeader = req.headers.get('authorization');
+    if (!isDemo) {
+      const authHeader = req.headers.get('authorization');
 
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const { createClient: createServerClient } = await import('@supabase/supabase-js');
-      const supabaseAuth = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { global: { headers: { Authorization: `Bearer ${token}` } } }
-      );
-      const { data: { user } } = await supabaseAuth.auth.getUser();
-      if (user) {
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const { createClient: createServerClient } = await import('@supabase/supabase-js');
+        const supabaseAuth = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          { global: { headers: { Authorization: `Bearer ${token}` } } }
+        );
+        const { data: { user } } = await supabaseAuth.auth.getUser();
+        if (user) {
+          const { data: member } = await supabaseAdmin
+            .from('members')
+            .select(MEMBER_SELECT)
+            .eq('supabase_auth_id', user.id)
+            .single();
+          if (member) {
+            memberId = member.id;
+            memberName = member.display_name;
+            memberExpTokens = member.exp_tokens || 0;
+            memberContext = buildMemberContext(member);
+          }
+        }
+      }
+
+      if (!memberId && walletMemberId) {
         const { data: member } = await supabaseAdmin
           .from('members')
           .select(MEMBER_SELECT)
-          .eq('supabase_auth_id', user.id)
+          .eq('id', walletMemberId)
           .single();
         if (member) {
           memberId = member.id;
@@ -93,92 +122,103 @@ export async function POST(req: NextRequest) {
           memberContext = buildMemberContext(member);
         }
       }
-    }
 
-    if (!memberId && walletMemberId) {
-      const { data: member } = await supabaseAdmin
-        .from('members')
-        .select(MEMBER_SELECT)
-        .eq('id', walletMemberId)
-        .single();
-      if (member) {
-        memberId = member.id;
-        memberName = member.display_name;
-        memberExpTokens = member.exp_tokens || 0;
-        memberContext = buildMemberContext(member);
+      if (!memberId) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
       }
     }
 
-    if (!memberId) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+    // --- SAVE USER MESSAGE (skip for demo and system-generated prompts) ---
+    if (!isDemo) {
+      const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
+        message.startsWith('You have been invited into a private conversation') ||
+        message.startsWith('Here are my current tasks:') ||
+        (message.includes('Respond as ') && message.includes(' — in character, direct'));
+
+      if (!isSystemPrompt) {
+        const { error: userMsgError } = await supabaseAdmin.from('salon_messages').insert({
+          salon_id: salonId,
+          sender_type: 'member',
+          sender_name: memberName || 'Explorer',
+          thinker_id: null,
+          content: message,
+        });
+        if (userMsgError) console.error('USER MSG SAVE FAILED:', userMsgError);
+      }
     }
 
-    // --- SAVE USER MESSAGE (skip system-generated prompts) ---
-    const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
-      message.startsWith('You have been invited into a private conversation') ||
-      message.startsWith('Here are my current tasks:') ||
-      (message.includes('Respond as ') && message.includes(' — in character, direct'));
+    // --- FETCH MESSAGE HISTORY (skip for demo — use client-provided messages) ---
+    let conversationHistory: { role: 'user' | 'assistant'; content: string }[];
 
-    if (!isSystemPrompt) {
-      const { error: userMsgError } = await supabaseAdmin.from('salon_messages').insert({
-        salon_id: salonId,
-        sender_type: 'member',
-        sender_name: memberName || 'Explorer',
-        thinker_id: null,
-        content: message,
-      });
-      if (userMsgError) console.error('USER MSG SAVE FAILED:', userMsgError);
-    }
-
-    // --- FETCH MESSAGE HISTORY ---
-    const { data: history } = await supabaseAdmin
-      .from('salon_messages')
-      .select('content, sender_type, thinker_id')
-      .eq('salon_id', salonId)
-      .order('created_at', { ascending: false })
-      .limit(HISTORY_LIMIT);
-
-    const conversationHistory = (history || [])
-      .reverse()
-      .map((msg) => ({
-        role: msg.sender_type === 'member' ? 'user' as const : 'assistant' as const,
-        content: msg.thinker_id && msg.sender_type === 'thinker'
-          ? `[${msg.thinker_id}]: ${msg.content}`
-          : msg.content,
+    if (isDemo) {
+      conversationHistory = (body.messages || []).map((m: any) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
       }));
+      if (!conversationHistory.some(m => m.content === message)) {
+        conversationHistory.push({ role: 'user', content: message });
+      }
+    } else {
+      const { data: history } = await supabaseAdmin
+        .from('salon_messages')
+        .select('content, sender_type, thinker_id')
+        .eq('salon_id', salonId)
+        .order('created_at', { ascending: false })
+        .limit(HISTORY_LIMIT);
 
-    // --- FETCH THINKER MEMORY ---
-    const memory = await getMemory(memberId, thinkerId);
+      conversationHistory = (history || [])
+        .reverse()
+        .map((msg) => ({
+          role: msg.sender_type === 'member' ? 'user' as const : 'assistant' as const,
+          content: msg.thinker_id && msg.sender_type === 'thinker'
+            ? `[${msg.thinker_id}]: ${msg.content}`
+            : msg.content,
+        }));
+    }
+
+    // --- FETCH THINKER MEMORY (skip for demo) ---
+    const memory = isDemo ? null : await getMemory(memberId!, thinkerId);
 
     // --- BUILD SYSTEM PROMPT ---
     const systemPrompt = buildSystemPrompt(thinkerId);
 
-    let maxTokens = isReaction ? REACTION_MAX_TOKENS : DIRECT_MAX_TOKENS;
-    if (!isReaction && isArtifactRequest(message)) {
+    let maxTokens: number;
+    if (isDemo) {
+      maxTokens = DEMO_MAX_TOKENS;
+    } else if (isReaction) {
+      maxTokens = REACTION_MAX_TOKENS;
+    } else if (isArtifactRequest(message)) {
       maxTokens = ARTIFACT_MAX_TOKENS;
+    } else {
+      maxTokens = DIRECT_MAX_TOKENS;
     }
 
-    const contextPrefix = memberContext
-      ? memberContext
-      : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
+    let fullSystemPrompt = systemPrompt;
 
-    // Resolve a usable name for the member
-    const usableName = (memberName && !memberName.startsWith('0x')) ? memberName : null;
+    if (!isDemo) {
+      const contextPrefix = memberContext
+        ? memberContext
+        : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
 
-    let fullSystemPrompt = `${systemPrompt}\n\n${contextPrefix}`;
-    if (usableName) {
-      fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. Use their name naturally in your response. Never call them "Anonymous Explorer" or just "Explorer."`;
-    }
+      const usableName = (memberName && !memberName.startsWith('0x')) ? memberName : null;
 
-    if (memory) {
-      fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference past conversations when relevant — "Last time we talked about X" or "You mentioned Y before." Don't announce that you have memory. Just know what you know, the way a trusted advisor remembers.`;
-    }
+      fullSystemPrompt += `\n\n${contextPrefix}`;
+      if (usableName) {
+        fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. Use their name naturally in your response. Never call them "Anonymous Explorer" or just "Explorer."`;
+      }
 
-    if (isReaction) {
-      fullSystemPrompt += '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.';
+      if (memory) {
+        fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference past conversations when relevant — "Last time we talked about X" or "You mentioned Y before." Don't announce that you have memory. Just know what you know, the way a trusted advisor remembers.`;
+      }
+
+      if (isReaction) {
+        fullSystemPrompt += '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.';
+      }
+    } else {
+      fullSystemPrompt += '\n\nThis is a brief demo conversation. Be concise and engaging. End your response by subtly inviting deeper exploration — the full Society experience awaits.';
     }
 
     // --- STREAM RESPONSE ---
@@ -213,79 +253,90 @@ export async function POST(req: NextRequest) {
             return;
           }
 
-          // --- PARSE ACTIONS ---
-          const { cleanText: rawClean, actions } = parseActions(fullText);
-          // Strip any "[thinkerId]: " prefix that Claude may echo from history
-          // Strip any "[thinkerId]: " prefix that Claude echoes from conversation history
-          const cleanText = rawClean
-            .replace(/^\[[\w-]+\]:\s*/i, '')
-            .replace(/^\[[\w-]+\]\s*/i, '')
-            .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
-            .trim();
+          // --- PARSE ACTIONS (skip for demo) ---
+          let cleanText: string;
+          let actions: any[] = [];
 
-          // --- SAVE THINKER RESPONSE (clean text only, no action JSON) ---
-          const thinkerDisplayNames: Record<string, string> = {
-            socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
-            aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
-          };
-          const { error: saveError } = await supabaseAdmin.from('salon_messages').insert({
-            salon_id: salonId,
-            sender_type: 'thinker',
-            sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
-            thinker_id: thinkerId,
-            content: cleanText,
-          });
-          if (saveError) console.error('THINKER SAVE FAILED:', saveError);
-          else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
+          if (isDemo) {
+            cleanText = fullText
+              .replace(/^\[[\w-]+\]:\s*/i, '')
+              .replace(/^\[[\w-]+\]\s*/i, '')
+              .replace(/^(socrates):\s*/i, '')
+              .trim();
+          } else {
+            const parsed = parseActions(fullText);
+            actions = parsed.actions;
+            cleanText = parsed.cleanText
+              .replace(/^\[[\w-]+\]:\s*/i, '')
+              .replace(/^\[[\w-]+\]\s*/i, '')
+              .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
+              .trim();
+          }
 
-          // --- EXECUTE ACTIONS ---
-          for (const action of actions) {
-            try {
-              await executeThinkerAction(action, memberId!, thinkerId);
-            } catch (e) {
-              console.error('Action execution failed:', action.type, e);
+          // --- SAVE + EXP + MEMORY + ACTIONS (skip all for demo) ---
+          if (!isDemo) {
+            const thinkerDisplayNames: Record<string, string> = {
+              socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
+              aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
+            };
+            const { error: saveError } = await supabaseAdmin.from('salon_messages').insert({
+              salon_id: salonId,
+              sender_type: 'thinker',
+              sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
+              thinker_id: thinkerId,
+              content: cleanText,
+            });
+            if (saveError) console.error('THINKER SAVE FAILED:', saveError);
+            else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
+
+            for (const action of actions) {
+              try {
+                await executeThinkerAction(action, memberId!, thinkerId);
+              } catch (e) {
+                console.error('Action execution failed:', action.type, e);
+              }
             }
+
+            const expAmount = isReaction ? 4 : 8;
+            await supabaseAdmin.from('exp_events').insert({
+              member_id: memberId,
+              amount: expAmount,
+              reason: isReaction
+                ? `Thinker reaction from ${thinkerId}`
+                : `Conversation with ${thinkerId}`,
+            });
+
+            const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
+              member_id_input: memberId,
+              amount_input: expAmount,
+            });
+            if (rpcError) {
+              await supabaseAdmin
+                .from('members')
+                .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
+                .eq('id', memberId);
+            }
+
+            const thinkerNames: Record<string, string> = {
+              socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
+              aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
+            };
+            recordInteraction(memberId!, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
+              .catch(err => console.error('Memory update failed:', err));
           }
-
-          // --- AWARD EXP TOKENS ---
-          const expAmount = isReaction ? 4 : 8;
-          await supabaseAdmin.from('exp_events').insert({
-            member_id: memberId,
-            amount: expAmount,
-            reason: isReaction
-              ? `Thinker reaction from ${thinkerId}`
-              : `Conversation with ${thinkerId}`,
-          });
-
-          const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
-            member_id_input: memberId,
-            amount_input: expAmount,
-          });
-          if (rpcError) {
-            await supabaseAdmin
-              .from('members')
-              .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
-              .eq('id', memberId);
-          }
-
-          // --- UPDATE THINKER MEMORY (fire-and-forget) ---
-          const thinkerNames: Record<string, string> = {
-            socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
-            aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
-          };
-          recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
-            .catch(err => console.error('Memory update failed:', err));
 
           // --- SEND DONE + ACTIONS TO CLIENT ---
-          if (actions.length > 0) {
+          if (!isDemo && actions.length > 0) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', actions })}\n\n`));
           }
 
           const doneData = JSON.stringify({
             done: true,
             response: cleanText,
-            expAwarded: expAmount,
-            actions: actions.length > 0 ? actions : undefined,
+            ...(!isDemo && {
+              expAwarded: isReaction ? 4 : 8,
+              actions: actions.length > 0 ? actions : undefined,
+            }),
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();
