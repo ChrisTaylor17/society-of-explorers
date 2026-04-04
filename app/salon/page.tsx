@@ -770,6 +770,7 @@ export default function SalonPage() {
                     { label: 'HALL',      action: () => router.push('/hall') },
                     { label: 'TEMPLE',    action: () => router.push('/temple') },
                     { label: 'DATA LAYER', action: () => router.push('/data-layer') },
+                    { label: 'TWIDDLE',       action: () => router.push('/twiddle') },
                     { label: 'WADDLE',        action: () => router.push('/waddle') },
                     { label: 'DASHBOARD',     action: () => router.push('/dashboard') },
                     { label: 'LOCK & SAFE',   action: () => router.push('/access') },
