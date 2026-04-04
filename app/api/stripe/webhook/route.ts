@@ -14,23 +14,18 @@ const supabaseAdmin = createClient(
 // You can find them in Stripe → Products → each product → Price ID (starts with price_)
 // For Payment Links, check the link config for the associated price.
 const TIER_MAP: Record<string, string> = {
-  // $9.99/mo Digital → member
-  // Fill in: 'price_XXXXX': 'member',
-
-  // $99/mo Salon → patron
-  // Fill in: 'price_XXXXX': 'patron',
-
-  // $499 one-time Founding → founding
-  // Fill in: 'price_XXXXX': 'founding',
+  [process.env.STRIPE_PRICE_SEEKER!]: 'seeker',
+  [process.env.STRIPE_PRICE_SCHOLAR!]: 'scholar',
+  [process.env.STRIPE_PRICE_PHILOSOPHER!]: 'philosopher',
 };
 
 // Fallback: map amount to tier if price ID not in TIER_MAP
 function tierFromAmount(amountCents: number | null, interval: string | null): string {
-  if (!amountCents) return 'member';
+  if (!amountCents) return 'seeker';
   const dollars = amountCents / 100;
-  if (dollars >= 499) return 'founding';
-  if (dollars >= 99) return 'patron';
-  return 'member';
+  if (dollars >= 499) return 'philosopher';
+  if (dollars >= 99) return 'scholar';
+  return 'seeker';
 }
 
 async function updateMemberTier(email: string, tier: string, stripeCustomerId?: string) {
@@ -105,7 +100,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Determine tier from line items
-        let tier = 'member';
+        let tier = 'seeker';
         const stripe = new Stripe(stripeKey, { apiVersion: '2026-03-25.dahlia' });
 
         try {
@@ -138,7 +133,7 @@ export async function POST(req: NextRequest) {
         const amount = subscription.items.data[0]?.price?.unit_amount;
         const interval = subscription.items.data[0]?.price?.recurring?.interval || null;
 
-        let tier = 'member';
+        let tier = 'seeker';
         if (priceId && TIER_MAP[priceId]) {
           tier = TIER_MAP[priceId];
         } else {

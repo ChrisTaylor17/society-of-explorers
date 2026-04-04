@@ -1,6 +1,6 @@
-export type Tier = 'free' | 'member' | 'patron' | 'founding';
+export type Tier = 'free' | 'seeker' | 'scholar' | 'philosopher';
 
-const TIER_LEVELS: Record<Tier, number> = { free: 0, member: 1, patron: 2, founding: 3 };
+const TIER_LEVELS: Record<Tier, number> = { free: 0, seeker: 1, scholar: 2, philosopher: 3 };
 
 export function hasAccess(memberTier: Tier | string | null | undefined, requiredTier: Tier): boolean {
   const level = TIER_LEVELS[(memberTier || 'free') as Tier] || 0;
@@ -9,6 +9,6 @@ export function hasAccess(memberTier: Tier | string | null | undefined, required
 }
 
 export function tierLabel(tier: string | null | undefined): string {
-  const labels: Record<string, string> = { free: 'FREE', member: 'MEMBER', patron: 'PATRON', founding: 'FOUNDING' };
+  const labels: Record<string, string> = { free: 'FREE', seeker: 'SEEKER', scholar: 'SCHOLAR', philosopher: 'PHILOSOPHER' };
   return labels[tier || 'free'] || 'FREE';
 }

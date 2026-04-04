@@ -291,7 +291,7 @@ export default function WaddleForge() {
 
       {/* Recorder */}
       <div style={{ maxWidth: '500px', margin: '0 auto', padding: '0 2rem 4rem', textAlign: 'center' }}>
-        {!hasAccess(memberTier, 'member') && !transcription && (
+        {!hasAccess(memberTier, 'seeker') && !transcription && (
           <div style={{ padding: '2rem', border: `1px solid ${gold}22`, background: '#0d0d0d', marginBottom: '2rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1rem' }}>⬡</div>
             <p style={{ fontSize: '1rem', color: muted, marginBottom: '1rem' }}>Recording requires a membership.</p>
@@ -308,8 +308,8 @@ export default function WaddleForge() {
               style={{ transition: 'stroke-dashoffset 0.3s' }} />
           </svg>
           <button
-            onMouseDown={() => hasAccess(memberTier, 'member') && startRecording()} onMouseUp={() => isRecording && stopRecording()}
-            onTouchStart={() => hasAccess(memberTier, 'member') && startRecording()} onTouchEnd={() => isRecording && stopRecording()}
+            onMouseDown={() => hasAccess(memberTier, 'seeker') && startRecording()} onMouseUp={() => isRecording && stopRecording()}
+            onTouchStart={() => hasAccess(memberTier, 'seeker') && startRecording()} onTouchEnd={() => isRecording && stopRecording()}
             style={{
               position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
               width: '80px', height: '80px', borderRadius: '50%',

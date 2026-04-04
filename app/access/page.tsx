@@ -13,7 +13,7 @@ interface SafeData {
 
 const TIERS = [
   {
-    name: 'OPEN', subtitle: 'Free Access', icon: '○', locked: false,
+    name: 'FREE', subtitle: 'Open Access', icon: '○', locked: false,
     features: [
       'Homepage Socrates taste',
       'Great Books library (read-only)',
@@ -23,7 +23,7 @@ const TIERS = [
     ],
   },
   {
-    name: 'LOCKED', subtitle: 'Member — $10+/mo', icon: '⬡', locked: true,
+    name: 'SEEKER', subtitle: '$9.99/mo', icon: '⬡', locked: true,
     features: [
       'Full thinker conversations',
       'Voice mode with distinct voices',
@@ -35,7 +35,7 @@ const TIERS = [
     ],
   },
   {
-    name: 'SEALED', subtitle: 'Patron — $100+/mo', icon: '◆', locked: true,
+    name: 'SCHOLAR', subtitle: '$99/mo', icon: '◆', locked: true,
     features: [
       'Everything in LOCKED',
       'Private ritual rooms',
@@ -107,7 +107,7 @@ export default function AccessPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}12` }}>
           {TIERS.map(tier => {
-            const tierMap: Record<string, string> = { OPEN: 'free', LOCKED: 'member', SEALED: 'patron' };
+            const tierMap: Record<string, string> = { FREE: 'free', SEEKER: 'seeker', SCHOLAR: 'scholar' };
             const isCurrentTier = memberTier === tierMap[tier.name] || (tier.name === 'OPEN' && memberTier === 'free');
             const isUnlocked = memberId && !tier.locked;
             return (

@@ -7,31 +7,27 @@ const gold = '#c9a84c';
 const parchment = '#E8DCC8';
 const muted = '#9a8f7a';
 
-const FOUNDING = 'https://buy.stripe.com/7sY7sE0Ic3lQ1wifXC9oc00';
-const SALON = 'https://buy.stripe.com/00w9AM62w8Gaej49ze9oc01';
-const DIGITAL = 'https://buy.stripe.com/9B6fZabmQ3lQ0sebHm9oc02';
-
 const TIERS = [
   {
-    name: 'EXPLORER', subtitle: 'Digital', price: '$9.99', period: '/mo', badge: null, link: DIGITAL, cta: 'Begin Your Initiation', featured: false,
+    name: 'SEEKER', subtitle: 'Digital', tier: 'seeker', price: '$9.99', period: '/mo', badge: null, cta: 'Begin Your Initiation', featured: false,
     features: ['All 6 AI thinker agents — unlimited conversations', 'Full Great Books reading program', 'TwiddleTwattle access — post, collaborate, create', 'The Labyrinth — all rooms', 'Member directory and messaging', '$EXP reputation earning', 'Salon conversation history'],
   },
   {
-    name: 'SALON', subtitle: 'Physical + Digital', price: '$99', period: '/mo', badge: 'MOST POPULAR', link: SALON, cta: 'Join the Salon', featured: true,
-    features: ['Everything in Explorer', 'Physical access to 92B South St, Boston', 'Monthly salon evenings and workshops', 'Voice AI conversations with thinkers', 'AI matchmaking for deep connections', 'Event priority access', 'Higher $EXP earning multiplier'],
+    name: 'SCHOLAR', subtitle: 'Physical + Digital', tier: 'scholar', price: '$99', period: '/mo', badge: 'MOST POPULAR', cta: 'Join the Salon', featured: true,
+    features: ['Everything in Seeker', 'Physical access to 92B South St, Boston', 'Monthly salon evenings and workshops', 'Voice AI conversations with thinkers', 'AI matchmaking for deep connections', 'Event priority access', 'Higher $EXP earning multiplier'],
   },
   {
-    name: 'FOUNDING MEMBER', subtitle: 'Lifetime', price: '$499', period: ' one-time', badge: 'LIMITED', link: FOUNDING, cta: 'Claim Your Founding Seat', featured: false,
-    features: ['Everything in Salon, forever', 'Your name engraved at 92B South St and on the blockchain', 'Founding dinner with your TribeKey', 'Maximum $EXP earning multiplier', 'Governance rights — vote on the Society\u2019s future', 'Hardware priority for TribeKey + Crystal Hub (in development)'],
+    name: 'PHILOSOPHER', subtitle: 'Lifetime', tier: 'philosopher', price: '$499', period: ' one-time', badge: 'LIMITED', cta: 'Claim Your Founding Seat', featured: false,
+    features: ['Everything in Scholar, forever', 'Your name engraved at 92B South St and on the blockchain', 'Founding dinner with your TribeKey', 'Maximum $EXP earning multiplier', 'Governance rights — vote on the Society\u2019s future', 'Hardware priority for TribeKey + Crystal Hub (in development)'],
     note: '10 seats total. When they\u2019re gone, this tier closes permanently.',
   },
 ];
 
 const FAQS = [
-  { q: 'Can I cancel anytime?', a: 'Yes. Explorer and Salon are month-to-month with no commitment. Cancel from your account settings.' },
+  { q: 'Can I cancel anytime?', a: 'Yes. Seeker and Scholar are month-to-month with no commitment. Cancel from your account settings.' },
   { q: 'What are AI thinkers?', a: 'Six philosophical minds — Socrates, Plato, Nietzsche, Marcus Aurelius, Einstein, and Steve Jobs — trained on deep source material. They remember you across sessions and respond in character.' },
   { q: 'Do I need to know about crypto or blockchain?', a: 'No. The digital layer works invisibly. You earn reputation ($EXP) by participating — reading, discussing, creating. No wallets or tokens required to use the platform.' },
-  { q: 'Where is the physical space?', a: '92B South St in downtown Boston. Salon members have access to the space for events, workshops, and co-working.' },
+  { q: 'Where is the physical space?', a: '92B South St in downtown Boston. Scholar members have access to the space for events, workshops, and co-working.' },
 ];
 
 export default function JoinPage() {
@@ -41,6 +37,24 @@ export default function JoinPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+
+  async function handleCheckout(tier: string) {
+    setCheckoutLoading(tier);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      setCheckoutLoading(null);
+    }
+  }
 
   async function submitInterest(e: React.FormEvent) {
     e.preventDefault();
@@ -63,33 +77,37 @@ export default function JoinPage() {
       {/* TIERS */}
       <section style={{ padding: '0 2rem 4rem' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}12` }}>
-          {TIERS.map(tier => (
-            <div key={tier.name} style={{ background: tier.featured ? '#111' : '#0d0d0d', padding: '2.5rem 2rem', position: 'relative', borderTop: tier.featured ? `3px solid ${gold}` : `1px solid ${gold}11`, display: 'flex', flexDirection: 'column' }}>
-              {tier.badge && (
-                <div style={{ position: 'absolute', top: tier.featured ? '-1px' : '0', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '3px 10px' }}>{tier.badge}</div>
+          {TIERS.map(t => (
+            <div key={t.name} style={{ background: t.featured ? '#111' : '#0d0d0d', padding: '2.5rem 2rem', position: 'relative', borderTop: t.featured ? `3px solid ${gold}` : `1px solid ${gold}11`, display: 'flex', flexDirection: 'column' }}>
+              {t.badge && (
+                <div style={{ position: 'absolute', top: t.featured ? '-1px' : '0', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '3px 10px' }}>{t.badge}</div>
               )}
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted, marginBottom: '0.25rem' }}>{tier.subtitle.toUpperCase()}</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>{tier.name}</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted, marginBottom: '0.25rem' }}>{t.subtitle.toUpperCase()}</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>{t.name}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '2rem' }}>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '2.5rem', color: parchment }}>{tier.price}</span>
-                <span style={{ fontSize: '13px', color: muted }}>{tier.period}</span>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '2.5rem', color: parchment }}>{t.price}</span>
+                <span style={{ fontSize: '13px', color: muted }}>{t.period}</span>
               </div>
               <div style={{ flex: 1, marginBottom: '2rem' }}>
-                {tier.features.map((f, i) => (
+                {t.features.map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.5rem', alignItems: 'flex-start' }}>
                     <span style={{ color: gold, opacity: 0.4, marginTop: '4px', fontSize: '7px', flexShrink: 0 }}>⬡</span>
                     <span style={{ fontSize: '14px', color: `${parchment}bb`, lineHeight: 1.5 }}>{f}</span>
                   </div>
                 ))}
               </div>
-              {tier.note && (
-                <p style={{ fontSize: '12px', color: muted, fontStyle: 'italic', marginBottom: '1rem', lineHeight: 1.6 }}>{tier.note}</p>
+              {t.note && (
+                <p style={{ fontSize: '12px', color: muted, fontStyle: 'italic', marginBottom: '1rem', lineHeight: 1.6 }}>{t.note}</p>
               )}
-              <a href={tier.link} target="_blank" rel="noopener noreferrer" style={{
-                display: 'block', textAlign: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
-                color: tier.featured ? '#000' : gold, background: tier.featured ? gold : 'transparent',
-                border: tier.featured ? 'none' : `1px solid ${gold}44`, padding: '12px', textDecoration: 'none',
-              }}>{tier.cta.toUpperCase()}</a>
+              <button
+                onClick={() => handleCheckout(t.tier)}
+                disabled={checkoutLoading === t.tier}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
+                  color: t.featured ? '#000' : gold, background: t.featured ? gold : 'transparent',
+                  border: t.featured ? 'none' : `1px solid ${gold}44`, padding: '12px', cursor: 'pointer',
+                  opacity: checkoutLoading === t.tier ? 0.6 : 1,
+                }}>{checkoutLoading === t.tier ? 'REDIRECTING...' : t.cta.toUpperCase()}</button>
             </div>
           ))}
         </div>

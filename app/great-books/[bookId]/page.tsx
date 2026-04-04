@@ -115,7 +115,7 @@ export default function BookReader() {
   function handleMouseUp(e: React.MouseEvent) {
     const sel = window.getSelection();
     const text = sel?.toString().trim();
-    if (text && text.length > 15 && hasAccess(memberTier, 'member')) {
+    if (text && text.length > 15 && hasAccess(memberTier, 'seeker')) {
       const range = sel!.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       const containerRect = readerRef.current?.getBoundingClientRect();
@@ -437,7 +437,7 @@ export default function BookReader() {
             <div style={{ textAlign: 'center', paddingTop: '4rem' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: thinker.color, opacity: 0.1, marginBottom: '1.5rem' }}>{thinker.symbol}</div>
               <div style={{ fontSize: '13px', color: muted, fontStyle: 'italic', lineHeight: 1.8 }}>
-                {hasAccess(memberTier, 'member')
+                {hasAccess(memberTier, 'seeker')
                   ? <>Select any passage.<br /><span style={{ color: thinker.color, opacity: 0.6 }}>{thinker.name}</span> will speak in the margin.</>
                   : <>Annotations require a membership.<br /><a href="/join" style={{ color: gold, textDecoration: 'none' }}>Upgrade to annotate →</a></>
                 }
