@@ -14,15 +14,15 @@ const DIGITAL = 'https://buy.stripe.com/9B6fZabmQ3lQ0sebHm9oc02';
 const TIERS = [
   {
     name: 'EXPLORER', subtitle: 'Digital', price: '$9.99', period: '/mo', badge: null, link: DIGITAL, cta: 'Begin Your Initiation', featured: false,
-    features: ['All 6 AI thinker agents — unlimited conversations', 'Full Great Books reading program', 'TwiddleTwattle — post, collaborate, create', 'The Labyrinth — all rooms', 'Member directory and messaging', '$EXP reputation earning', 'Salon conversation history'],
+    features: ['All 6 AI thinker agents — unlimited conversations', 'Full Great Books reading program', 'TwiddleTwattle access — post, collaborate, create', 'The Labyrinth — all rooms', 'Member directory and messaging', '$EXP reputation earning', 'Salon conversation history'],
   },
   {
     name: 'SALON', subtitle: 'Physical + Digital', price: '$99', period: '/mo', badge: 'MOST POPULAR', link: SALON, cta: 'Join the Salon', featured: true,
     features: ['Everything in Explorer', 'Physical access to 92B South St, Boston', 'Monthly salon evenings and workshops', 'Voice AI conversations with thinkers', 'AI matchmaking for deep connections', 'Event priority access', 'Higher $EXP earning multiplier'],
   },
   {
-    name: 'FOUNDING', subtitle: 'Lifetime', price: '$499', period: ' one-time', badge: 'LIMITED', link: FOUNDING, cta: 'Claim Your Founding Seat', featured: false,
-    features: ['Everything in Salon, forever', 'Your name at 92B South St and on the blockchain', 'Founding dinner with your TribeKey', 'Maximum $EXP earning multiplier', 'Governance rights — vote on the Society\u2019s future', 'Hardware priority: TribeKey + Crystal Hub (in development)'],
+    name: 'FOUNDING MEMBER', subtitle: 'Lifetime', price: '$499', period: ' one-time', badge: 'LIMITED', link: FOUNDING, cta: 'Claim Your Founding Seat', featured: false,
+    features: ['Everything in Salon, forever', 'Your name engraved at 92B South St and on the blockchain', 'Founding dinner with your TribeKey', 'Maximum $EXP earning multiplier', 'Governance rights — vote on the Society\u2019s future', 'Hardware priority for TribeKey + Crystal Hub (in development)'],
     note: '10 seats total. When they\u2019re gone, this tier closes permanently.',
   },
 ];

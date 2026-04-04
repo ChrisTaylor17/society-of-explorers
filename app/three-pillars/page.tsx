@@ -1,4 +1,6 @@
 import { Metadata } from 'next';
+import PublicNav from '@/components/PublicNav';
+import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
   title: 'The Three Pillars | Society of Explorers',
@@ -18,10 +20,7 @@ export default function ThreePillars() {
   return (
     <div style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
 
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← RETURN TO THE SALON</a>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5 }}>SOCIETY OF EXPLORERS</div>
-      </nav>
+      <PublicNav />
 
       {/* HERO */}
       <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '6rem 2rem 4rem', position: 'relative' }}>
@@ -200,24 +199,7 @@ export default function ThreePillars() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <section style={{ padding: '6rem 2rem', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.1em', color: gold, opacity: 0.4, maxWidth: '500px', margin: '0 auto 3rem', lineHeight: 1.8 }}>
-          The structure exists to serve the vision. The vision exists to serve the human.
-        </p>
-        <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-          {[
-            { href: '/salon', label: 'THE SALON' },
-            { href: '/great-books', label: 'GREAT BOOKS' },
-            { href: '/data-layer', label: 'DATA LAYER' },
-            { href: '/join', label: 'JOIN' },
-          ].map(link => (
-            <a key={link.href} href={link.href} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>{link.label}</a>
-          ))}
-        </div>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '12px', color: muted, opacity: 0.5 }}>chris@societyofexplorers.com</div>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.3, marginTop: '0.75rem' }}>CONSILIENCE SYSTEMS · 92B SOUTH ST · DOWNTOWN BOSTON</div>
-      </section>
+      <PublicFooter />
     </div>
   );
 }
