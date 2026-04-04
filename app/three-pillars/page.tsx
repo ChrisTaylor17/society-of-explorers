@@ -30,7 +30,7 @@ export default function ThreePillars() {
           THE THREE PILLARS
         </h1>
         <p style={{ fontSize: '1.2rem', color: muted, fontStyle: 'italic', lineHeight: 1.8, maxWidth: '550px', marginBottom: '4rem' }}>
-          One vision. Three vessels. A hierarchy designed for convergence.
+          How the Society is organized — the legal and corporate architecture.
         </p>
 
         {/* Hierarchy Tree — Consilience at top, branching down */}
@@ -93,10 +93,10 @@ export default function ThreePillars() {
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: purple, marginBottom: '0.25rem' }}>CONSILIENCE SYSTEMS LLC</div>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>THE PARENT DAC — TECHNOLOGY BACKBONE</div>
               <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
-                The Decentralized Autonomous Corporation. Consilience builds the infrastructure that everything else runs on — blockchain systems, AI platforms, data sovereignty tools, the Living Archive, TwiddleTwattle, ExploreOS. Located at 92B South St in downtown Boston. It provides services, IP licensing, and technical infrastructure to the Society of Explorers and the Nonprofit. Consilience is the root. It asks the questions that take decades to answer and builds the tools that make the answers possible.
+                The Decentralized Autonomous Corporation. Consilience builds the infrastructure that everything else runs on — blockchain systems, AI platforms, data sovereignty tools, the Living Archive (planned), TwiddleTwattle, ExploreOS (in development). Located at 92B South St in downtown Boston. It provides services, IP licensing, and technical infrastructure to the Society of Explorers and the Nonprofit. Consilience is the root. It asks the questions that take decades to answer and builds the tools that make the answers possible.
               </p>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: purple, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
-              {['Blockchain and AI infrastructure', 'Living Archive platform', 'ExploreOS development', 'TwiddleTwattle social layer', 'IP licensing and services', 'Data sovereignty tools', '92B South St operations'].map((f, i) => (
+              {['Blockchain and AI infrastructure', 'Living Archive (planned)', 'ExploreOS (in development)', 'TwiddleTwattle social layer', 'IP licensing and services', 'Data sovereignty tools', '92B South St operations'].map((f, i) => (
                 <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
                   <div style={{ color: purple, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>⬡</div>
                   <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
@@ -110,7 +110,7 @@ export default function ThreePillars() {
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.25rem' }}>SOCIETY OF EXPLORERS LLC</div>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>SUBSIDIARY DAO — COMMUNITY + MEMBERSHIP</div>
               <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
-                The living temple. The front-end community where members gather, thinkers speak, artifacts are forged, and salons convene. Functions as a DAO with tiered memberships — $10 Digital, $100 Salon, $1,000 Patron, $10,000 Founding. Managed under the Consilience umbrella. Revenue from membership dues, product sales, and the $EXP token economy funds operations. Surplus flows to the nonprofit.
+                The living temple. The front-end community where members gather, thinkers speak, artifacts are forged, and salons convene. Functions as a DAO with tiered memberships — $9.99/mo Digital, $99/mo Salon, $499 one-time Founding. Managed under the Consilience umbrella. Revenue from membership dues, product sales, and the $EXP token economy funds operations. Surplus flows to the nonprofit.
               </p>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
               {['Membership platform and DAO governance', 'AI thinker salon', 'Great Books reading program', 'Merch and artifact marketplace', '$EXP token economy', 'Events and salon evenings', 'Book salons and cohorts'].map((f, i) => (

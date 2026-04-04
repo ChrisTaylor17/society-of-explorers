@@ -32,6 +32,7 @@ export default function StructurePage() {
             Explorers Build Worlds
           </h1>
           <div style={{ width: '60px', height: '1px', background: gold, margin: '0 auto 2rem', opacity: 0.5 }} />
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.4, marginBottom: '1rem' }}>WHAT WE BELIEVE — THE INTELLECTUAL AND PHILOSOPHICAL FOUNDATION</div>
           <p style={{ fontSize: '1.2rem', color: muted, lineHeight: 1.9, fontStyle: 'italic', maxWidth: '560px', margin: '0 auto' }}>
             Society of Explorers stands on three pillars — each one a response to a failure of the old internet, each one a foundation for what comes next.
           </p>

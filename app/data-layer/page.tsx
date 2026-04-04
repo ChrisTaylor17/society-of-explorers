@@ -71,7 +71,7 @@ export default function DataLayer() {
               {
                 icon: '◇',
                 title: 'DECENTRALIZED COMPUTE',
-                body: 'ExploreOS: A decentralized operating system where AI agents run on distributed infrastructure. The thinkers don\u2019t live on Anthropic\u2019s servers alone — they live on a network owned by the community. Your conversations are processed by nodes you help run. Compute as a commons.',
+                body: 'ExploreOS (in development): A decentralized operating system where AI agents run on distributed infrastructure. The thinkers don\u2019t live on Anthropic\u2019s servers alone — they live on a network owned by the community. Your conversations are processed by nodes you help run. Compute as a commons.',
               },
               {
                 icon: '◎',
@@ -149,10 +149,10 @@ export default function DataLayer() {
           BEYOND THE SCREEN
         </h2>
         <p style={{ fontSize: '1.15rem', lineHeight: 2, marginBottom: '2rem' }}>
-          The thinkers will not stay digital. TribeKey becomes a physical device — an RFID-enabled key that unlocks physical spaces, identifies you to robotic systems, and carries your sovereign identity into the material world. The temple at 92B South St is the first node. The network grows from there.
+          The thinkers will not stay digital. TribeKey becomes a physical device (prototype) — an RFID-enabled key that unlocks physical spaces, identifies you to robotic systems, and carries your sovereign identity into the material world. The temple at 92B South St is the first node. The network grows from there.
         </p>
         <p style={{ fontSize: '1.15rem', lineHeight: 2, color: muted }}>
-          When you walk into the temple, your TribeKey authenticates you. The thinkers know who you are. The space responds to your presence. This is not science fiction — it is the convergence of NFC, blockchain identity, and AI agents that already exists in prototype at the Society. The question is not whether this will happen. The question is who builds it — platforms that extract, or communities that own.
+          This is where we are heading: When you walk into the temple, your TribeKey authenticates you. The thinkers know who you are. The space responds to your presence. This is the convergence of NFC, blockchain identity, and AI agents. The question is not whether this will happen. The question is who builds it — platforms that extract, or communities that own.
         </p>
       </section>
 

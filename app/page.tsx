@@ -254,7 +254,7 @@ export default function HomePage() {
             ))}
           </div>
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>
-            Founding Member — $1,000 lifetime access. <a href="/join" style={{ color: gold, textDecoration: 'none' }}>10 seats remaining.</a>
+            Founding Member — $499 lifetime access. <a href="/join" style={{ color: gold, textDecoration: 'none' }}>10 seats remaining.</a>
           </div>
         </div>
       </section>
