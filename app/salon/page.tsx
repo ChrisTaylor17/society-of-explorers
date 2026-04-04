@@ -129,18 +129,24 @@ export default function SalonPage() {
   // ── Auth ─────────────────────────────────────────────────────
   useEffect(() => {
     async function checkAuth() {
+      console.log('[salon] Starting auth check...');
+
       // First try getMemberSession (handles both Supabase + wallet)
       const session = await getMemberSession();
       if (session) {
+        console.log('[salon] getMemberSession OK:', session.member.id, session.member.display_name);
         setMember(session.member);
         setAuthReady(true);
         return;
       }
+      console.log('[salon] getMemberSession returned null, trying fallback...');
 
-      // If getMemberSession failed but there IS a Supabase user (e.g. RLS blocked the member query),
+      // If getMemberSession failed but there IS a Supabase user,
       // try creating the member via ensure-member before giving up
       const supabaseClient = (await import('@/lib/supabase/client')).createClient();
       const { data: { user } } = await supabaseClient.auth.getUser();
+      console.log('[salon] Supabase user:', user ? `${user.id} (${user.email})` : 'null');
+
       if (user) {
         try {
           const res = await fetch('/api/auth/ensure-member', {
@@ -153,15 +159,19 @@ export default function SalonPage() {
             }),
           });
           const data = await res.json();
+          console.log('[salon] ensure-member response:', JSON.stringify(data).slice(0, 200));
           if (data.member) {
             setMember(data.member);
             setAuthReady(true);
             return;
           }
-        } catch {}
+        } catch (err) {
+          console.error('[salon] ensure-member fetch failed:', err);
+        }
       }
 
       // Genuinely not authed — redirect to homepage
+      console.log('[salon] No auth found, redirecting to /');
       router.push('/');
     }
     checkAuth();
