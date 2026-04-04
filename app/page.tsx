@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { setWalletCookie } from '@/lib/auth/getSession'
+import PublicFooter from '@/components/PublicFooter'
 
 const gold = '#c9a84c'
 const parchment = '#E8DCC8'
@@ -231,19 +232,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ FOOTER ═══ */}
-      <footer style={{ padding: '3rem 2rem', borderTop: `1px solid ${gold}11` }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.3 }}>SOCIETY OF EXPLORERS · CONSILIENCE SYSTEMS</div>
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-            {[{ l: 'Great Books', h: '/great-books' }, { l: 'Join', h: '/join' }, { l: 'Structure', h: '/structure' }, { l: 'Data Layer', h: '/data-layer' }].map(lk => (
-              <a key={lk.h} href={lk.h} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted, textDecoration: 'none', opacity: 0.5 }}>{lk.l.toUpperCase()}</a>
-            ))}
-          </div>
-          <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', color: muted, opacity: 0.4 }}>chris@societyofexplorers.com</div>
-        </div>
-        <div style={{ textAlign: 'center', marginTop: '1.5rem', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, opacity: 0.2 }}>92B SOUTH ST · DOWNTOWN BOSTON</div>
-      </footer>
+      <PublicFooter />
 
       {/* ═══ AUTH MODAL ═══ */}
       {showAuth && (

@@ -1,5 +1,7 @@
 'use client';
 import { useEffect } from 'react';
+import PublicNav from '@/components/PublicNav';
+import PublicFooter from '@/components/PublicFooter';
 
 const gold = '#c9a84c';
 const text = '#E8DCC8';
@@ -19,10 +21,7 @@ export default function StructurePage() {
     <div style={{ minHeight: '100vh', background: '#080808', color: text, fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');`}</style>
 
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #080808, transparent)' }}>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← SALON</a>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.4 }}>SOCIETY OF EXPLORERS</div>
-      </nav>
+      <PublicNav />
 
       {/* ═══ HERO ═══ */}
       <section style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '8rem 2rem 6rem', position: 'relative' }}>
@@ -192,13 +191,11 @@ export default function StructurePage() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer style={{ padding: '4rem 2rem', borderTop: `1px solid ${gold}15`, textAlign: 'center' }}>
-        <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
-          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '10px 28px', textDecoration: 'none' }}>JOIN THE SOCIETY</a>
-          <a href="/twiddle" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '10px 28px', textDecoration: 'none' }}>ENTER THE CLEARING</a>
-        </div>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.3 }}>CONSILIENCE SYSTEMS · 92B SOUTH ST · BOSTON</div>
-      </footer>
+      {/* CTAs */}
+      <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap', padding: '2rem' }}>
+        <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '10px 28px', textDecoration: 'none' }}>JOIN THE SOCIETY</a>
+      </div>
+      <PublicFooter />
     </div>
   );
 }

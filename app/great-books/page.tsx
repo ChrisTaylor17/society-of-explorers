@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
+import PublicNav from '@/components/PublicNav';
+import PublicFooter from '@/components/PublicFooter';
 
 const gold = '#c9a84c';
 const dim = '#d4c9a8';
@@ -35,10 +37,7 @@ export default function GreatBooksLibrary() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: 'Cormorant Garamond, serif' }}>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← RETURN TO THE SALON</a>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5 }}>SOCIETY OF EXPLORERS</div>
-      </nav>
+      <PublicNav />
 
       <div style={{ textAlign: 'center', padding: '80px 20px 40px' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>THE GREAT BOOKS PROGRAM</div>
@@ -97,9 +96,7 @@ export default function GreatBooksLibrary() {
         })}
       </div>
 
-      <footer style={{ padding: '3rem 2rem', borderTop: `1px solid ${gold}22`, textAlign: 'center' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.4 }}>SOCIETY OF EXPLORERS · THE GREAT BOOKS PROGRAM</div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
