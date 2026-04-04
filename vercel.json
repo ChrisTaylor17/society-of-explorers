@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/twiddle/cron",
-      "schedule": "0 13,19,1 * * *"
+      "schedule": "0 13 * * *"
     }
   ]
 }
