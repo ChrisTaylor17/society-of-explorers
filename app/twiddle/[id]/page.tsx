@@ -60,10 +60,13 @@ export default function ThreadPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/twiddle/${id}`);
+      if (!res.ok) { setLoading(false); return; }
       const data = await res.json();
-      setRoot(data.twiddle);
-      setThread(data.thread || []);
-    } catch {}
+      setRoot(data.twiddle || null);
+      setThread(Array.isArray(data.thread) ? data.thread : []);
+    } catch (err) {
+      console.error('Thread load error:', err);
+    }
     setLoading(false);
   }
 

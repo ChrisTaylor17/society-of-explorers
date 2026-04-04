@@ -36,10 +36,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       m.is_thinker_response ? `[${m.thinker_key}]: ${m.content}` : `Member: ${m.content}`
     ).join('\n\n');
 
-    // Fetch thinker memory for this user
+    // Fetch thinker memory for this user (may fail if table doesn't exist)
     let memory: string | null = null;
     if (memberId) {
-      memory = await getMemory(memberId, thinker_key);
+      try { memory = await getMemory(memberId, thinker_key); } catch {}
     }
 
     // Fetch member profile
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Call Claude
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 200,
+      max_tokens: 400,
       system: systemPrompt,
       messages: [{
         role: 'user',

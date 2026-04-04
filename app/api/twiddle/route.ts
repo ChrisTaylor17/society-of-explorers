@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
 
     let query = supabaseAdmin
       .from('twiddles')
-      .select('*, twiddle_reactions(reaction_type)')
-      .is('parent_id', null) // Only top-level twiddles
+      .select('*')
+      .is('parent_id', null)
       .range(offset, offset + limit - 1);
 
     if (thinker) {
@@ -84,15 +84,12 @@ export async function GET(req: NextRequest) {
     }
 
     const { data, error } = await query;
-    if (error) return NextResponse.json({ twiddles: [], error: error.message });
+    if (error) {
+      console.error('Twiddle GET error:', error.message);
+      return NextResponse.json({ twiddles: [] });
+    }
 
-    // Enrich with reaction counts
-    const twiddles = (data || []).map((t: any) => {
-      const reactions = t.twiddle_reactions || [];
-      const counts: Record<string, number> = {};
-      reactions.forEach((r: any) => { counts[r.reaction_type] = (counts[r.reaction_type] || 0) + 1; });
-      return { ...t, reaction_counts: counts, twiddle_reactions: undefined };
-    });
+    const twiddles = (data || []).map((t: any) => ({ ...t, reaction_counts: {} }));
 
     return NextResponse.json({ twiddles });
   } catch (err) {

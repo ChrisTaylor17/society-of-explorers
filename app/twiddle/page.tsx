@@ -70,8 +70,11 @@ export default function TwiddlePage() {
     try {
       const res = await fetch(`/api/twiddle?filter=${tab}&limit=20${memberId ? `&memberId=${memberId}` : ''}`);
       const data = await res.json();
-      setTwiddles(data.twiddles || []);
-    } catch {}
+      setTwiddles(Array.isArray(data.twiddles) ? data.twiddles : []);
+    } catch (err) {
+      console.error('Feed load error:', err);
+      setTwiddles([]);
+    }
     setLoading(false);
   }
 
