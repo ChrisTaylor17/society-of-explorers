@@ -107,26 +107,39 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    // Build system prompt
+    // Build system prompt — personality + member profile + memory
     let systemPrompt = buildSystemPrompt(thinker_key);
     systemPrompt += `\n\n${memberContext}`;
     if (memory) {
       systemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from salon conversations):\n${memory}`;
     }
+    systemPrompt += `\n\nYou have an ongoing relationship with this Explorer. Reference past interactions naturally when relevant — but never force it. If this is a first interaction, welcome them warmly. Keep responses to 2-4 sentences. Be specific to THEM, not generic.`;
+
+    // Build messages array — context as a separate message, then the actual twiddle
+    const messages: { role: 'user' | 'assistant'; content: string }[] = [];
+
     if (relationshipContext) {
-      systemPrompt += relationshipContext;
+      messages.push({
+        role: 'user',
+        content: `[CONTEXT — do not repeat verbatim, use naturally]:${relationshipContext}`,
+      });
+      messages.push({
+        role: 'assistant',
+        content: 'Understood. I have this context about our relationship. I will reference it naturally when relevant.',
+      });
     }
-    systemPrompt += `\n\nYou are responding to a TwiddleTwattle post — a short-form philosophical social post. Keep your response to 2-4 sentences. Be sharp, specific to what they said, and in character. If you have context from previous interactions, weave it in naturally — "You keep circling back to X" or "Last time you were wrestling with Y, and now I see Z." Don't force it. Only reference history when it genuinely deepens the response.`;
+
+    messages.push({
+      role: 'user',
+      content: threadContext ? `Thread context:\n${threadContext}\n\nRespond to the latest message.` : twiddle.content,
+    });
 
     // Call Claude
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 400,
       system: systemPrompt,
-      messages: [{
-        role: 'user',
-        content: threadContext ? `Thread context:\n${threadContext}\n\nRespond to the latest message.` : twiddle.content,
-      }],
+      messages,
     });
 
     let responseText = response.content.find(b => b.type === 'text')?.text || '';
