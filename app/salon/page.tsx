@@ -130,6 +130,17 @@ export default function SalonPage() {
   const endRef   = useRef<HTMLDivElement>(null);
   const router   = useRouter();
   const supabase = createClient();
+
+  // Pre-select thinker from URL param (e.g. /salon?thinker=socrates)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const thinkerParam = params.get('thinker');
+    if (thinkerParam) {
+      const match = THINKERS.find(t => t.id === thinkerParam);
+      if (match) setSelectedThinker(match);
+    }
+  }, []);
   const { address }           = useAccount();
   const { writeContract, writeContractAsync } = useWriteContract();
   const { switchChainAsync }  = useSwitchChain();
