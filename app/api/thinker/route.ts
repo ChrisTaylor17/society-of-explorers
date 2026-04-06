@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
 import { parseActions, executeThinkerAction } from '@/lib/thinkerActions';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -83,44 +84,12 @@ export async function POST(req: NextRequest) {
     let memberExpTokens: number = 0;
 
     if (!isDemo) {
-      const authHeader = req.headers.get('authorization');
-
-      if (authHeader?.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        const { createClient: createServerClient } = await import('@supabase/supabase-js');
-        const supabaseAuth = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          { global: { headers: { Authorization: `Bearer ${token}` } } }
-        );
-        const { data: { user } } = await supabaseAuth.auth.getUser();
-        if (user) {
-          const { data: member } = await supabaseAdmin
-            .from('members')
-            .select(MEMBER_SELECT)
-            .eq('supabase_auth_id', user.id)
-            .single();
-          if (member) {
-            memberId = member.id;
-            memberName = member.display_name;
-            memberExpTokens = member.exp_tokens || 0;
-            memberContext = buildMemberContext(member);
-          }
-        }
-      }
-
-      if (!memberId && walletMemberId) {
-        const { data: member } = await supabaseAdmin
-          .from('members')
-          .select(MEMBER_SELECT)
-          .eq('id', walletMemberId)
-          .single();
-        if (member) {
-          memberId = member.id;
-          memberName = member.display_name;
-          memberExpTokens = member.exp_tokens || 0;
-          memberContext = buildMemberContext(member);
-        }
+      const auth = await getAuthenticatedMember(req);
+      if (auth) {
+        memberId = auth.memberId;
+        memberName = auth.member.display_name;
+        memberExpTokens = auth.member.exp_tokens || 0;
+        memberContext = buildMemberContext(auth.member);
       }
 
       if (!memberId) {

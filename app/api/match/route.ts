@@ -1,31 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const svc = createServiceClient()
+  const { query, memberProfiles, seekerName, seekerProfile } = await req.json()
 
-  const { query, memberProfiles, seekerName, walletMemberId, seekerProfile } = await req.json()
-
-  let member = null
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (user) {
-    const { data } = await supabase.from('members')
-      .select('id,display_name,bio,discipline,skills,project_description,seeking,philosophy')
-      .eq('supabase_auth_id', user.id).single()
-    member = data
-  } else if (walletMemberId) {
-    const { data } = await svc.from('members')
-      .select('id,display_name,bio,discipline,skills,project_description,seeking,philosophy')
-      .eq('id', walletMemberId).single()
-    member = data
-  }
-
-  if (!member) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthenticatedMember(req)
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const member = auth.member
 
   const seekerFullProfile = [
     seekerProfile?.bio && `Bio: ${seekerProfile.bio}`,
