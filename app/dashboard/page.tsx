@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import WelcomeModal from '@/components/WelcomeModal';
 import { computeFrequencyProfile, deriveTags, type CoherenceInput } from '@/lib/world/frequency';
 
 const gold = '#c9a84c';
@@ -97,6 +98,7 @@ export default function ExplorerDashboard() {
   const [stampSpaces, setStampSpaces] = useState<StampSpace[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
+  const hasCheckedWelcomeRef = useRef(false);
 
   useEffect(() => {
     import('@/lib/auth/getSession').then(({ getMemberSession }) => {
@@ -106,18 +108,19 @@ export default function ExplorerDashboard() {
         setMember(m);
         const sb = session.supabase;
 
-        // Parallel data fetches + first-visit check
-        const [eventsRes, scansRes, salonRes] = await Promise.all([
+        // Parallel data fetches
+        const [eventsRes, scansRes] = await Promise.all([
           sb.from('exp_events').select('*').eq('member_id', m.id).order('created_at', { ascending: false }).limit(10),
           sb.from('scan_uploads').select('id, space_id, quality_score, verified, is_first_scan, exp_awarded, created_at').eq('scanner_id', m.supabase_auth_id).order('created_at', { ascending: false }),
-          sb.from('salon_messages').select('id', { count: 'exact', head: true }).eq('sender_name', m.display_name).eq('sender_type', 'member'),
         ]);
 
-        // Show welcome modal if member has never sent a salon message
-        const hasMessages = (salonRes.count ?? 0) > 0;
-        const dismissedKey = `soe_welcome_dismissed_${m.id}`;
-        if (!hasMessages && typeof window !== 'undefined' && !sessionStorage.getItem(dismissedKey)) {
-          setShowWelcome(true);
+        // Check if first visit (no salon messages) — show welcome modal
+        if (!hasCheckedWelcomeRef.current) {
+          hasCheckedWelcomeRef.current = true;
+          const { data: salonData } = await sb.from('salon_messages').select('id').eq('member_id', m.id).limit(1);
+          if (!salonData || salonData.length === 0) {
+            setShowWelcome(true);
+          }
         }
 
         setEvents(eventsRes.data || []);
@@ -171,45 +174,16 @@ export default function ExplorerDashboard() {
   const freqTags = freqVector ? deriveTags(freqVector) : [];
   const verifiedScans = scans.filter(s => s.verified);
 
-  function dismissWelcome() {
-    setShowWelcome(false);
-    if (member) sessionStorage.setItem(`soe_welcome_dismissed_${member.id}`, '1');
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
 
-      {/* Welcome modal for first-time members */}
       {showWelcome && (
-        <div onClick={e => { if (e.target === e.currentTarget) dismissWelcome(); }} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-          <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '3rem 2.5rem', maxWidth: '420px', width: '100%', textAlign: 'center', position: 'relative' }}>
-            <button onClick={dismissWelcome} style={{ position: 'absolute', top: '1rem', right: '1.2rem', background: 'none', border: 'none', color: muted, fontSize: '1.2rem', cursor: 'pointer' }}>×</button>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1.5rem' }}>Σ</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>WELCOME TO THE SOCIETY</div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 300, letterSpacing: '0.06em', color: '#f5f0e8', marginBottom: '1rem' }}>
-              Your salon awaits
-            </h2>
-            <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8, marginBottom: '0.75rem' }}>
-              {member.display_name}, Socrates is ready to meet you. He remembers every conversation and will help you think through what matters most.
-            </p>
-            <p style={{ fontSize: '14px', color: `${muted}cc`, lineHeight: 1.7, marginBottom: '2rem', fontStyle: 'italic' }}>
-              This is your first step into a living intellectual community.
-            </p>
-            <a
-              href="/salon?thinker=socrates"
-              onClick={dismissWelcome}
-              style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '14px 32px', textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}
-            >
-              Enter the Salon →
-            </a>
-            <div>
-              <button onClick={dismissWelcome} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6 }}>
-                EXPLORE DASHBOARD FIRST
-              </button>
-            </div>
-          </div>
-        </div>
+        <WelcomeModal
+          displayName={member.display_name || 'Explorer'}
+          onEnterSalon={() => { setShowWelcome(false); router.push('/salon?thinker=socrates'); }}
+          onDismiss={() => setShowWelcome(false)}
+        />
       )}
 
       {/* ═══ WELCOME HEADER ═══ */}
