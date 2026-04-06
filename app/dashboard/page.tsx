@@ -1,218 +1,354 @@
 'use client';
-import { useState, useCallback } from 'react';
-import { parseWatchHistory, type ParsedData } from '@/lib/parseYoutubeTakeout';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import PublicNav from '@/components/PublicNav';
+import PublicFooter from '@/components/PublicFooter';
+import { computeFrequencyProfile, deriveTags, type CoherenceInput } from '@/lib/world/frequency';
 
-const gold = '#C5A55A';
+const amber = '#f59e0b';
+const slate950 = '#020617';
+const slate900 = '#0f172a';
+const slate800 = '#1e293b';
 const parchment = '#E8DCC8';
-const muted = '#9a8f7a';
-const crimson = '#BF4040';
+const muted = '#94a3b8';
+const gold = '#c9a84c';
 
-export default function Dashboard() {
-  const [data, setData] = useState<ParsedData | null>(null);
-  const [parsing, setParsing] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [thinkerNote, setThinkerNote] = useState('');
-  const [loadingNote, setLoadingNote] = useState(false);
+interface Member {
+  id: string;
+  display_name: string;
+  tier: string;
+  exp_tokens: number;
+  coherence_data: CoherenceInput | null;
+  supabase_auth_id: string | null;
+}
 
-  const handleFile = useCallback(async (file: File) => {
-    setParsing(true);
-    const content = await file.text();
-    const fileType = file.name.endsWith('.json') ? 'json' as const : 'html' as const;
-    const parsed = parseWatchHistory(content, fileType);
-    setData(parsed);
-    setParsing(false);
+interface ExpEvent {
+  id: string;
+  amount: number;
+  reason: string;
+  metadata: string;
+  created_at: string;
+}
 
-    // Get thinker commentary
-    if (parsed.totalVideos > 0) {
-      setLoadingNote(true);
-      const shortsPercentage = Math.round((parsed.totalShorts / parsed.totalVideos) * 100);
-      const hours = (parsed.estimatedMinutes / 60).toFixed(1);
-      try {
-        const res = await fetch('/api/taste', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            question: `I watched ${parsed.totalVideos} YouTube videos including ${parsed.totalShorts} Shorts (${shortsPercentage}% of total) totaling approximately ${hours} hours over the period ${parsed.dateRange.start} to ${parsed.dateRange.end}. What does this say about how I'm spending my attention?`,
-          }),
-        });
-        const d = await res.json();
-        setThinkerNote(d.response || d.error || '');
-      } catch { setThinkerNote('The thinker is silent. Try again.'); }
-      setLoadingNote(false);
-    }
-  }, []);
+interface ScanWithSpace {
+  id: string;
+  space_id: string;
+  quality_score: number | null;
+  verified: boolean;
+  is_first_scan: boolean;
+  exp_awarded: number;
+  created_at: string;
+  space_name?: string;
+  space_city?: string;
+  space_type?: string;
+}
 
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  }, [handleFile]);
+interface StampSpace {
+  id: string;
+  name: string;
+  city: string | null;
+  country: string | null;
+  space_type: string;
+  slug: string;
+}
 
-  const onFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
-  }, [handleFile]);
+const TIER_BADGES: Record<string, { label: string; color: string; icon: string }> = {
+  free: { label: 'Explorer', color: '#94a3b8', icon: '🧭' },
+  explorer: { label: 'Explorer', color: '#94a3b8', icon: '🧭' },
+  seeker: { label: 'Seeker', color: '#f59e0b', icon: '⬡' },
+  scholar: { label: 'Scholar', color: '#7B68EE', icon: '◇' },
+  philosopher: { label: 'Philosopher', color: '#DC143C', icon: '◈' },
+};
 
-  // Chart: last 30 days
-  const chartData = data ? data.dailyBreakdown.slice(-30) : [];
-  const maxDaily = Math.max(1, ...chartData.map(d => d.shorts + d.regular));
+const REASON_LABELS: Record<string, string> = {
+  scan_verified: 'Scan verified',
+  space_created: 'Space created',
+  spatial_annotation: 'Annotation placed',
+  thinker_question: 'Thinker question',
+  book_progress: 'Reading progress',
+  salon_message: 'Salon message',
+  seminar_completion: 'Seminar completed',
+};
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#0A0A0A', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← RETURN TO THE SALON</a>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5 }}>SOCIETY OF EXPLORERS</div>
-      </nav>
+const DIM_BARS: { key: string; label: string; color: string }[] = [
+  { key: 'focus', label: 'Focus', color: '#f59e0b' },
+  { key: 'coherence', label: 'Coherence', color: '#7B68EE' },
+  { key: 'engagement', label: 'Engagement', color: '#DC143C' },
+  { key: 'exploration', label: 'Exploration', color: '#4169E1' },
+];
 
-      <div style={{ textAlign: 'center', padding: '80px 2rem 40px' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>ATTENTION SOVEREIGNTY</div>
-        <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 300, letterSpacing: '0.15em', marginBottom: '1rem' }}>
-          YOUR ATTENTION LEDGER
-        </h1>
-        <p style={{ fontSize: '1.1rem', color: muted, fontStyle: 'italic', maxWidth: '500px', margin: '0 auto', lineHeight: 1.8 }}>
-          Where does your time go? The thinkers are watching.
-        </p>
-      </div>
+const TYPE_ICONS: Record<string, string> = {
+  salon: '⬡', library: '📚', temple: '◈', garden: '🌿', waypoint: '🧭', outpost: '⚑',
+};
 
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 2rem 4rem' }}>
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
-        {/* Upload area */}
-        {!data && !parsing && (
-          <div
-            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={onDrop}
-            style={{
-              border: `2px dashed ${dragOver ? gold : `${gold}44`}`,
-              background: dragOver ? `${gold}08` : 'transparent',
-              padding: '4rem 2rem', textAlign: 'center', cursor: 'pointer',
-              transition: 'all 0.3s',
-            }}
-            onClick={() => document.getElementById('takeout-input')?.click()}
-          >
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1rem' }}>⬡</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, marginBottom: '1rem' }}>
-              DROP YOUR YOUTUBE TAKEOUT FILE HERE
-            </div>
-            <p style={{ fontSize: '13px', color: muted, lineHeight: 1.7, maxWidth: '400px', margin: '0 auto' }}>
-              Upload your <strong style={{ color: parchment }}>watch-history.json</strong> or <strong style={{ color: parchment }}>watch-history.html</strong> from Google Takeout.
-              All parsing happens in your browser. No data leaves your device.
-            </p>
-            <input id="takeout-input" type="file" accept=".json,.html" onChange={onFileSelect} style={{ display: 'none' }} />
-            <div style={{ marginTop: '1.5rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: `${gold}60` }}>
-              CLICK OR DRAG · JSON OR HTML · PRIVATE BY DEFAULT
-            </div>
-          </div>
-        )}
+export default function ExplorerDashboard() {
+  const router = useRouter();
+  const [member, setMember] = useState<Member | null>(null);
+  const [events, setEvents] = useState<ExpEvent[]>([]);
+  const [scans, setScans] = useState<ScanWithSpace[]>([]);
+  const [stampSpaces, setStampSpaces] = useState<StampSpace[]>([]);
+  const [loading, setLoading] = useState(true);
 
-        {parsing && (
-          <div style={{ textAlign: 'center', padding: '4rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.3, marginBottom: '1rem' }}>⬡</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: muted }}>PARSING YOUR WATCH HISTORY...</div>
-          </div>
-        )}
+  useEffect(() => {
+    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
+      getMemberSession().then(async session => {
+        if (!session) { router.push('/join'); return; }
+        const m = session.member as Member;
+        setMember(m);
+        const sb = session.supabase;
 
-        {/* Stats */}
-        {data && (
-          <>
-            {/* Stat cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: `${gold}15`, marginBottom: '2rem' }}>
-              <div style={{ background: '#0d0d0d', padding: '2rem', textAlign: 'center' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3rem)', color: gold }}>{data.totalVideos.toLocaleString()}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted, marginTop: '0.5rem' }}>VIDEOS WATCHED</div>
-              </div>
-              <div style={{ background: '#0d0d0d', padding: '2rem', textAlign: 'center' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3rem)', color: data.totalShorts > data.totalVideos * 0.5 ? crimson : gold }}>
-                  {data.totalShorts.toLocaleString()}
-                </div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted, marginTop: '0.5rem' }}>
-                  SHORTS ({Math.round((data.totalShorts / Math.max(data.totalVideos, 1)) * 100)}%)
-                </div>
-              </div>
-              <div style={{ background: '#0d0d0d', padding: '2rem', textAlign: 'center' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3rem)', color: gold }}>{(data.estimatedMinutes / 60).toFixed(1)}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted, marginTop: '0.5rem' }}>ESTIMATED HOURS</div>
-              </div>
-            </div>
+        // Parallel data fetches
+        const [eventsRes, scansRes] = await Promise.all([
+          sb.from('exp_events').select('*').eq('member_id', m.id).order('created_at', { ascending: false }).limit(10),
+          sb.from('scan_uploads').select('id, space_id, quality_score, verified, is_first_scan, exp_awarded, created_at').eq('scanner_id', m.supabase_auth_id).order('created_at', { ascending: false }),
+        ]);
 
-            {/* Date range */}
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, textAlign: 'center', marginBottom: '2rem' }}>
-              {data.dateRange.start} — {data.dateRange.end}
-            </div>
+        setEvents(eventsRes.data || []);
 
-            {/* Bar chart — last 30 days */}
-            {chartData.length > 0 && (
-              <div style={{ marginBottom: '2rem' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>LAST {chartData.length} DAYS</div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '120px', borderBottom: `1px solid ${gold}22`, padding: '0 0 4px' }}>
-                  {chartData.map((day, i) => {
-                    const total = day.shorts + day.regular;
-                    const height = (total / maxDaily) * 100;
-                    const shortsHeight = (day.shorts / maxDaily) * 100;
-                    const regularHeight = (day.regular / maxDaily) * 100;
-                    return (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }} title={`${day.date}: ${day.regular} videos, ${day.shorts} shorts`}>
-                        <div style={{ height: `${shortsHeight}%`, background: `${crimson}88`, minHeight: day.shorts > 0 ? '2px' : 0 }} />
-                        <div style={{ height: `${regularHeight}%`, background: `${gold}88`, minHeight: day.regular > 0 ? '2px' : 0 }} />
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '8px', height: '8px', background: `${gold}88` }} />
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted }}>REGULAR</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '8px', height: '8px', background: `${crimson}88` }} />
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted }}>SHORTS</span>
-                  </div>
-                </div>
-              </div>
-            )}
+        const scanRows = scansRes.data || [];
+        // Fetch space names for scans
+        if (scanRows.length > 0) {
+          const spaceIds = [...new Set(scanRows.map((s: any) => s.space_id))];
+          const { data: spaces } = await sb.from('spaces').select('id, name, city, space_type').in('id', spaceIds);
+          const spaceMap = new Map((spaces || []).map((s: any) => [s.id, s]));
 
-            {/* Thinker note */}
-            <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d', padding: '2rem', marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: gold, opacity: 0.5 }}>Σ</span>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.6 }}>SOCRATES OBSERVES</span>
-              </div>
-              {loadingNote ? (
-                <div style={{ fontSize: '14px', color: muted, fontStyle: 'italic' }}>Socrates is examining your attention...</div>
-              ) : thinkerNote ? (
-                <p style={{ fontSize: '16px', color: parchment, lineHeight: 1.9, fontStyle: 'italic' }}>{thinkerNote}</p>
-              ) : null}
-            </div>
+          const enriched = scanRows.map((s: any) => {
+            const sp = spaceMap.get(s.space_id);
+            return { ...s, space_name: sp?.name, space_city: sp?.city, space_type: sp?.space_type };
+          });
+          setScans(enriched);
 
-            {/* CTA */}
-            <div style={{ textAlign: 'center' }}>
-              <a href="/great-books" style={{
-                fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em',
-                color: '#000', background: gold, padding: '12px 30px', textDecoration: 'none', display: 'inline-block',
-              }}>
-                SWAP A SHORT FOR PLATO →
-              </a>
-              <div style={{ marginTop: '1.5rem' }}>
-                <button onClick={() => { setData(null); setThinkerNote(''); }} style={{
-                  fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
-                  color: muted, background: 'none', border: 'none', cursor: 'pointer',
-                }}>UPLOAD DIFFERENT FILE</button>
-              </div>
-            </div>
-          </>
-        )}
+          // Unique spaces = passport stamps
+          const uniqueSpaces = [...spaceMap.values()] as StampSpace[];
+          setStampSpaces(uniqueSpaces);
+        }
 
-        {/* Privacy note */}
-        <div style={{ marginTop: '3rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '12px', color: muted, opacity: 0.5, fontStyle: 'italic' }}>
-            All parsing happens in your browser. Your watch history never leaves your device unless you explicitly save it.
-          </p>
+        setLoading(false);
+      });
+    });
+  }, [router]);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) (e.target as HTMLElement).style.opacity = '1'; });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('[data-fade]').forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, [loading]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: slate950, color: parchment, fontFamily: 'Cormorant Garamond, serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: amber, opacity: 0.2, marginBottom: '1rem' }}>⬡</div>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: muted }}>LOADING DASHBOARD...</div>
         </div>
       </div>
+    );
+  }
 
-      <footer style={{ padding: '3rem 2rem', borderTop: `1px solid ${gold}22`, textAlign: 'center' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.4 }}>SOCIETY OF EXPLORERS · ATTENTION LEDGER</div>
-      </footer>
+  if (!member) return null;
+
+  const tierInfo = TIER_BADGES[member.tier] || TIER_BADGES.free;
+  const freqVector = member.coherence_data ? computeFrequencyProfile(member.coherence_data) : null;
+  const freqTags = freqVector ? deriveTags(freqVector) : [];
+  const verifiedScans = scans.filter(s => s.verified);
+
+  return (
+    <div style={{ minHeight: '100vh', background: slate950, color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
+      <PublicNav />
+
+      {/* ═══ WELCOME HEADER ═══ */}
+      <section style={{ padding: '100px 2rem 2rem', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+          <span style={{ fontSize: '1.25rem' }}>{tierInfo.icon}</span>
+          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: tierInfo.color, padding: '4px 14px', border: `1px solid ${tierInfo.color}44` }}>
+            {tierInfo.label.toUpperCase()}
+          </span>
+        </div>
+        <h1 style={{ fontFamily: 'Playfair Display, Cinzel, serif', fontSize: 'clamp(1.8rem, 4.5vw, 3rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f8fafc', marginBottom: '0.5rem' }}>
+          Welcome back, {member.display_name}
+        </h1>
+        <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic' }}>Your explorer home base.</p>
+      </section>
+
+      {/* ═══ STATS ROW ═══ */}
+      <section data-fade style={{ padding: '1rem 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: `${amber}12` }}>
+          {[
+            { label: '$EXP Earned', value: member.exp_tokens.toLocaleString(), color: amber },
+            { label: 'Spaces Scanned', value: String(stampSpaces.length), color: '#4169E1' },
+            { label: 'Passport Stamps', value: String(stampSpaces.length), color: '#7B68EE' },
+            { label: 'Frequency', value: freqVector ? `${Math.round(freqVector.magnitude * 50)}%` : '—', color: '#DC143C' },
+          ].map(stat => (
+            <div key={stat.label} style={{ background: slate900, padding: '1.5rem 1rem', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 3vw, 2rem)', color: stat.color, marginBottom: '0.25rem' }}>{stat.value}</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted }}>{stat.label.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══ QUICK ACTIONS ═══ */}
+      <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: amber, opacity: 0.5, marginBottom: '1rem' }}>QUICK ACTIONS</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1px', background: `${amber}10` }}>
+            {[
+              { label: 'Scan a Space', desc: 'Upload photos or LiDAR', icon: '📸', href: '/world' },
+              { label: 'Find Your Frequency', desc: 'Match with explorers', icon: '🔮', href: '/world/match' },
+              { label: 'Talk to a Thinker', desc: 'Enter the Salon', icon: 'Σ', href: '/salon' },
+              { label: 'Book Travel', desc: 'Sovereign booking', icon: '✈️', href: '/travel' },
+            ].map(action => (
+              <a key={action.label} href={action.href} style={{ background: slate900, padding: '1.5rem', textDecoration: 'none', display: 'block', transition: 'background 0.2s' }}>
+                <div style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{action.icon}</div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#f8fafc', marginBottom: '0.25rem' }}>{action.label}</div>
+                <div style={{ fontSize: '12px', color: muted }}>{action.desc}</div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ RECENT ACTIVITY ═══ */}
+      <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: amber, opacity: 0.5, marginBottom: '1rem' }}>RECENT ACTIVITY</div>
+          {events.length === 0 ? (
+            <div style={{ background: slate900, padding: '2rem', textAlign: 'center', color: muted, fontStyle: 'italic' }}>
+              No activity yet. Start exploring to earn $EXP.
+            </div>
+          ) : (
+            <div style={{ background: slate900, border: `1px solid ${amber}11` }}>
+              {events.map((ev, i) => (
+                <div key={ev.id} style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: i < events.length - 1 ? `1px solid ${amber}08` : 'none' }}>
+                  <div>
+                    <div style={{ fontSize: '14px', color: parchment }}>{REASON_LABELS[ev.reason] || ev.reason}</div>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{timeAgo(ev.created_at)}</div>
+                  </div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: amber }}>+{ev.amount} EXP</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ═══ PASSPORT STAMPS ═══ */}
+      <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: amber, opacity: 0.5, marginBottom: '1rem' }}>PASSPORT STAMPS</div>
+          {stampSpaces.length === 0 ? (
+            <div style={{ background: slate900, padding: '2rem', textAlign: 'center' }}>
+              <p style={{ color: muted, fontStyle: 'italic', marginBottom: '0.75rem' }}>No stamps yet. Scan a space to earn your first.</p>
+              <a href="/world" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: amber, textDecoration: 'none' }}>Explore Spaces →</a>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+              {stampSpaces.map(sp => (
+                <div key={sp.id} style={{ background: slate900, border: `1px solid ${amber}18`, padding: '1.25rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{TYPE_ICONS[sp.space_type] || '⬡'}</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.08em', color: '#f8fafc', marginBottom: '2px' }}>{sp.name}</div>
+                  {sp.city && <div style={{ fontSize: '11px', color: muted }}>{sp.city}</div>}
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.15em', color: amber, opacity: 0.4, marginTop: '0.5rem' }}>SOULBOUND</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ═══ SCANNED SPACES ═══ */}
+      <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: amber, opacity: 0.5, marginBottom: '1rem' }}>YOUR SCANS</div>
+          {scans.length === 0 ? (
+            <div style={{ background: slate900, padding: '2rem', textAlign: 'center', color: muted, fontStyle: 'italic' }}>
+              No scans uploaded yet.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1px', background: `${amber}10` }}>
+              {scans.map(scan => (
+                <div key={scan.id} style={{ background: slate900, padding: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                    <div>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.06em', color: '#f8fafc' }}>{scan.space_name || 'Unknown Space'}</div>
+                      {scan.space_city && <div style={{ fontSize: '11px', color: muted }}>{scan.space_city}</div>}
+                    </div>
+                    {scan.verified && scan.quality_score !== null && (
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: scan.quality_score >= 80 ? '#22c55e' : scan.quality_score >= 60 ? amber : muted }}>
+                        {scan.quality_score}%
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {scan.verified ? (
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: '#22c55e', border: '1px solid #22c55e44', padding: '2px 8px' }}>VERIFIED</span>
+                    ) : (
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, border: `1px solid ${muted}33`, padding: '2px 8px' }}>PENDING</span>
+                    )}
+                    {scan.is_first_scan && (
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: amber, border: `1px solid ${amber}44`, padding: '2px 8px' }}>FIRST SCAN · 2×</span>
+                    )}
+                    {scan.exp_awarded > 0 && (
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: amber }}>+{scan.exp_awarded} EXP</span>
+                    )}
+                  </div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, marginTop: '0.5rem' }}>{timeAgo(scan.created_at)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ═══ FREQUENCY PROFILE ═══ */}
+      {freqVector && (
+        <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+          <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: amber, opacity: 0.5, marginBottom: '1rem' }}>FREQUENCY PROFILE</div>
+            <div style={{ background: slate900, border: `1px solid ${amber}18`, padding: '1.5rem 2rem' }}>
+              {DIM_BARS.map(d => {
+                const val = (freqVector as any)[d.key] as number;
+                const pct = Math.round(val * 100);
+                return (
+                  <div key={d.key} style={{ marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: muted }}>{d.label.toUpperCase()}</span>
+                      <span style={{ fontSize: '11px', color: parchment }}>{pct}%</span>
+                    </div>
+                    <div style={{ height: '4px', background: `${amber}12`, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: d.color, transition: 'width 0.6s ease' }} />
+                    </div>
+                  </div>
+                );
+              })}
+              {freqTags.length > 0 && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '1rem', paddingTop: '0.75rem', borderTop: `1px solid ${amber}10` }}>
+                  {freqTags.map(tag => (
+                    <span key={tag} style={{ padding: '3px 10px', fontSize: '9px', fontFamily: 'Cinzel, serif', letterSpacing: '0.06em', color: amber, border: `1px solid ${amber}33`, background: `${amber}08` }}>{tag}</span>
+                  ))}
+                </div>
+              )}
+              <a href="/world/match" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: amber, textDecoration: 'none' }}>Find Resonant Explorers →</a>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <PublicFooter />
     </div>
   );
 }
