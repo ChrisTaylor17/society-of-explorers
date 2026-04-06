@@ -32,7 +32,7 @@ const TIMELINE = [
   { step: 1, title: 'VR Preview', desc: 'Walk through the digital twin of your destination before you leave home. See spaces other explorers have scanned.' },
   { step: 2, title: 'Book with Crypto', desc: 'Use Travala or Dtravel — pay with BTC, ETH, stablecoins, or fiat. No middlemen. No surveillance pricing.' },
   { step: 3, title: 'Arrive', desc: 'Meet local explorer nodes. AI thinkers have prepared reading lists and contemplation prompts for your destination.' },
-  { step: 4, title: 'TribeKey Auth', desc: 'Tap your TribeKey to authenticate at the space. Your identity verified on-chain — no passwords, no check-in desks.' },
+  { step: 4, title: 'TribeKey Auth', desc: 'Tap your TribeKey to authenticate at the space. Your identity verified on-chain — no passwords, no check-in desks.', note: 'TribeKey authenticates your biometric profile on arrival — no passwords, no check-in desks' },
   { step: 5, title: 'LiDAR Scan', desc: 'Point your iPhone at the space. Capture walls, furniture, light. The scan feeds the digital twin.' },
   { step: 6, title: 'Earn $EXP', desc: 'Quality-graded rewards: 10 $EXP for basic scans, 25 for detailed, 50 for full property. First scans earn 2× bonus.' },
   { step: 7, title: 'Frequency Circle', desc: 'Join a biofeedback circle with local explorers. Muse EEG + Polar HRV. The room breathes together.' },
@@ -44,6 +44,12 @@ const FREQUENCY_CARDS = [
   { title: 'The Dialectic Circuit', freq: 'Athens → Rome → Vienna', icon: '⬡', color: '#C9A94E', desc: 'Follow the thread of Western philosophy from the Agora to the coffeehouses of Vienna.' },
   { title: 'The Stillness Path', freq: 'Kyoto → Bali → Reykjavík', icon: '◇', color: '#7B68EE', desc: 'Contemplative destinations for those seeking inner silence and elemental wonder.' },
   { title: 'The Emergence Route', freq: 'Medellín → Lisbon → Tbilisi', icon: '◈', color: '#DC143C', desc: 'Cities in transformation. Innovation hubs where old meets new in unexpected ways.' },
+];
+
+const TRAVELER_PROFILES = [
+  { initials: 'EM', name: 'Elena M.', discipline: 'Neuroscience', city: 'Lisbon', eegFocus: 78, hrvCoherence: 84, groupSync: 91 },
+  { initials: 'JK', name: 'James K.', discipline: 'Architecture', city: 'Athens', eegFocus: 65, hrvCoherence: 72, groupSync: 88 },
+  { initials: 'SA', name: 'Sofia A.', discipline: 'Philosophy', city: 'Kyoto', eegFocus: 92, hrvCoherence: 88, groupSync: 95 },
 ];
 
 const SCAN_TIERS = [
@@ -315,24 +321,85 @@ export default function TravelPage() {
         </div>
       </section>
 
-      {/* ═══ FREQUENCY MATCHING ═══ */}
+      {/* ═══ BIOFEEDBACK COHERENCE ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>CURATED JOURNEYS</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>BIOFEEDBACK COHERENCE</div>
             <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.75rem' }}>Frequency Matching</h2>
-            <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8 }}>Curated multi-city routes aligned to philosophical frequencies.</p>
+            <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8 }}>Find travelers whose brainwave and heart-rate patterns resonate with yours.</p>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted, opacity: 0.4, marginTop: '0.75rem' }}>POWERED BY MUSE S ATHENA + POLAR H10</div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            {FREQUENCY_CARDS.map(card => (
-              <div key={card.title} style={{ background: '#0a0a0a', padding: '2.5rem 2rem' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: card.color, opacity: 0.3, marginBottom: '1rem' }}>{card.icon}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: '#f5f0e8', marginBottom: '0.5rem' }}>{card.title}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.7, marginBottom: '1rem' }}>{card.freq.toUpperCase()}</div>
-                <p style={{ fontSize: '14px', color: muted, lineHeight: 1.8 }}>{card.desc}</p>
+          {/* Traveler profile cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}10`, marginBottom: '2rem' }}>
+            {TRAVELER_PROFILES.map(p => (
+              <div key={p.initials} style={{ background: '#0a0a0a', padding: '2rem' }}>
+                {/* Avatar + info */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.25rem' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: `2px solid ${gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '13px', color: gold, flexShrink: 0 }}>{p.initials}</div>
+                  <div>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.06em', color: '#f5f0e8' }}>{p.name}</div>
+                    <div style={{ fontSize: '12px', color: muted }}>{p.discipline} · {p.city}</div>
+                  </div>
+                </div>
+
+                {/* EEG Focus meter */}
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: muted }}>EEG FOCUS</span>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: parchment }}>{p.eegFocus}</span>
+                  </div>
+                  <div style={{ height: '3px', background: `${gold}15`, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${p.eegFocus}%`, background: gold, transition: 'width 0.6s ease' }} />
+                  </div>
+                </div>
+
+                {/* HRV Coherence meter */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: muted }}>HRV COHERENCE</span>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: parchment }}>{p.hrvCoherence}</span>
+                  </div>
+                  <div style={{ height: '3px', background: `${gold}15`, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${p.hrvCoherence}%`, background: '#7B68EE', transition: 'width 0.6s ease' }} />
+                  </div>
+                </div>
+
+                {/* Group Synchrony + button */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginBottom: '2px' }}>GROUP SYNCHRONY</div>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: gold }}>{p.groupSync}%</div>
+                  </div>
+                  <button style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, background: `${gold}08`, padding: '8px 14px', cursor: 'pointer' }}>RESONANT MATCH</button>
+                </div>
               </div>
             ))}
+          </div>
+
+          {/* AI Companion callout */}
+          <div style={{ border: `1px solid ${gold}22`, background: `${gold}05`, padding: '2rem', display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.25rem', color: gold, opacity: 0.4, flexShrink: 0, marginTop: '2px' }}>Σ</div>
+            <div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#f5f0e8', marginBottom: '0.5rem' }}>AI Companion Matching</div>
+              <p style={{ fontSize: '14px', color: muted, lineHeight: 1.8 }}>Your AI companion analyzes brainwave and heart-rate patterns to find travelers whose frequencies resonate with yours. No algorithms — just coherence.</p>
+            </div>
+          </div>
+
+          {/* Curated routes (kept) */}
+          <div style={{ marginTop: '3rem' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.4, textAlign: 'center', marginBottom: '1.5rem' }}>CURATED JOURNEYS</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}10` }}>
+              {FREQUENCY_CARDS.map(card => (
+                <div key={card.title} style={{ background: '#0a0a0a', padding: '2.5rem 2rem' }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: card.color, opacity: 0.3, marginBottom: '1rem' }}>{card.icon}</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: '#f5f0e8', marginBottom: '0.5rem' }}>{card.title}</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.7, marginBottom: '1rem' }}>{card.freq.toUpperCase()}</div>
+                  <p style={{ fontSize: '14px', color: muted, lineHeight: 1.8 }}>{card.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -411,6 +478,11 @@ export default function TravelPage() {
                 <div style={{ paddingTop: '4px' }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: '#f5f0e8', marginBottom: '0.35rem' }}>{item.title}</div>
                   <p style={{ fontSize: '13px', color: muted, lineHeight: 1.8 }}>{item.desc}</p>
+                  {(item as any).note && (
+                    <div style={{ marginTop: '0.5rem', padding: '8px 12px', background: `${gold}08`, border: `1px solid ${gold}18`, fontSize: '12px', color: gold, fontStyle: 'italic', lineHeight: 1.6 }}>
+                      {(item as any).note}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
