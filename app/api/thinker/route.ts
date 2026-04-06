@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     const isReaction = body.isReaction ?? false;
     const walletMemberId = body.walletMemberId;
     const salonId = body.salonId ?? 'general';
+    const councilContext: { thinker: string; response: string }[] = body.councilContext || [];
 
     if (!thinkerId || !message) {
       return new Response(
@@ -185,6 +186,11 @@ export async function POST(req: NextRequest) {
 
       if (isReaction) {
         fullSystemPrompt += '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.';
+      }
+
+      if (councilContext.length > 0) {
+        const ctxLines = councilContext.map(c => `[${c.thinker} said]: "${c.response}"`).join('\n');
+        fullSystemPrompt += `\n\nCOUNCIL SESSION — Other thinkers have already responded to this question:\n${ctxLines}\n\nYou may engage with, challenge, or build on their ideas. Be direct. Name them by name. Don't repeat what they said — add your distinct perspective or push back. Keep your response concise (3-5 sentences).`;
       }
     } else {
       fullSystemPrompt += '\n\nThis is a brief demo conversation. Be concise and engaging. End your response by subtly inviting deeper exploration — the full Society experience awaits.';

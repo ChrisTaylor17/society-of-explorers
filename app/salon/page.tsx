@@ -36,6 +36,11 @@ const THINKERS = [
   { id: 'plato',     name: 'Plato',     avatar: 'PL', era: 'Ancient Greece · 428 BC' },
 ];
 
+const THINKER_COLORS: Record<string, string> = {
+  socrates: '#C9A94E', plato: '#7B68EE', nietzsche: '#DC143C',
+  aurelius: '#8B7355', einstein: '#4169E1', jobs: '#A0A0A0',
+};
+
 const RITUALS = [
   { id: 1, thinker: 'Einstein', name: 'Thought Experiment', price: 5,  tagline: 'Bend reality through imagination.' },
   { id: 2, thinker: 'Jobs',     name: 'Simplicity Ritual',  price: 8,  tagline: 'Strip away the unnecessary.' },
@@ -91,6 +96,9 @@ export default function SalonPage() {
   const [voiceMode,       setVoiceMode]       = useState(false);
   const [isListening,     setIsListening]     = useState(false);
   const [interimText,     setInterimText]     = useState('');
+  const [councilMode,     setCouncilMode]     = useState(false);
+  const [councilThinkers, setCouncilThinkers] = useState<Set<string>>(new Set(['socrates', 'aurelius', 'nietzsche']));
+  const [councilThinking, setCouncilThinking] = useState<string | null>(null);
 
   // Sentence-level TTS streaming
   const sentenceQueueRef = useRef<string[]>([]);
@@ -405,13 +413,82 @@ export default function SalonPage() {
     }
   }
 
+  async function streamThinkerResponse(
+    thinkerId: string,
+    thinkerName: string,
+    text: string,
+    councilCtx: { thinker: string; response: string }[],
+  ): Promise<string> {
+    const streamId = `streaming-${thinkerId}-${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: streamId, created_at: new Date().toISOString(),
+      sender_type: 'thinker', sender_name: thinkerName,
+      thinker_id: thinkerId, content: '',
+    }]);
+
+    let responseFullText = '';
+    if (voiceMode) { sentenceQueueRef.current = []; ttsBufferRef.current = ''; }
+
+    try {
+      const res = await fetch('/api/thinker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          thinkerId, message: text,
+          history: messages.slice(-12), isReaction: false,
+          walletMemberId: member?.id,
+          salonId: currentSalonId,
+          councilContext: councilCtx,
+        }),
+      });
+      const reader = res.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.delta) {
+              responseFullText += evt.delta;
+              setMessages(prev => prev.map(m =>
+                m.id === streamId ? { ...m, content: m.content + evt.delta } : m));
+              if (voiceMode) { ttsBufferRef.current += evt.delta; pushSentenceFromBuffer(thinkerId); }
+            } else if (evt.type === 'actions' && evt.actions?.length > 0) {
+              const actionMessages: Record<string, string> = {
+                create_task: '⬡ Task added to your Hub', save_note: '⬡ Insight saved',
+                update_goal: '⬡ Goal updated', create_artifact_prompt: '⬡ Artifact queued',
+                schedule_ritual: '⬡ Ritual scheduled',
+              };
+              for (const action of evt.actions) {
+                setToasts(prev => [...prev, { id: Date.now() + Math.random(), text: actionMessages[action.type] || '⬡ Action taken' }]);
+              }
+            } else if (evt.done) {
+              const cleanResponse = (evt.response || responseFullText).split('|||ACTIONS|||')[0].replace(/^\[[\w-]+\]:\s*/i, '').replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '').trim();
+              if (evt.response) responseFullText = cleanResponse;
+              setMessages(prev => prev.map(m =>
+                m.id === streamId ? { ...m, content: cleanResponse || m.content } : m));
+            }
+          } catch {}
+        }
+      }
+    } catch {}
+
+    if (voiceMode) { flushTtsBuffer(thinkerId); ttsBufferRef.current = ''; }
+    return responseFullText;
+  }
+
   async function send(directText?: string) {
     const text = (directText ?? input).trim();
     if (!text || isLoading) return;
     setInput('');
     setIsLoading(true);
 
-    // Optimistically add member message to state
     const memberMsg: Message = {
       id: `member-${Date.now()}`,
       created_at: new Date().toISOString(),
@@ -433,83 +510,22 @@ export default function SalonPage() {
       }),
     });
 
-    const streamId = `streaming-${Date.now()}`;
-    setMessages(prev => [...prev, {
-      id: streamId, created_at: new Date().toISOString(),
-      sender_type: 'thinker', sender_name: selectedThinker.name,
-      thinker_id: selectedThinker.id, content: '',
-    }]);
+    if (councilMode) {
+      // Council mode: each selected thinker responds in sequence
+      const thinkerIds = Array.from(councilThinkers);
+      const councilCtx: { thinker: string; response: string }[] = [];
 
-    let responseFullText = '';
-    // Reset TTS sentence queue for new response
-    if (voiceMode) {
-      sentenceQueueRef.current = [];
-      ttsBufferRef.current = '';
-    }
-    try {
-      const res = await fetch('/api/thinker', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          thinkerId: selectedThinker.id, message: text,
-          history: messages.slice(-12), isReaction: false,
-          walletMemberId: member?.id,
-          salonId: currentSalonId,
-        }),
-      });
-      const reader = res.body!.getReader();
-      const dec = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() ?? '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const evt = JSON.parse(line.slice(6));
-            if (evt.delta) {
-              responseFullText += evt.delta;
-              setMessages(prev => prev.map(m =>
-                m.id === streamId ? { ...m, content: m.content + evt.delta } : m));
-              // Feed sentence queue for voice mode
-              if (voiceMode) {
-                ttsBufferRef.current += evt.delta;
-                pushSentenceFromBuffer(selectedThinker.id);
-              }
-            } else if (evt.type === 'actions' && evt.actions?.length > 0) {
-              // Show toast for each action
-              const actionMessages: Record<string, string> = {
-                create_task: '⬡ Task added to your Hub',
-                save_note: '⬡ Insight saved',
-                update_goal: '⬡ Goal updated',
-                create_artifact_prompt: '⬡ Artifact queued',
-                schedule_ritual: '⬡ Ritual scheduled',
-              };
-              for (const action of evt.actions) {
-                setToasts(prev => [...prev, { id: Date.now() + Math.random(), text: actionMessages[action.type] || '⬡ Action taken' }]);
-              }
-            } else if (evt.done) {
-              // Use clean response (actions stripped server-side)
-              const cleanResponse = (evt.response || responseFullText).split('|||ACTIONS|||')[0].replace(/^\[[\w-]+\]:\s*/i, '').replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '').trim();
-              if (evt.response) responseFullText = cleanResponse;
-              setMessages(prev => prev.map(m =>
-                m.id === streamId
-                  ? { ...m, content: cleanResponse || m.content }
-                  : m
-              ));
-            }
-          } catch {}
-        }
+      for (const tid of thinkerIds) {
+        const t = THINKERS.find(x => x.id === tid);
+        if (!t) continue;
+        setCouncilThinking(tid);
+        const resp = await streamThinkerResponse(tid, t.name, text, councilCtx);
+        councilCtx.push({ thinker: t.name, response: resp });
       }
-    } catch {}
-
-    // Voice mode: flush remaining buffer (sentences that didn't end with .!?)
-    if (voiceMode) {
-      flushTtsBuffer(selectedThinker.id);
-      ttsBufferRef.current = '';
+      setCouncilThinking(null);
+    } else {
+      // Single thinker mode
+      await streamThinkerResponse(selectedThinker.id, selectedThinker.name, text, []);
     }
 
     if (member) {
@@ -1026,7 +1042,9 @@ export default function SalonPage() {
           <div>
             <div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.1em' }}>The Salon of Great Minds</div>
             <div style={{ fontSize: '11px', color: 'var(--ivory-muted)', fontStyle: 'italic', marginTop: '1px', fontFamily: 'Cormorant Garamond,serif' }}>
-              Addressing {selectedThinker.name}
+              {councilMode
+                ? `Council: ${Array.from(councilThinkers).map(id => THINKERS.find(t => t.id === id)?.name).filter(Boolean).join(', ')}`
+                : `Addressing ${selectedThinker.name}`}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -1085,27 +1103,38 @@ export default function SalonPage() {
                     <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.15em', color: msg.sender_type === 'member' ? 'rgba(100,150,200,0.6)' : 'var(--gold-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>
                       {msg.sender_name}
                     </div>
-                    <div style={{ background: msg.sender_type === 'member' ? 'linear-gradient(135deg,#1a2030,#12182a)' : 'var(--bg-elevated)', border: `1px solid ${msg.sender_type === 'member' ? 'rgba(80,120,180,0.25)' : 'var(--border)'}`, borderRadius: msg.sender_type === 'member' ? '12px 2px 12px 12px' : '2px 12px 12px 12px', padding: '10px 14px', fontSize: '15px', lineHeight: 1.65, color: msg.sender_type === 'member' ? '#c8d8f0' : 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
+                    <div style={{ background: msg.sender_type === 'member' ? 'linear-gradient(135deg,#1a2030,#12182a)' : 'var(--bg-elevated)', border: `1px solid ${msg.sender_type === 'member' ? 'rgba(80,120,180,0.25)' : 'var(--border)'}`, borderLeft: msg.sender_type === 'thinker' && msg.thinker_id ? `3px solid ${THINKER_COLORS[msg.thinker_id] || 'var(--gold)'}` : undefined, borderRadius: msg.sender_type === 'member' ? '12px 2px 12px 12px' : '2px 12px 12px 12px', padding: '10px 14px', fontSize: '15px', lineHeight: 1.65, color: msg.sender_type === 'member' ? '#c8d8f0' : 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
                       {msg.sender_type === 'thinker'
                         ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown((msg.content || '').replace(/^\[?\w[\w-]*\]?:\s*/i, '')) }} />
                         : msg.content}
                     </div>
                     {msg.sender_type === 'thinker' && msg.content && (
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '5px' }}>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {/* Reaction buttons */}
+                        {[
+                          { emoji: '🔥', label: 'brilliant' },
+                          { emoji: '🤔', label: 'interesting' },
+                          { emoji: '⚡', label: 'challenging' },
+                        ].map(r => (
+                          <button key={r.label} onClick={() => {
+                            setToasts(prev => [...prev, { id: Date.now() + Math.random(), text: `${r.emoji} Reaction saved` }]);
+                          }} style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer', padding: '2px 8px', fontSize: '12px', opacity: 0.6, transition: 'opacity 0.2s' }}
+                            title={r.label}
+                          >{r.emoji}</button>
+                        ))}
+                        <span style={{ width: '1px', height: '14px', background: 'var(--border)', margin: '0 4px' }} />
                         <button onClick={() => { setShowMarket(true); setRitualTx({ status: 'idle' }); setShowArtifacts(false); }} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', cursor: 'pointer', padding: '0', opacity: 0.7 }}>
-                          ⬡ Run Ritual with {msg.sender_name}
+                          ⬡ Ritual
                         </button>
                         <button
                           onClick={() => {
                             const text = msg.content?.trim();
-                            console.log('LISTEN clicked', { hasContent: !!text, thinkerId: msg.thinker_id, contentLen: text?.length });
-                            if (!text) { console.warn('LISTEN: no content'); return; }
-                            speakText(text, msg.thinker_id || 'socrates')
-                              .catch(err => console.error('LISTEN TTS error:', err));
+                            if (!text) return;
+                            speakText(text, msg.thinker_id || 'socrates').catch(() => {});
                           }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', padding: '0', opacity: 0.5 }}
                         >
-                          ⬡ LISTEN
+                          ⬡ Listen
                         </button>
                       </div>
                     )}
@@ -1118,7 +1147,7 @@ export default function SalonPage() {
             </div>
           ))}
 
-          {isLoading && (
+          {isLoading && !councilThinking && (
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border-bright)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold)', flexShrink: 0 }}>
                 {selectedThinker.avatar}
@@ -1130,6 +1159,23 @@ export default function SalonPage() {
               </div>
             </div>
           )}
+          {councilThinking && (() => {
+            const ct = THINKERS.find(t => t.id === councilThinking);
+            const color = THINKER_COLORS[councilThinking] || '#c9a84c';
+            return (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-elevated)', border: `1.5px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel,serif', fontSize: '11px', color, flexShrink: 0 }}>
+                  {ct?.avatar || '?'}
+                </div>
+                <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderLeft: `3px solid ${color}`, borderRadius: '2px 12px 12px 12px', padding: '10px 14px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color, letterSpacing: '0.1em' }}>{ct?.name}</span>
+                  {[0, 0.2, 0.4].map((d, idx) => (
+                    <div key={idx} style={{ width: '5px', height: '5px', borderRadius: '50%', background: color, animation: `typing 1.2s ${d}s ease-in-out infinite` }} />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           <div ref={endRef} />
         </div>
 
@@ -1169,7 +1215,58 @@ export default function SalonPage() {
             >
               {voiceMode ? '⬡ VOICE ON' : '⬡ VOICE OFF'}
             </button>
+            <button
+              onClick={() => setCouncilMode(!councilMode)}
+              style={{
+                fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em',
+                color: councilMode ? '#c9a84c' : '#5a5040',
+                background: councilMode ? 'rgba(201,168,76,0.08)' : 'transparent',
+                border: `1px solid ${councilMode ? 'rgba(201,168,76,0.3)' : 'rgba(201,168,76,0.1)'}`,
+                padding: '0.4rem 0.8rem', cursor: 'pointer', transition: 'all 0.3s ease',
+                marginLeft: '8px',
+              }}
+            >
+              {councilMode ? '⬡ COUNCIL ON' : '⬡ COUNCIL'}
+            </button>
           </div>
+          {/* Council thinker selector */}
+          {councilMode && (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              {THINKERS.map(t => {
+                const active = councilThinkers.has(t.id);
+                const color = THINKER_COLORS[t.id] || '#c9a84c';
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setCouncilThinkers(prev => {
+                      const next = new Set(prev);
+                      if (next.has(t.id)) { if (next.size > 1) next.delete(t.id); }
+                      else next.add(t.id);
+                      return next;
+                    })}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      padding: '4px 10px', cursor: 'pointer',
+                      background: active ? `${color}15` : 'transparent',
+                      border: `1px solid ${active ? color : 'rgba(201,168,76,0.12)'}`,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div style={{
+                      width: '22px', height: '22px', borderRadius: '50%',
+                      border: `1.5px solid ${active ? color : 'rgba(201,168,76,0.2)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'Cinzel,serif', fontSize: '8px', color: active ? color : '#5a5040',
+                    }}>{t.avatar}</div>
+                    <span style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.1em', color: active ? color : '#5a5040' }}>{t.name.toUpperCase()}</span>
+                    {councilThinking === t.id && (
+                      <span style={{ fontSize: '8px', color, animation: 'typing 1.2s ease-in-out infinite' }}>...</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {voiceMode && !isListening && !isLoading && (
             <div style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.2em', color: '#c9a84c', opacity: 0.3, textAlign: 'center', padding: '4px' }}>
               TAP MIC OR SPEAK TO BEGIN
