@@ -21,10 +21,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'Invalid tier' }, { status: 400 });
   }
 
-  const isOneTime = tier === 'philosopher';
-
   const session = await stripe.checkout.sessions.create({
-    mode: isOneTime ? 'payment' : 'subscription',
+    mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${req.nextUrl.origin}/salon?welcome=1`,
     cancel_url: `${req.nextUrl.origin}/join`,
