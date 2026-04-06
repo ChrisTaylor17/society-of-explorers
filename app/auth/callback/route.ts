@@ -4,16 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
-
-  console.log('=== AUTH CALLBACK HIT ===', {
-    fullUrl: req.url,
-    code: code ? code.substring(0, 10) + '...' : 'none',
-    incomingCookies: req.cookies.getAll().map(c => c.name),
-  })
+  const next = searchParams.get('next') || '/dashboard'
 
   if (code) {
-    // Create the redirect response FIRST, then set cookies ON it
-    const response = NextResponse.redirect(new URL('/salon', origin))
+    const response = NextResponse.redirect(new URL(next, origin))
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,13 +36,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/?auth_error=true', origin))
     }
 
-    console.log('=== EXCHANGE RESULT ===', {
-      error: 'none',
-      cookiesSet: response.cookies.getAll().map(c => c.name),
-    })
     return response
   }
 
-  // No code — redirect to salon (may be hash-based implicit flow)
-  return NextResponse.redirect(new URL('/salon', origin))
+  return NextResponse.redirect(new URL(next, origin))
 }
