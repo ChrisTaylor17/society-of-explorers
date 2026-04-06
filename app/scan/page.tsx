@@ -17,15 +17,15 @@ type ApiErrorResponse = {
 
 type ScanRecord = {
   id: string;
-  file_path: string;
+  supabase_path: string;
   file_size_bytes: number;
   scan_format: string;
   quality_score: number | null;
-  exp_awarded: number;
+  reward_exp: number;
   status: string;
   location_name: string | null;
   created_at: string;
-  processed_at: string | null;
+  verified_at: string | null;
 };
 
 type MyScansResponse = {
@@ -158,7 +158,7 @@ export default function ScanPage() {
         : scoredScan.quality_score !== null && scoredScan.quality_score >= 30
           ? 'Detailed Scan'
           : 'Basic Scan',
-      scoredScan.exp_awarded,
+      scoredScan.reward_exp,
       scoredScan.quality_score ?? 0,
     );
   }, [scoredScan]);
@@ -512,7 +512,7 @@ export default function ScanPage() {
           {uploadState === 'success' && scoredScan && (
             <div style={{ position: 'relative', display: 'grid', gap: '18px', textAlign: 'center', justifyItems: 'center', animation: 'soeScaleIn 420ms ease-out forwards' }}>
               <div style={labelStyle}>Reward Granted</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(46px, 12vw, 84px)', color: COLORS.gold, lineHeight: 1, textShadow: '0 0 18px rgba(201,168,76,0.18)' }}>+{scoredScan.exp_awarded} $EXP</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(46px, 12vw, 84px)', color: COLORS.gold, lineHeight: 1, textShadow: '0 0 18px rgba(201,168,76,0.18)' }}>+{scoredScan.reward_exp} $EXP</div>
               <div style={{ padding: '9px 14px', borderRadius: '999px', border: '1px solid rgba(201,168,76,0.25)', background: 'rgba(201,168,76,0.06)', color: COLORS.gold, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase' }}>{successTierLabel}</div>
               <div style={{ width: '100%', maxWidth: '460px', display: 'grid', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
@@ -585,7 +585,7 @@ export default function ScanPage() {
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                       <span style={labelStyle}>EXP Earned</span>
-                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '22px', color: isScored ? COLORS.gold : 'rgba(201,168,76,0.46)' }}>+{scan.exp_awarded}</span>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '22px', color: isScored ? COLORS.gold : 'rgba(201,168,76,0.46)' }}>+{scan.reward_exp}</span>
                     </div>
                   </div>
                 );

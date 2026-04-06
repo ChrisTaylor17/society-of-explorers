@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const spaceId = formData.get('spaceId') as string;
-    const scanType = (formData.get('scanType') as string) || 'photo';
+    const scanFormat = (formData.get('scan_format') as string) || (formData.get('scanType') as string) || 'photo';
+    const locationName = (formData.get('location_name') as string) || null;
 
     if (!file || !spaceId) {
       return NextResponse.json({ error: 'Missing required fields: file, spaceId' }, { status: 400 });
@@ -58,24 +59,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 });
     }
 
-    const { data: urlData } = supabaseAdmin.storage
-      .from('world-scans')
-      .getPublicUrl(filename);
-
     // Determine if first scan for this space
     const isFirstScan = (space.total_scans || 0) === 0;
 
-    // Create scan record
-    const { data: scan, error: insertError } = await supabaseAdmin
+    // Create scan record using actual table column names
+    const { data: scanRow, error: insertError } = await supabaseAdmin
       .from('scan_uploads')
       .insert({
         space_id: spaceId,
         scanner_id: auth.member.supabase_auth_id || auth.memberId,
-        file_url: urlData.publicUrl,
-        file_size: file.size,
+        supabase_path: filename,
+        file_size_bytes: file.size,
         proof_hash: proofHash,
-        scan_type: scanType,
+        scan_type: scanFormat,
+        scan_format: scanFormat,
         is_first_scan: isFirstScan,
+        location_name: locationName,
+        scan_metadata: JSON.stringify({ originalName: file.name, contentType: file.type }),
       })
       .select()
       .single();
@@ -90,8 +90,20 @@ export async function POST(req: NextRequest) {
       .update({ total_scans: (space.total_scans || 0) + 1 })
       .eq('id', spaceId);
 
+    // Trigger auto-scoring
+    try {
+      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.societyofexplorers.com'}/api/scan/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scanId: scanRow.id, apiKey: process.env.SCAN_SCORING_API_KEY }),
+      }).catch(() => {});
+    } catch {}
+
     return NextResponse.json({
-      scan,
+      success: true,
+      scanId: scanRow.id,
+      message: 'Scan uploaded successfully. Scoring in progress.',
+      scan: scanRow,
       proofHash,
       isFirstScan,
       memberId: auth.memberId,

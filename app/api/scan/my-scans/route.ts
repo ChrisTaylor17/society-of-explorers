@@ -15,19 +15,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
-    const offset = (page - 1) * limit;
-    const status = searchParams.get('status'); // 'verified', 'pending', or null for all
+    const offset = parseInt(searchParams.get('offset') || '0', 10) || (page - 1) * limit;
+    const status = searchParams.get('status');
 
-    // Build query for scans by this member
     const scannerId = auth.member.supabase_auth_id || auth.memberId;
     let query = supabaseAdmin
       .from('scan_uploads')
-      .select('id, space_id, file_url, file_size, proof_hash, scan_type, quality_score, verified, verified_at, exp_awarded, is_first_scan, created_at', { count: 'exact' })
+      .select('id, space_id, supabase_path, file_size_bytes, proof_hash, scan_type, scan_format, quality_score, verified, verified_at, reward_exp, is_first_scan, location_name, status, created_at', { count: 'exact' })
       .or(`scanner_id.eq.${scannerId},scanner_id.eq.${auth.memberId}`)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (status === 'verified') query = query.eq('verified', true);
+    if (status === 'verified' || status === 'scored') query = query.eq('verified', true);
     else if (status === 'pending') query = query.eq('verified', false);
 
     const { data: scans, count, error } = await query;
@@ -56,8 +55,7 @@ export async function GET(req: NextRequest) {
       space: spaces[scan.space_id] || null,
     }));
 
-    // Aggregate stats
-    const totalExp = (scans || []).reduce((sum, s) => sum + (s.exp_awarded || 0), 0);
+    const totalExp = (scans || []).reduce((sum, s) => sum + (s.reward_exp || 0), 0);
     const verifiedCount = (scans || []).filter(s => s.verified).length;
 
     return NextResponse.json({

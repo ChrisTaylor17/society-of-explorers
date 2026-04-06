@@ -16,15 +16,15 @@ type ApiErrorResponse = {
 
 type ScanRecord = {
   id: string;
-  file_path: string;
+  supabase_path: string;
   file_size_bytes: number;
   scan_format: string;
   quality_score: number | null;
-  exp_awarded: number;
+  reward_exp: number;
   status: string;
   location_name: string | null;
   created_at: string;
-  processed_at: string | null;
+  verified_at: string | null;
 };
 
 type MyScansResponse = {
@@ -107,7 +107,7 @@ export function ScanUploadWidget() {
       if (!res.ok) { setWidgetState('success'); setSuccessMessage('Scoring in progress — check back soon.'); setRewardText('Pending'); setQualityScore(0); return; }
       const scan = ('scans' in payload ? payload.scans : []).find((e) => e.id === scanId);
       if (scan?.status === 'scored') {
-        setWidgetState('success'); setSuccessMessage('Scan recorded in the Explorer archive.'); setRewardText(`+${scan.exp_awarded} $EXP`); setQualityScore(scan.quality_score ?? 0); return;
+        setWidgetState('success'); setSuccessMessage('Scan recorded in the Explorer archive.'); setRewardText(`+${scan.reward_exp} $EXP`); setQualityScore(scan.quality_score ?? 0); return;
       }
       pollTimeoutRef.current = window.setTimeout(() => { void pollForScore(scanId, attempt + 1); }, POLL_INTERVAL_MS);
     } catch { setWidgetState('success'); setSuccessMessage('Scoring in progress — check back soon.'); setRewardText('Pending'); setQualityScore(0); }
