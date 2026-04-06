@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { ScanUploadWidget } from '@/components/scan/ScanUploadWidget';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
@@ -208,6 +209,11 @@ export default function TravelPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Upload widget */}
+          <div style={{ marginTop: '2.5rem' }}>
+            <ScanUploadWidget />
           </div>
         </div>
       </section>
