@@ -24,15 +24,20 @@ const PASSPORT_STAMPS = [
   { city: 'Athens', date: 'Spring 2025', icon: '🏛️', color: '#7B68EE' },
   { city: 'Kyoto', date: 'Autumn 2025', icon: '⛩️', color: '#DC143C' },
   { city: 'Lisbon', date: 'Winter 2026', icon: '🧭', color: '#4169E1' },
+  { city: 'Marrakech', date: 'Spring 2026', icon: '🕌', color: '#8B7355' },
+  { city: 'Reykjavík', date: 'Summer 2026', icon: '🌋', color: '#A0A0A0' },
 ];
 
 const TIMELINE = [
-  { step: 1, title: 'Choose Your Frequency', desc: 'Browse destinations matched to your current philosophical inquiry. Each city resonates with a different mode of thought.' },
-  { step: 2, title: 'Book Sovereign', desc: 'Use Travala or Dtravel — pay with crypto or fiat. No middlemen. No surveillance pricing. Your itinerary, your sovereignty.' },
-  { step: 3, title: 'Pre-Journey Attunement', desc: 'AI thinkers prepare a reading list and contemplation prompts tailored to your destination and inner questions.' },
-  { step: 4, title: 'Travel & Explore', desc: 'Meet local explorer nodes. Attend pop-up salons. Document insights in your explorer journal.' },
-  { step: 5, title: 'Earn Passport Stamps', desc: 'Soulbound tokens minted on-chain. Non-transferable proof of lived experience — not tourism, but transformation.' },
-  { step: 6, title: 'Return & Integrate', desc: 'Share your journey in the Salon. Your insights become part of the collective explorer intelligence.' },
+  { step: 1, title: 'VR Preview', desc: 'Walk through the digital twin of your destination before you leave home. See spaces other explorers have scanned.' },
+  { step: 2, title: 'Book with Crypto', desc: 'Use Travala or Dtravel — pay with BTC, ETH, stablecoins, or fiat. No middlemen. No surveillance pricing.' },
+  { step: 3, title: 'Arrive', desc: 'Meet local explorer nodes. AI thinkers have prepared reading lists and contemplation prompts for your destination.' },
+  { step: 4, title: 'TribeKey Auth', desc: 'Tap your TribeKey to authenticate at the space. Your identity verified on-chain — no passwords, no check-in desks.' },
+  { step: 5, title: 'LiDAR Scan', desc: 'Point your iPhone at the space. Capture walls, furniture, light. The scan feeds the digital twin.' },
+  { step: 6, title: 'Earn $EXP', desc: 'Quality-graded rewards: 10 $EXP for basic scans, 25 for detailed, 50 for full property. First scans earn 2× bonus.' },
+  { step: 7, title: 'Frequency Circle', desc: 'Join a biofeedback circle with local explorers. Muse EEG + Polar HRV. The room breathes together.' },
+  { step: 8, title: 'Digital Twin Live', desc: 'Your scan goes live in the world layer. Future explorers can preview the space in VR before booking.' },
+  { step: 9, title: 'Passport Stamp', desc: 'Soulbound token minted on-chain. Non-transferable proof of lived experience — not tourism, but transformation.' },
 ];
 
 const FREQUENCY_CARDS = [
@@ -41,10 +46,20 @@ const FREQUENCY_CARDS = [
   { title: 'The Emergence Route', freq: 'Medellín → Lisbon → Tbilisi', icon: '◈', color: '#DC143C', desc: 'Cities in transformation. Innovation hubs where old meets new in unexpected ways.' },
 ];
 
+const SCAN_TIERS = [
+  { level: 'Basic Scan', exp: 10, desc: 'Quick photo captures of key areas', icon: '📷' },
+  { level: 'Detailed Scan', exp: 25, desc: 'Multi-angle photos with depth data', icon: '📸' },
+  { level: 'Full Property', exp: 50, desc: 'Complete LiDAR walkthrough, all rooms', icon: '🔬' },
+];
+
+const MOCK_PASSPORT_EXP = 1_240;
+const MOCK_NEXT_TIER = { name: 'Wayfinder', threshold: 1_500 };
+
 export default function TravelPage() {
   const [activeTag, setActiveTag] = useState('all');
   const [bookingTab, setBookingTab] = useState<'travala' | 'dtravel'>('travala');
   const [searchQuery, setSearchQuery] = useState('');
+  const [vrModalOpen, setVrModalOpen] = useState(false);
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -60,9 +75,38 @@ export default function TravelPage() {
     return matchTag && matchSearch;
   });
 
+  const progressPct = Math.round((MOCK_PASSPORT_EXP / MOCK_NEXT_TIER.threshold) * 100);
+
   return (
     <div style={{ background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', minHeight: '100vh' }}>
       <PublicNav />
+
+      {/* CSS for cube animation */}
+      <style>{`
+        @keyframes spin-cube {
+          0% { transform: rotateX(-20deg) rotateY(0deg); }
+          100% { transform: rotateX(-20deg) rotateY(360deg); }
+        }
+        .cube-wrap { width: 80px; height: 80px; perspective: 200px; margin: 0 auto 1.5rem; }
+        .cube {
+          width: 80px; height: 80px; position: relative;
+          transform-style: preserve-3d;
+          animation: spin-cube 6s linear infinite;
+        }
+        .cube-face {
+          position: absolute; width: 80px; height: 80px;
+          border: 1px solid ${gold}44; background: ${gold}08;
+          display: flex; align-items: center; justify-content: center;
+          font-family: Cinzel, serif; font-size: 18px; color: ${gold};
+          opacity: 0.7;
+        }
+        .cube-face:nth-child(1) { transform: translateZ(40px); }
+        .cube-face:nth-child(2) { transform: rotateY(180deg) translateZ(40px); }
+        .cube-face:nth-child(3) { transform: rotateY(90deg) translateZ(40px); }
+        .cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(40px); }
+        .cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(40px); }
+        .cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(40px); }
+      `}</style>
 
       {/* ═══ HERO ═══ */}
       <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8rem 2rem 6rem', position: 'relative', overflow: 'hidden' }}>
@@ -82,6 +126,86 @@ export default function TravelPage() {
         </div>
       </section>
 
+      {/* ═══ VR PREVIEW BANNER ═══ */}
+      <section data-fade style={{ padding: '3rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto', border: `1px solid ${gold}22`, background: `${gold}05`, padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
+          <div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.6, marginBottom: '0.5rem' }}>NEW</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: '#f5f0e8', marginBottom: '0.35rem' }}>Preview Commons Spaces in VR</div>
+            <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6 }}>Walk through scanned spaces before you book. Digital twins built by fellow explorers.</p>
+          </div>
+          <button onClick={() => setVrModalOpen(true)} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, background: 'transparent', padding: '12px 24px', cursor: 'pointer', flexShrink: 0 }}>
+            LAUNCH PREVIEW →
+          </button>
+        </div>
+      </section>
+
+      {/* VR Modal */}
+      {vrModalOpen && (
+        <div onClick={e => { if (e.target === e.currentTarget) setVrModalOpen(false); }} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '3rem 2.5rem', maxWidth: '400px', width: '100%', textAlign: 'center', position: 'relative' }}>
+            <button onClick={() => setVrModalOpen(false)} style={{ position: 'absolute', top: '1rem', right: '1.2rem', background: 'none', border: 'none', color: muted, fontSize: '1.2rem', cursor: 'pointer' }}>×</button>
+            <div className="cube-wrap">
+              <div className="cube">
+                <div className="cube-face">⬡</div>
+                <div className="cube-face">⬡</div>
+                <div className="cube-face">⬡</div>
+                <div className="cube-face">⬡</div>
+                <div className="cube-face">⬡</div>
+                <div className="cube-face">⬡</div>
+              </div>
+            </div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.1em', color: '#f5f0e8', marginBottom: '0.5rem' }}>Digital Twin Viewer</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>COMING SOON</div>
+            <p style={{ fontSize: '14px', color: muted, lineHeight: 1.7 }}>Spatial scans from explorers worldwide will be viewable here. Scan a space to contribute to the world layer.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SCAN-TO-EARN ═══ */}
+      <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>SCAN-TO-EARN</div>
+            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.75rem' }}>Scan Spaces. Earn $EXP.</h2>
+            <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8 }}>Every room you scan becomes a permanent part of the world layer. Quality determines reward.</p>
+          </div>
+
+          {/* 4-step flow */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1px', background: `${gold}10`, marginBottom: '2.5rem' }}>
+            {[
+              { step: '01', icon: '🛬', title: 'Arrive', desc: 'Check in at any Commons-listed space' },
+              { step: '02', icon: '📱', title: 'Scan with LiDAR', desc: 'iPhone Pro captures depth + geometry' },
+              { step: '03', icon: '🔗', title: 'Upload to Node', desc: 'SHA-256 proof hash, stored on-chain' },
+              { step: '04', icon: '⬡', title: 'Earn 10-50 $EXP', desc: 'Quality-graded by space host' },
+            ].map(s => (
+              <div key={s.step} style={{ background: '#0a0a0a', padding: '2rem 1.5rem', textAlign: 'center' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.3, marginBottom: '0.75rem' }}>{s.step}</div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>{s.icon}</div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.08em', color: '#f5f0e8', marginBottom: '0.5rem' }}>{s.title}</div>
+                <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6 }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Reward tiers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1px', background: `${gold}10` }}>
+            {SCAN_TIERS.map(t => (
+              <div key={t.level} style={{ background: '#0d0d0d', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ fontSize: '1.5rem', flexShrink: 0 }}>{t.icon}</div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.25rem' }}>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: '#f5f0e8' }}>{t.level}</span>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold }}>{t.exp} $EXP</span>
+                  </div>
+                  <p style={{ fontSize: '12px', color: muted, lineHeight: 1.5 }}>{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ═══ DESTINATION SEARCH ═══ */}
       <section id="destinations" data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
@@ -90,7 +214,6 @@ export default function TravelPage() {
             <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1.5rem' }}>Destinations for Explorers</h2>
           </div>
 
-          {/* Search */}
           <div style={{ maxWidth: '480px', margin: '0 auto 1.5rem' }}>
             <input
               value={searchQuery}
@@ -100,7 +223,6 @@ export default function TravelPage() {
             />
           </div>
 
-          {/* Filter pills */}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
             {TAGS.map(tag => (
               <button key={tag} onClick={() => setActiveTag(tag)} style={{
@@ -114,7 +236,6 @@ export default function TravelPage() {
             ))}
           </div>
 
-          {/* Destination grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: `${gold}10` }}>
             {filtered.map(d => (
               <div key={d.city} style={{ background: '#0a0a0a', padding: '2rem', transition: 'background 0.3s' }}>
@@ -141,7 +262,6 @@ export default function TravelPage() {
             <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8 }}>Crypto-native booking platforms. No surveillance pricing. Pay with BTC, ETH, stablecoins, or fiat.</p>
           </div>
 
-          {/* Tabs */}
           <div style={{ display: 'flex', borderBottom: `1px solid ${gold}22`, marginBottom: '0' }}>
             {(['travala', 'dtravel'] as const).map(tab => (
               <button key={tab} onClick={() => setBookingTab(tab)} style={{
@@ -155,13 +275,13 @@ export default function TravelPage() {
             ))}
           </div>
 
-          {/* Tab content */}
           <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, borderTop: 'none', padding: '2rem' }}>
             {bookingTab === 'travala' ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
                   <span style={{ fontSize: '1.5rem' }}>✈️</span>
                   <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: '#f5f0e8' }}>Travala</span>
+                  <span style={{ marginLeft: 'auto', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}33`, padding: '3px 8px', background: `${gold}08` }}>EARN $EXP WHEN YOU SCAN</span>
                 </div>
                 <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
                   2,200,000+ properties worldwide. Pay with 100+ cryptocurrencies including AVA, BTC, ETH, and USDT. Up to 40% savings on hotels, flights, and activities.
@@ -178,6 +298,7 @@ export default function TravelPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
                   <span style={{ fontSize: '1.5rem' }}>🏡</span>
                   <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: '#f5f0e8' }}>Dtravel</span>
+                  <span style={{ marginLeft: 'auto', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}33`, padding: '3px 8px', background: `${gold}08` }}>EARN $EXP WHEN YOU SCAN</span>
                 </div>
                 <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
                   Decentralized home-sharing on blockchain. Direct host-to-guest bookings with smart contract escrow. No platform lock-in. True peer-to-peer travel.
@@ -216,9 +337,9 @@ export default function TravelPage() {
         </div>
       </section>
 
-      {/* ═══ EXPLORER PASSPORT ═══ */}
+      {/* ═══ EXPLORER PASSPORT (expanded) ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>SOULBOUND · ON-CHAIN</div>
             <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.75rem' }}>Explorer Passport</h2>
@@ -229,32 +350,49 @@ export default function TravelPage() {
           <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '2rem', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '1rem', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.3 }}>SOULBOUND</div>
 
+            {/* Header with EXP counter */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: `1px solid ${gold}15` }}>
               <div style={{ width: '48px', height: '48px', background: `${gold}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '18px', color: gold }}>⬡</div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: '#f5f0e8' }}>Explorer #0042</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>PHILOSOPHER TIER · 4 STAMPS</div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>PHILOSOPHER TIER · {PASSPORT_STAMPS.length} STAMPS</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '20px', color: gold }}>{MOCK_PASSPORT_EXP.toLocaleString()}</div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted }}>$EXP EARNED</div>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* Tier progress bar */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>NEXT: {MOCK_NEXT_TIER.name.toUpperCase()}</span>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: gold }}>{MOCK_PASSPORT_EXP} / {MOCK_NEXT_TIER.threshold.toLocaleString()}</span>
+              </div>
+              <div style={{ height: '4px', background: `${gold}15`, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progressPct}%`, background: gold, transition: 'width 0.6s ease' }} />
+              </div>
+            </div>
+
+            {/* Stamps grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '1.5rem' }}>
               {PASSPORT_STAMPS.map(stamp => (
-                <div key={stamp.city} style={{ background: `${stamp.color}08`, border: `1px solid ${stamp.color}22`, padding: '1rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{stamp.icon}</div>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: '#f5f0e8' }}>{stamp.city.toUpperCase()}</div>
-                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '11px', color: muted, marginTop: '2px' }}>{stamp.date}</div>
+                <div key={stamp.city} style={{ background: `${stamp.color}08`, border: `1px solid ${stamp.color}22`, padding: '1rem 0.5rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.25rem', marginBottom: '0.35rem' }}>{stamp.icon}</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.08em', color: '#f5f0e8' }}>{stamp.city.toUpperCase()}</div>
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '10px', color: muted, marginTop: '2px' }}>{stamp.date}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted, opacity: 0.5 }}>VERIFIED ON BASE · NON-TRANSFERABLE</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted, opacity: 0.5 }}>VERIFIED ON BASE · NON-TRANSFERABLE · SOULBOUND</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ═══ HOW IT WORKS ═══ */}
+      {/* ═══ HOW IT WORKS (expanded 9-step) ═══ */}
       <section id="how-it-works" data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -263,17 +401,16 @@ export default function TravelPage() {
           </div>
 
           <div style={{ position: 'relative' }}>
-            {/* Timeline line */}
             <div style={{ position: 'absolute', left: '19px', top: '8px', bottom: '8px', width: '1px', background: `${gold}22` }} />
 
             {TIMELINE.map((item, i) => (
-              <div key={item.step} style={{ display: 'flex', gap: '1.5rem', marginBottom: i < TIMELINE.length - 1 ? '2.5rem' : '0', position: 'relative' }}>
+              <div key={item.step} style={{ display: 'flex', gap: '1.5rem', marginBottom: i < TIMELINE.length - 1 ? '2rem' : '0', position: 'relative' }}>
                 <div style={{ width: '40px', height: '40px', flexShrink: 0, background: '#0a0a0a', border: `1px solid ${gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '12px', color: gold, position: 'relative', zIndex: 1 }}>
                   {item.step}
                 </div>
                 <div style={{ paddingTop: '4px' }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: '#f5f0e8', marginBottom: '0.5rem' }}>{item.title}</div>
-                  <p style={{ fontSize: '14px', color: muted, lineHeight: 1.8 }}>{item.desc}</p>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: '#f5f0e8', marginBottom: '0.35rem' }}>{item.title}</div>
+                  <p style={{ fontSize: '13px', color: muted, lineHeight: 1.8 }}>{item.desc}</p>
                 </div>
               </div>
             ))}
