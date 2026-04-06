@@ -18,16 +18,14 @@ export default function StructurePage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080808', color: text, fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');`}</style>
-
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: text, fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
       <PublicNav />
 
       {/* ═══ HERO ═══ */}
       <section style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '8rem 2rem 6rem', position: 'relative' }}>
         <div style={{ position: 'absolute', inset: 0, opacity: 0.03, pointerEvents: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66' fill='none' stroke='%23C9A84C' stroke-width='0.5'/%3E%3C/svg%3E")`, backgroundSize: '56px 100px' }} />
         <div style={{ maxWidth: '700px', position: 'relative', zIndex: 1 }}>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 1.15, marginBottom: '2rem' }}>
+          <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 1.15, marginBottom: '2rem' }}>
             Explorers Build Worlds
           </h1>
           <div style={{ width: '60px', height: '1px', background: gold, margin: '0 auto 2rem', opacity: 0.5 }} />
@@ -42,10 +40,10 @@ export default function StructurePage() {
       <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 1s ease' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>PILLAR I</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, marginBottom: '0.5rem', lineHeight: 1.2 }}>
+          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, marginBottom: '0.5rem', lineHeight: 1.2 }}>
             Data Sovereignty
           </h2>
-          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', color: gold, fontStyle: 'italic', marginBottom: '2.5rem' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.1rem', color: gold, fontStyle: 'italic', marginBottom: '2.5rem' }}>
             Own Your Mind
           </div>
 
@@ -83,10 +81,10 @@ export default function StructurePage() {
       <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 1s ease' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>PILLAR II</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, marginBottom: '0.5rem', lineHeight: 1.2 }}>
+          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, marginBottom: '0.5rem', lineHeight: 1.2 }}>
             Local-First Intelligence
           </h2>
-          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', color: gold, fontStyle: 'italic', marginBottom: '2.5rem' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.1rem', color: gold, fontStyle: 'italic', marginBottom: '2.5rem' }}>
             Think With Your Own Machine
           </div>
 
@@ -123,10 +121,10 @@ export default function StructurePage() {
       <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 1s ease' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>PILLAR III</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, marginBottom: '0.5rem', lineHeight: 1.2 }}>
+          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, marginBottom: '0.5rem', lineHeight: 1.2 }}>
             Physical-Digital Convergence
           </h2>
-          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', color: gold, fontStyle: 'italic', marginBottom: '2.5rem' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.1rem', color: gold, fontStyle: 'italic', marginBottom: '2.5rem' }}>
             The Clearing
           </div>
 
@@ -162,7 +160,7 @@ export default function StructurePage() {
       {/* ═══ CLOSING ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 1s ease' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 400, marginBottom: '2rem', lineHeight: 1.3 }}>
+          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 400, marginBottom: '2rem', lineHeight: 1.3 }}>
             The Synthesis That Doesn&apos;t Yet Exist
           </h2>
           <p style={{ fontSize: '1.15rem', lineHeight: 2, color: body, marginBottom: '2rem' }}>
@@ -173,7 +171,7 @@ export default function StructurePage() {
           </p>
 
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 400, color: text, lineHeight: 1.2 }}>
+            <h3 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 400, color: text, lineHeight: 1.2 }}>
               Explorers build worlds.
             </h3>
           </div>

@@ -3,12 +3,9 @@ import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 
-const amber = '#f59e0b';
-const slate950 = '#020617';
-const slate900 = '#0f172a';
-const slate800 = '#1e293b';
+const gold = '#c9a84c';
 const parchment = '#E8DCC8';
-const muted = '#94a3b8';
+const muted = '#9a8f7a';
 
 const TIERS = [
   {
@@ -144,13 +141,13 @@ export default function JoinPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: slate950, color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
 
       {/* ═══ HERO ═══ */}
       <section style={{ textAlign: 'center', padding: '100px 2rem 4rem' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: amber, opacity: 0.6, marginBottom: '1.5rem' }}>MEMBERSHIP</div>
-        <h1 style={{ fontFamily: 'Playfair Display, Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f8fafc', marginBottom: '1rem' }}>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.6, marginBottom: '1.5rem' }}>MEMBERSHIP</div>
+        <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem' }}>
           Choose Your Path
         </h1>
         <p style={{ fontSize: '1.15rem', color: muted, fontStyle: 'italic', maxWidth: '480px', margin: '0 auto', lineHeight: 1.8 }}>
@@ -160,37 +157,37 @@ export default function JoinPage() {
 
       {/* ═══ TIER CARDS ═══ */}
       <section data-fade style={{ padding: '0 2rem 5rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '1060px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1px', background: `${amber}10` }}>
+        <div style={{ maxWidth: '1060px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1px', background: `${gold}10` }}>
           {TIERS.map(t => (
             <div
               key={t.id}
               id={t.id}
               style={{
-                background: t.featured ? `${amber}06` : slate900,
+                background: t.featured ? `${gold}06` : '#0d0d0d',
                 padding: '2.5rem 1.75rem',
                 position: 'relative',
                 display: 'flex', flexDirection: 'column',
-                borderTop: t.featured ? `2px solid ${amber}` : 'none',
+                borderTop: t.featured ? `2px solid ${gold}` : 'none',
               }}
             >
               {t.badge && (
                 <div style={{
                   position: 'absolute', top: t.featured ? '-1px' : '0', right: '1rem',
                   fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.18em',
-                  color: slate950, background: amber, padding: '4px 10px',
+                  color: '#0a0a0a', background: gold, padding: '4px 10px',
                 }}>{t.badge}</div>
               )}
 
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.12em', color: amber, marginBottom: '0.5rem' }}>{t.name.toUpperCase()}</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.12em', color: gold, marginBottom: '0.5rem' }}>{t.name.toUpperCase()}</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '1.75rem' }}>
-                <span style={{ fontFamily: 'Playfair Display, Cinzel, serif', fontSize: '2.5rem', color: '#f8fafc' }}>{t.price}</span>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '2.5rem', color: '#f5f0e8' }}>{t.price}</span>
                 {t.period && <span style={{ fontSize: '14px', color: muted }}>{t.period}</span>}
               </div>
 
               <div style={{ flex: 1, marginBottom: '1.75rem' }}>
                 {t.features.map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.6rem', alignItems: 'flex-start' }}>
-                    <span style={{ color: amber, opacity: 0.4, marginTop: '5px', fontSize: '6px', flexShrink: 0 }}>⬡</span>
+                    <span style={{ color: gold, opacity: 0.4, marginTop: '5px', fontSize: '6px', flexShrink: 0 }}>⬡</span>
                     <span style={{ fontSize: '14px', color: `${parchment}bb`, lineHeight: 1.5 }}>{f}</span>
                   </div>
                 ))}
@@ -202,9 +199,9 @@ export default function JoinPage() {
                 style={{
                   display: 'block', width: '100%', textAlign: 'center',
                   fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
-                  color: t.featured ? slate950 : amber,
-                  background: t.featured ? amber : 'transparent',
-                  border: t.featured ? 'none' : `1px solid ${amber}44`,
+                  color: t.featured ? '#0a0a0a' : gold,
+                  background: t.featured ? gold : 'transparent',
+                  border: t.featured ? 'none' : `1px solid ${gold}44`,
                   padding: '13px', cursor: 'pointer',
                   opacity: checkoutLoading === t.id ? 0.5 : 1,
                   transition: 'opacity 0.2s',
@@ -218,10 +215,10 @@ export default function JoinPage() {
       </section>
 
       {/* ═══ FOUNDING DINNER FORM ═══ */}
-      <section data-fade style={{ padding: '5rem 2rem', background: slate900, opacity: 0, transition: 'opacity 0.8s ease' }}>
+      <section data-fade style={{ padding: '5rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
         <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: amber, opacity: 0.5, marginBottom: '1rem' }}>THE FOUNDING DINNER</div>
-          <h2 style={{ fontFamily: 'Playfair Display, Cinzel, serif', fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f8fafc', marginBottom: '1rem' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>THE FOUNDING DINNER</div>
+          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem' }}>
             Reserve Your Seat at 92B South St
           </h2>
           <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8, marginBottom: '2rem', maxWidth: '440px', margin: '0 auto 2rem' }}>
@@ -229,8 +226,8 @@ export default function JoinPage() {
           </p>
 
           {submitted ? (
-            <div style={{ padding: '2rem', border: `1px solid ${amber}33`, background: `${amber}05` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: amber, marginBottom: '0.5rem' }}>YOUR SEAT IS NOTED</div>
+            <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}05` }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, marginBottom: '0.5rem' }}>YOUR SEAT IS NOTED</div>
               <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic' }}>We will be in touch directly.</p>
             </div>
           ) : (
@@ -238,21 +235,21 @@ export default function JoinPage() {
               <input
                 value={interestName} onChange={e => setInterestName(e.target.value)} required
                 placeholder="Your name"
-                style={{ background: slate800, border: `1px solid ${amber}22`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                style={{ background: '#111', border: `1px solid ${gold}22`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', width: '100%', boxSizing: 'border-box' }}
               />
               <input
                 type="email" value={interestEmail} onChange={e => setInterestEmail(e.target.value)} required
                 placeholder="your@email.com"
-                style={{ background: slate800, border: `1px solid ${amber}22`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                style={{ background: '#111', border: `1px solid ${gold}22`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', width: '100%', boxSizing: 'border-box' }}
               />
               <textarea
                 value={interestWhy} onChange={e => setInterestWhy(e.target.value)} rows={3}
                 placeholder="Why are you an explorer? (optional)"
-                style={{ background: slate800, border: `1px solid ${amber}22`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box' }}
+                style={{ background: '#111', border: `1px solid ${gold}22`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', resize: 'vertical', width: '100%', boxSizing: 'border-box' }}
               />
               <button type="submit" disabled={submitting} style={{
                 fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em',
-                color: slate950, background: submitting ? `${amber}88` : amber,
+                color: '#0a0a0a', background: submitting ? `${gold}88` : gold,
                 border: 'none', padding: '13px', cursor: 'pointer',
               }}>
                 {submitting ? 'NOTING YOUR SEAT...' : 'RESERVE MY SEAT'}
@@ -267,12 +264,12 @@ export default function JoinPage() {
       <section data-fade style={{ padding: '5rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: amber, opacity: 0.5, marginBottom: '0.75rem' }}>QUESTIONS</div>
-            <h2 style={{ fontFamily: 'Playfair Display, Cinzel, serif', fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f8fafc' }}>Frequently Asked</h2>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>QUESTIONS</div>
+            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8' }}>Frequently Asked</h2>
           </div>
           <div>
             {FAQS.map((faq, i) => (
-              <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? `1px solid ${amber}12` : 'none' }}>
+              <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? `1px solid ${gold}12` : 'none' }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   style={{
@@ -280,8 +277,8 @@ export default function JoinPage() {
                     padding: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}
                 >
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.06em', color: '#f8fafc' }}>{faq.q}</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: amber, opacity: 0.5, flexShrink: 0, marginLeft: '1rem', transform: openFaq === i ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>+</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.06em', color: '#f5f0e8' }}>{faq.q}</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: gold, opacity: 0.5, flexShrink: 0, marginLeft: '1rem', transform: openFaq === i ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>+</span>
                 </button>
                 {openFaq === i && (
                   <div style={{ paddingBottom: '1.25rem' }}>
@@ -296,7 +293,7 @@ export default function JoinPage() {
 
       {/* ═══ CONTACT ═══ */}
       <section style={{ padding: '2rem', textAlign: 'center' }}>
-        <p style={{ fontSize: '13px', color: muted, opacity: 0.5 }}>Questions? Email <span style={{ color: amber }}>chris@societyofexplorers.com</span></p>
+        <p style={{ fontSize: '13px', color: muted, opacity: 0.5 }}>Questions? Email <span style={{ color: gold }}>chris@societyofexplorers.com</span></p>
       </section>
 
       <PublicFooter />

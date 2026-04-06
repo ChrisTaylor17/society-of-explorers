@@ -120,7 +120,7 @@ export default function LoginPage() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>SOCIETY OF EXPLORERS</div>
-            <h1 style={{ fontFamily: 'Playfair Display, Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.5rem' }}>
+            <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.5rem' }}>
               {isSignUp ? 'Create Account' : 'Welcome Back'}
             </h1>
             <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic' }}>

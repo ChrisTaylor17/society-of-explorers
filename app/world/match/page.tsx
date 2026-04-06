@@ -24,7 +24,7 @@ interface Match {
 }
 
 const DIM_LABELS: { key: keyof FrequencyVector; label: string; color: string }[] = [
-  { key: 'focus', label: 'Focus', color: '#f59e0b' },
+  { key: 'focus', label: 'Focus', color: '#c9a84c' },
   { key: 'coherence', label: 'Coherence', color: '#7B68EE' },
   { key: 'engagement', label: 'Engagement', color: '#DC143C' },
   { key: 'exploration', label: 'Exploration', color: '#4169E1' },
