@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { createClient } from '@/lib/supabase/client';
@@ -26,9 +25,7 @@ const TIERS = [
 ];
 
 export default function FundPage() {
-  const searchParams = useSearchParams();
-  const isSuccess = searchParams.get('success') === 'true';
-
+  const [isSuccess, setIsSuccess] = useState(false);
   const [pledging, setPledging] = useState<string | null>(null);
   const [pledgeEmail, setPledgeEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +47,13 @@ export default function FundPage() {
       document.querySelectorAll<HTMLElement>('[data-parallax]').forEach(el => {
         el.style.backgroundAttachment = 'scroll';
       });
+    }
+  }, []);
+
+  // Check for success param
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('success=true')) {
+      setIsSuccess(true);
     }
   }, []);
 
