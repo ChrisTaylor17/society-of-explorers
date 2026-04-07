@@ -34,7 +34,7 @@ function countUserMessages(msgs: ChatMessage[]): number {
 const SECTIONS = [
   {
     id: 'council',
-    image: '/images/hero-salon.jpeg',
+    image: '/images/hero-council-mode.jpeg',
     label: 'COUNCIL MODE',
     heading: 'Multiple minds. One conversation.',
     body: 'Socrates, Nietzsche, and Aurelius debate your questions in real time. They disagree. They build on each other. They remember your past conversations.',
@@ -52,7 +52,7 @@ const SECTIONS = [
   },
   {
     id: 'travel',
-    image: '/images/hero-africa.jpeg',
+    image: '/images/hero-mission.jpeg',
     label: 'SOVEREIGN TRAVEL',
     heading: 'The world is your campus',
     body: 'Book with crypto via Travala + Dtravel. Scan rooms with iPhone LiDAR. Earn $EXP. Your travels build the shared metaverse.',
@@ -61,7 +61,7 @@ const SECTIONS = [
   },
   {
     id: 'vision',
-    image: '/images/hero-agora-purple.jpeg',
+    image: '/images/hero-renaissance.jpeg',
     label: 'THE VISION',
     heading: 'A living philosophical civilization',
     body: 'Physical salons. AI thinkers with memory. Blockchain reputation. Sovereign travel. Music therapy. All connected by $EXP and a shared commitment to human flourishing.',
@@ -228,7 +228,7 @@ export default function HomePage() {
           justifyContent: 'center',
           padding: '8rem 2rem 6rem',
           position: 'relative',
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("/images/hero-physical-salon.jpeg")',
+          backgroundImage: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("/images/hero-guild.jpeg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',
@@ -272,7 +272,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ COUNCIL MODE ═══ */}
-      <section data-fade data-parallax style={sectionStyle('/images/hero-salon.jpeg')}>
+      <section data-fade data-parallax style={sectionStyle('/images/hero-council-mode.jpeg')}>
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
@@ -408,7 +408,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ SOVEREIGN TRAVEL ═══ */}
-      <section data-fade data-parallax style={sectionStyle('/images/hero-africa.jpeg')}>
+      <section data-fade data-parallax style={sectionStyle('/images/hero-mission.jpeg')}>
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>SOVEREIGN TRAVEL</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
@@ -432,7 +432,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ THE VISION ═══ */}
-      <section data-fade data-parallax style={sectionStyle('/images/hero-agora-purple.jpeg')}>
+      <section data-fade data-parallax style={sectionStyle('/images/hero-renaissance.jpeg')}>
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>THE VISION</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
