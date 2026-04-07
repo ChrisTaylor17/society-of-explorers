@@ -95,8 +95,13 @@ export default function HomePage() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.location.hash) {
-      setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }), 0);
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    // Fight browser scroll restoration
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
     }
   }, []);
 
