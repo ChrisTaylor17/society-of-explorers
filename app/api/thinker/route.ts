@@ -201,8 +201,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (memory) {
-        const trimmedMemory = memory.length > 500 ? memory.slice(0, 500) + '...' : memory;
-        fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${trimmedMemory}\n\nUse this memory naturally. Reference past conversations when relevant — "Last time we talked about X" or "You mentioned Y before." Don't announce that you have memory. Just know what you know, the way a trusted advisor remembers.`;
+        fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference specific facts, commitments, and past conversations. If they committed to something, ask about progress. If they shared a struggle, check in. You are continuing a relationship — not starting from scratch.`;
       }
 
       if (isReaction) {
