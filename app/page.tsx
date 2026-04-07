@@ -297,14 +297,15 @@ export default function HomePage() {
 
       {/* ═══ SOCRATES DEMO ═══ */}
       <section id="demo" data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>TRY IT NOW</div>
+            <p style={{ fontSize: '18px', color: ivory85, fontFamily: 'Cormorant Garamond, serif', marginBottom: '0.75rem' }}>Experience it now — no sign-up required.</p>
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>Ask Socrates anything.</h2>
             <p style={{ fontSize: '18px', color: ivory85, fontStyle: 'italic', fontFamily: 'Cormorant Garamond, serif' }}>Real AI. Real streaming. No sign-up required.</p>
           </div>
 
-          <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d' }}>
+          <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d', boxShadow: '0 0 40px rgba(201,168,76,0.08)' }}>
             <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '1.5rem' }}>
               {displayMessages.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '2rem 0' }}>
