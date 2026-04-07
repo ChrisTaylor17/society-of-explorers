@@ -1071,7 +1071,7 @@ export default function SalonPage() {
         </div>
 
         {/* Free tier banner */}
-        {member && !hasAccess(member.tier, 'seeker') && (
+        {member && !(member.tier && !['free', 'explorer'].includes(member.tier.toLowerCase())) && (
           <div style={{ padding: '8px 16px', background: 'rgba(197,165,90,0.06)', borderBottom: `1px solid rgba(197,165,90,0.15)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#c9a84c', opacity: 0.7 }}>FREE ACCESS — Upgrade to unlock voice mode, private sessions, and thinker memory</span>
             <a href="/join" style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#000', background: '#c9a84c', padding: '4px 12px', textDecoration: 'none' }}>UPGRADE →</a>

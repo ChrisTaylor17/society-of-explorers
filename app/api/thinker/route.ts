@@ -15,7 +15,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const DIRECT_MAX_TOKENS = 400;
+const DIRECT_MAX_TOKENS = 600;
+const COUNCIL_MAX_TOKENS = 400;
 const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
@@ -50,6 +51,8 @@ function buildMemberContext(m: any): string {
 const MEMBER_SELECT = 'id, display_name, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens';
 
 export async function POST(req: NextRequest) {
+  const _startTime = Date.now();
+  console.log('[thinker] start', _startTime);
   try {
     const body = await req.json();
 
@@ -164,8 +167,11 @@ export async function POST(req: NextRequest) {
     // --- FETCH THINKER MEMORY (skip for demo) ---
     const memory = isDemo ? null : await getMemory(memberId!, thinkerId);
 
-    // --- BUILD SYSTEM PROMPT ---
-    const systemPrompt = buildSystemPrompt(thinkerId);
+    // --- BUILD SYSTEM PROMPT (cap length for speed) ---
+    let systemPrompt = buildSystemPrompt(thinkerId);
+    if (systemPrompt.length > 2000) {
+      systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
+    }
 
     let maxTokens: number;
     if (isDemo) {
@@ -174,6 +180,8 @@ export async function POST(req: NextRequest) {
       maxTokens = REACTION_MAX_TOKENS;
     } else if (isArtifactRequest(message)) {
       maxTokens = ARTIFACT_MAX_TOKENS;
+    } else if (councilContext.length > 0) {
+      maxTokens = COUNCIL_MAX_TOKENS;
     } else {
       maxTokens = DIRECT_MAX_TOKENS;
     }
@@ -193,7 +201,8 @@ export async function POST(req: NextRequest) {
       }
 
       if (memory) {
-        fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference past conversations when relevant — "Last time we talked about X" or "You mentioned Y before." Don't announce that you have memory. Just know what you know, the way a trusted advisor remembers.`;
+        const trimmedMemory = memory.length > 500 ? memory.slice(0, 500) + '...' : memory;
+        fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${trimmedMemory}\n\nUse this memory naturally. Reference past conversations when relevant — "Last time we talked about X" or "You mentioned Y before." Don't announce that you have memory. Just know what you know, the way a trusted advisor remembers.`;
       }
 
       if (isReaction) {
@@ -339,6 +348,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    console.log('[thinker] response complete', Date.now(), `(${Date.now() - _startTime}ms)`);
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
