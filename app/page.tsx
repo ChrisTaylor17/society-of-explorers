@@ -95,10 +95,15 @@ export default function HomePage() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && !window.location.hash) {
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }), 0);
+    }
+  }, []);
+
+  useEffect(() => {
     const stored = loadDemoMessages();
     setMessages(stored);
     if (countUserMessages(stored) >= DEMO_LIMIT) setGated(true);
-    window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
@@ -297,7 +302,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ SOCRATES DEMO ═══ */}
-      <section id="demo" data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.8s ease' }}>
+      <section data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.8s ease' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>TRY IT NOW</div>
