@@ -215,6 +215,9 @@ export default function NinetyTwoBPage() {
 
           <div style={{ marginTop: '1.5rem' }}>
             <a href="/92b/fund" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, textDecoration: 'none' }}>Or fund the Boston salon now &rarr;</a>
+            <div style={{ marginTop: '1rem' }}>
+              <a href="/salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: muted, textDecoration: 'none' }}>View all cities &rarr;</a>
+            </div>
           </div>
         </div>
       </section>
