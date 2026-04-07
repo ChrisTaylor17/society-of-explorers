@@ -1351,17 +1351,6 @@ export default function SalonPage() {
       </div>
     )}
 
-    {/* Prominent Labyrinth Button */}
-    <div className="fixed bottom-8 right-8 z-[9999]">
-      <a
-        href="/labyrinth"
-        className="group flex items-center gap-x-3 bg-black border-2 border-amber-400 hover:border-amber-300 text-amber-400 hover:text-amber-200 px-8 py-5 text-xl font-light tracking-widest shadow-2xl transition-all"
-        style={{ fontFamily: 'Cinzel, serif' }}
-      >
-        ⬡ ENTER THE LABYRINTH OF BECOMING
-        <span className="text-4xl group-hover:translate-x-2 transition-transform duration-300">→</span>
-      </a>
-    </div>
     </>
   );
 }
