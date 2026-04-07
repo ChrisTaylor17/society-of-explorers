@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="Society of Explorers" />
       </head>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: "if(!window.location.hash){window.scrollTo(0,0)}" }} />
         <Providers>{children}</Providers>
         <ServiceWorkerRegistration />
       </body>
