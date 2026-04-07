@@ -114,6 +114,8 @@ export default function CouncilModePage() {
       });
 
       if (!res.ok || !res.body) {
+        const errText = await res.text().catch(() => '');
+        console.error(`[council] ${thinkerId} failed: ${res.status}`, errText);
         setMessages(prev => prev.map(m =>
           m.id === streamId ? { ...m, content: 'The thinker is silent. Try again.' } : m
         ));

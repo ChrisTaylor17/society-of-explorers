@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
     let memberName: string | null = null;
     let memberContext: string | null = null;
     let memberExpTokens: number = 0;
+    const isCouncilMode = body.isCouncilMode === true;
 
     if (!isDemo) {
       const auth = await getAuthenticatedMember(req);
@@ -109,7 +110,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (!memberId) {
+      // Council mode allows anonymous usage (no member required)
+      if (!memberId && !isCouncilMode) {
         return new Response(
           JSON.stringify({ error: 'Unauthorized' }),
           { status: 401, headers: { 'Content-Type': 'application/json' } }
@@ -165,8 +167,8 @@ export async function POST(req: NextRequest) {
         }));
     }
 
-    // --- FETCH THINKER MEMORY (skip for demo) ---
-    const memory = isDemo ? null : await getMemory(memberId!, thinkerId);
+    // --- FETCH THINKER MEMORY (skip for demo and anonymous council) ---
+    const memory = (isDemo || !memberId) ? null : await getMemory(memberId, thinkerId);
 
     // --- BUILD SYSTEM PROMPT (cap length for speed) ---
     let systemPrompt = buildSystemPrompt(thinkerId);
@@ -321,46 +323,49 @@ export async function POST(req: NextRequest) {
             if (saveError) console.error('THINKER SAVE FAILED:', saveError);
             else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
 
-            for (const action of actions) {
-              try {
-                await executeThinkerAction(action, memberId!, thinkerId);
-              } catch (e) {
-                console.error('Action execution failed:', action.type, e);
+            // Member-specific operations (skip for anonymous council)
+            if (memberId) {
+              for (const action of actions) {
+                try {
+                  await executeThinkerAction(action, memberId, thinkerId);
+                } catch (e) {
+                  console.error('Action execution failed:', action.type, e);
+                }
               }
+
+              const expAmount = isReaction ? 4 : 8;
+              await supabaseAdmin.from('exp_events').insert({
+                member_id: memberId,
+                amount: expAmount,
+                reason: isReaction
+                  ? `Thinker reaction from ${thinkerId}`
+                  : `Conversation with ${thinkerId}`,
+              });
+
+              const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
+                member_id_input: memberId,
+                amount_input: expAmount,
+              });
+              if (rpcError) {
+                await supabaseAdmin
+                  .from('members')
+                  .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
+                  .eq('id', memberId);
+              }
+
+              const thinkerNames: Record<string, string> = {
+                socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
+                aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
+              };
+              recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
+                .catch(err => console.error('Memory update failed:', err));
+
+              // Store embeddings for vector memory (fire and forget)
+              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'user', content: message })
+                .catch(() => {});
+              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'assistant', content: cleanText })
+                .catch(() => {});
             }
-
-            const expAmount = isReaction ? 4 : 8;
-            await supabaseAdmin.from('exp_events').insert({
-              member_id: memberId,
-              amount: expAmount,
-              reason: isReaction
-                ? `Thinker reaction from ${thinkerId}`
-                : `Conversation with ${thinkerId}`,
-            });
-
-            const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
-              member_id_input: memberId,
-              amount_input: expAmount,
-            });
-            if (rpcError) {
-              await supabaseAdmin
-                .from('members')
-                .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
-                .eq('id', memberId);
-            }
-
-            const thinkerNames: Record<string, string> = {
-              socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
-              aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
-            };
-            recordInteraction(memberId!, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
-              .catch(err => console.error('Memory update failed:', err));
-
-            // Store embeddings for vector memory (fire and forget)
-            storeConversationEmbedding({ memberId: memberId!, thinkerKey: thinkerId, role: 'user', content: message })
-              .catch(() => {});
-            storeConversationEmbedding({ memberId: memberId!, thinkerKey: thinkerId, role: 'assistant', content: cleanText })
-              .catch(() => {});
           }
 
           // --- SEND DONE + ACTIONS TO CLIENT ---
