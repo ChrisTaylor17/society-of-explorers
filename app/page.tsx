@@ -452,20 +452,36 @@ export default function HomePage() {
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
             A civilization worth building
           </h2>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
+          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '0.75rem' }}>
             The Renaissance happened because a small group of people decided that human potential was worth investing in. We're doing it again — with AI, blockchain, philosophy, and a physical salon at 92B South St, Boston.
           </p>
-          <a
-            href="/join"
-            style={{
-              fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-              color: '#0a0a0a', background: gold, padding: '0 28px',
-              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-              height: '48px', borderRadius: 0,
-            }}
-          >
-            BECOME AN EXPLORER
-          </a>
+          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
+            The first physical salon is under construction at 92B South St, Boston.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="/join"
+              style={{
+                fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
+                color: '#0a0a0a', background: gold, padding: '0 28px',
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+                height: '48px', borderRadius: 0,
+              }}
+            >
+              BECOME AN EXPLORER
+            </a>
+            <a
+              href="/92b/fund"
+              style={{
+                fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
+                color: gold, background: 'transparent', border: `1px solid ${gold}`,
+                padding: '0 28px', textDecoration: 'none', display: 'inline-flex',
+                alignItems: 'center', height: '48px', borderRadius: 0,
+              }}
+            >
+              FUND 92B
+            </a>
+          </div>
         </div>
       </section>
 
