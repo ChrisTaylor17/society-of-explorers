@@ -1,3 +1,4 @@
+// Backup/intent-only route. Real payments go through /api/92b/checkout → Stripe.
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 

@@ -94,6 +94,50 @@ export async function POST(req: NextRequest) {
         const email = session.customer_details?.email || session.customer_email;
         const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
+        // --- 92B PLEDGE HANDLING ---
+        if (session.metadata?.type === '92b_pledge') {
+          const pledgeTier = session.metadata.tier;
+          const pledgeAmount = session.metadata.amount;
+          console.log(`[webhook] 92B pledge: ${pledgeTier} $${pledgeAmount} from ${email}`);
+
+          await supabaseAdmin.from('founding_interest').insert({
+            name: email || 'Unknown',
+            email: email?.toLowerCase() || '',
+            why: `[92B Pledge PAID] ${pledgeTier} - $${pledgeAmount}`,
+            created_at: new Date().toISOString(),
+          });
+
+          // Award bonus EXP if member exists
+          if (email) {
+            const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+            const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+            if (authUser) {
+              const { data: member } = await supabaseAdmin.from('members').select('id, exp_tokens').eq('supabase_auth_id', authUser.id).single();
+              if (member) {
+                const expBonus = pledgeTier === 'RENAISSANCE FOUNDER' ? 1000 : pledgeTier === 'PATRON' ? 200 : 50;
+                await supabaseAdmin.from('members').update({ exp_tokens: (member.exp_tokens || 0) + expBonus }).eq('id', member.id);
+                await supabaseAdmin.from('exp_events').insert({ member_id: member.id, amount: expBonus, reason: `92B pledge: ${pledgeTier}` });
+              }
+            }
+          }
+
+          // Notify Chris
+          if (process.env.RESEND_API_KEY) {
+            try {
+              const { Resend } = await import('resend');
+              const resend = new Resend(process.env.RESEND_API_KEY);
+              await resend.emails.send({
+                from: 'Society of Explorers <notifications@societyofexplorers.com>',
+                to: 'chris@societyofexplorers.com',
+                subject: `92B PLEDGE RECEIVED: ${pledgeTier} - $${pledgeAmount}`,
+                html: `<div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;"><h2 style="color:#c9a84c;">New 92B Pledge!</h2><p>Tier: ${pledgeTier}</p><p>Amount: $${pledgeAmount}</p><p>Email: ${email}</p></div>`,
+              });
+            } catch {}
+          }
+          break;
+        }
+
+        // --- MEMBERSHIP SUBSCRIPTION HANDLING ---
         if (!email) {
           console.warn('checkout.session.completed: no email found');
           break;

@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { createClient } from '@/lib/supabase/client';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -24,11 +26,15 @@ const TIERS = [
 ];
 
 export default function FundPage() {
+  const searchParams = useSearchParams();
+  const isSuccess = searchParams.get('success') === 'true';
+
   const [pledging, setPledging] = useState<string | null>(null);
-  const [pledgeName, setPledgeName] = useState('');
   const [pledgeEmail, setPledgeEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [totalRaised, setTotalRaised] = useState(0);
+  const [backerCount, setBackerCount] = useState(0);
+  const [goal] = useState(120000);
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -47,19 +53,46 @@ export default function FundPage() {
     }
   }, []);
 
+  // Pre-fill email from Supabase session
+  useEffect(() => {
+    async function loadEmail() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) setPledgeEmail(user.email);
+      } catch {}
+    }
+    loadEmail();
+  }, []);
+
+  // Fetch live progress
+  useEffect(() => {
+    fetch('/api/92b/progress')
+      .then(r => r.json())
+      .then(d => {
+        setTotalRaised(d.totalRaised || 0);
+        setBackerCount(d.backerCount || 0);
+      })
+      .catch(() => {});
+  }, []);
+
   async function handlePledge(e: React.FormEvent) {
     e.preventDefault();
-    if (!pledgeName.trim() || !pledgeEmail.trim() || !pledging) return;
+    if (!pledgeEmail.trim() || !pledging) return;
     const tier = TIERS.find(t => t.id === pledging);
     if (!tier) return;
     setSubmitting(true);
     try {
-      await fetch('/api/92b/pledge', {
+      const res = await fetch('/api/92b/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: tier.name, amount: tier.amount, name: pledgeName.trim(), email: pledgeEmail.trim() }),
+        body: JSON.stringify({ tier: tier.name, amount: tier.amount, email: pledgeEmail.trim() }),
       });
-      setSuccess(true);
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
     } catch {}
     setSubmitting(false);
   }
@@ -70,16 +103,27 @@ export default function FundPage() {
     outline: 'none', boxSizing: 'border-box',
   };
 
+  const progressPct = goal > 0 ? Math.min((totalRaised / goal) * 100, 100) : 0;
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
+
+      {/* ═══ SUCCESS BANNER ═══ */}
+      {isSuccess && (
+        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, zIndex: 190, padding: '16px 2rem', background: `linear-gradient(90deg, rgba(201,168,76,0.15), rgba(201,168,76,0.08))`, borderBottom: `1px solid ${gold}33`, textAlign: 'center' }}>
+          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold }}>
+            Thank you! Your pledge has been received. Welcome to the founding circle.
+          </span>
+        </div>
+      )}
 
       {/* ═══ HERO ═══ */}
       <section
         data-parallax
         style={{
           minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '8rem 2rem 6rem', position: 'relative',
+          padding: isSuccess ? '10rem 2rem 6rem' : '8rem 2rem 6rem', position: 'relative',
           backgroundImage: 'linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url("/images/hero-renaissance.jpeg")',
           backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
         }}
@@ -112,7 +156,7 @@ export default function FundPage() {
                   ))}
                 </div>
                 <button
-                  onClick={() => { setPledging(tier.id); setSuccess(false); }}
+                  onClick={() => setPledging(tier.id)}
                   style={{
                     fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
                     color: '#0a0a0a', background: gold, border: 'none', height: '48px',
@@ -134,34 +178,23 @@ export default function FundPage() {
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}
         >
           <div onClick={e => e.stopPropagation()} style={{ background: '#0d0d0d', border: `1px solid ${gold}33`, padding: '2.5rem', maxWidth: '420px', width: '100%' }}>
-            {success ? (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>PLEDGE RECEIVED</div>
-                <p style={{ fontSize: '18px', color: ivory85, lineHeight: 1.7, marginBottom: '1.5rem' }}>
-                  Thank you for becoming a founding patron. We'll be in touch with next steps.
-                </p>
-                <button onClick={() => setPledging(null)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', padding: '0 28px', cursor: 'pointer', borderRadius: 0 }}>CLOSE</button>
+            <form onSubmit={handlePledge}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>
+                {TIERS.find(t => t.id === pledging)?.name}
               </div>
-            ) : (
-              <form onSubmit={handlePledge}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>
-                  {TIERS.find(t => t.id === pledging)?.name}
-                </div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '24px', color: parchment, marginBottom: '1.5rem' }}>
-                  ${TIERS.find(t => t.id === pledging)?.amount} Pledge
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
-                  <input value={pledgeName} onChange={e => setPledgeName(e.target.value)} placeholder="Your name" required style={inputStyle} />
-                  <input value={pledgeEmail} onChange={e => setPledgeEmail(e.target.value)} placeholder="Your email" type="email" required style={inputStyle} />
-                </div>
-                <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6, marginBottom: '1.5rem' }}>
-                  This records your pledge intent. Payment processing will be set up shortly — we'll email you when it's ready.
-                </p>
-                <button type="submit" disabled={submitting} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', borderRadius: 0, width: '100%', opacity: submitting ? 0.5 : 1 }}>
-                  {submitting ? 'SUBMITTING...' : 'CONFIRM PLEDGE'}
-                </button>
-              </form>
-            )}
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '24px', color: parchment, marginBottom: '1.5rem' }}>
+                ${TIERS.find(t => t.id === pledging)?.amount} Pledge
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
+                <input value={pledgeEmail} onChange={e => setPledgeEmail(e.target.value)} placeholder="Your email" type="email" required style={inputStyle} />
+              </div>
+              <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                You'll be redirected to Stripe for secure payment. Your pledge includes $EXP rewards and founding patron status.
+              </p>
+              <button type="submit" disabled={submitting} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', borderRadius: 0, width: '100%', opacity: submitting ? 0.5 : 1 }}>
+                {submitting ? 'REDIRECTING TO STRIPE...' : 'PAY WITH CARD'}
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -173,14 +206,14 @@ export default function FundPage() {
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>FUNDING PROGRESS</div>
           </div>
           <div style={{ height: '12px', background: '#1a1a1a', borderRadius: '6px', overflow: 'hidden', marginBottom: '1rem' }}>
-            <div style={{ height: '100%', width: '0%', background: `linear-gradient(90deg, ${gold}, #d4b85a)`, borderRadius: '6px', transition: 'width 1s ease' }} />
+            <div style={{ height: '100%', width: `${progressPct}%`, background: `linear-gradient(90deg, ${gold}, #d4b85a)`, borderRadius: '6px', transition: 'width 1s ease' }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: parchment }}>$0 raised</span>
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: muted }}>$120,000 goal</span>
+            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: parchment }}>${totalRaised.toLocaleString()} raised</span>
+            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: muted }}>${goal.toLocaleString()} goal</span>
           </div>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <span style={{ fontSize: '14px', color: muted }}>0 backers</span>
+            <span style={{ fontSize: '14px', color: muted }}>{backerCount} backer{backerCount !== 1 ? 's' : ''}</span>
           </div>
           <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8, textAlign: 'center' }}>
             Funds will be held in transparent escrow. Milestone-based releases. Full accountability.
