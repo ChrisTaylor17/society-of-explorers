@@ -236,13 +236,13 @@ export default function HomePage() {
       >
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>
-            SOCIETY OF EXPLORERS
+            THE NEW RENAISSANCE
           </div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(42px, 8vw, 72px)', fontWeight: 400, lineHeight: 1.15, marginBottom: '1.5rem', color: parchment }}>
-            AI Relationship OS
+            Become a Renaissance Human
           </h1>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, maxWidth: '600px', margin: '0 auto 2.5rem', fontFamily: 'Cormorant Garamond, serif' }}>
-            Build real relationships with Socrates, Nietzsche, Marcus Aurelius and the great minds. They remember you. They disagree. They help you live better.
+            The greatest minds in history are waiting to train you. Socrates sharpens your thinking. Aurelius steadies your discipline. Nietzsche ignites your ambition. This is the guild where polymaths are made.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a
@@ -276,10 +276,10 @@ export default function HomePage() {
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            Multiple minds. One conversation.
+            Train with the greatest minds
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
-            Socrates, Nietzsche, and Aurelius debate your questions in real time. They disagree. They build on each other. They remember your past conversations.
+            In the Renaissance, artists studied under masters. Now you study under six of history's most powerful thinkers — simultaneously. They debate each other. They remember you. They push you to become more.
           </p>
           <a
             href="/salon"
@@ -399,10 +399,10 @@ export default function HomePage() {
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>MUSIC THERAPY</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            Sound as philosophy
+            The Renaissance was musical
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif' }}>
-            AI-composed soundscapes tuned to your brainwave coherence. Muse S EEG + Polar H10 HRV integration. Music that thinks with you.
+            Lorenzo de' Medici filled Florence with music because he understood: sound shapes the mind. Our AI-composed soundscapes tune to your brainwave coherence, creating the conditions for deep thought.
           </p>
         </div>
       </section>
@@ -412,10 +412,10 @@ export default function HomePage() {
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>SOVEREIGN TRAVEL</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            The world is your campus
+            The Grand Tour, reimagined
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
-            Book with crypto via Travala + Dtravel. Scan rooms with iPhone LiDAR. Earn $EXP. Your travels build the shared metaverse.
+            Renaissance thinkers traveled to learn. Your journeys earn $EXP, build the shared metaverse, and connect you with fellow explorers worldwide. Book with crypto. Scan spaces with LiDAR. Travel sovereign.
           </p>
           <a
             href="/travel"
@@ -436,10 +436,10 @@ export default function HomePage() {
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>THE VISION</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            A living philosophical civilization
+            A civilization worth building
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
-            Physical salons. AI thinkers with memory. Blockchain reputation. Sovereign travel. Music therapy. All connected by $EXP and a shared commitment to human flourishing.
+            The Renaissance happened because a small group of people decided that human potential was worth investing in. We're doing it again — with AI, blockchain, philosophy, and a physical salon at 92B South St, Boston.
           </p>
           <a
             href="/join"
