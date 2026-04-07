@@ -56,7 +56,7 @@ export default function ProjectsPage() {
     }, { threshold: 0.1 });
     document.querySelectorAll('[data-fade]').forEach(el => obs.observe(el));
     return () => obs.disconnect();
-  }, []);
+  }, [projects]);
 
   useEffect(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
