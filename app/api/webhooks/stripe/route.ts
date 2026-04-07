@@ -12,7 +12,7 @@ export const config = { api: { bodyParser: false } };
 
 export async function POST(req: NextRequest) {
   const stripeKey     = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_MERCH;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_MERCH?.trim();
   const printfulKey   = process.env.PRINTFUL_API_KEY;
 
   if (!stripeKey || !webhookSecret || !printfulKey) {

@@ -65,7 +65,7 @@ async function updateMemberTier(email: string, tier: string, stripeCustomerId?: 
 
 export async function POST(req: NextRequest) {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
 
   if (!stripeKey || !webhookSecret) {
     console.error('Missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET');
