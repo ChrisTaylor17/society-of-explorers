@@ -112,8 +112,10 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamText]);
+    if (streaming || streamText) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, streamText, streaming]);
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
