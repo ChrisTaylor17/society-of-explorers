@@ -33,7 +33,7 @@ export default function PublicNav() {
         <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="hide-mobile">
           <a href="/renaissance" style={linkStyle}>Renaissance</a>
           <a href="/experience" style={linkStyle}>Experience</a>
-          <a href="/projects" style={linkStyle}>Projects</a>
+          <a href="/projects" style={{ ...linkStyle, color: gold, opacity: 1 }}>Projects</a>
           <a href="/92b" style={{ ...linkStyle, color: gold, opacity: 1 }}>92B</a>
           <a href="/great-books" style={linkStyle}>Great Books</a>
           <a href="/travel" style={linkStyle}>Travel</a>

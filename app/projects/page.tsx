@@ -8,6 +8,18 @@ const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
+interface Project {
+  id: string;
+  title: string;
+  short_description: string | null;
+  description: string;
+  category: string;
+  funding_goal: number;
+  amount_raised: number;
+  backer_count: number;
+  status: string;
+}
+
 const STEPS = [
   { num: 1, title: 'Propose', desc: 'Any explorer can pitch a project. AI thinkers help refine your idea, challenge your assumptions, and sharpen your pitch.' },
   { num: 2, title: 'Fund', desc: 'Members pledge capital. Smart contracts hold funds in escrow. No middlemen, no banks, no gatekeepers.' },
@@ -21,10 +33,20 @@ const CARDS = [
   { title: 'Living Stories', body: 'Follow founders like a show. Video updates, milestone celebrations, real-time progress. Not boring status reports — compelling narratives.' },
 ];
 
+const CATEGORIES: Record<string, string> = {
+  general: 'GENERAL', physical: 'PHYSICAL', technology: 'TECHNOLOGY',
+  education: 'EDUCATION', art: 'ART', community: 'COMMUNITY',
+};
+
 export default function ProjectsPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [interest, setInterest] = useState('both');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [title, setTitle] = useState('');
+  const [shortDesc, setShortDesc] = useState('');
+  const [desc, setDesc] = useState('');
+  const [category, setCategory] = useState('general');
+  const [fundingGoal, setFundingGoal] = useState('10000');
+  const [pName, setPName] = useState('');
+  const [pEmail, setPEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -45,15 +67,25 @@ export default function ProjectsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(d => setProjects(d.projects || []))
+      .catch(() => {});
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (!title.trim() || !desc.trim() || !pName.trim() || !pEmail.trim()) return;
     setSubmitting(true);
     try {
-      await fetch('/api/projects/interest', {
+      await fetch('/api/projects/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), interest_type: interest }),
+        body: JSON.stringify({
+          title: title.trim(), short_description: shortDesc.trim(), description: desc.trim(),
+          category, funding_goal: fundingGoal, name: pName.trim(), email: pEmail.trim(),
+        }),
       });
       setSubmitted(true);
     } catch {}
@@ -88,34 +120,54 @@ export default function ProjectsPage() {
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, maxWidth: '600px', margin: '0 auto 2.5rem' }}>
             A philosophical funding platform where entrepreneurs find capital, investors find meaning, and smart contracts ensure accountability.
           </p>
-          <div style={{
-            display: 'inline-block', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em',
-            color: gold, border: `1px solid ${gold}55`, padding: '8px 24px', borderRadius: '20px',
-          }}>
-            COMING SOON
-          </div>
+          <a href="#submit" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>SUBMIT A PROJECT</a>
         </div>
       </section>
 
+      {/* ═══ ACTIVE PROJECTS ═══ */}
+      {projects.length > 0 && (
+        <section data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
+          <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>ACTIVE PROJECTS</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1px', background: `${gold}10` }}>
+              {projects.map(p => {
+                const pct = p.funding_goal > 0 ? Math.min((p.amount_raised / p.funding_goal) * 100, 100) : 0;
+                return (
+                  <div key={p.id} style={{ background: '#0d0d0d', padding: '2rem', border: `1px solid rgba(201,168,76,0.15)`, position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '3px 10px', borderRadius: '10px' }}>
+                      {CATEGORIES[p.category] || p.category.toUpperCase()}
+                    </div>
+                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', fontWeight: 400, color: parchment, marginBottom: '0.75rem', paddingRight: '80px' }}>{p.title}</h3>
+                    <p style={{ fontSize: '16px', color: muted, lineHeight: 1.7, marginBottom: '1.5rem' }}>{p.short_description || p.description.slice(0, 120) + '...'}</p>
+                    <div style={{ height: '6px', background: '#1a1a1a', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.5rem' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: gold, borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: muted, marginBottom: '1.5rem' }}>
+                      <span>${p.amount_raised.toLocaleString()} of ${p.funding_goal.toLocaleString()}</span>
+                      <span>{p.backer_count} backer{p.backer_count !== 1 ? 's' : ''}</span>
+                    </div>
+                    <a href={`/projects/${p.id}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '40px', borderRadius: 0 }}>VIEW PROJECT</a>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ═══ HOW IT WORKS ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
+      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.9s ease' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>HOW IT WORKS</div>
           </div>
-
           <div style={{ position: 'relative' }}>
             <div style={{ position: 'absolute', left: '19px', top: '8px', bottom: '8px', width: '1px', background: `${gold}22` }} />
-
             {STEPS.map((item, i) => (
               <div key={item.num} style={{ display: 'flex', gap: '1.5rem', marginBottom: i < STEPS.length - 1 ? '2.5rem' : '0', position: 'relative' }}>
-                <div style={{
-                  width: '40px', height: '40px', flexShrink: 0, background: '#0a0a0a',
-                  border: `1px solid ${gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'Cinzel, serif', fontSize: '12px', color: gold, position: 'relative', zIndex: 1,
-                }}>
-                  {item.num}
-                </div>
+                <div style={{ width: '40px', height: '40px', flexShrink: 0, background: '#0d0d0d', border: `1px solid ${gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '12px', color: gold, position: 'relative', zIndex: 1 }}>{item.num}</div>
                 <div style={{ paddingTop: '4px' }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: parchment, marginBottom: '0.35rem', letterSpacing: '0.08em' }}>{item.title.toUpperCase()}</div>
                   <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>{item.desc}</p>
@@ -126,11 +178,61 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      {/* ═══ WHY THIS MATTERS ═══ */}
+      {/* ═══ SUBMIT YOUR PROJECT ═══ */}
+      <section id="submit" data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <div style={{ maxWidth: '520px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>SUBMIT YOUR PROJECT</div>
+          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '2rem', lineHeight: 1.3 }}>
+            Have something worth building?
+          </h2>
+
+          {submitted ? (
+            <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}08` }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>SUBMISSION RECEIVED</div>
+              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>Your project has been submitted for review. We'll be in touch.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
+              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Project title" required style={inputStyle} />
+              <input value={shortDesc} onChange={e => setShortDesc(e.target.value)} placeholder="One-line description" style={inputStyle} />
+              <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Full description" required rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+              <select value={category} onChange={e => setCategory(e.target.value)} style={{ ...inputStyle, appearance: 'auto' }}>
+                <option value="general">General</option>
+                <option value="physical">Physical Space</option>
+                <option value="technology">Technology</option>
+                <option value="education">Education</option>
+                <option value="art">Art</option>
+                <option value="community">Community</option>
+              </select>
+              <input value={fundingGoal} onChange={e => setFundingGoal(e.target.value)} placeholder="Funding goal ($)" type="number" style={inputStyle} />
+              <input value={pName} onChange={e => setPName(e.target.value)} placeholder="Your name" required style={inputStyle} />
+              <input value={pEmail} onChange={e => setPEmail(e.target.value)} placeholder="Your email" type="email" required style={inputStyle} />
+              <button type="submit" disabled={submitting} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: submitting ? 0.5 : 1, borderRadius: 0 }}>
+                {submitting ? 'SUBMITTING...' : 'SUBMIT PROJECT PROPOSAL'}
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
+
+      {/* ═══ INSPIRATION CARDS ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}10` }}>
+            {CARDS.map(card => (
+              <div key={card.title} style={{ background: '#0d0d0d', padding: '2.5rem 2rem', border: `1px solid rgba(201,168,76,0.15)` }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>{card.title.toUpperCase()}</div>
+                <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>{card.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ WHY THIS MATTERS ═══ */}
+      <section data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
         <div style={{ maxWidth: '680px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '2rem' }}>WHY THIS MATTERS</div>
-
           <p style={{ fontSize: '22px', color: parchment, lineHeight: 1.8, fontStyle: 'italic', marginBottom: '2rem' }}>
             We lost the ability to build great things together. Cathedrals took generations. The pyramids coordinated thousands. Modern bureaucracy killed that spirit.
           </p>
@@ -143,81 +245,16 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      {/* ═══ INSPIRATION CARDS ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            {CARDS.map(card => (
-              <div key={card.title} style={{ background: '#0d0d0d', padding: '2.5rem 2rem', border: `1px solid rgba(201,168,76,0.15)` }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>
-                  {card.title.toUpperCase()}
-                </div>
-                <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>{card.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ EXPRESS INTEREST ═══ */}
+      {/* ═══ CTA ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.9s ease' }}>
-        <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>BE FIRST</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '2rem', lineHeight: 1.3 }}>
-            Want to propose a project or fund one?
+        <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, color: parchment, marginBottom: '1.5rem' }}>
+            The Renaissance needs builders.
           </h2>
-
-          {submitted ? (
-            <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}08` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>YOU'RE ON THE LIST</div>
-              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>
-                We'll reach out when the Projects layer launches. Welcome to the frontier.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
-              <input
-                value={name} onChange={e => setName(e.target.value)}
-                placeholder="Your name" required
-                style={inputStyle}
-              />
-              <input
-                value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="Your email" type="email" required
-                style={inputStyle}
-              />
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 0' }}>
-                {[
-                  { value: 'propose', label: 'I want to propose a project' },
-                  { value: 'fund', label: 'I want to fund projects' },
-                  { value: 'both', label: 'Both' },
-                ].map(opt => (
-                  <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '15px', color: muted }}>
-                    <input
-                      type="radio" name="interest" value={opt.value}
-                      checked={interest === opt.value}
-                      onChange={() => setInterest(opt.value)}
-                      style={{ accentColor: gold }}
-                    />
-                    {opt.label}
-                  </label>
-                ))}
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                style={{
-                  fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-                  color: '#0a0a0a', background: gold, border: 'none', height: '48px',
-                  cursor: 'pointer', opacity: submitting ? 0.5 : 1, borderRadius: 0,
-                }}
-              >
-                {submitting ? 'SUBMITTING...' : 'JOIN THE WAITLIST'}
-              </button>
-            </form>
-          )}
+          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2.5rem' }}>
+            Whether you're proposing a project or funding one, you're part of something that matters.
+          </p>
+          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>BECOME AN EXPLORER</a>
         </div>
       </section>
 

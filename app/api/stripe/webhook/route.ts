@@ -137,6 +137,61 @@ export async function POST(req: NextRequest) {
           break;
         }
 
+        // --- PROJECT PLEDGE HANDLING ---
+        if (session.metadata?.type === 'project_pledge') {
+          const projectId = session.metadata.projectId;
+          const pledgeAmount = parseInt(session.metadata.amount || '0');
+          const pledgeTier = session.metadata.tier;
+          console.log(`[webhook] Project pledge: ${pledgeTier} $${pledgeAmount} for ${projectId} from ${email}`);
+
+          // Increment project funding
+          const { data: project } = await supabaseAdmin.from('projects').select('amount_raised, backer_count').eq('id', projectId).single();
+          if (project) {
+            await supabaseAdmin.from('projects').update({
+              amount_raised: (project.amount_raised || 0) + pledgeAmount,
+              backer_count: (project.backer_count || 0) + 1,
+              updated_at: new Date().toISOString(),
+            }).eq('id', projectId);
+          }
+
+          // Record in founding_interest
+          await supabaseAdmin.from('founding_interest').insert({
+            name: email || 'Unknown',
+            email: email?.toLowerCase() || '',
+            why: `[Project Pledge PAID] ${pledgeTier} - $${pledgeAmount} for project ${projectId}`,
+            created_at: new Date().toISOString(),
+          });
+
+          // Award EXP
+          if (email) {
+            const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+            const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+            if (authUser) {
+              const { data: member } = await supabaseAdmin.from('members').select('id, exp_tokens').eq('supabase_auth_id', authUser.id).single();
+              if (member) {
+                const expBonus = pledgeAmount >= 500 ? 1000 : pledgeAmount >= 100 ? 200 : 50;
+                await supabaseAdmin.from('members').update({ exp_tokens: (member.exp_tokens || 0) + expBonus }).eq('id', member.id);
+                await supabaseAdmin.from('exp_events').insert({ member_id: member.id, amount: expBonus, reason: `Project pledge: ${pledgeTier} for ${projectId}` });
+              }
+            }
+          }
+
+          // Notify Chris
+          if (process.env.RESEND_API_KEY) {
+            try {
+              const { Resend } = await import('resend');
+              const resend = new Resend(process.env.RESEND_API_KEY);
+              await resend.emails.send({
+                from: 'Society of Explorers <notifications@societyofexplorers.com>',
+                to: 'chris@societyofexplorers.com',
+                subject: `Project Pledge: ${pledgeTier} $${pledgeAmount}`,
+                html: `<div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;"><h2 style="color:#c9a84c;">New Project Pledge!</h2><p>Project: ${projectId}</p><p>Tier: ${pledgeTier}</p><p>Amount: $${pledgeAmount}</p><p>Email: ${email}</p></div>`,
+              });
+            } catch {}
+          }
+          break;
+        }
+
         // --- MEMBERSHIP SUBSCRIPTION HANDLING ---
         if (!email) {
           console.warn('checkout.session.completed: no email found');
