@@ -442,9 +442,13 @@ export default function SalonPage() {
     if (voiceMode) { sentenceQueueRef.current = []; ttsBufferRef.current = ''; }
 
     try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
       const res = await fetch('/api/thinker', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authSession?.access_token || ''}`,
+        },
         body: JSON.stringify({
           thinkerId, message: text,
           history: messages.slice(-12), isReaction: false,
