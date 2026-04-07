@@ -68,6 +68,7 @@ interface Member {
   display_name: string;
   exp_tokens: number;
   member_rank: string;
+  tier: string;
 }
 
 interface NFTToken {
@@ -541,7 +542,7 @@ export default function SalonPage() {
 
     if (member) {
       const { data } = await supabase.from('members')
-        .select('exp_tokens,member_rank').eq('id', member.id).single();
+        .select('exp_tokens,member_rank,tier').eq('id', member.id).single();
       if (data) setMember(p => p ? { ...p, ...data } : p);
     }
     setIsLoading(false);
@@ -1065,7 +1066,7 @@ export default function SalonPage() {
         </div>
 
         {/* Free tier banner */}
-        {member && !hasAccess((member as any).tier, 'seeker') && (
+        {member && !hasAccess(member.tier, 'seeker') && (
           <div style={{ padding: '8px 16px', background: 'rgba(197,165,90,0.06)', borderBottom: `1px solid rgba(197,165,90,0.15)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#c9a84c', opacity: 0.7 }}>FREE ACCESS — Upgrade to unlock voice mode, private sessions, and thinker memory</span>
             <a href="/join" style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#000', background: '#c9a84c', padding: '4px 12px', textDecoration: 'none' }}>UPGRADE →</a>
@@ -1207,7 +1208,7 @@ export default function SalonPage() {
             </button>
             <button
               onClick={() => {
-                if (!hasAccess((member as any)?.tier, 'seeker')) { alert('Voice mode requires a Seeker membership. Upgrade at societyofexplorers.com/join'); return; }
+                if (!hasAccess(member?.tier, 'seeker')) { alert('Voice mode requires a Seeker membership. Upgrade at societyofexplorers.com/join'); return; }
                 if (!voiceMode) {
                   const isMetaMaskBrowser = /MetaMaskMobile/i.test(navigator.userAgent) || (typeof (window as any).ethereum !== 'undefined' && /Mobile/i.test(navigator.userAgent) && !/Safari/i.test(navigator.userAgent));
                   if (isMetaMaskBrowser) { alert('Voice mode works best in Safari or Chrome. MetaMask browser has limited mic support — open societyofexplorers.com in Safari for full voice.'); return; }

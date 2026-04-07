@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { createClient } from '@/lib/supabase/client';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
@@ -107,10 +108,19 @@ export default function JoinPage() {
   async function handleCheckout(tier: string) {
     setCheckoutLoading(tier);
     try {
+      // Resolve email from Supabase session so Stripe can pre-fill it
+      // and the webhook can match the payment to the correct member
+      let email: string | undefined;
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        email = user?.email ?? undefined;
+      } catch {}
+
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, email }),
       });
       const data = await res.json();
       if (data.url) {

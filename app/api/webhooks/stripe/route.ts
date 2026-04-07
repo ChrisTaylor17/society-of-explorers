@@ -8,7 +8,7 @@ import Stripe from 'stripe';
 //   STRIPE_WEBHOOK_SECRET_MERCH  (Stripe Dashboard → Webhooks → signing secret)
 //   PRINTFUL_API_KEY
 
-export const config = { api: { bodyParser: false } };
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const stripeKey     = process.env.STRIPE_SECRET_KEY;
