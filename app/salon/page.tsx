@@ -453,6 +453,7 @@ export default function SalonPage() {
           thinkerId, message: text,
           history: messages.slice(-12), isReaction: false,
           walletMemberId: member?.id,
+          memberId: member?.id,
           salonId: currentSalonId,
           councilContext: councilCtx,
         }),

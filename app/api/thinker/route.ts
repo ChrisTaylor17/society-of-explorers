@@ -93,6 +93,18 @@ export async function POST(req: NextRequest) {
         memberContext = buildMemberContext(auth.member);
       }
 
+      // Fallback: accept memberId from request body when cookie/token auth fails
+      if (!memberId && (body.memberId || body.walletMemberId)) {
+        const fallbackId = body.memberId || body.walletMemberId;
+        const { data: m } = await supabaseAdmin.from('members').select(MEMBER_SELECT).eq('id', fallbackId).single();
+        if (m) {
+          memberId = m.id;
+          memberName = m.display_name;
+          memberExpTokens = m.exp_tokens || 0;
+          memberContext = buildMemberContext(m);
+        }
+      }
+
       if (!memberId) {
         return new Response(
           JSON.stringify({ error: 'Unauthorized' }),
