@@ -98,6 +98,7 @@ export default function HomePage() {
     const stored = loadDemoMessages();
     setMessages(stored);
     if (countUserMessages(stored) >= DEMO_LIMIT) setGated(true);
+    window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
