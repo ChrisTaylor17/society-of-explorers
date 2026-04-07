@@ -415,9 +415,20 @@ export default function HomePage() {
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
             The Renaissance was musical
           </h2>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif' }}>
+          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
             Lorenzo de' Medici filled Florence with music because he understood: sound shapes the mind. Our AI-composed soundscapes tune to your brainwave coherence, creating the conditions for deep thought.
           </p>
+          <a
+            href="/music-therapy"
+            style={{
+              fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
+              color: '#0a0a0a', background: gold, padding: '0 28px',
+              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+              height: '48px', borderRadius: 0,
+            }}
+          >
+            EXPERIENCE MUSIC THERAPY
+          </a>
         </div>
       </section>
 
