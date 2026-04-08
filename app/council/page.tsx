@@ -143,9 +143,25 @@ export default function CouncilPage() {
             const evt = JSON.parse(line.slice(6));
             if (evt.delta) {
               responseFullText += evt.delta;
+              // Strip |||ACTIONS||| from streaming display
+              const displayText = responseFullText.split('|||ACTIONS|||')[0].trim();
               setMessages(prev => prev.map(m =>
-                m.id === streamId ? { ...m, content: responseFullText } : m
+                m.id === streamId ? { ...m, content: displayText } : m
               ));
+            } else if (evt.type === 'actions' && evt.actions?.length > 0) {
+              // Show action badges
+              for (const action of evt.actions) {
+                const labels: Record<string, string> = {
+                  create_task: 'Task created', save_note: 'Note saved',
+                  update_goal: 'Goal updated', award_exp: 'EXP awarded',
+                  check_exp: 'EXP checked',
+                };
+                setToast(`\u2713 ${labels[action.type] || 'Action taken'}`);
+              }
+            } else if (evt.action === 'exp_balance') {
+              setToast(`Your $EXP: ${evt.value.toLocaleString()}`);
+            } else if (evt.action === 'exp_awarded') {
+              setToast(`+${evt.amount} $EXP: ${evt.reason}`);
             } else if (evt.done && evt.response) {
               const clean = evt.response.split('|||ACTIONS|||')[0]
                 .replace(/^\[[\w-]+\]:\s*/i, '')

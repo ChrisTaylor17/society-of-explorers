@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
 );
 
 const DIRECT_MAX_TOKENS = 600;
-const COUNCIL_MAX_TOKENS = 400;
+const COUNCIL_MAX_TOKENS = 300;
 const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
@@ -174,7 +174,8 @@ export async function POST(req: NextRequest) {
     let systemPrompt = buildSystemPrompt(thinkerId);
     if (isCouncilMode) {
       // In council mode, strip most PROJECT_KNOWLEDGE — focus on the member's question
-      systemPrompt = systemPrompt.slice(0, 500) + '\n...[Council Mode: focus on the member\'s question, not internal details]';
+      systemPrompt = 'CRITICAL: Your response MUST be under 150 words. 2-3 short paragraphs max. No asterisk stage directions. No theatrical narration. Direct speech only.\n\n' +
+        systemPrompt.slice(0, 500) + '\n...[Council Mode: focus on the member\'s question, not internal details]';
     } else if (systemPrompt.length > 2000) {
       systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
     }
@@ -331,6 +332,13 @@ export async function POST(req: NextRequest) {
               for (const action of actions) {
                 try {
                   await executeThinkerAction(action, memberId, thinkerId);
+                  // Emit special SSE events for crypto actions
+                  if (action.type === 'check_exp' && action.data.result !== undefined) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ action: 'exp_balance', value: action.data.result })}\n\n`));
+                  }
+                  if (action.type === 'award_exp') {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ action: 'exp_awarded', amount: action.data.amount, reason: action.data.reason })}\n\n`));
+                  }
                 } catch (e) {
                   console.error('Action execution failed:', action.type, e);
                 }

@@ -90,6 +90,31 @@ export async function executeThinkerAction(
       });
       break;
 
+    case 'check_exp': {
+      const { data: member } = await supabaseAdmin
+        .from('members').select('exp_tokens').eq('id', memberId).single();
+      // Store result in action data for SSE emission
+      action.data.result = member?.exp_tokens || 0;
+      break;
+    }
+
+    case 'award_exp': {
+      const amount = parseInt(action.data.amount) || 0;
+      if (amount > 0 && amount <= 500) {
+        const { data: member } = await supabaseAdmin
+          .from('members').select('exp_tokens').eq('id', memberId).single();
+        await supabaseAdmin.from('members')
+          .update({ exp_tokens: (member?.exp_tokens || 0) + amount })
+          .eq('id', memberId);
+        await supabaseAdmin.from('exp_events').insert({
+          member_id: memberId,
+          amount,
+          reason: action.data.reason || `Awarded by ${thinkerId}`,
+        });
+      }
+      break;
+    }
+
     default:
       console.warn('Unknown thinker action:', action.type);
   }
