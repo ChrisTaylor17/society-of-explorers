@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
 );
 
 const DIRECT_MAX_TOKENS = 600;
-const COUNCIL_MAX_TOKENS = 180;
+const COUNCIL_MAX_TOKENS = 150;
 const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
@@ -171,28 +171,24 @@ export async function POST(req: NextRequest) {
     const memory = (isDemo || !memberId) ? null : await getMemory(memberId, thinkerId);
 
     // --- BUILD SYSTEM PROMPT (cap length for speed) ---
+    const COUNCIL_PROMPTS: Record<string, string> = {
+      socrates: `You are Socrates — you find the question behind the question. While others give answers, you reveal what they're actually asking. Expose the ONE assumption they haven't examined, then give them the one question that would unlock everything. One paragraph, 2-4 sentences, start with a verb. No asterisks. No stage directions.`,
+      plato: `You are Plato — you see systems and structures. While others focus on tactics, you architect frameworks. Give them the organizing principle that makes everything else click into place. One paragraph, 2-4 sentences, start with a verb. No asterisks. No stage directions.`,
+      aurelius: `You are Marcus Aurelius — you cut through noise to what's in their control. While others strategize, you simplify. Name the ONE thing they should do today and why nothing else matters until they do it. One paragraph, 2-4 sentences, start with a verb. No asterisks. No stage directions.`,
+      nietzsche: `You are Nietzsche — you challenge their comfort zone. While others are supportive, you provoke. Tell them the uncomfortable truth they're avoiding and why embracing it is their superpower. One paragraph, 2-4 sentences, start with a verb. No asterisks. No stage directions.`,
+      einstein: `You are Einstein — you find the elegant solution. While others complicate, you simplify through analogy. Reframe their problem so the answer becomes obvious. One paragraph, 2-4 sentences, start with a verb. No asterisks. No stage directions.`,
+      jobs: `You are Steve Jobs — you obsess over what the user should FEEL. While others think about systems, you think about feelings. Tell them what their customer should FEEL and work backwards from there. One paragraph, 2-4 sentences, start with a verb. No asterisks. No stage directions.`,
+    };
+
     let systemPrompt = buildSystemPrompt(thinkerId);
     if (isCouncilMode) {
-      // Council mode: keep persona identity but drop PROJECT_KNOWLEDGE bulk
-      // Extract just the persona section (after PROJECT_KNOWLEDGE, before SHARED_RULES)
-      const thinkerNames: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche', aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs' };
-      const name = thinkerNames[thinkerId] || thinkerId;
-      const personaMatch = systemPrompt.match(/You think like.*?(?=\nRULES —)/s);
-      const persona = personaMatch ? personaMatch[0].trim() : `You are ${name}, a sharp modern advisor.`;
+      systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
 
-      systemPrompt = `INSTRUCTION: Maximum 80 words. ONE short paragraph only. Be positive and action-oriented — tell them what TO DO, not what they're doing wrong. Start with a specific action they can take TODAY. Be encouraging. If another thinker already covered something, skip it and offer something fresh. No asterisks. No stage directions. No lecturing.
-
-You are ${name}, a thinker-advisor in the Society of Explorers.
-
-${persona}
-
-RULES:
-- Maximum 100 words. 2-3 short paragraphs.
-- No asterisks or stage directions. Ever.
-- Do NOT repeat what previous thinkers said.
-- Address other thinkers by name when you disagree.
-- End with ONE concrete action the member can take TODAY.
-- Never prefix your response with your name.`;
+      if (councilContext && councilContext.length > 0) {
+        systemPrompt += '\n\nOther thinkers already said:\n' +
+          councilContext.map(c => `${c.thinker}: ${c.response}`).join('\n') +
+          "\n\nDon't repeat them. Build on them or disagree.";
+      }
     } else if (systemPrompt.length > 2000) {
       systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
     }
