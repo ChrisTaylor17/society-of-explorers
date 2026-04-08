@@ -259,7 +259,7 @@ export default function HomePage() {
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a
-              href="/salon"
+              href="/council"
               style={{
                 fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
                 color: '#0a0a0a', background: gold, padding: '0 28px',
@@ -267,7 +267,7 @@ export default function HomePage() {
                 height: '48px', borderRadius: 0,
               }}
             >
-              ENTER THE SALON
+              TRY COUNCIL MODE
             </a>
             <a
               href="/join"
