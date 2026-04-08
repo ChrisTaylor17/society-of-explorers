@@ -173,9 +173,26 @@ export async function POST(req: NextRequest) {
     // --- BUILD SYSTEM PROMPT (cap length for speed) ---
     let systemPrompt = buildSystemPrompt(thinkerId);
     if (isCouncilMode) {
-      // In council mode, strip most PROJECT_KNOWLEDGE — focus on the member's question
-      systemPrompt = 'INSTRUCTION: Respond in EXACTLY 2-3 short paragraphs. Maximum 100 words total. No asterisks. No stage directions. No *actions in asterisks*. Speak directly.\n\n' +
-        systemPrompt.slice(0, 500) + '\n...[Council Mode: focus on the member\'s question, not internal details]';
+      // Council mode: keep persona identity but drop PROJECT_KNOWLEDGE bulk
+      // Extract just the persona section (after PROJECT_KNOWLEDGE, before SHARED_RULES)
+      const thinkerNames: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche', aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs' };
+      const name = thinkerNames[thinkerId] || thinkerId;
+      const personaMatch = systemPrompt.match(/You think like.*?(?=\nRULES —)/s);
+      const persona = personaMatch ? personaMatch[0].trim() : `You are ${name}, a sharp modern advisor.`;
+
+      systemPrompt = `INSTRUCTION: Respond in EXACTLY 2-3 short paragraphs. Maximum 100 words total. No asterisks. No stage directions like *leans forward*. No narrating your own actions. Speak directly in plain modern English.
+
+You are ${name}, a thinker-advisor in the Society of Explorers.
+
+${persona}
+
+RULES:
+- Maximum 100 words. 2-3 short paragraphs.
+- No asterisks or stage directions. Ever.
+- Do NOT repeat what previous thinkers said.
+- Address other thinkers by name when you disagree.
+- End with ONE concrete action the member can take TODAY.
+- Never prefix your response with your name.`;
     } else if (systemPrompt.length > 2000) {
       systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
     }
@@ -258,6 +275,8 @@ export async function POST(req: NextRequest) {
     } else {
       fullSystemPrompt += '\n\nThis is a brief demo conversation. Be concise and engaging. End your response by subtly inviting deeper exploration — the full Society experience awaits.';
     }
+
+    console.log('[thinker] system prompt length:', fullSystemPrompt.length, 'first 200 chars:', fullSystemPrompt.slice(0, 200));
 
     // --- STREAM RESPONSE ---
     const encoder = new TextEncoder();
