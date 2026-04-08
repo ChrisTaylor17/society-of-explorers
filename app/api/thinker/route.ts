@@ -172,7 +172,10 @@ export async function POST(req: NextRequest) {
 
     // --- BUILD SYSTEM PROMPT (cap length for speed) ---
     let systemPrompt = buildSystemPrompt(thinkerId);
-    if (systemPrompt.length > 2000) {
+    if (isCouncilMode) {
+      // In council mode, strip most PROJECT_KNOWLEDGE — focus on the member's question
+      systemPrompt = systemPrompt.slice(0, 500) + '\n...[Council Mode: focus on the member\'s question, not internal details]';
+    } else if (systemPrompt.length > 2000) {
       systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
     }
 

@@ -295,7 +295,7 @@ export default function HomePage() {
             In the Renaissance, artists studied under masters. Now you study under six of history's most powerful thinkers — simultaneously. They debate each other. They remember you. They push you to become more.
           </p>
           <a
-            href="/council-preview"
+            href="/council"
             style={{
               fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
               color: '#0a0a0a', background: gold, padding: '0 28px',
