@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
 );
 
 const DIRECT_MAX_TOKENS = 600;
-const COUNCIL_MAX_TOKENS = 300;
+const COUNCIL_MAX_TOKENS = 250;
 const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
     let systemPrompt = buildSystemPrompt(thinkerId);
     if (isCouncilMode) {
       // In council mode, strip most PROJECT_KNOWLEDGE — focus on the member's question
-      systemPrompt = 'CRITICAL: Your response MUST be under 150 words. 2-3 short paragraphs max. No asterisk stage directions. No theatrical narration. Direct speech only.\n\n' +
+      systemPrompt = 'INSTRUCTION: Respond in EXACTLY 2-3 short paragraphs. Maximum 100 words total. No asterisks. No stage directions. No *actions in asterisks*. Speak directly.\n\n' +
         systemPrompt.slice(0, 500) + '\n...[Council Mode: focus on the member\'s question, not internal details]';
     } else if (systemPrompt.length > 2000) {
       systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
