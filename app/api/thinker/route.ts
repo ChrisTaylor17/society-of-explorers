@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
 );
 
 const DIRECT_MAX_TOKENS = 600;
-const COUNCIL_MAX_TOKENS = 250;
+const COUNCIL_MAX_TOKENS = 180;
 const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
       const personaMatch = systemPrompt.match(/You think like.*?(?=\nRULES —)/s);
       const persona = personaMatch ? personaMatch[0].trim() : `You are ${name}, a sharp modern advisor.`;
 
-      systemPrompt = `INSTRUCTION: Respond in EXACTLY 2-3 short paragraphs. Maximum 100 words total. No asterisks. No stage directions like *leans forward*. No narrating your own actions. Speak directly in plain modern English.
+      systemPrompt = `INSTRUCTION: Maximum 80 words. ONE short paragraph only. Be positive and action-oriented — tell them what TO DO, not what they're doing wrong. Start with a specific action they can take TODAY. Be encouraging. If another thinker already covered something, skip it and offer something fresh. No asterisks. No stage directions. No lecturing.
 
 You are ${name}, a thinker-advisor in the Society of Explorers.
 
