@@ -5,16 +5,8 @@
       "schedule": "0 7 * * *"
     },
     {
-      "path": "/api/twiddle/cron",
-      "schedule": "0 13 * * *"
-    },
-    {
       "path": "/api/email/weekly-provocation",
       "schedule": "0 14 * * 1"
-    },
-    {
-      "path": "/api/cron/proactive",
-      "schedule": "0 */2 * * *"
     }
   ]
 }
