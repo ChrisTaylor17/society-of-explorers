@@ -46,11 +46,20 @@ export default function CouncilPage() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDesc, setTaskDesc] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+  const [onboarded, setOnboarded] = useState(true); // assume true, check on mount
+  const [onboardStep, setOnboardStep] = useState(0);
+  const [obBuilding, setObBuilding] = useState('');
+  const [obChallenge, setObChallenge] = useState('');
+  const [obSuccess, setObSuccess] = useState('');
+  const [obBackground, setObBackground] = useState('');
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('soe_onboarded')) {
+      setOnboarded(false);
+    }
     async function loadAuth() {
       try {
         const session = await getMemberSession();
@@ -206,6 +215,23 @@ export default function CouncilPage() {
     inputRef.current?.focus();
   }, [input, isStreaming, selectedThinkers, streamThinkerResponse]);
 
+  function completeOnboarding(skip?: boolean) {
+    localStorage.setItem('soe_onboarded', 'true');
+    setOnboarded(true);
+    if (!skip && (obBuilding || obChallenge || obSuccess || obBackground)) {
+      const contextMsg = `Here's my context: I'm building ${obBuilding || 'something new'}. My biggest challenge is ${obChallenge || 'figuring out next steps'}. In 90 days, success means ${obSuccess || 'meaningful progress'}. Background: ${obBackground || 'varied experience'}. Given all this — what should I focus on first?`;
+      // Save to member profile if logged in
+      if (memberId) {
+        fetch('/api/members/onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId, answers: { building: obBuilding, challenge: obChallenge, success: obSuccess, background: obBackground } }),
+        }).catch(() => {});
+      }
+      send(contextMsg);
+    }
+  }
+
   async function handleCreateTask(e: React.FormEvent) {
     e.preventDefault();
     if (!taskTitle.trim()) return;
@@ -277,7 +303,59 @@ export default function CouncilPage() {
 
       {/* Chat Area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {messages.length === 0 && (
+        {messages.length === 0 && !onboarded && (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', maxWidth: '480px', margin: 'auto' }}>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>
+            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.3 }}>
+              Before we begin — tell us about yourself.
+            </h2>
+            <p style={{ fontSize: '15px', color: muted, lineHeight: 1.7, marginBottom: '2rem' }}>The thinkers will remember everything you share.</p>
+
+            {onboardStep === 0 && (
+              <div>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What are you building?</p>
+                <input value={obBuilding} onChange={e => setObBuilding(e.target.value)} placeholder="A SaaS product, a community, a book..."
+                  style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
+                  onKeyDown={e => { if (e.key === 'Enter') setOnboardStep(1); }} />
+              </div>
+            )}
+            {onboardStep === 1 && (
+              <div>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What's your biggest challenge right now?</p>
+                <input value={obChallenge} onChange={e => setObChallenge(e.target.value)} placeholder="Finding customers, raising capital..."
+                  style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
+                  onKeyDown={e => { if (e.key === 'Enter') setOnboardStep(2); }} />
+              </div>
+            )}
+            {onboardStep === 2 && (
+              <div>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What does success look like in 90 days?</p>
+                <input value={obSuccess} onChange={e => setObSuccess(e.target.value)} placeholder="10 paying customers, MVP launched..."
+                  style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
+                  onKeyDown={e => { if (e.key === 'Enter') setOnboardStep(3); }} />
+              </div>
+            )}
+            {onboardStep === 3 && (
+              <div>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What's your background?</p>
+                <input value={obBackground} onChange={e => setObBackground(e.target.value)} placeholder="Engineer, designer, MBA dropout..."
+                  style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
+                  onKeyDown={e => { if (e.key === 'Enter') completeOnboarding(); }} />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '0.5rem' }}>
+              {onboardStep < 3 ? (
+                <button onClick={() => setOnboardStep(s => s + 1)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', padding: '0 24px', height: '44px', cursor: 'pointer', borderRadius: 0 }}>NEXT</button>
+              ) : (
+                <button onClick={() => completeOnboarding()} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', padding: '0 24px', height: '44px', cursor: 'pointer', borderRadius: 0 }}>START</button>
+              )}
+              <button onClick={() => completeOnboarding(true)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: muted, background: 'none', border: 'none', cursor: 'pointer' }}>SKIP</button>
+            </div>
+          </div>
+        )}
+
+        {messages.length === 0 && onboarded && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem', maxWidth: '520px', margin: 'auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem', lineHeight: 1.3 }}>

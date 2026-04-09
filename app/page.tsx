@@ -39,7 +39,7 @@ const SECTIONS = [
     heading: 'Multiple minds. One conversation.',
     body: 'Socrates, Nietzsche, and Aurelius debate your questions in real time. They disagree. They build on each other. They remember your past conversations.',
     cta: 'TRY COUNCIL MODE',
-    href: '/salon',
+    href: '/council',
   },
   {
     id: 'music',
