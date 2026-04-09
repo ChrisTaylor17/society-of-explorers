@@ -49,6 +49,7 @@ export default function CouncilPage() {
   const [taskDesc, setTaskDesc] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [lastVerdictUrl, setLastVerdictUrl] = useState<string | null>(null);
+  const [verdictLoading, setVerdictLoading] = useState(false);
   const [onboarded, setOnboarded] = useState(true); // assume true, check on mount
   const [onboardStep, setOnboardStep] = useState(0);
   const [obBuilding, setObBuilding] = useState('');
@@ -288,7 +289,45 @@ export default function CouncilPage() {
     setShowTaskForm(false);
   }
 
+  async function handleShareVerdict() {
+    const thinkerMessages = messages.filter(m => m.role === 'thinker' && m.content);
+    if (thinkerMessages.length < 2) return;
+
+    // Find the last user question
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    const question = lastUserMsg?.content || '';
+
+    const responses = thinkerMessages.map(m => ({
+      thinker: m.thinkerName || m.thinkerKey || 'Unknown',
+      response: m.content,
+    }));
+
+    setVerdictLoading(true);
+    try {
+      const res = await fetch('/api/council/verdict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: `council-${Date.now()}`,
+          question,
+          responses,
+          memberId: memberId || null,
+        }),
+      });
+      const data = await res.json();
+      const url = data.publicUrl || `https://www.societyofexplorers.com/council/verdict/${data.slug}`;
+      setLastVerdictUrl(url);
+      await navigator.clipboard.writeText(url);
+      setToast('Verdict link copied!');
+    } catch {
+      setToast('Failed to generate verdict');
+    } finally {
+      setVerdictLoading(false);
+    }
+  }
+
   const activeThinkerCount = selectedThinkers.size;
+  const thinkerResponseCount = messages.filter(m => m.role === 'thinker' && m.content).length;
   const showSignInBanner = !memberId && exchangeCount >= 3;
 
   return (
@@ -472,6 +511,14 @@ export default function CouncilPage() {
       {/* Action Bar */}
       {messages.length > 0 && !showTaskForm && (
         <div style={{ flexShrink: 0, padding: '6px 16px', background: '#0a0a0a', borderTop: `1px solid ${gold}08`, display: 'flex', gap: '16px', justifyContent: 'center' }}>
+          {thinkerResponseCount >= 2 && (
+            <button onClick={handleShareVerdict} disabled={verdictLoading}
+              style={{ background: 'none', border: 'none', cursor: verdictLoading ? 'wait' : 'pointer', color: lastVerdictUrl ? `${gold}ee` : `${gold}88`, fontSize: '10px', letterSpacing: '0.15em', fontFamily: 'Cinzel, serif', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = gold} onMouseLeave={e => e.currentTarget.style.color = lastVerdictUrl ? `${gold}ee` : `${gold}88`}>
+              {verdictLoading ? '...' : lastVerdictUrl ? '\u2705' : '\ud83d\udcf8'}{' '}
+              {verdictLoading ? 'GENERATING...' : lastVerdictUrl ? 'LINK COPIED' : 'SHARE VERDICT'}
+            </button>
+          )}
           <button onClick={() => setShowTaskForm(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: muted, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'Cinzel, serif', letterSpacing: '0.08em' }}
             onMouseEnter={e => e.currentTarget.style.color = gold} onMouseLeave={e => e.currentTarget.style.color = muted}>
             <span>&#128203;</span> CREATE TASK
@@ -482,12 +529,6 @@ export default function CouncilPage() {
           <span style={{ color: `${muted}44`, fontSize: '12px', cursor: 'default' }} title="Coming soon">
             <span>&#128231;</span> <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.08em' }}>DRAFT EMAIL</span>
           </span>
-          {lastVerdictUrl && (
-            <button onClick={() => { navigator.clipboard.writeText(lastVerdictUrl); setToast('Verdict link copied!'); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: gold, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'Cinzel, serif', letterSpacing: '0.08em' }}>
-              <span>&#128279;</span> SHARE VERDICT
-            </button>
-          )}
         </div>
       )}
 
