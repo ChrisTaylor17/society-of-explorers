@@ -5,7 +5,8 @@ import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
 import { parseActions, executeThinkerAction } from '@/lib/thinkerActions';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
-import { retrieveRelevantMemory, retrieveCrossThinkerMemory, storeConversationEmbedding } from '@/lib/memory/embeddings';
+import { storeConversationEmbedding } from '@/lib/memory/embeddings';
+import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -230,39 +231,15 @@ export async function POST(req: NextRequest) {
         fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference specific facts, commitments, and past conversations. If they committed to something, ask about progress. If they shared a struggle, check in. You are continuing a relationship — not starting from scratch.`;
       }
 
-      // Vector memory: semantic search over past conversations
+      // 4-layer shared memory: profile + semantic facts + episodes + persona lens
       if (memberId && !isReaction) {
         try {
-          const [sameResults, crossResults] = await Promise.all([
-            retrieveRelevantMemory({ memberId, thinkerKey: thinkerId, query: message, topK: 5 }),
-            retrieveCrossThinkerMemory({ memberId, currentThinkerKey: thinkerId, query: message, topK: 3 }),
-          ]);
-
-          const thinkerNames: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche', aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs' };
-          let contextBlock = '';
-
-          if (sameResults.length > 0) {
-            const lines = sameResults.map(r => {
-              const date = new Date(r.conversation_date).toLocaleDateString();
-              return `- ${date}: ${r.content.slice(0, 120)}`;
-            }).join('\n');
-            contextBlock += `[From your past conversations with this member:]\n${lines}`;
-          }
-
-          if (crossResults.length > 0) {
-            const lines = crossResults.map(r => {
-              const date = new Date(r.conversation_date).toLocaleDateString();
-              const name = thinkerNames[r.thinker_key] || r.thinker_key;
-              return `- ${date} with ${name}: ${r.content.slice(0, 120)}`;
-            }).join('\n');
-            contextBlock += `\n\n[From their conversations with other thinkers:]\n${lines}`;
-          }
-
-          if (contextBlock) {
-            fullSystemPrompt += `\n\n<RELEVANT_PAST_CONTEXT>\n${contextBlock}\n</RELEVANT_PAST_CONTEXT>`;
+          const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: isCouncilMode });
+          if (sharedContext) {
+            fullSystemPrompt += '\n\n' + sharedContext;
           }
         } catch (err) {
-          console.error('[thinker] Vector memory lookup failed:', err);
+          console.error('[thinker] Shared memory lookup failed:', err);
         }
       }
 
@@ -392,11 +369,21 @@ export async function POST(req: NextRequest) {
               recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
                 .catch(err => console.error('Memory update failed:', err));
 
-              // Store embeddings for vector memory (fire and forget)
-              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'user', content: message })
-                .catch(() => {});
-              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'assistant', content: cleanText })
-                .catch(() => {});
+              // Store embeddings + episodes for memory (fire and forget)
+              const sessionId = `${isCouncilMode ? 'council' : 'salon'}-${salonId}-${Date.now()}`;
+              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'user', content: message }).catch(() => {});
+              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'assistant', content: cleanText }).catch(() => {});
+              storeEpisode({ memberId, thinkerId, role: 'user', content: message, sessionId, isCouncil: isCouncilMode }).catch(() => {});
+              storeEpisode({ memberId, thinkerId, role: 'assistant', content: cleanText, sessionId, isCouncil: isCouncilMode }).catch(() => {});
+
+              // Trigger memory extraction every 4 messages in council, 8 in salon
+              const extractInterval = isCouncilMode ? 4 : 8;
+              if (memberExpTokens > 0 && (memberExpTokens % extractInterval === 0)) {
+                extractMemory(memberId, [
+                  { role: 'user', content: message, thinker_id: thinkerId },
+                  { role: 'assistant', content: cleanText, thinker_id: thinkerId },
+                ]).catch(() => {});
+              }
             }
           }
 

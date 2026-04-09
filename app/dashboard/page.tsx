@@ -99,6 +99,7 @@ export default function ExplorerDashboard() {
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const hasCheckedWelcomeRef = useRef(false);
+  const [briefing, setBriefing] = useState<any>(null);
 
   useEffect(() => {
     import('@/lib/auth/getSession').then(({ getMemberSession }) => {
@@ -144,6 +145,11 @@ export default function ExplorerDashboard() {
         }
 
         setLoading(false);
+
+        // Fetch morning briefing data
+        fetch('/api/dashboard/briefing').then(r => r.json()).then(d => {
+          if (!d.error) setBriefing(d);
+        }).catch(() => {});
       });
     });
   }, [router]);
@@ -199,6 +205,43 @@ export default function ExplorerDashboard() {
         </h1>
         <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic' }}>Your explorer home base.</p>
       </section>
+
+      {/* ═══ MORNING BRIEFING ═══ */}
+      {briefing && (
+        <section data-fade style={{ padding: '0 2rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+          <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+            {/* Context line */}
+            {briefing.profile?.active_goals?.length > 0 && (
+              <p style={{ fontSize: '15px', color: muted, textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic' }}>
+                {briefing.profile.active_goals.length} active goal{briefing.profile.active_goals.length !== 1 ? 's' : ''}.
+                {briefing.profile.pending_commitments?.length > 0 && ` ${briefing.profile.pending_commitments.length} commitment${briefing.profile.pending_commitments.length !== 1 ? 's' : ''} pending.`}
+              </p>
+            )}
+
+            {/* Proactive check-ins */}
+            {briefing.triggers.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>COUNCIL CHECK-INS</div>
+                {briefing.triggers.map((t: any) => (
+                  <div key={t.id} style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1rem 1.25rem', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: gold }}>{(t.suggested_thinker || '').toUpperCase()}</span>
+                      <p style={{ fontSize: '14px', color: parchment, lineHeight: 1.6, margin: '4px 0 0' }}>{t.message_sent || t.context_summary}</p>
+                    </div>
+                    <a href="/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: '#0a0a0a', background: gold, padding: '6px 14px', textDecoration: 'none', flexShrink: 0 }}>RESPOND</a>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Quick actions */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <a href="/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '10px 20px', textDecoration: 'none' }}>ASK THE COUNCIL</a>
+              <a href="/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '10px 20px', textDecoration: 'none' }}>REVIEW MY GOALS</a>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ═══ STATS ROW ═══ */}
       <section data-fade style={{ padding: '1rem 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>

@@ -46,6 +46,7 @@ export default function CouncilPage() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDesc, setTaskDesc] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+  const [lastVerdictUrl, setLastVerdictUrl] = useState<string | null>(null);
   const [onboarded, setOnboarded] = useState(true); // assume true, check on mount
   const [onboardStep, setOnboardStep] = useState(0);
   const [obBuilding, setObBuilding] = useState('');
@@ -213,7 +214,26 @@ export default function CouncilPage() {
     setIsStreaming(false);
     setExchangeCount(prev => prev + 1);
     inputRef.current?.focus();
-  }, [input, isStreaming, selectedThinkers, streamThinkerResponse]);
+
+    // Auto-generate verdict card (fire and forget)
+    if (councilCtx.length >= 2) {
+      fetch('/api/council/verdict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: `council-${Date.now()}`,
+          question: text,
+          responses: councilCtx,
+          memberId,
+        }),
+      }).then(r => r.json()).then(d => {
+        if (d.publicUrl) {
+          setLastVerdictUrl(d.publicUrl);
+          setToast('Verdict card generated');
+        }
+      }).catch(() => {});
+    }
+  }, [input, isStreaming, selectedThinkers, streamThinkerResponse, memberId]);
 
   function completeOnboarding(skip?: boolean) {
     localStorage.setItem('soe_onboarded', 'true');
@@ -444,6 +464,12 @@ export default function CouncilPage() {
           <span style={{ color: `${muted}44`, fontSize: '12px', cursor: 'default' }} title="Coming soon">
             <span>&#128231;</span> <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.08em' }}>DRAFT EMAIL</span>
           </span>
+          {lastVerdictUrl && (
+            <button onClick={() => { navigator.clipboard.writeText(lastVerdictUrl); setToast('Verdict link copied!'); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: gold, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'Cinzel, serif', letterSpacing: '0.08em' }}>
+              <span>&#128279;</span> SHARE VERDICT
+            </button>
+          )}
         </div>
       )}
 
