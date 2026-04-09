@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { initializeRolesForCommunity } from '@/lib/governance/hats';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
   }
 
   await supabase.from('community_members').insert({ community_id: community.id, member_id: memberId, role: 'owner' });
+
+  // Initialize governance roles
+  await initializeRolesForCommunity(community.id, memberId);
 
   return NextResponse.json({ community });
 }

@@ -8,6 +8,7 @@ import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { storeConversationEmbedding } from '@/lib/memory/embeddings';
 import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
 import { getCommunityThinkerPrompts } from '@/lib/community/getCommunity';
+import { checkPermission } from '@/lib/governance/hats';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -128,6 +129,14 @@ export async function POST(req: NextRequest) {
           JSON.stringify({ error: 'Unauthorized' }),
           { status: 401, headers: { 'Content-Type': 'application/json' } }
         );
+      }
+    }
+
+    // Permission check for non-default communities
+    if (memberId && communitySlug !== 'society-of-explorers' && !isDemo) {
+      const canUseCouncil = await checkPermission(memberId, communitySlug, 'use_council');
+      if (!canUseCouncil) {
+        return new Response(JSON.stringify({ error: 'You do not have council access in this community' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
       }
     }
 

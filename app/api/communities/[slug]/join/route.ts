@@ -17,5 +17,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   if (existing) return NextResponse.json({ success: true, already_member: true });
 
   await supabase.from('community_members').insert({ community_id: community.id, member_id: memberId, role: 'member' });
+
+  // Assign the member role
+  const { data: memberRole } = await supabase.from('community_roles').select('id').eq('community_id', community.id).eq('role_key', 'member').single();
+  if (memberRole) {
+    await supabase.from('community_members').update({ role_id: memberRole.id }).eq('community_id', community.id).eq('member_id', memberId);
+  }
+
   return NextResponse.json({ success: true });
 }

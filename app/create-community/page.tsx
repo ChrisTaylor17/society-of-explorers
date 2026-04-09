@@ -169,6 +169,15 @@ export default function CreateCommunityPage() {
                 <p style={{ fontSize: '15px', color: gold, marginBottom: '1rem' }}>societyofexplorers.com/c/{slug}</p>
                 <p style={{ fontSize: '14px', color: muted, marginBottom: '4px' }}>Thinkers</p>
                 <p style={{ fontSize: '15px', color: parchment }}>{useDefaults ? 'Default Council (6 thinkers)' : `${customThinkers.length} custom thinkers`}</p>
+                <p style={{ fontSize: '14px', color: muted, marginTop: '1rem', marginBottom: '4px' }}>Governance</p>
+                <div style={{ fontSize: '13px', color: muted, lineHeight: 1.6 }}>
+                  Default roles will be created:<br />
+                  &bull; Owner (you) — full control<br />
+                  &bull; Admin — manage thinkers, members, branding<br />
+                  &bull; Moderator — moderate content<br />
+                  &bull; Member — use the council<br />
+                  <span style={{ fontSize: '12px', color: `${muted}88`, display: 'block', marginTop: '4px' }}>Customize from the Governance tab after creation.</span>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setStep(1)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '48px', cursor: 'pointer' }}>BACK</button>
