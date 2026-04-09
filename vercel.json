@@ -7,6 +7,14 @@
     {
       "path": "/api/email/weekly-provocation",
       "schedule": "0 14 * * 1"
+    },
+    {
+      "path": "/api/cron/create-live-session",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/proactive",
+      "schedule": "0 */2 * * *"
     }
   ]
 }
