@@ -21,7 +21,7 @@ export async function getThinkerContext(
   memberId: string,
   thinkerId: string,
   userMessage: string,
-  options: { isCouncil?: boolean; maxTokens?: number } = {}
+  options: { isCouncil?: boolean; maxTokens?: number; communitySlug?: string } = {}
 ): Promise<string> {
   const { isCouncil = false, maxTokens = 1500 } = options;
   const parts: string[] = [];
@@ -102,8 +102,15 @@ export async function getThinkerContext(
       }
     }
 
-    // Persona lens
-    const lens = PERSONA_LENSES[thinkerId];
+    // Persona lens — try community-specific first, fall back to static
+    let lens = PERSONA_LENSES[thinkerId];
+    if (options.communitySlug && options.communitySlug !== 'society-of-explorers') {
+      try {
+        const { getCommunityThinkerLenses } = await import('../community/getCommunity');
+        const lenses = await getCommunityThinkerLenses(options.communitySlug);
+        if (lenses[thinkerId]) lens = lenses[thinkerId];
+      } catch {}
+    }
     if (lens) parts.push(lens);
 
   } catch (err) {

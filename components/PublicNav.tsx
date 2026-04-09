@@ -42,6 +42,7 @@ export default function PublicNav() {
           <a href="/travel" style={linkStyle}>Travel</a>
           <a href="/tokenomics" style={linkStyle}>Tokenomics</a>
           <a href="/join" style={linkStyle}>Join</a>
+          <a href="/create-community" style={{ ...linkStyle, color: gold, opacity: 1 }}>Create</a>
           <a href="/login" style={{ ...linkStyle, color: gold, opacity: 1, border: `1px solid ${gold}44`, padding: '6px 16px' }}>Sign In</a>
         </div>
 
@@ -54,7 +55,7 @@ export default function PublicNav() {
       {/* Mobile menu */}
       {menuOpen && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,10,0.98)', zIndex: 199, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {[{ l: 'Council', h: '/council' }, { l: 'Renaissance', h: '/renaissance' }, { l: 'Experience', h: '/experience' }, { l: 'Projects', h: '/projects' }, { l: '92B', h: '/92b' }, { l: 'Salons', h: '/salons' }, { l: 'Music', h: '/music-therapy' }, { l: 'Great Books', h: '/great-books' }, { l: 'Travel', h: '/travel' }, { l: 'Tokenomics', h: '/tokenomics' }, { l: 'Join', h: '/join' }, { l: 'Sign In', h: '/login' }].map(lk => (
+          {[{ l: 'Council', h: '/council' }, { l: 'Renaissance', h: '/renaissance' }, { l: 'Experience', h: '/experience' }, { l: 'Projects', h: '/projects' }, { l: '92B', h: '/92b' }, { l: 'Salons', h: '/salons' }, { l: 'Music', h: '/music-therapy' }, { l: 'Great Books', h: '/great-books' }, { l: 'Travel', h: '/travel' }, { l: 'Tokenomics', h: '/tokenomics' }, { l: 'Join', h: '/join' }, { l: 'Create', h: '/create-community' }, { l: 'Sign In', h: '/login' }].map(lk => (
             <a key={lk.h} href={lk.h} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}
         </div>

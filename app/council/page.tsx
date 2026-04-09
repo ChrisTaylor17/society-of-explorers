@@ -9,7 +9,7 @@ const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-const THINKERS = [
+const DEFAULT_THINKERS = [
   { id: 'socrates',  name: 'Socrates',  avatar: 'SO', color: '#C9A94E' },
   { id: 'plato',     name: 'Plato',     avatar: 'PL', color: '#7B68EE' },
   { id: 'aurelius',  name: 'Aurelius',  avatar: 'MA', color: '#8B7355' },
@@ -34,9 +34,11 @@ interface Message {
 }
 
 export default function CouncilPage() {
+  const [thinkers, setThinkers] = useState(DEFAULT_THINKERS);
+  const [communitySlug, setCommunitySlug] = useState('society-of-explorers');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [selectedThinkers, setSelectedThinkers] = useState<Set<string>>(new Set(THINKERS.map(t => t.id)));
+  const [selectedThinkers, setSelectedThinkers] = useState<Set<string>>(new Set(DEFAULT_THINKERS.map(t => t.id)));
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentThinker, setCurrentThinker] = useState<string | null>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -60,6 +62,21 @@ export default function CouncilPage() {
   useEffect(() => {
     if (typeof window !== 'undefined' && !localStorage.getItem('soe_onboarded')) {
       setOnboarded(false);
+    }
+    // Read community from URL params
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const comm = params.get('community');
+      if (comm) {
+        setCommunitySlug(comm);
+        fetch(`/api/communities/${comm}/thinkers`).then(r => r.json()).then(d => {
+          if (d.thinkers?.length > 0) {
+            const mapped = d.thinkers.map((t: any) => ({ id: t.thinker_key, name: t.name, avatar: t.avatar, color: t.color }));
+            setThinkers(mapped);
+            setSelectedThinkers(new Set(mapped.map((t: any) => t.id)));
+          }
+        }).catch(() => {});
+      }
     }
     async function loadAuth() {
       try {
@@ -102,7 +119,7 @@ export default function CouncilPage() {
     councilCtx: { thinker: string; response: string }[],
   ): Promise<string> => {
     const streamId = `thinker-${thinkerId}-${Date.now()}`;
-    const thinker = THINKERS.find(t => t.id === thinkerId)!;
+    const thinker = thinkers.find(t => t.id === thinkerId)!;
 
     setMessages(prev => [...prev, {
       id: streamId, role: 'thinker', content: '',
@@ -125,6 +142,7 @@ export default function CouncilPage() {
           salonId: `council-${memberId || 'anon'}`,
           councilContext: councilCtx,
           isCouncilMode: true,
+          community: communitySlug,
         }),
       });
 
@@ -190,7 +208,7 @@ export default function CouncilPage() {
     }
 
     return responseFullText;
-  }, [authToken, memberId]);
+  }, [authToken, memberId, communitySlug]);
 
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -201,7 +219,7 @@ export default function CouncilPage() {
 
     setMessages(prev => [...prev, { id: `user-${Date.now()}`, role: 'user', content: text }]);
 
-    const activeThinkers = THINKERS.filter(t => selectedThinkers.has(t.id));
+    const activeThinkers = thinkers.filter(t => selectedThinkers.has(t.id));
     const councilCtx: { thinker: string; response: string }[] = [];
 
     for (const thinker of activeThinkers) {
@@ -291,7 +309,7 @@ export default function CouncilPage() {
           display: 'flex', justifyContent: 'center', gap: '6px', padding: '10px 12px',
           borderBottom: `1px solid ${gold}11`, background: '#0a0a0a', overflowX: 'auto',
         }}>
-          {THINKERS.map(t => {
+          {thinkers.map(t => {
             const active = selectedThinkers.has(t.id);
             const isCurrent = currentThinker === t.id;
             return (
@@ -417,7 +435,7 @@ export default function CouncilPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'Cinzel, serif', fontSize: '9px', color: msg.thinkerColor, marginTop: '2px',
               }}>
-                {THINKERS.find(t => t.id === msg.thinkerKey)?.avatar || '?'}
+                {thinkers.find(t => t.id === msg.thinkerKey)?.avatar || '?'}
               </div>
               <div style={{ borderLeft: `2px solid ${msg.thinkerColor}33`, paddingLeft: '12px', minWidth: 0 }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: msg.thinkerColor, marginBottom: '4px' }}>

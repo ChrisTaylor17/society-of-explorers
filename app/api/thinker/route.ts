@@ -7,6 +7,7 @@ import { parseActions, executeThinkerAction } from '@/lib/thinkerActions';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { storeConversationEmbedding } from '@/lib/memory/embeddings';
 import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
+import { getCommunityThinkerPrompts } from '@/lib/community/getCommunity';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
     const walletMemberId = body.walletMemberId;
     const salonId = body.salonId ?? 'general';
     const councilContext: { thinker: string; response: string }[] = body.councilContext || [];
+    const communitySlug: string = body.community || 'society-of-explorers';
 
     if (!thinkerId || !message) {
       return new Response(
@@ -183,7 +185,11 @@ export async function POST(req: NextRequest) {
     // --- BUILD SYSTEM PROMPT (cap length for speed) ---
     let systemPrompt = buildSystemPrompt(thinkerId);
     if (isCouncilMode) {
-      systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
+      // Try community-specific prompts first, fall back to hardcoded
+      const communityPrompts = communitySlug !== 'society-of-explorers'
+        ? await getCommunityThinkerPrompts(communitySlug)
+        : {};
+      systemPrompt = communityPrompts[thinkerId] || COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
 
       // Inject member memory if available
       if (memory) {
@@ -234,7 +240,7 @@ export async function POST(req: NextRequest) {
       // 4-layer shared memory: profile + semantic facts + episodes + persona lens
       if (memberId && !isReaction) {
         try {
-          const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: isCouncilMode });
+          const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: isCouncilMode, communitySlug });
           if (sharedContext) {
             fullSystemPrompt += '\n\n' + sharedContext;
           }
