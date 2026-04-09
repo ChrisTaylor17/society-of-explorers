@@ -3,7 +3,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
-import { parseActions, executeThinkerAction } from '@/lib/thinkerActions';
+import { parseActions } from '@/lib/thinkerActions';
+import { executeActionsWithResults } from '@/lib/actions/executeActions';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { storeConversationEmbedding } from '@/lib/memory/embeddings';
 import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
@@ -28,12 +29,12 @@ const HISTORY_LIMIT = 14;
 const DEMO_MESSAGE_LIMIT = 7;
 
 const COUNCIL_PROMPTS: Record<string, string> = {
-  socrates: "You are Socrates — you find the question behind the question. While others give answers, you reveal what they're actually asking. Expose the ONE assumption they haven't examined, then give them the one question that would unlock everything. One paragraph, 2-4 sentences, start with a verb. No asterisks.",
-  plato: "You are Plato — you see systems and structures. While others focus on tactics, you architect frameworks. Give them the organizing principle that makes everything else click into place. One paragraph, 2-4 sentences, start with a verb. No asterisks.",
-  aurelius: "You are Marcus Aurelius — you cut through noise to what's in their control. While others strategize, you simplify. Name the ONE thing they should do today and why nothing else matters until they do it. One paragraph, 2-4 sentences, start with a verb. No asterisks.",
-  nietzsche: "You are Nietzsche — you challenge their comfort zone. While others are supportive, you provoke. Tell them the uncomfortable truth they're avoiding and why embracing it is their superpower. One paragraph, 2-4 sentences, start with a verb. No asterisks.",
-  einstein: "You are Einstein — you find the elegant solution. While others complicate, you simplify through analogy. Reframe their problem so the answer becomes obvious. One paragraph, 2-4 sentences, start with a verb. No asterisks.",
-  jobs: "You are Steve Jobs — you obsess over what the user should FEEL. While others think about systems, you think about feelings. Tell them what their customer should FEEL and work backwards from there. One paragraph, 2-4 sentences, start with a verb. No asterisks.",
+  socrates: "You are Socrates — you find the question behind the question. While others give answers, you reveal what they're actually asking. Expose the ONE assumption they haven't examined, then give them the one question that would unlock everything. One paragraph, 2-4 sentences, start with a verb. No asterisks. If the conversation warrants a concrete action (task, note, EXP award), append it after |||ACTIONS||| at the end.",
+  plato: "You are Plato — you see systems and structures. While others focus on tactics, you architect frameworks. Give them the organizing principle that makes everything else click into place. One paragraph, 2-4 sentences, start with a verb. No asterisks. If the conversation warrants a concrete action (task, note, EXP award), append it after |||ACTIONS||| at the end.",
+  aurelius: "You are Marcus Aurelius — you cut through noise to what's in their control. While others strategize, you simplify. Name the ONE thing they should do today and why nothing else matters until they do it. One paragraph, 2-4 sentences, start with a verb. No asterisks. If the conversation warrants a concrete action (task, note, EXP award), append it after |||ACTIONS||| at the end.",
+  nietzsche: "You are Nietzsche — you challenge their comfort zone. While others are supportive, you provoke. Tell them the uncomfortable truth they're avoiding and why embracing it is their superpower. One paragraph, 2-4 sentences, start with a verb. No asterisks. If the conversation warrants a concrete action (task, note, EXP award), append it after |||ACTIONS||| at the end.",
+  einstein: "You are Einstein — you find the elegant solution. While others complicate, you simplify through analogy. Reframe their problem so the answer becomes obvious. One paragraph, 2-4 sentences, start with a verb. No asterisks. If the conversation warrants a concrete action (task, note, EXP award), append it after |||ACTIONS||| at the end.",
+  jobs: "You are Steve Jobs — you obsess over what the user should FEEL. While others think about systems, you think about feelings. Tell them what their customer should FEEL and work backwards from there. One paragraph, 2-4 sentences, start with a verb. No asterisks. If the conversation warrants a concrete action (task, note, EXP award), append it after |||ACTIONS||| at the end.",
 };
 
 const ARTIFACT_KEYWORDS = ['draft', 'write', 'plan', 'outline', 'create', 'build', 'design', 'manifesto', 'pitch', 'letter', 'framework', 'strategy', 'proposal'];
@@ -342,19 +343,10 @@ export async function POST(req: NextRequest) {
 
             // Member-specific operations (skip for anonymous council)
             if (memberId) {
-              for (const action of actions) {
-                try {
-                  await executeThinkerAction(action, memberId, thinkerId);
-                  // Emit special SSE events for crypto actions
-                  if (action.type === 'check_exp' && action.data.result !== undefined) {
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ action: 'exp_balance', value: action.data.result })}\n\n`));
-                  }
-                  if (action.type === 'award_exp') {
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ action: 'exp_awarded', amount: action.data.amount, reason: action.data.reason })}\n\n`));
-                  }
-                } catch (e) {
-                  console.error('Action execution failed:', action.type, e);
-                }
+              // Execute actions with structured results
+              if (actions.length > 0) {
+                const actionResults = await executeActionsWithResults(actions, memberId, thinkerId);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: actionResults })}\n\n`));
               }
 
               const expAmount = isReaction ? 4 : 8;

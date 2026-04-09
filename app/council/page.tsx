@@ -50,6 +50,7 @@ export default function CouncilPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [lastVerdictUrl, setLastVerdictUrl] = useState<string | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
+  const [actionResults, setActionResults] = useState<Record<string, any[]>>({});
   const [onboarded, setOnboarded] = useState(true); // assume true, check on mount
   const [onboardStep, setOnboardStep] = useState(0);
   const [obBuilding, setObBuilding] = useState('');
@@ -177,20 +178,13 @@ export default function CouncilPage() {
               setMessages(prev => prev.map(m =>
                 m.id === streamId ? { ...m, content: displayText } : m
               ));
-            } else if (evt.type === 'actions' && evt.actions?.length > 0) {
-              // Show action badges
-              for (const action of evt.actions) {
-                const labels: Record<string, string> = {
-                  create_task: 'Task created', save_note: 'Note saved',
-                  update_goal: 'Goal updated', award_exp: 'EXP awarded',
-                  check_exp: 'EXP checked',
-                };
-                setToast(`\u2713 ${labels[action.type] || 'Action taken'}`);
+            } else if (evt.type === 'actions' && evt.results?.length > 0) {
+              // Store structured action results for badge display
+              setActionResults(prev => ({ ...prev, [thinkerId]: evt.results }));
+              const successResults = evt.results.filter((r: any) => r.success);
+              if (successResults.length > 0) {
+                setToast(successResults.map((r: any) => r.message).join(' | '));
               }
-            } else if (evt.action === 'exp_balance') {
-              setToast(`Your $EXP: ${evt.value.toLocaleString()}`);
-            } else if (evt.action === 'exp_awarded') {
-              setToast(`+${evt.amount} $EXP: ${evt.reason}`);
             } else if (evt.done && evt.response) {
               const clean = evt.response.split('|||ACTIONS|||')[0]
                 .replace(/^\[[\w-]+\]:\s*/i, '')
@@ -489,6 +483,21 @@ export default function CouncilPage() {
                     <span style={{ color: msg.thinkerColor }}>&#9613;</span>
                   )}
                 </p>
+                {msg.thinkerKey && actionResults[msg.thinkerKey] && actionResults[msg.thinkerKey].length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(201,168,76,0.1)' }}>
+                    {actionResults[msg.thinkerKey].map((r: any, i: number) => (
+                      <span key={i} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '12px',
+                        fontSize: '10px', letterSpacing: '0.1em', fontFamily: 'Cinzel, serif',
+                        background: r.success ? 'rgba(201,168,76,0.12)' : 'rgba(220,20,60,0.12)',
+                        color: r.success ? 'rgba(201,168,76,0.85)' : 'rgba(220,20,60,0.7)',
+                        border: `1px solid ${r.success ? 'rgba(201,168,76,0.2)' : 'rgba(220,20,60,0.2)'}`,
+                      }}>
+                        {r.success ? (r.type === 'create_task' ? '\u2713' : r.type === 'award_exp' ? '\ud83c\udf96' : r.type === 'save_note' ? '\ud83d\udcdd' : '\u2713') : '\u2717'} {r.message}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )
