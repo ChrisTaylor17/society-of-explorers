@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { disburse } from '@/lib/wallets/disburse';
+import { emitActivity } from '@/lib/feed/activityFeed';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,6 +31,7 @@ export async function executeActionsWithResults(
             created_at: new Date().toISOString(),
           });
           results.push({ type: 'create_task', success: !error, message: error ? 'Task failed' : `Task created: "${action.data.title}"` });
+          if (!error) emitActivity({ memberId, agentKey: thinkerId, eventType: 'task_created', title: `${thinkerId} assigned: ${action.data.title}` }).catch(() => {});
           break;
         }
 
@@ -112,6 +114,29 @@ export async function executeActionsWithResults(
             member_id: memberId, thinker_id: thinkerId, prompt: action.data.prompt, context: action.data.context,
           });
           results.push({ type: 'create_artifact_prompt', success: !error, message: error ? 'Artifact failed' : 'Artifact queued' });
+          break;
+        }
+
+        case 'create_project_task': {
+          const { project_id, title, description, reward_amount } = action.data;
+          if (!project_id) { results.push({ type: 'create_project_task', success: false, message: 'No project_id' }); break; }
+          const { data: ptData, error: ptErr } = await supabase.from('hub_tasks').insert({
+            member_id: memberId, project_id, title: title || 'New task', description: description || '',
+            reward_amount: Math.min(reward_amount || 0, 500), reward_token: 'EXP', is_public: true,
+            status: 'pending', created_by: thinkerId,
+          }).select('id, title').single();
+          results.push({ type: 'create_project_task', success: !ptErr, message: ptErr ? 'Task creation failed' : `Project task: "${ptData?.title}" (${reward_amount || 0} $EXP)` });
+          if (!ptErr) emitActivity({ memberId, agentKey: thinkerId, eventType: 'task_created', title: `${thinkerId} created project task: "${title}"`, metadata: { project_id, reward_amount } }).catch(() => {});
+          break;
+        }
+
+        case 'narrate_project': {
+          const { project_id, text, event: evt } = action.data;
+          if (!project_id || !text) { results.push({ type: 'narrate_project', success: false, message: 'project_id and text required' }); break; }
+          const { data: proj } = await supabase.from('projects').select('narrative_log').eq('id', project_id).single();
+          const log = [...(proj?.narrative_log || []), { timestamp: new Date().toISOString(), thinker: thinkerId, event: evt || 'observation', text }];
+          await supabase.from('projects').update({ narrative_log: log, updated_at: new Date().toISOString() }).eq('id', project_id);
+          results.push({ type: 'narrate_project', success: true, message: 'Project narrative updated' });
           break;
         }
 

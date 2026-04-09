@@ -90,6 +90,27 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function DashboardFeed() {
+  const [events, setEvents] = useState<any[]>([]);
+  useEffect(() => { fetch('/api/feed?limit=8').then(r => r.json()).then(d => setEvents(d.events || [])).catch(() => {}); }, []);
+  if (events.length === 0) return null;
+  const ICONS: Record<string, string> = { task_created: '\u2713', task_completed: '\u2705', exp_awarded: '\ud83c\udf96', project_created: '\ud83d\udcca', room_started: '\ud83d\udcf9', member_joined: '\ud83d\udc64' };
+  return (
+    <section data-fade style={{ padding: '0 2rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>RECENT ACTIVITY</div>
+        {events.map(ev => (
+          <div key={ev.id} style={{ display: 'flex', gap: '8px', padding: '8px 0', borderBottom: `1px solid ${gold}08` }}>
+            <span style={{ fontSize: '14px', width: '24px', textAlign: 'center', flexShrink: 0 }}>{ICONS[ev.event_type] || '\u2022'}</span>
+            <p style={{ fontSize: '14px', color: '#E8DCC8', margin: 0, lineHeight: 1.5, flex: 1 }}>{ev.title}</p>
+          </div>
+        ))}
+        <a href="/activity" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, textDecoration: 'none', display: 'block', marginTop: '0.75rem' }}>VIEW ALL &rarr;</a>
+      </div>
+    </section>
+  );
+}
+
 export default function ExplorerDashboard() {
   const router = useRouter();
   const [member, setMember] = useState<Member | null>(null);
@@ -242,6 +263,9 @@ export default function ExplorerDashboard() {
           </div>
         </section>
       )}
+
+      {/* ═══ RECENT ACTIVITY ═══ */}
+      <DashboardFeed />
 
       {/* ═══ STATS ROW ═══ */}
       <section data-fade style={{ padding: '1rem 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
