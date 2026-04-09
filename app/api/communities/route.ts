@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { initializeRolesForCommunity } from '@/lib/governance/hats';
+import { initializeAgentWallets } from '@/lib/wallets/agentWallet';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -76,6 +77,9 @@ export async function POST(req: NextRequest) {
 
   // Initialize governance roles
   await initializeRolesForCommunity(community.id, memberId);
+
+  // Initialize agent wallets and treasury
+  await initializeAgentWallets(community.id).catch(err => console.error('[community] wallet init error:', err));
 
   return NextResponse.json({ community });
 }

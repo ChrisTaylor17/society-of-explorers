@@ -489,11 +489,11 @@ export default function CouncilPage() {
                       <span key={i} style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '12px',
                         fontSize: '10px', letterSpacing: '0.1em', fontFamily: 'Cinzel, serif',
-                        background: r.success ? 'rgba(201,168,76,0.12)' : 'rgba(220,20,60,0.12)',
-                        color: r.success ? 'rgba(201,168,76,0.85)' : 'rgba(220,20,60,0.7)',
-                        border: `1px solid ${r.success ? 'rgba(201,168,76,0.2)' : 'rgba(220,20,60,0.2)'}`,
+                        background: !r.success ? 'rgba(220,20,60,0.12)' : r.message?.includes('pending') ? 'rgba(255,167,38,0.12)' : 'rgba(201,168,76,0.12)',
+                        color: !r.success ? 'rgba(220,20,60,0.7)' : r.message?.includes('pending') ? 'rgba(255,167,38,0.85)' : 'rgba(201,168,76,0.85)',
+                        border: `1px solid ${!r.success ? 'rgba(220,20,60,0.2)' : r.message?.includes('pending') ? 'rgba(255,167,38,0.2)' : 'rgba(201,168,76,0.2)'}`,
                       }}>
-                        {r.success ? (r.type === 'create_task' ? '\u2713' : r.type === 'award_exp' ? '\ud83c\udf96' : r.type === 'save_note' ? '\ud83d\udcdd' : '\u2713') : '\u2717'} {r.message}
+                        {r.success ? (r.type === 'create_task' ? '\u2713' : r.type === 'award_exp' ? '\ud83c\udf96' : r.type === 'save_note' ? '\ud83d\udcdd' : r.type === 'verify_task' ? '\u2705' : '\u2713') : '\u2717'} {r.message}
                       </span>
                     ))}
                   </div>
