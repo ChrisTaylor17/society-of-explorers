@@ -4,9 +4,10 @@ import Stripe from 'stripe';
 export const runtime = 'nodejs';
 
 const PRICE_MAP: Record<string, string> = {
-  seeker: process.env.STRIPE_PRICE_SEEKER!,
-  scholar: process.env.STRIPE_PRICE_SCHOLAR!,
-  philosopher: process.env.STRIPE_PRICE_PHILOSOPHER!,
+  seeker: process.env.STRIPE_PRICE_SEEKER || 'price_1TLoRO5r4D5OocVfuYznEHL3',
+  scholar: process.env.STRIPE_PRICE_SCHOLAR || 'price_1TLoSN5r4D5OocVfhyeCPI1N',
+  philosopher: process.env.STRIPE_PRICE_PHILOSOPHER || 'price_1TLoSN5r4D5OocVfhyeCPI1N',
+  oracle: process.env.STRIPE_PRICE_ORACLE || 'price_1TLoRy5r4D5OocVf15xtFSyS',
 };
 
 export async function POST(req: NextRequest) {
@@ -21,8 +22,9 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'Invalid tier' }, { status: 400 });
   }
 
+  const isOneTime = tier === 'oracle';
   const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
+    mode: isOneTime ? 'payment' : 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${req.nextUrl.origin}/salon?welcome=1`,
     cancel_url: `${req.nextUrl.origin}/join`,

@@ -9,10 +9,10 @@ const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-// TODO: Replace with actual Stripe Price IDs from dashboard
-const SEEKER_PRICE = process.env.NEXT_PUBLIC_STRIPE_PRICE_SEEKER || 'seeker';
-const PHILOSOPHER_PRICE = process.env.NEXT_PUBLIC_STRIPE_PRICE_PHILOSOPHER || 'philosopher';
-const ORACLE_PRICE = 'oracle'; // One-time payment — needs separate Stripe product
+// Stripe Price IDs (checkout route handles the mapping)
+// Seeker: price_1TLoRO5r4D5OocVfuYznEHL3
+// Philosopher: price_1TLoSN5r4D5OocVfhyeCPI1N
+// Oracle: price_1TLoRy5r4D5OocVf15xtFSyS (one-time payment)
 
 const TIERS = [
   {
