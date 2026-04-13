@@ -29,27 +29,23 @@ export default function PublicNav() {
           SOCIETY OF EXPLORERS
         </a>
 
-        {/* Desktop */}
         <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="hide-mobile">
           <a href="/council" style={{ ...linkStyle, color: gold, opacity: 1 }}>Council</a>
+          <a href="/salon" style={{ ...linkStyle, color: gold, opacity: 1 }}>Salons</a>
           <a href="/live" style={{ ...linkStyle, color: gold, opacity: 1 }}>Live</a>
-          <a href="/projects" style={{ ...linkStyle, color: gold, opacity: 1 }}>Projects</a>
-          <a href="/discover" style={linkStyle}>Discover</a>
-          <a href="/create-community" style={linkStyle}>Create</a>
+          <a href="/leaderboard" style={linkStyle}>Leaderboard</a>
           <a href="/join" style={linkStyle}>Join</a>
           <a href="/login" style={{ ...linkStyle, color: gold, opacity: 1, border: `1px solid ${gold}44`, padding: '6px 16px' }}>Sign In</a>
         </div>
 
-        {/* Mobile hamburger */}
         <button onClick={() => setMenuOpen(v => !v)} style={{ display: 'none', background: 'none', border: 'none', color: gold, fontSize: '20px', cursor: 'pointer' }} className="show-mobile">
-          {menuOpen ? '×' : '☰'}
+          {menuOpen ? '\u00d7' : '\u2630'}
         </button>
       </nav>
 
-      {/* Mobile menu */}
       {menuOpen && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,10,0.98)', zIndex: 199, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {[{ l: 'Council', h: '/council' }, { l: 'Live', h: '/live' }, { l: 'Projects', h: '/projects' }, { l: 'Discover', h: '/discover' }, { l: 'Create', h: '/create-community' }, { l: 'Join', h: '/join' }, { l: 'Sign In', h: '/login' }].map(lk => (
+          {[{ l: 'Council', h: '/council' }, { l: 'Salons', h: '/salon' }, { l: 'Live', h: '/live' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: 'Join', h: '/join' }, { l: 'Sign In', h: '/login' }].map(lk => (
             <a key={lk.h} href={lk.h} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}
         </div>
