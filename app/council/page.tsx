@@ -567,7 +567,7 @@ export default function CouncilPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', padding: '10px 24px', borderRadius: '4px', zIndex: 500 }}>
+        <div style={{ position: 'fixed', top: '16px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', padding: '10px 24px', borderRadius: '4px', zIndex: 500, maxWidth: '300px', textAlign: 'center' }}>
           <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: gold }}>{toast}</span>
         </div>
       )}

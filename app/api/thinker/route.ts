@@ -21,7 +21,7 @@ const supabaseAdmin = createClient(
 );
 
 const DIRECT_MAX_TOKENS = 600;
-const COUNCIL_MAX_TOKENS = 150;
+const COUNCIL_MAX_TOKENS = 800;
 const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
