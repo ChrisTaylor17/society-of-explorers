@@ -198,6 +198,16 @@ export default function JoinPage() {
         </div>
       </section>
 
+      {/* Create your own */}
+      <section style={{ padding: '2rem 2rem 4rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2rem', border: `1px solid ${gold}15`, background: '#0d0d0d' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>OR</div>
+          <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>Create your own community</h3>
+          <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6, marginBottom: '1rem' }}>Build your own DAO-style intellectual community. AI thinkers guide you through every step.</p>
+          <a href="/create-community" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '10px 24px', textDecoration: 'none' }}>CREATE COMMUNITY</a>
+        </div>
+      </section>
+
       <PublicFooter />
     </div>
   );
