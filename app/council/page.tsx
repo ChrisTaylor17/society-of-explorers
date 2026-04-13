@@ -122,19 +122,16 @@ export default function CouncilPage() {
   ): Promise<string> => {
     const streamId = `thinker-${thinkerId}-${Date.now()}`;
     const thinker = thinkers.find(t => t.id === thinkerId)!;
-    console.log(`[council] starting ${thinkerId}...`);
+    console.log(`[council] starting ${thinkerId}`);
 
     setMessages(prev => [...prev, {
       id: streamId, role: 'thinker', content: '',
       thinkerKey: thinkerId, thinkerName: thinker.name, thinkerColor: thinker.color,
     }]);
 
-    let responseFullText = '';
-    try {
-      // Abort if no response within 30 seconds
-      const abortController = new AbortController();
-      const timeout = setTimeout(() => abortController.abort(), 30000);
+    let fullText = '';
 
+    try {
       const res = await fetch('/api/thinker', {
         method: 'POST',
         headers: {
@@ -151,81 +148,58 @@ export default function CouncilPage() {
           isCouncilMode: true,
           community: communitySlug,
         }),
-        signal: abortController.signal,
       });
 
-      clearTimeout(timeout);
+      if (!res.ok) {
+        console.error(`[council] ${thinkerId} HTTP ${res.status}`);
+        fullText = `[${thinker.name} unavailable]`;
+      } else {
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
 
-      if (!res.ok || !res.body) {
-        const errText = await res.text().catch(() => '');
-        console.error(`[council] ${thinkerId} failed: ${res.status}`, errText);
-        setMessages(prev => prev.map(m =>
-          m.id === streamId ? { ...m, content: '[Thinker unavailable]' } : m
-        ));
-        return '';
-      }
-
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() ?? '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const evt = JSON.parse(line.slice(6));
-            if (evt.error) {
-              // Server reported an error
-              console.error(`[council] ${thinkerId} server error:`, evt.error);
-              if (!responseFullText) responseFullText = '[Thinker unavailable]';
-            } else if (evt.delta) {
-              responseFullText += evt.delta;
-              const displayText = responseFullText.split('|||ACTIONS|||')[0].trim();
-              setMessages(prev => prev.map(m =>
-                m.id === streamId ? { ...m, content: displayText } : m
-              ));
-            } else if (evt.type === 'actions' && evt.results?.length > 0) {
-              setActionResults(prev => ({ ...prev, [thinkerId]: evt.results }));
-              const successResults = evt.results.filter((r: any) => r.success);
-              if (successResults.length > 0) {
-                setToast(successResults.map((r: any) => r.message).join(' | '));
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split('\n')) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const evt = JSON.parse(line.slice(6));
+              if (evt.delta) {
+                fullText += evt.delta;
+                const display = fullText.split('|||ACTIONS|||')[0].trim();
+                setMessages(prev => prev.map(m => m.id === streamId ? { ...m, content: display } : m));
               }
-            } else if (evt.done && evt.response) {
-              const clean = evt.response.split('|||ACTIONS|||')[0]
-                .replace(/^\[[\w-]+\]:\s*/i, '')
-                .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
-                .trim();
-              responseFullText = clean || responseFullText;
-              setMessages(prev => prev.map(m =>
-                m.id === streamId ? { ...m, content: responseFullText } : m
-              ));
-            }
-          } catch {}
+              if (evt.error) {
+                console.error(`[council] ${thinkerId} server error:`, evt.error);
+                if (!fullText) fullText = `[${thinker.name} unavailable]`;
+              }
+              if (evt.type === 'actions' && evt.results) {
+                setActionResults(prev => ({ ...prev, [thinkerId]: evt.results }));
+              }
+              if (evt.done && evt.response) {
+                const clean = evt.response.split('|||ACTIONS|||')[0]
+                  .replace(/^\[[\w-]+\]:\s*/i, '')
+                  .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
+                  .trim();
+                if (clean) fullText = clean;
+              }
+            } catch {}
+          }
         }
       }
-    } catch (err: any) {
-      console.error(`[council] ${thinkerId} stream error:`, err?.name, err?.message);
-      if (!responseFullText) {
-        setMessages(prev => prev.map(m =>
-          m.id === streamId ? { ...m, content: err?.name === 'AbortError' ? '[Thinker timed out]' : '[Thinker unavailable]' } : m
-        ));
-      }
+    } catch (err) {
+      console.error(`[council] ${thinkerId} error:`, err);
+      if (!fullText) fullText = `[${thinker.name} unavailable]`;
     }
 
-    // Final cleanup: if response is still empty, mark as unavailable
-    if (!responseFullText) {
-      setMessages(prev => prev.map(m =>
-        m.id === streamId && !m.content ? { ...m, content: '[Thinker unavailable]' } : m
-      ));
-    }
+    // Ensure message has content
+    if (!fullText.trim()) fullText = `[${thinker.name} unavailable]`;
+    const finalDisplay = fullText.split('|||ACTIONS|||')[0].trim();
+    setMessages(prev => prev.map(m => m.id === streamId ? { ...m, content: finalDisplay } : m));
 
-    console.log(`[council] ${thinkerId} done: ${responseFullText.length} chars`);
-    return responseFullText;
+    console.log(`[council] ${thinkerId} done: ${finalDisplay.length} chars`);
+    return finalDisplay;
   }, [authToken, memberId, communitySlug]);
 
   const send = useCallback(async (overrideText?: string) => {
@@ -256,15 +230,16 @@ export default function CouncilPage() {
     setExchangeCount(prev => prev + 1);
     inputRef.current?.focus();
 
-    // Auto-generate verdict card (fire and forget)
-    if (councilCtx.length >= 2) {
+    // Auto-generate verdict card (fire and forget) — only if 2+ real responses
+    const realResponses = councilCtx.filter(c => c.response && !c.response.startsWith('['));
+    if (realResponses.length >= 2) {
       fetch('/api/council/verdict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: `council-${Date.now()}`,
           question: text,
-          responses: councilCtx,
+          responses: realResponses,
           memberId,
         }),
       }).then(r => r.json()).then(d => {
