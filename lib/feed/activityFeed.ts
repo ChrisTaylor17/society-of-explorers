@@ -9,7 +9,9 @@ export type EventType =
   | 'task_created' | 'task_completed' | 'exp_awarded'
   | 'artifact_minted' | 'verdict_shared' | 'ritual_logged'
   | 'project_created' | 'project_joined' | 'member_joined'
-  | 'room_started' | 'room_ended' | 'thinker_insight';
+  | 'room_started' | 'room_ended' | 'thinker_insight'
+  | 'salon_created' | 'salon_joined' | 'session_completed'
+  | 'member_graduated' | 'guide_promoted';
 
 export async function emitActivity({
   communityId, memberId, agentKey, eventType, title, description, metadata = {}, isPublic = true,

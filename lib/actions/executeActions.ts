@@ -140,6 +140,26 @@ export async function executeActionsWithResults(
           break;
         }
 
+        case 'recommend_salon': {
+          const { track, salon_id, reason } = action.data;
+          await supabase.from('thinker_notes').insert({
+            member_id: memberId, thinker_id: thinkerId,
+            content: `Salon recommendation: ${reason}. Track: ${track || 'any'}. Salon: ${salon_id || 'any available'}`,
+            category: 'recommendation',
+            created_at: new Date().toISOString(),
+          });
+          emitActivity({ memberId, agentKey: thinkerId, eventType: 'thinker_insight', title: `${thinkerId} recommended a salon`, description: reason }).catch(() => {});
+          results.push({ type: 'recommend_salon', success: true, message: `Salon recommended: ${reason}` });
+          break;
+        }
+
+        case 'celebrate_graduation': {
+          const { member_id: gradMemberId, salon_title, message } = action.data;
+          emitActivity({ memberId: gradMemberId || memberId, agentKey: thinkerId, eventType: 'member_graduated', title: `${thinkerId} celebrates graduation from ${salon_title || 'salon'}`, description: message }).catch(() => {});
+          results.push({ type: 'celebrate_graduation', success: true, message: `Graduation celebrated!` });
+          break;
+        }
+
         default:
           results.push({ type: action.type, success: false, message: `Unknown action: ${action.type}` });
       }
