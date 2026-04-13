@@ -538,12 +538,6 @@ export default function CouncilPage() {
             onMouseEnter={e => e.currentTarget.style.color = gold} onMouseLeave={e => e.currentTarget.style.color = muted}>
             <span>&#128203;</span> CREATE TASK
           </button>
-          <span style={{ color: `${muted}44`, fontSize: '12px', cursor: 'default' }} title="Coming soon">
-            <span>&#127912;</span> <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.08em' }}>ARTIFACT</span>
-          </span>
-          <span style={{ color: `${muted}44`, fontSize: '12px', cursor: 'default' }} title="Coming soon">
-            <span>&#128231;</span> <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.08em' }}>DRAFT EMAIL</span>
-          </span>
         </div>
       )}
 
@@ -573,8 +567,8 @@ export default function CouncilPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', background: `${gold}22`, border: `1px solid ${gold}44`, padding: '10px 20px', borderRadius: '4px', zIndex: 500 }}>
-          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: gold }}>{toast}</span>
+        <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', padding: '10px 24px', borderRadius: '4px', zIndex: 500 }}>
+          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: gold }}>{toast}</span>
         </div>
       )}
 
