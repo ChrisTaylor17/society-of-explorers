@@ -195,21 +195,30 @@ export async function POST(req: NextRequest) {
         }));
     }
 
-    // --- FETCH THINKER MEMORY (skip for demo and anonymous council) ---
-    const memory = (isDemo || !memberId) ? null : await getMemory(memberId, thinkerId);
+    // --- FETCH THINKER MEMORY (skip for demo, council, and anonymous) ---
+    let memory: string | null = null;
+    if (!isDemo && !isCouncilMode && memberId) {
+      try {
+        memory = await getMemory(memberId, thinkerId);
+      } catch (memErr) {
+        console.error('[thinker] Memory retrieval failed, continuing without:', memErr);
+      }
+    }
 
     // --- BUILD SYSTEM PROMPT (cap length for speed) ---
     let systemPrompt = buildSystemPrompt(thinkerId);
     if (isCouncilMode) {
-      // Try community-specific prompts first, fall back to hardcoded
-      const communityPrompts = communitySlug !== 'society-of-explorers'
-        ? await getCommunityThinkerPrompts(communitySlug)
-        : {};
-      systemPrompt = communityPrompts[thinkerId] || COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
-
-      // Inject member memory if available
-      if (memory) {
-        systemPrompt += '\n\n' + memory;
+      // Council mode: use hardcoded mandates (fast, no DB call)
+      // Only query community prompts for non-default communities
+      if (communitySlug !== 'society-of-explorers') {
+        try {
+          const communityPrompts = await getCommunityThinkerPrompts(communitySlug);
+          systemPrompt = communityPrompts[thinkerId] || COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
+        } catch {
+          systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
+        }
+      } else {
+        systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
       }
 
       // Inject what other thinkers said
@@ -237,7 +246,16 @@ export async function POST(req: NextRequest) {
 
     let fullSystemPrompt = systemPrompt;
 
-    if (!isDemo) {
+    if (isCouncilMode) {
+      // Council mode: FAST PATH — system prompt is already built above.
+      // Only add member name if available.
+      if (memberName && !memberName.startsWith('0x')) {
+        fullSystemPrompt += `\n\nThe member's name is ${memberName}.`;
+      }
+    } else if (isDemo) {
+      fullSystemPrompt += '\n\nThis is a brief demo conversation. Be concise and engaging. End your response by subtly inviting deeper exploration — the full Society experience awaits.';
+    } else {
+      // Salon / single thinker mode: full context loading
       const contextPrefix = memberContext
         ? memberContext
         : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
@@ -253,10 +271,10 @@ export async function POST(req: NextRequest) {
         fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference specific facts, commitments, and past conversations. If they committed to something, ask about progress. If they shared a struggle, check in. You are continuing a relationship — not starting from scratch.`;
       }
 
-      // 4-layer shared memory: profile + semantic facts + episodes + persona lens
+      // 4-layer shared memory (skip for council — already fast-pathed above)
       if (memberId && !isReaction) {
         try {
-          const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: isCouncilMode, communitySlug });
+          const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: false, communitySlug });
           if (sharedContext) {
             fullSystemPrompt += '\n\n' + sharedContext;
           }
@@ -269,14 +287,10 @@ export async function POST(req: NextRequest) {
         fullSystemPrompt += '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.';
       }
 
-      // Council context is already injected in the isCouncilMode branch above.
-      // For non-council mode (salon), inject council context here if present.
-      if (!isCouncilMode && councilContext.length > 0) {
+      if (councilContext.length > 0) {
         const ctxLines = councilContext.map(c => `[${c.thinker} said]: "${c.response}"`).join('\n');
         fullSystemPrompt += `\n\nCOUNCIL SESSION — Other thinkers have already responded to this question:\n${ctxLines}\n\nYou may engage with, challenge, or build on their ideas. Be direct. Name them by name. Don't repeat what they said — add your distinct perspective or push back. Keep your response concise (3-5 sentences).`;
       }
-    } else {
-      fullSystemPrompt += '\n\nThis is a brief demo conversation. Be concise and engaging. End your response by subtly inviting deeper exploration — the full Society experience awaits.';
     }
 
     console.log('[thinker] system prompt length:', fullSystemPrompt.length, 'first 200 chars:', fullSystemPrompt.slice(0, 200));
@@ -288,25 +302,36 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           let fullText = '';
-          console.log(`[thinker] ${thinkerId} calling Claude API (${maxTokens} max_tokens, council=${isCouncilMode})`);
+          console.log(`[thinker] ${thinkerId} calling Claude (${maxTokens} tokens, council=${isCouncilMode}, prompt=${fullSystemPrompt.length} chars)`);
 
-          const anthropicStream = anthropic.messages.stream({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: maxTokens,
-            system: fullSystemPrompt,
-            messages: conversationHistory.length > 0
-              ? conversationHistory
-              : [{ role: 'user', content: message }],
-          });
+          // Retry once on failure
+          let lastErr: any = null;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const anthropicStream = anthropic.messages.stream({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: maxTokens,
+                system: fullSystemPrompt,
+                messages: conversationHistory,
+              });
 
-          anthropicStream.on('text', (text) => {
-            fullText += text;
-            const data = JSON.stringify({ delta: text });
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-          });
+              anthropicStream.on('text', (text) => {
+                fullText += text;
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
+              });
 
-          await anthropicStream.finalMessage();
-          console.log(`[thinker] ${thinkerId} Claude response: ${fullText.length} chars`);
+              await anthropicStream.finalMessage();
+              lastErr = null;
+              break; // success
+            } catch (apiErr: any) {
+              lastErr = apiErr;
+              console.error(`[thinker] ${thinkerId} Claude attempt ${attempt + 1} failed:`, apiErr?.message || apiErr);
+              if (attempt === 0) await new Promise(r => setTimeout(r, 2000)); // wait before retry
+            }
+          }
+          if (lastErr) throw lastErr;
+
+          console.log(`[thinker] ${thinkerId} response: ${fullText.length} chars`);
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
             const doneData = JSON.stringify({ done: true, response: '', silent: true });
@@ -423,16 +448,11 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();
         } catch (err: any) {
-          console.error(`[thinker] ${thinkerId} stream error:`, err?.message || err);
+          console.error(`[thinker] FATAL ${thinkerId}:`, err?.message, err?.status, err?.error?.type);
           try {
-            const errorData = JSON.stringify({
-              error: err?.message || 'Stream failed',
-              done: true,
-            });
-            controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err?.message || 'Stream failed', done: true })}\n\n`));
             controller.close();
           } catch {
-            // Controller may already be closed
             try { controller.close(); } catch {}
           }
         }
