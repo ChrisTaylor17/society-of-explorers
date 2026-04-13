@@ -141,8 +141,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // --- SAVE USER MESSAGE (skip for demo and system-generated prompts) ---
-    if (!isDemo) {
+    // --- SAVE USER MESSAGE (skip for demo, council mode, and system-generated prompts) ---
+    if (!isDemo && !isCouncilMode) {
       const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
         message.startsWith('You have been invited into a private conversation') ||
         message.startsWith('Here are my current tasks:') ||
@@ -160,10 +160,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // --- FETCH MESSAGE HISTORY (skip for demo — use client-provided messages) ---
+    // --- FETCH MESSAGE HISTORY ---
+    // Council mode: skip history fetch — use only the current message + councilContext (injected in system prompt)
+    // Demo mode: use client-provided messages
+    // Salon mode: fetch from salon_messages
     let conversationHistory: { role: 'user' | 'assistant'; content: string }[];
 
-    if (isDemo) {
+    if (isCouncilMode) {
+      // Council: just the current user message. Council context is already in the system prompt.
+      conversationHistory = [{ role: 'user', content: message }];
+    } else if (isDemo) {
       conversationHistory = (body.messages || []).map((m: any) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
@@ -263,7 +269,9 @@ export async function POST(req: NextRequest) {
         fullSystemPrompt += '\n\nYou are reacting to what another thinker just said. Keep your reaction to 1-2 sentences. Be substantive — agree, disagree, or build on their point. No pleasantries.';
       }
 
-      if (councilContext.length > 0) {
+      // Council context is already injected in the isCouncilMode branch above.
+      // For non-council mode (salon), inject council context here if present.
+      if (!isCouncilMode && councilContext.length > 0) {
         const ctxLines = councilContext.map(c => `[${c.thinker} said]: "${c.response}"`).join('\n');
         fullSystemPrompt += `\n\nCOUNCIL SESSION — Other thinkers have already responded to this question:\n${ctxLines}\n\nYou may engage with, challenge, or build on their ideas. Be direct. Name them by name. Don't repeat what they said — add your distinct perspective or push back. Keep your response concise (3-5 sentences).`;
       }
@@ -331,15 +339,18 @@ export async function POST(req: NextRequest) {
               socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
               aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
             };
-            const { error: saveError } = await supabaseAdmin.from('salon_messages').insert({
-              salon_id: salonId,
-              sender_type: 'thinker',
-              sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
-              thinker_id: thinkerId,
-              content: cleanText,
-            });
-            if (saveError) console.error('THINKER SAVE FAILED:', saveError);
-            else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
+            // Skip salon_messages save in council mode (each thinker manages its own context via councilContext)
+            if (!isCouncilMode) {
+              const { error: saveError } = await supabaseAdmin.from('salon_messages').insert({
+                salon_id: salonId,
+                sender_type: 'thinker',
+                sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
+                thinker_id: thinkerId,
+                content: cleanText,
+              });
+              if (saveError) console.error('THINKER SAVE FAILED:', saveError);
+              else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
+            }
 
             // Member-specific operations (skip for anonymous council)
             if (memberId) {
