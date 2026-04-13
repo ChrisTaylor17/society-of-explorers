@@ -218,10 +218,13 @@ export default function CouncilPage() {
       const thinker = activeThinkers[i];
       setCurrentThinker(thinker.id);
       const resp = await streamThinkerResponse(thinker.id, text, councilCtx);
-      if (resp) councilCtx.push({ thinker: thinker.name, response: resp });
-      // Delay between thinkers to prevent rate limiting
+      // Only include actual responses (not "[unavailable]") in council context
+      if (resp && !resp.startsWith('[')) {
+        councilCtx.push({ thinker: thinker.name, response: resp });
+      }
+      // Delay between thinkers to prevent Claude API rate limiting
       if (i < activeThinkers.length - 1) {
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 2000));
       }
     }
 
