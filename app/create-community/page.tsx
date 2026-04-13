@@ -180,7 +180,7 @@ export default function CreateCommunityPage() {
           parameters: { governance_type: govType, voting_threshold: votingThreshold, membership_type: membershipType },
         });
 
-        router.push(`/c/${slug}`);
+        setStep(5);
       }
     } catch {}
     setSubmitting(false);
@@ -236,7 +236,7 @@ export default function CreateCommunityPage() {
               <div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: guide.color, marginBottom: '4px' }}>{guide.name.toUpperCase()} GUIDES THIS STEP</div>
                 <p style={{ fontSize: '15px', color: ivory85, lineHeight: 1.7, margin: 0 }}>
-                  {guidanceLoading && !guidance ? '...' : guidance || 'Thinking...'}
+                  {guidanceLoading && !guidance ? '...' : (step === 2 && guidance && (guidance.trim().startsWith('[') || guidance.trim().startsWith('"') || guidance.trim().startsWith('```'))) ? 'Your matching questionnaire has been generated below.' : guidance || 'Thinking...'}
                 </p>
               </div>
             </div>
@@ -337,6 +337,21 @@ export default function CreateCommunityPage() {
                 <button onClick={handleCreate} disabled={submitting} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: submitting ? 0.5 : 1 }}>
                   {submitting ? 'CREATING...' : 'LAUNCH COMMUNITY'}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 5: Success */}
+          {step === 5 && (
+            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+              <div style={{ fontSize: '36px', marginBottom: '1rem' }}>&#10003;</div>
+              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>Your community is live!</h2>
+              <p style={{ fontSize: '16px', color: muted, lineHeight: 1.7, marginBottom: '2rem' }}>
+                &ldquo;{name}&rdquo; is ready. Share it with the people who need it.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '300px', margin: '0 auto' }}>
+                <a href={`/c/${slug}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '48px' }}>VIEW YOUR COMMUNITY</a>
+                <a href={`/council?community=${slug}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0 28px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px' }}>ENTER COUNCIL</a>
               </div>
             </div>
           )}
