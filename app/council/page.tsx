@@ -122,6 +122,7 @@ export default function CouncilPage() {
   ): Promise<string> => {
     const streamId = `thinker-${thinkerId}-${Date.now()}`;
     const thinker = thinkers.find(t => t.id === thinkerId)!;
+    console.log(`[council] starting ${thinkerId}...`);
 
     setMessages(prev => [...prev, {
       id: streamId, role: 'thinker', content: '',
@@ -130,6 +131,10 @@ export default function CouncilPage() {
 
     let responseFullText = '';
     try {
+      // Abort if no response within 30 seconds
+      const abortController = new AbortController();
+      const timeout = setTimeout(() => abortController.abort(), 30000);
+
       const res = await fetch('/api/thinker', {
         method: 'POST',
         headers: {
@@ -146,13 +151,16 @@ export default function CouncilPage() {
           isCouncilMode: true,
           community: communitySlug,
         }),
+        signal: abortController.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!res.ok || !res.body) {
         const errText = await res.text().catch(() => '');
         console.error(`[council] ${thinkerId} failed: ${res.status}`, errText);
         setMessages(prev => prev.map(m =>
-          m.id === streamId ? { ...m, content: 'The thinker is silent. Try again.' } : m
+          m.id === streamId ? { ...m, content: '[Thinker unavailable]' } : m
         ));
         return '';
       }
@@ -171,15 +179,17 @@ export default function CouncilPage() {
           if (!line.startsWith('data: ')) continue;
           try {
             const evt = JSON.parse(line.slice(6));
-            if (evt.delta) {
+            if (evt.error) {
+              // Server reported an error
+              console.error(`[council] ${thinkerId} server error:`, evt.error);
+              if (!responseFullText) responseFullText = '[Thinker unavailable]';
+            } else if (evt.delta) {
               responseFullText += evt.delta;
-              // Strip |||ACTIONS||| from streaming display
               const displayText = responseFullText.split('|||ACTIONS|||')[0].trim();
               setMessages(prev => prev.map(m =>
                 m.id === streamId ? { ...m, content: displayText } : m
               ));
             } else if (evt.type === 'actions' && evt.results?.length > 0) {
-              // Store structured action results for badge display
               setActionResults(prev => ({ ...prev, [thinkerId]: evt.results }));
               const successResults = evt.results.filter((r: any) => r.success);
               if (successResults.length > 0) {
@@ -198,10 +208,23 @@ export default function CouncilPage() {
           } catch {}
         }
       }
-    } catch (err) {
-      console.error(`[council] ${thinkerId} stream error:`, err);
+    } catch (err: any) {
+      console.error(`[council] ${thinkerId} stream error:`, err?.name, err?.message);
+      if (!responseFullText) {
+        setMessages(prev => prev.map(m =>
+          m.id === streamId ? { ...m, content: err?.name === 'AbortError' ? '[Thinker timed out]' : '[Thinker unavailable]' } : m
+        ));
+      }
     }
 
+    // Final cleanup: if response is still empty, mark as unavailable
+    if (!responseFullText) {
+      setMessages(prev => prev.map(m =>
+        m.id === streamId && !m.content ? { ...m, content: '[Thinker unavailable]' } : m
+      ));
+    }
+
+    console.log(`[council] ${thinkerId} done: ${responseFullText.length} chars`);
     return responseFullText;
   }, [authToken, memberId, communitySlug]);
 
@@ -217,10 +240,15 @@ export default function CouncilPage() {
     const activeThinkers = thinkers.filter(t => selectedThinkers.has(t.id));
     const councilCtx: { thinker: string; response: string }[] = [];
 
-    for (const thinker of activeThinkers) {
+    for (let i = 0; i < activeThinkers.length; i++) {
+      const thinker = activeThinkers[i];
       setCurrentThinker(thinker.id);
       const resp = await streamThinkerResponse(thinker.id, text, councilCtx);
       if (resp) councilCtx.push({ thinker: thinker.name, response: resp });
+      // Delay between thinkers to prevent rate limiting
+      if (i < activeThinkers.length - 1) {
+        await new Promise(r => setTimeout(r, 800));
+      }
     }
 
     setCurrentThinker(null);

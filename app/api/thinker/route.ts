@@ -288,6 +288,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           let fullText = '';
+          console.log(`[thinker] ${thinkerId} calling Claude API (${maxTokens} max_tokens, council=${isCouncilMode})`);
 
           const anthropicStream = anthropic.messages.stream({
             model: 'claude-sonnet-4-20250514',
@@ -305,6 +306,7 @@ export async function POST(req: NextRequest) {
           });
 
           await anthropicStream.finalMessage();
+          console.log(`[thinker] ${thinkerId} Claude response: ${fullText.length} chars`);
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
             const doneData = JSON.stringify({ done: true, response: '', silent: true });
@@ -420,14 +422,19 @@ export async function POST(req: NextRequest) {
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();
-        } catch (err) {
-          console.error('Thinker stream error:', err);
-          const errorData = JSON.stringify({
-            error: 'Stream failed',
-            done: true,
-          });
-          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-          controller.close();
+        } catch (err: any) {
+          console.error(`[thinker] ${thinkerId} stream error:`, err?.message || err);
+          try {
+            const errorData = JSON.stringify({
+              error: err?.message || 'Stream failed',
+              done: true,
+            });
+            controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+            controller.close();
+          } catch {
+            // Controller may already be closed
+            try { controller.close(); } catch {}
+          }
         }
       },
     });
