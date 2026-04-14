@@ -94,22 +94,29 @@ export default function FeedPage() {
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '1.25rem' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: gold, animation: 'pulse 2s infinite' }} />
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold }}>LIVE FEED</span>
+            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold }}>LIVE</span>
           </div>
 
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 5vw, 38px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.2, color: parchment, marginBottom: '0.75rem' }}>
+            What explorers are thinking right now.
+          </h1>
+          <p style={{ fontSize: '15px', color: ivory85, lineHeight: 1.7, marginBottom: '2rem' }}>
+            Every morning, a new question. These are today&apos;s answers.
+          </p>
+
           {todayQuestion ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1rem' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${qThinkerColor}18`, border: `1.5px solid ${qThinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px', color: qThinkerColor }}>{qThinkerAvatar}</div>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: qThinkerColor }}>{qThinkerName.toUpperCase()} ASKS:</span>
+            <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1.5rem', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '0.75rem' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `${qThinkerColor}18`, border: `1.5px solid ${qThinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '8px', color: qThinkerColor }}>{qThinkerAvatar}</div>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: qThinkerColor }}>TODAY &middot; {qThinkerName.toUpperCase()}</span>
               </div>
-              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.4, color: parchment, margin: 0 }}>
+              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(17px, 3vw, 22px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, margin: 0 }}>
                 &ldquo;{todayQuestion.question_text}&rdquo;
-              </h1>
-              <p style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: muted, marginTop: '1.25rem' }}>
+              </p>
+              <p style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: muted, marginTop: '1rem' }}>
                 {stats.todayCount} EXPLORER{stats.todayCount !== 1 ? 'S' : ''} ANSWERED TODAY
               </p>
-            </>
+            </div>
           ) : (
             <p style={{ fontSize: '16px', color: muted }}>Today&apos;s question is being generated.</p>
           )}

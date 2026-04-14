@@ -6,15 +6,10 @@ const gold = '#c9a84c';
 const parchment = '#E8DCC8';
 
 const NAV_LINKS = [
-  { l: 'Home', h: '/' },
-  { l: 'Create DAO', h: '/create-community' },
-  { l: 'Explore DAOs', h: '/explore' },
-  { l: 'SOE', h: '/soe' },
   { l: 'Practice', h: '/practice' },
   { l: 'Feed', h: '/feed' },
-  { l: 'Match', h: '/match' },
-  { l: 'Salons', h: '/salon' },
-  { l: 'Dashboard', h: '/guide' },
+  { l: 'Council', h: '/council' },
+  { l: 'Join', h: '/join' },
 ];
 
 function truncate(name: string, max = 12): string {
@@ -59,12 +54,12 @@ export default function PublicNav() {
         borderBottom: scrolled ? `1px solid ${gold}11` : 'none', transition: 'all 0.3s',
       }}>
         <a href="/" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
-          CONSILIENCE SYSTEMS
+          SOCIETY OF EXPLORERS
         </a>
 
-        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }} className="hide-mobile">
+        <div style={{ display: 'flex', gap: '1.75rem', alignItems: 'center' }} className="hide-mobile">
           {NAV_LINKS.map(lk => (
-            <a key={lk.h} href={lk.h} style={lk.l === 'Create DAO' ? { ...linkStyle, color: gold, opacity: 1 } : linkStyle}>{lk.l}</a>
+            <a key={lk.h} href={lk.h} style={linkStyle}>{lk.l}</a>
           ))}
           <a
             href={authHref}
@@ -90,8 +85,8 @@ export default function PublicNav() {
       )}
 
       <style>{`
-        @media (max-width: 900px) { .hide-mobile { display: none !important; } .show-mobile { display: block !important; } }
-        @media (min-width: 901px) { .show-mobile { display: none !important; } }
+        @media (max-width: 640px) { .hide-mobile { display: none !important; } .show-mobile { display: block !important; } }
+        @media (min-width: 641px) { .show-mobile { display: none !important; } }
       `}</style>
     </>
   );

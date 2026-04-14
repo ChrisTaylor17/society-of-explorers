@@ -147,6 +147,13 @@ export default function PracticePage() {
             <p style={{ fontSize: '16px', color: muted, fontStyle: 'italic' }}>Loading today&apos;s question...</p>
           ) : question ? (
             <>
+              {/* First-time-visitor hint */}
+              {(!memberId || streak.total_responses === 0) && (
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: muted, marginBottom: '1rem' }}>
+                  TODAY&apos;S QUESTION FROM {thinkerName.toUpperCase()} &middot; ANSWER IN 280 CHARACTERS
+                </div>
+              )}
+
               {/* Thinker avatar */}
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${thinkerColor}18`, border: `2px solid ${thinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontFamily: 'Cinzel, serif', fontSize: '11px', color: thinkerColor }}>{thinkerAvatar}</div>
 
@@ -257,6 +264,9 @@ export default function PracticePage() {
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     {submitting ? 'SUBMITTING...' : 'RESPOND'}
                   </button>
+                  <p style={{ fontSize: '11px', color: `${muted}aa`, textAlign: 'center', marginTop: '8px', fontStyle: 'italic' }}>
+                    Your answer is visible to other explorers. No editing, no deleting.
+                  </p>
                 </div>
               ) : (
                 <div style={{ marginBottom: '1rem' }}>
