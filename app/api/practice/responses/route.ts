@@ -12,10 +12,16 @@ export async function GET(req: NextRequest) {
     .eq('question_id', questionId)
     .order('created_at', { ascending: true });
 
-  // Enrich with display names
+  // Enrich with display names. member_id is returned for client-side self-check only.
   const enriched = await Promise.all((data || []).map(async r => {
     const { data: m } = await supabase.from('members').select('display_name').eq('id', r.member_id).single();
-    return { id: r.id, display_name: m?.display_name || 'Explorer', response_text: r.response_text, created_at: r.created_at };
+    return {
+      id: r.id,
+      member_id: r.member_id,
+      display_name: m?.display_name || 'Explorer',
+      response_text: r.response_text,
+      created_at: r.created_at,
+    };
   }));
 
   return NextResponse.json({ responses: enriched });
