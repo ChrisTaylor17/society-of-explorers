@@ -195,6 +195,15 @@ export default function PracticePage() {
                     >{inviteCopied ? 'LINK COPIED!' : 'INVITE A FRIEND'}</button>
                   </div>
 
+                  {/* Profile link */}
+                  {memberId && (
+                    <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
+                      <a href={`/explorer/${memberId}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.8 }}>
+                        VIEW YOUR EXPLORER PROFILE &rarr;
+                      </a>
+                    </div>
+                  )}
+
                   {/* Expandable share card */}
                   {showShareCard && (
                     <div style={{ animation: 'fadeIn 0.3s ease', marginBottom: '1rem' }}>
