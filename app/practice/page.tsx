@@ -87,7 +87,8 @@ export default function PracticePage() {
   }, [question?.id, authToken, memberId]);
 
   async function handleSubmit() {
-    if (!response.trim() || !question?.id || !authToken) return;
+    if (!response.trim() || !question?.id) return;
+    if (!authToken) { window.location.href = '/login'; return; }
     setSubmitting(true);
     try {
       const res = await fetch('/api/practice/respond', {
@@ -142,7 +143,7 @@ export default function PracticePage() {
                   </div>
                   <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.7, margin: 0 }}>{myResponse || response}</p>
                 </div>
-              ) : memberId ? (
+              ) : memberId && authToken ? (
                 <div style={{ marginBottom: '1rem' }}>
                   <div style={{ position: 'relative' }}>
                     <textarea
