@@ -455,13 +455,16 @@ export default function CreateDAOPage() {
               ) : (
                 <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                   <div style={{ fontSize: '40px', color: '#4CAF50', marginBottom: '1rem' }}>{'\u2713'}</div>
-                  <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>DAO deployed</h2>
-                  <p style={{ fontSize: '15px', color: muted, marginBottom: '0.5rem' }}>&ldquo;{name}&rdquo; is live.</p>
+                  <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.25 }}>
+                    Your DAO is live &mdash; go build your brand.
+                  </h2>
+                  <p style={{ fontSize: '15px', color: muted, marginBottom: '0.5rem' }}>&ldquo;{name}&rdquo; is deployed. Start your storefront, mint reputation, recruit contributors.</p>
                   <p style={{ fontSize: '13px', color: `${muted}88`, marginBottom: '2rem' }}>consilience.systems/dao/{slug}</p>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '320px', margin: '0 auto' }}>
-                    <a href={`/c/${slug}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '48px' }}>OPEN DAO DASHBOARD</a>
-                    <button onClick={() => { navigator.clipboard.writeText(`https://www.societyofexplorers.com/c/${slug}`); }} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, background: 'none', border: `1px solid ${gold}44`, height: '44px', cursor: 'pointer' }}>COPY INVITE LINK</button>
+                    <a href={`/c/${slug}#store`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '48px' }}>OPEN YOUR STORE</a>
+                    <a href={`/c/${slug}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, background: 'none', border: `1px solid ${gold}44`, padding: '0 24px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px' }}>VIEW FULL DASHBOARD</a>
+                    <button onClick={() => { navigator.clipboard.writeText(`https://www.societyofexplorers.com/c/${slug}`); }} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: muted, background: 'none', border: `1px solid ${muted}33`, height: '40px', cursor: 'pointer' }}>COPY INVITE LINK</button>
                   </div>
                 </div>
               )}

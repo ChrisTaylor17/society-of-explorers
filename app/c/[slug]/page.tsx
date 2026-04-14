@@ -34,6 +34,16 @@ const VERIFICATION_LABELS: Record<string, string> = {
   oracle: 'Oracle / trusted third-party',
 };
 
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  tokenSymbol: string;
+  imageUrl: string;
+  createdAt: string;
+}
+
 export default function CommunityDashboard({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const [data, setData] = useState<any>(null);
@@ -41,6 +51,15 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
   const [notFound, setNotFound] = useState(false);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Store state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [pName, setPName] = useState('');
+  const [pDesc, setPDesc] = useState('');
+  const [pPrice, setPPrice] = useState(100);
+  const [pToken, setPToken] = useState<'REP' | 'GOV'>('REP');
+  const [pImage, setPImage] = useState('');
 
   useEffect(() => {
     getMemberSession().then(s => { if (s?.member) setMemberId(s.member.id); }).catch(() => {});
@@ -53,7 +72,35 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
       .then(d => { if (d) setData(d); })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
+
+    // Load products from localStorage (UI prototype — no DB schema yet)
+    try {
+      const stored = localStorage.getItem(`soe_dao_products_${slug}`);
+      if (stored) setProducts(JSON.parse(stored));
+    } catch {}
   }, [slug]);
+
+  function saveProducts(next: Product[]) {
+    setProducts(next);
+    try { localStorage.setItem(`soe_dao_products_${slug}`, JSON.stringify(next)); } catch {}
+  }
+
+  function handleCreateProduct(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pName.trim()) return;
+    const newProduct: Product = {
+      id: `p_${Date.now()}`,
+      name: pName.trim(),
+      description: pDesc.trim(),
+      price: pPrice,
+      tokenSymbol: pToken,
+      imageUrl: pImage.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    saveProducts([...products, newProduct]);
+    setPName(''); setPDesc(''); setPPrice(100); setPToken('REP'); setPImage('');
+    setShowCreate(false);
+  }
 
   function handleInvite() {
     const url = `https://www.societyofexplorers.com/c/${slug}`;
@@ -91,6 +138,8 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
   const infra = data.contracts?.infrastructure?.parameters || {};
   const memberCount = data.memberCount || 0;
   const members = data.members || [];
+  const isOwner = !!(memberId && members.some((m: any) => m.member_id === memberId && m.role === 'owner'))
+    || (memberId && community.owner_member_id === memberId);
 
   const templateLabel = TEMPLATE_LABELS[gov.template] || gov.template || 'DAO';
   const repSymbol = gov.reputation_token?.symbol || 'REP';
@@ -242,6 +291,115 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* STORE */}
+      <section id="store" style={{ padding: '1rem 2rem 1rem', scrollMarginTop: '80px' }}>
+        <div style={{ maxWidth: '760px', margin: '0 auto' }}>
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={cardLabelStyle}>STORE</div>
+              {isOwner && !showCreate && (
+                <button onClick={() => setShowCreate(true)} style={{
+                  fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold,
+                  background: 'transparent', border: `1px solid ${gold}`, padding: '8px 16px', cursor: 'pointer',
+                }}>+ CREATE PRODUCT</button>
+              )}
+            </div>
+
+            {/* Create product form */}
+            {isOwner && showCreate && (
+              <form onSubmit={handleCreateProduct} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: '#111', border: `1px solid ${gold}33`, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, marginBottom: '0.25rem' }}>NEW PRODUCT</div>
+                <input value={pName} onChange={e => setPName(e.target.value)} placeholder="Product name" required
+                  style={{ background: '#0a0a0a', border: `1px solid ${gold}22`, padding: '12px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
+                <textarea value={pDesc} onChange={e => setPDesc(e.target.value)} placeholder="Description" rows={2}
+                  style={{ background: '#0a0a0a', border: `1px solid ${gold}22`, padding: '12px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box', resize: 'none' }} />
+                <input value={pImage} onChange={e => setPImage(e.target.value)} placeholder="Image URL (optional)"
+                  style={{ background: '#0a0a0a', border: `1px solid ${gold}22`, padding: '12px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>PRICE</span>
+                  <input type="number" value={pPrice} onChange={e => setPPrice(parseInt(e.target.value) || 0)} min={0}
+                    style={{ flex: 1, background: '#0a0a0a', border: `1px solid ${gold}22`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {(['REP', 'GOV'] as const).map(t => (
+                      <button key={t} type="button" onClick={() => setPToken(t)} style={{
+                        fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em',
+                        color: pToken === t ? '#0a0a0a' : gold,
+                        background: pToken === t ? gold : 'transparent',
+                        border: `1px solid ${gold}44`, padding: '8px 12px', cursor: 'pointer',
+                      }}>${t}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '0.25rem' }}>
+                  <button type="submit" style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', cursor: 'pointer' }}>SAVE PRODUCT</button>
+                  <button type="button" onClick={() => setShowCreate(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 16px', height: '40px', cursor: 'pointer' }}>CANCEL</button>
+                </div>
+              </form>
+            )}
+
+            {/* Token-gated drop teaser */}
+            <div style={{
+              padding: '1rem 1.25rem', marginBottom: '1.5rem',
+              background: `linear-gradient(135deg, ${gold}10, transparent)`,
+              border: `1px solid ${gold}33`, borderLeft: `3px solid ${gold}`,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, marginBottom: '4px' }}>MEMBERS-ONLY DROP</div>
+                  <div style={{ fontSize: '15px', color: parchment, marginBottom: '2px' }}>Unlock with reputation.</div>
+                  <div style={{ fontSize: '12px', color: muted }}>Token-gated drops require ${repSymbol} balance to purchase.</div>
+                </div>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, border: `1px solid ${muted}44`, padding: '4px 10px' }}>COMING SOON</span>
+              </div>
+            </div>
+
+            {/* Product grid */}
+            {products.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1.5rem 1rem', border: `1px dashed ${gold}22` }}>
+                <p style={{ fontSize: '15px', color: parchment, fontStyle: 'italic', margin: 0, marginBottom: '0.25rem' }}>
+                  No products yet.
+                </p>
+                <p style={{ fontSize: '13px', color: muted, margin: 0 }}>
+                  {isOwner ? 'Create your first product to start building your DAO\u2019s storefront.' : 'The DAO owner hasn\u2019t added products yet.'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+                {products.map(p => (
+                  <div key={p.id} style={{ background: '#111', border: `1px solid ${gold}15`, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{
+                      width: '100%', aspectRatio: '1 / 1', background: '#0a0a0a',
+                      backgroundImage: p.imageUrl ? `url(${p.imageUrl})` : undefined,
+                      backgroundSize: 'cover', backgroundPosition: 'center',
+                      borderBottom: `1px solid ${gold}10`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {!p.imageUrl && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: `${muted}88` }}>NO IMAGE</span>}
+                    </div>
+                    <div style={{ padding: '0.875rem 1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.08em', color: parchment, marginBottom: '4px' }}>{p.name}</div>
+                      {p.description && <p style={{ fontSize: '12px', color: muted, lineHeight: 1.4, margin: 0, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.description}</p>}
+                      <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+                          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: gold }}>{p.price.toLocaleString()}</span>
+                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: muted }}>${p.tokenSymbol}</span>
+                        </div>
+                        <button disabled style={{
+                          width: '100%', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
+                          color: gold, background: 'transparent', border: `1px solid ${gold}33`,
+                          padding: '8px', cursor: 'not-allowed', opacity: 0.7,
+                        }}>BUY WITH TOKENS</button>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: `${muted}88`, textAlign: 'center', marginTop: '4px' }}>COMING SOON \u00b7 PHYSICAL FULFILLMENT</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
