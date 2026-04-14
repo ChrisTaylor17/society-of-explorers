@@ -23,6 +23,14 @@ export async function POST(req: NextRequest) {
   if (!questionId || !responseText) return NextResponse.json({ error: 'questionId and responseText required' }, { status: 400 });
   if (responseText.length > 280) return NextResponse.json({ error: 'Response must be 280 characters or less' }, { status: 400 });
 
+  // Detect if this is a first-time response for today (drives streak + total_responses)
+  const { data: existingResponse } = await supabase.from('question_responses')
+    .select('id')
+    .eq('member_id', auth.memberId)
+    .eq('question_id', questionId)
+    .maybeSingle();
+  const isFirstResponseToday = !existingResponse;
+
   // Upsert response
   const { error: respErr } = await supabase.from('question_responses').upsert({
     member_id: auth.memberId, question_id: questionId, response_text: responseText.trim(),
@@ -32,12 +40,16 @@ export async function POST(req: NextRequest) {
 
   // Update streak
   const today = getTodayET();
-  const { data: member } = await supabase.from('members')
+  const { data: member, error: memberErr } = await supabase.from('members')
     .select('current_streak, longest_streak, last_practice_date, total_responses')
     .eq('id', auth.memberId).single();
 
-  let streak = member?.current_streak || 0;
-  const lastDate = member?.last_practice_date;
+  if (memberErr || !member) {
+    return NextResponse.json({ error: `Member lookup failed: ${memberErr?.message || 'not found'}` }, { status: 500 });
+  }
+
+  let streak = member.current_streak || 0;
+  const lastDate = member.last_practice_date;
 
   if (lastDate === today) {
     // Already practiced today — don't change streak
@@ -49,21 +61,35 @@ export async function POST(req: NextRequest) {
     if (lastDate === yesterdayStr) {
       streak += 1; // Continue streak
     } else {
-      streak = 1; // Reset streak
+      streak = 1; // Reset streak (first response, or gap of 2+ days)
     }
   }
 
-  const longest = Math.max(streak, member?.longest_streak || 0);
-  const total = (member?.total_responses || 0) + (lastDate === today ? 0 : 1);
+  const longest = Math.max(streak, member.longest_streak || 0);
+  // Count this response if it's the member's first answer for this specific question
+  const total = (member.total_responses || 0) + (isFirstResponseToday ? 1 : 0);
 
-  await supabase.from('members').update({
-    current_streak: streak, longest_streak: longest,
-    last_practice_date: today, total_responses: total,
-  }).eq('id', auth.memberId);
+  const { data: updated, error: updErr } = await supabase.from('members').update({
+    current_streak: streak,
+    longest_streak: longest,
+    last_practice_date: today,
+    total_responses: total,
+  }).eq('id', auth.memberId)
+    .select('current_streak, longest_streak, total_responses, last_practice_date')
+    .single();
 
-  // Update engagement score
+  if (updErr) {
+    return NextResponse.json({ error: `Streak update failed: ${updErr.message}` }, { status: 500 });
+  }
+
+  // Update engagement score (best-effort)
   const { count } = await supabase.from('question_responses').select('*', { count: 'exact', head: true }).eq('question_id', questionId);
   await supabase.from('daily_questions').update({ engagement_score: count || 0 }).eq('id', questionId);
 
-  return NextResponse.json({ success: true, streak, longest, total });
+  return NextResponse.json({
+    success: true,
+    streak: updated?.current_streak ?? streak,
+    longest: updated?.longest_streak ?? longest,
+    total: updated?.total_responses ?? total,
+  });
 }
