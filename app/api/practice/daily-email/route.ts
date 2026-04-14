@@ -23,8 +23,8 @@ function getTomorrowET(): string {
   return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
-export async function POST(req: NextRequest) {
-  // Verify cron secret
+async function handler(req: NextRequest) {
+  // Verify cron secret (Vercel sends this automatically when CRON_SECRET is set)
   const authHeader = req.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -124,3 +124,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ sent, errors, total: members.length });
 }
+
+export const GET = handler;
+export const POST = handler;
