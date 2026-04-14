@@ -63,6 +63,12 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  // Purchase state
+  const [repBalance, setRepBalance] = useState(0);
+  const [buying, setBuying] = useState<string | null>(null);
+  const [purchaseError, setPurchaseError] = useState<{ productId: string; message: string } | null>(null);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     getMemberSession().then(s => { if (s?.member) setMemberId(s.member.id); }).catch(() => {});
 
@@ -80,6 +86,39 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // Fetch REP balance when member is known
+  useEffect(() => {
+    if (!memberId) { setRepBalance(0); return; }
+    fetch(`/api/store/balance?memberId=${memberId}`)
+      .then(r => r.json())
+      .then(d => setRepBalance(Number(d.balance) || 0))
+      .catch(() => {});
+  }, [memberId]);
+
+  async function handleBuy(productId: string) {
+    if (!memberId) { window.location.href = '/login'; return; }
+    setBuying(productId);
+    setPurchaseError(null);
+    try {
+      const res = await fetch('/api/store/buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, memberId, communitySlug: slug }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setPurchaseError({ productId, message: json.error || 'Purchase failed' });
+      } else {
+        if (typeof json.newBalance === 'number') setRepBalance(json.newBalance);
+        setPurchaseSuccess(productId);
+        setTimeout(() => setPurchaseSuccess(prev => (prev === productId ? null : prev)), 2000);
+      }
+    } catch (err: any) {
+      setPurchaseError({ productId, message: err?.message || 'Network error' });
+    }
+    setBuying(null);
+  }
 
   async function handleCreateProduct(e: React.FormEvent) {
     e.preventDefault();
@@ -375,6 +414,23 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
               </div>
             </div>
 
+            {/* Balance display */}
+            {memberId && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', marginBottom: '12px', background: `${gold}08`, border: `1px solid ${gold}22` }}>
+                <div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted }}>YOUR BALANCE</div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '20px', color: gold, lineHeight: 1.1, marginTop: '2px' }}>
+                    {repBalance.toLocaleString()} <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted }}>${repSymbol}</span>
+                  </div>
+                </div>
+                {repBalance === 0 && (
+                  <div style={{ fontSize: '12px', color: muted, textAlign: 'right', maxWidth: '220px' }}>
+                    Earn ${repSymbol} through Daily Practice and Salons.
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Product grid */}
             {products.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '1.5rem 1rem', border: `1px dashed ${gold}22` }}>
@@ -389,39 +445,101 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                {products.map(p => (
-                  <div key={p.id} style={{ background: '#111', border: `1px solid ${gold}15`, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{
-                      width: '100%', aspectRatio: '1 / 1', background: '#1a1a1a',
-                      backgroundImage: p.image_url ? `url(${p.image_url})` : undefined,
-                      backgroundSize: 'cover', backgroundPosition: 'center',
-                      borderBottom: `1px solid ${gold}10`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      position: 'relative',
-                    }}>
-                      {!p.image_url && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: `${muted}88` }}>NO IMAGE</span>}
-                      {p.is_token_gated && (
-                        <span style={{ position: 'absolute', top: 6, right: 6, fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, background: 'rgba(10,10,10,0.85)', border: `1px solid ${gold}66`, padding: '2px 6px' }}>GATED</span>
-                      )}
-                    </div>
-                    <div style={{ padding: '0.875rem 1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.08em', color: parchment, marginBottom: '4px' }}>{p.name}</div>
-                      {p.description && <p style={{ fontSize: '12px', color: muted, lineHeight: 1.4, margin: 0, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.description}</p>}
-                      <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: gold }}>{(p.price_rep || 0).toLocaleString()}</span>
-                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: muted }}>${repSymbol}</span>
+                {products.map(p => {
+                  const price = Number(p.price_rep) || 0;
+                  const affordable = repBalance >= price;
+                  const gatedBlocked = p.is_token_gated && !affordable;
+                  const isBuying = buying === p.id;
+                  const showSuccess = purchaseSuccess === p.id;
+                  const errForProduct = purchaseError?.productId === p.id ? purchaseError.message : null;
+
+                  let buyLabel = 'BUY';
+                  let buyDisabled = false;
+                  let buyBg: string = gold;
+                  let buyColor = '#0a0a0a';
+                  let buyCursor: 'pointer' | 'not-allowed' = 'pointer';
+                  let buyOpacity = 1;
+
+                  if (!memberId) {
+                    buyLabel = 'SIGN IN TO BUY';
+                    buyBg = 'transparent';
+                    buyColor = gold;
+                  } else if (gatedBlocked) {
+                    buyLabel = `REQUIRES ${price.toLocaleString()} $${repSymbol}`;
+                    buyDisabled = true;
+                    buyBg = 'transparent';
+                    buyColor = muted;
+                    buyCursor = 'not-allowed';
+                    buyOpacity = 0.7;
+                  } else if (!affordable) {
+                    buyLabel = `INSUFFICIENT $${repSymbol}`;
+                    buyDisabled = true;
+                    buyBg = 'transparent';
+                    buyColor = muted;
+                    buyCursor = 'not-allowed';
+                    buyOpacity = 0.7;
+                  } else if (isBuying) {
+                    buyLabel = 'BUYING...';
+                    buyDisabled = true;
+                    buyOpacity = 0.6;
+                  } else if (showSuccess) {
+                    buyLabel = 'PURCHASED';
+                    buyDisabled = true;
+                    buyBg = '#4CAF50';
+                    buyColor = '#0a0a0a';
+                  }
+
+                  return (
+                    <div key={p.id} style={{ background: '#111', border: `1px solid ${showSuccess ? '#4CAF50' : `${gold}15`}`, display: 'flex', flexDirection: 'column', transition: 'border-color 0.3s' }}>
+                      <div style={{
+                        width: '100%', aspectRatio: '1 / 1', background: '#1a1a1a',
+                        backgroundImage: p.image_url ? `url(${p.image_url})` : undefined,
+                        backgroundSize: 'cover', backgroundPosition: 'center',
+                        borderBottom: `1px solid ${gold}10`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        position: 'relative',
+                      }}>
+                        {!p.image_url && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: `${muted}88` }}>NO IMAGE</span>}
+                        {p.is_token_gated && (
+                          <span style={{ position: 'absolute', top: 6, right: 6, fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, background: 'rgba(10,10,10,0.85)', border: `1px solid ${gold}66`, padding: '2px 6px' }}>GATED</span>
+                        )}
+                      </div>
+                      <div style={{ padding: '0.875rem 1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.08em', color: parchment, marginBottom: '4px' }}>{p.name}</div>
+                        {p.description && <p style={{ fontSize: '12px', color: muted, lineHeight: 1.4, margin: 0, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.description}</p>}
+                        <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+                            <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: gold }}>{price.toLocaleString()}</span>
+                            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: muted }}>${repSymbol}</span>
+                          </div>
+                          {!memberId ? (
+                            <a href="/login" style={{
+                              display: 'block', textAlign: 'center', textDecoration: 'none',
+                              width: '100%', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em',
+                              color: gold, background: 'transparent', border: `1px solid ${gold}`,
+                              padding: '8px', boxSizing: 'border-box',
+                            }}>SIGN IN TO BUY</a>
+                          ) : (
+                            <button
+                              onClick={() => !buyDisabled && handleBuy(p.id)}
+                              disabled={buyDisabled}
+                              style={{
+                                width: '100%', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em',
+                                color: buyColor, background: buyBg,
+                                border: buyBg === 'transparent' ? `1px solid ${buyColor}66` : 'none',
+                                padding: '8px', cursor: buyCursor, opacity: buyOpacity,
+                                transition: 'background 0.2s, color 0.2s',
+                              }}
+                            >{buyLabel}</button>
+                          )}
+                          {errForProduct && (
+                            <div style={{ fontSize: '11px', color: '#DC143C', marginTop: '4px', lineHeight: 1.3 }}>{errForProduct}</div>
+                          )}
                         </div>
-                        <button disabled style={{
-                          width: '100%', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em',
-                          color: '#0a0a0a', background: gold, border: 'none',
-                          padding: '8px', cursor: 'not-allowed', opacity: 0.4,
-                        }}>BUY</button>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: `${muted}88`, textAlign: 'center', marginTop: '4px' }}>WALLET COMING SOON</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
