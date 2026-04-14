@@ -236,15 +236,15 @@ export default function HomePage() {
       <section style={{ padding: '8rem 2rem 4rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>SOCIETY OF EXPLORERS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 7vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.2, marginBottom: '1.5rem', color: parchment }}>
-            Six philosophers. One council. Your question.
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 6vw, 44px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, marginBottom: '1.5rem', color: parchment }}>
+            A daily philosophical practice. Real conversations with real people.
           </h1>
           <p style={{ fontSize: '18px', color: ivory85, lineHeight: 1.8, maxWidth: '560px', margin: '0 auto 2.5rem', fontFamily: 'Cormorant Garamond, serif' }}>
-            Socrates, Plato, Aurelius, Nietzsche, Einstein, and Jobs — reimagined as modern AI advisors. They debate each other. They remember you. They push you to become more.
+            Six AI thinkers generate your daily question. You respond. You connect with fellow explorers. You grow.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>TRY COUNCIL MODE</a>
-            <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, background: 'transparent', border: `1px solid ${gold}`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>JOIN</a>
+            <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>START PRACTICING</a>
+            <a href="/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, background: 'transparent', border: `1px solid ${gold}`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>TRY COUNCIL MODE</a>
           </div>
         </div>
       </section>
@@ -354,9 +354,9 @@ export default function HomePage() {
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1px', background: `${gold}10` }}>
             {[
-              { label: 'ASK', desc: 'Bring any question. Career, philosophy, ethics, strategy.' },
-              { label: 'DEBATE', desc: 'Six thinkers respond simultaneously, each from their unique framework.' },
-              { label: 'DECIDE', desc: 'Get a shareable verdict card. The Council remembers your journey.' },
+              { label: 'PRACTICE', desc: 'Every morning, a thinker poses a question. You respond in 280 characters. See what others are thinking.' },
+              { label: 'CONNECT', desc: 'After 7 days, we match you with a fellow explorer for a structured philosophical conversation.' },
+              { label: 'GATHER', desc: 'Weekly salons bring 8-12 members together for AI-facilitated discussions. In Boston and online.' },
             ].map(c => (
               <div key={c.label} style={{ background: '#0d0d0d', padding: '2rem', border: `1px solid rgba(201,168,76,0.12)` }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>{c.label}</div>
