@@ -65,12 +65,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Insufficient $${repSymbol} balance`, balance, required: price }, { status: 400 });
   }
 
-  // Deduct via negative exp_events row (existing schema uses `reason` + `source`)
+  // Deduct via negative exp_events row (schema has member_id, amount, reason)
   const { error: debitErr } = await supabase.from('exp_events').insert({
     member_id: memberId,
     amount: -price,
-    reason: `Purchased: ${product.name}`,
-    source: `store:${communitySlug}:${productId}`,
+    reason: `Purchased: ${product.name} [store:${communitySlug}:${productId}]`,
   });
 
   if (debitErr) {
@@ -104,8 +103,7 @@ export async function POST(req: NextRequest) {
     await supabase.from('exp_events').insert({
       member_id: memberId,
       amount: price,
-      reason: `Refund: order failed for ${product.name}`,
-      source: `store:${communitySlug}:${productId}:refund`,
+      reason: `Refund: order failed for ${product.name} [store:${communitySlug}:${productId}:refund]`,
     });
     if (m) {
       await supabase.from('members').update({ exp_tokens: Number(m.exp_tokens) || 0 }).eq('id', memberId);
