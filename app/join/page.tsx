@@ -21,9 +21,9 @@ const TIERS = [
     tagline: 'Begin your journey',
     features: [
       '3 Council questions per day',
+      'Daily Practice included — start your streak today',
       'Browse the Constellation',
       'Read verdict cards',
-      'No salon access',
     ],
   },
   {
@@ -32,10 +32,10 @@ const TIERS = [
     tagline: 'Find your people',
     features: [
       'Unlimited Council access',
+      'Matched philosophical conversations — AI pairs you with fellow explorers',
       'Join a 7-week salon',
       'Earn $EXP tokens',
       'Voice conversations with thinkers',
-      'Activity feed access',
     ],
     note: 'Covers our infrastructure costs',
   },
