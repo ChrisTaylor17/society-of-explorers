@@ -43,6 +43,8 @@ export default function PracticePage() {
   const [loading, setLoading] = useState(true);
   const [myResponse, setMyResponse] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -101,9 +103,31 @@ export default function PracticePage() {
     setSubmitting(false);
   }
 
+  function buildShareText() {
+    return `\u201c${question.question_text}\u201d \u2014 ${thinkerName}\n\nMy answer: ${myResponse}\n\nhttps://societyofexplorers.com/practice`;
+  }
+
   function handleShare() {
-    const text = `"${question.question_text}" \u2014 ${thinkerName}\n\nMy answer: ${myResponse}\n\nhttps://societyofexplorers.com/practice`;
-    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {});
+    navigator.clipboard.writeText(buildShareText()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }
+
+  function handleNativeShare() {
+    if (navigator.share) {
+      navigator.share({ title: `${thinkerName} asks...`, text: buildShareText() }).catch(() => {});
+    } else {
+      handleShare();
+    }
+  }
+
+  function handleInvite() {
+    const inviteText = `I\u2019ve been doing this daily philosophical practice \u2014 one question every morning from AI thinkers like Socrates and Nietzsche. Try today\u2019s question:\n\nhttps://societyofexplorers.com/practice`;
+    navigator.clipboard.writeText(inviteText).then(() => {
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    }).catch(() => {});
   }
 
   const thinkerName = question ? THINKER_NAMES[question.thinker_id] || question.thinker_id : '';
@@ -142,16 +166,68 @@ export default function PracticePage() {
               {/* Response area */}
               {submitted || myResponse ? (
                 <div style={{ animation: 'fadeIn 0.5s ease' }}>
-                  <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '16px', textAlign: 'left', marginBottom: '0.5rem' }}>
+                  {/* Your response card */}
+                  <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '16px', textAlign: 'left', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold }}>YOUR RESPONSE</span>
                       <span style={{ fontSize: '12px', color: '#4CAF50' }}>{'\u2713'}</span>
                     </div>
                     <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.7, margin: 0 }}>{myResponse || response}</p>
                   </div>
-                  <button onClick={handleShare} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: muted, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', position: 'relative' }}>
-                    {copied ? 'COPIED!' : 'SHARE'}
-                  </button>
+
+                  {/* Share + Invite row */}
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                    <button onClick={() => setShowShareCard(!showShareCard)} style={{
+                      fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold,
+                      background: 'transparent', border: `1px solid ${gold}44`, padding: '8px 20px', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${gold}0a`; e.currentTarget.style.borderColor = gold; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${gold}44`; }}
+                    >SHARE YOUR ANSWER</button>
+                    <button onClick={handleInvite} style={{
+                      fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: muted,
+                      background: 'transparent', border: `1px solid ${muted}33`, padding: '8px 20px', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.color = gold; e.currentTarget.style.borderColor = `${gold}44`; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = muted; e.currentTarget.style.borderColor = `${muted}33`; }}
+                    >{inviteCopied ? 'LINK COPIED!' : 'INVITE A FRIEND'}</button>
+                  </div>
+
+                  {/* Expandable share card */}
+                  {showShareCard && (
+                    <div style={{ animation: 'fadeIn 0.3s ease', marginBottom: '1rem' }}>
+                      <div style={{
+                        background: '#0d0d0d', border: `1px solid ${gold}33`, padding: '1.5rem',
+                        maxWidth: '440px', margin: '0.75rem auto 0', textAlign: 'left',
+                        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+                      }}>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>SOCIETY OF EXPLORERS</div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `${thinkerColor}18`, border: `1.5px solid ${thinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '8px', color: thinkerColor }}>{thinkerAvatar}</div>
+                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: thinkerColor }}>{thinkerName.toUpperCase()}</span>
+                        </div>
+                        <p style={{ fontSize: '16px', color: parchment, fontStyle: 'italic', lineHeight: 1.6, marginBottom: '1rem' }}>&ldquo;{question.question_text}&rdquo;</p>
+                        <div style={{ borderTop: `1px solid ${gold}15`, paddingTop: '0.75rem' }}>
+                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginBottom: '4px' }}>MY ANSWER</div>
+                          <p style={{ fontSize: '14px', color: ivory85, lineHeight: 1.6, margin: 0 }}>{myResponse || response}</p>
+                        </div>
+                        <div style={{ borderTop: `1px solid ${gold}08`, marginTop: '1rem', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: `${gold}66` }}>societyofexplorers.com/practice</span>
+                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: `${muted}88` }}>Daily Practice</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '0.75rem' }}>
+                        <button onClick={handleShare} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold, background: `${gold}0a`, border: `1px solid ${gold}44`, padding: '6px 16px', cursor: 'pointer' }}>
+                          {copied ? 'COPIED!' : 'COPY TEXT'}
+                        </button>
+                        <button onClick={handleNativeShare} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold, background: `${gold}0a`, border: `1px solid ${gold}44`, padding: '6px 16px', cursor: 'pointer' }}>
+                          SHARE...
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : memberId ? (
                 <div style={{ marginBottom: '1rem' }}>
@@ -218,6 +294,14 @@ export default function PracticePage() {
             </div>
           </div>
           <p style={{ fontSize: '13px', color: muted, fontStyle: 'italic' }}>{streakMessage(streak.current_streak)}</p>
+          {streak.total_responses > 0 && streak.total_responses < 7 && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <div style={{ width: '200px', height: '4px', background: '#1a1a1a', borderRadius: '2px', margin: '0 auto' }}>
+                <div style={{ height: '100%', width: `${Math.min((streak.total_responses / 7) * 100, 100)}%`, background: gold, borderRadius: '2px', transition: 'width 0.5s ease' }} />
+              </div>
+              <p style={{ fontSize: '11px', color: `${muted}88`, marginTop: '4px' }}>{streak.total_responses}/7 to unlock Matched Conversations</p>
+            </div>
+          )}
         </div>
       </section>
 
