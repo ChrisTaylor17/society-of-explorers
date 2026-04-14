@@ -161,8 +161,12 @@ export default function SalonPage() {
         <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {recruiting.length === 0 && (
             <div style={{ textAlign: 'center', padding: '3rem', border: `1px solid ${gold}15` }}>
-              <p style={{ fontSize: '18px', color: muted, fontStyle: 'italic', marginBottom: '1rem' }}>No salons recruiting right now.</p>
-              <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none' }}>JOIN TO BE NOTIFIED &rarr;</a>
+              <p style={{ fontSize: '18px', color: muted, fontStyle: 'italic', marginBottom: '0.75rem' }}>No salons recruiting right now.</p>
+              <p style={{ fontSize: '14px', color: muted, marginBottom: '1.5rem' }}>Start your daily practice while you wait. The first salon launches when we reach 8 members.</p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '0 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '40px' }}>DAILY PRACTICE</a>
+                <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '0 20px', display: 'inline-flex', alignItems: 'center', height: '40px' }}>JOIN</a>
+              </div>
             </div>
           )}
           {recruiting.map(s => (
