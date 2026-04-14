@@ -185,6 +185,21 @@ export default function PracticePage() {
         </div>
       </section>
 
+      {/* MATCH UNLOCK BANNER */}
+      {memberId && streak.total_responses >= 7 && (
+        <section style={{ padding: '0 2rem 1.5rem' }}>
+          <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+            <a href="/match" style={{ display: 'block', background: `${gold}0a`, border: `1px solid ${gold}22`, padding: '16px 20px', textDecoration: 'none', textAlign: 'center', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = `${gold}66`}
+              onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}22`}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, marginBottom: '6px' }}>UNLOCKED</div>
+              <div style={{ fontSize: '16px', color: parchment, marginBottom: '4px' }}>You&apos;ve earned a Matched Conversation</div>
+              <div style={{ fontSize: '13px', color: muted }}>We&apos;ll pair you with a fellow explorer for a structured philosophical exchange.</div>
+            </a>
+          </div>
+        </section>
+      )}
+
       {/* STREAK */}
       <section style={{ padding: '0 2rem 3rem' }}>
         <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
