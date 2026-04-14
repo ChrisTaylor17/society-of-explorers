@@ -1,88 +1,72 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { getMemberSession } from '@/lib/auth/getSession';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-const GUIDES = [
-  { id: 'socrates', name: 'Socrates', avatar: 'SO', color: '#C9A94E', step: 0 },
-  { id: 'plato', name: 'Plato', avatar: 'PL', color: '#7B68EE', step: 1 },
-  { id: 'nietzsche', name: 'Nietzsche', avatar: 'FN', color: '#DC143C', step: 2 },
-  { id: 'aurelius', name: 'Aurelius', avatar: 'MA', color: '#8B7355', step: 3 },
-  { id: 'jobs', name: 'Jobs', avatar: 'SJ', color: '#A0A0A0', step: 4 },
-  { id: 'einstein', name: 'Einstein', avatar: 'AE', color: '#4169E1', step: 5 },
-];
-
-const STEP_LABELS = ['VISION', 'PHILOSOPHY', 'QUESTIONNAIRE', 'GOVERNANCE', 'TREASURY', 'LAUNCH'];
-const ORIENTATIONS = ['stoic', 'existentialist', 'pragmatist', 'phenomenological', 'eastern', 'eclectic'];
-const GOVERNANCE_TYPES = [
-  { id: 'dao', label: 'DAO', desc: 'Democratic — members vote on decisions. Smart contract enforces outcomes.' },
-  { id: 'benevolent', label: 'Benevolent Leader', desc: 'You make decisions, members advise. Treasury under your stewardship.' },
-  { id: 'council', label: 'Council of Elders', desc: 'Small elected council governs. Multi-sig treasury.' },
-];
+const STEP_LABELS = ['MISSION', 'INFRASTRUCTURE', 'TOKENS', 'LAUNCH'];
 
 const DAO_TEMPLATES = [
-  { id: 'philosophy-salon', label: 'Philosophy Salon', desc: '7-week cohort structure with rotating tracks. Guide flywheel enabled.', icon: '\u03A6' },
-  { id: 'research-collective', label: 'Research Collective', desc: 'Shared inquiry into a specific domain. Publish together.', icon: '\u2234' },
-  { id: 'book-club', label: 'Reading Circle', desc: 'Structured deep reading with AI-facilitated discussion.', icon: '\u2261' },
-  { id: 'custom', label: 'Custom DAO', desc: 'Build your community from scratch. Full control.', icon: '\u2726' },
+  { id: 'depin-sensor', label: 'DePIN Sensor Network', desc: 'Distributed sensor grid. Members host nodes, collect environmental data, earn for uptime + bandwidth.', domains: ['Air quality', 'Noise', 'Radio spectrum', 'Soil'] },
+  { id: 'citizen-bio', label: 'Citizen Bio Lab', desc: 'Distributed biology. Water testing, soil microbiome, species counts, at-home PCR kits. Contributors verify with photo + geolocation.', domains: ['Microbiome', 'Water', 'Species', 'Genomics'] },
+  { id: 'climate-grid', label: 'Climate Monitoring Grid', desc: 'Weather stations, CO2 sensors, ocean buoys, glacier cameras. Open dataset, on-chain attestation.', domains: ['Weather', 'CO2/VOC', 'Marine', 'Ice'] },
+  { id: 'open-hardware', label: 'Open Hardware Collective', desc: 'Design, manufacture, and distribute open hardware. Contributors earn for schematics, firmware, and assembly.', domains: ['Firmware', 'PCB', 'Mech', 'Docs'] },
+  { id: 'habit-layer', label: 'Habit / Research Layer', desc: 'Daily practice, streaks, cohorts. Run behavioral studies with real participant commitment. (SOE model.)', domains: ['Habits', 'Cohorts', 'Surveys', 'Rituals'] },
+  { id: 'custom', label: 'Custom DAO', desc: 'Start from scratch. Define your own mission, infrastructure, and incentives.', domains: ['Configurable'] },
 ];
 
-const TREASURY_PRESETS: Record<string, { perTx: number; daily: number; weekly: number; initial: number }> = {
-  'philosophy-salon': { perTx: 50, daily: 200, weekly: 1000, initial: 5000 },
-  'research-collective': { perTx: 100, daily: 500, weekly: 2000, initial: 10000 },
-  'book-club': { perTx: 25, daily: 100, weekly: 500, initial: 2500 },
-  'custom': { perTx: 50, daily: 250, weekly: 1000, initial: 5000 },
-};
+const DATA_METHODS = [
+  { id: 'sensors', label: 'Sensor nodes (hardware devices)' },
+  { id: 'mobile', label: 'Mobile app / in-the-wild observations' },
+  { id: 'field-stations', label: 'Field stations / physical sites' },
+  { id: 'lab-kits', label: 'At-home / distributed lab kits' },
+  { id: 'web-scrape', label: 'Web / satellite / public data' },
+  { id: 'survey', label: 'Structured surveys / participant reports' },
+];
 
-export default function CreateCommunityPage() {
-  const router = useRouter();
+const VERIFICATION_METHODS = [
+  { id: 'crypto-attest', label: 'Cryptographic attestation (signed by device)' },
+  { id: 'geo-photo', label: 'Geolocation + photo' },
+  { id: 'peer-review', label: 'Peer-review by other members' },
+  { id: 'oracle', label: 'Oracle / trusted third-party' },
+];
+
+export default function CreateDAOPage() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [step, setStep] = useState(0);
 
-  // Step 0: Vision
+  // Step 1: Mission
+  const [template, setTemplate] = useState('depin-sensor');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
-  const [mission, setMission] = useState('');
-  const [template, setTemplate] = useState('philosophy-salon');
+  const [description, setDescription] = useState('');
+  const [problem, setProblem] = useState('');
 
-  // Step 1: Philosophy
-  const [orientation, setOrientation] = useState('eclectic');
-  const [customOrientation, setCustomOrientation] = useState('');
+  // Step 2: Infrastructure
+  const [methods, setMethods] = useState<string[]>(['sensors']);
+  const [verification, setVerification] = useState('geo-photo');
+  const [hardwareNeeded, setHardwareNeeded] = useState('');
+  const [dataGoal, setDataGoal] = useState('');
 
-  // Step 2: Questionnaire
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [generatingQs, setGeneratingQs] = useState(false);
-
-  // Step 3: Governance
-  const [govType, setGovType] = useState('dao');
-  const [votingThreshold, setVotingThreshold] = useState(51);
-  const [membershipType, setMembershipType] = useState('free');
-
-  // Step 4: Treasury & Blockchain
-  const [perTxLimit, setPerTxLimit] = useState(50);
-  const [dailyLimit, setDailyLimit] = useState(200);
-  const [weeklyLimit, setWeeklyLimit] = useState(1000);
-  const [initialTreasury, setInitialTreasury] = useState(5000);
-  const [micropayments, setMicropayments] = useState(true);
-  const [tokenSymbol, setTokenSymbol] = useState('EXP');
-
-  // Thinker guidance
-  const [guidance, setGuidance] = useState('');
-  const [guidanceLoading, setGuidanceLoading] = useState(false);
+  // Step 3: Tokens & Incentives
+  const [repSymbol, setRepSymbol] = useState('REP');
+  const [govSymbol, setGovSymbol] = useState('GOV');
+  const [initialTreasury, setInitialTreasury] = useState(10000);
+  const [rewardContribution, setRewardContribution] = useState(10);
+  const [rewardParticipation, setRewardParticipation] = useState(5);
+  const [rewardAnalysis, setRewardAnalysis] = useState(25);
 
   // Deploy state
   const [submitting, setSubmitting] = useState(false);
   const [deploySteps, setDeploySteps] = useState<{ label: string; status: 'pending' | 'deploying' | 'done' | 'error' }[]>([]);
-  const [createdCommunity, setCreatedCommunity] = useState<any>(null);
+  const [createdDao, setCreatedDao] = useState<any>(null);
 
   useEffect(() => {
     async function load() {
@@ -99,194 +83,99 @@ export default function CreateCommunityPage() {
     setSlug(name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').slice(0, 50));
   }, [name]);
 
-  // Apply template presets
-  useEffect(() => {
-    const preset = TREASURY_PRESETS[template] || TREASURY_PRESETS['custom'];
-    setPerTxLimit(preset.perTx);
-    setDailyLimit(preset.daily);
-    setWeeklyLimit(preset.weekly);
-    setInitialTreasury(preset.initial);
-  }, [template]);
-
-  const askThinker = useCallback(async (thinkerId: string, prompt: string) => {
-    setGuidanceLoading(true);
-    setGuidance('');
-    try {
-      const res = await fetch('/api/thinker', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify({
-          thinkerId, message: prompt, memberId, isCouncilMode: true,
-          salonId: 'community-architect',
-        }),
-      });
-      if (!res.ok) { setGuidance(''); setGuidanceLoading(false); return; }
-      const reader = res.body!.getReader();
-      const dec = new TextDecoder();
-      let text = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        for (const line of dec.decode(value, { stream: true }).split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const evt = JSON.parse(line.slice(6));
-            if (evt.delta) { text += evt.delta; setGuidance(text); }
-            if (evt.done && evt.response) { text = evt.response.split('|||ACTIONS|||')[0].trim(); setGuidance(text); }
-          } catch {}
-        }
-      }
-    } catch {}
-    setGuidanceLoading(false);
-  }, [authToken, memberId]);
-
-  // Trigger thinker guidance on step change
-  useEffect(() => {
-    const guide = GUIDES[step];
-    if (!guide || step >= 6) return;
-    const templateLabel = DAO_TEMPLATES.find(t => t.id === template)?.label || template;
-    const prompts: Record<number, string> = {
-      0: `I'm creating a new intellectual community${name ? ` called "${name}"` : ''} using the ${templateLabel} template. ${mission ? `Our mission: "${mission}".` : ''} As Socrates, ask me ONE probing question about why this community needs to exist. Be direct. 2-3 sentences max.`,
-      1: `This community${name ? ` "${name}"` : ''} has orientation: ${orientation}. As Plato, articulate the intellectual framework in 2-3 sentences. What Form does this community aspire toward?`,
-      2: `Create 7 philosophical matching questions for a ${orientation} community${name ? ` called "${name}"` : ''}. Each question should reveal genuine philosophical differences, not personality traits. Format: numbered list, each with the philosophical axis it measures (epistemology/ethics/metaphysics/aesthetics/politics). Be provocative.`,
-      3: `This community uses ${GOVERNANCE_TYPES.find(g => g.id === govType)?.label} governance with ${votingThreshold}% voting threshold. As Aurelius, give stoic counsel on whether this governance design will serve the community well. 2-3 sentences.`,
-      4: `This community "${name}" has a treasury of ${initialTreasury} $${tokenSymbol} with per-transaction limit ${perTxLimit}, daily limit ${dailyLimit}. Micropayments ${micropayments ? 'enabled' : 'disabled'}. As Jobs, evaluate this economic design. Is it simple enough? Will it create the right incentives? 2-3 sentences.`,
-      5: `Summarize this community: "${name}" — ${mission}. ${orientation} orientation, ${govType} governance, ${questions.length} matching questions, treasury of ${initialTreasury} $${tokenSymbol}. As Einstein, describe its architecture elegantly in 2-3 sentences.`,
-    };
-    if (prompts[step]) askThinker(guide.id, prompts[step]);
-  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function generateQuestions() {
-    setGeneratingQs(true);
-    await askThinker('nietzsche', `Create exactly 7 philosophical matching questions for a ${orientation} community called "${name}". Mission: "${mission}". Each question should be rated 1-7 by the respondent. Format as a JSON array: [{"id":"q1","text":"question text","philosophical_axis":"epistemology|ethics|metaphysics|aesthetics|politics","type":"scale"}]. Return ONLY the JSON array.`);
-    setGeneratingQs(false);
+  function toggleMethod(id: string) {
+    setMethods(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
   }
 
-  // Parse questions from guidance when it changes (for step 2)
-  useEffect(() => {
-    if (step === 2 && guidance) {
-      try {
-        const match = guidance.match(/\[[\s\S]*\]/);
-        if (match) {
-          const parsed = JSON.parse(match[0]);
-          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].text) setQuestions(parsed);
-        }
-      } catch {}
-    }
-  }, [guidance, step]);
-
-  async function handleCreate() {
+  async function handleDeploy() {
     if (!memberId || !name || !slug) return;
     setSubmitting(true);
 
     const steps = [
-      { label: 'Creating community', status: 'deploying' as const },
+      { label: 'Creating DAO record', status: 'deploying' as const },
       { label: 'Initializing governance roles', status: 'pending' as const },
-      { label: 'Generating treasury wallet', status: 'pending' as const },
-      { label: 'Configuring $' + tokenSymbol + ' soulbound token', status: 'pending' as const },
-      { label: 'Setting spending limits', status: 'pending' as const },
-      ...(micropayments ? [{ label: 'Enabling micropayments', status: 'pending' as const }] : []),
-      { label: 'Deploying governance contract', status: 'pending' as const },
+      { label: 'Generating non-custodial treasury', status: 'pending' as const },
+      { label: `Configuring $${repSymbol} soulbound token`, status: 'pending' as const },
+      { label: `Configuring $${govSymbol} governance token`, status: 'pending' as const },
+      { label: 'Setting reward rules', status: 'pending' as const },
+      { label: 'Registering infrastructure spec', status: 'pending' as const },
       { label: 'Finalizing', status: 'pending' as const },
     ];
     setDeploySteps(steps);
-    setStep(6);
+    setStep(4);
 
     const updateStep = (idx: number, status: 'deploying' | 'done' | 'error') => {
       setDeploySteps(prev => prev.map((s, i) => i === idx ? { ...s, status } : i === idx + 1 && status === 'done' ? { ...s, status: 'deploying' } : s));
     };
 
     try {
-      // Step 1: Create community
       const res = await fetch('/api/communities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(), slug, description: mission.trim(),
-          primaryColor: gold, theme: 'dark', memberId,
-        }),
+        body: JSON.stringify({ name: name.trim(), slug, description: description.trim(), primaryColor: gold, theme: 'dark', memberId }),
       });
       const data = await res.json();
       if (!data.community) { updateStep(0, 'error'); setSubmitting(false); return; }
       updateStep(0, 'done');
 
-      const communityId = data.community.id;
+      const daoId = data.community.id;
       const supabase = createClient();
 
-      // Step 2: Governance roles (already initialized by API, just confirm)
-      await new Promise(r => setTimeout(r, 600));
-      updateStep(1, 'done');
+      await new Promise(r => setTimeout(r, 500)); updateStep(1, 'done');
+      await new Promise(r => setTimeout(r, 700)); updateStep(2, 'done');
 
-      // Step 3: Treasury wallet
-      await new Promise(r => setTimeout(r, 800));
-      updateStep(2, 'done');
-
-      // Step 4: $EXP token config
       await (supabase as any).from('communities').update({
-        philosophy_orientation: orientation === 'eclectic' && customOrientation ? customOrientation : orientation,
-        governance_type: govType,
-        voting_threshold: votingThreshold / 100,
-        mission: mission.trim(),
-      }).eq('id', communityId);
-      await new Promise(r => setTimeout(r, 600));
-      updateStep(3, 'done');
+        mission: problem.trim() || description.trim(),
+        governance_type: 'dao',
+      }).eq('id', daoId);
+      await new Promise(r => setTimeout(r, 600)); updateStep(3, 'done');
+      await new Promise(r => setTimeout(r, 500)); updateStep(4, 'done');
 
-      // Step 5: Spending limits
-      const { data: wallets } = await (supabase as any).from('agent_wallets').select('id').eq('community_id', communityId);
+      // Spending limits
+      const { data: wallets } = await (supabase as any).from('agent_wallets').select('id').eq('community_id', daoId);
       if (wallets && wallets.length > 0) {
         for (const w of wallets) {
           await (supabase as any).from('agent_spending_limits').upsert({
             wallet_id: w.id,
-            max_per_transaction: perTxLimit,
-            max_daily: dailyLimit,
-            max_weekly: weeklyLimit,
-            human_approval_threshold: perTxLimit * 5,
+            max_per_transaction: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 5,
+            max_daily: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 20,
+            max_weekly: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 100,
+            human_approval_threshold: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 20,
           }, { onConflict: 'wallet_id' });
         }
       }
-      await new Promise(r => setTimeout(r, 500));
-      updateStep(4, 'done');
+      await new Promise(r => setTimeout(r, 500)); updateStep(5, 'done');
 
-      // Step 6: Micropayments (if enabled)
-      let stepOffset = 5;
-      if (micropayments) {
-        await new Promise(r => setTimeout(r, 700));
-        updateStep(stepOffset, 'done');
-        stepOffset++;
-      }
-
-      // Step 7: Governance contract
-      await (supabase as any).from('community_contracts').insert({
-        community_id: communityId, contract_type: 'governance',
-        status: 'deployed',
-        parameters: {
-          governance_type: govType,
-          voting_threshold: votingThreshold,
-          membership_type: membershipType,
-          template,
-          token_symbol: tokenSymbol,
-          micropayments_enabled: micropayments,
-          treasury_config: { initial: initialTreasury, perTx: perTxLimit, daily: dailyLimit, weekly: weeklyLimit },
+      // Governance + infrastructure contract config
+      await (supabase as any).from('community_contracts').insert([
+        {
+          community_id: daoId, contract_type: 'governance',
+          status: 'deployed',
+          parameters: {
+            template, governance_type: 'dao', voting_threshold: 51,
+            reputation_token: { symbol: repSymbol, soulbound: true, standard: 'Solana Token-2022' },
+            governance_token: { symbol: govSymbol, transferable: true },
+            initial_treasury: initialTreasury,
+            rewards: { contribution: rewardContribution, participation: rewardParticipation, analysis: rewardAnalysis },
+          },
         },
-      });
-      await new Promise(r => setTimeout(r, 800));
-      updateStep(stepOffset, 'done');
+        {
+          community_id: daoId, contract_type: 'infrastructure',
+          status: 'deployed',
+          parameters: {
+            data_methods: methods,
+            verification_method: verification,
+            hardware_needed: hardwareNeeded,
+            data_goal: dataGoal,
+            problem_statement: problem,
+          },
+        },
+      ]);
+      await new Promise(r => setTimeout(r, 700)); updateStep(6, 'done');
+      await new Promise(r => setTimeout(r, 400)); updateStep(7, 'done');
 
-      // Step 8: Save questionnaire + finalize
-      if (questions.length > 0) {
-        await (supabase as any).from('community_questionnaire').upsert({
-          community_id: communityId, questions,
-        }, { onConflict: 'community_id' });
-      }
-      await new Promise(r => setTimeout(r, 400));
-      updateStep(stepOffset + 1, 'done');
-
-      setCreatedCommunity(data.community);
+      setCreatedDao(data.community);
     } catch {
-      // Mark current deploying step as error
       setDeploySteps(prev => prev.map(s => s.status === 'deploying' ? { ...s, status: 'error' } : s));
     }
     setSubmitting(false);
@@ -298,350 +187,281 @@ export default function CreateCommunityPage() {
     boxSizing: 'border-box', transition: 'box-shadow 0.2s',
   };
 
-  const guide = GUIDES[step];
-
   if (!memberId) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
         <PublicNav />
         <div style={{ padding: '10rem 2rem', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>CONSILIENCE PLATFORM</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '1rem' }}>Build your own intellectual community</h1>
-          <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '480px', margin: '0 auto 2rem' }}>
-            AI thinkers guide you through every step. Instant DAO creation with treasury, governance, and soulbound tokens.
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>CONSILIENCE SYSTEMS</div>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 5vw, 40px)', fontWeight: 400, color: parchment, marginBottom: '1rem', lineHeight: 1.2 }}>
+            Launch your own citizen-science DAO.
+          </h1>
+          <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '520px', margin: '0 auto 2rem' }}>
+            Run real-world experiments, own the data, reward contributors. Four steps. Non-custodial. Open protocol.
           </p>
-          <a href="/login" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px' }}>SIGN IN TO CREATE</a>
+          <a href="/login" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>SIGN IN TO CREATE</a>
         </div>
         <PublicFooter />
-        <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
       </div>
     );
   }
 
+  const tpl = DAO_TEMPLATES.find(t => t.id === template);
+
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
 
       {/* Progress bar */}
-      {step < 6 && (
+      {step < 4 && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, zIndex: 190, background: '#0a0a0a', padding: '8px 2rem', borderBottom: `1px solid ${gold}11` }}>
-          <div style={{ maxWidth: '560px', margin: '0 auto', display: 'flex', gap: '4px' }}>
+          <div style={{ maxWidth: '640px', margin: '0 auto', display: 'flex', gap: '6px' }}>
             {STEP_LABELS.map((label, i) => (
               <div key={label} style={{ flex: 1, textAlign: 'center' }}>
                 <div style={{ height: '3px', background: i <= step ? gold : '#1a1a1a', borderRadius: '2px', marginBottom: '4px', transition: 'background 0.3s' }} />
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: i <= step ? gold : muted }}>{label}</span>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: i <= step ? gold : muted }}>{label}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <section style={{ padding: step < 6 ? '7rem 2rem 2rem' : '8rem 2rem 2rem', textAlign: 'center' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>
-          {step < 6 ? 'CREATE YOUR COMMUNITY' : 'DEPLOYING'}
+      <section style={{ padding: step < 4 ? '7rem 2rem 2rem' : '8rem 2rem 2rem', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '0.5rem' }}>
+          {step < 4 ? 'CREATE YOUR DAO' : 'DEPLOYING'}
         </div>
+        {step < 4 && <p style={{ fontSize: '14px', color: muted }}>Step {step + 1} of 4 &middot; {STEP_LABELS[step]}</p>}
       </section>
 
-      <section style={{ padding: '0 2rem 2rem' }}>
-        <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+      <section style={{ padding: '0 2rem 3rem' }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
 
-          {/* Thinker guidance */}
-          {guide && step < 6 && (
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '2rem', padding: '1.25rem', background: '#0d0d0d', border: `1px solid ${guide.color}22`, animation: 'fadeIn 0.4s ease' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${guide.color}22`, border: `2px solid ${guide.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '11px', color: guide.color, flexShrink: 0 }}>{guide.avatar}</div>
-              <div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: guide.color, marginBottom: '4px' }}>{guide.name.toUpperCase()} GUIDES THIS STEP</div>
-                <p style={{ fontSize: '15px', color: ivory85, lineHeight: 1.7, margin: 0 }}>
-                  {guidanceLoading && !guidance ? '...' : (step === 2 && guidance && (guidance.trim().startsWith('[') || guidance.trim().startsWith('"') || guidance.trim().startsWith('```'))) ? 'Your matching questionnaire has been generated below.' : guidance || 'Thinking...'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 0: Vision */}
+          {/* STEP 1: Mission */}
           {step === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* DAO Template Selection */}
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>CHOOSE A TEMPLATE</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
-                {DAO_TEMPLATES.map(t => (
-                  <button key={t.id} onClick={() => setTemplate(t.id)} style={{
-                    background: template === t.id ? `${gold}15` : '#0d0d0d',
-                    border: `1px solid ${template === t.id ? gold : `${gold}22`}`,
-                    padding: '16px', cursor: 'pointer', textAlign: 'left',
-                    transition: 'border-color 0.2s',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '20px', color: template === t.id ? gold : muted }}>{t.icon}</span>
-                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: template === t.id ? gold : parchment }}>{t.label}</span>
-                    </div>
-                    <p style={{ fontSize: '12px', color: muted, lineHeight: 1.5, margin: 0 }}>{t.desc}</p>
-                  </button>
-                ))}
+              <div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>CHOOSE A TEMPLATE</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '8px' }}>
+                  {DAO_TEMPLATES.map(t => (
+                    <button key={t.id} onClick={() => setTemplate(t.id)} style={{
+                      background: template === t.id ? `${gold}15` : '#0d0d0d',
+                      border: `1px solid ${template === t.id ? gold : `${gold}22`}`,
+                      padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
+                      transition: 'border-color 0.2s',
+                    }}>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: template === t.id ? gold : parchment, marginBottom: '6px' }}>{t.label.toUpperCase()}</div>
+                      <p style={{ fontSize: '13px', color: muted, lineHeight: 1.5, margin: 0, marginBottom: '8px' }}>{t.desc}</p>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {t.domains.map(d => (
+                          <span key={d} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.08em', color: `${gold}88`, border: `1px solid ${gold}22`, padding: '1px 6px' }}>{d.toUpperCase()}</span>
+                        ))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div style={{ width: '100%', height: '1px', background: `${gold}15`, margin: '0.5rem 0' }} />
 
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Community name"
-                style={inputStyle}
-                onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`}
-                onBlur={e => e.target.style.boxShadow = 'none'}
-              />
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="DAO name"
+                style={inputStyle} onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />
               <div>
-                <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="url-slug"
-                  style={inputStyle}
-                  onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`}
-                  onBlur={e => e.target.style.boxShadow = 'none'}
-                />
-                <span style={{ fontSize: '12px', color: muted }}>societyofexplorers.com/c/{slug || '...'}</span>
+                <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="url-slug" style={inputStyle}
+                  onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />
+                <span style={{ fontSize: '12px', color: muted }}>consilience.systems/dao/{slug || '...'}</span>
               </div>
-              <textarea value={mission} onChange={e => setMission(e.target.value)} placeholder="One-sentence mission" rows={2}
+              <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="One-sentence description" rows={2}
                 style={{ ...inputStyle, resize: 'none' }}
-                onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`}
-                onBlur={e => e.target.style.boxShadow = 'none'}
-              />
-              <button onClick={() => setStep(1)} disabled={!name.trim()} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: name.trim() ? 1 : 0.4, transition: 'opacity 0.2s' }}>NEXT: PHILOSOPHY</button>
+                onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />
+              <textarea value={problem} onChange={e => setProblem(e.target.value)} placeholder="What real-world problem are you targeting? (e.g., 'No public network measures indoor air quality at zip-code granularity in US cities.')" rows={3}
+                style={{ ...inputStyle, resize: 'none' }}
+                onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />
+
+              <button onClick={() => setStep(1)} disabled={!name.trim()} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: name.trim() ? 1 : 0.4 }}>NEXT: INFRASTRUCTURE</button>
             </div>
           )}
 
-          {/* STEP 1: Philosophy */}
+          {/* STEP 2: Infrastructure */}
           {step === 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeIn 0.4s ease' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>PHILOSOPHICAL ORIENTATION</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {ORIENTATIONS.map(o => (
-                  <button key={o} onClick={() => setOrientation(o)} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: orientation === o ? '#0a0a0a' : gold, background: orientation === o ? gold : 'transparent', border: `1px solid ${gold}${orientation === o ? '' : '44'}`, padding: '8px 16px', cursor: 'pointer', transition: 'all 0.2s' }}>{o.toUpperCase()}</button>
-                ))}
-              </div>
-              {orientation === 'eclectic' && <input value={customOrientation} onChange={e => setCustomOrientation(e.target.value)} placeholder="Describe your orientation..." style={inputStyle} onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '1rem' }}>
-                <button onClick={() => setStep(0)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '44px', cursor: 'pointer' }}>BACK</button>
-                <button onClick={() => setStep(2)} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '44px', cursor: 'pointer' }}>NEXT: QUESTIONNAIRE</button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: Questionnaire */}
-          {step === 2 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeIn 0.4s ease' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>MATCHING QUESTIONNAIRE</div>
-              <p style={{ fontSize: '14px', color: muted }}>Nietzsche generates provocative questions that reveal genuine philosophical differences between members.</p>
-              {questions.length === 0 && (
-                <button onClick={generateQuestions} disabled={generatingQs} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold, background: 'transparent', border: `1px solid ${gold}`, padding: '12px', cursor: 'pointer', transition: 'background 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = `${gold}0a`}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >{generatingQs ? 'GENERATING...' : 'GENERATE QUESTIONS'}</button>
-              )}
-              {questions.map((q, i) => (
-                <div key={q.id || i} style={{ background: '#111', border: `1px solid ${gold}15`, padding: '12px' }}>
-                  <div style={{ fontSize: '14px', color: parchment, marginBottom: '4px' }}>{i + 1}. {q.text}</div>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: `${gold}88` }}>{q.philosophical_axis?.toUpperCase()}</span>
-                </div>
-              ))}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '0.5rem' }}>
-                <button onClick={() => setStep(1)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '44px', cursor: 'pointer' }}>BACK</button>
-                <button onClick={() => setStep(3)} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '44px', cursor: 'pointer' }}>NEXT: GOVERNANCE</button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: Governance */}
-          {step === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeIn 0.4s ease' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>GOVERNANCE MODEL</div>
-              {GOVERNANCE_TYPES.map(g => (
-                <button key={g.id} onClick={() => setGovType(g.id)} style={{ background: govType === g.id ? `${gold}15` : '#111', border: `1px solid ${govType === g.id ? gold : `${gold}22`}`, padding: '14px 16px', cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.2s' }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: govType === g.id ? gold : parchment }}>{g.label}</div>
-                  <div style={{ fontSize: '13px', color: muted, marginTop: '4px', lineHeight: 1.5 }}>{g.desc}</div>
-                </button>
-              ))}
-              <div style={{ marginTop: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '14px', color: muted }}>Voting threshold</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: gold }}>{votingThreshold}%</span>
-                </div>
-                <input type="range" min="33" max="75" value={votingThreshold} onChange={e => setVotingThreshold(parseInt(e.target.value))} style={{ width: '100%', accentColor: gold }} />
-              </div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: muted, marginTop: '0.5rem' }}>MEMBERSHIP</div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {['free', 'paid', 'invite'].map(t => (
-                  <button key={t} onClick={() => setMembershipType(t)} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '9px', color: membershipType === t ? '#0a0a0a' : gold, background: membershipType === t ? gold : 'transparent', border: `1px solid ${gold}44`, padding: '10px', cursor: 'pointer', transition: 'all 0.2s' }}>{t.toUpperCase()}</button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '0.5rem' }}>
-                <button onClick={() => setStep(2)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '44px', cursor: 'pointer' }}>BACK</button>
-                <button onClick={() => setStep(4)} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '44px', cursor: 'pointer' }}>NEXT: TREASURY</button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: Treasury & Blockchain */}
-          {step === 4 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'fadeIn 0.4s ease' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>TREASURY &amp; BLOCKCHAIN</div>
-              <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6 }}>
-                Your community gets an auto-generated treasury wallet, soulbound $EXP tokens, and configurable spending limits. Non-custodial — you control the keys.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6, margin: 0 }}>
+                Define what real-world data this DAO collects and how contributions are verified.
               </p>
 
-              {/* Token config */}
-              <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1.25rem' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>SOULBOUND TOKEN</div>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: '13px', color: muted }}>Symbol</span>
-                    <input value={tokenSymbol} onChange={e => setTokenSymbol(e.target.value.toUpperCase().slice(0, 6))} style={{ ...inputStyle, marginTop: '4px' }}
-                      onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`}
-                      onBlur={e => e.target.style.boxShadow = 'none'}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: '13px', color: muted }}>Initial treasury</span>
-                    <input type="number" value={initialTreasury} onChange={e => setInitialTreasury(parseInt(e.target.value) || 0)} style={{ ...inputStyle, marginTop: '4px' }}
-                      onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`}
-                      onBlur={e => e.target.style.boxShadow = 'none'}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, border: `1px solid ${muted}33`, padding: '2px 8px', borderRadius: '8px' }}>SOULBOUND</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, border: `1px solid ${muted}33`, padding: '2px 8px', borderRadius: '8px' }}>NON-TRANSFERABLE</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, border: `1px solid ${muted}33`, padding: '2px 8px', borderRadius: '8px' }}>SOLANA TOKEN-2022</span>
-                </div>
-              </div>
-
-              {/* Spending limits */}
-              <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1.25rem' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>SPENDING GUARDRAILS</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {[
-                    { label: 'Per transaction', value: perTxLimit, set: setPerTxLimit },
-                    { label: 'Daily limit', value: dailyLimit, set: setDailyLimit },
-                    { label: 'Weekly limit', value: weeklyLimit, set: setWeeklyLimit },
-                  ].map(lim => (
-                    <div key={lim.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '14px', color: muted }}>{lim.label}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <input type="number" value={lim.value} onChange={e => lim.set(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '100px', textAlign: 'right', padding: '8px 12px' }}
-                          onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`}
-                          onBlur={e => e.target.style.boxShadow = 'none'}
-                        />
-                        <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold }}>${tokenSymbol}</span>
-                      </div>
-                    </div>
+              <div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>DATA COLLECTION METHODS</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {DATA_METHODS.map(m => (
+                    <button key={m.id} onClick={() => toggleMethod(m.id)} style={{
+                      background: methods.includes(m.id) ? `${gold}0f` : '#0d0d0d',
+                      border: `1px solid ${methods.includes(m.id) ? gold : `${gold}22`}`,
+                      padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                    }}>
+                      <span style={{ fontSize: '12px', color: methods.includes(m.id) ? gold : muted, width: '14px' }}>{methods.includes(m.id) ? '\u25A0' : '\u25A1'}</span>
+                      <span style={{ fontSize: '14px', color: methods.includes(m.id) ? parchment : ivory85 }}>{m.label}</span>
+                    </button>
                   ))}
                 </div>
-                <p style={{ fontSize: '11px', color: `${muted}88`, marginTop: '8px' }}>Human approval required above {perTxLimit * 5} ${tokenSymbol} per transaction.</p>
               </div>
 
-              {/* Micropayments */}
-              <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, marginBottom: '4px' }}>CRYPTO MICROPAYMENTS</div>
-                    <p style={{ fontSize: '13px', color: muted, margin: 0 }}>Automatic micro-transactions for member interactions, content access, and AI usage.</p>
-                  </div>
-                  <button onClick={() => setMicropayments(!micropayments)} style={{
-                    width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                    background: micropayments ? gold : '#333', position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-                  }}>
-                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: micropayments ? '23px' : '3px', transition: 'left 0.2s' }} />
-                  </button>
+              <div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>VERIFICATION METHOD</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {VERIFICATION_METHODS.map(v => (
+                    <button key={v.id} onClick={() => setVerification(v.id)} style={{
+                      background: verification === v.id ? `${gold}0f` : '#0d0d0d',
+                      border: `1px solid ${verification === v.id ? gold : `${gold}22`}`,
+                      padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                    }}>
+                      <span style={{ fontSize: '12px', color: verification === v.id ? gold : muted, width: '14px' }}>{verification === v.id ? '\u25C9' : '\u25CB'}</span>
+                      <span style={{ fontSize: '14px', color: verification === v.id ? parchment : ivory85 }}>{v.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => setStep(3)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '44px', cursor: 'pointer' }}>BACK</button>
-                <button onClick={() => setStep(5)} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '44px', cursor: 'pointer' }}>NEXT: LAUNCH</button>
+              <textarea value={hardwareNeeded} onChange={e => setHardwareNeeded(e.target.value)} placeholder="Hardware or kits required (optional) — e.g., 'ESP32 + PMS5003 PM2.5 sensor, SD card, WiFi'"
+                rows={2} style={{ ...inputStyle, resize: 'none' }}
+                onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />
+
+              <textarea value={dataGoal} onChange={e => setDataGoal(e.target.value)} placeholder="Target dataset / outcome (optional) — e.g., 'Publish a public PM2.5 heatmap for 50 US cities by end of year.'"
+                rows={2} style={{ ...inputStyle, resize: 'none' }}
+                onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '0.5rem' }}>
+                <button onClick={() => setStep(0)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '44px', cursor: 'pointer' }}>BACK</button>
+                <button onClick={() => setStep(2)} disabled={methods.length === 0} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '44px', cursor: 'pointer', opacity: methods.length === 0 ? 0.4 : 1 }}>NEXT: TOKENS</button>
               </div>
             </div>
           )}
 
-          {/* STEP 5: Launch / Review */}
-          {step === 5 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'fadeIn 0.4s ease' }}>
+          {/* STEP 3: Tokens & Incentives */}
+          {step === 2 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6, margin: 0 }}>
+                Two tokens. Soulbound reputation tracks verified contributions (non-transferable). Governance token enables voting and treasury access.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1rem' }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.18em', color: gold, marginBottom: '0.5rem' }}>REPUTATION TOKEN</div>
+                  <span style={{ fontSize: '12px', color: muted, display: 'block', marginBottom: '4px' }}>Symbol</span>
+                  <input value={repSymbol} onChange={e => setRepSymbol(e.target.value.toUpperCase().slice(0, 6))} style={{ ...inputStyle, padding: '10px 12px' }} />
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, border: `1px solid ${muted}33`, padding: '2px 6px' }}>SOULBOUND</span>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, border: `1px solid ${muted}33`, padding: '2px 6px' }}>NON-TRANSFERABLE</span>
+                  </div>
+                </div>
+                <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1rem' }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.18em', color: gold, marginBottom: '0.5rem' }}>GOVERNANCE TOKEN</div>
+                  <span style={{ fontSize: '12px', color: muted, display: 'block', marginBottom: '4px' }}>Symbol</span>
+                  <input value={govSymbol} onChange={e => setGovSymbol(e.target.value.toUpperCase().slice(0, 6))} style={{ ...inputStyle, padding: '10px 12px' }} />
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, border: `1px solid ${muted}33`, padding: '2px 6px' }}>VOTING</span>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted, border: `1px solid ${muted}33`, padding: '2px 6px' }}>TREASURY</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1rem' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.18em', color: gold, marginBottom: '0.5rem' }}>INITIAL TREASURY</div>
+                <input type="number" value={initialTreasury} onChange={e => setInitialTreasury(parseInt(e.target.value) || 0)} style={{ ...inputStyle, padding: '10px 12px' }} />
+                <span style={{ fontSize: '12px', color: muted }}>${repSymbol} allocated to reward contributions at launch.</span>
+              </div>
+
+              <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1rem' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.18em', color: gold, marginBottom: '0.75rem' }}>REWARD RULES</div>
+                {[
+                  { label: 'Per verified data contribution', value: rewardContribution, set: setRewardContribution },
+                  { label: 'Per experiment participation', value: rewardParticipation, set: setRewardParticipation },
+                  { label: 'Per analysis / publication', value: rewardAnalysis, set: setRewardAnalysis },
+                ].map(r => (
+                  <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: `1px solid ${gold}08` }}>
+                    <span style={{ fontSize: '14px', color: ivory85 }}>{r.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <input type="number" value={r.value} onChange={e => r.set(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px', textAlign: 'right', padding: '6px 10px' }} />
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold, minWidth: '28px' }}>${repSymbol}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '0.5rem' }}>
+                <button onClick={() => setStep(1)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '44px', cursor: 'pointer' }}>BACK</button>
+                <button onClick={() => setStep(3)} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '44px', cursor: 'pointer' }}>NEXT: LAUNCH</button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Review / Launch */}
+          {step === 3 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>REVIEW &amp; DEPLOY</div>
 
-              <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1.5rem' }}>
+              <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1.5rem' }}>
                 {[
                   { label: 'Name', value: name },
-                  { label: 'Template', value: DAO_TEMPLATES.find(t => t.id === template)?.label || template },
-                  { label: 'Mission', value: mission || 'Not set' },
-                  { label: 'Philosophy', value: orientation },
-                  { label: 'Governance', value: `${GOVERNANCE_TYPES.find(g => g.id === govType)?.label} \u00b7 ${votingThreshold}% threshold \u00b7 ${membershipType}` },
-                  { label: 'Treasury', value: `${initialTreasury.toLocaleString()} $${tokenSymbol} \u00b7 ${perTxLimit}/${dailyLimit}/${weeklyLimit} limits` },
-                  { label: 'Micropayments', value: micropayments ? 'Enabled' : 'Disabled' },
-                  { label: 'Questionnaire', value: `${questions.length} matching questions` },
+                  { label: 'Slug', value: slug },
+                  { label: 'Template', value: tpl?.label || template },
+                  { label: 'Description', value: description || '—' },
+                  { label: 'Problem', value: problem || '—' },
+                  { label: 'Data methods', value: methods.map(m => DATA_METHODS.find(d => d.id === m)?.label).filter(Boolean).join(', ') || '—' },
+                  { label: 'Verification', value: VERIFICATION_METHODS.find(v => v.id === verification)?.label || verification },
+                  { label: 'Reputation token', value: `$${repSymbol} (soulbound)` },
+                  { label: 'Governance token', value: `$${govSymbol}` },
+                  { label: 'Treasury', value: `${initialTreasury.toLocaleString()} $${repSymbol}` },
+                  { label: 'Rewards', value: `Contribute ${rewardContribution} \u00b7 Participate ${rewardParticipation} \u00b7 Analyze ${rewardAnalysis} $${repSymbol}` },
                 ].map(({ label, value }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${gold}08` }}>
-                    <span style={{ fontSize: '14px', color: muted }}>{label}</span>
-                    <span style={{ fontSize: '14px', color: parchment, textAlign: 'right', maxWidth: '60%' }}>{value}</span>
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${gold}08`, gap: '1rem' }}>
+                    <span style={{ fontSize: '13px', color: muted, minWidth: '120px' }}>{label}</span>
+                    <span style={{ fontSize: '13px', color: parchment, textAlign: 'right' }}>{value}</span>
                   </div>
                 ))}
               </div>
 
               <div style={{ background: `${gold}08`, border: `1px solid ${gold}22`, padding: '12px 16px', fontSize: '12px', color: ivory85, lineHeight: 1.6 }}>
-                <strong style={{ color: gold }}>Non-custodial.</strong> Treasury keys are encrypted (AES-256-GCM) and stored on your behalf. Smart contract governance is intent-based — no code required. All token operations comply with SEC April 2026 guidance for non-transferable participation tokens.
+                <strong style={{ color: gold }}>Non-custodial.</strong> Treasury keys are AES-256-GCM encrypted. Reputation tokens are soulbound and compliant with SEC April 2026 guidance on non-transferable participation tokens. Governance token follows your DAO&apos;s charter.
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => setStep(4)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '48px', cursor: 'pointer' }}>BACK</button>
-                <button onClick={handleCreate} disabled={submitting} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: submitting ? 0.5 : 1 }}>
-                  {submitting ? 'DEPLOYING...' : 'DEPLOY COMMUNITY'}
+                <button onClick={() => setStep(2)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 20px', height: '48px', cursor: 'pointer' }}>BACK</button>
+                <button onClick={handleDeploy} disabled={submitting} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: submitting ? 0.5 : 1 }}>
+                  {submitting ? 'DEPLOYING...' : 'DEPLOY DAO'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 6: Deploying / Success */}
-          {step === 6 && (
-            <div style={{ animation: 'fadeIn 0.5s ease' }}>
-              {!createdCommunity ? (
-                /* Deploy progress */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, textAlign: 'center', marginBottom: '0.5rem' }}>DEPLOYING TO BLOCKCHAIN</div>
+          {/* STEP 5: Deploy progress / Success */}
+          {step === 4 && (
+            <div>
+              {!createdDao ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, textAlign: 'center', marginBottom: '0.5rem' }}>DEPLOYING</div>
                   {deploySteps.map((ds, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: ds.status === 'deploying' ? `${gold}0a` : '#0d0d0d', border: `1px solid ${ds.status === 'deploying' ? `${gold}33` : ds.status === 'done' ? '#4CAF5022' : ds.status === 'error' ? '#DC143C22' : `${gold}08`}`, transition: 'all 0.3s' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: ds.status === 'deploying' ? `${gold}0a` : '#0d0d0d', border: `1px solid ${ds.status === 'deploying' ? `${gold}33` : ds.status === 'done' ? '#4CAF5022' : ds.status === 'error' ? '#DC143C22' : `${gold}08`}` }}>
                       <div style={{ width: '20px', textAlign: 'center', fontSize: '14px' }}>
                         {ds.status === 'done' ? <span style={{ color: '#4CAF50' }}>{'\u2713'}</span> :
-                         ds.status === 'deploying' ? <span style={{ color: gold, animation: 'pulse 1s infinite' }}>{'\u25cf'}</span> :
-                         ds.status === 'error' ? <span style={{ color: '#DC143C' }}>{'\u2717'}</span> :
-                         <span style={{ color: muted }}>{'\u25cb'}</span>}
+                          ds.status === 'deploying' ? <span style={{ color: gold, animation: 'pulse 1s infinite' }}>{'\u25cf'}</span> :
+                          ds.status === 'error' ? <span style={{ color: '#DC143C' }}>{'\u2717'}</span> :
+                          <span style={{ color: muted }}>{'\u25cb'}</span>}
                       </div>
                       <span style={{ fontSize: '14px', color: ds.status === 'done' ? parchment : ds.status === 'deploying' ? gold : muted }}>{ds.label}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                /* Success */
                 <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                  <div style={{ fontSize: '36px', color: '#4CAF50', marginBottom: '1rem' }}>{'\u2713'}</div>
-                  <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>Your community is live</h2>
-                  <p style={{ fontSize: '16px', color: muted, lineHeight: 1.7, marginBottom: '0.5rem' }}>
-                    &ldquo;{name}&rdquo; is deployed with {govType.toUpperCase()} governance, {initialTreasury.toLocaleString()} ${tokenSymbol} treasury{micropayments ? ', and micropayments enabled' : ''}.
-                  </p>
-                  <p style={{ fontSize: '13px', color: `${muted}88`, marginBottom: '2rem' }}>Share the link: societyofexplorers.com/c/{slug}</p>
-
-                  {/* Blockchain summary */}
-                  <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1.25rem', marginBottom: '2rem', textAlign: 'left' }}>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>BLOCKCHAIN STATUS</div>
-                    {[
-                      { label: 'Treasury wallet', value: 'Generated (AES-256-GCM encrypted)', color: '#4CAF50' },
-                      { label: 'Governance contract', value: 'Deployed', color: '#4CAF50' },
-                      { label: `$${tokenSymbol} token`, value: 'Soulbound (Token-2022)', color: '#4CAF50' },
-                      { label: 'Spending limits', value: `${perTxLimit}/${dailyLimit}/${weeklyLimit}`, color: parchment },
-                      { label: 'Micropayments', value: micropayments ? 'Active' : 'Disabled', color: micropayments ? '#4CAF50' : muted },
-                    ].map(item => (
-                      <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${gold}08` }}>
-                        <span style={{ fontSize: '13px', color: muted }}>{item.label}</span>
-                        <span style={{ fontSize: '13px', color: item.color }}>{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <div style={{ fontSize: '40px', color: '#4CAF50', marginBottom: '1rem' }}>{'\u2713'}</div>
+                  <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>DAO deployed</h2>
+                  <p style={{ fontSize: '15px', color: muted, marginBottom: '0.5rem' }}>&ldquo;{name}&rdquo; is live.</p>
+                  <p style={{ fontSize: '13px', color: `${muted}88`, marginBottom: '2rem' }}>consilience.systems/dao/{slug}</p>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '320px', margin: '0 auto' }}>
-                    <a href={`/c/${slug}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '48px' }}>VIEW YOUR COMMUNITY</a>
-                    <a href={`/council?community=${slug}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '0 28px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '44px' }}>ENTER COUNCIL</a>
-                    <button onClick={() => { navigator.clipboard.writeText(`https://societyofexplorers.com/c/${slug}`); }} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: muted, background: 'none', border: `1px solid ${muted}33`, height: '40px', cursor: 'pointer' }}>COPY INVITE LINK</button>
+                    <a href={`/c/${slug}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '48px' }}>OPEN DAO DASHBOARD</a>
+                    <button onClick={() => { navigator.clipboard.writeText(`https://www.societyofexplorers.com/c/${slug}`); }} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, background: 'none', border: `1px solid ${gold}44`, height: '44px', cursor: 'pointer' }}>COPY INVITE LINK</button>
                   </div>
                 </div>
               )}
@@ -651,10 +471,7 @@ export default function CreateCommunityPage() {
       </section>
 
       <PublicFooter />
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-      `}</style>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
     </div>
   );
 }
