@@ -61,9 +61,9 @@ export default function PracticePage() {
   useEffect(() => {
     if (!question?.id) return;
 
-    // Streak
-    if (authToken) {
-      fetch('/api/practice/streak', { headers: { 'Authorization': `Bearer ${authToken}` } })
+    // Streak (works with cookie auth or bearer token)
+    if (memberId) {
+      fetch('/api/practice/streak', { headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {} })
         .then(r => r.json()).then(setStreak).catch(() => {});
     }
 
@@ -88,13 +88,13 @@ export default function PracticePage() {
 
   async function handleSubmit() {
     if (!response.trim() || !question?.id) return;
-    if (!authToken) { window.location.href = '/login'; return; }
+    if (!memberId) { window.location.href = '/login'; return; }
     setSubmitting(true);
     try {
       const res = await fetch('/api/practice/respond', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ questionId: question.id, responseText: response.trim() }),
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
+        body: JSON.stringify({ questionId: question.id, responseText: response.trim(), memberId }),
       });
       const data = await res.json();
       if (data.success) {
@@ -143,7 +143,7 @@ export default function PracticePage() {
                   </div>
                   <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.7, margin: 0 }}>{myResponse || response}</p>
                 </div>
-              ) : memberId && authToken ? (
+              ) : memberId ? (
                 <div style={{ marginBottom: '1rem' }}>
                   <div style={{ position: 'relative' }}>
                     <textarea

@@ -9,10 +9,17 @@ function getTodayET(): string {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await getAuthenticatedMember(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const body = await req.json();
+  const { questionId, responseText } = body;
 
-  const { questionId, responseText } = await req.json();
+  // Try standard auth first, then fall back to memberId in body (for wallet auth)
+  let auth = await getAuthenticatedMember(req);
+  if (!auth && body.memberId) {
+    const { data: member } = await supabase.from('members').select('id, display_name, exp_tokens, current_streak, longest_streak, last_practice_date, total_responses')
+      .eq('id', body.memberId).single();
+    if (member) auth = { memberId: member.id, member: member as any };
+  }
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!questionId || !responseText) return NextResponse.json({ error: 'questionId and responseText required' }, { status: 400 });
   if (responseText.length > 280) return NextResponse.json({ error: 'Response must be 280 characters or less' }, { status: 400 });
 
