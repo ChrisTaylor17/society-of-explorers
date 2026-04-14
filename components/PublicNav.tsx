@@ -31,10 +31,7 @@ export default function PublicNav() {
 
         <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }} className="hide-mobile">
           <a href="/council" style={{ ...linkStyle, color: gold, opacity: 1 }}>Council</a>
-          <a href="/salon" style={{ ...linkStyle, color: gold, opacity: 1 }}>Salons</a>
-          <a href="/live" style={{ ...linkStyle, color: gold, opacity: 1 }}>Live</a>
-          <a href="/leaderboard" style={linkStyle}>Leaderboard</a>
-          <a href="/create-community" style={linkStyle}>Create</a>
+          <a href="/live" style={linkStyle}>Live</a>
           <a href="/join" style={linkStyle}>Join</a>
           <a href="/login" style={{ ...linkStyle, color: gold, opacity: 1, border: `1px solid ${gold}44`, padding: '6px 16px' }}>Sign In</a>
         </div>
@@ -46,7 +43,7 @@ export default function PublicNav() {
 
       {menuOpen && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,10,0.98)', zIndex: 199, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {[{ l: 'Council', h: '/council' }, { l: 'Salons', h: '/salon' }, { l: 'Live', h: '/live' }, { l: 'Leaderboard', h: '/leaderboard' }, { l: 'Create', h: '/create-community' }, { l: 'Join', h: '/join' }, { l: 'Sign In', h: '/login' }].map(lk => (
+          {[{ l: 'Council', h: '/council' }, { l: 'Live', h: '/live' }, { l: 'Join', h: '/join' }, { l: 'Sign In', h: '/login' }].map(lk => (
             <a key={lk.h} href={lk.h} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}
         </div>

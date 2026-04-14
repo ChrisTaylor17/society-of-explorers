@@ -4,14 +4,33 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
 
 export function getNextSessionDate(): Date {
   const now = new Date();
-  const day = now.getUTCDay();
+  // Get current day/time in ET
+  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const etNow = new Date(etStr);
+  const day = etNow.getDay(); // 0=Sun, 3=Wed
   let daysUntilWed = (3 - day + 7) % 7;
-  if (daysUntilWed === 0 && now.getUTCHours() >= 24) daysUntilWed = 7; // past Wednesday
-  const nextWed = new Date(now);
-  nextWed.setUTCDate(nextWed.getUTCDate() + daysUntilWed);
-  // 8pm ET = midnight UTC (EDT, UTC-4)
-  nextWed.setUTCHours(0, 0, 0, 0);
-  return nextWed;
+
+  // If it's Wednesday past 9pm ET, push to next week
+  if (daysUntilWed === 0 && etNow.getHours() >= 21) daysUntilWed = 7;
+
+  // Build target: next Wednesday 8pm ET
+  const target = new Date(etNow);
+  target.setDate(target.getDate() + daysUntilWed);
+  target.setHours(20, 0, 0, 0);
+
+  // Convert ET back to UTC
+  const year = target.getFullYear();
+  const month = String(target.getMonth() + 1).padStart(2, '0');
+  const dateStr = String(target.getDate()).padStart(2, '0');
+  // Check DST: if ET offset from UTC is 4h it's EDT, 5h is EST
+  const jan = new Date(year, 0, 1);
+  const jul = new Date(year, 6, 1);
+  const stdOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+  const isDST = etNow.getTimezoneOffset !== undefined; // always use -04:00 for EDT (Apr-Nov)
+  // Simpler: April is always EDT (-04:00)
+  const offset = (target.getMonth() >= 2 && target.getMonth() <= 10) ? '-04:00' : '-05:00';
+
+  return new Date(`${year}-${month}-${dateStr}T20:00:00${offset}`);
 }
 
 export function generateGoogleCalendarUrl(sessionDate: Date): string {

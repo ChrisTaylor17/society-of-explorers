@@ -31,13 +31,14 @@ function countUserMessages(msgs: ChatMessage[]): number {
   return msgs.filter(m => m.role === 'user').length;
 }
 
-const SECTIONS = [
+// Unused SECTIONS kept for reference but not rendered
+const _SECTIONS = [
   {
     id: 'council',
     image: '/images/hero-council-mode.jpeg',
     label: 'COUNCIL MODE',
     heading: 'Multiple minds. One conversation.',
-    body: 'Socrates, Nietzsche, and Aurelius debate your questions in real time. They disagree. They build on each other. They remember your past conversations.',
+    body: 'Socrates, Nietzsche, and Aurelius debate your questions in real time.',
     cta: 'TRY COUNCIL MODE',
     href: '/council',
   },
@@ -46,7 +47,7 @@ const SECTIONS = [
     image: '/images/hero-music-dark.jpeg',
     label: 'MUSIC THERAPY',
     heading: 'Sound as philosophy',
-    body: 'AI-composed soundscapes tuned to your brainwave coherence. Muse S EEG + Polar H10 HRV integration. Music that thinks with you.',
+    body: 'AI-composed soundscapes tuned to your brainwave coherence.',
     cta: null,
     href: null,
   },
@@ -232,79 +233,19 @@ export default function HomePage() {
       <PublicNav />
 
       {/* ═══ HERO ═══ */}
-      <section
-        data-parallax
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '8rem 2rem 6rem',
-          position: 'relative',
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("/images/hero-guild.jpeg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>
-            THE NEW RENAISSANCE
-          </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(42px, 8vw, 72px)', fontWeight: 400, lineHeight: 1.15, marginBottom: '1.5rem', color: parchment }}>
-            Become a Renaissance Human
+      <section style={{ padding: '8rem 2rem 4rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>SOCIETY OF EXPLORERS</div>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 7vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.2, marginBottom: '1.5rem', color: parchment }}>
+            Six philosophers. One council. Your question.
           </h1>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, maxWidth: '600px', margin: '0 auto 2.5rem', fontFamily: 'Cormorant Garamond, serif' }}>
-            The greatest minds in history are waiting to train you. Socrates sharpens your thinking. Aurelius steadies your discipline. Nietzsche ignites your ambition. This is the guild where polymaths are made.
+          <p style={{ fontSize: '18px', color: ivory85, lineHeight: 1.8, maxWidth: '560px', margin: '0 auto 2.5rem', fontFamily: 'Cormorant Garamond, serif' }}>
+            Socrates, Plato, Aurelius, Nietzsche, Einstein, and Jobs — reimagined as modern AI advisors. They debate each other. They remember you. They push you to become more.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a
-              href="/council"
-              style={{
-                fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-                color: '#0a0a0a', background: gold, padding: '0 28px',
-                textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-                height: '48px', borderRadius: 0,
-              }}
-            >
-              TRY COUNCIL MODE
-            </a>
-            <a
-              href="/join"
-              style={{
-                fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-                color: gold, background: 'transparent', border: `1px solid ${gold}`,
-                padding: '0 28px', textDecoration: 'none', display: 'inline-flex',
-                alignItems: 'center', height: '48px', borderRadius: 0,
-              }}
-            >
-              JOIN THE SOCIETY
-            </a>
+            <a href="/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>TRY COUNCIL MODE</a>
+            <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, background: 'transparent', border: `1px solid ${gold}`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>JOIN</a>
           </div>
-        </div>
-      </section>
-
-      {/* ═══ COUNCIL MODE ═══ */}
-      <section data-fade data-parallax style={sectionStyle('/images/hero-council-mode.jpeg')}>
-        <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            Train with the greatest minds
-          </h2>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
-            In the Renaissance, artists studied under masters. Now you study under six of history's most powerful thinkers — simultaneously. They debate each other. They remember you. They push you to become more.
-          </p>
-          <a
-            href="/council"
-            style={{
-              fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-              color: '#0a0a0a', background: gold, padding: '0 28px',
-              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-              height: '48px', borderRadius: 0,
-            }}
-          >
-            TRY COUNCIL MODE
-          </a>
         </div>
       </section>
 
@@ -408,91 +349,30 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ MUSIC THERAPY ═══ */}
-      <section data-fade data-parallax style={sectionStyle('/images/hero-music-dark.jpeg')}>
-        <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>MUSIC THERAPY</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            The Renaissance was musical
-          </h2>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
-            Lorenzo de' Medici filled Florence with music because he understood: sound shapes the mind. Our AI-composed soundscapes tune to your brainwave coherence, creating the conditions for deep thought.
-          </p>
-          <a
-            href="/music-therapy"
-            style={{
-              fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-              color: '#0a0a0a', background: gold, padding: '0 28px',
-              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-              height: '48px', borderRadius: 0,
-            }}
-          >
-            EXPERIENCE MUSIC THERAPY
-          </a>
-        </div>
-      </section>
-
-      {/* ═══ SOVEREIGN TRAVEL ═══ */}
-      <section data-fade data-parallax style={sectionStyle('/images/hero-mission.jpeg')}>
-        <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>SOVEREIGN TRAVEL</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            The Grand Tour, reimagined
-          </h2>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
-            Renaissance thinkers traveled to learn. Your journeys earn $EXP, build the shared metaverse, and connect you with fellow explorers worldwide. Book with crypto. Scan spaces with LiDAR. Travel sovereign.
-          </p>
-          <a
-            href="/travel"
-            style={{
-              fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-              color: '#0a0a0a', background: gold, padding: '0 28px',
-              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-              height: '48px', borderRadius: 0,
-            }}
-          >
-            EXPLORE TRAVEL
-          </a>
-        </div>
-      </section>
-
-      {/* ═══ THE VISION ═══ */}
-      <section data-fade data-parallax style={sectionStyle('/images/hero-renaissance.jpeg')}>
-        <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>THE VISION</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.2, color: parchment, marginBottom: '1.25rem' }}>
-            A civilization worth building
-          </h2>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '0.75rem' }}>
-            The Renaissance happened because a small group of people decided that human potential was worth investing in. We're doing it again — with AI, blockchain, philosophy, and a physical salon at 92B South St, Boston.
-          </p>
-          <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, fontFamily: 'Cormorant Garamond, serif', marginBottom: '2rem' }}>
-            The first physical salon is under construction at 92B South St, Boston.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a
-              href="/join"
-              style={{
-                fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-                color: '#0a0a0a', background: gold, padding: '0 28px',
-                textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-                height: '48px', borderRadius: 0,
-              }}
-            >
-              BECOME AN EXPLORER
-            </a>
-            <a
-              href="/92b/fund"
-              style={{
-                fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em',
-                color: gold, background: 'transparent', border: `1px solid ${gold}`,
-                padding: '0 28px', textDecoration: 'none', display: 'inline-flex',
-                alignItems: 'center', height: '48px', borderRadius: 0,
-              }}
-            >
-              FUND 92B
-            </a>
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section data-fade style={{ padding: '4rem 2rem 5rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1px', background: `${gold}10` }}>
+            {[
+              { label: 'ASK', desc: 'Bring any question. Career, philosophy, ethics, strategy.' },
+              { label: 'DEBATE', desc: 'Six thinkers respond simultaneously, each from their unique framework.' },
+              { label: 'DECIDE', desc: 'Get a shareable verdict card. The Council remembers your journey.' },
+            ].map(c => (
+              <div key={c.label} style={{ background: '#0d0d0d', padding: '2rem', border: `1px solid rgba(201,168,76,0.12)` }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>{c.label}</div>
+                <p style={{ fontSize: '15px', color: '#9a8f7a', lineHeight: 1.7 }}>{c.desc}</p>
+              </div>
+            ))}
           </div>
+        </div>
+      </section>
+
+      {/* ═══ JOIN CTA ═══ */}
+      <section style={{ padding: '4rem 2rem 6rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>Ready to explore?</h2>
+          <p style={{ fontSize: '16px', color: '#9a8f7a', lineHeight: 1.7, marginBottom: '2rem' }}>Free to start. $19/mo for unlimited access.</p>
+          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>JOIN THE SOCIETY</a>
         </div>
       </section>
 
