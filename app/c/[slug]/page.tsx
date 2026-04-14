@@ -37,11 +37,11 @@ const VERIFICATION_LABELS: Record<string, string> = {
 interface Product {
   id: string;
   name: string;
-  description: string;
-  price: number;
-  tokenSymbol: string;
-  imageUrl: string;
-  createdAt: string;
+  description: string | null;
+  image_url: string | null;
+  price_rep: number;
+  is_token_gated: boolean;
+  created_at: string;
 }
 
 export default function CommunityDashboard({ params }: { params: Promise<{ slug: string }> }) {
@@ -58,8 +58,10 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
   const [pName, setPName] = useState('');
   const [pDesc, setPDesc] = useState('');
   const [pPrice, setPPrice] = useState(100);
-  const [pToken, setPToken] = useState<'REP' | 'GOV'>('REP');
   const [pImage, setPImage] = useState('');
+  const [pTokenGated, setPTokenGated] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     getMemberSession().then(s => { if (s?.member) setMemberId(s.member.id); }).catch(() => {});
@@ -69,37 +71,46 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
         if (r.status === 404) { setNotFound(true); return null; }
         return r.json();
       })
-      .then(d => { if (d) setData(d); })
+      .then(d => {
+        if (d) {
+          setData(d);
+          if (Array.isArray(d.products)) setProducts(d.products);
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
-
-    // Load products from localStorage (UI prototype — no DB schema yet)
-    try {
-      const stored = localStorage.getItem(`soe_dao_products_${slug}`);
-      if (stored) setProducts(JSON.parse(stored));
-    } catch {}
   }, [slug]);
 
-  function saveProducts(next: Product[]) {
-    setProducts(next);
-    try { localStorage.setItem(`soe_dao_products_${slug}`, JSON.stringify(next)); } catch {}
-  }
-
-  function handleCreateProduct(e: React.FormEvent) {
+  async function handleCreateProduct(e: React.FormEvent) {
     e.preventDefault();
-    if (!pName.trim()) return;
-    const newProduct: Product = {
-      id: `p_${Date.now()}`,
-      name: pName.trim(),
-      description: pDesc.trim(),
-      price: pPrice,
-      tokenSymbol: pToken,
-      imageUrl: pImage.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    saveProducts([...products, newProduct]);
-    setPName(''); setPDesc(''); setPPrice(100); setPToken('REP'); setPImage('');
-    setShowCreate(false);
+    if (!pName.trim() || !memberId) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await fetch(`/api/communities/${slug}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: pName.trim(),
+          description: pDesc.trim(),
+          image_url: pImage.trim(),
+          price_rep: pPrice,
+          is_token_gated: pTokenGated,
+          memberId,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.product) {
+        setCreateError(json.error || 'Failed to create product');
+      } else {
+        setProducts(prev => [json.product, ...prev]);
+        setPName(''); setPDesc(''); setPPrice(100); setPImage(''); setPTokenGated(false);
+        setShowCreate(false);
+      }
+    } catch (err: any) {
+      setCreateError(err?.message || 'Network error');
+    }
+    setCreating(false);
   }
 
   function handleInvite() {
@@ -302,14 +313,14 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div style={cardLabelStyle}>STORE</div>
               {isOwner && !showCreate && (
-                <button onClick={() => setShowCreate(true)} style={{
+                <button onClick={() => { setShowCreate(true); setCreateError(null); }} style={{
                   fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold,
                   background: 'transparent', border: `1px solid ${gold}`, padding: '8px 16px', cursor: 'pointer',
                 }}>+ CREATE PRODUCT</button>
               )}
             </div>
 
-            {/* Create product form */}
+            {/* Create product form (owner only) */}
             {isOwner && showCreate && (
               <form onSubmit={handleCreateProduct} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: '#111', border: `1px solid ${gold}33`, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, marginBottom: '0.25rem' }}>NEW PRODUCT</div>
@@ -323,20 +334,27 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
                   <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>PRICE</span>
                   <input type="number" value={pPrice} onChange={e => setPPrice(parseInt(e.target.value) || 0)} min={0}
                     style={{ flex: 1, background: '#0a0a0a', border: `1px solid ${gold}22`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    {(['REP', 'GOV'] as const).map(t => (
-                      <button key={t} type="button" onClick={() => setPToken(t)} style={{
-                        fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em',
-                        color: pToken === t ? '#0a0a0a' : gold,
-                        background: pToken === t ? gold : 'transparent',
-                        border: `1px solid ${gold}44`, padding: '8px 12px', cursor: 'pointer',
-                      }}>${t}</button>
-                    ))}
-                  </div>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold, minWidth: '36px' }}>${repSymbol}</span>
                 </div>
+                {/* Token-gated toggle */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 2px' }}>
+                  <div>
+                    <div style={{ fontSize: '14px', color: parchment }}>Token-gated drop</div>
+                    <div style={{ fontSize: '12px', color: muted }}>Only members holding ${repSymbol} can purchase.</div>
+                  </div>
+                  <button type="button" onClick={() => setPTokenGated(!pTokenGated)} style={{
+                    width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                    background: pTokenGated ? gold : '#333', position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                  }}>
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '3px', left: pTokenGated ? '23px' : '3px', transition: 'left 0.2s' }} />
+                  </button>
+                </div>
+                {createError && (
+                  <div style={{ fontSize: '12px', color: '#DC143C', padding: '6px 0' }}>{createError}</div>
+                )}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '0.25rem' }}>
-                  <button type="submit" style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', cursor: 'pointer' }}>SAVE PRODUCT</button>
-                  <button type="button" onClick={() => setShowCreate(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 16px', height: '40px', cursor: 'pointer' }}>CANCEL</button>
+                  <button type="submit" disabled={creating} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', cursor: 'pointer', opacity: creating ? 0.5 : 1 }}>{creating ? 'SAVING...' : 'SAVE PRODUCT'}</button>
+                  <button type="button" onClick={() => { setShowCreate(false); setCreateError(null); }} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: muted, background: 'none', border: `1px solid ${muted}44`, padding: '0 16px', height: '40px', cursor: 'pointer' }}>CANCEL</button>
                 </div>
               </form>
             )}
@@ -349,9 +367,9 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, marginBottom: '4px' }}>MEMBERS-ONLY DROP</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, marginBottom: '4px' }}>MEMBERS-ONLY DROPS</div>
                   <div style={{ fontSize: '15px', color: parchment, marginBottom: '2px' }}>Unlock with reputation.</div>
-                  <div style={{ fontSize: '12px', color: muted }}>Token-gated drops require ${repSymbol} balance to purchase.</div>
+                  <div style={{ fontSize: '12px', color: muted }}>Token-gated drops will require ${repSymbol} balance to purchase.</div>
                 </div>
                 <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, border: `1px solid ${muted}44`, padding: '4px 10px' }}>COMING SOON</span>
               </div>
@@ -363,69 +381,49 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
                 <p style={{ fontSize: '15px', color: parchment, fontStyle: 'italic', margin: 0, marginBottom: '0.25rem' }}>
                   No products yet.
                 </p>
-                <p style={{ fontSize: '13px', color: muted, margin: 0 }}>
-                  {isOwner ? 'Create your first product to start building your DAO\u2019s storefront.' : 'The DAO owner hasn\u2019t added products yet.'}
-                </p>
+                {isOwner && (
+                  <p style={{ fontSize: '13px', color: muted, margin: 0 }}>
+                    Create your first product to start building your DAO&apos;s storefront.
+                  </p>
+                )}
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
                 {products.map(p => (
                   <div key={p.id} style={{ background: '#111', border: `1px solid ${gold}15`, display: 'flex', flexDirection: 'column' }}>
                     <div style={{
-                      width: '100%', aspectRatio: '1 / 1', background: '#0a0a0a',
-                      backgroundImage: p.imageUrl ? `url(${p.imageUrl})` : undefined,
+                      width: '100%', aspectRatio: '1 / 1', background: '#1a1a1a',
+                      backgroundImage: p.image_url ? `url(${p.image_url})` : undefined,
                       backgroundSize: 'cover', backgroundPosition: 'center',
                       borderBottom: `1px solid ${gold}10`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      position: 'relative',
                     }}>
-                      {!p.imageUrl && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: `${muted}88` }}>NO IMAGE</span>}
+                      {!p.image_url && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: `${muted}88` }}>NO IMAGE</span>}
+                      {p.is_token_gated && (
+                        <span style={{ position: 'absolute', top: 6, right: 6, fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, background: 'rgba(10,10,10,0.85)', border: `1px solid ${gold}66`, padding: '2px 6px' }}>GATED</span>
+                      )}
                     </div>
                     <div style={{ padding: '0.875rem 1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.08em', color: parchment, marginBottom: '4px' }}>{p.name}</div>
                       {p.description && <p style={{ fontSize: '12px', color: muted, lineHeight: 1.4, margin: 0, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.description}</p>}
                       <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: gold }}>{p.price.toLocaleString()}</span>
-                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: muted }}>${p.tokenSymbol}</span>
+                          <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: gold }}>{(p.price_rep || 0).toLocaleString()}</span>
+                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: muted }}>${repSymbol}</span>
                         </div>
                         <button disabled style={{
-                          width: '100%', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
-                          color: gold, background: 'transparent', border: `1px solid ${gold}33`,
-                          padding: '8px', cursor: 'not-allowed', opacity: 0.7,
-                        }}>BUY WITH TOKENS</button>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: `${muted}88`, textAlign: 'center', marginTop: '4px' }}>COMING SOON \u00b7 PHYSICAL FULFILLMENT</div>
+                          width: '100%', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em',
+                          color: '#0a0a0a', background: gold, border: 'none',
+                          padding: '8px', cursor: 'not-allowed', opacity: 0.4,
+                        }}>BUY</button>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: `${muted}88`, textAlign: 'center', marginTop: '4px' }}>WALLET COMING SOON</div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Actions */}
-      <section style={{ padding: '1rem 2rem 1rem' }}>
-        <div style={{ maxWidth: '760px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>QUICK ACTIONS</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
-            {[
-              { label: 'Log Data Contribution', note: 'coming soon' },
-              { label: 'Join Experiment', note: 'coming soon' },
-              { label: 'View Open Dataset', note: 'coming soon' },
-              { label: 'Governance Vote', note: 'coming soon' },
-            ].map(a => (
-              <button key={a.label} disabled
-                style={{
-                  background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1rem',
-                  cursor: 'not-allowed', textAlign: 'left', opacity: 0.6,
-                }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: parchment, marginBottom: '4px' }}>
-                  {a.label.toUpperCase()}
-                </div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted }}>{a.note.toUpperCase()}</div>
-              </button>
-            ))}
           </div>
         </div>
       </section>

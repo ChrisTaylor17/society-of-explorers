@@ -456,7 +456,7 @@ export default function CreateDAOPage() {
                 <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                   <div style={{ fontSize: '40px', color: '#4CAF50', marginBottom: '1rem' }}>{'\u2713'}</div>
                   <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.25 }}>
-                    Your DAO is live &mdash; go build your brand.
+                    Your DAO is live
                   </h2>
                   <p style={{ fontSize: '15px', color: muted, marginBottom: '0.5rem' }}>&ldquo;{name}&rdquo; is deployed. Start your storefront, mint reputation, recruit contributors.</p>
                   <p style={{ fontSize: '13px', color: `${muted}88`, marginBottom: '2rem' }}>consilience.systems/dao/{slug}</p>

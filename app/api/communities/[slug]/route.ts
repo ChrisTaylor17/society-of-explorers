@@ -54,10 +54,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     }));
   }
 
+  const { data: products } = await supabase
+    .from('dao_products')
+    .select('*')
+    .eq('community_id', community.id)
+    .order('created_at', { ascending: false });
+
   return NextResponse.json({
     community,
     contracts: { governance, infrastructure },
     memberCount: memberCount || 0,
     members: memberProfiles,
+    products: products || [],
   });
 }
