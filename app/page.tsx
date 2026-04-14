@@ -8,8 +8,14 @@ const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
+const THINKER_COLORS: Record<string, string> = {
+  socrates: '#C9A94E', plato: '#7B68EE', aurelius: '#8B7355',
+  nietzsche: '#DC143C', einstein: '#4169E1', jobs: '#A0A0A0',
+};
+
 export default function HomePage() {
   const [daos, setDaos] = useState<any[]>([]);
+  const [pulse, setPulse] = useState<any>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -18,6 +24,15 @@ export default function HomePage() {
 
   useEffect(() => {
     fetch('/api/communities').then(r => r.json()).then(d => setDaos(d.discover || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    function load() {
+      fetch('/api/feed/pulse').then(r => r.json()).then(setPulse).catch(() => {});
+    }
+    load();
+    const iv = setInterval(load, 30000);
+    return () => clearInterval(iv);
   }, []);
 
   useEffect(() => {
@@ -66,6 +81,70 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* HAPPENING NOW — live pulse from SOE (flagship instance) */}
+      <section data-fade style={{ padding: '1rem 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1.5rem' }}>
+            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: gold, animation: 'pulse 2s infinite' }} />
+            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold }}>
+              HAPPENING NOW
+              {pulse && pulse.stats?.todayCount > 0 && (
+                <> &middot; {pulse.stats.todayCount} EXPLORER{pulse.stats.todayCount !== 1 ? 'S' : ''} ANSWERED TODAY</>
+              )}
+            </span>
+          </div>
+
+          {!pulse ? null : pulse.stats?.todayCount === 0 && (pulse.recentResponses || []).length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '1.5rem', border: `1px dashed ${gold}22`, background: '#0d0d0d' }}>
+              <p style={{ fontSize: '15px', color: parchment, fontStyle: 'italic', margin: 0, marginBottom: '0.5rem' }}>
+                Today&apos;s question is waiting. Be the first.
+              </p>
+              <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '10px 22px', display: 'inline-block', marginTop: '0.5rem' }}>TODAY&apos;S QUESTION</a>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {(pulse.recentResponses || []).slice(0, 3).map((r: any) => {
+                  const tColor = THINKER_COLORS[r.thinker_id] || gold;
+                  return (
+                    <div key={r.id} style={{
+                      background: '#0d0d0d', borderLeft: `3px solid ${tColor}`,
+                      border: `1px solid ${gold}10`, padding: '0.75rem 1rem',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '13px', color: gold }}>{r.display_name}</span>
+                        <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: tColor }}>{(r.thinker_id || '').toUpperCase()}</span>
+                      </div>
+                      <p style={{ fontSize: '14px', color: parchment, lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {r.response_text}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <a href="/feed" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.18em', color: gold, textDecoration: 'none' }}>VIEW FULL FEED &rarr;</a>
+              </div>
+
+              {(pulse.streakLeaders || []).length > 0 && (
+                <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: `1px solid ${gold}10` }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.3em', color: muted, textAlign: 'center', marginBottom: '0.75rem' }}>STREAK LEADERS</div>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                    {pulse.streakLeaders.slice(0, 3).map((l: any, i: number) => (
+                      <div key={`${l.display_name}-${i}`} style={{ textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: ['#c9a84c', '#C0C0C0', '#CD7F32'][i] || muted }}>{i + 1}</div>
+                        <div style={{ fontSize: '13px', color: parchment }}>{l.display_name}</div>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{l.current_streak}d STREAK</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
@@ -154,6 +233,8 @@ export default function HomePage() {
       </section>
 
       <PublicFooter />
+
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
     </div>
   );
 }

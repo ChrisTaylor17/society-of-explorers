@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { l: 'Explore DAOs', h: '/explore' },
   { l: 'SOE', h: '/soe' },
   { l: 'Practice', h: '/practice' },
+  { l: 'Feed', h: '/feed' },
   { l: 'Match', h: '/match' },
   { l: 'Salons', h: '/salon' },
   { l: 'Dashboard', h: '/guide' },
