@@ -98,24 +98,28 @@ export default function HomePage() {
     })();
   }, []);
 
-  // Fetch community responses + self-check if already answered
+  // Self-check: did this member answer today's question?
   useEffect(() => {
-    if (!question?.id) return;
+    if (!question?.id || !memberId) return;
     fetch(`/api/practice/responses?questionId=${question.id}`)
       .then(r => r.json())
       .then(d => {
-        const list = d.responses || [];
-        setResponses(list);
-        if (memberId) {
-          const mine = list.find((r: any) => r.member_id === memberId);
-          if (mine) {
-            setSubmitted(true);
-            setMyResponse(mine.response_text);
-          }
+        const mine = (d.responses || []).find((r: any) => r.member_id === memberId);
+        if (mine) {
+          setSubmitted(true);
+          setMyResponse(mine.response_text);
         }
       })
       .catch(() => {});
   }, [question?.id, memberId]);
+
+  // Community feed: last 7 days across all questions
+  useEffect(() => {
+    fetch('/api/practice/responses?days=7')
+      .then(r => r.json())
+      .then(d => setResponses(d.responses || []))
+      .catch(() => {});
+  }, []);
 
   // Socrates demo init
   useEffect(() => {
@@ -148,8 +152,8 @@ export default function HomePage() {
       } else {
         setSubmitted(true);
         setMyResponse(response.trim());
-        // Refresh community feed
-        fetch(`/api/practice/responses?questionId=${question.id}`).then(r => r.json()).then(d => setResponses(d.responses || [])).catch(() => {});
+        // Refresh 7-day community feed
+        fetch('/api/practice/responses?days=7').then(r => r.json()).then(d => setResponses(d.responses || [])).catch(() => {});
       }
     } catch (err: any) {
       setSubmitError(err?.message || 'Network error');
@@ -222,7 +226,8 @@ export default function HomePage() {
   const tColor = THINKER_COLORS[tId] || gold;
   const tAvatar = THINKER_AVATARS[tId] || '??';
 
-  const communityResponses = (responses || []).filter(r => r.member_id !== memberId).slice(-8).reverse();
+  // 7-day feed is already ordered newest-first by the API; drop self and cap at 8
+  const communityResponses = (responses || []).filter(r => r.member_id !== memberId).slice(0, 8);
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
@@ -322,14 +327,14 @@ export default function HomePage() {
         <section style={{ padding: '2rem 2rem 3rem', animation: 'fadeIn 0.6s ease' }}>
           <div style={{ maxWidth: '560px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>WHAT OTHERS SAID</span>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>THIS WEEK&apos;S REFLECTIONS</span>
               <span style={{ flex: 1, height: '1px', background: `${gold}15` }} />
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: muted }}>{responses.length} TODAY</span>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: muted }}>{responses.length} RECENT</span>
             </div>
 
             {communityResponses.length === 0 ? (
               <div style={{ padding: '1.5rem', textAlign: 'center', border: `1px dashed ${gold}22` }}>
-                <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', margin: 0 }}>You&apos;re the first to answer today. Come back later to see others.</p>
+                <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', margin: 0 }}>You&apos;re the first this week. Come back later to see others.</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -339,6 +344,14 @@ export default function HomePage() {
                       <span style={{ fontSize: '13px', color: gold }}>{r.display_name}</span>
                       <span style={{ fontSize: '11px', color: muted }}>{timeAgo(r.created_at)}</span>
                     </div>
+                    {r.question_text && (
+                      <p style={{
+                        fontSize: '12px', color: `${muted}cc`, fontStyle: 'italic', margin: 0, marginBottom: '6px',
+                        display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      }}>
+                        &ldquo;{r.question_text}&rdquo;
+                      </p>
+                    )}
                     <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.response_text}</p>
                   </div>
                 ))}
