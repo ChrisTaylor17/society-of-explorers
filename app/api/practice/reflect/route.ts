@@ -30,19 +30,65 @@ interface PriorPair {
   created_at: string;
 }
 
+interface SemanticFact {
+  category: string;
+  key: string;
+  value: string;
+  confidence: number;
+}
+
+interface ThinkerEpisode {
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+  source: string;
+  session_id: string | null;
+}
+
+function relativeDay(iso: string): string {
+  const now = Date.now();
+  const t = new Date(iso).getTime();
+  const diffMs = Math.max(0, now - t);
+  const hrs = Math.floor(diffMs / 3600000);
+  if (hrs < 1) return 'earlier today';
+  if (hrs < 12) return `${hrs} hour${hrs === 1 ? '' : 's'} ago`;
+  const days = Math.floor(diffMs / 86400000);
+  if (days === 0) return 'earlier today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 14) return 'last week';
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  if (days < 60) return 'last month';
+  return `${Math.floor(days / 30)} months ago`;
+}
+
 function buildPrompt(params: {
   thinkerName: string;
   voiceLine: string;
   questionText: string;
   responseText: string;
   priorPairs: PriorPair[];
+  semanticFacts: SemanticFact[];
+  widerHistory: ThinkerEpisode[];
 }): string {
-  const { thinkerName, voiceLine, questionText, responseText, priorPairs } = params;
+  const { thinkerName, voiceLine, questionText, responseText, priorPairs, semanticFacts, widerHistory } = params;
 
   const priorBlock = priorPairs.length > 0
-    ? `PRIOR EXCHANGES WITH THIS MEMBER (most recent first):\n${priorPairs.map((p, i) => {
-        const dayLabel = new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        return `- ${dayLabel}, they answered: "${p.answer}" — you reflected: "${p.reflection}"`;
+    ? `PRIOR PRACTICE EXCHANGES WITH THIS MEMBER (most recent first):\n${priorPairs.map(p => {
+        return `- ${relativeDay(p.created_at)}, they answered: "${p.answer}" — you reflected: "${p.reflection}"`;
+      }).join('\n')}\n\n`
+    : '';
+
+  const factsBlock = semanticFacts.length > 0
+    ? `WHAT YOU KNOW ABOUT THIS MEMBER (durable facts extracted from past exchanges):\n${semanticFacts.map(f => `- [${f.category}] ${f.key}: ${f.value}`).join('\n')}\n\n`
+    : '';
+
+  const historyBlock = widerHistory.length > 0
+    ? `WIDER HISTORY WITH YOU (beyond today's practice — salon conversations and older exchanges, newest first):\n${widerHistory.map(e => {
+        const who = e.role === 'user' ? 'they said' : 'you said';
+        const where = e.source && e.source !== 'practice' ? ` [${e.source}]` : '';
+        const excerpt = e.content.length > 220 ? e.content.slice(0, 219).trim() + '\u2026' : e.content;
+        return `- ${relativeDay(e.created_at)}${where}, ${who}: "${excerpt}"`;
       }).join('\n')}\n\n`
     : '';
 
@@ -59,7 +105,7 @@ TODAY'S QUESTION (which you asked):
 THEIR ANSWER:
 "${responseText}"
 
-${priorBlock}HARD RULES (violating any of these is failure):
+${priorBlock}${factsBlock}${historyBlock}HARD RULES (violating any of these is failure):
 - Reference a specific word, phrase, or move from their answer. Generic reflections that would fit anyone's answer are failures.
 - Never open with praise. No "That's thoughtful." No "Interesting." No "I appreciate."
 - Never paraphrase their answer back. No "What I'm hearing is." No "So you're saying."
@@ -67,6 +113,9 @@ ${priorBlock}HARD RULES (violating any of these is failure):
 - Write 2-4 sentences. Stop when you've said the thing. No padding.
 - If a prior exchange exists, notice what's shifting or repeating.
 - Stay in your voice. ${thinkerName}'s voice. Modern, sharp, not archaic. You are a brilliant person who has internalized this thinker's framework, not a costumed reenactor.
+
+MEMORY USE (required when relevant, forbidden when not):
+You have the member's past context above. If anything in it is genuinely relevant to what they said today — a goal they're pursuing, a challenge they named before, a value they've articulated, a commitment they made, a pattern shifting from prior to now — weave it in specifically and naturally. Anchor it in time and detail, the way a friend who remembers would: "Three days ago you said X about control. Today you're saying Y about surrender." Use the relative time labels above when you reference a moment. Never say "According to my memory," "I recall that you," "Last time we spoke," "you told me previously" or any meta-reference to the act of remembering. Just remember, and speak. If nothing in the prior context is genuinely relevant to today's answer, do not force it — a clean reflection with no callback is better than a contrived one.
 
 MANIFESTO CONNECTION (only when genuinely earned):
 When — and only when — the member's answer naturally touches one of the manifesto's themes (sovereignty over your own mind and data, private AI counsel, voluntary contribution vs. extraction, the wisdom layer, the personal data vault, soulbound reputation, real-world action over pixels, a different architecture for being a person online) you may gesture at that larger frame in a single clause or phrase. Never name "the manifesto." Never pitch. Never use the phrase "Society of Explorers." Never say "our vision" or "what we're building." The connection must feel inevitable, not marketed — the way a wise friend would note that a specific thought is pointing at something larger. If the answer doesn't open that door, do not force it open. A reflection with no manifesto thread is better than a forced one.
@@ -159,11 +208,52 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Semantic facts about this member (thinker-agnostic; facts describe the person)
+  let semanticFacts: SemanticFact[] = [];
+  // Wider history: episodes with THIS thinker across all sources (practice + salon),
+  // excluding the session we're about to generate so we don't echo ourselves
+  let widerHistory: ThinkerEpisode[] = [];
+
+  if (response.member_id) {
+    try {
+      const { data: factRows } = await supabase
+        .from('user_semantic_memory')
+        .select('category, key, value, confidence, created_at')
+        .eq('member_id', response.member_id)
+        .is('valid_until', null)
+        .order('confidence', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (factRows) semanticFacts = factRows as SemanticFact[];
+    } catch (e) {
+      console.error('[practice/reflect] facts fetch failed (non-fatal):', e);
+    }
+
+    try {
+      const currentSessionId = `practice_${responseId}`;
+      const { data: epRows } = await supabase
+        .from('user_episodes')
+        .select('role, content, created_at, source, session_id')
+        .eq('member_id', response.member_id)
+        .eq('thinker_id', thinkerId)
+        .neq('session_id', currentSessionId)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      if (epRows) widerHistory = epRows as ThinkerEpisode[];
+    } catch (e) {
+      console.error('[practice/reflect] episodes fetch failed (non-fatal):', e);
+    }
+  }
+
   const systemPrompt = buildPrompt({
     thinkerName, voiceLine,
     questionText: question.question_text,
     responseText: response.response_text,
     priorPairs,
+    semanticFacts,
+    widerHistory,
   });
 
   const encoder = new TextEncoder();
