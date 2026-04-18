@@ -45,6 +45,14 @@ export default function PublicNav() {
   const authLabel = displayName || 'Sign In';
   const authHref = displayName ? '/dashboard' : '/login';
 
+  // Insights link surfaces only when the viewer is signed in.
+  const visibleLinks = NAV_LINKS.flatMap(lk => {
+    if (lk.l === 'Council' && displayName) {
+      return [{ l: 'Insights', h: '/insights' }, lk];
+    }
+    return [lk];
+  });
+
   return (
     <>
       <nav style={{
@@ -59,7 +67,7 @@ export default function PublicNav() {
         </a>
 
         <div style={{ display: 'flex', gap: '1.75rem', alignItems: 'center' }} className="hide-mobile">
-          {NAV_LINKS.map(lk => (
+          {visibleLinks.map(lk => (
             <a key={lk.h} href={lk.h} style={linkStyle}>{lk.l}</a>
           ))}
           <a
@@ -79,7 +87,7 @@ export default function PublicNav() {
 
       {menuOpen && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,10,0.98)', zIndex: 199, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {[...NAV_LINKS, { l: authLabel, h: authHref }].map(lk => (
+          {[...visibleLinks, { l: authLabel, h: authHref }].map(lk => (
             <a key={lk.h + lk.l} href={lk.h} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}
         </div>
