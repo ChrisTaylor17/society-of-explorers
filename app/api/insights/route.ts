@@ -8,7 +8,12 @@ const supabaseAdmin = createClient(
 );
 
 export async function GET(req: NextRequest) {
+  console.log('[insights-auth] headers:', {
+    authorization: req.headers.get('authorization') ? 'present' : 'null',
+    cookie: req.headers.get('cookie') ? 'present' : 'null',
+  });
   const auth = await getAuthenticatedMember(req);
+  console.log('[insights-auth] resolved:', auth ? `memberId=${auth.memberId}` : 'null');
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const memberId = auth.memberId;
