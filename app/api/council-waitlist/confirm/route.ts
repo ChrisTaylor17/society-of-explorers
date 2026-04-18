@@ -1,8 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// Basic but strict-enough email regex: local@domain.tld
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
-  if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
+  if (!email || typeof email !== 'string') {
+    return NextResponse.json({ error: 'Email required' }, { status: 400 });
+  }
+
+  const normalized = email.trim().toLowerCase();
+  if (!EMAIL_RE.test(normalized) || normalized.length > 254) {
+    return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
+  }
+
+  // Duplicate-signup guard: if we've already recorded this email for the
+  // waitlist in founding_interest, short-circuit before sending anything.
+  const { data: existing } = await supabase
+    .from('founding_interest')
+    .select('id')
+    .eq('email', normalized)
+    .ilike('why', '%Council Waitlist%')
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({ success: true, duplicate: true });
+  }
+
+  // Record the signup so subsequent posts dedupe
+  await supabase.from('founding_interest').insert({
+    name: null,
+    email: normalized,
+    why: '[Council Waitlist]',
+    created_at: new Date().toISOString(),
+  });
 
   if (!process.env.RESEND_API_KEY) {
     return NextResponse.json({ success: true, note: 'No RESEND_API_KEY' });
@@ -23,7 +61,7 @@ export async function POST(req: NextRequest) {
         </td></tr>
         <tr><td style="padding:0 24px 24px;text-align:center;">
           <p style="font-family:Georgia,serif;font-size:16px;line-height:1.8;color:rgba(245,240,232,0.8);margin:0 0 16px;">
-            You'll be among the first to consult Socrates, Nietzsche, Aurelius, Einstein, Plato, and Jobs — simultaneously.
+            You'll be among the first to consult Socrates, Nietzsche, Aurelius, Einstein, Plato, and Jobs &mdash; simultaneously.
           </p>
           <p style="font-family:Georgia,serif;font-size:16px;line-height:1.8;color:rgba(245,240,232,0.8);margin:0 0 16px;">
             The thinkers remember you. Every conversation deepens the relationship.
@@ -51,7 +89,7 @@ export async function POST(req: NextRequest) {
       headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: 'Society of Explorers <notifications@societyofexplorers.com>',
-        to: email.trim(),
+        to: normalized,
         subject: "You're on the list — welcome to the Renaissance",
         html: confirmHtml,
       }),
@@ -64,8 +102,8 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         from: 'Society of Explorers <notifications@societyofexplorers.com>',
         to: 'chris@societyofexplorers.com',
-        subject: `[Council Waitlist] ${email.trim()}`,
-        html: `<div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;"><p style="color:#c9a84c;">[Council Waitlist]</p><p>${email.trim()}</p></div>`,
+        subject: `[Council Waitlist] ${normalized}`,
+        html: `<div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;"><p style="color:#c9a84c;">[Council Waitlist]</p><p>${normalized}</p></div>`,
       }),
     });
   } catch (err) {

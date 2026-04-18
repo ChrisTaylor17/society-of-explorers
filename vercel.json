@@ -13,10 +13,6 @@
       "schedule": "0 9 * * 1"
     },
     {
-      "path": "/api/cron/proactive",
-      "schedule": "0 */2 * * *"
-    },
-    {
       "path": "/api/practice/daily-email",
       "schedule": "0 1 * * *"
     }

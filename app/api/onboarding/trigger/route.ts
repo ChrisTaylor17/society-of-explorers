@@ -92,6 +92,10 @@ Be steady, grounded, warm. Every word should earn its place.`
 ];
 
 export async function POST(req: NextRequest) {
+  if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { memberId, step } = await req.json();
 
