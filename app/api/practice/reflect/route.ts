@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { THINKER_PROFILES } from '@/lib/claude/thinkers';
+import { MANIFESTO_SUMMARY } from '@/lib/manifesto';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const supabase = createClient(
@@ -47,6 +48,9 @@ function buildPrompt(params: {
 
 A member of Society of Explorers just answered today's practice question. You are writing a reflection on THEIR specific answer — not continuing a conversation, not asking a follow-up question.
 
+WHAT THIS COMMUNITY IS (context only — never recite this back):
+${MANIFESTO_SUMMARY}
+
 TODAY'S QUESTION (which you asked):
 "${questionText}"
 
@@ -61,6 +65,9 @@ ${priorBlock}HARD RULES (violating any of these is failure):
 - Write 2-4 sentences. Stop when you've said the thing. No padding.
 - If a prior exchange exists, notice what's shifting or repeating.
 - Stay in your voice. ${thinkerName}'s voice. Modern, sharp, not archaic. You are a brilliant person who has internalized this thinker's framework, not a costumed reenactor.
+
+MANIFESTO CONNECTION (only when genuinely earned):
+When — and only when — the member's answer naturally touches one of the manifesto's themes (sovereignty over your own mind and data, private AI counsel, voluntary contribution vs. extraction, the wisdom layer, the personal data vault, soulbound reputation, real-world action over pixels, a different architecture for being a person online) you may gesture at that larger frame in a single clause or phrase. Never name "the manifesto." Never pitch. Never use the phrase "Society of Explorers." Never say "our vision" or "what we're building." The connection must feel inevitable, not marketed — the way a wise friend would note that a specific thought is pointing at something larger. If the answer doesn't open that door, do not force it open. A reflection with no manifesto thread is better than a forced one.
 
 Write the reflection now. Plain prose. No preamble.`;
 }
