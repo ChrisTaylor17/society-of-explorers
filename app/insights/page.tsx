@@ -75,7 +75,6 @@ export default function InsightsPage() {
     async function load() {
       try {
         const session = await getMemberSession();
-        console.log('[insights-debug] session:', session);
         if (!session?.member) { setUnauthenticated(true); setLoading(false); return; }
 
         let authToken: string | null = null;
@@ -84,12 +83,10 @@ export default function InsightsPage() {
           const { data: { session: auth } } = await supabase.auth.getSession();
           authToken = auth?.access_token || null;
         } catch {}
-        console.log('[insights-debug] authToken:', authToken ? 'present' : 'null');
 
         const res = await fetch('/api/insights', {
           headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
         });
-        console.log('[insights-debug] response status:', res.status);
         if (res.status === 401) { setUnauthenticated(true); setLoading(false); return; }
         if (!res.ok) { setError('Could not load insights.'); setLoading(false); return; }
         const json = await res.json();

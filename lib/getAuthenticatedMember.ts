@@ -40,30 +40,16 @@ export async function getAuthenticatedMember(
   // 1. Try Supabase session (Google OAuth / email-password)
   try {
     const supabase = await createClient();
-    const { data: { user }, error: getUserError } = await supabase.auth.getUser();
-    if (getUserError) {
-      console.log('[auth-branch] supabase-session: getUser error', { message: getUserError.message });
-    }
+    const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: member, error: memberError } = await supabaseAdmin
+      const { data: member } = await supabaseAdmin
         .from('members')
         .select(MEMBER_SELECT)
         .eq('supabase_auth_id', user.id)
         .single();
-      if (member) {
-        console.log('[auth-branch] supabase-session: OK', { memberId: member.id });
-        return { memberId: member.id, member: member as AuthenticatedMember };
-      }
-      console.log('[auth-branch] supabase-session: user found but no member row', {
-        authUserId: user.id,
-        memberError: memberError?.message,
-      });
-    } else {
-      console.log('[auth-branch] supabase-session: no user in session');
+      if (member) return { memberId: member.id, member: member as AuthenticatedMember };
     }
-  } catch (e: any) {
-    console.log('[auth-branch] supabase-session: threw', { message: e?.message });
-  }
+  } catch {}
 
   // 2. Try Bearer token (used by some client-side callers)
   const authHeader = req.headers.get('authorization');
@@ -76,54 +62,28 @@ export async function getAuthenticatedMember(
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { global: { headers: { Authorization: `Bearer ${token}` } } },
       );
-      const { data: { user }, error: getUserError } = await supabaseAuth.auth.getUser();
-      if (getUserError) {
-        console.log('[auth-branch] bearer: getUser error', { message: getUserError.message });
-      }
+      const { data: { user } } = await supabaseAuth.auth.getUser();
       if (user) {
-        const { data: member, error: memberError } = await supabaseAdmin
+        const { data: member } = await supabaseAdmin
           .from('members')
           .select(MEMBER_SELECT)
           .eq('supabase_auth_id', user.id)
           .single();
-        if (member) {
-          console.log('[auth-branch] bearer: OK', { memberId: member.id });
-          return { memberId: member.id, member: member as AuthenticatedMember };
-        }
-        console.log('[auth-branch] bearer: user found but no member row', {
-          authUserId: user.id,
-          memberError: memberError?.message,
-        });
-      } else {
-        console.log('[auth-branch] bearer: token did not resolve to a user');
+        if (member) return { memberId: member.id, member: member as AuthenticatedMember };
       }
-    } catch (e: any) {
-      console.log('[auth-branch] bearer: threw', { message: e?.message });
-    }
-  } else {
-    console.log('[auth-branch] bearer: no Authorization: Bearer header');
+    } catch {}
   }
 
   // 3. Try soe_wallet_id cookie (MetaMask/SIWE)
   const walletId = req.cookies.get('soe_wallet_id')?.value;
   if (walletId) {
-    const { data: member, error: memberError } = await supabaseAdmin
+    const { data: member } = await supabaseAdmin
       .from('members')
       .select(MEMBER_SELECT)
       .eq('id', walletId)
       .single();
-    if (member) {
-      console.log('[auth-branch] wallet-cookie: OK', { memberId: member.id });
-      return { memberId: member.id, member: member as AuthenticatedMember };
-    }
-    console.log('[auth-branch] wallet-cookie: id present but no member row', {
-      walletId,
-      memberError: memberError?.message,
-    });
-  } else {
-    console.log('[auth-branch] wallet-cookie: no soe_wallet_id cookie');
+    if (member) return { memberId: member.id, member: member as AuthenticatedMember };
   }
 
-  console.log('[auth-branch] ALL BRANCHES REJECTED — returning null');
   return null;
 }
