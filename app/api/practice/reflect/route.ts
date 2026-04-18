@@ -3,6 +3,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { THINKER_PROFILES } from '@/lib/claude/thinkers';
 import { MANIFESTO_SUMMARY } from '@/lib/manifesto';
+import { writeEpisodes } from '@/lib/memory/episodes';
+import { extractFactsFromAnswer } from '@/lib/memory/extractFacts';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const supabase = createClient(
@@ -197,6 +199,30 @@ export async function POST(req: NextRequest) {
             reflection_text: clean,
             is_public: true,
           }, { onConflict: 'response_id' });
+
+          // --- MEMORY LAYER (non-fatal) ---
+          if (response.member_id) {
+            try {
+              const sessionId = `practice_${responseId}`;
+              const { userEpisodeId } = await writeEpisodes({
+                memberId: response.member_id,
+                thinkerId,
+                sessionId,
+                userContent: response.response_text,
+                assistantContent: clean,
+                source: 'practice',
+              });
+
+              await extractFactsFromAnswer({
+                memberId: response.member_id,
+                sourceEpisodeId: userEpisodeId,
+                question: question.question_text,
+                answer: response.response_text,
+              });
+            } catch (memErr) {
+              console.error('memory layer failed (non-fatal):', memErr);
+            }
+          }
         }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
