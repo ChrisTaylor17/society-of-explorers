@@ -26,7 +26,12 @@ export async function writeEpisodes(params: {
     .select('id, role');
 
   if (error || !data) {
-    console.error('writeEpisodes failed:', error);
+    console.error('[memory-layer-insert-failed]', {
+      message: error?.message,
+      code: (error as any)?.code,
+      details: (error as any)?.details,
+      memberId, thinkerId, sessionId, source,
+    });
     return { userEpisodeId: null, assistantEpisodeId: null };
   }
 

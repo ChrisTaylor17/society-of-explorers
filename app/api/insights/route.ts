@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const memberId = auth.memberId;
 
   // Semantic facts — active only, ordered for grouping
-  const { data: factRows } = await supabaseAdmin
+  const { data: factRows, error: factsError } = await supabaseAdmin
     .from('user_semantic_memory')
     .select('id, category, key, value, confidence, created_at, source_episode_id')
     .eq('member_id', memberId)
@@ -22,14 +22,30 @@ export async function GET(req: NextRequest) {
     .order('confidence', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(200);
+  if (factsError) {
+    console.error('[insights-query-failed] semantic_memory', {
+      message: factsError.message,
+      code: (factsError as any).code,
+      details: (factsError as any).details,
+      memberId,
+    });
+  }
 
-  // Episodes — last 20 rows, then group into threads by session_id
-  const { data: episodeRows } = await supabaseAdmin
+  // Episodes — last 30 rows, then group into threads by session_id
+  const { data: episodeRows, error: episodesError } = await supabaseAdmin
     .from('user_episodes')
     .select('id, thinker_id, role, content, created_at, source, session_id')
     .eq('member_id', memberId)
     .order('created_at', { ascending: false })
     .limit(30);
+  if (episodesError) {
+    console.error('[insights-query-failed] episodes', {
+      message: episodesError.message,
+      code: (episodesError as any).code,
+      details: (episodesError as any).details,
+      memberId,
+    });
+  }
 
   // Group by session_id, preserving newest-first order (first encounter = newest)
   const threadsMap = new Map<string, any>();
