@@ -31,12 +31,15 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   const isFirstResponseToday = !existingResponse;
 
-  // Upsert response
-  const { error: respErr } = await supabase.from('question_responses').upsert({
+  // Upsert response and capture its id for downstream reflection generation
+  const { data: upserted, error: respErr } = await supabase.from('question_responses').upsert({
     member_id: auth.memberId, question_id: questionId, response_text: responseText.trim(),
-  }, { onConflict: 'member_id,question_id' });
+  }, { onConflict: 'member_id,question_id' })
+    .select('id')
+    .single();
 
   if (respErr) return NextResponse.json({ error: respErr.message }, { status: 500 });
+  const responseId = upserted?.id;
 
   // Update streak
   const today = getTodayET();
@@ -88,6 +91,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
+    responseId,
     streak: updated?.current_streak ?? streak,
     longest: updated?.longest_streak ?? longest,
     total: updated?.total_responses ?? total,

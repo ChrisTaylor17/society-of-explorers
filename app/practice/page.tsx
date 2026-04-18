@@ -14,6 +14,7 @@ const muted = '#9a8f7a';
 const THINKER_NAMES: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', aurelius: 'Marcus Aurelius', nietzsche: 'Nietzsche', einstein: 'Einstein', jobs: 'Steve Jobs' };
 const THINKER_COLORS: Record<string, string> = { socrates: '#C9A94E', plato: '#7B68EE', aurelius: '#8B7355', nietzsche: '#DC143C', einstein: '#4169E1', jobs: '#A0A0A0' };
 const THINKER_AVATARS: Record<string, string> = { socrates: 'SO', plato: 'PL', aurelius: 'MA', nietzsche: 'FN', einstein: 'AE', jobs: 'SJ' };
+const THINKER_SYMBOLS: Record<string, string> = { socrates: '\u03A3', plato: '\u03A0', aurelius: 'M', nietzsche: 'N', einstein: 'E', jobs: 'J' };
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -47,6 +48,13 @@ export default function PracticePage() {
   const [showShareCard, setShowShareCard] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Reflection streaming state
+  const [responseId, setResponseId] = useState<string | null>(null);
+  const [reflectionText, setReflectionText] = useState('');
+  const [reflectionStreaming, setReflectionStreaming] = useState(false);
+  const [reflectionDone, setReflectionDone] = useState(false);
+  const [reflectionError, setReflectionError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -83,6 +91,50 @@ export default function PracticePage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [question?.id, authToken, memberId]);
 
+  async function streamReflection(rid: string) {
+    setReflectionText('');
+    setReflectionDone(false);
+    setReflectionError(null);
+    setReflectionStreaming(true);
+    try {
+      const res = await fetch('/api/practice/reflect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ responseId: rid }),
+      });
+      if (!res.ok || !res.body) {
+        setReflectionError('Reflection unavailable. Please try again later.');
+        setReflectionStreaming(false);
+        setReflectionDone(true);
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.error) setReflectionError(evt.error);
+            if (evt.delta) { accumulated += evt.delta; setReflectionText(accumulated); }
+            if (evt.done) { setReflectionDone(true); }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      setReflectionError(err?.message || 'Network error');
+      setReflectionDone(true);
+    }
+    setReflectionStreaming(false);
+  }
+
   async function handleSubmit() {
     if (!response.trim() || !question?.id) return;
     if (!memberId) { window.location.href = '/login'; return; }
@@ -99,6 +151,11 @@ export default function PracticePage() {
         setMyResponse(response.trim());
         setStreak({ current_streak: data.streak, longest_streak: data.longest, total_responses: data.total });
         setResponses(prev => [...prev, { id: 'mine', display_name: 'You', response_text: response.trim(), created_at: new Date().toISOString() }]);
+        if (data.responseId) {
+          setResponseId(data.responseId);
+          // Fire-and-forget: streams into the Reflection card state
+          streamReflection(data.responseId);
+        }
       }
     } catch {}
     setSubmitting(false);
@@ -195,11 +252,78 @@ export default function PracticePage() {
                   {/* Your response card */}
                   <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '16px', textAlign: 'left', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold }}>YOUR RESPONSE</span>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold }}>YOUR ANSWER</span>
                       <span style={{ fontSize: '12px', color: '#4CAF50' }}>{'\u2713'}</span>
                     </div>
                     <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.7, margin: 0 }}>{myResponse || response}</p>
                   </div>
+
+                  {/* Reflection card — scripture panel */}
+                  {(reflectionStreaming || reflectionText || reflectionDone || responseId) && (
+                    <div style={{
+                      background: '#0a0a0a',
+                      borderTop: `1px solid ${gold}`,
+                      borderLeft: `1px solid ${gold}15`,
+                      borderRight: `1px solid ${gold}15`,
+                      borderBottom: `1px solid ${gold}15`,
+                      padding: '1.5rem 1.25rem',
+                      textAlign: 'left',
+                      marginBottom: '1rem',
+                      animation: 'fadeIn 0.5s ease',
+                    }}>
+                      {/* Symbol glyph */}
+                      <div style={{
+                        fontFamily: 'Cinzel, serif', fontSize: '22px',
+                        color: thinkerColor, opacity: 0.45,
+                        textAlign: 'center', marginBottom: '0.5rem', lineHeight: 1,
+                      }}>
+                        {THINKER_SYMBOLS[question?.thinker_id] || '\u00B7'}
+                      </div>
+                      {/* Attribution */}
+                      <div style={{
+                        fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em',
+                        color: `${thinkerColor}cc`, textAlign: 'center', marginBottom: '0.9rem',
+                      }}>
+                        {reflectionDone
+                          ? `${thinkerName.toUpperCase()} REFLECTS`
+                          : `${thinkerName.toUpperCase()} IS REFLECTING\u2026`}
+                      </div>
+                      {/* Body */}
+                      {reflectionError ? (
+                        <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', lineHeight: 1.7, margin: 0 }}>
+                          {reflectionError}
+                        </p>
+                      ) : (
+                        <p style={{
+                          fontFamily: 'Cormorant Garamond, serif',
+                          fontSize: '17px', fontStyle: 'italic',
+                          color: parchment, lineHeight: 1.8, margin: 0,
+                          minHeight: reflectionText ? undefined : '3em',
+                        }}>
+                          {reflectionText}
+                          {reflectionStreaming && !reflectionDone && <span style={{ color: thinkerColor, marginLeft: 2 }}>{'\u2588'}</span>}
+                        </p>
+                      )}
+
+                      {/* Auth-aware footer */}
+                      {reflectionDone && !reflectionError && (
+                        <p style={{
+                          fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
+                          color: muted, textAlign: 'center',
+                          marginTop: '1rem', marginBottom: 0,
+                        }}>
+                          {memberId ? (
+                            'SAVED TO YOUR HISTORY.'
+                          ) : (
+                            <>
+                              <a href="/login" style={{ color: gold, textDecoration: 'none' }}>SIGN IN</a>
+                              {` AND ${thinkerName.toUpperCase()} WILL REMEMBER THIS.`}
+                            </>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Share + Invite row */}
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
