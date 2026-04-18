@@ -4,6 +4,7 @@ import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { getMemberSession } from '@/lib/auth/getSession';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -160,6 +161,24 @@ export default function PracticePage() {
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: thinkerColor, marginBottom: '1.5rem' }}>
                 {thinkerName.toUpperCase()} ASKS:
               </div>
+              <Link
+                href="/manifesto"
+                style={{
+                  fontFamily: 'Cormorant Garamond, serif',
+                  fontStyle: 'italic',
+                  fontSize: '13px',
+                  color: `${gold}80`,
+                  textDecoration: 'none',
+                  display: 'inline-block',
+                  marginBottom: '1rem',
+                  opacity: 0.6,
+                  transition: 'opacity 0.3s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
+              >
+                Today&rsquo;s question is part of the larger manifesto &rarr;
+              </Link>
               <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 5vw, 34px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, marginBottom: '0.75rem' }}>
                 &ldquo;{question.question_text}&rdquo;
               </h1>
