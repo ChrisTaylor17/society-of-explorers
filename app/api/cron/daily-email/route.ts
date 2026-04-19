@@ -27,15 +27,17 @@ async function handler(req: NextRequest) {
   const thinker = THINKER_PROFILES[question.thinker_id];
   const thinkerName = thinker?.name || question.thinker_id;
 
-  const { data: subs } = await supabase
+  const { data: subs, error: subsError } = await supabase
     .from('daily_email_subscriptions')
     .select('id, unsubscribe_token, member_id, last_sent_question_id, members!inner(email, display_name)')
     .is('unsubscribed_at', null)
-    .neq('last_sent_question_id', question.id)
+    .or(`last_sent_question_id.is.null,last_sent_question_id.neq.${question.id}`)
     .not('members.email', 'is', null);
 
+  console.log('[cron/daily-email] question', question.id, 'subs', subs?.length ?? 0, 'err', subsError?.message);
+
   if (!subs || subs.length === 0) {
-    return NextResponse.json({ sent: 0 });
+    return NextResponse.json({ sent: 0, reason: subsError?.message ?? 'no-matching-subs' });
   }
 
   let sent = 0;
