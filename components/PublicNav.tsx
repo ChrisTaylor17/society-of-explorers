@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { l: 'Practice', h: '/practice' },
   { l: 'Feed', h: '/feed' },
   { l: 'Manifesto', h: '/manifesto' },
+  { l: 'Vision', h: '/vision' },
   { l: 'Council', h: '/council' },
   { l: 'Join', h: '/join' },
 ];
