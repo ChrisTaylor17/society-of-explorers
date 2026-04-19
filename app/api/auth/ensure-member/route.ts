@@ -6,6 +6,28 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function ensureDailySubscription(memberId: string) {
+  try {
+    const { data: existing } = await supabaseAdmin
+      .from('daily_email_subscriptions')
+      .select('id, unsubscribed_at')
+      .eq('member_id', memberId)
+      .maybeSingle();
+    if (existing) {
+      if (existing.unsubscribed_at) {
+        await supabaseAdmin
+          .from('daily_email_subscriptions')
+          .update({ unsubscribed_at: null, subscribed_at: new Date().toISOString() })
+          .eq('id', existing.id);
+      }
+      return;
+    }
+    await supabaseAdmin.from('daily_email_subscriptions').insert({ member_id: memberId });
+  } catch (e) {
+    console.error('[ensure-member] daily subscription failed (non-fatal):', e);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { supabaseAuthId, displayName, email } = await req.json();
@@ -18,7 +40,10 @@ export async function POST(req: NextRequest) {
       .eq('supabase_auth_id', supabaseAuthId)
       .single();
 
-    if (existing) return NextResponse.json({ member: existing, created: false });
+    if (existing) {
+      await ensureDailySubscription(existing.id);
+      return NextResponse.json({ member: existing, created: false });
+    }
 
     // Fallback: look up by email (handles members created before OAuth)
     if (email) {
@@ -34,6 +59,7 @@ export async function POST(req: NextRequest) {
         if (emailMember) {
           // Link existing member to new OAuth identity
           await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', emailMember.id);
+          await ensureDailySubscription(emailMember.id);
           return NextResponse.json({ member: { ...emailMember, supabase_auth_id: supabaseAuthId }, created: false });
         }
       }
@@ -46,6 +72,7 @@ export async function POST(req: NextRequest) {
         .single();
       if (byEmail && !byEmail.supabase_auth_id) {
         await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', byEmail.id);
+        await ensureDailySubscription(byEmail.id);
         return NextResponse.json({ member: { ...byEmail, supabase_auth_id: supabaseAuthId }, created: false });
       }
     }
@@ -67,6 +94,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    await ensureDailySubscription(member.id);
     return NextResponse.json({ member, created: true });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

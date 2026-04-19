@@ -83,7 +83,11 @@ export default function LivePage() {
       {/* Countdown or Live */}
       <section style={{ padding: '1rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-          {isLive ? (
+          {loading ? (
+            <div style={{ minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: muted, opacity: 0.5 }}>LOADING</span>
+            </div>
+          ) : isLive ? (
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#DC143C', animation: 'pulse 1.5s infinite' }} />
@@ -93,7 +97,7 @@ export default function LivePage() {
                 <button onClick={joinSession} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '52px', padding: '0 36px', cursor: 'pointer', borderRadius: 0, display: 'block', margin: '0 auto' }}>JOIN SESSION</button>
               ) : null}
             </div>
-          ) : (
+          ) : nextDate ? (
             <div>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1rem' }}>
                 {[
@@ -108,20 +112,18 @@ export default function LivePage() {
                   </div>
                 ))}
               </div>
-              {nextDate && (
-                <p style={{ fontSize: '14px', color: muted }}>
-                  {new Date(nextDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} &middot; 8:00 PM ET
-                </p>
+              <p style={{ fontSize: '14px', color: muted }}>
+                {new Date(nextDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} &middot; 8:00 PM ET
+              </p>
+              {calLinks && (
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '1.5rem' }}>
+                  <a href={calLinks.google} target="_blank" rel="noopener" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '8px 16px', textDecoration: 'none' }}>GOOGLE CALENDAR</a>
+                  <a href={calLinks.ics} download="soe-live-council.ics" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '8px 16px', textDecoration: 'none' }}>DOWNLOAD .ICS</a>
+                </div>
               )}
             </div>
-          )}
-
-          {/* Calendar links */}
-          {calLinks && !isLive && (
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '1.5rem' }}>
-              <a href={calLinks.google} target="_blank" rel="noopener" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '8px 16px', textDecoration: 'none' }}>GOOGLE CALENDAR</a>
-              <a href={calLinks.ics} download="soe-live-council.ics" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '8px 16px', textDecoration: 'none' }}>DOWNLOAD .ICS</a>
-            </div>
+          ) : (
+            <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic' }}>No session scheduled yet.</p>
           )}
         </div>
       </section>

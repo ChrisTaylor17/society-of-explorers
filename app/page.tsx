@@ -2,8 +2,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -35,34 +33,8 @@ function saveDemoMessages(msgs: ChatMessage[]) {
 }
 function countUserMessages(msgs: ChatMessage[]): number { return msgs.filter(m => m.role === 'user').length; }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
 export default function HomePage() {
   const [question, setQuestion] = useState<any>(null);
-
-  // Auth
-  const [memberId, setMemberId] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
-
-  // Respond state
-  const [response, setResponse] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [myResponse, setMyResponse] = useState<string | null>(null);
-  const [showAuthGate, setShowAuthGate] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // Community responses
-  const [responses, setResponses] = useState<any[]>([]);
 
   // Socrates demo
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -78,46 +50,11 @@ export default function HomePage() {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   }, []);
 
-  // Auth + question load
+  // Today's question
   useEffect(() => {
-    (async () => {
-      try {
-        const session = await getMemberSession();
-        if (session?.member) setMemberId(session.member.id);
-        const supabase = createClient();
-        const { data: { session: auth } } = await supabase.auth.getSession();
-        if (auth?.access_token) setAuthToken(auth.access_token);
-      } catch {}
-      setAuthChecked(true);
-
-      try {
-        const qRes = await fetch('/api/practice/today');
-        const qData = await qRes.json();
-        if (qData.question) setQuestion(qData.question);
-      } catch {}
-    })();
-  }, []);
-
-  // Self-check: did this member answer today's question?
-  useEffect(() => {
-    if (!question?.id || !memberId) return;
-    fetch(`/api/practice/responses?questionId=${question.id}`)
+    fetch('/api/practice/today')
       .then(r => r.json())
-      .then(d => {
-        const mine = (d.responses || []).find((r: any) => r.member_id === memberId);
-        if (mine) {
-          setSubmitted(true);
-          setMyResponse(mine.response_text);
-        }
-      })
-      .catch(() => {});
-  }, [question?.id, memberId]);
-
-  // Community feed: last 7 days across all questions
-  useEffect(() => {
-    fetch('/api/practice/responses?days=7')
-      .then(r => r.json())
-      .then(d => setResponses(d.responses || []))
+      .then(d => { if (d.question) setQuestion(d.question); })
       .catch(() => {});
   }, []);
 
@@ -131,35 +68,6 @@ export default function HomePage() {
   useEffect(() => {
     if (streaming || streamText) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamText, streaming]);
-
-  async function handleRespond() {
-    if (!response.trim() || !question?.id) return;
-    if (!memberId) {
-      setShowAuthGate(true);
-      return;
-    }
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const res = await fetch('/api/practice/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
-        body: JSON.stringify({ questionId: question.id, responseText: response.trim(), memberId }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setSubmitError(data.error || 'Could not save your response.');
-      } else {
-        setSubmitted(true);
-        setMyResponse(response.trim());
-        // Refresh 7-day community feed
-        fetch('/api/practice/responses?days=7').then(r => r.json()).then(d => setResponses(d.responses || [])).catch(() => {});
-      }
-    } catch (err: any) {
-      setSubmitError(err?.message || 'Network error');
-    }
-    setSubmitting(false);
-  }
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -226,156 +134,58 @@ export default function HomePage() {
   const tColor = THINKER_COLORS[tId] || gold;
   const tAvatar = THINKER_AVATARS[tId] || '??';
 
-  // 7-day feed is already ordered newest-first by the API; drop self and cap at 8
-  const communityResponses = (responses || []).filter(r => r.member_id !== memberId).slice(0, 8);
-
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
 
-      {/* HERO + INLINE ANSWER */}
+      {/* HERO */}
       <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>SOCIETY OF EXPLORERS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(36px, 7vw, 58px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, marginBottom: '1.25rem', color: parchment }}>
-            One question. Every day.
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>
+            A DAILY PHILOSOPHICAL PRACTICE
+          </div>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.2, marginBottom: '1.5rem', color: parchment }}>
+            Six thinkers pose the question.<br />You notice what you think.
           </h1>
-          <p style={{ fontSize: '17px', color: ivory85, lineHeight: 1.7, maxWidth: '520px', margin: '0 auto 2.5rem' }}>
-            Answer a philosophical question in 280 characters. See how others respond. Build your streak.
+          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '18px', color: ivory85, lineHeight: 1.7, maxWidth: '540px', margin: '0 auto 2.5rem' }}>
+            Every morning, one of six philosophers asks a single question. You answer in 280 characters. They notice what you wrote.
           </p>
-
-          {/* Question + answer card */}
-          {question && (
-            <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '2rem 1.5rem', maxWidth: '560px', marginLeft: 'auto', marginRight: 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1rem' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${tColor}18`, border: `1.5px solid ${tColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px', color: tColor }}>{tAvatar}</div>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: tColor }}>TODAY &middot; {tName.toUpperCase()}</span>
-              </div>
-              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, margin: 0, marginBottom: '1.75rem' }}>
-                &ldquo;{question.question_text}&rdquo;
-              </p>
-
-              {/* Already responded: show their answer, else: show textarea */}
-              {submitted && myResponse ? (
-                <div style={{ background: '#111', border: `1px solid ${gold}33`, padding: '1rem', textAlign: 'left', animation: 'fadeIn 0.4s ease' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold }}>YOUR RESPONSE</span>
-                    <span style={{ fontSize: '12px', color: '#4CAF50' }}>{'\u2713'}</span>
-                  </div>
-                  <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: 0 }}>{myResponse}</p>
-                </div>
-              ) : (
-                <>
-                  <textarea
-                    value={response}
-                    onChange={e => setResponse(e.target.value.slice(0, 280))}
-                    placeholder="What do you think?"
-                    rows={3}
-                    onFocus={e => { e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.35)`; e.target.style.borderColor = gold; }}
-                    onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = `${gold}33`; }}
-                    style={{
-                      width: '100%', background: '#0a0a0a', border: `1px solid ${gold}33`,
-                      padding: '14px 16px 28px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px',
-                      color: parchment, outline: 'none', resize: 'none', boxSizing: 'border-box',
-                      transition: 'box-shadow 0.2s, border-color 0.2s',
-                    }}
-                  />
-                  <div style={{ textAlign: 'right', marginTop: '-22px', marginRight: '12px', marginBottom: '10px', position: 'relative', zIndex: 1 }}>
-                    <span style={{ fontSize: '10px', color: response.length > 260 ? '#DC143C' : `${muted}88` }}>{response.length}/280</span>
-                  </div>
-                  <button
-                    onClick={handleRespond}
-                    disabled={submitting || !response.trim()}
-                    style={{
-                      width: '100%', fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em',
-                      color: '#0a0a0a', background: gold, border: 'none', height: '52px',
-                      cursor: submitting || !response.trim() ? 'not-allowed' : 'pointer',
-                      opacity: submitting || !response.trim() ? 0.4 : 1,
-                    }}
-                  >{submitting ? 'SUBMITTING...' : 'RESPOND'}</button>
-
-                  {submitError && (
-                    <p style={{ fontSize: '12px', color: '#DC143C', marginTop: '8px', textAlign: 'left' }}>{submitError}</p>
-                  )}
-
-                  {/* Inline auth gate */}
-                  {showAuthGate && authChecked && !memberId && (
-                    <div style={{ marginTop: '12px', padding: '1rem', background: `${gold}08`, border: `1px solid ${gold}33`, textAlign: 'left', animation: 'fadeIn 0.3s ease' }}>
-                      <p style={{ fontSize: '14px', color: parchment, margin: 0, marginBottom: '0.75rem', lineHeight: 1.5 }}>
-                        Create a free account to save your answer and build your streak.
-                      </p>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <a href="/join" style={{ flex: 1, minWidth: '120px', fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '0 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '44px' }}>SIGN UP FREE</a>
-                        <a href="/login" style={{ flex: 1, minWidth: '120px', fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}`, padding: '0 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '44px' }}>SIGN IN</a>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Single-line how it works */}
-          <p style={{ fontSize: '15px', color: muted, fontStyle: 'italic', marginTop: '1.5rem' }}>
-            Answer one question a day. Build your streak. Read what others think.
-          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
+              TRY TODAY&apos;S QUESTION &rarr;
+            </a>
+          </div>
+          <a href="/manifesto" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: muted, textDecoration: 'none', opacity: 0.8 }}>
+            Read the manifesto
+          </a>
         </div>
       </section>
 
-      {/* COMMUNITY RESPONSES (revealed after answer, or always for already-answered state) */}
-      {submitted && (
-        <section style={{ padding: '2rem 2rem 3rem', animation: 'fadeIn 0.6s ease' }}>
-          <div style={{ maxWidth: '560px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>THIS WEEK&apos;S REFLECTIONS</span>
-              <span style={{ flex: 1, height: '1px', background: `${gold}15` }} />
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: muted }}>{responses.length} RECENT</span>
+      {/* TODAY'S QUESTION PREVIEW */}
+      {question && (
+        <section style={{ padding: '2rem 2rem 3rem' }}>
+          <div style={{ maxWidth: '560px', margin: '0 auto', background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '2rem 1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1rem' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${tColor}18`, border: `1.5px solid ${tColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px', color: tColor }}>
+                {tAvatar}
+              </div>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: tColor }}>
+                POSED TODAY BY {tName.toUpperCase()}
+              </span>
             </div>
-
-            {communityResponses.length === 0 ? (
-              <div style={{ padding: '1.5rem', textAlign: 'center', border: `1px dashed ${gold}22` }}>
-                <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', margin: 0 }}>You&apos;re the first this week. Come back later to see others.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {communityResponses.map((r: any) => (
-                  <div key={r.id} style={{ background: '#0d0d0d', border: `1px solid ${gold}10`, borderLeft: `2px solid ${gold}33`, padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: gold }}>{r.display_name}</span>
-                      <span style={{ fontSize: '11px', color: muted }}>{timeAgo(r.created_at)}</span>
-                    </div>
-                    {r.question_text && (
-                      <p style={{
-                        fontSize: '12px', color: `${muted}cc`, fontStyle: 'italic', margin: 0, marginBottom: '6px',
-                        display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                      }}>
-                        &ldquo;{r.question_text}&rdquo;
-                      </p>
-                    )}
-                    <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.response_text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <p style={{ fontSize: '13px', color: muted, fontStyle: 'italic', textAlign: 'center', marginTop: '1.5rem' }}>
-              Come back tomorrow for the next question.
+            <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, textAlign: 'center', margin: 0, marginBottom: '1.75rem' }}>
+              &ldquo;{question.question_text}&rdquo;
             </p>
-
-            {/* Sign-up nudge for anonymous answers (shouldn't hit this path, but belt-and-suspenders) */}
-            {!memberId && (
-              <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
-                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>
-                  Create an account to build your streak and see your Explorer profile.
-                </p>
-                <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>JOIN FREE</a>
-              </div>
-            )}
+            <div style={{ textAlign: 'center' }}>
+              <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>
+                RESPOND TO THIS QUESTION &rarr;
+              </a>
+            </div>
           </div>
         </section>
       )}
 
-      {/* SOCRATES DEMO (below community responses) */}
+      {/* SOCRATES DEMO */}
       <section style={{ padding: '3rem 2rem 5rem' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -457,14 +267,12 @@ export default function HomePage() {
         <div style={{ maxWidth: '440px', margin: '0 auto' }}>
           <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 2rem' }} />
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 28px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>Start your practice.</h2>
-          <p style={{ fontSize: '15px', color: muted, marginBottom: '1.75rem' }}>One question. Every morning. Free.</p>
-          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>JOIN FREE</a>
+          <p style={{ fontSize: '15px', color: muted, marginBottom: '1.75rem' }}>Free. One question. Every morning.</p>
+          <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>TODAY&apos;S QUESTION &rarr;</a>
         </div>
       </section>
 
       <PublicFooter />
-
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
   );
 }
