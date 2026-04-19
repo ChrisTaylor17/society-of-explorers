@@ -15,3 +15,5 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .salon-root{height:100vh;height:100dvh;}
 /* Lift input above iOS home indicator */
 .salon-input-area{padding-bottom:max(12px,env(safe-area-inset-bottom,12px));}
+.animate-fade-up{animation:fadeUp 400ms ease-out both;opacity:0;}
+.animate-gold-pulse{animation:goldPulse 2.4s ease-in-out infinite;}

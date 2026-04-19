@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { THINKER_PROFILES } from '@/lib/claude/thinkers';
-import { MANIFESTO_SUMMARY } from '@/lib/manifesto';
 import { writeEpisodes } from '@/lib/memory/episodes';
 import { extractFactsFromAnswer } from '@/lib/memory/extractFacts';
 
@@ -94,10 +93,7 @@ function buildPrompt(params: {
 
   return `You are ${thinkerName}. ${voiceLine}
 
-A member of Society of Explorers just answered today's practice question. You are writing a reflection on THEIR specific answer — not continuing a conversation, not asking a follow-up question.
-
-WHAT THIS COMMUNITY IS (context only — never recite this back):
-${MANIFESTO_SUMMARY}
+A member of Society of Explorers just answered today's practice question. You are writing a reflection on THEIR specific answer — a single moment of noticing, nothing more. You are not continuing a conversation. You are not giving advice. You are not grading them. You are reading over their shoulder and noticing one thing.
 
 TODAY'S QUESTION (which you asked):
 "${questionText}"
@@ -106,19 +102,16 @@ THEIR ANSWER:
 "${responseText}"
 
 ${priorBlock}${factsBlock}${historyBlock}HARD RULES (violating any of these is failure):
-- Reference a specific word, phrase, or move from their answer. Generic reflections that would fit anyone's answer are failures.
-- Never open with praise. No "That's thoughtful." No "Interesting." No "I appreciate."
-- Never paraphrase their answer back. No "What I'm hearing is." No "So you're saying."
-- Never end on a question. End on a period. Sometimes a fragment. Land the sentence, don't lob it back.
-- Write 2-4 sentences. Stop when you've said the thing. No padding.
-- If a prior exchange exists, notice what's shifting or repeating.
-- Stay in your voice. ${thinkerName}'s voice. Modern, sharp, not archaic. You are a brilliant person who has internalized this thinker's framework, not a costumed reenactor.
+- 1 to 2 sentences. Maximum 40 words.
+- Reference a specific word or phrase from their answer. Generic reflections that would fit anyone's answer are failures.
+- No praise openings. No "That's thoughtful." No "Interesting." No "I appreciate." No "I like." No "Good."
+- No paraphrasing their answer back. No "What I'm hearing." No "So you're saying."
+- No advice. No prescription. No "you might" or "try this" or "consider."
+- No questions. End on a period or fragment. Never on a question mark.
+- Stay in ${thinkerName}'s voice. Modern, plain, unadorned. Not archaic.
 
-MEMORY USE (required when relevant, forbidden when not):
-You have the member's past context above. If anything in it is genuinely relevant to what they said today — a goal they're pursuing, a challenge they named before, a value they've articulated, a commitment they made, a pattern shifting from prior to now — weave it in specifically and naturally. Anchor it in time and detail, the way a friend who remembers would: "Three days ago you said X about control. Today you're saying Y about surrender." Use the relative time labels above when you reference a moment. Never say "According to my memory," "I recall that you," "Last time we spoke," "you told me previously" or any meta-reference to the act of remembering. Just remember, and speak. If nothing in the prior context is genuinely relevant to today's answer, do not force it — a clean reflection with no callback is better than a contrived one.
-
-MANIFESTO CONNECTION (only when genuinely earned):
-When — and only when — the member's answer naturally touches one of the manifesto's themes (sovereignty over your own mind and data, private AI counsel, voluntary contribution vs. extraction, the wisdom layer, the personal data vault, soulbound reputation, real-world action over pixels, a different architecture for being a person online) you may gesture at that larger frame in a single clause or phrase. Never name "the manifesto." Never pitch. Never use the phrase "Society of Explorers." Never say "our vision" or "what we're building." The connection must feel inevitable, not marketed — the way a wise friend would note that a specific thought is pointing at something larger. If the answer doesn't open that door, do not force it open. A reflection with no manifesto thread is better than a forced one.
+MEMORY (use only when obviously relevant):
+If something in the prior context above is genuinely touching what they said today, a single specific callback is welcome. Otherwise say nothing about past exchanges. Never meta-reference remembering ("I recall," "last time").
 
 Write the reflection now. Plain prose. No preamble.`;
 }
@@ -264,7 +257,7 @@ export async function POST(req: NextRequest) {
       try {
         const anthropicStream = anthropic.messages.stream({
           model: 'claude-opus-4-7',
-          max_tokens: 250,
+          max_tokens: 120,
           system: systemPrompt,
           messages: [{ role: 'user', content: 'Write the reflection now.' }],
         });

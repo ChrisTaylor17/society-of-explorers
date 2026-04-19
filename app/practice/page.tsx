@@ -1,113 +1,268 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { getMemberSession } from '@/lib/auth/getSession';
 import { createClient } from '@/lib/supabase/client';
-import Link from 'next/link';
 
-const gold = '#c9a84c';
-const parchment = '#f5f0e8';
-const ivory85 = 'rgba(245,240,232,0.85)';
-const muted = '#9a8f7a';
+const CINZEL = 'Cinzel, serif';
+const CORMORANT = 'Cormorant Garamond, serif';
+const PLAYFAIR = 'Playfair Display, serif';
 
-const THINKER_NAMES: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', aurelius: 'Marcus Aurelius', nietzsche: 'Nietzsche', einstein: 'Einstein', jobs: 'Steve Jobs' };
-const THINKER_COLORS: Record<string, string> = { socrates: '#C9A94E', plato: '#7B68EE', aurelius: '#8B7355', nietzsche: '#DC143C', einstein: '#4169E1', jobs: '#A0A0A0' };
-const THINKER_AVATARS: Record<string, string> = { socrates: 'SO', plato: 'PL', aurelius: 'MA', nietzsche: 'FN', einstein: 'AE', jobs: 'SJ' };
-const THINKER_SYMBOLS: Record<string, string> = { socrates: '\u03A3', plato: '\u03A0', aurelius: 'M', nietzsche: 'N', einstein: 'E', jobs: 'J' };
+const THINKER_NAMES: Record<string, string> = {
+  socrates: 'Socrates',
+  plato: 'Plato',
+  aurelius: 'Marcus Aurelius',
+  nietzsche: 'Friedrich Nietzsche',
+  einstein: 'Albert Einstein',
+  jobs: 'Steve Jobs',
+};
+const THINKER_SYMBOLS: Record<string, string> = {
+  socrates: 'Σ',
+  plato: 'Π',
+  aurelius: 'M',
+  nietzsche: 'N',
+  einstein: 'E',
+  jobs: 'J',
+};
+const THINKER_COLORS: Record<string, string> = {
+  socrates: '#C9A94E',
+  plato: '#7B68EE',
+  aurelius: '#8B7355',
+  nietzsche: '#DC143C',
+  einstein: '#4169E1',
+  jobs: '#A0A0A0',
+};
+
+type Phase = 'loading' | 'composing' | 'submitting' | 'revealing' | 'complete';
+
+interface Question {
+  id: string;
+  thinker_id: string;
+  question_text: string;
+  question_context: string | null;
+  date: string;
+}
+interface MyResponse {
+  id: string;
+  response_text: string;
+  created_at: string;
+}
+interface Streak {
+  current_streak: number;
+  longest_streak: number;
+  total_responses: number;
+}
+interface Other {
+  id: string;
+  display_name: string;
+  response_text: string;
+  created_at: string;
+}
+
+const MILESTONE_NOTES: Record<number, string> = {
+  7: 'a week of noticing',
+  30: 'a month of presence',
+  100: 'something is changing',
+  365: 'a year of practice',
+};
+
+function formatToday(): { label: string } {
+  const now = new Date();
+  const day = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
+  const monthDay = now.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'America/New_York',
+  });
+  return { label: `TODAY · ${day.toUpperCase()} · ${monthDay.toUpperCase()}` };
+}
+
+function formatTimeOfDay(iso: string): string {
+  const d = new Date(iso);
+  return d
+    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
+    .toUpperCase();
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins === 1) return '1 minute ago';
+  if (mins < 60) return `${mins} minutes ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs === 1) return '1 hour ago';
+  if (hrs < 24) return `${hrs} hours ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'yesterday';
+  return `${days} days ago`;
 }
 
-function streakMessage(s: number): string {
-  if (s === 0) return 'Start your streak today';
-  if (s <= 2) return 'Building momentum...';
-  if (s <= 6) return 'You\u2019re on fire \ud83d\udd25';
-  return 'Philosopher-level dedication';
+function counterColor(n: number): string {
+  if (n >= 280) return '#f5e5b6';
+  if (n >= 261) return '#fcd34d';
+  if (n >= 201) return '#fbbf24';
+  return '#78716c';
+}
+
+function counterWeight(n: number): number {
+  return n >= 280 ? 700 : 400;
 }
 
 export default function PracticePage() {
-  const [question, setQuestion] = useState<any>(null);
-  const [response, setResponse] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState<Phase>('loading');
+  const [question, setQuestion] = useState<Question | null>(null);
+  const [myResponse, setMyResponse] = useState<MyResponse | null>(null);
+  const [myReflection, setMyReflection] = useState<string | null>(null);
+  const [streak, setStreak] = useState<Streak | null>(null);
+  const [others, setOthers] = useState<Other[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const [streak, setStreak] = useState({ current_streak: 0, longest_streak: 0, total_responses: 0 });
-  const [responses, setResponses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [myResponse, setMyResponse] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [showShareCard, setShowShareCard] = useState(false);
-  const [inviteCopied, setInviteCopied] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Reflection streaming state
-  const [responseId, setResponseId] = useState<string | null>(null);
-  const [reflectionText, setReflectionText] = useState('');
-  const [reflectionStreaming, setReflectionStreaming] = useState(false);
-  const [reflectionDone, setReflectionDone] = useState(false);
-  const [reflectionError, setReflectionError] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [textareaHidden, setTextareaHidden] = useState(false);
+  const [reflectionMounted, setReflectionMounted] = useState(false);
+  const [streakMounted, setStreakMounted] = useState(false);
+  const [commonsMounted, setCommonsMounted] = useState(false);
+
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const { label: dayLabel } = useMemo(formatToday, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
+      let token: string | null = null;
+      let mid: string | null = null;
       try {
         const session = await getMemberSession();
-        if (session?.member) setMemberId(session.member.id);
+        if (session?.member) mid = session.member.id;
         const supabase = createClient();
         const { data: { session: auth } } = await supabase.auth.getSession();
-        if (auth?.access_token) setAuthToken(auth.access_token);
+        if (auth?.access_token) token = auth.access_token;
       } catch {}
 
-      const qRes = await fetch('/api/practice/today');
-      const qData = await qRes.json();
-      if (qData.question) setQuestion(qData.question);
-      setLoading(false);
+      if (cancelled) return;
+      setMemberId(mid);
+      setAuthToken(token);
+
+      try {
+        const res = await fetch('/api/practice/my-today', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!data.question) {
+          setPhase('composing');
+          return;
+        }
+        setQuestion(data.question);
+        setOthers(Array.isArray(data.others) ? data.others : []);
+        if (data.streak) setStreak(data.streak);
+        if (data.myResponse) {
+          setMyResponse(data.myResponse);
+          setMyReflection(data.myReflection || null);
+          setTextareaHidden(true);
+          setReflectionMounted(true);
+          setStreakMounted(true);
+          setCommonsMounted(true);
+          setPhase('complete');
+        } else {
+          setPhase('composing');
+        }
+      } catch {
+        if (!cancelled) setPhase('composing');
+      }
     }
+
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (!question?.id) return;
+    if (phase !== 'composing') return;
+    if (typeof window === 'undefined') return;
+    const desktop = window.matchMedia('(min-width: 768px)').matches;
+    if (desktop && textareaRef.current) textareaRef.current.focus();
+  }, [phase]);
 
-    if (memberId) {
-      fetch('/api/practice/streak', { headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {} })
-        .then(r => r.json()).then(setStreak).catch(() => {});
+  async function handleSubmit() {
+    if (!question || !draft.trim()) return;
+    if (!memberId) {
+      window.location.href = '/join';
+      return;
     }
+    setPhase('submitting');
+    try {
+      const res = await fetch('/api/practice/respond', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          questionId: question.id,
+          responseText: draft.trim(),
+          memberId,
+        }),
+      });
+      const data = await res.json();
+      if (!data?.success || !data?.responseId) {
+        setPhase('composing');
+        return;
+      }
 
-    function loadResponses() {
-      fetch(`/api/practice/responses?questionId=${question.id}`)
-        .then(r => r.json()).then(d => setResponses(d.responses || [])).catch(() => {});
+      const responseId: string = data.responseId;
+      const nowIso = new Date().toISOString();
+      setMyResponse({ id: responseId, response_text: draft.trim(), created_at: nowIso });
+      setStreak({
+        current_streak: data.streak ?? 0,
+        longest_streak: data.longest ?? 0,
+        total_responses: data.total ?? 0,
+      });
+
+      setTextareaHidden(true);
+      setPhase('revealing');
+
+      // Start fetching the reflection immediately (parallel with the fade).
+      const reflectionPromise = fetchReflection(responseId);
+      const othersPromise = fetch(
+        `/api/practice/others?questionId=${encodeURIComponent(question.id)}`,
+        { headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined },
+      )
+        .then((r) => r.json())
+        .then((d) => (Array.isArray(d?.others) ? (d.others as Other[]) : []))
+        .catch(() => [] as Other[]);
+
+      const [text, freshOthers] = await Promise.all([reflectionPromise, othersPromise]);
+      setMyReflection(text);
+      setOthers(freshOthers);
+
+      await new Promise((r) => setTimeout(r, 800));
+      setReflectionMounted(true);
+      await new Promise((r) => setTimeout(r, 700));
+      setStreakMounted(true);
+      await new Promise((r) => setTimeout(r, 500));
+      setCommonsMounted(true);
+      setPhase('complete');
+    } catch {
+      setPhase('composing');
     }
-    loadResponses();
-    intervalRef.current = setInterval(loadResponses, 30000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [question?.id, authToken, memberId]);
+  }
 
-  async function streamReflection(rid: string) {
-    setReflectionText('');
-    setReflectionDone(false);
-    setReflectionError(null);
-    setReflectionStreaming(true);
+  async function fetchReflection(responseId: string): Promise<string> {
     try {
       const res = await fetch('/api/practice/reflect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ responseId: rid }),
+        body: JSON.stringify({ responseId }),
       });
-      if (!res.ok || !res.body) {
-        setReflectionError('Reflection unavailable. Please try again later.');
-        setReflectionStreaming(false);
-        setReflectionDone(true);
-        return;
-      }
+      if (!res.ok || !res.body) return '';
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -122,388 +277,455 @@ export default function PracticePage() {
           if (!line.startsWith('data: ')) continue;
           try {
             const evt = JSON.parse(line.slice(6));
-            if (evt.error) setReflectionError(evt.error);
-            if (evt.delta) { accumulated += evt.delta; setReflectionText(accumulated); }
-            if (evt.done) { setReflectionDone(true); }
+            if (typeof evt.delta === 'string') accumulated += evt.delta;
           } catch {}
         }
       }
-    } catch (err: any) {
-      setReflectionError(err?.message || 'Network error');
-      setReflectionDone(true);
+      return accumulated.trim();
+    } catch {
+      return '';
     }
-    setReflectionStreaming(false);
-  }
-
-  async function handleSubmit() {
-    if (!response.trim() || !question?.id) return;
-    if (!memberId) { window.location.href = '/login'; return; }
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/practice/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
-        body: JSON.stringify({ questionId: question.id, responseText: response.trim(), memberId }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSubmitted(true);
-        setMyResponse(response.trim());
-        setStreak({ current_streak: data.streak, longest_streak: data.longest, total_responses: data.total });
-        setResponses(prev => [...prev, { id: 'mine', display_name: 'You', response_text: response.trim(), created_at: new Date().toISOString() }]);
-        if (data.responseId) {
-          setResponseId(data.responseId);
-          // Fire-and-forget: streams into the Reflection card state
-          streamReflection(data.responseId);
-        }
-      }
-    } catch {}
-    setSubmitting(false);
-  }
-
-  function buildShareText() {
-    return `\u201c${question.question_text}\u201d \u2014 ${thinkerName}\n\nMy answer: ${myResponse}\n\nhttps://societyofexplorers.com/practice`;
-  }
-
-  function handleShare() {
-    navigator.clipboard.writeText(buildShareText()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
-  }
-
-  function handleNativeShare() {
-    if (navigator.share) {
-      navigator.share({ title: `${thinkerName} asks...`, text: buildShareText() }).catch(() => {});
-    } else {
-      handleShare();
-    }
-  }
-
-  function handleInvite() {
-    const inviteText = `I\u2019ve been doing this daily philosophical practice \u2014 one question every morning from AI thinkers like Socrates and Nietzsche. Try today\u2019s question:\n\nhttps://societyofexplorers.com/practice`;
-    navigator.clipboard.writeText(inviteText).then(() => {
-      setInviteCopied(true);
-      setTimeout(() => setInviteCopied(false), 2000);
-    }).catch(() => {});
   }
 
   const thinkerName = question ? THINKER_NAMES[question.thinker_id] || question.thinker_id : '';
-  const thinkerColor = question ? THINKER_COLORS[question.thinker_id] || gold : gold;
-  const thinkerAvatar = question ? THINKER_AVATARS[question.thinker_id] || '??' : '??';
+  const thinkerSymbol = question ? THINKER_SYMBOLS[question.thinker_id] || '·' : '·';
+  const thinkerColor = question ? THINKER_COLORS[question.thinker_id] || '#c9a84c' : '#c9a84c';
+
+  const charCount = draft.length;
+  const canSubmit = draft.trim().length > 0 && phase === 'composing';
+  const showReflection =
+    phase === 'complete' || (phase === 'revealing' && reflectionMounted);
+  const showStreak = phase === 'complete' || (phase === 'revealing' && streakMounted);
+  const showCommons = phase === 'complete' || (phase === 'revealing' && commonsMounted);
+  const loggedOut = !memberId;
+
+  const streakNumber = streak?.current_streak ?? 0;
+  const streakLabel = streakNumber === 1 ? 'day one' : `${streakNumber} days`;
+  const milestoneNote = MILESTONE_NOTES[streakNumber];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#0a0a0a',
+        color: '#e8dcc8',
+        fontFamily: CORMORANT,
+      }}
+    >
       <PublicNav />
 
-      {/* TODAY'S QUESTION */}
-      <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>DAILY PRACTICE</div>
-
-          {loading ? (
-            <p style={{ fontSize: '16px', color: muted, fontStyle: 'italic' }}>Loading today&apos;s question...</p>
-          ) : question ? (
-            <>
-              {/* First-time-visitor hint */}
-              {(!memberId || streak.total_responses === 0) && (
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: muted, marginBottom: '1rem' }}>
-                  TODAY&apos;S QUESTION FROM {thinkerName.toUpperCase()} &middot; ANSWER IN 280 CHARACTERS
-                </div>
-              )}
-
-              {/* Thinker avatar */}
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${thinkerColor}18`, border: `2px solid ${thinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontFamily: 'Cinzel, serif', fontSize: '11px', color: thinkerColor }}>{thinkerAvatar}</div>
-
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: thinkerColor, marginBottom: '1.5rem' }}>
-                {thinkerName.toUpperCase()} ASKS:
-              </div>
-              <Link
-                href="/manifesto"
+      <main className="px-6 md:px-24 pt-24 md:pt-28 pb-20">
+        {phase === 'loading' ? (
+          <div
+            className="flex items-center justify-center"
+            style={{ minHeight: '60vh', color: '#78716c', fontStyle: 'italic' }}
+          >
+            <span>opening today&rsquo;s question&hellip;</span>
+          </div>
+        ) : question ? (
+          <>
+            {/* BEAT 1 — ARRIVAL */}
+            <section className="flex flex-col items-center text-center gap-4 pb-12">
+              <div
+                className="animate-fade-up"
                 style={{
-                  fontFamily: 'Cormorant Garamond, serif',
-                  fontStyle: 'italic',
-                  fontSize: '13px',
-                  color: `${gold}80`,
-                  textDecoration: 'none',
-                  display: 'inline-block',
-                  marginBottom: '1rem',
-                  opacity: 0.6,
-                  transition: 'opacity 0.3s',
+                  animationDelay: '0ms',
+                  fontFamily: CINZEL,
+                  fontSize: '10px',
+                  letterSpacing: '0.4em',
+                  color: '#c9a84c',
+                  opacity: 0.65,
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
               >
-                Today&rsquo;s question is part of the larger manifesto &rarr;
-              </Link>
-              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 5vw, 34px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, marginBottom: '0.75rem' }}>
-                &ldquo;{question.question_text}&rdquo;
-              </h1>
-              {question.question_context && (
-                <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', marginBottom: '1.5rem' }}>{question.question_context}</p>
-              )}
-
-              {/* Gold divider */}
-              <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 2rem' }} />
-
-              {/* Response area */}
-              {submitted || myResponse ? (
-                <div style={{ animation: 'fadeIn 0.5s ease' }}>
-                  {/* Your response card */}
-                  <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '16px', textAlign: 'left', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold }}>YOUR ANSWER</span>
-                      <span style={{ fontSize: '12px', color: '#4CAF50' }}>{'\u2713'}</span>
-                    </div>
-                    <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.7, margin: 0 }}>{myResponse || response}</p>
-                  </div>
-
-                  {/* Reflection card — scripture panel */}
-                  {(reflectionStreaming || reflectionText || reflectionDone || responseId) && (
-                    <div style={{
-                      background: '#0a0a0a',
-                      borderTop: `1px solid ${gold}`,
-                      borderLeft: `1px solid ${gold}15`,
-                      borderRight: `1px solid ${gold}15`,
-                      borderBottom: `1px solid ${gold}15`,
-                      padding: '1.5rem 1.25rem',
-                      textAlign: 'left',
-                      marginBottom: '1rem',
-                      animation: 'fadeIn 0.5s ease',
-                    }}>
-                      {/* Symbol glyph */}
-                      <div style={{
-                        fontFamily: 'Cinzel, serif', fontSize: '22px',
-                        color: thinkerColor, opacity: 0.45,
-                        textAlign: 'center', marginBottom: '0.5rem', lineHeight: 1,
-                      }}>
-                        {THINKER_SYMBOLS[question?.thinker_id] || '\u00B7'}
-                      </div>
-                      {/* Attribution */}
-                      <div style={{
-                        fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em',
-                        color: `${thinkerColor}cc`, textAlign: 'center', marginBottom: '0.9rem',
-                      }}>
-                        {reflectionDone
-                          ? `${thinkerName.toUpperCase()} REFLECTS`
-                          : `${thinkerName.toUpperCase()} IS REFLECTING\u2026`}
-                      </div>
-                      {/* Body */}
-                      {reflectionError ? (
-                        <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', lineHeight: 1.7, margin: 0 }}>
-                          {reflectionError}
-                        </p>
-                      ) : (
-                        <p style={{
-                          fontFamily: 'Cormorant Garamond, serif',
-                          fontSize: '17px', fontStyle: 'italic',
-                          color: parchment, lineHeight: 1.8, margin: 0,
-                          minHeight: reflectionText ? undefined : '3em',
-                        }}>
-                          {reflectionText}
-                          {reflectionStreaming && !reflectionDone && <span style={{ color: thinkerColor, marginLeft: 2 }}>{'\u2588'}</span>}
-                        </p>
-                      )}
-
-                      {/* Auth-aware footer */}
-                      {reflectionDone && !reflectionError && (
-                        <p style={{
-                          fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
-                          color: muted, textAlign: 'center',
-                          marginTop: '1rem', marginBottom: 0,
-                        }}>
-                          {memberId ? (
-                            'SAVED TO YOUR HISTORY.'
-                          ) : (
-                            <>
-                              <a href="/login" style={{ color: gold, textDecoration: 'none' }}>SIGN IN</a>
-                              {` AND ${thinkerName.toUpperCase()} WILL REMEMBER THIS.`}
-                            </>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Share + Invite row */}
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                    <button onClick={() => setShowShareCard(!showShareCard)} style={{
-                      fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold,
-                      background: 'transparent', border: `1px solid ${gold}44`, padding: '8px 20px', cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = `${gold}0a`; e.currentTarget.style.borderColor = gold; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${gold}44`; }}
-                    >SHARE YOUR ANSWER</button>
-                    <button onClick={handleInvite} style={{
-                      fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: muted,
-                      background: 'transparent', border: `1px solid ${muted}33`, padding: '8px 20px', cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.color = gold; e.currentTarget.style.borderColor = `${gold}44`; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = muted; e.currentTarget.style.borderColor = `${muted}33`; }}
-                    >{inviteCopied ? 'LINK COPIED!' : 'INVITE A FRIEND'}</button>
-                  </div>
-
-                  {/* Profile link */}
-                  {memberId && (
-                    <div style={{ textAlign: 'center', marginBottom: '0.75rem' }}>
-                      <a href={`/explorer/${memberId}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.8 }}>
-                        VIEW YOUR EXPLORER PROFILE &rarr;
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Expandable share card */}
-                  {showShareCard && (
-                    <div style={{ animation: 'fadeIn 0.3s ease', marginBottom: '1rem' }}>
-                      <div style={{
-                        background: '#0d0d0d', border: `1px solid ${gold}33`, padding: '1.5rem',
-                        maxWidth: '440px', margin: '0.75rem auto 0', textAlign: 'left',
-                        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-                      }}>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>SOCIETY OF EXPLORERS</div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `${thinkerColor}18`, border: `1.5px solid ${thinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '8px', color: thinkerColor }}>{thinkerAvatar}</div>
-                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: thinkerColor }}>{thinkerName.toUpperCase()}</span>
-                        </div>
-                        <p style={{ fontSize: '16px', color: parchment, fontStyle: 'italic', lineHeight: 1.6, marginBottom: '1rem' }}>&ldquo;{question.question_text}&rdquo;</p>
-                        <div style={{ borderTop: `1px solid ${gold}15`, paddingTop: '0.75rem' }}>
-                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginBottom: '4px' }}>MY ANSWER</div>
-                          <p style={{ fontSize: '14px', color: ivory85, lineHeight: 1.6, margin: 0 }}>{myResponse || response}</p>
-                        </div>
-                        <div style={{ borderTop: `1px solid ${gold}08`, marginTop: '1rem', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: `${gold}66` }}>societyofexplorers.com/practice</span>
-                          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: `${muted}88` }}>Daily Practice</span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '0.75rem' }}>
-                        <button onClick={handleShare} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold, background: `${gold}0a`, border: `1px solid ${gold}44`, padding: '6px 16px', cursor: 'pointer' }}>
-                          {copied ? 'COPIED!' : 'COPY TEXT'}
-                        </button>
-                        <button onClick={handleNativeShare} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: gold, background: `${gold}0a`, border: `1px solid ${gold}44`, padding: '6px 16px', cursor: 'pointer' }}>
-                          SHARE...
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : memberId ? (
-                <div style={{ marginBottom: '1rem' }}>
-                  <textarea
-                    value={response} onChange={e => setResponse(e.target.value.slice(0, 280))}
-                    placeholder="Your response..."
-                    rows={3}
-                    style={{ width: '100%', background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '14px 16px 28px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', resize: 'none', boxSizing: 'border-box', transition: 'box-shadow 0.2s' }}
-                    onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`}
-                    onBlur={e => e.target.style.boxShadow = 'none'}
-                  />
-                  <div style={{ textAlign: 'right', marginTop: '-22px', marginRight: '12px', marginBottom: '12px', position: 'relative', zIndex: 1 }}>
-                    <span style={{ fontSize: '10px', color: response.length > 260 ? '#DC143C' : `${muted}88` }}>{response.length}/280</span>
-                  </div>
-                  <button onClick={handleSubmit} disabled={submitting || !response.trim()}
-                    style={{ width: '100%', fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, background: 'transparent', border: `1px solid ${gold}`, height: '48px', cursor: 'pointer', opacity: submitting || !response.trim() ? 0.4 : 1, borderRadius: 0, transition: 'background 0.2s' }}
-                    onMouseEnter={e => { if (!submitting && response.trim()) e.currentTarget.style.background = 'rgba(201,168,76,0.08)'; }}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    {submitting ? 'SUBMITTING...' : 'RESPOND'}
-                  </button>
-                  <p style={{ fontSize: '11px', color: `${muted}aa`, textAlign: 'center', marginTop: '8px', fontStyle: 'italic' }}>
-                    Your answer is visible to other explorers. No editing, no deleting.
-                  </p>
-                </div>
-              ) : (
-                <div style={{ marginBottom: '1rem' }}>
-                  <a href="/login" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}`, padding: '14px 28px', textDecoration: 'none', display: 'inline-block' }}>SIGN IN TO RESPOND</a>
-                </div>
-              )}
-            </>
-          ) : (
-            <p style={{ fontSize: '16px', color: muted }}>No question available today.</p>
-          )}
-        </div>
-      </section>
-
-      {/* MATCH UNLOCK BANNER */}
-      {memberId && streak.total_responses >= 7 && (
-        <section style={{ padding: '0 2rem 1.5rem' }}>
-          <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-            <a href="/match" style={{ display: 'block', background: `${gold}0a`, border: `1px solid ${gold}22`, padding: '16px 20px', textDecoration: 'none', textAlign: 'center', transition: 'border-color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = `${gold}66`}
-              onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}22`}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, marginBottom: '6px' }}>UNLOCKED</div>
-              <div style={{ fontSize: '16px', color: parchment, marginBottom: '4px' }}>You&apos;ve earned a Matched Conversation</div>
-              <div style={{ fontSize: '13px', color: muted }}>We&apos;ll pair you with a fellow explorer for a structured philosophical exchange.</div>
-            </a>
-          </div>
-        </section>
-      )}
-
-      {/* STREAK */}
-      <section style={{ padding: '0 2rem 3rem' }}>
-        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '2.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: streak.current_streak > 0 ? '32px' : '24px', color: streak.current_streak >= 3 ? gold : streak.current_streak > 0 ? parchment : muted, transition: 'all 0.3s' }}>{streak.current_streak}</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>DAY STREAK</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', color: muted }}>{streak.total_responses}</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>TOTAL</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', color: muted }}>{streak.longest_streak}</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>LONGEST</div>
-            </div>
-          </div>
-          <p style={{ fontSize: '13px', color: muted, fontStyle: 'italic' }}>{streakMessage(streak.current_streak)}</p>
-          {streak.total_responses > 0 && streak.total_responses < 7 && (
-            <div style={{ marginTop: '0.75rem' }}>
-              <div style={{ width: '200px', height: '4px', background: '#1a1a1a', borderRadius: '2px', margin: '0 auto' }}>
-                <div style={{ height: '100%', width: `${Math.min((streak.total_responses / 7) * 100, 100)}%`, background: gold, borderRadius: '2px', transition: 'width 0.5s ease' }} />
+                {dayLabel}
               </div>
-              <p style={{ fontSize: '11px', color: `${muted}88`, marginTop: '4px' }}>{streak.total_responses}/7 to unlock Matched Conversations</p>
-            </div>
-          )}
-        </div>
-      </section>
+              <div
+                className="animate-fade-up"
+                style={{
+                  animationDelay: '120ms',
+                  fontFamily: CORMORANT,
+                  fontStyle: 'italic',
+                  fontSize: '14px',
+                  color: '#9a8f7a',
+                }}
+              >
+                Posed by {thinkerName}
+              </div>
+              <h1
+                className="animate-fade-up"
+                style={{
+                  animationDelay: '240ms',
+                  fontFamily: PLAYFAIR,
+                  fontStyle: 'italic',
+                  fontSize: 'clamp(26px, 4.8vw, 32px)',
+                  color: '#f5e5b6',
+                  lineHeight: 1.35,
+                  maxWidth: '40ch',
+                  margin: 0,
+                  fontWeight: 400,
+                }}
+              >
+                {question.question_text}
+              </h1>
+            </section>
 
-      {/* COMMUNITY RESPONSES */}
-      <section style={{ padding: '3rem 2rem' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>
-            {responses.length > 0
-              ? `${responses.length} EXPLORER${responses.length !== 1 ? 'S' : ''} ANSWERED TODAY`
-              : 'WHAT OTHERS ARE THINKING'}
-          </div>
-
-          {responses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-              <p style={{ fontSize: '16px', color: muted, fontStyle: 'italic', marginBottom: '0.5rem' }}>Be the first to respond today.</p>
-              <p style={{ fontSize: '13px', color: `${muted}88` }}>Your response will appear here for others to see.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {responses.map(r => (
-                <div key={r.id} style={{ background: '#0d0d0d', border: `1px solid ${gold}08`, padding: '12px 16px', borderLeft: '2px solid transparent', transition: 'border-color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderLeftColor = `${gold}66`}
-                  onMouseLeave={e => e.currentTarget.style.borderLeftColor = 'transparent'}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', color: gold }}>{r.display_name}</span>
-                    <span style={{ fontSize: '11px', color: muted }}>{timeAgo(r.created_at)}</span>
-                  </div>
-                  <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.response_text}</p>
+            {/* STATE C: own response above reflection */}
+            {phase === 'complete' && myResponse && (
+              <section className="flex flex-col items-center gap-3 pb-10">
+                <div
+                  className="animate-fade-up"
+                  style={{
+                    animationDelay: '360ms',
+                    fontFamily: CINZEL,
+                    fontSize: '10px',
+                    letterSpacing: '0.3em',
+                    color: '#c9a84c',
+                    opacity: 0.7,
+                  }}
+                >
+                  YOUR RESPONSE · {formatTimeOfDay(myResponse.created_at)}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+                <div
+                  className="animate-fade-up w-full"
+                  style={{ animationDelay: '440ms', maxWidth: '560px' }}
+                >
+                  <blockquote
+                    className="border-l pl-4"
+                    style={{
+                      borderColor: 'rgba(146, 64, 14, 0.35)',
+                      fontFamily: CORMORANT,
+                      fontSize: '16px',
+                      color: 'rgba(255, 251, 235, 0.82)',
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    {myResponse.response_text}
+                  </blockquote>
+                </div>
+              </section>
+            )}
+
+            {/* BEAT 2 — RESPONSE (State A) */}
+            {!textareaHidden && phase === 'composing' && (
+              <section
+                className="flex flex-col items-center"
+                style={{
+                  transition: 'opacity 600ms ease',
+                  opacity: phase === 'composing' ? 1 : 0,
+                }}
+              >
+                <div className="w-full" style={{ maxWidth: '560px' }}>
+                  <textarea
+                    ref={textareaRef}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value.slice(0, 280))}
+                    onClick={() => {
+                      if (loggedOut) window.location.href = '/join';
+                    }}
+                    readOnly={loggedOut}
+                    placeholder="What do you notice?"
+                    rows={3}
+                    className="w-full bg-stone-900/60 border border-amber-900/40 focus:border-amber-200/70 focus:ring-1 focus:ring-amber-200/20 rounded-sm outline-none p-6 resize-none transition-colors"
+                    style={{
+                      fontFamily: CORMORANT,
+                      fontSize: '16px',
+                      color: '#fefce8',
+                      minHeight: '120px',
+                      fontStyle: draft ? 'normal' : 'italic',
+                      caretColor: '#fcd34d',
+                    }}
+                  />
+                  <div
+                    className="flex items-center justify-end gap-2 mt-2 tabular-nums"
+                    style={{
+                      fontFamily: CINZEL,
+                      fontSize: '11px',
+                      letterSpacing: '0.15em',
+                      color: counterColor(charCount),
+                      fontWeight: counterWeight(charCount),
+                    }}
+                  >
+                    <span>
+                      {charCount} / 280
+                    </span>
+                    {charCount === 280 && (
+                      <span style={{ color: '#f5e5b6', letterSpacing: '0.25em' }}>FULL</span>
+                    )}
+                  </div>
+
+                  {loggedOut ? (
+                    <p
+                      className="mt-8 text-center"
+                      style={{
+                        fontFamily: CORMORANT,
+                        fontSize: '15px',
+                        fontStyle: 'italic',
+                        color: '#9a8f7a',
+                      }}
+                    >
+                      <Link href="/join" style={{ color: '#fcd34d', textDecoration: 'none' }}>
+                        Sign in
+                      </Link>{' '}
+                      to commit your answer and see how others responded today.
+                    </p>
+                  ) : (
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                        className="w-full md:w-auto border border-amber-200/40 hover:bg-amber-950/30 disabled:opacity-30 disabled:cursor-not-allowed rounded-none px-8 py-3 transition-colors"
+                        style={{
+                          fontFamily: CINZEL,
+                          fontSize: '11px',
+                          letterSpacing: '0.2em',
+                          color: '#fcd34d',
+                          background: 'transparent',
+                          cursor: canSubmit ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        COMMIT YOUR ANSWER
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Revealing — contemplation dot while the reflection buffers */}
+            {phase === 'revealing' && !reflectionMounted && (
+              <section className="flex flex-col items-center py-12">
+                <span
+                  className="inline-block rounded-full animate-pulse"
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    background: '#fcd34d',
+                    boxShadow: '0 0 16px rgba(252, 211, 77, 0.55)',
+                  }}
+                />
+              </section>
+            )}
+
+            {/* Submitting indicator */}
+            {phase === 'submitting' && (
+              <section className="flex flex-col items-center py-6">
+                <span
+                  style={{
+                    fontFamily: CINZEL,
+                    fontSize: '11px',
+                    letterSpacing: '0.25em',
+                    color: '#c9a84c',
+                    opacity: 0.8,
+                  }}
+                >
+                  COMMITTING&hellip;
+                </span>
+              </section>
+            )}
+
+            {/* BEAT 3 — REFLECTION */}
+            {showReflection && myReflection && (
+              <section
+                className="flex flex-col items-center gap-4 py-8"
+                style={{
+                  animation: 'fadeUp 600ms ease-out both',
+                }}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div
+                    className="flex items-center justify-center rounded-full"
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      border: `1px solid ${thinkerColor}`,
+                      background: `${thinkerColor}18`,
+                      fontFamily: CINZEL,
+                      fontSize: '14px',
+                      color: thinkerColor,
+                    }}
+                  >
+                    {thinkerSymbol}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: CINZEL,
+                      fontSize: '10px',
+                      letterSpacing: '0.3em',
+                      color: `${thinkerColor}`,
+                      opacity: 0.85,
+                    }}
+                  >
+                    {thinkerName.toUpperCase()}
+                  </div>
+                </div>
+                <p
+                  className="text-center"
+                  style={{
+                    fontFamily: CORMORANT,
+                    fontStyle: 'italic',
+                    fontSize: 'clamp(16px, 2.5vw, 18px)',
+                    lineHeight: 1.7,
+                    color: 'rgba(232, 220, 200, 0.92)',
+                    maxWidth: '48ch',
+                    margin: 0,
+                  }}
+                >
+                  {myReflection}
+                </p>
+              </section>
+            )}
+
+            {/* BEAT 4 — STREAK */}
+            {showStreak && streak && (
+              <section
+                className="flex flex-col items-center py-10"
+                style={{ animation: 'fadeUp 600ms ease-out both' }}
+              >
+                <div
+                  style={{
+                    width: '80px',
+                    height: '1px',
+                    background: 'rgba(146, 64, 14, 0.3)',
+                    marginBottom: '2rem',
+                  }}
+                />
+                <div
+                  style={{
+                    fontFamily: CINZEL,
+                    fontSize: '10px',
+                    letterSpacing: '0.3em',
+                    color: '#c9a84c',
+                    opacity: 0.7,
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  YOUR PRACTICE
+                </div>
+                <div
+                  className={milestoneNote ? 'animate-gold-pulse' : ''}
+                  style={{
+                    fontFamily: PLAYFAIR,
+                    fontSize: 'clamp(40px, 8vw, 56px)',
+                    color: '#fde68a',
+                    lineHeight: 1,
+                    fontWeight: 400,
+                  }}
+                >
+                  {streakNumber}
+                </div>
+                <div
+                  style={{
+                    fontFamily: CORMORANT,
+                    fontSize: '14px',
+                    color: '#9a8f7a',
+                    marginTop: '0.5rem',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  {streakLabel}
+                </div>
+                {milestoneNote && (
+                  <div
+                    style={{
+                      fontFamily: CORMORANT,
+                      fontStyle: 'italic',
+                      fontSize: '15px',
+                      color: '#fcd34d',
+                      marginTop: '0.75rem',
+                      opacity: 0.85,
+                    }}
+                  >
+                    {milestoneNote}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* BEAT 5 — COMMONS */}
+            {showCommons && others.length > 0 && (
+              <section
+                className="flex flex-col items-center py-10"
+                style={{ animation: 'fadeUp 600ms ease-out both' }}
+              >
+                <div
+                  style={{
+                    fontFamily: CINZEL,
+                    fontSize: '10px',
+                    letterSpacing: '0.3em',
+                    color: '#c9a84c',
+                    opacity: 0.7,
+                    marginBottom: '1.5rem',
+                  }}
+                >
+                  OTHER EXPLORERS TODAY
+                </div>
+                <div className="flex flex-col gap-6 w-full" style={{ maxWidth: '560px' }}>
+                  {others.map((o) => (
+                    <article key={o.id} className="flex flex-col gap-2">
+                      <div
+                        style={{
+                          fontFamily: CORMORANT,
+                          fontSize: '13px',
+                          fontStyle: 'italic',
+                          color: '#9a8f7a',
+                        }}
+                      >
+                        {o.display_name}
+                      </div>
+                      <blockquote
+                        className="border-l pl-4"
+                        style={{
+                          borderColor: 'rgba(146, 64, 14, 0.35)',
+                          fontFamily: CORMORANT,
+                          fontSize: '16px',
+                          color: 'rgba(255, 251, 235, 0.82)',
+                          lineHeight: 1.6,
+                          margin: 0,
+                        }}
+                      >
+                        {o.response_text}
+                      </blockquote>
+                      <div
+                        style={{
+                          fontFamily: CORMORANT,
+                          fontSize: '11px',
+                          color: '#57534e',
+                        }}
+                      >
+                        {timeAgo(o.created_at)}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                <Link
+                  href="/practice/today"
+                  className="mt-8"
+                  style={{
+                    fontFamily: CINZEL,
+                    fontSize: '10px',
+                    letterSpacing: '0.3em',
+                    color: '#c9a84c',
+                    textDecoration: 'none',
+                    opacity: 0.75,
+                  }}
+                >
+                  SEE ALL RESPONSES →
+                </Link>
+              </section>
+            )}
+          </>
+        ) : (
+          <div
+            className="flex items-center justify-center"
+            style={{ minHeight: '60vh', color: '#78716c', fontStyle: 'italic' }}
+          >
+            <span>No question today. Return tomorrow.</span>
+          </div>
+        )}
+      </main>
 
       <PublicFooter />
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
     </div>
   );
 }
