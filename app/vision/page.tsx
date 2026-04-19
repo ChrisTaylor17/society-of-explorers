@@ -1,3 +1,6 @@
+import PublicNav from '@/components/PublicNav';
+import PublicFooter from '@/components/PublicFooter';
+
 export const metadata = {
   title: 'Our Vision — Society of Explorers',
   description:
@@ -7,18 +10,20 @@ export const metadata = {
 export default function VisionPage() {
   return (
     <main className="min-h-screen bg-black text-stone-200">
+      <PublicNav />
+
       {/* Hero */}
       <section className="px-6 pt-28 pb-16 text-center">
         <div className="mx-auto max-w-4xl">
           <p
             className="text-xs md:text-sm tracking-[0.4em] text-[#c9a84c] mb-6"
-            style={{ fontFamily: 'var(--font-cinzel), serif' }}
+            style={{ fontFamily: 'Cinzel, serif' }}
           >
             SOCIETY OF EXPLORERS
           </p>
           <h1
             className="text-5xl md:text-7xl font-light text-[#e8d9a7]"
-            style={{ fontFamily: 'var(--font-cinzel), serif' }}
+            style={{ fontFamily: 'Cinzel, serif' }}
           >
             Our Vision
           </h1>
@@ -30,7 +35,7 @@ export default function VisionPage() {
       <section className="px-6 pb-24">
         <article
           className="mx-auto max-w-2xl space-y-8 text-xl md:text-2xl leading-relaxed text-stone-300"
-          style={{ fontFamily: 'var(--font-cormorant), "Cormorant Garamond", serif' }}
+          style={{ fontFamily: 'Cormorant Garamond, serif' }}
         >
           <p>I didn&apos;t build this to give you daily journaling prompts.</p>
 
@@ -42,7 +47,7 @@ export default function VisionPage() {
           <div className="pt-8">
             <h2
               className="text-2xl md:text-3xl text-[#c9a84c] tracking-wide"
-              style={{ fontFamily: 'var(--font-cinzel), serif' }}
+              style={{ fontFamily: 'Cinzel, serif' }}
             >
               Here&apos;s how it actually works
             </h2>
@@ -89,12 +94,14 @@ export default function VisionPage() {
           <a
             href="/practice"
             className="inline-block px-10 py-4 text-sm tracking-[0.2em] bg-[#c9a84c] text-black hover:bg-[#e8d9a7] transition-colors"
-            style={{ fontFamily: 'var(--font-cinzel), serif' }}
+            style={{ fontFamily: 'Cinzel, serif' }}
           >
             BEGIN THE DAILY PRACTICE →
           </a>
         </div>
       </section>
+
+      <PublicFooter />
     </main>
   );
 }
