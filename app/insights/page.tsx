@@ -61,10 +61,6 @@ function relativeDay(iso: string): string {
   return `${Math.floor(days / 30)} months ago`;
 }
 
-function formatKey(key: string): string {
-  return key.replace(/_/g, ' ');
-}
-
 function truncate(s: string, max: number): string {
   if (!s) return '';
   return s.length > max ? s.slice(0, max - 1).trimEnd() + '\u2026' : s;
@@ -150,6 +146,7 @@ export default function InsightsPage() {
   const facts: any[] = data?.semanticFacts || [];
   const threads: any[] = data?.threads || [];
   const displayName = data?.member?.display_name || 'Explorer';
+  const openingHeadline: string = (data?.openingHeadline || '').trim() || 'What the Thinkers Know About You';
 
   const factsByCategory: Record<string, any[]> = {};
   for (const f of facts) {
@@ -169,7 +166,7 @@ export default function InsightsPage() {
             SOCIETY OF EXPLORERS
           </div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(30px, 5.5vw, 44px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, color: parchment, marginBottom: '1rem' }}>
-            What the Thinkers Know About You
+            {openingHeadline}
           </h1>
           <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '560px', margin: '0 auto 1.75rem' }}>
             {displayName}, this is your living wisdom profile.
@@ -221,15 +218,15 @@ export default function InsightsPage() {
                         const tColor = tid ? (THINKER_COLORS[tid] || gold) : gold;
                         const tSymbol = tid ? (THINKER_SYMBOLS[tid] || '\u25C8') : '\u25C8';
                         const tName = tid ? (THINKER_NAMES[tid] || tid) : null;
-                        const confPct = Math.round((f.confidence || 0) * 100);
+                        const when = relativeDay(f.created_at);
                         return (
                           <div key={f.id} className="fact-card" style={{
                             background: '#0d0d0d',
                             border: `1px solid ${gold}12`,
                             borderLeft: `2px solid ${tColor}55`,
-                            padding: '14px 16px',
+                            padding: '18px 20px',
                             display: 'flex',
-                            gap: '14px',
+                            gap: '16px',
                             alignItems: 'flex-start',
                             transition: 'border-color 0.25s, background 0.25s',
                           }}>
@@ -239,40 +236,24 @@ export default function InsightsPage() {
                               border: `1px solid ${tColor}55`, background: `${tColor}10`,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontFamily: 'Cinzel, serif', fontSize: '14px', color: tColor,
-                              lineHeight: 1,
+                              lineHeight: 1, marginTop: '2px',
                             }} title={tName || 'Distilled from the council'}>
                               {tSymbol}
                             </div>
 
                             {/* Body */}
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.18em', color: gold }}>
-                                  {formatKey(f.key).toUpperCase()}
-                                </span>
-                                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: `${muted}bb` }}>
-                                  {relativeDay(f.created_at)}
-                                </span>
-                              </div>
-                              <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: '0 0 10px 0' }}>
+                              <p style={{ fontSize: '16px', color: parchment, lineHeight: 1.7, margin: 0 }}>
                                 {f.value}
                               </p>
-
-                              {/* Confidence bar */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ flex: 1, height: '2px', background: `${gold}18`, position: 'relative', maxWidth: '200px' }}>
-                                  <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${confPct}%`, background: gold, opacity: 0.75 }} />
-                                </div>
-                                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>
-                                  {confPct}%
-                                </span>
-                                <span className="fact-hover-note" style={{
-                                  fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em',
-                                  color: gold, opacity: 0, transition: 'opacity 0.25s',
-                                }}>
-                                  ACTIVE IN TODAY&rsquo;S REFLECTIONS
-                                </span>
-                              </div>
+                              <p style={{
+                                fontFamily: 'Cormorant Garamond, serif',
+                                fontSize: '13px', fontStyle: 'italic',
+                                color: muted, lineHeight: 1.5,
+                                margin: '8px 0 0 0',
+                              }}>
+                                {tName ? `\u2014 ${tName} \u00B7 ${when}` : when}
+                              </p>
                             </div>
                           </div>
                         );
@@ -390,7 +371,6 @@ export default function InsightsPage() {
           border-color: ${gold}33;
           background: #101010;
         }
-        .fact-card:hover .fact-hover-note { opacity: 1; }
         .thread-card:hover {
           border-color: ${gold}33;
           background: #101010;

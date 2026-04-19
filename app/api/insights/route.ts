@@ -1,11 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import Anthropic from '@anthropic-ai/sdk';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+async function generateOpeningHeadline(
+  displayName: string,
+  facts: Array<{ value: string }>
+): Promise<string | null> {
+  if (!facts.length) return null;
+  try {
+    const bulleted = facts
+      .slice(0, 12)
+      .map(f => `- ${f.value}`)
+      .join('\n');
+    const res = await anthropic.messages.create({
+      model: 'claude-opus-4-7',
+      max_tokens: 120,
+      system: `You write one sentence. The person below will read it the moment they open their wisdom profile. They will feel either "oh, they see me" or "this is generic." Make them feel seen.
+
+VOICE:
+- Second person. "You" — never "they," never "the user."
+- Observation, not diagnosis. You are noticing, not labeling.
+- One sentence. No greeting words ("Hello," "Welcome"). No meta-commentary ("Based on what I've learned..."). No hedging ("seems," "appears," "may").
+- Perceptive-friend tone, not psychologist. No jargon.
+- Weave together a thread you notice across what's below — don't restate any single fact verbatim. Notice what's underneath them.
+- End with a period, not an ellipsis. Under 28 words.
+
+Return ONLY the sentence itself. No quotes, no preamble, no JSON.`,
+      messages: [{
+        role: 'user',
+        content: `Name: ${displayName}\n\nWhat we've learned about them:\n${bulleted}`,
+      }],
+    });
+    const text = res.content.find(b => b.type === 'text')?.text ?? '';
+    let cleaned = text.trim();
+    if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+        (cleaned.startsWith('\u201C') && cleaned.endsWith('\u201D'))) {
+      cleaned = cleaned.slice(1, -1).trim();
+    }
+    if (!cleaned) return null;
+    return cleaned.slice(0, 240);
+  } catch (err) {
+    console.error('[insights-opening-headline-failed]', err);
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
@@ -85,9 +131,13 @@ export async function GET(req: NextRequest) {
     thinker_id: f.source_episode?.thinker_id || null,
   }));
 
+  const displayName = auth.member.display_name || 'Explorer';
+  const openingHeadline = await generateOpeningHeadline(displayName, semanticFacts);
+
   return NextResponse.json({
     member: { id: auth.member.id, display_name: auth.member.display_name },
     semanticFacts,
     threads,
+    openingHeadline,
   });
 }
