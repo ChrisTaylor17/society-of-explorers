@@ -13,10 +13,11 @@ export async function GET(req: NextRequest) {
 
   const memberId = auth.memberId;
 
-  // Semantic facts — active only, ordered for grouping
+  // Semantic facts — active only, ordered for grouping. Join source episode
+  // to surface which thinker originally authored the fact (for the avatar).
   const { data: factRows, error: factsError } = await supabaseAdmin
     .from('user_semantic_memory')
-    .select('id, category, key, value, confidence, created_at, source_episode_id')
+    .select('id, category, key, value, confidence, created_at, source_episode_id, source_episode:user_episodes!source_episode_id(thinker_id)')
     .eq('member_id', memberId)
     .is('valid_until', null)
     .order('confidence', { ascending: false })
@@ -72,9 +73,21 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 8);
 
+  // Flatten the embedded thinker_id onto each fact for easy client rendering.
+  const semanticFacts = (factRows || []).map((f: any) => ({
+    id: f.id,
+    category: f.category,
+    key: f.key,
+    value: f.value,
+    confidence: f.confidence,
+    created_at: f.created_at,
+    source_episode_id: f.source_episode_id,
+    thinker_id: f.source_episode?.thinker_id || null,
+  }));
+
   return NextResponse.json({
     member: { id: auth.member.id, display_name: auth.member.display_name },
-    semanticFacts: factRows || [],
+    semanticFacts,
     threads,
   });
 }

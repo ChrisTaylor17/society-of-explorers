@@ -33,8 +33,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   goal: 'GOALS',
   challenge: 'CHALLENGES',
   value: 'VALUES',
-  emotional_pattern: 'EMOTIONAL PATTERNS',
-  relationship: 'RELATIONSHIPS',
+  emotional_pattern: 'PATTERNS',
+  relationship: 'CONNECTIONS',
   commitment: 'COMMITMENTS',
   milestone: 'MILESTONES',
   preference: 'PREFERENCES',
@@ -48,11 +48,11 @@ const SOURCE_LABELS: Record<string, string> = {
 
 function relativeDay(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return mins <= 1 ? 'just now' : `${mins}m ago`;
   const hrs = Math.floor(diff / 3600000);
-  if (hrs < 1) return 'earlier today';
-  if (hrs < 12) return `${hrs}h ago`;
+  if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'earlier today';
   if (days === 1) return 'yesterday';
   if (days < 7) return `${days} days ago`;
   if (days < 14) return 'last week';
@@ -63,6 +63,11 @@ function relativeDay(iso: string): string {
 
 function formatKey(key: string): string {
   return key.replace(/_/g, ' ');
+}
+
+function truncate(s: string, max: number): string {
+  if (!s) return '';
+  return s.length > max ? s.slice(0, max - 1).trimEnd() + '\u2026' : s;
 }
 
 export default function InsightsPage() {
@@ -103,7 +108,7 @@ export default function InsightsPage() {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <PublicNav />
-        <span style={{ color: muted, fontFamily: 'Cinzel, serif', fontSize: '11px' }}>LOADING\u2026</span>
+        <span style={{ color: muted, fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.25em' }}>LOADING\u2026</span>
       </div>
     );
   }
@@ -118,7 +123,7 @@ export default function InsightsPage() {
             This is your private wisdom profile.
           </h1>
           <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, marginBottom: '2rem' }}>
-            Sign in to see what the thinkers know about you — facts they&rsquo;ve learned from your answers, and every conversation that shaped them.
+            Sign in to see what the thinkers know about you &mdash; facts they&rsquo;ve learned from your answers, and every conversation that shaped them.
           </p>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/login" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px' }}>SIGN IN</a>
@@ -146,7 +151,6 @@ export default function InsightsPage() {
   const threads: any[] = data?.threads || [];
   const displayName = data?.member?.display_name || 'Explorer';
 
-  // Group facts by category
   const factsByCategory: Record<string, any[]> = {};
   for (const f of facts) {
     if (!factsByCategory[f.category]) factsByCategory[f.category] = [];
@@ -159,24 +163,28 @@ export default function InsightsPage() {
       <PublicNav />
 
       {/* HERO */}
-      <section style={{ padding: '7rem 2rem 2.5rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+      <section style={{ padding: '7rem 2rem 2rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.25rem' }}>
             SOCIETY OF EXPLORERS
           </div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(30px, 5.5vw, 44px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, color: parchment, marginBottom: '1rem' }}>
             What the Thinkers Know About You
           </h1>
-          <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '560px', margin: '0 auto' }}>
-            {displayName}, this is your living wisdom profile. It grows with every answer.
+          <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '560px', margin: '0 auto 1.75rem' }}>
+            {displayName}, this is your living wisdom profile.
+          </p>
+          <div style={{ width: '60px', height: '1px', background: `${gold}66`, margin: '0 auto 1.25rem' }} />
+          <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', lineHeight: 1.7, maxWidth: '520px', margin: '0 auto' }}>
+            The more you share, the more the AIs remember &mdash; and the wiser their guidance becomes.
           </p>
         </div>
       </section>
 
       {/* SECTION 1 — SEMANTIC FACTS */}
-      <section style={{ padding: '1rem 2rem 2rem' }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, textAlign: 'center', marginBottom: '2rem' }}>
+      <section style={{ padding: '3rem 2rem 2rem' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, textAlign: 'center', marginBottom: '2.25rem' }}>
             WHAT WE&rsquo;VE LEARNED
           </div>
 
@@ -193,39 +201,82 @@ export default function InsightsPage() {
               </a>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.25rem' }}>
               {orderedCategories.map(cat => {
                 const items = factsByCategory[cat];
                 return (
                   <div key={cat}>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>
-                      {CATEGORY_LABELS[cat] || cat.toUpperCase()}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.9rem' }}>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold }}>
+                        {CATEGORY_LABELS[cat] || cat.toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: `${muted}aa` }}>
+                        {items.length}
+                      </span>
+                      <span style={{ flex: 1, height: '1px', background: `${gold}1a` }} />
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {items.map(f => (
-                        <div key={f.id} style={{
-                          background: '#0d0d0d', borderLeft: `2px solid ${gold}33`,
-                          border: `1px solid ${gold}10`, borderLeftWidth: '2px',
-                          padding: '10px 14px',
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '3px' }}>
-                            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold }}>
-                              {formatKey(f.key).toUpperCase()}
-                            </span>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'baseline', flexShrink: 0 }}>
-                              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>
-                                {Math.round((f.confidence || 0) * 100)}% CONFIDENCE
-                              </span>
-                              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: `${muted}aa` }}>
-                                {relativeDay(f.created_at)}
-                              </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {items.map(f => {
+                        const tid = f.thinker_id as string | null;
+                        const tColor = tid ? (THINKER_COLORS[tid] || gold) : gold;
+                        const tSymbol = tid ? (THINKER_SYMBOLS[tid] || '\u25C8') : '\u25C8';
+                        const tName = tid ? (THINKER_NAMES[tid] || tid) : null;
+                        const confPct = Math.round((f.confidence || 0) * 100);
+                        return (
+                          <div key={f.id} className="fact-card" style={{
+                            background: '#0d0d0d',
+                            border: `1px solid ${gold}12`,
+                            borderLeft: `2px solid ${tColor}55`,
+                            padding: '14px 16px',
+                            display: 'flex',
+                            gap: '14px',
+                            alignItems: 'flex-start',
+                            transition: 'border-color 0.25s, background 0.25s',
+                          }}>
+                            {/* Thinker avatar */}
+                            <div style={{
+                              width: '34px', height: '34px', flexShrink: 0, borderRadius: '50%',
+                              border: `1px solid ${tColor}55`, background: `${tColor}10`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontFamily: 'Cinzel, serif', fontSize: '14px', color: tColor,
+                              lineHeight: 1,
+                            }} title={tName || 'Distilled from the council'}>
+                              {tSymbol}
+                            </div>
+
+                            {/* Body */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.18em', color: gold }}>
+                                  {formatKey(f.key).toUpperCase()}
+                                </span>
+                                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: `${muted}bb` }}>
+                                  {relativeDay(f.created_at)}
+                                </span>
+                              </div>
+                              <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: '0 0 10px 0' }}>
+                                {f.value}
+                              </p>
+
+                              {/* Confidence bar */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ flex: 1, height: '2px', background: `${gold}18`, position: 'relative', maxWidth: '200px' }}>
+                                  <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${confPct}%`, background: gold, opacity: 0.75 }} />
+                                </div>
+                                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>
+                                  {confPct}%
+                                </span>
+                                <span className="fact-hover-note" style={{
+                                  fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em',
+                                  color: gold, opacity: 0, transition: 'opacity 0.25s',
+                                }}>
+                                  ACTIVE IN TODAY&rsquo;S REFLECTIONS
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: 0 }}>
-                            {f.value}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -236,20 +287,20 @@ export default function InsightsPage() {
       </section>
 
       {/* SECTION 2 — WISDOM THREADS */}
-      <section style={{ padding: '2rem 2rem 2rem' }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, textAlign: 'center', marginBottom: '2rem' }}>
+      <section style={{ padding: '3rem 2rem 2rem' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, textAlign: 'center', marginBottom: '2.25rem' }}>
             WISDOM THREADS
           </div>
 
           {threads.length === 0 ? (
             <div style={{ padding: '1.75rem', textAlign: 'center', border: `1px dashed ${gold}22` }}>
               <p style={{ fontSize: '15px', color: muted, fontStyle: 'italic', margin: 0 }}>
-                No threads yet. Every answer + reflection becomes a thread here.
+                No threads yet. Every answer and reflection becomes a thread here.
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {threads.map((t, i) => {
                 const tColor = THINKER_COLORS[t.thinker_id] || gold;
                 const tName = THINKER_NAMES[t.thinker_id] || t.thinker_id || 'Thinker';
@@ -257,22 +308,26 @@ export default function InsightsPage() {
                 const sourceLabel = SOURCE_LABELS[t.source] || (t.source ? t.source.toUpperCase() : 'EXCHANGE');
 
                 return (
-                  <div key={t.session_id || `thread-${i}`} style={{
-                    background: '#0d0d0d', border: `1px solid ${gold}12`,
-                    padding: '1.25rem 1.1rem',
+                  <div key={t.session_id || `thread-${i}`} className="thread-card" style={{
+                    background: '#0d0d0d',
+                    border: `1px solid ${gold}14`,
+                    padding: '1.4rem 1.25rem',
+                    transition: 'border-color 0.25s, background 0.25s',
                   }}>
-                    {/* Header row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
-                      <span style={{
-                        fontFamily: 'Cinzel, serif', fontSize: '16px',
-                        color: tColor, opacity: 0.55, lineHeight: 1,
-                      }}>{tSymbol}</span>
-                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.18em', color: tColor }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                      <div style={{
+                        width: '30px', height: '30px', flexShrink: 0, borderRadius: '50%',
+                        border: `1px solid ${tColor}66`, background: `${tColor}15`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'Cinzel, serif', fontSize: '13px', color: tColor, lineHeight: 1,
+                      }}>{tSymbol}</div>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: tColor }}>
                         {tName.toUpperCase()}
                       </span>
                       <span style={{
-                        fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em',
-                        color: muted, border: `1px solid ${muted}44`, padding: '2px 7px',
+                        fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em',
+                        color: gold, border: `1px solid ${gold}55`, padding: '3px 8px',
                       }}>{sourceLabel}</span>
                       <span style={{ flex: 1 }} />
                       <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: muted }}>
@@ -282,23 +337,23 @@ export default function InsightsPage() {
 
                     {/* Answer */}
                     {t.user && (
-                      <div style={{ marginBottom: t.assistant ? '0.9rem' : 0 }}>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: `${muted}cc`, marginBottom: '4px' }}>
+                      <div style={{ marginBottom: t.assistant ? '1rem' : 0 }}>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: `${muted}cc`, marginBottom: '5px' }}>
                           YOU
                         </div>
-                        <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.6, margin: 0 }}>
-                          {t.user.content}
+                        <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.65, margin: 0 }}>
+                          {truncate(t.user.content, 260)}
                         </p>
                       </div>
                     )}
 
                     {/* Reflection */}
                     {t.assistant && (
-                      <div style={{ paddingTop: t.user ? '0.75rem' : 0, borderTop: t.user ? `1px solid ${gold}18` : 'none' }}>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: `${tColor}cc`, marginBottom: '4px' }}>
+                      <div style={{ paddingTop: t.user ? '0.85rem' : 0, borderTop: t.user ? `1px solid ${gold}1a` : 'none' }}>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: `${tColor}cc`, marginBottom: '5px' }}>
                           {tName.toUpperCase()}
                         </div>
-                        <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', fontStyle: 'italic', color: ivory85, lineHeight: 1.75, margin: 0 }}>
+                        <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', fontStyle: 'italic', color: ivory85, lineHeight: 1.8, margin: 0 }}>
                           {t.assistant.content}
                         </p>
                       </div>
@@ -311,19 +366,36 @@ export default function InsightsPage() {
         </div>
       </section>
 
-      {/* FOOTNOTE */}
-      <section style={{ padding: '2rem 2rem 5rem' }}>
+      {/* DATA VALUE FOOTNOTE */}
+      <section style={{ padding: '3rem 2rem 5rem' }}>
         <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 1.5rem' }} />
-          <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', lineHeight: 1.7, margin: 0 }}>
-            This is your living wisdom profile. Every answer and reflection adds to it.
-            This is the foundation of the personal data layer described in the{' '}
-            <Link href="/manifesto" style={{ color: gold, textDecoration: 'none' }}>Manifesto</Link>.
+          <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 1.75rem' }} />
+          <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', lineHeight: 1.8, margin: 0 }}>
+            Every answer you give strengthens this profile.
+            <br />
+            In time, this living memory will power deeper guidance, matched conversations, and &mdash; one day &mdash; a marketplace for your wisdom.
           </p>
+          <div style={{ marginTop: '1.5rem' }}>
+            <Link href="/manifesto" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em', color: gold, textDecoration: 'none', opacity: 0.7 }}>
+              READ THE MANIFESTO &rarr;
+            </Link>
+          </div>
         </div>
       </section>
 
       <PublicFooter />
+
+      <style>{`
+        .fact-card:hover {
+          border-color: ${gold}33;
+          background: #101010;
+        }
+        .fact-card:hover .fact-hover-note { opacity: 1; }
+        .thread-card:hover {
+          border-color: ${gold}33;
+          background: #101010;
+        }
+      `}</style>
     </div>
   );
 }
