@@ -161,17 +161,18 @@ export default function InsightsPage() {
 
       {/* HERO */}
       <section style={{ padding: '7rem 2rem 2rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.25rem' }}>
-            SOCIETY OF EXPLORERS
+        <div style={{ maxWidth: '760px', margin: '0 auto' }}>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.75rem' }}>
+            FOR {displayName.toUpperCase()}
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(30px, 5.5vw, 44px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, color: parchment, marginBottom: '1rem' }}>
+          <div style={{ width: '60px', height: '1px', background: `${gold}66`, margin: '0 auto 1.75rem' }} />
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.1, color: parchment, margin: 0, letterSpacing: '-0.005em' }}>
             {openingHeadline}
           </h1>
-          <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '560px', margin: '0 auto 1.75rem' }}>
-            {displayName}, this is your living wisdom profile.
+          <div style={{ width: '60px', height: '1px', background: `${gold}66`, margin: '1.75rem auto 1.25rem' }} />
+          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory85, fontStyle: 'italic', lineHeight: 1.7, maxWidth: '520px', margin: '0 auto 1.25rem' }}>
+            Your living wisdom profile.
           </p>
-          <div style={{ width: '60px', height: '1px', background: `${gold}66`, margin: '0 auto 1.25rem' }} />
           <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic', lineHeight: 1.7, maxWidth: '520px', margin: '0 auto' }}>
             The more you share, the more the AIs remember &mdash; and the wiser their guidance becomes.
           </p>
@@ -224,16 +225,16 @@ export default function InsightsPage() {
                             background: '#0d0d0d',
                             border: `1px solid ${gold}12`,
                             borderLeft: `2px solid ${tColor}55`,
-                            padding: '18px 20px',
+                            padding: '22px 26px',
                             display: 'flex',
-                            gap: '16px',
+                            gap: '18px',
                             alignItems: 'flex-start',
                             transition: 'border-color 0.25s, background 0.25s',
                           }}>
                             {/* Thinker avatar */}
                             <div style={{
                               width: '34px', height: '34px', flexShrink: 0, borderRadius: '50%',
-                              border: `1px solid ${tColor}55`, background: `${tColor}10`,
+                              border: `1px solid ${tColor}44`, background: `${tColor}0d`,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontFamily: 'Cinzel, serif', fontSize: '14px', color: tColor,
                               lineHeight: 1, marginTop: '2px',
@@ -243,16 +244,38 @@ export default function InsightsPage() {
 
                             {/* Body */}
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ fontSize: '16px', color: parchment, lineHeight: 1.7, margin: 0 }}>
+                              <p style={{
+                                fontFamily: 'Cormorant Garamond, serif',
+                                fontSize: '18px', fontWeight: 400,
+                                color: parchment, lineHeight: 1.75,
+                                letterSpacing: '0.005em',
+                                margin: 0,
+                              }}>
+                                <span style={{
+                                  fontFamily: 'Playfair Display, serif',
+                                  fontStyle: 'italic',
+                                  color: `${gold}88`,
+                                  marginRight: '10px',
+                                  fontSize: '22px',
+                                  lineHeight: 0,
+                                  verticalAlign: '-0.15em',
+                                }} aria-hidden="true">&ldquo;</span>
                                 {f.value}
                               </p>
                               <p style={{
                                 fontFamily: 'Cormorant Garamond, serif',
                                 fontSize: '13px', fontStyle: 'italic',
-                                color: muted, lineHeight: 1.5,
-                                margin: '8px 0 0 0',
+                                lineHeight: 1.5,
+                                margin: '10px 0 0 0',
+                                color: muted,
                               }}>
-                                {tName ? `\u2014 ${tName} \u00B7 ${when}` : when}
+                                {tName ? (
+                                  <>
+                                    <span style={{ color: muted }}>&mdash; </span>
+                                    <span style={{ color: tColor }}>{tName}</span>
+                                    <span style={{ color: muted }}> &middot; {when}</span>
+                                  </>
+                                ) : when}
                               </p>
                             </div>
                           </div>
@@ -368,8 +391,8 @@ export default function InsightsPage() {
 
       <style>{`
         .fact-card:hover {
-          border-color: ${gold}33;
-          background: #101010;
+          border-color: ${gold}44;
+          background: #111;
         }
         .thread-card:hover {
           border-color: ${gold}33;
