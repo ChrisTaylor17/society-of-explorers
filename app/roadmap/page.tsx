@@ -130,7 +130,7 @@ const MODULES: Array<{ name: string; status: Status; body: string; href?: string
   },
   {
     name: 'DAILY PRACTICE',
-    status: 'progress',
+    status: 'live',
     body: 'One question per day, your streak, and a reflection card from the asking thinker. Stabilizing pending a database migration — expect occasional hiccups until it lands.',
     href: '/practice',
     linkLabel: 'VISIT /PRACTICE →',
@@ -143,7 +143,6 @@ const MODULES: Array<{ name: string; status: Status; body: string; href?: string
 ];
 
 const NEXT_ITEMS: Array<{ title: string; body: string }> = [
-  { title: 'Daily Practice migration complete.', body: 'Reliable streaks, no response loss, cleaner reflection latency.' },
   { title: 'Matched Conversations.', body: 'AI-paired 1:1 exchanges once you hit a 7-response streak. Built but not yet serving real matches in production.' },
   { title: 'Live Weekly Council Sessions (Wed 8pm ET).', body: 'Real-time video where thinkers comment on the week\u2019s question.' },
   { title: '@AskTheCouncil on X.', body: 'Auto-post verdict cards to a public account so threads become discoverable.' },
@@ -219,7 +218,7 @@ export default function RoadmapPage() {
             letterSpacing: '0.3em',
             color: muted,
           }}>
-            LAST UPDATED APRIL 19, 2026
+            Last updated: April 19, 2026
           </div>
         </header>
 
