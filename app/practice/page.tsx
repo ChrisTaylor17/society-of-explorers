@@ -101,7 +101,7 @@ function timeAgo(iso: string): string {
 }
 
 function counterColor(n: number): string {
-  if (n >= 280) return '#f5e5b6';
+  if (n >= 280) return '#fde68a';
   if (n >= 261) return '#fcd34d';
   if (n >= 201) return '#fbbf24';
   return '#78716c';
@@ -126,6 +126,7 @@ export default function PracticePage() {
   const [reflectionMounted, setReflectionMounted] = useState(false);
   const [streakMounted, setStreakMounted] = useState(false);
   const [commonsMounted, setCommonsMounted] = useState(false);
+  const [textareaFocused, setTextareaFocused] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -415,7 +416,14 @@ export default function PracticePage() {
                   opacity: phase === 'composing' ? 1 : 0,
                 }}
               >
-                <div className="w-full" style={{ maxWidth: '560px' }}>
+                <div style={{ width: '100%', maxWidth: '560px' }}>
+                  <style>{`
+                    .practice-textarea::placeholder {
+                      color: #78716c;
+                      font-style: italic;
+                      opacity: 1;
+                    }
+                  `}</style>
                   <textarea
                     ref={textareaRef}
                     value={draft}
@@ -423,41 +431,58 @@ export default function PracticePage() {
                     onClick={() => {
                       if (loggedOut) window.location.href = '/join';
                     }}
+                    onFocus={() => setTextareaFocused(true)}
+                    onBlur={() => setTextareaFocused(false)}
                     readOnly={loggedOut}
                     placeholder="What do you notice?"
                     rows={3}
-                    className="w-full bg-stone-900/60 border border-amber-900/40 focus:border-amber-200/70 focus:ring-1 focus:ring-amber-200/20 rounded-sm outline-none p-6 resize-none transition-colors"
+                    className="practice-textarea"
                     style={{
+                      width: '100%',
+                      backgroundColor: 'rgba(28, 25, 23, 0.5)',
+                      border: textareaFocused
+                        ? '1px solid rgba(253, 230, 138, 0.6)'
+                        : '1px solid rgba(120, 53, 15, 0.3)',
+                      boxShadow: textareaFocused
+                        ? '0 0 0 3px rgba(253, 230, 138, 0.1)'
+                        : 'none',
+                      borderRadius: '2px',
                       fontFamily: CORMORANT,
-                      fontSize: '16px',
-                      color: '#fefce8',
+                      fontSize: '20px',
+                      lineHeight: 1.5,
+                      color: '#fafaf9',
+                      padding: '24px',
                       minHeight: '120px',
-                      fontStyle: draft ? 'normal' : 'italic',
+                      resize: 'vertical',
+                      outline: 'none',
                       caretColor: '#fcd34d',
+                      transition: 'border-color 150ms ease, box-shadow 150ms ease',
                     }}
                   />
                   <div
-                    className="flex items-center justify-end gap-2 mt-2 tabular-nums"
                     style={{
-                      fontFamily: CINZEL,
-                      fontSize: '11px',
-                      letterSpacing: '0.15em',
+                      textAlign: 'right',
+                      fontSize: '12px',
+                      marginTop: '8px',
+                      fontFamily: CORMORANT,
                       color: counterColor(charCount),
                       fontWeight: counterWeight(charCount),
+                      fontVariantNumeric: 'tabular-nums',
                     }}
                   >
-                    <span>
-                      {charCount} / 280
-                    </span>
+                    <span>{charCount} / 280</span>
                     {charCount === 280 && (
-                      <span style={{ color: '#f5e5b6', letterSpacing: '0.25em' }}>FULL</span>
+                      <span style={{ marginLeft: '8px', color: '#fde68a', letterSpacing: '0.25em' }}>
+                        FULL
+                      </span>
                     )}
                   </div>
 
                   {loggedOut ? (
                     <p
-                      className="mt-8 text-center"
                       style={{
+                        marginTop: '32px',
+                        textAlign: 'center',
                         fontFamily: CORMORANT,
                         fontSize: '15px',
                         fontStyle: 'italic',
@@ -470,18 +495,24 @@ export default function PracticePage() {
                       to commit your answer and see how others responded today.
                     </p>
                   ) : (
-                    <div className="mt-8 flex justify-center">
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <button
                         onClick={handleSubmit}
                         disabled={!canSubmit}
-                        className="w-full md:w-auto border border-amber-200/40 hover:bg-amber-950/30 disabled:opacity-30 disabled:cursor-not-allowed rounded-none px-8 py-3 transition-colors"
                         style={{
+                          backgroundColor: 'transparent',
+                          border: '1px solid rgba(253, 230, 138, 0.4)',
+                          borderRadius: 0,
+                          padding: '12px 32px',
+                          marginTop: '32px',
                           fontFamily: CINZEL,
-                          fontSize: '11px',
+                          fontSize: '12px',
                           letterSpacing: '0.2em',
-                          color: '#fcd34d',
-                          background: 'transparent',
+                          color: '#fde68a',
+                          textTransform: 'uppercase',
                           cursor: canSubmit ? 'pointer' : 'not-allowed',
+                          opacity: canSubmit ? 1 : 0.3,
+                          transition: 'opacity 150ms ease',
                         }}
                       >
                         COMMIT YOUR ANSWER
