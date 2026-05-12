@@ -34,6 +34,14 @@ const THINKER_COLORS: Record<string, string> = {
   einstein: '#4169E1',
   jobs: '#A0A0A0',
 };
+const THINKER_AVATARS: Record<string, string> = {
+  socrates: 'SO',
+  plato: 'PL',
+  aurelius: 'MA',
+  nietzsche: 'FN',
+  einstein: 'AE',
+  jobs: 'SJ',
+};
 
 type Phase = 'loading' | 'composing' | 'submitting' | 'revealing' | 'complete';
 
@@ -68,7 +76,7 @@ const MILESTONE_NOTES: Record<number, string> = {
   365: 'a year of practice',
 };
 
-function formatToday(): { label: string } {
+function formatToday(): { day: string; monthDay: string } {
   const now = new Date();
   const day = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
   const monthDay = now.toLocaleDateString('en-US', {
@@ -76,7 +84,7 @@ function formatToday(): { label: string } {
     day: 'numeric',
     timeZone: 'America/New_York',
   });
-  return { label: `TODAY · ${day.toUpperCase()} · ${monthDay.toUpperCase()}` };
+  return { day: day.toUpperCase(), monthDay: monthDay.toUpperCase() };
 }
 
 function formatTimeOfDay(iso: string): string {
@@ -101,7 +109,7 @@ function timeAgo(iso: string): string {
 }
 
 function counterColor(n: number): string {
-  if (n >= 280) return '#f5e5b6';
+  if (n >= 280) return '#fde68a';
   if (n >= 261) return '#fcd34d';
   if (n >= 201) return '#fbbf24';
   return '#78716c';
@@ -126,10 +134,12 @@ export default function PracticePage() {
   const [reflectionMounted, setReflectionMounted] = useState(false);
   const [streakMounted, setStreakMounted] = useState(false);
   const [commonsMounted, setCommonsMounted] = useState(false);
+  const [textareaFocused, setTextareaFocused] = useState(false);
+  const [todayCount, setTodayCount] = useState<number>(0);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { label: dayLabel } = useMemo(formatToday, []);
+  const { day: dayName, monthDay } = useMemo(formatToday, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,6 +171,7 @@ export default function PracticePage() {
         }
         setQuestion(data.question);
         setOthers(Array.isArray(data.others) ? data.others : []);
+        if (typeof data.todayCount === 'number') setTodayCount(data.todayCount);
         if (data.streak) setStreak(data.streak);
         if (data.myResponse) {
           setMyResponse(data.myResponse);
@@ -225,6 +236,7 @@ export default function PracticePage() {
         longest_streak: data.longest ?? 0,
         total_responses: data.total ?? 0,
       });
+      setTodayCount((n) => n + 1);
 
       setTextareaHidden(true);
       setPhase('revealing');
@@ -290,6 +302,7 @@ export default function PracticePage() {
   const thinkerName = question ? THINKER_NAMES[question.thinker_id] || question.thinker_id : '';
   const thinkerSymbol = question ? THINKER_SYMBOLS[question.thinker_id] || '·' : '·';
   const thinkerColor = question ? THINKER_COLORS[question.thinker_id] || '#c9a84c' : '#c9a84c';
+  const thinkerAvatar = question ? THINKER_AVATARS[question.thinker_id] || '··' : '··';
 
   const charCount = draft.length;
   const canSubmit = draft.trim().length > 0 && phase === 'composing';
@@ -324,98 +337,169 @@ export default function PracticePage() {
           </div>
         ) : question ? (
           <>
-            {/* BEAT 1 — ARRIVAL */}
-            <section className="flex flex-col items-center text-center gap-4 pb-12">
-              <div
-                className="animate-fade-up"
-                style={{
-                  animationDelay: '0ms',
-                  fontFamily: CINZEL,
-                  fontSize: '10px',
-                  letterSpacing: '0.4em',
-                  color: '#c9a84c',
-                  opacity: 0.65,
-                }}
-              >
-                {dayLabel}
-              </div>
-              <div
-                className="animate-fade-up"
-                style={{
-                  animationDelay: '120ms',
-                  fontFamily: CORMORANT,
-                  fontStyle: 'italic',
-                  fontSize: '14px',
-                  color: '#9a8f7a',
-                }}
-              >
-                Posed by {thinkerName}
-              </div>
-              <h1
-                className="animate-fade-up"
-                style={{
-                  animationDelay: '240ms',
-                  fontFamily: PLAYFAIR,
-                  fontStyle: 'italic',
-                  fontSize: 'clamp(26px, 4.8vw, 32px)',
-                  color: '#f5e5b6',
-                  lineHeight: 1.35,
-                  maxWidth: '40ch',
-                  margin: 0,
-                  fontWeight: 400,
-                }}
-              >
-                {question.question_text}
-              </h1>
-            </section>
+            <style>{`
+              .practice-shell {
+                max-width: 720px;
+                margin: 0 auto;
+                padding: 96px 24px 64px;
+              }
+              .practice-card {
+                padding: 48px 40px;
+              }
+              .practice-textarea::placeholder {
+                color: #78716c;
+                font-style: italic;
+                opacity: 1;
+              }
+              @media (max-width: 768px) {
+                .practice-shell { padding: 64px 16px 48px; }
+                .practice-card { padding: 32px 24px; }
+              }
+            `}</style>
 
-            {/* STATE C: own response above reflection */}
-            {phase === 'complete' && myResponse && (
-              <section className="flex flex-col items-center gap-3 pb-10">
+            <div className="practice-shell">
+              {/* QUESTION CARD */}
+              <div
+                className="practice-card animate-fade-up"
+                style={{
+                  border: '1px solid rgba(200, 168, 75, 0.15)',
+                  backgroundColor: 'transparent',
+                  borderRadius: 0,
+                  marginBottom: '48px',
+                  animationDelay: '0ms',
+                }}
+              >
                 <div
-                  className="animate-fade-up"
                   style={{
-                    animationDelay: '360ms',
-                    fontFamily: CINZEL,
-                    fontSize: '10px',
-                    letterSpacing: '0.3em',
-                    color: '#c9a84c',
-                    opacity: 0.7,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    marginBottom: '24px',
+                    flexWrap: 'wrap',
                   }}
                 >
-                  YOUR RESPONSE · {formatTimeOfDay(myResponse.created_at)}
-                </div>
-                <div
-                  className="animate-fade-up w-full"
-                  style={{ animationDelay: '440ms', maxWidth: '560px' }}
-                >
-                  <blockquote
-                    className="border-l pl-4"
+                  <div
                     style={{
-                      borderColor: 'rgba(146, 64, 14, 0.35)',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: `${thinkerColor}18`,
+                      border: `1.5px solid ${thinkerColor}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: CINZEL,
+                      fontSize: '8px',
+                      color: thinkerColor,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {thinkerAvatar}
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: CINZEL,
+                      fontSize: '10px',
+                      letterSpacing: '0.25em',
+                      color: '#c9a84c',
+                      textAlign: 'center',
+                    }}
+                  >
+                    TODAY · {dayName} · {monthDay} · {thinkerName.toUpperCase()}
+                  </span>
+                </div>
+
+                <p
+                  style={{
+                    fontFamily: PLAYFAIR,
+                    fontStyle: 'italic',
+                    fontSize: 'clamp(24px, 4vw, 32px)',
+                    lineHeight: 1.4,
+                    color: '#f5f0e8',
+                    textAlign: 'center',
+                    margin: 0,
+                    fontWeight: 400,
+                  }}
+                >
+                  &ldquo;{question.question_text}&rdquo;
+                </p>
+
+                <div
+                  style={{
+                    width: '40px',
+                    height: '1px',
+                    backgroundColor: '#c9a84c',
+                    opacity: 0.4,
+                    margin: '32px auto 24px',
+                  }}
+                />
+
+                <p
+                  style={{
+                    fontFamily: CORMORANT,
+                    fontStyle: 'italic',
+                    fontSize: '14px',
+                    color: '#888',
+                    textAlign: 'center',
+                    margin: 0,
+                  }}
+                >
+                  Posed by {thinkerName}
+                </p>
+              </div>
+
+              {/* STATE C: own response above reflection */}
+              {phase === 'complete' && myResponse && (
+                <section
+                  className="animate-fade-up"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '40px',
+                    animationDelay: '120ms',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: CINZEL,
+                      fontSize: '10px',
+                      letterSpacing: '0.3em',
+                      color: '#c9a84c',
+                      opacity: 0.7,
+                    }}
+                  >
+                    YOUR RESPONSE · {formatTimeOfDay(myResponse.created_at)}
+                  </div>
+                  <blockquote
+                    style={{
+                      borderLeft: '1px solid rgba(146, 64, 14, 0.35)',
+                      paddingLeft: '16px',
                       fontFamily: CORMORANT,
                       fontSize: '16px',
                       color: 'rgba(255, 251, 235, 0.82)',
                       lineHeight: 1.6,
                       margin: 0,
+                      width: '100%',
                     }}
                   >
                     {myResponse.response_text}
                   </blockquote>
-                </div>
-              </section>
-            )}
+                </section>
+              )}
 
-            {/* BEAT 2 — RESPONSE (State A) */}
-            {!textareaHidden && phase === 'composing' && (
-              <section
-                className="flex flex-col items-center"
-                style={{
-                  transition: 'opacity 600ms ease',
-                  opacity: phase === 'composing' ? 1 : 0,
-                }}
-              >
-                <div className="w-full" style={{ maxWidth: '560px' }}>
+              {/* TEXTAREA SECTION */}
+              {!textareaHidden && phase === 'composing' && (
+                <div
+                  style={{
+                    width: '100%',
+                    marginBottom: '24px',
+                    transition: 'opacity 600ms ease',
+                    opacity: 1,
+                  }}
+                >
                   <textarea
                     ref={textareaRef}
                     value={draft}
@@ -423,74 +507,123 @@ export default function PracticePage() {
                     onClick={() => {
                       if (loggedOut) window.location.href = '/join';
                     }}
+                    onFocus={() => setTextareaFocused(true)}
+                    onBlur={() => setTextareaFocused(false)}
                     readOnly={loggedOut}
                     placeholder="What do you notice?"
                     rows={3}
-                    className="w-full bg-stone-900/60 border border-amber-900/40 focus:border-amber-200/70 focus:ring-1 focus:ring-amber-200/20 rounded-sm outline-none p-6 resize-none transition-colors"
+                    className="practice-textarea"
                     style={{
+                      width: '100%',
+                      backgroundColor: 'rgba(28, 25, 23, 0.5)',
+                      border: textareaFocused
+                        ? '1px solid rgba(253, 230, 138, 0.6)'
+                        : '1px solid rgba(200, 168, 75, 0.15)',
+                      boxShadow: textareaFocused
+                        ? '0 0 0 3px rgba(253, 230, 138, 0.1)'
+                        : 'none',
+                      borderRadius: '2px',
                       fontFamily: CORMORANT,
-                      fontSize: '16px',
-                      color: '#fefce8',
+                      fontSize: '20px',
+                      lineHeight: 1.5,
+                      color: '#fafaf9',
+                      padding: '24px',
                       minHeight: '120px',
-                      fontStyle: draft ? 'normal' : 'italic',
+                      resize: 'vertical',
+                      outline: 'none',
                       caretColor: '#fcd34d',
+                      transition: 'border-color 150ms ease, box-shadow 150ms ease',
                     }}
                   />
+
                   <div
-                    className="flex items-center justify-end gap-2 mt-2 tabular-nums"
                     style={{
-                      fontFamily: CINZEL,
-                      fontSize: '11px',
-                      letterSpacing: '0.15em',
-                      color: counterColor(charCount),
-                      fontWeight: counterWeight(charCount),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginTop: '16px',
+                      gap: '16px',
                     }}
                   >
-                    <span>
-                      {charCount} / 280
-                    </span>
-                    {charCount === 280 && (
-                      <span style={{ color: '#f5e5b6', letterSpacing: '0.25em' }}>FULL</span>
-                    )}
-                  </div>
-
-                  {loggedOut ? (
-                    <p
-                      className="mt-8 text-center"
+                    <div
                       style={{
+                        fontSize: '12px',
                         fontFamily: CORMORANT,
-                        fontSize: '15px',
-                        fontStyle: 'italic',
-                        color: '#9a8f7a',
+                        color: counterColor(charCount),
+                        fontWeight: counterWeight(charCount),
+                        fontVariantNumeric: 'tabular-nums',
                       }}
                     >
-                      <Link href="/join" style={{ color: '#fcd34d', textDecoration: 'none' }}>
-                        Sign in
-                      </Link>{' '}
-                      to commit your answer and see how others responded today.
-                    </p>
-                  ) : (
-                    <div className="mt-8 flex justify-center">
-                      <button
-                        onClick={handleSubmit}
-                        disabled={!canSubmit}
-                        className="w-full md:w-auto border border-amber-200/40 hover:bg-amber-950/30 disabled:opacity-30 disabled:cursor-not-allowed rounded-none px-8 py-3 transition-colors"
+                      <span>{charCount} / 280</span>
+                      {charCount === 280 && (
+                        <span style={{ marginLeft: '8px', color: '#fde68a', letterSpacing: '0.25em' }}>
+                          FULL
+                        </span>
+                      )}
+                    </div>
+
+                    {loggedOut ? (
+                      <Link
+                        href="/join"
                         style={{
                           fontFamily: CINZEL,
                           fontSize: '11px',
                           letterSpacing: '0.2em',
-                          color: '#fcd34d',
-                          background: 'transparent',
+                          color: '#fde68a',
+                          textDecoration: 'none',
+                          border: '1px solid rgba(253, 230, 138, 0.4)',
+                          padding: '12px 24px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Sign in to commit
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                        style={{
+                          backgroundColor: 'transparent',
+                          border: '1px solid rgba(253, 230, 138, 0.4)',
+                          borderRadius: 0,
+                          padding: '12px 32px',
+                          fontFamily: CINZEL,
+                          fontSize: '12px',
+                          letterSpacing: '0.2em',
+                          color: '#fde68a',
+                          textTransform: 'uppercase',
                           cursor: canSubmit ? 'pointer' : 'not-allowed',
+                          opacity: canSubmit ? 1 : 0.3,
+                          transition: 'opacity 150ms ease',
                         }}
                       >
                         COMMIT YOUR ANSWER
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </section>
-            )}
+              )}
+
+              {/* FOOTNOTE: N explorers answered today */}
+              {phase === 'composing' && (
+                <p
+                  style={{
+                    fontFamily: CINZEL,
+                    fontSize: '10px',
+                    letterSpacing: '0.25em',
+                    color: '#888',
+                    textTransform: 'uppercase',
+                    textAlign: 'center',
+                    marginTop: '48px',
+                    margin: '48px 0 0',
+                  }}
+                >
+                  {todayCount > 0
+                    ? `${todayCount} EXPLORER${todayCount === 1 ? '' : 'S'} ANSWERED TODAY`
+                    : 'BE THE FIRST EXPLORER TODAY'}
+                </p>
+              )}
+            </div>
 
             {/* Revealing — contemplation dot while the reflection buffers */}
             {phase === 'revealing' && !reflectionMounted && (
