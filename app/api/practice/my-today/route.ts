@@ -27,22 +27,31 @@ export async function GET(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
   const memberId = auth?.memberId || null;
 
+  const todayCountPromise = supabase
+    .from('question_responses')
+    .select('id', { count: 'exact', head: true })
+    .eq('question_id', question.id);
+
   if (!memberId) {
-    const others = await fetchOtherExplorers({
-      questionId: question.id,
-      excludeMemberId: null,
-      limit: 3,
-    });
+    const [others, todayCountResult] = await Promise.all([
+      fetchOtherExplorers({
+        questionId: question.id,
+        excludeMemberId: null,
+        limit: 3,
+      }),
+      todayCountPromise,
+    ]);
     return NextResponse.json({
       question,
       myResponse: null,
       myReflection: null,
       streak: null,
       others,
+      todayCount: todayCountResult.count ?? 0,
     });
   }
 
-  const [myResponseResult, streakResult, others] = await Promise.all([
+  const [myResponseResult, streakResult, others, todayCountResult] = await Promise.all([
     supabase
       .from('question_responses')
       .select('id, response_text, created_at')
@@ -59,6 +68,7 @@ export async function GET(req: NextRequest) {
       excludeMemberId: memberId,
       limit: 3,
     }),
+    todayCountPromise,
   ]);
 
   const myResponseRow = myResponseResult.data;
@@ -90,6 +100,7 @@ export async function GET(req: NextRequest) {
       last_practice_date: string | null;
     };
     others: OtherResponse[];
+    todayCount: number;
   } = {
     question,
     myResponse: myResponseRow
@@ -107,6 +118,7 @@ export async function GET(req: NextRequest) {
       last_practice_date: streak.last_practice_date || null,
     },
     others,
+    todayCount: todayCountResult.count ?? 0,
   };
 
   return NextResponse.json(payload);
