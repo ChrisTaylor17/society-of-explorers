@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { l: 'Feed', h: '/feed' },
   { l: 'Manifesto', h: '/manifesto' },
   { l: 'Roadmap', h: '/roadmap' },
+  { l: 'Movement', h: '/movement' },
   { l: 'Vision', h: '/vision' },
   { l: 'Council', h: '/council' },
   { l: 'Join', h: '/join' },
