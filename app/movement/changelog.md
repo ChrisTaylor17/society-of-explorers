@@ -1,3 +1,4 @@
 # Explorer Movement Changelog
 
-Phase 1 - Movement foundation + landing - pending commit
+Phase 1 - Movement foundation + landing - 42f2e26
+Phase 2 - Content engine + script generation - pending commit
