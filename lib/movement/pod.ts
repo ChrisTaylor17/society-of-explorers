@@ -45,6 +45,11 @@ export interface PodStats {
   last_committed_at: string | null;
   updated_at: string | null;
   version: number | null;
+  sync_version: number | null;
+  sync_device_id: string | null;
+  sync_client_updated_at: string | null;
+  sync_status: string | null;
+  sync_conflict_count: number;
 }
 
 function asArray<T>(value: T[] | null): T[] {
@@ -231,7 +236,7 @@ export async function getPodStats(memberId: string): Promise<PodStats> {
   const [podResult, responseCountResult] = await Promise.all([
     supabaseAdmin
       .from('data_pods')
-      .select('ciphertext, version, last_commitment_hash, last_committed_at, updated_at')
+      .select('ciphertext, version, last_commitment_hash, last_committed_at, updated_at, sync_version, sync_device_id, sync_client_updated_at, sync_status, sync_conflict_count')
       .eq('member_id', memberId)
       .maybeSingle(),
     supabaseAdmin
@@ -254,5 +259,10 @@ export async function getPodStats(memberId: string): Promise<PodStats> {
     last_committed_at: row?.last_committed_at || null,
     updated_at: row?.updated_at || null,
     version: row?.version || null,
+    sync_version: row?.sync_version ?? null,
+    sync_device_id: row?.sync_device_id || null,
+    sync_client_updated_at: row?.sync_client_updated_at || null,
+    sync_status: row?.sync_status || null,
+    sync_conflict_count: row?.sync_conflict_count ?? 0,
   };
 }

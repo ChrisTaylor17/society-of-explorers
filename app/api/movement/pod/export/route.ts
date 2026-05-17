@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('data_pods')
-      .select('ciphertext, iv, version, last_commitment_hash, last_committed_at, updated_at')
+      .select('ciphertext, iv, version, last_commitment_hash, last_committed_at, updated_at, sync_version, sync_device_id, sync_client_updated_at, sync_status, sync_conflict_count')
       .eq('member_id', auth.memberId)
       .maybeSingle();
 
@@ -35,6 +35,11 @@ export async function GET(req: NextRequest) {
       last_commitment_hash: data.last_commitment_hash || null,
       last_committed_at: data.last_committed_at || null,
       updated_at: data.updated_at || null,
+      sync_version: data.sync_version ?? null,
+      sync_device_id: data.sync_device_id || null,
+      sync_client_updated_at: data.sync_client_updated_at || null,
+      sync_status: data.sync_status || null,
+      sync_conflict_count: data.sync_conflict_count ?? 0,
     };
 
     return new NextResponse(JSON.stringify(envelope, null, 2), {
