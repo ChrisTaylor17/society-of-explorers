@@ -220,6 +220,81 @@ export default function MovementPage() {
           </div>
         </section>
 
+        <section style={{ padding: '0 2rem 5rem' }}>
+          <div
+            style={{
+              maxWidth: '700px',
+              margin: '0 auto',
+              borderTop: border,
+              paddingTop: '3rem',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'Cinzel, serif',
+                fontSize: '9px',
+                letterSpacing: '0.28em',
+                color: gold,
+                marginBottom: '1rem',
+              }}
+            >
+              PERSONALITIES
+            </div>
+            <h2
+              style={{
+                fontFamily: 'Playfair Display, serif',
+                fontSize: 'clamp(26px, 4vw, 38px)',
+                fontWeight: 400,
+                fontStyle: 'italic',
+                lineHeight: 1.15,
+                color: parchment,
+                margin: '0 0 1.5rem',
+              }}
+            >
+              Special voices for the Movement.
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <a
+                href="/movement/p/lennon-mccartney"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '10px',
+                  letterSpacing: '0.18em',
+                  color: gold,
+                  border,
+                  padding: '0 18px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '44px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                LENNON &amp; MCCARTNEY
+              </a>
+              <a
+                href="/movement/p/buck-holler"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '10px',
+                  letterSpacing: '0.18em',
+                  color: gold,
+                  border,
+                  padding: '0 18px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '44px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                BUCK HOLLER
+              </a>
+            </div>
+          </div>
+        </section>
+
         <section style={{ padding: '0 2rem 6rem' }}>
           <div
             style={{
