@@ -133,6 +133,24 @@ export default function MovementPage() {
               >
                 YOUR DATA POD
               </a>
+              <a
+                href="/movement/personal-ai"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                YOUR MIRROR
+              </a>
             </div>
           </div>
         </section>
