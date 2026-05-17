@@ -90,23 +90,50 @@ export default function MovementPage() {
               ecosystem: sovereign data, human practice, creator feedback, and a community learning
               how to think in public without giving itself away.
             </p>
-            <a
-              href="/practice"
+            <div
               style={{
-                fontFamily: 'Cinzel, serif',
-                fontSize: '11px',
-                letterSpacing: '0.2em',
-                color: '#0a0a0a',
-                background: gold,
-                padding: '0 32px',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                height: '52px',
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '0.75rem',
+                flexWrap: 'wrap',
               }}
             >
-              TODAY&apos;S QUESTION &rarr;
-            </a>
+              <a
+                href="/practice"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: '#0a0a0a',
+                  background: gold,
+                  padding: '0 28px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                }}
+              >
+                TODAY&apos;S QUESTION &rarr;
+              </a>
+              <a
+                href="/movement/pod"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                YOUR DATA POD
+              </a>
+            </div>
           </div>
         </section>
 
