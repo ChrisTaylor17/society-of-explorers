@@ -4,9 +4,19 @@ import { NextRequest } from 'next/server'
 import { createWalletSessionValue } from '@/lib/auth/walletSession'
 import { privateJson } from '@/lib/http/routeError'
 import { SIWE_NONCE_COOKIE, verifyNonceCookie } from '@/lib/auth/siweNonce'
+import { canonicalizeSignature, shortAddress } from '@/lib/auth/siweSignature'
+import { findOrCreateWalletMember } from '@/lib/auth/walletMember'
 
+// siwe rejects with a SiweResponse ({ success, error: SiweError { type } }), not an Error.
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unknown SIWE error'
+  if (error instanceof Error) return error.message
+  const type = (error as { error?: { type?: unknown } } | null)?.error?.type
+  return typeof type === 'string' ? type : 'Unknown SIWE error'
+}
+
+// Server-side reason only; the client gets a generic message. No signatures, secrets or full addresses.
+function logFailure(reason: string, address: string | null, extra: Record<string, unknown> = {}) {
+  console.error('[siwe] sign-in failed', JSON.stringify({ reason, wallet: shortAddress(address), ...extra }))
 }
 
 export async function POST(req: NextRequest) {
@@ -39,28 +49,43 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-forwarded-host') ||
       req.headers.get('host') ||
       undefined
-    const { success, data } = await siweMessage.verify({ signature, nonce, domain })
-    if (!success) return privateJson({ error: 'Invalid signature' }, { status: 401 })
+    const canonical = canonicalizeSignature(signature)
+    let verified: Awaited<ReturnType<typeof siweMessage.verify>>
+    try {
+      verified = await siweMessage.verify({ signature: canonical.signature, nonce, domain })
+    } catch (verifyError: unknown) {
+      logFailure(`verify_rejected:${errorMessage(verifyError)}`, address, { signatureShape: canonical.shape, signatureLength: signature.length })
+      const rejected = privateJson({ error: 'Invalid signature. Please try again.' }, { status: 401 })
+      rejected.cookies.set(SIWE_NONCE_COOKIE, '', {
+        httpOnly: true,
+        maxAge: 0,
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      })
+      return rejected
+    }
+    const { success, data } = verified
+    if (!success) {
+      logFailure('verify_unsuccessful', address, { signatureShape: canonical.shape })
+      return privateJson({ error: 'Invalid signature' }, { status: 401 })
+    }
 
     const normalizedAddress = (data.address || address).toLowerCase()
     const supabase = createServiceClient()
 
-    const { data: existing } = await supabase.from('members')
-      .select('*').eq('wallet_address', normalizedAddress).single()
-
-    let member = existing
-    if (!member) {
-      const { data: newMember } = await supabase.from('members')
-        .insert({ wallet_address: normalizedAddress, display_name: `${normalizedAddress.slice(0,6)}…${normalizedAddress.slice(-4)}`, exp_tokens: 10 })
-        .select().single()
-      member = newMember
-    }
-
-    if (!member?.id) {
+    const found = await findOrCreateWalletMember(supabase, normalizedAddress)
+    if (!found.member) {
+      logFailure(found.reason, normalizedAddress)
       return privateJson({ error: 'Unable to create wallet session.' }, { status: 500 })
+    }
+    const member = found.member
+    if (found.duplicates > 1) {
+      console.warn('[siwe] duplicate member rows for wallet; using the oldest', JSON.stringify({ wallet: shortAddress(normalizedAddress), rows: found.duplicates }))
     }
     const walletSession = await createWalletSessionValue(member.id)
     if (!walletSession) {
+      logFailure('session_value_null', normalizedAddress)
       return privateJson({ error: 'Unable to create wallet session.' }, { status: 500 })
     }
 
@@ -83,7 +108,7 @@ export async function POST(req: NextRequest) {
     })
     return res
   } catch (error: unknown) {
-    console.error('SIWE error:', errorMessage(error))
+    logFailure(`unexpected:${errorMessage(error)}`, address)
     // Don't echo library/database error text to the client.
     const response = privateJson({ error: 'Sign-in failed. Please request a new nonce and try again.' }, { status: 400 })
     response.cookies.set(SIWE_NONCE_COOKIE, '', {

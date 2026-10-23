@@ -10,6 +10,11 @@ type Row = Record<string, any>;
 export class FakeDb {
   tables: Record<string, Row[]> = {};
   log: { table: string; op: string; filters: any[]; payload?: any }[] = [];
+  // Optional case-insensitive unique columns per table, e.g. { members: ['wallet_address'] } (insert -> 23505).
+  uniqueCi: Record<string, string[]> = {};
+  // When true, .single()/.maybeSingle() behave like PostgREST: .single() with 0 or 2+ rows, and .maybeSingle()
+  // with 2+ rows, return { data: null, error }. Off by default so older tests keep their lax behaviour.
+  strictSingle = false;
   seq = 0;
   constructor(seed: Record<string, Row[]> = {}) {
     for (const [k, v] of Object.entries(seed)) this.tables[k] = v.map(r => ({ ...r }));
@@ -22,7 +27,7 @@ export class FakeDb {
 
 class Q {
   op = 'select'; filters: any[] = []; payload: any; conflict?: string;
-  isSingle = false; lim?: number; ord?: [string, boolean]; wantRows = false;
+  isSingle = false; maybe = false; lim?: number; ord?: [string, boolean]; wantRows = false;
   constructor(public db: FakeDb, public table: string) {}
   countOnly = false;
   select(_c?: string, o?: { count?: string; head?: boolean }) { if (o?.head) this.countOnly = true; if (this.op !== 'select') this.wantRows = true; return this; }
@@ -33,13 +38,13 @@ class Q {
   gte(_c: string, _v: any) { return this; }
   lt(_c: string, _v: any) { return this; }
   lte(_c: string, _v: any) { return this; }
-  ilike(_c: string, _v: any) { return this; }
+  ilike(c: string, v: any) { if (typeof v === 'string' && !/[%_]/.test(v)) this.filters.push(['ilike', c, v]); return this; }
   in(c: string, v: any[]) { this.filters.push(['in', c, v]); return this; }
   not(c: string, op: string, v: any) { this.filters.push(['not', c, op, v]); return this; }
   is(c: string, v: any) { this.filters.push(['isnull', c, v]); return this; }
   contains(c: string, v: any[]) { this.filters.push(['contains', c, v]); return this; }
   range(a: number, b: number) { this.lim = b - a + 1; return this; }
-  maybeSingle() { this.isSingle = true; return this; }
+  maybeSingle() { this.isSingle = true; this.maybe = true; return this; }
   delete() { this.op = 'delete'; return this; }
   eq(c: string, v: any) { this.filters.push(['eq', c, v]); return this; }
   or(expr: string) { this.filters.push(['or', expr]); return this; }
@@ -52,6 +57,7 @@ class Q {
   match(r: Row) {
     return this.filters.every(f => {
       if (f[0] === 'eq') return r[f[1]] === f[2];
+      if (f[0] === 'ilike') return typeof r[f[1]] === 'string' && r[f[1]].toLowerCase() === String(f[2]).toLowerCase();
       if (f[0] === 'or') return String(f[1]).split(',').some(cl => {
         const [c, op, ...rest] = cl.split('.'); const v = rest.join('.');
         return op === 'eq' ? r[c] === v : op === 'is' ? r[c] == null : false;
@@ -70,6 +76,12 @@ class Q {
     if (this.op === 'insert') {
       const items = (Array.isArray(this.payload) ? this.payload : [this.payload])
         .map((p: Row) => ({ id: `row-${++this.db.seq}`, created_at: new Date(1_700_000_000_000 + this.db.seq * 1000).toISOString(), ...p }));
+      for (const col of this.db.uniqueCi[this.table] || []) {
+        for (const it of items) {
+          const clash = rows.some(r => typeof r[col] === 'string' && typeof it[col] === 'string' && r[col].toLowerCase() === it[col].toLowerCase());
+          if (clash) return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
+        }
+      }
       rows.push(...items);
       return { data: this.isSingle ? items[0] : items, error: null };
     }
@@ -84,6 +96,9 @@ class Q {
     if (this.ord) { const [c, asc] = this.ord; out = [...out].sort((a, b) => (a[c] < b[c] ? -1 : a[c] > b[c] ? 1 : 0) * (asc ? 1 : -1)); }
     if (this.countOnly) return { data: null, count: out.length, error: null };
     if (this.lim != null) out = out.slice(0, this.lim);
+    if (this.isSingle && this.db.strictSingle) {
+      if (out.length > 1 || (!this.maybe && out.length === 0)) return { data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } };
+    }
     return { data: this.isSingle ? (out[0] ?? null) : out, error: null };
   }
   then(res: any, rej: any) { return Promise.resolve().then(() => this.exec()).then(res, rej); }

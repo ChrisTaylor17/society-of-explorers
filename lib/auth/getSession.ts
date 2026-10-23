@@ -13,8 +13,9 @@ import {
 
 const AUTH_LOOKUP_TIMEOUT_MS = 5_000
 const WALLET_STORAGE_KEY = 'soe_wallet_id'
+// Any well-formed hex UUID, matching lib/auth/walletSession.ts (member ids are not guaranteed to be v1-5).
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 async function withAuthLookupTimeout<T>(operation: Promise<T>, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined

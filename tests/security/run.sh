@@ -15,7 +15,8 @@ for f in \
   tests/security/s6-verdict-endpoint.test.ts \
   tests/security/s7-no-hardcoded-ref.test.ts \
   tests/security/s8-salon-message-load.test.ts \
-  tests/security/s9-salon-message-post.test.ts; do
+  tests/security/s9-salon-message-post.test.ts \
+  tests/security/s10-siwe-wallet-session.test.ts; do
   bun test --no-install "$f" || rc=1
 done
 exit $rc

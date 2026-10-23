@@ -1,5 +1,10 @@
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// Any well-formed hex UUID (Postgres uuid columns accept all versions/variants, e.g. seeded or v7 ids). Before, only
+// versions 1-5 with an RFC variant were accepted, so a member with any other id could never get a session.
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isWellFormedUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/;
 const SESSION_VERSION = 'v2';
 const LEGACY_SESSION_VERSION = 'v1';
