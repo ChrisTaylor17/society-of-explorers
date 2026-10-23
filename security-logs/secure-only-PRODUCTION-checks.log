@@ -1,0 +1,11 @@
+# Production checks, society-of-explorers.vercel.app -> dpl_E3hbXc8KdGeQ7Sux7hHoQSfPNKpM, 2026-10-23 10:44 EDT (no writes)
+home GET /                               200
+login GET /login                         200
+salons GET /salons                       200
+salon-message POST anon                  401
+salon-message POST raw cookie            401
+salon load general no session            401
+salon load uuid no session               401
+salon load private no session            400
+council/verdict anon                     401
+nonce GET                                200 (signed cookie, 3 segments)

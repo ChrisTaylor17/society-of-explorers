@@ -1,5 +1,22 @@
 # RELEASE_PLAN — SoE app security rounds 1–3
 
+## RELEASED — Fri Oct 23, 2026, 10:44 AM ET (security-only branch)
+
+- Branch `release-r1-3-secure-only-2026-10-23`: `release-r1-3-on-prod-2026-10-23`, with `ab1e7c5` reverted (`1ad4948`).
+  The broken UUID check is left exactly as it is in production, so twiddle, live, rooms, salons, book-salons, merch,
+  projects invite/[id] and the **Stripe pledge checkout stay disabled**. No security commit depended on `ab1e7c5`:
+  the salon-message routes and `lib/salons/access.ts` have their own correct regex. Tests accept a 400 refusal on
+  the dead routes (`c3ae7cc`).
+- Gates: suite 109/0; tsc 0; next build 0; live-smoke 12/12 on localhost, on preview and on the production
+  candidate.
+- Preview: `dpl_JCqyeoyCcM4swouVM9gau8eBkUBn` (target preview).
+- Production: `dpl_E3hbXc8KdGeQ7Sux7hHoQSfPNKpM`. It was deployed with `--prod --skip-domain`, smoke-tested, then
+  promoted. The previous production deployment was `dpl_8PSS1iRp7s7tvNx8mRnwQ38Lfv2d`.
+- Rollback: `vercel rollback dpl_8PSS1iRp7s7tvNx8mRnwQ38Lfv2d --scope chris-projects-03dec906 --yes`
+- No secret was added. No env var was changed: the production-only env names were NOT copied to preview. The
+  NEXT_PUBLIC_* config values need a value read that was not approved, and the third-party secrets (Stripe live
+  key, Resend, Printful and others) were deliberately not copied into preview.
+
 ## STATUS — updated Fri Oct 23, 2026, ~10:30 AM ET (Step 0 done on the box; nothing deployed or pushed)
 
 **Release branch:** `release-r1-3-on-prod-2026-10-23`, in the box repo `/workspace/soe-security-fixes-2026-10-23`
