@@ -73,7 +73,10 @@
     "pod:wallet-seal:smoke": "node scripts/pod-wallet-seal-smoke.mjs",
     "sovereignty:passport:smoke": "node scripts/sovereignty-passport-smoke.mjs",
     "world:permissions:smoke": "node scripts/world-permissions-smoke.mjs",
-    "twiddle:cron-auth:smoke": "node scripts/twiddle-cron-auth-smoke.mjs"
+    "twiddle:cron-auth:smoke": "node scripts/twiddle-cron-auth-smoke.mjs",
+    "test:security": "bash tests/security/run.sh",
+    "test:growth": "bash tests/growth/run.sh",
+    "test": "bash tests/security/run.sh && bash tests/growth/run.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
