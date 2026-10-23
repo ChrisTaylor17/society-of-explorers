@@ -167,7 +167,7 @@ async function updateSummary(
   existingSummary: string
 ): Promise<void> {
   try {
-    const transcript = await getRecentTranscript(salonId, thinkerId, thinkerName);
+    const transcript = await getRecentTranscript(memberId, salonId, thinkerId, thinkerName);
     if (!transcript) return;
 
     const anthropic = createAnthropicClient();
@@ -218,7 +218,7 @@ async function extractAndStoreFacts(
   existing: ThinkerMemoryRecord | null | undefined
 ): Promise<void> {
   try {
-    const transcript = await getRecentTranscript(salonId, thinkerId, thinkerName);
+    const transcript = await getRecentTranscript(memberId, salonId, thinkerId, thinkerName);
     if (!transcript) return;
 
     const existingFacts = existing?.life_facts || {};
@@ -289,9 +289,12 @@ Only extract what's clearly stated. Don't infer or assume. Return ONLY the JSON 
 }
 
 /**
- * Fetch recent transcript for a salon.
+ * Fetch the recent transcript used to update ONE member's private memory.
+ * Security fix S2: only the member's own private salon (`private-<memberId>`) is used. Shared salons mix
+ * several members' words, so they yield no transcript and no summary/fact update happens.
  */
-async function getRecentTranscript(salonId: string, thinkerId: string, thinkerName: string): Promise<string | null> {
+async function getRecentTranscript(memberId: string, salonId: string, thinkerId: string, thinkerName: string): Promise<string | null> {
+  if (!memberId || salonId !== `private-${memberId}`) return null;
   const supabaseAdmin = getSupabaseAdmin();
   const { data: recentMessages } = await supabaseAdmin
     .from('salon_messages')
