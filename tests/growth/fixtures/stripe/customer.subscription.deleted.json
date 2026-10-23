@@ -1,0 +1,42 @@
+{
+  "id": "evt_test_fixture_sub_deleted",
+  "object": "event",
+  "api_version": "2026-03-25.dahlia",
+  "created": 1792807200,
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": { "id": null, "idempotency_key": null },
+  "type": "customer.subscription.deleted",
+  "data": {
+    "object": {
+      "id": "sub_test_fixture_ada",
+      "object": "subscription",
+      "canceled_at": 1792807200,
+      "customer": "cus_test_fixture_ada",
+      "ended_at": 1792807200,
+      "livemode": false,
+      "metadata": {},
+      "status": "canceled",
+      "items": {
+        "object": "list",
+        "data": [
+          {
+            "id": "si_test_fixture_ada",
+            "object": "subscription_item",
+            "price": {
+              "id": "price_test_fixture_seeker",
+              "object": "price",
+              "currency": "usd",
+              "livemode": false,
+              "recurring": { "interval": "month", "interval_count": 1, "usage_type": "licensed" },
+              "type": "recurring",
+              "unit_amount": 1900
+            },
+            "quantity": 1
+          }
+        ],
+        "has_more": false
+      }
+    }
+  }
+}

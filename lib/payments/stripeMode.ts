@@ -53,14 +53,14 @@ export function resolveStripeSecretKey(env: Env = process.env): StripeKeyResolut
 export const MEMBERSHIP_TIER_IDS = ['seeker', 'scholar', 'philosopher', 'oracle'] as const;
 export type MembershipTierId = (typeof MEMBERSHIP_TIER_IDS)[number];
 
-const LIVE_PRICE_ENV: Record<MembershipTierId, string> = {
+export const LIVE_PRICE_ENV: Record<MembershipTierId, string> = {
   seeker: 'STRIPE_PRICE_SEEKER',
   scholar: 'STRIPE_PRICE_SCHOLAR',
   philosopher: 'STRIPE_PRICE_PHILOSOPHER',
   oracle: 'STRIPE_PRICE_ORACLE',
 };
 
-const TEST_PRICE_ENV: Record<MembershipTierId, string> = {
+export const TEST_PRICE_ENV: Record<MembershipTierId, string> = {
   seeker: 'STRIPE_TEST_PRICE_SEEKER',
   scholar: 'STRIPE_TEST_PRICE_SCHOLAR',
   philosopher: 'STRIPE_TEST_PRICE_PHILOSOPHER',

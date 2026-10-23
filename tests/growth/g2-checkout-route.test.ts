@@ -95,7 +95,7 @@ test('G2g preview test checkout uses the test key and test price', async () => {
   expect(created[0].customer_email).toBe('ada@example.test');
 });
 
-test('G2h production session shape is unchanged (oracle is a one-time payment)', async () => {
+test('G2h production session shape: unchanged apart from the added member reference (oracle is one-time)', async () => {
   process.env.VERCEL_ENV = 'production';
   process.env.STRIPE_SECRET_KEY = 'sk_live_FAKE';
   process.env.STRIPE_PRICE_ORACLE = 'price_live_oracle';
@@ -110,8 +110,23 @@ test('G2h production session shape is unchanged (oracle is a one-time payment)',
     success_url: 'https://app.example.test/salon?welcome=1',
     cancel_url: 'https://app.example.test/join',
     customer_email: 'ada@example.test',
-    metadata: { type: 'membership', tier: 'oracle', tier_id: 'oracle', tier_label: 'ORACLE', source: 'join_page' },
+    client_reference_id: 'm1',
+    metadata: { type: 'membership', tier: 'oracle', tier_id: 'oracle', tier_label: 'ORACLE', source: 'join_page', member_id: 'm1' },
   });
+});
+
+test('G2j subscriptions carry the member reference on the subscription too', async () => {
+  process.env.VERCEL_ENV = 'production';
+  process.env.STRIPE_SECRET_KEY = 'sk_live_FAKE';
+  process.env.STRIPE_PRICE_SEEKER = 'price_live_seeker';
+  process.env.NEXT_PUBLIC_SITE_URL = 'https://app.example.test';
+  nextUrl = 'https://checkout.stripe.com/c/pay/cs_live_fake2';
+  member = { memberId: '33333333-3333-4333-8333-333333333333', member: { id: '33333333-3333-4333-8333-333333333333', email: 'ada@example.test' } };
+  const r = await post({ tier: 'seeker' }, 'https://app.example.test/api/checkout');
+  expect(r.status).toBe(200);
+  expect(created[0].mode).toBe('subscription');
+  expect(created[0].client_reference_id).toBe('33333333-3333-4333-8333-333333333333');
+  expect(created[0].subscription_data).toEqual({ metadata: { type: 'membership', tier: 'seeker', member_id: '33333333-3333-4333-8333-333333333333' } });
 });
 
 test('G2i a non-Stripe redirect from Stripe is refused', async () => {

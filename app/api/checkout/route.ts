@@ -85,19 +85,24 @@ export async function POST(req: NextRequest) {
     const blocked = blockLocalLiveStripeCheckout(req, stripeKey.key, baseUrl, 'Membership checkout');
     if (blocked) return blocked;
     const isOneTime = tier === 'oracle';
+    const memberId = authenticated.memberId || authenticated.member.id;
     const session = await getStripe(stripeKey.key).checkout.sessions.create({
       mode: isOneTime ? 'payment' : 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${baseUrl}/salon?welcome=1`,
       cancel_url: `${baseUrl}/join`,
       customer_email: email,
+      // Lets the webhook find the member directly instead of searching auth users by email.
+      client_reference_id: memberId,
       metadata: {
         type: 'membership',
         tier,
         tier_id: tier,
         tier_label: String(tier).toUpperCase(),
         source: 'join_page',
+        member_id: memberId,
       },
+      ...(isOneTime ? {} : { subscription_data: { metadata: { type: 'membership', tier, member_id: memberId } } }),
     });
 
     if (!isStripeCheckoutUrl(session.url)) {

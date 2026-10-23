@@ -10,6 +10,9 @@ import { recordPaidPledge } from '@/lib/capital/pledgeLedger';
 import { capitalWebhookEmailSkipReason } from '@/lib/capital/webhookSafety';
 import { getResend } from '@/lib/email/resend';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { findAuthUserIdByEmail, findMembersForPayment, type MemberTarget } from '@/lib/payments/memberLookup';
+import { resolveMembershipTier, shouldPreserveExistingTier, type PriceFacts } from '@/lib/payments/membershipTier';
+import { markEventProcessed, wasEventProcessed } from '@/lib/payments/webhookIdempotency';
 
 export const runtime = 'nodejs';
 
@@ -20,67 +23,77 @@ function getStripe(stripeKey: string): Stripe {
   return stripe;
 }
 
-// Map Stripe price IDs to membership tiers.
-function getTierMap(): Record<string, string> {
-  return Object.fromEntries(
-    [
-      [process.env.STRIPE_PRICE_SEEKER, 'seeker'],
-      [process.env.STRIPE_PRICE_SCHOLAR, 'scholar'],
-      [process.env.STRIPE_PRICE_PHILOSOPHER, 'philosopher'],
-      [process.env.STRIPE_PRICE_ORACLE, 'oracle'],
-    ].filter((entry): entry is [string, string] => Boolean(entry[0])),
-  );
+type MembershipOutcome = 'updated' | 'preserved_lifetime' | 'no_member';
+
+// Membership entitlements are keyed by price id (see lib/payments/membershipTier.ts).
+// Unknown, missing or $0 prices never grant a paid tier: they are logged and skipped.
+function membershipTierOrNull(facts: PriceFacts, context: string): string | null {
+  const resolved = resolveMembershipTier(facts);
+  if (resolved.ok) {
+    if (resolved.via === 'exact_amount') console.warn(`[webhook] ${context}: price id not configured, matched published price for ${resolved.tier}`);
+    return resolved.tier;
+  }
+  console.warn(`[webhook] ${context}: skipped, ${resolved.reason} does not map to a membership tier`);
+  return null;
 }
 
-// Fallback: map amount to tier if price ID not in TIER_MAP
-function tierFromAmount(amountCents: number | null, interval: string | null): string {
-  if (!amountCents) return 'seeker';
-  const dollars = amountCents / 100;
-  if (!interval) return dollars >= 499 ? 'oracle' : 'seeker';
-  if (dollars >= 99) return 'philosopher';
-  if (dollars >= 49) return 'scholar';
-  return 'seeker';
-}
-
-async function updateMemberTier(email: string, tier: string, stripeCustomerId?: string) {
+async function updateMemberTier(target: MemberTarget, tier: string): Promise<MembershipOutcome> {
   const supabaseAdmin = getSupabaseAdmin();
-  // Try by email first (matches Supabase auth email)
+  const match = await findMembersForPayment(supabaseAdmin, target);
+  if (!match) return 'no_member';
+
+  const writable = match.rows.filter((row) => !shouldPreserveExistingTier(row.tier, tier));
+  if (!writable.length) {
+    console.log(`[webhook] Lifetime membership kept; ${tier} not applied (matched by ${match.via})`);
+    return 'preserved_lifetime';
+  }
+
   const updateData: Record<string, string> = { tier };
-  if (stripeCustomerId) updateData.stripe_customer_id = stripeCustomerId;
+  if (target.customerId) updateData.stripe_customer_id = target.customerId;
+  const { data: updatedMembers, error } = await supabaseAdmin
+    .from('members')
+    .update(updateData)
+    .in('id', writable.map((row) => row.id))
+    .select('id');
+  if (error) throw new Error('Membership entitlement write failed');
+  if (!updatedMembers?.length) return 'no_member';
+  console.log(`[webhook] Membership entitlement updated: ${tier} (matched by ${match.via})`);
+  return 'updated';
+}
 
-  // Find member by Supabase auth email
-  const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-  if (authError) throw new Error('Membership auth lookup failed');
-  const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+function customerIdOf(value: string | { id: string } | null | undefined): string | undefined {
+  if (!value) return undefined;
+  return typeof value === 'string' ? value : value.id;
+}
 
-  if (authUser) {
-    const { data: updatedMembers, error } = await supabaseAdmin
-      .from('members')
-      .update(updateData)
-      .eq('supabase_auth_id', authUser.id)
-      .select('id');
-    if (error) throw new Error('Membership entitlement write failed');
-    if (updatedMembers?.length) {
-      console.log(`[webhook] Membership entitlement updated: ${tier}`);
-      return;
-    }
+async function customerEmail(stripe: Stripe, customerId: string): Promise<string | null> {
+  const customer = await stripe.customers.retrieve(customerId);
+  if ((customer as Stripe.DeletedCustomer).deleted) return null;
+  return (customer as Stripe.Customer).email ?? null;
+}
+
+// Subscription states that still entitle the member to the paid tier.
+const ENTITLED_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing', 'past_due']);
+// States after which the paid tier ends.
+const ENDED_SUBSCRIPTION_STATUSES = new Set(['canceled', 'incomplete_expired']);
+
+function subscriptionPriceFacts(subscription: Stripe.Subscription): PriceFacts {
+  const price = subscription.items?.data?.[0]?.price;
+  return {
+    priceId: price?.id ?? null,
+    amountCents: price?.unit_amount ?? null,
+    interval: price?.recurring?.interval ?? null,
+  };
+}
+
+async function activeMembershipTierForCustomer(stripe: Stripe, customerId: string, excludeSubscriptionId: string): Promise<string | null> {
+  const list = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 10 });
+  for (const other of list.data) {
+    if (other.id === excludeSubscriptionId) continue;
+    const resolved = resolveMembershipTier(subscriptionPriceFacts(other));
+    if (resolved.ok) return resolved.tier;
   }
-
-  // Fallback: try by stripe_customer_id if we have it
-  if (stripeCustomerId) {
-    const { data: updatedMembers, error } = await supabaseAdmin
-      .from('members')
-      .update(updateData)
-      .eq('stripe_customer_id', stripeCustomerId)
-      .select('id');
-    if (error) throw new Error('Membership entitlement write failed');
-    if (updatedMembers?.length) {
-      console.log(`[webhook] Membership entitlement updated by customer: ${tier}`);
-      return;
-    }
-  }
-
-  throw new Error('Paid membership has no matching member');
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -106,8 +119,19 @@ export async function POST(req: NextRequest) {
 
   console.log('Stripe webhook event:', event.type);
 
+  let outcome = 'processed';
+  let idempotencyAvailable = false;
   try {
+    // Idempotency on Stripe event id: a redelivered, already-processed event is acknowledged without side effects.
+    const seen = await wasEventProcessed(getSupabaseAdmin(), event.id);
+    idempotencyAvailable = seen.available;
+    if (seen.processed) {
+      console.log(`[webhook] Duplicate Stripe event ignored: ${event.type}`);
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
     switch (event.type) {
+      case 'checkout.session.async_payment_succeeded':
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const email = session.customer_details?.email || session.customer_email;
@@ -140,10 +164,14 @@ export async function POST(req: NextRequest) {
 
           // Award bonus EXP if member exists
           if (email) {
-            const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-            const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
-            if (authUser) {
-              const { data: member } = await supabaseAdmin.from('members').select('id, exp_tokens').eq('supabase_auth_id', authUser.id).single();
+            let authUserId: string | null = null;
+            try {
+              authUserId = await findAuthUserIdByEmail(supabaseAdmin, email);
+            } catch {
+              console.warn('[webhook] Pledge EXP skipped: member lookup failed');
+            }
+            if (authUserId) {
+              const { data: member } = await supabaseAdmin.from('members').select('id, exp_tokens').eq('supabase_auth_id', authUserId).single();
               if (member) {
                 const tierDefinition = getTierByLabelOrAmount(NINETY_TWO_B_TIERS, pledgeTier, pledgeAmount);
                 const expBonus = tierDefinition?.exp || (pledgeAmount >= 500 ? 1000 : pledgeAmount >= 100 ? 200 : 50);
@@ -217,10 +245,14 @@ export async function POST(req: NextRequest) {
 
           // Award EXP
           if (email) {
-            const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-            const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
-            if (authUser) {
-              const { data: member } = await supabaseAdmin.from('members').select('id, exp_tokens').eq('supabase_auth_id', authUser.id).single();
+            let authUserId: string | null = null;
+            try {
+              authUserId = await findAuthUserIdByEmail(supabaseAdmin, email);
+            } catch {
+              console.warn('[webhook] Pledge EXP skipped: member lookup failed');
+            }
+            if (authUserId) {
+              const { data: member } = await supabaseAdmin.from('members').select('id, exp_tokens').eq('supabase_auth_id', authUserId).single();
               if (member) {
                 const tierDefinition = getTierByLabelOrAmount(PROJECT_PLEDGE_TIERS, pledgeTier, pledgeAmount);
                 const expBonus = tierDefinition?.exp || (pledgeAmount >= 500 ? 1000 : pledgeAmount >= 100 ? 200 : 50);
@@ -256,100 +288,119 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        if (!email) {
+        if (session.payment_status === 'unpaid') {
+          console.log('[webhook] Membership checkout not paid yet; waiting for async_payment_succeeded');
+          outcome = 'awaiting_payment';
+          break;
+        }
+
+        const memberId = session.metadata?.member_id || session.client_reference_id || null;
+        if (!email && !memberId && !customerId) {
           throw new Error('Paid membership checkout is missing an email');
         }
 
-        // Determine tier from line items
-        let tier = 'seeker';
+        // Determine tier from the purchased price. A Stripe API failure is retried
+        // (500), never guessed from the amount.
         const stripe = getStripe(stripeKey);
-        const tierMap = getTierMap();
-
-        try {
-          const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-          const item = lineItems.data[0];
-          const priceId = item?.price?.id;
-
-          if (priceId && tierMap[priceId]) {
-            tier = tierMap[priceId];
-          } else {
-            // Fallback: use amount
-            const amount = item?.amount_total || session.amount_total;
-            const interval = item?.price?.recurring?.interval || null;
-            tier = tierFromAmount(amount, interval);
-          }
-        } catch {
-          console.warn('Could not fetch line items, using amount fallback');
-          tier = tierFromAmount(session.amount_total, null);
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+        const item = lineItems.data[0];
+        const tier = membershipTierOrNull(
+          {
+            priceId: item?.price?.id ?? null,
+            amountCents: item?.price?.unit_amount ?? item?.amount_total ?? null,
+            interval: item?.price?.recurring?.interval ?? null,
+          },
+          'Membership checkout',
+        );
+        if (!tier) {
+          outcome = 'skipped_unknown_price';
+          break;
         }
 
         console.log(`[webhook] Membership checkout completed: ${tier}`);
-        await updateMemberTier(email, tier, customerId || undefined);
+        const result = await updateMemberTier({ memberId, customerId, email }, tier);
+        if (result === 'no_member') throw new Error('Paid membership has no matching member');
+        outcome = result;
         break;
       }
 
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
-        const priceId = subscription.items.data[0]?.price?.id;
-        const amount = subscription.items.data[0]?.price?.unit_amount;
-        const interval = subscription.items.data[0]?.price?.recurring?.interval || null;
-
-        let tier = 'seeker';
-        const tierMap = getTierMap();
-        if (priceId && tierMap[priceId]) {
-          tier = tierMap[priceId];
-        } else {
-          tier = tierFromAmount(amount || null, interval);
+        const stripe = getStripe(stripeKey);
+        const eventSubscription = event.data.object as Stripe.Subscription;
+        // Events can arrive out of order; act on the subscription as it is now.
+        const subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
+        const customerId = customerIdOf(subscription.customer);
+        if (!customerId) {
+          console.warn('[webhook] Subscription update without a customer skipped');
+          outcome = 'skipped_no_customer';
+          break;
         }
 
-        // Look up email from Stripe customer
-        if (customerId) {
-          const stripe = getStripe(stripeKey);
-          const customer = await stripe.customers.retrieve(customerId);
-          const email = (customer as Stripe.Customer).email;
-          if (email) {
-            console.log(`Subscription updated: ${email} → tier: ${tier}`);
-            await updateMemberTier(email, tier, customerId);
-          }
+        if (ENDED_SUBSCRIPTION_STATUSES.has(subscription.status)) {
+          console.log(`[webhook] Subscription update reports ${subscription.status}; handled as cancellation`);
+          const replacement = await activeMembershipTierForCustomer(stripe, customerId, subscription.id);
+          const email = await customerEmail(stripe, customerId);
+          const result = await updateMemberTier(
+            { memberId: subscription.metadata?.member_id, customerId, email },
+            replacement || 'free',
+          );
+          if (result === 'no_member') throw new Error('Cancelled membership has no matching member');
+          outcome = result;
+          break;
         }
+
+        if (!ENTITLED_SUBSCRIPTION_STATUSES.has(subscription.status)) {
+          console.log(`[webhook] Subscription status ${subscription.status} leaves membership unchanged`);
+          outcome = 'skipped_status';
+          break;
+        }
+
+        const tier = membershipTierOrNull(subscriptionPriceFacts(subscription), 'Subscription update');
+        if (!tier) {
+          outcome = 'skipped_unknown_price';
+          break;
+        }
+
+        const email = await customerEmail(stripe, customerId);
+        const result = await updateMemberTier({ memberId: subscription.metadata?.member_id, customerId, email }, tier);
+        if (result === 'no_member') throw new Error('Paid membership has no matching member');
+        outcome = result;
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
-        const supabaseAdmin = getSupabaseAdmin();
-
-        if (customerId) {
-          // Set tier back to free
-          const { data: updatedMembers, error } = await supabaseAdmin
-            .from('members')
-            .update({ tier: 'free' })
-            .eq('stripe_customer_id', customerId)
-            .select('id');
-
-          if (error) throw new Error('Membership cancellation write failed');
-          if (updatedMembers?.length) {
-            console.log('[webhook] Membership subscription returned to free');
-          } else {
-            // Fallback: look up email when the customer id was not attached locally.
-            const stripe = getStripe(stripeKey);
-            const customer = await stripe.customers.retrieve(customerId);
-            const email = (customer as Stripe.Customer).email;
-            if (email) {
-              await updateMemberTier(email, 'free', customerId);
-            } else {
-              throw new Error('Cancelled membership has no matching member');
-            }
-          }
+        const customerId = customerIdOf(subscription.customer);
+        if (!customerId) {
+          outcome = 'skipped_no_customer';
+          break;
         }
+
+        // Another active membership subscription on the same customer keeps its tier.
+        const stripe = getStripe(stripeKey);
+        const replacement = await activeMembershipTierForCustomer(stripe, customerId, subscription.id);
+        const nextTier = replacement || 'free';
+
+        let result = await updateMemberTier({ memberId: subscription.metadata?.member_id, customerId }, nextTier);
+        if (result === 'no_member') {
+          // Fallback: look up email when the customer id was not attached locally.
+          const email = await customerEmail(stripe, customerId);
+          if (email) result = await updateMemberTier({ customerId, email }, nextTier);
+        }
+        if (result === 'no_member') {
+          throw new Error('Cancelled membership has no matching member');
+        }
+        console.log(`[webhook] Membership subscription ended; tier now ${nextTier === 'free' ? 'free' : nextTier}`);
+        outcome = result;
         break;
       }
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
+        outcome = 'ignored';
     }
+
+    if (idempotencyAvailable) await markEventProcessed(getSupabaseAdmin(), event, outcome);
   } catch {
     console.error('[webhook] Stripe event processing failed');
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });

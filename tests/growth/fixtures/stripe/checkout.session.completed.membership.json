@@ -1,0 +1,36 @@
+{
+  "id": "evt_test_fixture_checkout_seeker",
+  "object": "event",
+  "api_version": "2026-03-25.dahlia",
+  "created": 1792800000,
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": { "id": null, "idempotency_key": null },
+  "type": "checkout.session.completed",
+  "data": {
+    "object": {
+      "id": "cs_test_fixture_seeker",
+      "object": "checkout.session",
+      "amount_subtotal": 1900,
+      "amount_total": 1900,
+      "client_reference_id": "11111111-1111-4111-8111-111111111111",
+      "currency": "usd",
+      "customer": "cus_test_fixture_ada",
+      "customer_details": { "email": "ada@example.test", "name": "Ada Fixture" },
+      "customer_email": "ada@example.test",
+      "livemode": false,
+      "metadata": {
+        "type": "membership",
+        "tier": "seeker",
+        "tier_id": "seeker",
+        "tier_label": "SEEKER",
+        "source": "join_page",
+        "member_id": "11111111-1111-4111-8111-111111111111"
+      },
+      "mode": "subscription",
+      "payment_status": "paid",
+      "status": "complete",
+      "subscription": "sub_test_fixture_ada"
+    }
+  }
+}

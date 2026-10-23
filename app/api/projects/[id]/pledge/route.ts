@@ -12,10 +12,12 @@ import { recordPendingPledge } from '@/lib/capital/pledgeLedger';
 import { privateJson } from '@/lib/http/routeError';
 import { PROJECT_ID_PATTERN } from '@/lib/projects/publicProject';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { projectPledgeStripe } from '@/lib/capital/projectPledgeStripe';
 
 export const runtime = 'nodejs';
 
 let stripe: Stripe | null = null;
+let stripeKeyInUse = '';
 const UTM_KEYS = new Set(['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -49,15 +51,11 @@ function sanitizeUtm(value: unknown) {
   return entries.length > 0 ? Object.fromEntries(entries) : null;
 }
 
-function getStripeKey() {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error('STRIPE_SECRET_KEY not configured');
-  return key;
-}
-
-function getStripe() {
-  const key = getStripeKey();
-  if (!stripe) stripe = new Stripe(key, { apiVersion: '2026-03-25.dahlia', maxNetworkRetries: 1 });
+function getStripe(key: string) {
+  if (!stripe || stripeKeyInUse !== key) {
+    stripe = new Stripe(key, { apiVersion: '2026-03-25.dahlia', maxNetworkRetries: 1 });
+    stripeKeyInUse = key;
+  }
   return stripe;
 }
 
@@ -79,6 +77,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return privateJson({ error: 'Invalid pledge amount' }, { status: 400 });
   }
 
+  const stripeConfig = projectPledgeStripe();
+  if (!stripeConfig.ok) {
+    console.warn(`[projects/pledge] checkout unavailable: ${stripeConfig.code}`);
+    return privateJson({ error: stripeConfig.error, code: stripeConfig.code }, { status: stripeConfig.status });
+  }
+
   const supabase = getSupabaseAdmin();
   const { data: project } = await supabase.from('projects').select('title').eq('id', projectId).single();
   const projectTitle = project?.title || 'Society of Explorers Project';
@@ -87,10 +91,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const tierId = tierDefinition?.id || String(tierLabel).toLowerCase().replace(/[^a-z0-9]+/g, '_');
   const amountCents = dollarsToCents(amountNumber);
   const baseUrl = getCheckoutBaseUrl(req);
-  const blocked = blockLocalLiveStripeCheckout(req, getStripeKey(), baseUrl, 'Project pledge checkout');
+  const blocked = blockLocalLiveStripeCheckout(req, stripeConfig.key, baseUrl, 'Project pledge checkout');
   if (blocked) return blocked;
 
-  const session = await getStripe().checkout.sessions.create({
+  const session = await getStripe(stripeConfig.key).checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'payment',
     customer_email: email,

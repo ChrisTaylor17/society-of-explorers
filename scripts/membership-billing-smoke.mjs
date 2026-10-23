@@ -18,6 +18,8 @@ const files = {
   checkout: read('app/api/checkout/route.ts'),
   authenticatedMember: read('lib/getAuthenticatedMember.ts'),
   webhook: read('app/api/stripe/webhook/route.ts'),
+  membershipTier: read('lib/payments/membershipTier.ts'),
+  memberLookup: read('lib/payments/memberLookup.ts'),
   package: read('package.json'),
   operator: read('scripts/operator-smoke.mjs'),
   handoff: read('docs/soe-current-thread-handoff.md'),
@@ -112,11 +114,17 @@ const checks = [
       files.webhook.includes('Ignored non-membership checkout session type'),
   },
   {
-    name: 'fallback pricing maps monthly 49 to Scholar, monthly 99 to Philosopher, and one-time 499 to Oracle',
+    name: 'tiers map by Stripe price id first; the amount fallback accepts only the exact published prices (never $0, missing, or unknown) and unknowns are logged and skipped',
     ok:
-      files.webhook.includes("if (!interval) return dollars >= 499 ? 'oracle' : 'seeker';") &&
-      files.webhook.includes("if (dollars >= 99) return 'philosopher';") &&
-      files.webhook.includes("if (dollars >= 49) return 'scholar';"),
+      files.membershipTier.includes('export function tierForPriceId(') &&
+      files.membershipTier.includes("{ tier: 'seeker', amountCents: 1900, interval: 'month' }") &&
+      files.membershipTier.includes("{ tier: 'scholar', amountCents: 4900, interval: 'month' }") &&
+      files.membershipTier.includes("{ tier: 'philosopher', amountCents: 9900, interval: 'month' }") &&
+      files.membershipTier.includes("{ tier: 'oracle', amountCents: 49900, interval: null }") &&
+      files.membershipTier.includes("reason: 'zero_amount'") &&
+      !files.webhook.includes('dollars >=') &&
+      files.webhook.includes('does not map to a membership tier') &&
+      files.memberLookup.includes('page += 1'),
   },
   {
     name: 'paid entitlement and cancellation writes require persisted member rows',
