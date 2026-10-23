@@ -2,8 +2,8 @@
 
 ## STATUS — updated Fri Oct 23, 2026, ~10:30 AM ET (Step 0 done on the box; nothing deployed or pushed)
 
-**Release branch:** `release-r1-3-on-prod-2026-10-23`, in the box repo `/workspace/soe-prod-snapshot-2026-10-23`
-(worktree `wt-rel`). It exists **only on the box** and has not been pushed anywhere. No Vercel env var, deployment,
+**Release branch:** `release-r1-3-on-prod-2026-10-23`, in the box repo `/workspace/soe-security-fixes-2026-10-23`
+(worktree `/workspace/soe-prod-snapshot-2026-10-23/wt-rel`; the repo has no remote). It exists **only on the box** and has not been pushed anywhere. No Vercel env var, deployment,
 alias or domain was touched, and the Mac working tree was only read.
 
 - `c48cf3d` / `3c45c22`: snapshot of production's deployed source (dpl_8PSS1…), taken from a tar of the Mac tree.
