@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { memberCanUseSharedSalon } from '@/lib/salons/access';
 
 const GENERAL_SALON_ID = 'general';
 const MAX_SALON_ID_LENGTH = 64;
@@ -49,8 +51,15 @@ export async function GET(req: NextRequest) {
   const salonId = normalizeSalonId(req.nextUrl.searchParams.get('salonId'));
   if (!salonId) return privateJson({ messages: [], error: 'Invalid salonId' }, { status: 400 });
 
+  // Security fix S8: reading requires a verified session and membership of the salon.
+  const auth = await getAuthenticatedMember(req);
+  if (!auth) return privateJson({ messages: [], error: 'Unauthorized' }, { status: 401 });
+
   try {
     const supabase = getSupabaseAdmin();
+    if (!(await memberCanUseSharedSalon(supabase, auth.memberId, salonId))) {
+      return privateJson({ messages: [], error: 'Forbidden' }, { status: 403 });
+    }
     let query = supabase
       .from('salon_messages')
       .select(SALON_MESSAGE_SELECT)

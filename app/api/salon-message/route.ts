@@ -1,16 +1,16 @@
 import type { NextRequest } from 'next/server';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { memberCanUseSharedSalon } from '@/lib/salons/access';
 
 const GENERAL_SALON_ID = 'general';
 const MAX_SALON_ID_LENGTH = 64;
 const MAX_SENDER_NAME_LENGTH = 80;
-const MAX_THINKER_ID_LENGTH = 80;
 const MAX_CONTENT_LENGTH = 4000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type SalonMessageBody = Record<string, unknown>;
-type SalonMessageSenderType = 'member' | 'thinker';
 
 function isRecord(value: unknown): value is SalonMessageBody {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -37,10 +37,6 @@ function normalizeSalonId(value: unknown): string | null {
   return null;
 }
 
-function normalizeSenderType(value: unknown): SalonMessageSenderType {
-  return boundedText(value, 20) === 'thinker' ? 'thinker' : 'member';
-}
-
 export async function POST(req: NextRequest) {
   const body = await safeRequestJson(req);
   if (!body) return privateJson({ error: 'Invalid body' }, { status: 400 });
@@ -51,16 +47,23 @@ export async function POST(req: NextRequest) {
   const content = boundedText(body.content, MAX_CONTENT_LENGTH);
   if (!content) return privateJson({ error: 'Content required' }, { status: 400 });
 
-  const senderName = boundedText(body.sender_name, MAX_SENDER_NAME_LENGTH) || 'Explorer';
-  const thinkerId = boundedText(body.thinker_id, MAX_THINKER_ID_LENGTH) || null;
+  // Security fix S9: the author is the verified session's member. Body sender_name / sender_type /
+  // thinker_id / member ids are ignored, and only members of the salon may post.
+  const auth = await getAuthenticatedMember(req);
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const supabase = getSupabaseAdmin();
+    if (!(await memberCanUseSharedSalon(supabase, auth.memberId, salonId))) {
+      return privateJson({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const senderName = boundedText(auth.member.display_name, MAX_SENDER_NAME_LENGTH) || 'Explorer';
     const { error } = await supabase.from('salon_messages').insert({
       salon_id: salonId,
-      sender_type: normalizeSenderType(body.sender_type),
+      sender_type: 'member',
       sender_name: senderName,
-      thinker_id: thinkerId,
+      thinker_id: null,
       content,
     });
 
