@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 import { createWalletSessionValue } from '@/lib/auth/walletSession'
 import { privateJson } from '@/lib/http/routeError'
+import { SIWE_NONCE_COOKIE, verifyNonceCookie } from '@/lib/auth/siweNonce'
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown SIWE error'
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
     return privateJson({ error: 'message, signature, and address are required' }, { status: 400 })
   }
 
-  const nonce = req.cookies.get('soe_siwe_nonce')?.value
+  // S3: only a nonce this server signed (and that has not expired) is accepted.
+  const nonce = await verifyNonceCookie(req.cookies.get(SIWE_NONCE_COOKIE)?.value)
 
   try {
     if (!nonce) {
@@ -54,6 +56,9 @@ export async function POST(req: NextRequest) {
       member = newMember
     }
 
+    if (!member?.id) {
+      return privateJson({ error: 'Unable to create wallet session.' }, { status: 500 })
+    }
     const walletSession = await createWalletSessionValue(member.id)
     if (!walletSession) {
       return privateJson({ error: 'Unable to create wallet session.' }, { status: 500 })
@@ -69,7 +74,7 @@ export async function POST(req: NextRequest) {
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       secure: process.env.NODE_ENV === 'production',
     })
-    res.cookies.set('soe_siwe_nonce', '', {
+    res.cookies.set(SIWE_NONCE_COOKIE, '', {
       httpOnly: true,
       maxAge: 0,
       path: '/',
@@ -78,10 +83,10 @@ export async function POST(req: NextRequest) {
     })
     return res
   } catch (error: unknown) {
-    const message = errorMessage(error)
-    console.error('SIWE error:', message)
-    const response = privateJson({ error: message }, { status: 400 })
-    response.cookies.set('soe_siwe_nonce', '', {
+    console.error('SIWE error:', errorMessage(error))
+    // Don't echo library/database error text to the client.
+    const response = privateJson({ error: 'Sign-in failed. Please request a new nonce and try again.' }, { status: 400 })
+    response.cookies.set(SIWE_NONCE_COOKIE, '', {
       httpOnly: true,
       maxAge: 0,
       path: '/',

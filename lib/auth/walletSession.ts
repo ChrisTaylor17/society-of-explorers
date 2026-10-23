@@ -37,7 +37,16 @@ async function signPayload(payload: string): Promise<string | null> {
   return hex(new Uint8Array(signature));
 }
 
-function secureEqual(left: string, right: string): boolean {
+/**
+ * HMAC-SHA256 (hex) with the wallet-session secret, for other short-lived signed values (e.g. the SIWE nonce).
+ * Callers must domain-separate their payloads; wallet-session payloads always start with "v1:" or "v2:".
+ */
+export async function signWithWalletSessionSecret(payload: string): Promise<string | null> {
+  if (/^v[0-9]+:/.test(payload)) return null;
+  return signPayload(payload);
+}
+
+export function secureEqual(left: string, right: string): boolean {
   if (left.length !== right.length) return false;
 
   let mismatch = 0;
