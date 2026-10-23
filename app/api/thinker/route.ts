@@ -5,6 +5,8 @@ import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
 import { parseActions, type ThinkerAction } from '@/lib/thinkerActions';
 import { executeActionsWithResults } from '@/lib/actions/executeActions';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { limitModelCall } from '@/lib/rateLimit';
+import { memberCanUseSharedSalon } from '@/lib/salons/access';
 import { storeConversationEmbedding } from '@/lib/memory/embeddings';
 import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
 import { getCommunityThinkerPrompts } from '@/lib/community/getCommunity';
@@ -191,6 +193,19 @@ export async function POST(req: NextRequest) {
       }
 
       if (!memberId) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Security fix S4: server-side rate limit before any model call. Signed-in members use their own
+    // budget; anonymous demo calls use a per-IP budget plus a global anonymous ceiling.
+    const limited = limitModelCall(req, memberId);
+    if (limited) return limited;
+
+    // Security fix S2b: salon mode reads and writes salon history, so the salon must be the caller's own
+    // private salon, 'general', or a salon they guide or belong to. Council and demo don't touch salon history.
+    if (!isDemo && !isCouncilMode && memberId && salonId !== `private-${memberId}`) {
+      if (salonId.startsWith('private-') || !(await memberCanUseSharedSalon(supabaseAdmin(), memberId, salonId))) {
+        return privateJson({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Permission check for non-default communities

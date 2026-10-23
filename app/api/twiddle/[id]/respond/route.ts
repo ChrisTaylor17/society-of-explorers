@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt, getThinkerProfile } from '@/lib/claude/thinkers';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { limitModelCall } from '@/lib/rateLimit';
 import { privateJson } from '@/lib/http/routeError';
 import { getMemory } from '@/lib/thinkerMemory';
 import { parseActions, executeThinkerAction } from '@/lib/thinkerActions';
@@ -258,6 +259,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+  // Security fix S4: this route makes paid model calls (re-enabled by the UUID regex fix), so rate-limit it too.
+  const limited = limitModelCall(req, auth.memberId, 'twiddle-respond');
+  if (limited) return limited;
 
   const supabaseAdmin = getSupabaseAdmin();
   const { data: twiddle } = await supabaseAdmin
