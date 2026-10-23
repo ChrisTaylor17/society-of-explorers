@@ -137,3 +137,30 @@ test('when no session can be made, the user gets a generic message and the reaso
   expect(line).toContain('member_id_not_uuid');
   expect(line).not.toContain(addr.slice(4, 38)); // wallet is truncated (0x12…ab)
 });
+
+// Second report, 2026-10-23 11:59 AM ET on dpl_DcS4: the signature verified, then the log said
+// {"reason":"lookup_failed:"} - an empty PostgREST code, which postgrest-js only produces when fetch() itself
+// throws. Production's Supabase hostname returns NXDOMAIN (paused or deleted project), so every DB call failed.
+test('an unreachable member database is classified as db_unreachable and answered 503, never as a wallet problem', async () => {
+  const d = seed([]);
+  d.networkDown = { cause: 'ENOTFOUND' };
+  const { res, body, session } = await signIn();
+  expect(res.status).toBe(503);
+  expect(body.error).toBe('Sign-in is temporarily unavailable. Please try again later.');
+  expect(session).toBeUndefined();
+  expect(JSON.stringify(body)).not.toMatch(/ENOTFOUND|supabase|db_unreachable/i);
+  const line = errors.find(e => e.includes('[siwe] sign-in failed'))!;
+  expect(line).toContain('"reason":"db_unreachable:ENOTFOUND"');
+  expect(line).not.toContain('supabase.co');
+  expect(line).not.toContain(addr.slice(4, 38));
+  // No insert was attempted against a database that could not even be read.
+  expect(d.log.filter(l => l.op === 'insert').length).toBe(0);
+});
+
+test('classifyDbError keeps real PostgREST codes and never leaks host names', async () => {
+  const { classifyDbError } = await import('../../lib/auth/walletMember.ts');
+  expect(classifyDbError('lookup_failed', { code: '42703', message: 'column does not exist' }, 400)).toBe('lookup_failed:42703');
+  expect(classifyDbError('lookup_failed', { code: '', message: 'TypeError: fetch failed', details: 'Caused by: Error: connect ECONNREFUSED 1.2.3.4:443 (ECONNREFUSED)' }, 0)).toBe('db_unreachable:ECONNREFUSED');
+  expect(classifyDbError('insert_failed', { code: '', message: 'TypeError: fetch failed' }, 0)).toBe('db_unreachable:fetch_failed');
+  expect(classifyDbError('lookup_failed', { message: 'weird' }, 500)).toBe('lookup_failed:unknown');
+});

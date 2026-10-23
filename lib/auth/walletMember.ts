@@ -11,7 +11,28 @@
 import { isWellFormedUuid } from '@/lib/auth/walletSession';
 
 type Row = { id?: unknown; created_at?: unknown; wallet_address?: unknown; [key: string]: unknown };
-type QueryResult = { data: unknown; error: { code?: string; message?: string } | null };
+type QueryError = { code?: string; message?: string; details?: string };
+type QueryResult = { data: unknown; error: QueryError | null; status?: number };
+
+// postgrest-js turns a thrown fetch (DNS failure, refused connection, paused/deleted Supabase project) into
+// { error: { code: '', message: 'TypeError: fetch failed', details: '...Caused by: ... (ENOTFOUND)' }, status: 0 }.
+// That is an infrastructure outage, not a member/data problem, so it gets its own reason. Only the errno-style
+// cause code is kept (never the host, URL or key).
+export function classifyDbError(prefix: string, error: QueryError, status?: number): string {
+  const code = typeof error.code === 'string' ? error.code : '';
+  if (code) return `${prefix}:${code}`;
+  const text = `${error.message ?? ''}\n${error.details ?? ''}`;
+  const network = status === 0 || /fetch failed|FetchError|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|UND_ERR/i.test(text);
+  if (network) {
+    const cause = text.match(/\b(ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|UND_ERR_[A-Z_]+|ABORT_ERR)\b/);
+    return `db_unreachable:${cause ? cause[1] : 'fetch_failed'}`;
+  }
+  return `${prefix}:unknown`;
+}
+
+export function isDbUnreachable(reason: string): boolean {
+  return reason.startsWith('db_unreachable');
+}
 
 export type WalletMemberResult =
   | { member: Row & { id: string }; created: boolean; duplicates: number }
@@ -33,12 +54,12 @@ function pickOldest(rows: Row[]): Row | null {
 
 async function lookup(supabase: SupabaseLike, address: string): Promise<{ rows: Row[]; error?: string }> {
   const exact: QueryResult = await supabase.from('members').select('*').eq('wallet_address', address).limit(25);
-  if (exact.error) return { rows: [], error: `lookup_failed:${exact.error.code ?? 'unknown'}` };
+  if (exact.error) return { rows: [], error: classifyDbError('lookup_failed', exact.error, exact.status) };
   const exactRows = Array.isArray(exact.data) ? (exact.data as Row[]) : [];
   if (exactRows.length) return { rows: exactRows };
   // Hex address: no LIKE wildcards possible, so ilike is a case-insensitive exact match.
   const ci: QueryResult = await supabase.from('members').select('*').ilike('wallet_address', address).limit(25);
-  if (ci.error) return { rows: [], error: `lookup_ci_failed:${ci.error.code ?? 'unknown'}` };
+  if (ci.error) return { rows: [], error: classifyDbError('lookup_ci_failed', ci.error, ci.status) };
   return { rows: Array.isArray(ci.data) ? (ci.data as Row[]) : [] };
 }
 
@@ -65,7 +86,7 @@ export async function findOrCreateWalletMember(supabase: SupabaseLike, walletAdd
       const again = await lookup(supabase, address);
       if (again.rows.length) return accept(pickOldest(again.rows), false, again.rows.length);
     }
-    return { member: null, reason: `insert_failed:${inserted.error.code ?? 'unknown'}` };
+    return { member: null, reason: classifyDbError('insert_failed', inserted.error, inserted.status) };
   }
   return accept((inserted.data as Row | null) ?? null, true, 0);
 }

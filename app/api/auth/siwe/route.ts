@@ -5,7 +5,7 @@ import { createWalletSessionValue } from '@/lib/auth/walletSession'
 import { privateJson } from '@/lib/http/routeError'
 import { SIWE_NONCE_COOKIE, verifyNonceCookie } from '@/lib/auth/siweNonce'
 import { canonicalizeSignature, shortAddress } from '@/lib/auth/siweSignature'
-import { findOrCreateWalletMember } from '@/lib/auth/walletMember'
+import { findOrCreateWalletMember, isDbUnreachable } from '@/lib/auth/walletMember'
 
 // siwe rejects with a SiweResponse ({ success, error: SiweError { type } }), not an Error.
 function errorMessage(error: unknown): string {
@@ -77,6 +77,10 @@ export async function POST(req: NextRequest) {
     const found = await findOrCreateWalletMember(supabase, normalizedAddress)
     if (!found.member) {
       logFailure(found.reason, normalizedAddress)
+      if (isDbUnreachable(found.reason)) {
+        // The signature was fine; the member database could not be reached. Say so generically (no internals).
+        return privateJson({ error: 'Sign-in is temporarily unavailable. Please try again later.' }, { status: 503 })
+      }
       return privateJson({ error: 'Unable to create wallet session.' }, { status: 500 })
     }
     const member = found.member

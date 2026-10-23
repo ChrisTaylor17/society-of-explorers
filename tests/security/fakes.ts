@@ -15,6 +15,9 @@ export class FakeDb {
   // When true, .single()/.maybeSingle() behave like PostgREST: .single() with 0 or 2+ rows, and .maybeSingle()
   // with 2+ rows, return { data: null, error }. Off by default so older tests keep their lax behaviour.
   strictSingle = false;
+  // When set, every query resolves the way postgrest-js reports a thrown fetch (DNS failure, refused connection,
+  // paused/deleted project): { data: null, error: { code: '', message: 'TypeError: fetch failed', ... }, status: 0 }.
+  networkDown: null | { cause: string } = null;
   seq = 0;
   constructor(seed: Record<string, Row[]> = {}) {
     for (const [k, v] of Object.entries(seed)) this.tables[k] = v.map(r => ({ ...r }));
@@ -73,6 +76,11 @@ class Q {
   exec() {
     const rows = this.db.rows(this.table);
     this.db.log.push({ table: this.table, op: this.op, filters: this.filters, payload: this.payload });
+    if (this.db.networkDown) {
+      const c = this.db.networkDown.cause;
+      return { data: null, count: null, status: 0, statusText: '', error: { code: '', hint: '', message: 'TypeError: fetch failed',
+        details: `TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ${c} example-ref.supabase.co (${c})` } };
+    }
     if (this.op === 'insert') {
       const items = (Array.isArray(this.payload) ? this.payload : [this.payload])
         .map((p: Row) => ({ id: `row-${++this.db.seq}`, created_at: new Date(1_700_000_000_000 + this.db.seq * 1000).toISOString(), ...p }));

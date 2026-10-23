@@ -257,3 +257,6 @@ keep working.
   without a session get 401.
 - **Rate limits (S4)** return 429 and `Retry-After` on thinker and verdict calls past the per-10-minute limits.
 - **Verdicts** are private unless "Share verdict" is clicked (S6).
+
+## 2026-10-23 SIWE wallet-login hotfix
+Production dpl_DcS4fNJ64P4uZCmr1vAHbaUUC8GD (branch fix-siwe-wallet-session-2026-10-23) promoted 11:40 AM ET. Rollback target dpl_E3hbXc8KdGeQ7Sux7hHoQSfPNKpM. See security-logs/2026-10-23-siwe-login-incident.md.
