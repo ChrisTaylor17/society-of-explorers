@@ -4,7 +4,7 @@ import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const ROOM_ACTIONS = new Set(['join', 'leave', 'end', 'transcript']);
 const MAX_TRANSCRIPT_LENGTH = 4_000;
 const MAX_SPEAKER_NAME_LENGTH = 80;

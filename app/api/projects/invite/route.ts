@@ -25,7 +25,7 @@ const MAX_INVITE_JSON_BYTES = 128 * 1024;
 const MAX_INVITE_METADATA_BYTES = 8 * 1024;
 const MAX_MILESTONES = 25;
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 const TX_HASH_PATTERN = /^0x[a-fA-F0-9]{64}$/;
