@@ -11,7 +11,7 @@ const SALON_CREATE_RECEIPT_SELECT = 'id,title,description,status,max_members,top
 const PUBLIC_STATUSES = new Set(['recruiting', 'active', 'graduating', 'completed']);
 const MAX_DISPLAY_TEXT = 160;
 const MAX_DESCRIPTION_TEXT = 1000;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type SalonListRow = {
   id: string;
