@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import Anthropic from '@anthropic-ai/sdk';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export interface DailyQuestion {
   id: string;
@@ -33,10 +33,7 @@ function pickThinker(): typeof THINKERS[number] {
 }
 
 export async function getOrCreateTodayQuestion(): Promise<DailyQuestion | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = getSupabaseAdmin();
   const today = getTodayET();
 
   const { data: existing } = await supabase
@@ -48,9 +45,10 @@ export async function getOrCreateTodayQuestion(): Promise<DailyQuestion | null> 
 
   const thinker = pickThinker();
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 200,
       system: `You are ${thinker.name}, the AI thinker from Society of Explorers. ${thinker.lens} Generate ONE philosophical question for today's daily practice. The question should be answerable in 280 characters or less, provoke genuine reflection, and reflect your unique perspective. Respond with ONLY a JSON object: {"question": "...", "context": "A 1-sentence note on why you're asking this today."}`,
       messages: [{ role: 'user', content: "Generate today's daily practice question." }],

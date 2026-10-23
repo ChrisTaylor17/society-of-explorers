@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
 import { completeClaudeText } from '@/lib/movement/claude';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const PROFILE_THRESHOLD = 30;
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 export type Manifest = {
   tone: string;
@@ -109,6 +104,7 @@ ${responseBlock}`;
 }
 
 export async function buildManifest(memberId: string): Promise<Manifest | null> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('question_responses')
     .select('response_text, created_at, daily_questions(question_text, thinker_id)')

@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -37,6 +36,16 @@ const VERIFICATION_METHODS = [
   { id: 'oracle', label: 'Oracle / trusted third-party' },
 ];
 
+type CreatedDao = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+function toCommunitySlug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').slice(0, 50);
+}
+
 export default function CreateDAOPage() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -66,25 +75,25 @@ export default function CreateDAOPage() {
   // Deploy state
   const [submitting, setSubmitting] = useState(false);
   const [deploySteps, setDeploySteps] = useState<{ label: string; status: 'pending' | 'deploying' | 'done' | 'error' }[]>([]);
-  const [createdDao, setCreatedDao] = useState<any>(null);
+  const [createdDao, setCreatedDao] = useState<CreatedDao | null>(null);
 
   useEffect(() => {
     async function load() {
       const session = await getMemberSession();
       if (session?.member) setMemberId(session.member.id);
-      const supabase = createClient();
-      const { data: { session: auth } } = await supabase.auth.getSession();
-      if (auth?.access_token) setAuthToken(auth.access_token);
+      const accessToken = await getSupabaseAccessToken();
+      if (accessToken) setAuthToken(accessToken);
     }
     load().catch(() => {});
   }, []);
 
-  useEffect(() => {
-    setSlug(name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').slice(0, 50));
-  }, [name]);
-
   function toggleMethod(id: string) {
     setMethods(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+  }
+
+  function handleNameChange(value: string) {
+    setName(value);
+    setSlug(toCommunitySlug(value));
   }
 
   async function handleDeploy() {
@@ -109,68 +118,52 @@ export default function CreateDAOPage() {
     };
 
     try {
+      const accessToken = authToken || await getSupabaseAccessToken();
+      if (accessToken && !authToken) setAuthToken(accessToken);
+
       const res = await fetch('/api/communities', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), slug, description: description.trim(), primaryColor: gold, theme: 'dark', memberId }),
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          slug,
+          description: description.trim(),
+          primaryColor: gold,
+          theme: 'dark',
+          mission: problem.trim() || description.trim(),
+          launchConfig: {
+            template,
+            reputationSymbol: repSymbol,
+            governanceSymbol: govSymbol,
+            initialTreasury,
+            rewards: {
+              contribution: rewardContribution,
+              participation: rewardParticipation,
+              analysis: rewardAnalysis,
+            },
+            infrastructure: {
+              dataMethods: methods,
+              verificationMethod: verification,
+              hardwareNeeded,
+              dataGoal,
+              problemStatement: problem,
+            },
+          },
+        }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { community?: CreatedDao };
       if (!data.community) { updateStep(0, 'error'); setSubmitting(false); return; }
       updateStep(0, 'done');
 
-      const daoId = data.community.id;
-      const supabase = createClient();
-
       await new Promise(r => setTimeout(r, 500)); updateStep(1, 'done');
       await new Promise(r => setTimeout(r, 700)); updateStep(2, 'done');
-
-      await (supabase as any).from('communities').update({
-        mission: problem.trim() || description.trim(),
-        governance_type: 'dao',
-      }).eq('id', daoId);
       await new Promise(r => setTimeout(r, 600)); updateStep(3, 'done');
       await new Promise(r => setTimeout(r, 500)); updateStep(4, 'done');
-
-      // Spending limits
-      const { data: wallets } = await (supabase as any).from('agent_wallets').select('id').eq('community_id', daoId);
-      if (wallets && wallets.length > 0) {
-        for (const w of wallets) {
-          await (supabase as any).from('agent_spending_limits').upsert({
-            wallet_id: w.id,
-            max_per_transaction: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 5,
-            max_daily: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 20,
-            max_weekly: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 100,
-            human_approval_threshold: Math.max(rewardContribution, rewardParticipation, rewardAnalysis) * 20,
-          }, { onConflict: 'wallet_id' });
-        }
-      }
       await new Promise(r => setTimeout(r, 500)); updateStep(5, 'done');
-
-      // Governance + infrastructure contract config
-      await (supabase as any).from('community_contracts').insert([
-        {
-          community_id: daoId, contract_type: 'governance',
-          status: 'deployed',
-          parameters: {
-            template, governance_type: 'dao', voting_threshold: 51,
-            reputation_token: { symbol: repSymbol, soulbound: true, standard: 'Solana Token-2022' },
-            governance_token: { symbol: govSymbol, transferable: true },
-            initial_treasury: initialTreasury,
-            rewards: { contribution: rewardContribution, participation: rewardParticipation, analysis: rewardAnalysis },
-          },
-        },
-        {
-          community_id: daoId, contract_type: 'infrastructure',
-          status: 'deployed',
-          parameters: {
-            data_methods: methods,
-            verification_method: verification,
-            hardware_needed: hardwareNeeded,
-            data_goal: dataGoal,
-            problem_statement: problem,
-          },
-        },
-      ]);
       await new Promise(r => setTimeout(r, 700)); updateStep(6, 'done');
       await new Promise(r => setTimeout(r, 400)); updateStep(7, 'done');
 
@@ -263,7 +256,7 @@ export default function CreateDAOPage() {
 
               <div style={{ width: '100%', height: '1px', background: `${gold}15`, margin: '0.5rem 0' }} />
 
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="DAO name"
+              <input value={name} onChange={e => handleNameChange(e.target.value)} placeholder="DAO name"
                 style={inputStyle} onFocus={e => e.target.style.boxShadow = `0 0 0 1px rgba(201,168,76,0.3)`} onBlur={e => e.target.style.boxShadow = 'none'} />
               <div>
                 <input value={slug} onChange={e => setSlug(e.target.value)} placeholder="url-slug" style={inputStyle}

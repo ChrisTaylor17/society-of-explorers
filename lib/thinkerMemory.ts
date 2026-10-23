@@ -3,14 +3,8 @@
 // Each thinker maintains a running summary + structured facts
 // about their relationship with each member.
 
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const SUMMARY_INTERVAL = 8;
 
@@ -22,11 +16,29 @@ export interface StructuredMemory {
   commitments: string[];
 }
 
+type ThinkerMemoryRecord = {
+  id?: string;
+  summary?: string | null;
+  message_count?: number | null;
+  life_facts?: Record<string, string> | null;
+  intellectual_interests?: string[] | null;
+  emotional_patterns?: string[] | null;
+  commitments?: string[] | null;
+};
+
+type ExtractedThinkerMemory = {
+  life_facts?: Record<string, string>;
+  intellectual_interests?: string[];
+  emotional_patterns?: string[];
+  commitments?: string[];
+};
+
 /**
  * Fetch the full memory record for a member-thinker pair.
  * Returns structured memory including summary, life facts, interests, and commitments.
  */
 export async function getMemory(memberId: string, thinkerId: string): Promise<string | null> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data } = await supabaseAdmin
     .from('thinker_memory')
     .select('summary, life_facts, intellectual_interests, emotional_patterns, commitments')
@@ -43,6 +55,7 @@ export async function getMemory(memberId: string, thinkerId: string): Promise<st
  * Get the full structured memory record.
  */
 export async function getStructuredMemory(memberId: string, thinkerId: string): Promise<StructuredMemory | null> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data } = await supabaseAdmin
     .from('thinker_memory')
     .select('summary, life_facts, intellectual_interests, emotional_patterns, commitments')
@@ -65,7 +78,7 @@ export async function getStructuredMemory(memberId: string, thinkerId: string): 
  * Build a memory string for system prompt injection.
  * Prioritizes structured facts over raw summary, capped at ~800 chars.
  */
-function buildMemoryString(data: any): string | null {
+function buildMemoryString(data: ThinkerMemoryRecord): string | null {
   const parts: string[] = [];
 
   const facts = data.life_facts || {};
@@ -110,6 +123,7 @@ export async function recordInteraction(
   thinkerName: string,
   salonId: string
 ): Promise<void> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: existing } = await supabaseAdmin
     .from('thinker_memory')
     .select('id, message_count, summary, life_facts, intellectual_interests, emotional_patterns, commitments')
@@ -156,8 +170,10 @@ async function updateSummary(
     const transcript = await getRecentTranscript(salonId, thinkerId, thinkerName);
     if (!transcript) return;
 
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('memory', 'claude-sonnet-4-20250514');
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 400,
       system: `You are maintaining a living memory record for ${thinkerName} about a member of the Society of Explorers.
 
@@ -179,6 +195,7 @@ Do not include any preamble or explanation. Just the summary.`,
     const newSummary = response.content.find(b => b.type === 'text')?.text || '';
 
     if (newSummary) {
+      const supabaseAdmin = getSupabaseAdmin();
       await supabaseAdmin
         .from('thinker_memory')
         .update({ summary: newSummary, updated_at: new Date().toISOString() })
@@ -198,7 +215,7 @@ async function extractAndStoreFacts(
   thinkerId: string,
   thinkerName: string,
   salonId: string,
-  existing: any
+  existing: ThinkerMemoryRecord | null | undefined
 ): Promise<void> {
   try {
     const transcript = await getRecentTranscript(salonId, thinkerId, thinkerName);
@@ -209,8 +226,10 @@ async function extractAndStoreFacts(
     const existingPatterns = existing?.emotional_patterns || [];
     const existingCommitments = existing?.commitments || [];
 
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('memory', 'claude-sonnet-4-20250514');
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 500,
       system: `Extract key facts from this conversation between ${thinkerName} and a member. Return ONLY valid JSON with these fields:
 
@@ -233,14 +252,14 @@ Only extract what's clearly stated. Don't infer or assume. Return ONLY the JSON 
 
     const text = response.content.find(b => b.type === 'text')?.text || '';
 
-    let extracted: any;
+    let extracted: ExtractedThinkerMemory;
     try {
-      extracted = JSON.parse(text.trim());
+      extracted = JSON.parse(text.trim()) as ExtractedThinkerMemory;
     } catch {
       // Try to extract JSON from markdown code block
       const match = text.match(/\{[\s\S]*\}/);
       if (match) {
-        try { extracted = JSON.parse(match[0]); } catch { return; }
+        try { extracted = JSON.parse(match[0]) as ExtractedThinkerMemory; } catch { return; }
       } else { return; }
     }
 
@@ -250,6 +269,7 @@ Only extract what's clearly stated. Don't infer or assume. Return ONLY the JSON 
     const mergedPatterns = [...new Set([...existingPatterns, ...(extracted.emotional_patterns || [])])].slice(-8);
     const mergedCommitments = [...new Set([...existingCommitments, ...(extracted.commitments || [])])].slice(-10);
 
+    const supabaseAdmin = getSupabaseAdmin();
     await supabaseAdmin
       .from('thinker_memory')
       .update({
@@ -272,6 +292,7 @@ Only extract what's clearly stated. Don't infer or assume. Return ONLY the JSON 
  * Fetch recent transcript for a salon.
  */
 async function getRecentTranscript(salonId: string, thinkerId: string, thinkerName: string): Promise<string | null> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: recentMessages } = await supabaseAdmin
     .from('salon_messages')
     .select('content, sender_type, thinker_id, created_at')

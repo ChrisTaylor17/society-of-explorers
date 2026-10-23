@@ -1,34 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import type { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
-import { byteaToBuffer } from '@/lib/movement/pod';
+import { internalRouteError, privateAttachmentJson, privateJson } from '@/lib/http/routeError';
+import { byteaToBuffer, describePodCustody, normalizePodMetadata, resolvePodKeyMode } from '@/lib/movement/pod';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthenticatedMember(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
+    const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('data_pods')
-      .select('ciphertext, iv, version, last_commitment_hash, last_committed_at, updated_at, sync_version, sync_device_id, sync_client_updated_at, sync_status, sync_conflict_count')
+      .select('ciphertext, iv, version, last_commitment_hash, last_committed_at, updated_at, sync_version, sync_device_id, sync_client_updated_at, sync_status, sync_conflict_count, sync_metadata')
       .eq('member_id', auth.memberId)
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) return NextResponse.json({ error: 'No pod found. Refresh your pod first.' }, { status: 404 });
+    if (!data) return privateJson({ error: 'No pod found. Refresh your pod first.' }, { status: 404 });
 
+    const syncMetadata = normalizePodMetadata(data.sync_metadata);
+    const keyMode = resolvePodKeyMode(data);
+    const custody = describePodCustody(keyMode, syncMetadata);
     const envelope = {
       kind: 'society-of-explorers.encrypted-pod',
       member_id: auth.memberId,
       version: data.version || 1,
       algorithm: 'AES-256-GCM',
+      key_mode: keyMode,
+      custody_status: custody.custody_status,
+      sovereignty_status: custody.sovereignty_status,
+      custody_verification: custody.custody_verification,
+      custody_note: custody.custody_note,
       ciphertext_encoding: 'base64',
       ciphertext: byteaToBuffer(data.ciphertext).toString('base64'),
       iv: byteaToBuffer(data.iv).toString('base64'),
@@ -40,18 +46,26 @@ export async function GET(req: NextRequest) {
       sync_client_updated_at: data.sync_client_updated_at || null,
       sync_status: data.sync_status || null,
       sync_conflict_count: data.sync_conflict_count ?? 0,
+      sync_metadata: syncMetadata,
+      verification: {
+        commitment_format: 'sha256:sync-v2-canonical-json',
+        verifier_route: '/movement/pod/verify',
+        can_recompute_commitment: typeof syncMetadata.base_sync_version === 'number',
+        required_fields: [
+          'ciphertext',
+          'iv',
+          'sync_client_updated_at',
+          'sync_device_id',
+          'sync_metadata.base_sync_version',
+          'last_commitment_hash',
+        ],
+      },
     };
 
-    return new NextResponse(JSON.stringify(envelope, null, 2), {
-      status: 200,
-      headers: {
-        'content-type': 'application/json; charset=utf-8',
-        'content-disposition': `attachment; filename="soe-data-pod-${auth.memberId}.pod.json"`,
-        'cache-control': 'no-store',
-      },
+    return privateAttachmentJson(envelope, {
+      filename: `soe-data-pod-${auth.memberId}.pod.json`,
     });
-  } catch (err) {
-    console.error('[movement/pod/export] failed', err);
-    return NextResponse.json({ error: 'Pod export failed', details: String(err) }, { status: 500 });
+  } catch {
+    return internalRouteError('Pod export failed');
   }
 }

@@ -15,12 +15,27 @@ const RANK_STYLES: Record<number, { color: string; size: string; accent: string 
   2: { color: '#CD7F32', size: '26px', accent: 'rgba(205,127,50,0.12)' },
 };
 
+type GuideLeaderboardEntry = {
+  rankKey: string;
+  displayName: string;
+  guideLevel: number;
+  salonsLed: number;
+  membersGraduated: number;
+  guideExp: number;
+};
+
 export default function LeaderboardPage() {
-  const [guides, setGuides] = useState<any[]>([]);
+  const [guides, setGuides] = useState<GuideLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/leaderboard').then(r => r.json()).then(d => { setGuides(d.guides || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch('/api/leaderboard', { cache: 'no-store' })
+      .then(r => r.json())
+      .then((d: { guides?: GuideLeaderboardEntry[] }) => {
+        setGuides(Array.isArray(d.guides) ? d.guides : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -71,15 +86,15 @@ export default function LeaderboardPage() {
                     const rs = RANK_STYLES[rank];
                     const isFirst = rank === 0;
                     return (
-                      <div key={g.id} style={{ textAlign: 'center', padding: isFirst ? '2rem 1.5rem' : '1.5rem 1.25rem', background: '#0d0d0d', border: `1px solid ${rs.color}33`, minWidth: '140px', order: rank === 1 ? 0 : rank === 0 ? 1 : 2 }}>
+                      <div key={g.rankKey} style={{ textAlign: 'center', padding: isFirst ? '2rem 1.5rem' : '1.5rem 1.25rem', background: '#0d0d0d', border: `1px solid ${rs.color}33`, minWidth: '140px', order: rank === 1 ? 0 : rank === 0 ? 1 : 2 }}>
                         <div style={{ fontFamily: 'Playfair Display, serif', fontSize: rs.size, color: rs.color, marginBottom: '0.5rem' }}>{rank + 1}</div>
-                        <div style={{ fontSize: isFirst ? '18px' : '16px', color: parchment, marginBottom: '4px' }}>{g.display_name}</div>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: rs.color, marginBottom: '0.75rem' }}>{GUIDE_LEVELS[g.guide_level] || 'Guide'}</div>
+                        <div style={{ fontSize: isFirst ? '18px' : '16px', color: parchment, marginBottom: '4px' }}>{g.displayName}</div>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: rs.color, marginBottom: '0.75rem' }}>{GUIDE_LEVELS[g.guideLevel] || 'Guide'}</div>
                         <div style={{ fontSize: '13px', color: muted }}>
-                          {g.salons_led || 0} salons &middot; {g.members_graduated || 0} graduated
+                          {g.salonsLed} salons &middot; {g.membersGraduated} graduated
                         </div>
                         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: rs.color, marginTop: '0.5rem' }}>
-                          {(g.guide_earnings_total || 0).toLocaleString()} <span style={{ fontSize: '8px', color: muted }}>EXP</span>
+                          {g.guideExp.toLocaleString()} <span style={{ fontSize: '8px', color: muted }}>EXP</span>
                         </div>
                       </div>
                     );
@@ -93,25 +108,25 @@ export default function LeaderboardPage() {
                   const isTop3 = i < 3;
                   const rs = RANK_STYLES[i];
                   return (
-                    <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 12px', borderBottom: `1px solid ${gold}08`, transition: 'background 0.2s' }}
+                    <div key={g.rankKey} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 12px', borderBottom: `1px solid ${gold}08`, transition: 'background 0.2s' }}
                       onMouseEnter={e => e.currentTarget.style.background = '#0d0d0d'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <div style={{ fontFamily: 'Playfair Display, serif', fontSize: isTop3 ? '24px' : '18px', color: rs?.color || muted, width: '36px', textAlign: 'center' }}>
                         {i + 1}
                       </div>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isTop3 ? (rs?.accent || '#1a1a1a') : '#1a1a1a', border: `1px solid ${isTop3 ? (rs?.color || muted) : muted}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '12px', color: isTop3 ? (rs?.color || muted) : muted, flexShrink: 0 }}>
-                        {(g.display_name || '?')[0].toUpperCase()}
+                        {g.displayName[0]?.toUpperCase() || '?'}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '17px', color: parchment }}>{g.display_name}</div>
-                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: isTop3 ? (rs?.color || gold) : muted, marginTop: '2px' }}>{GUIDE_LEVELS[g.guide_level] || 'Guide'}</div>
+                        <div style={{ fontSize: '17px', color: parchment }}>{g.displayName}</div>
+                        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: isTop3 ? (rs?.color || gold) : muted, marginTop: '2px' }}>{GUIDE_LEVELS[g.guideLevel] || 'Guide'}</div>
                       </div>
                       <div style={{ textAlign: 'right', fontSize: '13px', color: muted }}>
-                        <div>{g.salons_led || 0} salons</div>
-                        <div>{g.members_graduated || 0} graduated</div>
+                        <div>{g.salonsLed} salons</div>
+                        <div>{g.membersGraduated} graduated</div>
                       </div>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: isTop3 ? (rs?.color || gold) : gold, minWidth: '70px', textAlign: 'right' }}>
-                        {(g.guide_earnings_total || 0).toLocaleString()} <span style={{ fontSize: '8px', color: muted }}>EXP</span>
+                        {g.guideExp.toLocaleString()} <span style={{ fontSize: '8px', color: muted }}>EXP</span>
                       </div>
                     </div>
                   );

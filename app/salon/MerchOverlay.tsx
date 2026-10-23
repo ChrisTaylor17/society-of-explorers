@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Product {
@@ -260,7 +261,7 @@ function CheckoutDrawer({
 
               {!product.printfulVariantId && (
                 <div style={{ background: '#1a0f00', border: '1px solid #c9a84c44', borderRadius: '4px', padding: '10px 14px', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#c9a84c', fontStyle: 'italic', lineHeight: 1.5 }}>
-                  This product's Printful variant ID is not yet set. Add it to PRODUCTS in MerchOverlay.tsx after creating the product in your Printful store.
+                  This product&apos;s Printful variant ID is not yet set. Add it to PRODUCTS in MerchOverlay.tsx after creating the product in your Printful store.
                 </div>
               )}
 
@@ -345,8 +346,15 @@ function stripMd(s: string) {
   return s.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
 }
 
+async function merchHeaders(json = false): Promise<Record<string, string>> {
+  const accessToken = await getSupabaseAccessToken();
+  return {
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
+}
+
 function AISuggestPanel({ onClose }: { onClose: () => void }) {
-  const supabase = createClient();
   const [thinker,       setThinker]       = useState(SUGGEST_THINKERS[0]);
   const [theme,         setTheme]         = useState('');
   const [product,       setProduct]       = useState<GeneratedProduct | null>(null);
@@ -370,7 +378,8 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch('/api/merch/generate-products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: await merchHeaders(true),
         body: JSON.stringify({ thinkerId: thinker.id, theme: theme.trim() || undefined }),
       });
       const data = await res.json();
@@ -391,7 +400,8 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
       const brief = `${product.name} — ${product.type}. ${product.description} Thinker: ${thinker.name}. Style: Society of Explorers, philosophical luxury brand.`;
       const res = await fetch('/api/merch/generate-mockup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: await merchHeaders(true),
         body: JSON.stringify({ visual_brief: brief }),
       });
       const data = await res.json();
@@ -408,33 +418,34 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
     if (!product) return;
     setPublishing(true);
     setPublishError('');
-    // 1. Insert row to get the ID (needed for publish route to fetch image_url)
-    const { data: row, error: insertErr } = await supabase
-      .from('merch_suggestions')
-      .insert({
-        thinker_id:     thinker.id,
-        product_type:   product.type,
-        name:           stripMd(product.name),
-        tagline:        stripMd(product.tagline),
-        price:          product.price,
-        raw_suggestion: stripMd(product.description).slice(0, 500),
-        image_url:      mockupImage ?? null,
-        status:         'pending',
-        suggested_by:   'ai',
-      })
-      .select('id')
-      .single();
-    if (insertErr || !row) {
-      setPublishError(insertErr?.message ?? 'Failed to save');
+    // 1. Save through the private API to get the ID (needed for publish route to fetch image_url)
+    const saveRes = await fetch('/api/merch/suggestions', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: await merchHeaders(true),
+      body: JSON.stringify({
+        thinkerId: thinker.id,
+        productType: product.type,
+        name: stripMd(product.name),
+        tagline: stripMd(product.tagline),
+        price: product.price,
+        rawSuggestion: stripMd(product.description).slice(0, 500),
+        imageUrl: mockupImage,
+      }),
+    });
+    const saveData = (await saveRes.json().catch(() => ({}))) as { suggestion?: { id: string }; error?: string };
+    if (!saveRes.ok || !saveData.suggestion) {
+      setPublishError(saveData.error ?? 'Failed to save');
       setPublishing(false);
       return;
     }
     // 2. Publish directly to Printful
     const res = await fetch('/api/merch/publish', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      headers: await merchHeaders(true),
       body: JSON.stringify({
-        suggestionId: row.id,
+        suggestionId: saveData.suggestion.id,
         name:         stripMd(product.name),
         tagline:      stripMd(product.tagline),
         price:        product.price,
@@ -506,7 +517,15 @@ function AISuggestPanel({ onClose }: { onClose: () => void }) {
               <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.6 }}>{stripMd(product.description)}</div>
 
               {mockupImage && (
-                <img src={mockupImage} alt={product.name} style={{ width: '100%', borderRadius: '4px', display: 'block' }} />
+                <Image
+                  src={mockupImage}
+                  alt={product.name}
+                  width={1024}
+                  height={1024}
+                  sizes="(max-width: 720px) calc(100vw - 40px), 640px"
+                  unoptimized
+                  style={{ width: '100%', height: 'auto', borderRadius: '4px', display: 'block' }}
+                />
               )}
               {mockupError && (
                 <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '12px', color: '#e07070', fontStyle: 'italic' }}>{mockupError}</div>
@@ -639,7 +658,6 @@ const THINKER_ACCENT: Record<string, string> = {
 };
 
 function ReviewPanel({ onClose }: { onClose: () => void }) {
-  const supabase = createClient();
   const [rows,        setRows]        = useState<MerchSuggestion[]>([]);
   const [filter,      setFilter]      = useState<SuggestionStatus | 'all'>('pending');
   const [loading,     setLoading]     = useState(true);
@@ -647,24 +665,38 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
   const [updating,    setUpdating]    = useState<string | null>(null);
   const [publishErr,  setPublishErr]  = useState<Record<string, string>>({});
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
-    const q = supabase
-      .from('merch_suggestions')
-      .select('id,thinker_id,name,product_type,tagline,price,raw_suggestion,mockup_prompt,status,printful_product_id,created_at')
-      .order('created_at', { ascending: false });
-    const { data, error } = filter === 'all' ? await q : await q.eq('status', filter);
-    if (!error) setRows((data as MerchSuggestion[]) ?? []);
-    setLoading(false);
-  }
+    try {
+      const res = await fetch(`/api/merch/suggestions?status=${encodeURIComponent(filter)}`, {
+        cache: 'no-store',
+        headers: await merchHeaders(),
+      });
+      const data = (await res.json().catch(() => ({}))) as { suggestions?: MerchSuggestion[] };
+      setRows(res.ok ? data.suggestions || [] : []);
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { void load(); }, [load]);
 
-  async function setStatus(id: string, status: SuggestionStatus) {
+  async function setStatus(id: string, status: SuggestionStatus): Promise<boolean> {
     setUpdating(id);
-    await supabase.from('merch_suggestions').update({ status }).eq('id', id);
+    const res = await fetch(`/api/merch/suggestions/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      cache: 'no-store',
+      headers: await merchHeaders(true),
+      body: JSON.stringify({ status }),
+    });
     setUpdating(null);
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      setPublishErr(prev => ({ ...prev, [id]: data.error ?? 'Status update failed' }));
+      return false;
+    }
     setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r).filter(r => filter === 'all' || r.status === filter));
+    return true;
   }
 
   async function approveAndPublish(row: MerchSuggestion) {
@@ -673,7 +705,8 @@ function ReviewPanel({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch('/api/merch/publish', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: await merchHeaders(true),
         body: JSON.stringify({
           suggestionId: row.id,
           name:         row.name,

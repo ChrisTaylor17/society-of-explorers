@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import {
   MAX_SYNC_CIPHERTEXT_BYTES,
   MAX_SYNC_JSON_BYTES,
@@ -12,6 +12,8 @@ import {
   isRecord,
   stableStringify,
 } from '@/lib/movement/podSync';
+import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
+import { privateJson } from '@/lib/http/routeError';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -22,6 +24,16 @@ const DEVICE_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const FORBIDDEN_METADATA_KEYS = new Set([
+  'wallet_signature',
+  'raw_wallet_signature',
+  'signature',
+  'private_key',
+  'secret_key',
+  'mnemonic',
+  'seed_phrase',
+  'recovery_phrase',
+]);
 
 interface EdgeMember {
   id: string;
@@ -55,7 +67,6 @@ interface CanonicalPodSyncState {
 interface SyncResponseBody {
   ok: boolean;
   audit_id: string;
-  member_id: string;
   sync: PodSyncRpcResult;
   canonical_state?: CanonicalPodSyncState;
   commitment: {
@@ -70,13 +81,15 @@ interface SyncResponseBody {
 
 class SyncHttpError extends Error {
   status: number;
-  details?: unknown;
+  publicMessage: string;
+  privateContext?: unknown;
 
-  constructor(status: number, message: string, details?: unknown) {
+  constructor(status: number, message: string, privateContext?: unknown) {
     super(message);
     this.name = 'SyncHttpError';
     this.status = status;
-    this.details = details;
+    this.publicMessage = message;
+    this.privateContext = privateContext;
   }
 }
 
@@ -159,7 +172,7 @@ function auditLog(
   audit: SyncAuditContext,
   phase: SyncAuditPhase,
   level: SyncAuditLevel,
-  details: Record<string, unknown> = {},
+  fields: Record<string, unknown> = {},
 ) {
   const line = JSON.stringify({
     event: 'movement.pod.sync.audit',
@@ -173,19 +186,19 @@ function auditLog(
     stream: audit.stream,
     region: audit.region,
     request: audit.request,
-    member_id: audit.memberId,
-    device_id: audit.deviceId,
+    member_authenticated: Boolean(audit.memberId),
+    device_id_present: Boolean(audit.deviceId),
     base_sync_version: audit.baseSyncVersion,
     payload_bytes: audit.payloadBytes,
-    commitment_hash: audit.commitmentHash,
+    commitment_present: Boolean(audit.commitmentHash),
     sync_version: audit.syncVersion,
     sync_status: audit.syncStatus,
     timings_ms: audit.timings,
-    ...dropUndefined(details),
+    ...dropUndefined(fields),
   });
 
   if (level === 'error') {
-    console.error(line);
+    console.warn(line);
   } else if (level === 'warn') {
     console.warn(line);
   } else {
@@ -215,19 +228,17 @@ export async function POST(req: NextRequest) {
       http_status: result.status,
       ok: result.body.ok,
     });
-    return NextResponse.json(result.body, {
+    return privateJson(result.body, {
       status: result.status,
       headers: {
-        'cache-control': 'no-store',
         'x-sync-audit-id': audit.auditId,
       },
     });
   } catch (err) {
     const normalized = normalizeError(err, audit);
-    return NextResponse.json(normalized.body, {
+    return privateJson(normalized.body, {
       status: normalized.status,
       headers: {
-        'cache-control': 'no-store',
         'x-sync-audit-id': audit.auditId,
       },
     });
@@ -252,10 +263,9 @@ async function runSync(
 
   audit.memberId = auth.id;
   auditLog(audit, 'auth_accepted', 'info', {
-    member_id: auth.id,
-    tier: auth.tier,
+    tier_present: Boolean(auth.tier),
   });
-  await emit('authenticated', { member_id: auth.id, tier: auth.tier });
+  await emit('authenticated', { authenticated: true, tier_present: Boolean(auth.tier) });
 
   const parseStartedAt = performance.now();
   const prepared = await parseAndVerifyEnvelope(req);
@@ -266,24 +276,22 @@ async function runSync(
   audit.commitmentHash = prepared.envelope.commitment_hash;
 
   auditLog(audit, 'payload_verified', 'info', {
-    device_id: prepared.envelope.device_id,
     base_sync_version: prepared.envelope.base_sync_version,
     payload_bytes: prepared.payloadBytes,
-    commitment_hash: prepared.envelope.commitment_hash,
+    device_id_present: true,
+    commitment_present: true,
   });
   await emit('verified', {
-    device_id: prepared.envelope.device_id,
+    device_id_present: true,
     base_sync_version: prepared.envelope.base_sync_version,
     payload_bytes: prepared.payloadBytes,
   });
 
   auditLog(audit, 'rpc_lock_transaction_started', 'info', {
-    member_id: auth.id,
-    device_id: prepared.envelope.device_id,
     base_sync_version: prepared.envelope.base_sync_version,
+    device_id_present: true,
   });
   await emit('locking', {
-    member_id: auth.id,
     base_sync_version: prepared.envelope.base_sync_version,
   });
 
@@ -316,9 +324,9 @@ async function runSync(
     sync_version: sync.sync_version,
     previous_sync_version: sync.previous_sync_version,
     conflict: sync.conflict,
-    last_commitment_hash: sync.last_commitment_hash,
-    rejected_commitment_hash: sync.rejected_commitment_hash,
-    canonical_commitment_hash: canonicalState?.commitment_hash,
+    last_commitment_present: Boolean(sync.last_commitment_hash),
+    rejected_commitment_present: Boolean(sync.rejected_commitment_hash),
+    canonical_commitment_present: Boolean(canonicalState?.commitment_hash),
   });
   await emit(sync.accepted ? 'committed' : 'conflict', {
     status: sync.status,
@@ -330,7 +338,6 @@ async function runSync(
   const body: SyncResponseBody = {
     ok: sync.accepted,
     audit_id: audit.auditId,
-    member_id: auth.id,
     sync,
     ...(canonicalState ? { canonical_state: canonicalState } : {}),
     commitment: {
@@ -533,7 +540,49 @@ function normalizeMetadata(value: unknown): Record<string, unknown> {
     throw new SyncHttpError(413, 'metadata exceeds maximum sync metadata size');
   }
 
+  validateMetadataSafety(value);
   return value;
+}
+
+function validateMetadataSafety(metadata: Record<string, unknown>) {
+  for (const key of Object.keys(metadata)) {
+    if (FORBIDDEN_METADATA_KEYS.has(key.toLowerCase())) {
+      throw new SyncHttpError(400, `metadata must not include raw secret field ${key}`);
+    }
+  }
+
+  validateOptionalSha256(metadata.wallet_address_hash, 'wallet_address_hash');
+  validateOptionalSha256(metadata.wallet_key_message_hash, 'wallet_key_message_hash');
+  validateOptionalSha256(metadata.wallet_signature_hash, 'wallet_signature_hash');
+
+  if (metadata.key_mode !== 'client_wallet_derived') return;
+
+  if (metadata.key_derivation !== 'wallet_signature_hkdf_sha256_v1') {
+    throw new SyncHttpError(400, 'wallet-derived pod metadata must identify the key derivation version');
+  }
+
+  if (metadata.wallet_signature_stored !== false) {
+    throw new SyncHttpError(400, 'wallet-derived pod metadata must confirm the wallet signature was not stored');
+  }
+
+  if (metadata.server_can_decrypt_pod !== false) {
+    throw new SyncHttpError(400, 'wallet-derived pod metadata must confirm the server cannot decrypt the pod');
+  }
+
+  for (const field of ['wallet_address_hash', 'wallet_key_message_hash', 'wallet_signature_hash']) {
+    if (!isSha256Hex(metadata[field])) {
+      throw new SyncHttpError(400, `wallet-derived pod metadata requires ${field} as a sha256 hex digest`);
+    }
+  }
+}
+
+function validateOptionalSha256(value: unknown, field: string) {
+  if (value === undefined || isSha256Hex(value)) return;
+  throw new SyncHttpError(400, `${field} must be a 64-character sha256 hex digest`);
+}
+
+function isSha256Hex(value: unknown): boolean {
+  return typeof value === 'string' && SHA256_HEX_PATTERN.test(value.trim().toLowerCase());
 }
 
 function requiredString(value: unknown, field: string): string {
@@ -613,7 +662,7 @@ async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<E
     }
   }
 
-  const walletId = parseCookies(req.headers.get('cookie')).get('soe_wallet_id');
+  const walletId = await verifyWalletSessionValue(parseCookies(req.headers.get('cookie')).get('soe_wallet_id'));
   if (walletId && UUID_PATTERN.test(walletId)) {
     const member = await lookupMember(env, 'id', walletId);
     if (member) return member;
@@ -803,12 +852,14 @@ function normalizeError(
   audit?: SyncAuditContext,
 ): { status: number; body: Record<string, unknown> } {
   if (err instanceof SyncHttpError) {
+    const publicMessage = publicSyncErrorMessage(err);
     if (audit) {
       const classification = classifySyncError(err);
       auditLog(audit, classification.phase, classification.level, {
         http_status: err.status,
-        error: err.message,
-        details: serializeErrorDetails(err.details),
+        error: publicMessage,
+        error_kind: classification.kind,
+        private_context_redacted: err.privateContext !== undefined,
       });
     }
 
@@ -816,8 +867,7 @@ function normalizeError(
       status: err.status,
       body: {
         audit_id: audit?.auditId,
-        error: err.message,
-        details: err.details,
+        error: publicMessage,
       },
     };
   }
@@ -826,10 +876,9 @@ function normalizeError(
     auditLog(audit, 'sync_failed', 'error', {
       http_status: 500,
       error: 'Pod sync failed',
-      details: serializeErrorDetails(err),
+      error_kind: 'unexpected',
+      private_context_redacted: true,
     });
-  } else {
-    console.error('[movement/pod/sync] failed', err);
   }
 
   return {
@@ -837,36 +886,30 @@ function normalizeError(
     body: {
       audit_id: audit?.auditId,
       error: 'Pod sync failed',
-      details: String(err),
     },
   };
 }
 
-function classifySyncError(error: SyncHttpError): { phase: SyncAuditPhase; level: SyncAuditLevel } {
-  if (error.status === 401) return { phase: 'auth_rejected', level: 'warn' };
-  if (error.status === 400 || error.status === 413) {
-    return { phase: 'validation_rejected', level: 'warn' };
+type SyncErrorKind = 'auth' | 'validation' | 'payload_too_large' | 'conflict' | 'upstream' | 'unexpected';
+
+function classifySyncError(error: SyncHttpError): {
+  phase: SyncAuditPhase;
+  level: SyncAuditLevel;
+  kind: SyncErrorKind;
+} {
+  if (error.status === 401) return { phase: 'auth_rejected', level: 'warn', kind: 'auth' };
+  if (error.status === 400) return { phase: 'validation_rejected', level: 'warn', kind: 'validation' };
+  if (error.status === 413) return { phase: 'validation_rejected', level: 'warn', kind: 'payload_too_large' };
+  if (error.status === 409) return { phase: 'stale_conflict', level: 'warn', kind: 'conflict' };
+  if (error.status >= 500 || error.privateContext !== undefined) {
+    return { phase: 'rpc_failed', level: 'error', kind: 'upstream' };
   }
-  if (
-    error.message.includes('Pod sync transaction failed') ||
-    error.message.includes('Supabase auth lookup failed') ||
-    error.message.includes('Member lookup failed') ||
-    error.message.includes('returned an invalid response')
-  ) {
-    return { phase: 'rpc_failed', level: 'error' };
-  }
-  return { phase: 'sync_failed', level: 'error' };
+  return { phase: 'sync_failed', level: 'error', kind: 'unexpected' };
 }
 
-function serializeErrorDetails(value: unknown): unknown {
-  if (value instanceof Error) {
-    return {
-      name: value.name,
-      message: value.message,
-    };
-  }
-
-  if (typeof value === 'string') return value.slice(0, 500);
-  if (isRecord(value) || Array.isArray(value) || value === null) return value;
-  return String(value);
+function publicSyncErrorMessage(error: SyncHttpError): string {
+  if (error.status === 401) return 'Unauthorized';
+  if (error.status === 400 || error.status === 413) return error.publicMessage;
+  if (error.status === 409) return 'Pod sync conflict. Refresh your pod and try again.';
+  return 'Pod sync failed';
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import { blockLocalLiveStripeCheckout, getCheckoutBaseUrl } from '@/lib/capital/checkoutSafety';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,10 +9,10 @@ export async function POST(req: NextRequest) {
     if (!stripeKey) return NextResponse.json({ error: 'STRIPE_SECRET_KEY not configured' }, { status: 503 });
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2026-03-25.dahlia', maxNetworkRetries: 1 });
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = getSupabaseAdmin();
+    const baseUrl = getCheckoutBaseUrl(req);
+    const blocked = blockLocalLiveStripeCheckout(req, stripeKey, baseUrl, 'Merch checkout');
+    if (blocked) return blocked;
 
     const { productId, quantity = 1 } = await req.json();
 
@@ -45,10 +46,12 @@ export async function POST(req: NextRequest) {
         quantity,
       }],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/merch/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/salon`,
+      success_url: `${baseUrl}/merch/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/salon`,
       metadata: { 
+        type: 'merch',
         productId: productId.toString(), 
+        product_id: productId.toString(),
         quantity: quantity.toString()
       },
       shipping_address_collection: { allowed_countries: ['US'] },

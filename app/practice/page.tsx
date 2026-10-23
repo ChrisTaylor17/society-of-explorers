@@ -3,8 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const CINZEL = 'Cinzel, serif';
 const CORMORANT = 'Cormorant Garamond, serif';
@@ -139,7 +138,7 @@ export default function PracticePage() {
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { day: dayName, monthDay } = useMemo(formatToday, []);
+  const { day: dayName, monthDay } = useMemo(() => formatToday(), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,9 +149,7 @@ export default function PracticePage() {
       try {
         const session = await getMemberSession();
         if (session?.member) mid = session.member.id;
-        const supabase = createClient();
-        const { data: { session: auth } } = await supabase.auth.getSession();
-        if (auth?.access_token) token = auth.access_token;
+        token = await getSupabaseAccessToken();
       } catch {}
 
       if (cancelled) return;
@@ -205,7 +202,7 @@ export default function PracticePage() {
   async function handleSubmit() {
     if (!question || !draft.trim()) return;
     if (!memberId) {
-      window.location.href = '/join';
+      window.location.assign('/join');
       return;
     }
     setPhase('submitting');
@@ -219,7 +216,6 @@ export default function PracticePage() {
         body: JSON.stringify({
           questionId: question.id,
           responseText: draft.trim(),
-          memberId,
         }),
       });
       const data = await res.json();
@@ -242,7 +238,7 @@ export default function PracticePage() {
       setPhase('revealing');
 
       // Start fetching the reflection immediately (parallel with the fade).
-      const reflectionPromise = fetchReflection(responseId);
+      const reflectionPromise = fetchReflection(responseId, authToken);
       const othersPromise = fetch(
         `/api/practice/others?questionId=${encodeURIComponent(question.id)}`,
         { headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined },
@@ -267,11 +263,14 @@ export default function PracticePage() {
     }
   }
 
-  async function fetchReflection(responseId: string): Promise<string> {
+  async function fetchReflection(responseId: string, token: string | null): Promise<string> {
     try {
       const res = await fetch('/api/practice/reflect', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ responseId }),
       });
       if (!res.ok || !res.body) return '';

@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { startRecording, stopRecording, isRecordingNow } from '@/lib/voiceRecorder';
 import { speakText } from '@/lib/tts';
 
@@ -27,9 +28,21 @@ const REACTIONS = [
 const TABS = ['trending', 'thinker_picks', 'my', 'archive'] as const;
 const TAB_LABELS: Record<string, string> = { trending: 'Trending', thinker_picks: "Thinker's Picks", my: 'My Constellation', archive: 'Archive' };
 
+interface Twiddle {
+  id: string;
+  content: string | null;
+  twiddle_type: string | null;
+  thread_type: string | null;
+  thinker_tags: string[];
+  voice_url?: string | null;
+  is_thinker_response?: boolean | null;
+  thinker_key?: string | null;
+  created_at: string;
+  reaction_counts: Record<string, number>;
+}
+
 export default function TwiddlePage() {
   const [memberId, setMemberId] = useState<string | null>(null);
-  const [memberName, setMemberName] = useState('Explorer');
 
   // Compose
   const [content, setContent] = useState('');
@@ -43,32 +56,33 @@ export default function TwiddlePage() {
 
   // Feed
   const [tab, setTab] = useState<typeof TABS[number]>('trending');
-  const [twiddles, setTwiddles] = useState<any[]>([]);
+  const [twiddles, setTwiddles] = useState<Twiddle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(() => Date.now());
 
   // Thread expand
   const [expandedThread, setExpandedThread] = useState<string | null>(null);
-  const [threadData, setThreadData] = useState<any[]>([]);
+  const [threadData, setThreadData] = useState<Twiddle[]>([]);
 
   // Thinker respond
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
-  const [respondThinker, setRespondThinker] = useState('socrates');
+  const [respondThinker] = useState('socrates');
 
-  useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => {
-        if (s?.member) { setMemberId(s.member.id); setMemberName(s.member.display_name || 'Explorer'); }
-      });
-    });
-    loadFeed();
+  const getAuthHeaders = useCallback(async (includeJson = false): Promise<HeadersInit> => {
+    const accessToken = await getSupabaseAccessToken();
+    return {
+      ...(includeJson ? { 'Content-Type': 'application/json' } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
   }, []);
 
-  useEffect(() => { loadFeed(); }, [tab]);
-
-  async function loadFeed() {
+  const loadFeed = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/twiddle?filter=${tab}&limit=20${memberId ? `&memberId=${memberId}` : ''}`);
+      const res = await fetch(`/api/twiddle?filter=${tab}&limit=20`, {
+        cache: 'no-store',
+        headers: await getAuthHeaders(),
+      });
       const data = await res.json();
       setTwiddles(Array.isArray(data.twiddles) ? data.twiddles : []);
     } catch (err) {
@@ -76,15 +90,28 @@ export default function TwiddlePage() {
       setTwiddles([]);
     }
     setLoading(false);
-  }
+  }, [getAuthHeaders, tab]);
+
+  useEffect(() => {
+    getMemberSession().then(s => {
+      if (s?.member) setMemberId(s.member.id);
+    });
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => { void Promise.resolve().then(loadFeed); }, [loadFeed]);
 
   async function postTwiddle() {
     if (!content.trim() || !memberId || posting) return;
     setPosting(true);
     await fetch('/api/twiddle', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, twiddle_type: 'text', thread_type: threadType, thinker_tags: selectedThinkers, memberId }),
+      headers: await getAuthHeaders(true),
+      body: JSON.stringify({ content, twiddle_type: 'text', thread_type: threadType, thinker_tags: selectedThinkers }),
     });
     setContent(''); setSelectedThinkers([]); setPosting(false);
     loadFeed();
@@ -107,8 +134,8 @@ export default function TwiddlePage() {
     if (!memberId) return;
     await fetch(`/api/twiddle/${twiddleId}/react`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reaction_type: reactionType, memberId }),
+      headers: await getAuthHeaders(true),
+      body: JSON.stringify({ reaction_type: reactionType }),
     });
     loadFeed();
   }
@@ -116,10 +143,10 @@ export default function TwiddlePage() {
   async function askThinker(twiddleId: string) {
     if (!memberId) return;
     setRespondingTo(twiddleId);
-    const res = await fetch(`/api/twiddle/${twiddleId}/respond`, {
+    await fetch(`/api/twiddle/${twiddleId}/respond`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ thinker_key: respondThinker, memberId }),
+      headers: await getAuthHeaders(true),
+      body: JSON.stringify({ thinker_key: respondThinker }),
     });
     setRespondingTo(null);
     loadFeed();
@@ -128,7 +155,10 @@ export default function TwiddlePage() {
   async function loadThread(twiddleId: string) {
     if (expandedThread === twiddleId) { setExpandedThread(null); return; }
     setExpandedThread(twiddleId);
-    const res = await fetch(`/api/twiddle/${twiddleId}`);
+    const res = await fetch(`/api/twiddle/${twiddleId}`, {
+      cache: 'no-store',
+      headers: await getAuthHeaders(),
+    });
     const data = await res.json();
     setThreadData(data.thread || []);
   }
@@ -138,7 +168,7 @@ export default function TwiddlePage() {
   }
 
   function timeAgo(ts: string): string {
-    const diff = Date.now() - new Date(ts).getTime();
+    const diff = now - new Date(ts).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'now';
     if (mins < 60) return `${mins}m`;
@@ -237,9 +267,6 @@ export default function TwiddlePage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: `${gold}08` }}>
             {twiddles.map(tw => {
-              const thinkerResponses = expandedThread === tw.id ? threadData.filter((t: any) => t.is_thinker_response) : [];
-              const threadCount = tw.reaction_counts ? Object.values(tw.reaction_counts as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : 0;
-
               return (
                 <div key={tw.id} style={{ background: '#0d0d0d', padding: '1.25rem 1.5rem' }}>
                   {/* Header */}
@@ -315,7 +342,7 @@ export default function TwiddlePage() {
                   {/* Expanded thread */}
                   {expandedThread === tw.id && threadData.length > 1 && (
                     <div style={{ marginTop: '0.75rem', borderLeft: `1px solid ${gold}22`, paddingLeft: '1rem' }}>
-                      {threadData.filter((t: any) => t.id !== tw.id).map((reply: any) => {
+                      {threadData.filter((threadTwiddle) => threadTwiddle.id !== tw.id).map((reply) => {
                         const rt = reply.is_thinker_response ? THINKERS.find(x => x.id === reply.thinker_key) : null;
                         return (
                           <div key={reply.id} style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: `1px solid ${gold}08` }}>
@@ -326,7 +353,7 @@ export default function TwiddlePage() {
                               {reply.content}
                             </div>
                             {reply.voice_url && reply.is_thinker_response && (
-                              <button onClick={() => speakText(reply.content, reply.thinker_key || 'socrates').catch(() => {})} style={{
+                              <button onClick={() => speakText(reply.content || '', reply.thinker_key || 'socrates').catch(() => {})} style={{
                                 marginTop: '0.25rem', fontFamily: 'Cinzel, serif', fontSize: '7px', color: rt?.color || gold,
                                 background: 'none', border: `1px solid ${(rt?.color || gold)}22`, padding: '2px 6px', cursor: 'pointer',
                               }}>⬡ LISTEN</button>

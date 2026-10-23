@@ -1,5 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
 
 const gold = '#C5A55A';
@@ -11,8 +13,28 @@ const THINKER_NAMES: Record<string, string> = {
   aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
 };
 
+type BookCohort = {
+  id: string;
+  book_id: string;
+  title: string;
+  description?: string | null;
+  max_members?: number | null;
+  member_count?: number | null;
+  status?: string | null;
+  thinker_id?: string | null;
+  start_date?: string | null;
+};
+
+async function bookSalonHeaders(json = false): Promise<Record<string, string>> {
+  const accessToken = await getSupabaseAccessToken();
+  return {
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
+}
+
 export default function BookSalons() {
-  const [cohorts, setCohorts] = useState<any[]>([]);
+  const [cohorts, setCohorts] = useState<BookCohort[]>([]);
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -23,22 +45,23 @@ export default function BookSalons() {
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState<string | null>(null);
 
-  useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => { if (s?.member?.id) setMemberId(s.member.id); });
-    });
-    loadCohorts();
-  }, []);
-
-  async function loadCohorts() {
+  const loadCohorts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/book-salons');
+      const res = await fetch('/api/book-salons', {
+        cache: 'no-store',
+        headers: await bookSalonHeaders(),
+      });
       const data = await res.json();
       setCohorts(data.cohorts || []);
     } catch {}
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    getMemberSession().then(s => { if (s?.member?.id) setMemberId(s.member.id); });
+    void Promise.resolve().then(() => loadCohorts());
+  }, [loadCohorts]);
 
   async function createCohort() {
     if (!createBook || !createTitle || !memberId) return;
@@ -46,18 +69,18 @@ export default function BookSalons() {
     const book = GREAT_BOOKS.find(b => b.id === createBook);
     await fetch('/api/book-salons', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      headers: await bookSalonHeaders(true),
       body: JSON.stringify({
         bookId: createBook,
         title: createTitle,
         maxMembers: createMax,
         startDate: createDate || new Date().toISOString(),
-        memberId,
         thinkerId: book?.recommended_thinker || 'socrates',
       }),
     });
     setCreating(false); setShowCreate(false); setCreateTitle(''); setCreateBook('');
-    loadCohorts();
+    void loadCohorts();
   }
 
   async function joinCohort(cohortId: string) {
@@ -65,18 +88,19 @@ export default function BookSalons() {
     setJoining(cohortId);
     await fetch('/api/book-salons/join', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cohortId, memberId }),
+      cache: 'no-store',
+      headers: await bookSalonHeaders(true),
+      body: JSON.stringify({ cohortId }),
     });
     setJoining(null);
-    loadCohorts();
+    void loadCohorts();
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← GREAT BOOKS LIBRARY</a>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>SALON</a>
+        <Link href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← GREAT BOOKS LIBRARY</Link>
+        <Link href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>SALON</Link>
       </nav>
 
       <div style={{ textAlign: 'center', padding: '80px 20px 40px' }}>
@@ -117,7 +141,7 @@ export default function BookSalons() {
                   </div>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', letterSpacing: '0.1em', color: parchment, marginBottom: '0.25rem' }}>{cohort.title}</div>
                   <div style={{ fontSize: '13px', color: muted, fontStyle: 'italic' }}>
-                    {book?.author || 'Unknown'} · Led by {THINKER_NAMES[cohort.thinker_id] || 'Socrates'}
+                    {book?.author || 'Unknown'} · Led by {THINKER_NAMES[cohort.thinker_id || ''] || 'Socrates'}
                     {cohort.start_date && ` · Starts ${new Date(cohort.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                   </div>
                   {cohort.description && <p style={{ fontSize: '12px', color: muted, marginTop: '0.5rem', lineHeight: 1.6 }}>{cohort.description}</p>}
@@ -131,9 +155,9 @@ export default function BookSalons() {
                       {joining === cohort.id ? 'JOINING...' : `JOIN · ${spotsLeft} SPOTS`}
                     </button>
                   ) : (
-                    <a href={`/book-salons/${cohort.id}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '8px 18px', textDecoration: 'none', display: 'inline-block' }}>
+                    <Link href={`/book-salons/${cohort.id}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '8px 18px', textDecoration: 'none', display: 'inline-block' }}>
                       ENTER SALON
-                    </a>
+                    </Link>
                   )}
                 </div>
               </div>

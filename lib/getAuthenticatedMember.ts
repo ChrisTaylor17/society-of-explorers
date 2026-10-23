@@ -1,17 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
 
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
-const MEMBER_SELECT = 'id, display_name, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens, tier, coherence_data, supabase_auth_id, wallet_address';
+const MEMBER_SELECT = 'id, display_name, email, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens, tier, coherence_data, supabase_auth_id, wallet_address';
 
 export interface AuthenticatedMember {
   id: string;
   display_name: string;
+  email: string | null;
   bio: string | null;
   discipline: string | null;
   skills: string[] | null;
@@ -20,9 +17,22 @@ export interface AuthenticatedMember {
   philosophy: string | null;
   exp_tokens: number;
   tier: string;
-  coherence_data: any;
+  coherence_data: unknown;
   supabase_auth_id: string | null;
   wallet_address: string | null;
+}
+
+async function getMemberByColumn(
+  column: 'supabase_auth_id' | 'id',
+  value: string,
+): Promise<AuthenticatedMember | null> {
+  const { data: member } = await getSupabaseAdmin()
+    .from('members')
+    .select(MEMBER_SELECT)
+    .eq(column, value)
+    .single();
+
+  return (member as AuthenticatedMember | null) ?? null;
 }
 
 /**
@@ -36,18 +46,13 @@ export interface AuthenticatedMember {
 export async function getAuthenticatedMember(
   req: NextRequest,
 ): Promise<{ memberId: string; member: AuthenticatedMember } | null> {
-
   // 1. Try Supabase session (Google OAuth / email-password)
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: member } = await supabaseAdmin
-        .from('members')
-        .select(MEMBER_SELECT)
-        .eq('supabase_auth_id', user.id)
-        .single();
-      if (member) return { memberId: member.id, member: member as AuthenticatedMember };
+      const member = await getMemberByColumn('supabase_auth_id', user.id);
+      if (member) return { memberId: member.id, member };
     }
   } catch {}
 
@@ -64,25 +69,17 @@ export async function getAuthenticatedMember(
       );
       const { data: { user } } = await supabaseAuth.auth.getUser();
       if (user) {
-        const { data: member } = await supabaseAdmin
-          .from('members')
-          .select(MEMBER_SELECT)
-          .eq('supabase_auth_id', user.id)
-          .single();
-        if (member) return { memberId: member.id, member: member as AuthenticatedMember };
+        const member = await getMemberByColumn('supabase_auth_id', user.id);
+        if (member) return { memberId: member.id, member };
       }
     } catch {}
   }
 
   // 3. Try soe_wallet_id cookie (MetaMask/SIWE)
-  const walletId = req.cookies.get('soe_wallet_id')?.value;
+  const walletId = await verifyWalletSessionValue(req.cookies.get('soe_wallet_id')?.value);
   if (walletId) {
-    const { data: member } = await supabaseAdmin
-      .from('members')
-      .select(MEMBER_SELECT)
-      .eq('id', walletId)
-      .single();
-    if (member) return { memberId: member.id, member: member as AuthenticatedMember };
+    const member = await getMemberByColumn('id', walletId);
+    if (member) return { memberId: member.id, member };
   }
 
   return null;

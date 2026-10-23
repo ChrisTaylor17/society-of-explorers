@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import WelcomeModal from '@/components/WelcomeModal';
-import { computeFrequencyProfile, deriveTags, type CoherenceInput } from '@/lib/world/frequency';
+import { computeFrequencyProfile, deriveTags, type CoherenceInput, type FrequencyVector } from '@/lib/world/frequency';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
@@ -23,7 +23,7 @@ interface ExpEvent {
   id: string;
   amount: number;
   reason: string;
-  metadata: string;
+  metadata: unknown;
   created_at: string;
 }
 
@@ -44,9 +44,47 @@ interface StampSpace {
   id: string;
   name: string;
   city: string | null;
-  country: string | null;
+  country?: string | null;
   space_type: string;
-  slug: string;
+  slug?: string;
+}
+
+interface DashboardTrigger {
+  id: string;
+  suggested_thinker: string | null;
+  message_sent: string | null;
+  context_summary: string | null;
+}
+
+interface DashboardBriefing {
+  profile: {
+    active_goals?: unknown[] | null;
+    pending_commitments?: unknown[] | null;
+  } | null;
+  triggers: DashboardTrigger[];
+  sessionCount: number;
+  lastSessionAt: string | null;
+  latestVerdict: {
+    question: string;
+    public_url_slug: string;
+    created_at: string;
+  } | null;
+  memberName: string;
+  events: ExpEvent[];
+  scans: ScanWithSpace[];
+  stampSpaces: StampSpace[];
+  showWelcome: boolean;
+  error?: string;
+}
+
+interface FeedEvent {
+  id: string;
+  event_type: string;
+  title: string;
+}
+
+interface FeedResponse {
+  events?: FeedEvent[];
 }
 
 const TIER_BADGES: Record<string, { label: string; color: string; icon: string }> = {
@@ -67,7 +105,9 @@ const REASON_LABELS: Record<string, string> = {
   seminar_completion: 'Seminar completed',
 };
 
-const DIM_BARS: { key: string; label: string; color: string }[] = [
+type FrequencyDimension = Extract<keyof FrequencyVector, 'focus' | 'coherence' | 'engagement' | 'exploration'>;
+
+const DIM_BARS: { key: FrequencyDimension; label: string; color: string }[] = [
   { key: 'focus', label: 'Focus', color: '#c9a84c' },
   { key: 'coherence', label: 'Coherence', color: '#7B68EE' },
   { key: 'engagement', label: 'Engagement', color: '#DC143C' },
@@ -91,8 +131,13 @@ function timeAgo(iso: string): string {
 }
 
 function DashboardFeed() {
-  const [events, setEvents] = useState<any[]>([]);
-  useEffect(() => { fetch('/api/feed?limit=8').then(r => r.json()).then(d => setEvents(d.events || [])).catch(() => {}); }, []);
+  const [events, setEvents] = useState<FeedEvent[]>([]);
+  useEffect(() => {
+    fetch('/api/feed?limit=8')
+      .then(r => r.json() as Promise<FeedResponse>)
+      .then(d => setEvents(d.events || []))
+      .catch(() => {});
+  }, []);
   if (events.length === 0) return null;
   const ICONS: Record<string, string> = { task_created: '\u2713', task_completed: '\u2705', exp_awarded: '\ud83c\udf96', project_created: '\ud83d\udcca', room_started: '\ud83d\udcf9', member_joined: '\ud83d\udc64' };
   return (
@@ -120,59 +165,63 @@ export default function ExplorerDashboard() {
   const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const hasCheckedWelcomeRef = useRef(false);
-  const [briefing, setBriefing] = useState<any>(null);
+  const [briefing, setBriefing] = useState<DashboardBriefing | null>(null);
 
   useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(async session => {
-        if (!session) { router.push('/join'); return; }
+    let active = true;
+
+    async function loadDashboard() {
+      try {
+        const { getMemberSession, getSupabaseAccessToken } = await import('@/lib/auth/getSession');
+        const session = await getMemberSession();
+        if (!active) return;
+        if (!session) {
+          router.push('/join');
+          return;
+        }
+
         const m = session.member as Member;
         setMember(m);
-        const sb = session.supabase;
 
-        // Parallel data fetches
-        const [eventsRes, scansRes] = await Promise.all([
-          sb.from('exp_events').select('*').eq('member_id', m.id).order('created_at', { ascending: false }).limit(10),
-          sb.from('scan_uploads').select('id, space_id, quality_score, verified, is_first_scan, exp_awarded, created_at').eq('scanner_id', m.supabase_auth_id).order('created_at', { ascending: false }),
-        ]);
+        const authToken = await getSupabaseAccessToken();
+        const briefingResponse = await fetch('/api/dashboard/briefing', {
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+          cache: 'no-store',
+        });
+        if (!active) return;
+        if (briefingResponse.status === 401) {
+          router.push('/join');
+          return;
+        }
+        if (!briefingResponse.ok) throw new Error('Dashboard briefing failed');
 
-        // Check if first visit (no salon messages) — show welcome modal
+        const data = (await briefingResponse.json()) as DashboardBriefing;
+        if (data.error) throw new Error('Dashboard briefing failed');
+
+        setBriefing(data);
+        setEvents(data.events || []);
+        setScans(data.scans || []);
+        setStampSpaces(data.stampSpaces || []);
         if (!hasCheckedWelcomeRef.current) {
           hasCheckedWelcomeRef.current = true;
-          const { data: salonData } = await sb.from('salon_messages').select('id').eq('member_id', m.id).limit(1);
-          if (!salonData || salonData.length === 0) {
-            setShowWelcome(true);
-          }
+          setShowWelcome(Boolean(data.showWelcome));
         }
+      } catch {
+        if (!active) return;
+        setBriefing(null);
+        setEvents([]);
+        setScans([]);
+        setStampSpaces([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
 
-        setEvents(eventsRes.data || []);
+    loadDashboard();
 
-        const scanRows = scansRes.data || [];
-        // Fetch space names for scans
-        if (scanRows.length > 0) {
-          const spaceIds = [...new Set(scanRows.map((s: any) => s.space_id))];
-          const { data: spaces } = await sb.from('spaces').select('id, name, city, space_type').in('id', spaceIds);
-          const spaceMap = new Map((spaces || []).map((s: any) => [s.id, s]));
-
-          const enriched = scanRows.map((s: any) => {
-            const sp = spaceMap.get(s.space_id);
-            return { ...s, space_name: sp?.name, space_city: sp?.city, space_type: sp?.space_type };
-          });
-          setScans(enriched);
-
-          // Unique spaces = passport stamps
-          const uniqueSpaces = [...spaceMap.values()] as StampSpace[];
-          setStampSpaces(uniqueSpaces);
-        }
-
-        setLoading(false);
-
-        // Fetch morning briefing data
-        fetch('/api/dashboard/briefing').then(r => r.json()).then(d => {
-          if (!d.error) setBriefing(d);
-        }).catch(() => {});
-      });
-    });
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   useEffect(() => {
@@ -199,7 +248,8 @@ export default function ExplorerDashboard() {
   const tierInfo = TIER_BADGES[member.tier] || TIER_BADGES.free;
   const freqVector = member.coherence_data ? computeFrequencyProfile(member.coherence_data) : null;
   const freqTags = freqVector ? deriveTags(freqVector) : [];
-  const verifiedScans = scans.filter(s => s.verified);
+  const activeGoals = briefing?.profile?.active_goals ?? [];
+  const pendingCommitments = briefing?.profile?.pending_commitments ?? [];
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
@@ -227,7 +277,7 @@ export default function ExplorerDashboard() {
         <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic', marginBottom: '0.75rem' }}>Your explorer home base.</p>
         <a
           href={`/explorer/${member.id}`}
-          onClick={(e) => {
+          onClick={() => {
             try {
               navigator.clipboard.writeText(`${window.location.origin}/explorer/${member.id}`).catch(() => {});
             } catch {}
@@ -244,10 +294,10 @@ export default function ExplorerDashboard() {
         <section data-fade style={{ padding: '0 2rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
           <div style={{ maxWidth: '640px', margin: '0 auto' }}>
             {/* Context line */}
-            {briefing.profile?.active_goals?.length > 0 && (
+            {activeGoals.length > 0 && (
               <p style={{ fontSize: '15px', color: muted, textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic' }}>
-                {briefing.profile.active_goals.length} active goal{briefing.profile.active_goals.length !== 1 ? 's' : ''}.
-                {briefing.profile.pending_commitments?.length > 0 && ` ${briefing.profile.pending_commitments.length} commitment${briefing.profile.pending_commitments.length !== 1 ? 's' : ''} pending.`}
+                {activeGoals.length} active goal{activeGoals.length !== 1 ? 's' : ''}.
+                {pendingCommitments.length > 0 && ` ${pendingCommitments.length} commitment${pendingCommitments.length !== 1 ? 's' : ''} pending.`}
               </p>
             )}
 
@@ -255,7 +305,7 @@ export default function ExplorerDashboard() {
             {briefing.triggers.length > 0 && (
               <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>COUNCIL CHECK-INS</div>
-                {briefing.triggers.map((t: any) => (
+                {briefing.triggers.map((t) => (
                   <div key={t.id} style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1rem 1.25rem', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                     <div style={{ flex: 1 }}>
                       <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: gold }}>{(t.suggested_thinker || '').toUpperCase()}</span>
@@ -416,7 +466,7 @@ export default function ExplorerDashboard() {
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>FREQUENCY PROFILE</div>
             <div style={{ background: '#0d0d0d', border: `1px solid ${gold}18`, padding: '1.5rem 2rem' }}>
               {DIM_BARS.map(d => {
-                const val = (freqVector as any)[d.key] as number;
+                const val = freqVector[d.key];
                 const pct = Math.round(val * 100);
                 return (
                   <div key={d.key} style={{ marginBottom: '8px' }}>

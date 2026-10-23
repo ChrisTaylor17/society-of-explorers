@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import Anthropic from '@anthropic-ai/sdk';
+import { NextRequest } from 'next/server';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getResend } from '@/lib/email/resend';
+import { privateJson } from '@/lib/http/routeError';
 import { getThinkerContext } from '@/lib/memory/sharedMemory';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 const COUNCIL_PROMPTS: Record<string, string> = {
   socrates: 'You are Socrates — you find the question behind the question.',
@@ -18,20 +17,40 @@ const COUNCIL_PROMPTS: Record<string, string> = {
   jobs: 'You are Steve Jobs — you obsess over what the user should FEEL.',
 };
 
+function proactiveEmailNotificationsEnabled() {
+  return process.env.PROACTIVE_EMAIL_NOTIFICATIONS_ENABLED === 'true';
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 export async function GET(req: NextRequest) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return privateJson({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: triggers } = await supabase
+  const supabase = getSupabaseAdmin();
+
+  const { data: triggers, error: triggersError } = await supabase
     .from('proactive_triggers')
-    .select('*')
+    .select('id, member_id, suggested_thinker, context_summary, trigger_type')
     .eq('status', 'pending')
     .lte('scheduled_for', new Date().toISOString())
     .limit(20);
 
+  if (triggersError) {
+    console.warn('[proactive] trigger query failed');
+    return privateJson({ error: 'Failed to load proactive triggers' }, { status: 500 });
+  }
+
   if (!triggers || triggers.length === 0) {
-    return NextResponse.json({ processed: 0 });
+    return privateJson({ processed: 0 });
   }
 
   let processed = 0;
@@ -57,8 +76,10 @@ export async function GET(req: NextRequest) {
         context = await getThinkerContext(trigger.member_id, trigger.suggested_thinker, trigger.context_summary, { isCouncil: false });
       } catch {}
 
+      const anthropic = createAnthropicClient();
+      const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model,
         max_tokens: 150,
         system: `${prompt}\n\nYou are proactively reaching out to check in. Be warm, specific, and reference what you know. 2-3 sentences only. This is a notification, not a conversation.\n\n${context}`,
         messages: [{ role: 'user', content: `Generate a proactive ${trigger.trigger_type} check-in about: ${trigger.context_summary}` }],
@@ -66,33 +87,19 @@ export async function GET(req: NextRequest) {
 
       const message = response.content.find(b => b.type === 'text')?.text || '';
 
-      if (process.env.RESEND_API_KEY && email) {
-        const thinkerName = trigger.suggested_thinker.charAt(0).toUpperCase() + trigger.suggested_thinker.slice(1);
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'Society of Explorers <notifications@societyofexplorers.com>',
-            to: email,
-            subject: `${thinkerName} has a question for you`,
-            html: `<div style="background:#0a0a0a;color:#f5f0e8;padding:40px;font-family:Georgia,serif;max-width:500px;">
-              <div style="font-size:9px;letter-spacing:0.4em;color:#c9a84c;margin-bottom:24px;">SOCIETY OF EXPLORERS</div>
-              <p style="font-size:18px;line-height:1.8;color:rgba(245,240,232,0.85);margin:0 0 24px;">${message}</p>
-              <a href="https://www.societyofexplorers.com/council" style="display:inline-block;padding:12px 28px;background:#c9a84c;color:#0a0a0a;text-decoration:none;font-size:11px;letter-spacing:0.15em;">RESPOND TO THE COUNCIL</a>
-              <div style="margin-top:32px;height:1px;background:rgba(201,168,76,0.15);"></div>
-              <div style="margin-top:16px;font-size:11px;color:rgba(245,240,232,0.3);">92B South St &middot; Boston</div>
-            </div>`,
-          }),
-        }).catch(console.error);
-      }
+      await sendProactiveEmail({
+        email,
+        thinkerId: trigger.suggested_thinker,
+        message,
+      });
 
       await supabase.from('proactive_triggers')
         .update({ status: 'delivered', delivered_at: new Date().toISOString(), message_sent: message })
         .eq('id', trigger.id);
 
       processed++;
-    } catch (err) {
-      console.error('[proactive] Trigger failed:', trigger.id, err);
+    } catch {
+      console.warn('[proactive] trigger failed', trigger.id);
       await supabase.from('proactive_triggers')
         .update({ status: 'failed' })
         .eq('id', trigger.id);
@@ -100,5 +107,35 @@ export async function GET(req: NextRequest) {
   }
 
   console.log(`[proactive] Processed ${processed} triggers`);
-  return NextResponse.json({ processed });
+  return privateJson({ processed });
+}
+
+async function sendProactiveEmail(input: {
+  email: string | null;
+  thinkerId: string;
+  message: string;
+}) {
+  if (!input.email || !proactiveEmailNotificationsEnabled()) return;
+
+  try {
+    const thinkerName = input.thinkerId.charAt(0).toUpperCase() + input.thinkerId.slice(1);
+    const safeThinkerName = escapeHtml(thinkerName);
+    const safeMessage = escapeHtml(input.message);
+    const resend = getResend();
+    await resend.emails.send({
+      from: 'Society of Explorers <notifications@societyofexplorers.com>',
+      to: input.email,
+      subject: `${thinkerName} has a question for you`,
+      html: `<div style="background:#0a0a0a;color:#f5f0e8;padding:40px;font-family:Georgia,serif;max-width:500px;">
+        <div style="font-size:9px;letter-spacing:0.4em;color:#c9a84c;margin-bottom:12px;">SOCIETY OF EXPLORERS</div>
+        <div style="font-size:11px;letter-spacing:0.18em;color:rgba(201,168,76,0.65);margin-bottom:24px;">${safeThinkerName}</div>
+        <p style="font-size:18px;line-height:1.8;color:rgba(245,240,232,0.85);margin:0 0 24px;">${safeMessage}</p>
+        <a href="https://www.societyofexplorers.com/council" style="display:inline-block;padding:12px 28px;background:#c9a84c;color:#0a0a0a;text-decoration:none;font-size:11px;letter-spacing:0.15em;">RESPOND TO THE COUNCIL</a>
+        <div style="margin-top:32px;height:1px;background:rgba(201,168,76,0.15);"></div>
+        <div style="margin-top:16px;font-size:11px;color:rgba(245,240,232,0.3);">92B South St &middot; Boston</div>
+      </div>`,
+    });
+  } catch {
+    console.warn('[proactive] notification email skipped');
+  }
 }

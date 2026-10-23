@@ -27,7 +27,7 @@ export interface FrequencyVector {
 }
 
 export interface MatchResult {
-  memberId: string;
+  matchKey: string;
   displayName: string;
   similarity: number;
   vector: FrequencyVector;

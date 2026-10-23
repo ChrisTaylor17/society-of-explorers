@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
@@ -8,22 +9,40 @@ const THINKER_NAMES: Record<string, string> = { socrates: 'SOCRATES', plato: 'PL
 const THINKER_COLORS: Record<string, string> = { socrates: '#C9A84C', plato: '#7C9EBF', nietzsche: '#BF4040', aurelius: '#8B7355', einstein: '#6B9E6B', jobs: '#C0C0C0' };
 const gold = '#c9a84c';
 
+type Artifact = {
+  id: string;
+  title: string;
+  description: string | null;
+  philosophical_note: string | null;
+  image_url: string | null;
+  thinker_id: string;
+  members: { display_name: string | null } | null;
+};
+
 export default function HallOfCreations() {
-  const [artifacts, setArtifacts] = useState<any[]>([]);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [selectedArtifact, setSelectedArtifact] = useState<any>(null);
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
 
-  useEffect(() => { loadArtifacts(); }, [filter]);
+  useEffect(() => {
+    let cancelled = false;
 
-  async function loadArtifacts() {
-    setLoading(true);
-    let query = supabase.from('artifacts').select('*, members(display_name)').eq('is_public', true).order('created_at', { ascending: false }).limit(48);
-    if (filter !== 'all') query = query.eq('thinker_id', filter);
-    const { data } = await query;
-    setArtifacts(data || []);
-    setLoading(false);
-  }
+    async function loadArtifacts() {
+      setLoading(true);
+      let query = supabase.from('artifacts').select('*, members(display_name)').eq('is_public', true).order('created_at', { ascending: false }).limit(48);
+      if (filter !== 'all') query = query.eq('thinker_id', filter);
+      const { data } = await query;
+      if (cancelled) return;
+      setArtifacts((data || []) as Artifact[]);
+      setLoading(false);
+    }
+
+    void loadArtifacts();
+    return () => {
+      cancelled = true;
+    };
+  }, [filter]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', color: '#E8D5A3', fontFamily: 'Cormorant Garamond, serif' }}>
@@ -57,7 +76,14 @@ export default function HallOfCreations() {
         ) : artifacts.map((a) => (
           <div key={a.id} onClick={() => setSelectedArtifact(a)} style={{ cursor: 'pointer', position: 'relative', aspectRatio: '1', overflow: 'hidden', border: '1px solid rgba(201,168,76,0.15)', transition: 'border-color 0.3s' }}>
             {a.image_url ? (
-              <img src={a.image_url} alt={a.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Image
+                src={a.image_url}
+                alt={a.title}
+                fill
+                sizes="(max-width: 680px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                unoptimized
+                style={{ objectFit: 'cover' }}
+              />
             ) : (
               <div style={{ width: '100%', height: '100%', background: `radial-gradient(ellipse, ${THINKER_COLORS[a.thinker_id] || gold}22 0%, #0A0A0A 70%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>⬡</div>
             )}
@@ -75,7 +101,17 @@ export default function HallOfCreations() {
       {selectedArtifact && (
         <div onClick={() => setSelectedArtifact(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '100%', background: '#111', border: `1px solid ${THINKER_COLORS[selectedArtifact.thinker_id] || gold}40`, padding: '40px' }}>
-            {selectedArtifact.image_url && <img src={selectedArtifact.image_url} alt={selectedArtifact.title} style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', marginBottom: '24px' }} />}
+            {selectedArtifact.image_url && (
+              <Image
+                src={selectedArtifact.image_url}
+                alt={selectedArtifact.title}
+                width={800}
+                height={800}
+                sizes="(max-width: 840px) calc(100vw - 40px), 800px"
+                unoptimized
+                style={{ width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'cover', marginBottom: '24px' }}
+              />
+            )}
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '3px', color: THINKER_COLORS[selectedArtifact.thinker_id] || gold, marginBottom: '8px' }}>{selectedArtifact.thinker_id?.toUpperCase()} × {selectedArtifact.members?.display_name}</div>
             <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: '22px', fontWeight: 400, color: '#E8D5A3', margin: '0 0 16px' }}>{selectedArtifact.title}</h2>
             <p style={{ fontSize: '15px', color: 'rgba(232,213,163,0.75)', lineHeight: 1.7, fontStyle: 'italic', marginBottom: '16px' }}>{selectedArtifact.description}</p>

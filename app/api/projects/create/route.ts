@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 import {
   BASE_MAINNET_CHAIN_ID,
   BASE_SEPOLIA_CHAIN_ID,
   getDefaultLiveBaseChainId,
 } from '@/lib/blockchain/liveBaseProfile';
+import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
+import { privateJson } from '@/lib/http/routeError';
 import type {
   ActiveCollaboration,
   EscrowSettlementPreferences,
@@ -82,8 +83,7 @@ export async function POST(req: NextRequest) {
     if (auth.id !== request.creator_member_id && auth.id !== request.partner_member_id) {
       auditLog(audit, 'membership_rejected', 'warn', {
         http_status: 403,
-        creator_member_id: request.creator_member_id,
-        partner_member_id: request.partner_member_id,
+        participant_reference_count: 2,
       });
       return jsonWithAudit(
         { audit_id: audit.auditId, error: 'Caller must be one of the proposed project members.' },
@@ -134,12 +134,10 @@ export async function POST(req: NextRequest) {
 
     auditLog(audit, 'workspace_scaffold_created', 'info', {
       http_status: 200,
-      project_id: projectId,
-      creator_member_id: request.creator_member_id,
-      partner_member_id: request.partner_member_id,
+      participant_count: 2,
       milestone_count: milestones.length,
       chain_id: multisigConfig.chain_id,
-      multisig_address: multisigConfig.multisig_address,
+      multisig_configured: multisigConfig.multisig_address !== ZERO_ADDRESS,
     });
 
     return jsonWithAudit(
@@ -166,10 +164,10 @@ export async function POST(req: NextRequest) {
       audit.auditId,
       200,
     );
-  } catch (error) {
+  } catch {
     auditLog(audit, 'execution_failed', 'error', {
       http_status: 500,
-      error: errorMessage(error),
+      reason: 'internal_error',
     });
     return jsonWithAudit(
       { audit_id: audit.auditId, error: 'Project creation failed.' },
@@ -316,7 +314,7 @@ async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<E
     }
   }
 
-  const walletId = parseCookies(req.headers.get('cookie')).get('soe_wallet_id');
+  const walletId = await verifyWalletSessionValue(parseCookies(req.headers.get('cookie')).get('soe_wallet_id'));
   if (walletId && UUID_PATTERN.test(walletId)) {
     return lookupMember(env, 'id', walletId);
   }
@@ -345,12 +343,7 @@ async function lookupMember(
   field: 'id' | 'supabase_auth_id',
   value: string,
 ): Promise<EdgeMember | null> {
-  const supabase = createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  const supabase = await createServiceSupabase(env);
 
   const { data, error } = await supabase
     .from('members')
@@ -359,25 +352,30 @@ async function lookupMember(
     .limit(1)
     .maybeSingle();
 
-  if (error) throw new Error(`Member lookup failed: ${error.message}`);
+  if (error) throw new Error('Member lookup failed.');
   return data ? (data as EdgeMember) : null;
 }
 
 async function lookupMembers(env: SupabaseEnv, memberIds: string[]): Promise<EdgeMember[]> {
-  const supabase = createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  const supabase = await createServiceSupabase(env);
 
   const { data, error } = await supabase
     .from('members')
     .select(MEMBER_SELECT)
     .in('id', memberIds);
 
-  if (error) throw new Error(`Project member lookup failed: ${error.message}`);
+  if (error) throw new Error('Project member lookup failed.');
   return Array.isArray(data) ? (data as EdgeMember[]) : [];
+}
+
+async function createServiceSupabase(env: SupabaseEnv) {
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(env.url, env.serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
 function getSupabaseEnv(): SupabaseEnv {
@@ -393,10 +391,9 @@ function getSupabaseEnv(): SupabaseEnv {
 }
 
 function jsonWithAudit(body: Record<string, unknown>, auditId: string, status: number) {
-  return NextResponse.json(body, {
+  return privateJson(body, {
     status,
     headers: {
-      'cache-control': 'no-store',
       'x-project-audit-id': auditId,
     },
   });
@@ -415,14 +412,12 @@ function auditLog(
     audit_id: audit.auditId,
     at: new Date().toISOString(),
     elapsed_ms: Math.round((performance.now() - audit.startedAtMs) * 100) / 100,
-    caller_member_id: audit.callerMemberId,
-    project_id: audit.projectId,
+    caller_authenticated: Boolean(audit.callerMemberId),
+    project_scaffolded: Boolean(audit.projectId),
     ...details,
   });
 
-  if (level === 'error') {
-    console.error(line);
-  } else if (level === 'warn') {
+  if (level === 'error' || level === 'warn') {
     console.warn(line);
   } else {
     console.info(line);
@@ -463,14 +458,4 @@ function parseCookies(header: string | null): Map<string, string> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Unknown error';
-  }
 }

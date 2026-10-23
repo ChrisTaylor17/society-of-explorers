@@ -1,24 +1,16 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
-import { parseActions } from '@/lib/thinkerActions';
+import { parseActions, type ThinkerAction } from '@/lib/thinkerActions';
 import { executeActionsWithResults } from '@/lib/actions/executeActions';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { storeConversationEmbedding } from '@/lib/memory/embeddings';
 import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
 import { getCommunityThinkerPrompts } from '@/lib/community/getCommunity';
 import { checkPermission } from '@/lib/governance/hats';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const DIRECT_MAX_TOKENS = 600;
 const COUNCIL_MAX_TOKENS = 800;
@@ -39,12 +31,97 @@ const COUNCIL_PROMPTS: Record<string, string> = {
 
 const ARTIFACT_KEYWORDS = ['draft', 'write', 'plan', 'outline', 'create', 'build', 'design', 'manifesto', 'pitch', 'letter', 'framework', 'strategy', 'proposal'];
 
+interface MemberContextProfile {
+  id?: string;
+  display_name?: string | null;
+  bio?: string | null;
+  discipline?: string | null;
+  skills?: string[] | null;
+  project_description?: string | null;
+  seeking?: string | null;
+  philosophy?: string | null;
+  exp_tokens?: number | null;
+}
+
+interface DemoMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface ThinkerRequestBody {
+  demo?: boolean;
+  thinkerId?: string;
+  thinker?: string;
+  message?: string;
+  isReaction?: boolean;
+  salonId?: string;
+  isCouncilMode?: boolean;
+  councilContext?: { thinker: string; response: string }[];
+  community?: string;
+  messages?: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function textField(value: unknown, maxLength: number): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
+async function safeRequestJson(req: NextRequest): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCouncilContext(value: unknown): { thinker: string; response: string }[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .slice(0, 8)
+    .map((entry) => {
+      if (!isRecord(entry)) return null;
+      const thinker = textField(entry.thinker, 80);
+      const response = textField(entry.response, 4_000);
+      return thinker && response ? { thinker, response } : null;
+    })
+    .filter((entry): entry is { thinker: string; response: string } => Boolean(entry));
+}
+
+function privateSseHeaders(): HeadersInit {
+  return {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate, no-transform',
+    Pragma: 'no-cache',
+    Expires: '0',
+    Connection: 'keep-alive',
+    Vary: 'Cookie, Authorization',
+    'X-Content-Type-Options': 'nosniff',
+  };
+}
+
+function reportThinkerRouteFailure(scope: string) {
+  console.warn(`[thinker] ${scope} failed`);
+}
+
 function isArtifactRequest(message: string): boolean {
   const lower = message.toLowerCase();
   return ARTIFACT_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-function buildMemberContext(m: any): string {
+function isDemoMessage(value: unknown): value is DemoMessage {
+  if (typeof value !== 'object' || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return (row.role === 'user' || row.role === 'assistant') && typeof row.content === 'string';
+}
+
+function buildMemberContext(m: MemberContextProfile): string {
   let name = 'Explorer';
   if (m.display_name && !m.display_name.startsWith('0x')) {
     name = m.display_name;
@@ -62,37 +139,38 @@ function buildMemberContext(m: any): string {
   ].filter(Boolean).join('\n');
 }
 
-const MEMBER_SELECT = 'id, display_name, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens';
-
 export async function POST(req: NextRequest) {
-  const _startTime = Date.now();
-  console.log('[thinker] start', _startTime);
   try {
-    const body = await req.json();
+    const parsed = await safeRequestJson(req);
+    if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
+
+    const body = parsed as ThinkerRequestBody;
+    let supabaseAdminClient: ReturnType<typeof getSupabaseAdmin> | null = null;
+    const supabaseAdmin = () => {
+      supabaseAdminClient ??= getSupabaseAdmin();
+      return supabaseAdminClient;
+    };
 
     const isDemo = body.demo === true;
-    const thinkerId = body.thinkerId ?? body.thinker;
-    const message = body.message;
+    const thinkerId = textField(body.thinkerId, 80) ?? textField(body.thinker, 80);
+    const message = textField(body.message, 8_000);
     const isReaction = body.isReaction ?? false;
-    const walletMemberId = body.walletMemberId;
-    const salonId = body.salonId ?? 'general';
-    const councilContext: { thinker: string; response: string }[] = body.councilContext || [];
-    const communitySlug: string = body.community || 'society-of-explorers';
+    const salonId = textField(body.salonId, 120) ?? 'general';
+    const councilContext = normalizeCouncilContext(body.councilContext);
+    const communitySlug = textField(body.community, 120) ?? 'society-of-explorers';
+    const demoMessages = Array.isArray(body.messages) ? body.messages.filter(isDemoMessage) : [];
 
     if (!thinkerId || !message) {
-      return new Response(
-        JSON.stringify({ error: 'thinkerId and message are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return privateJson({ error: 'thinkerId and message are required' }, { status: 400 });
     }
 
     // --- DEMO MODE: Socrates only, limited messages, no auth ---
     if (isDemo) {
       if (thinkerId !== 'socrates') {
-        return Response.json({ error: 'Demo only available with Socrates' }, { status: 403 });
+        return privateJson({ error: 'Demo only available with Socrates' }, { status: 403 });
       }
-      if (body.messages && body.messages.length > DEMO_MESSAGE_LIMIT) {
-        return Response.json({ error: 'Demo limit reached' }, { status: 429 });
+      if (demoMessages.length > DEMO_MESSAGE_LIMIT) {
+        return privateJson({ error: 'Demo limit reached' }, { status: 429 });
       }
     }
 
@@ -112,32 +190,14 @@ export async function POST(req: NextRequest) {
         memberContext = buildMemberContext(auth.member);
       }
 
-      // Fallback: accept memberId from request body when cookie/token auth fails
-      if (!memberId && (body.memberId || body.walletMemberId)) {
-        const fallbackId = body.memberId || body.walletMemberId;
-        const { data: m } = await supabaseAdmin.from('members').select(MEMBER_SELECT).eq('id', fallbackId).single();
-        if (m) {
-          memberId = m.id;
-          memberName = m.display_name;
-          memberExpTokens = m.exp_tokens || 0;
-          memberContext = buildMemberContext(m);
-        }
-      }
-
-      // Council mode allows anonymous usage (no member required)
-      if (!memberId && !isCouncilMode) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
+      if (!memberId) return privateJson({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Permission check for non-default communities
     if (memberId && communitySlug !== 'society-of-explorers' && !isDemo) {
       const canUseCouncil = await checkPermission(memberId, communitySlug, 'use_council');
       if (!canUseCouncil) {
-        return new Response(JSON.stringify({ error: 'You do not have council access in this community' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+        return privateJson({ error: 'You do not have council access in this community' }, { status: 403 });
       }
     }
 
@@ -149,14 +209,14 @@ export async function POST(req: NextRequest) {
         (message.includes('Respond as ') && message.includes(' — in character, direct'));
 
       if (!isSystemPrompt) {
-        const { error: userMsgError } = await supabaseAdmin.from('salon_messages').insert({
+        const { error: userMsgError } = await supabaseAdmin().from('salon_messages').insert({
           salon_id: salonId,
           sender_type: 'member',
           sender_name: memberName || 'Explorer',
           thinker_id: null,
           content: message,
         });
-        if (userMsgError) console.error('USER MSG SAVE FAILED:', userMsgError);
+        if (userMsgError) reportThinkerRouteFailure('member message save');
       }
     }
 
@@ -170,15 +230,12 @@ export async function POST(req: NextRequest) {
       // Council: just the current user message. Council context is already in the system prompt.
       conversationHistory = [{ role: 'user', content: message }];
     } else if (isDemo) {
-      conversationHistory = (body.messages || []).map((m: any) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      }));
+      conversationHistory = demoMessages;
       if (!conversationHistory.some(m => m.content === message)) {
         conversationHistory.push({ role: 'user', content: message });
       }
     } else {
-      const { data: history } = await supabaseAdmin
+      const { data: history } = await supabaseAdmin()
         .from('salon_messages')
         .select('content, sender_type, thinker_id')
         .eq('salon_id', salonId)
@@ -200,8 +257,8 @@ export async function POST(req: NextRequest) {
     if (!isDemo && !isCouncilMode && memberId) {
       try {
         memory = await getMemory(memberId, thinkerId);
-      } catch (memErr) {
-        console.error('[thinker] Memory retrieval failed, continuing without:', memErr);
+      } catch {
+        reportThinkerRouteFailure('thinker memory retrieval');
       }
     }
 
@@ -278,8 +335,8 @@ export async function POST(req: NextRequest) {
           if (sharedContext) {
             fullSystemPrompt += '\n\n' + sharedContext;
           }
-        } catch (err) {
-          console.error('[thinker] Shared memory lookup failed:', err);
+        } catch {
+          reportThinkerRouteFailure('shared memory lookup');
         }
       }
 
@@ -293,23 +350,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('[thinker] system prompt length:', fullSystemPrompt.length, 'first 200 chars:', fullSystemPrompt.slice(0, 200));
-
     // --- STREAM RESPONSE ---
+    const claudePurpose = isCouncilMode ? 'council' : 'default';
+    const claudeModel = resolveClaudeModel(claudePurpose);
+    const anthropic = createAnthropicClient();
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
           let fullText = '';
-          console.log(`[thinker] ${thinkerId} calling Claude (${maxTokens} tokens, council=${isCouncilMode}, prompt=${fullSystemPrompt.length} chars)`);
 
           // Retry once on failure
-          let lastErr: any = null;
+          let lastErr: unknown = null;
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
+              const claudeStartedAt = Date.now();
               const anthropicStream = anthropic.messages.stream({
-                model: 'claude-sonnet-4-20250514',
+                model: claudeModel,
                 max_tokens: maxTokens,
                 system: fullSystemPrompt,
                 messages: conversationHistory,
@@ -320,18 +378,23 @@ export async function POST(req: NextRequest) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
               });
 
-              await anthropicStream.finalMessage();
+              const finalMessage = await anthropicStream.finalMessage();
+              logClaudeUsage({
+                purpose: claudePurpose,
+                model: claudeModel,
+                operation: 'messages.stream',
+                latencyMs: Date.now() - claudeStartedAt,
+                usage: finalMessage.usage,
+              });
               lastErr = null;
               break; // success
-            } catch (apiErr: any) {
+            } catch (apiErr: unknown) {
               lastErr = apiErr;
-              console.error(`[thinker] ${thinkerId} Claude attempt ${attempt + 1} failed:`, apiErr?.message || apiErr);
+              reportThinkerRouteFailure('provider stream attempt');
               if (attempt === 0) await new Promise(r => setTimeout(r, 2000)); // wait before retry
             }
           }
           if (lastErr) throw lastErr;
-
-          console.log(`[thinker] ${thinkerId} response: ${fullText.length} chars`);
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
             const doneData = JSON.stringify({ done: true, response: '', silent: true });
@@ -342,7 +405,7 @@ export async function POST(req: NextRequest) {
 
           // --- PARSE ACTIONS (skip for demo) ---
           let cleanText: string;
-          let actions: any[] = [];
+          let actions: ThinkerAction[] = [];
 
           if (isDemo) {
             cleanText = fullText
@@ -368,15 +431,14 @@ export async function POST(req: NextRequest) {
             };
             // Skip salon_messages save in council mode (each thinker manages its own context via councilContext)
             if (!isCouncilMode) {
-              const { error: saveError } = await supabaseAdmin.from('salon_messages').insert({
+              const { error: saveError } = await supabaseAdmin().from('salon_messages').insert({
                 salon_id: salonId,
                 sender_type: 'thinker',
                 sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
                 thinker_id: thinkerId,
                 content: cleanText,
               });
-              if (saveError) console.error('THINKER SAVE FAILED:', saveError);
-              else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
+              if (saveError) reportThinkerRouteFailure('thinker message save');
             }
 
             // Member-specific operations (skip for anonymous council)
@@ -388,7 +450,7 @@ export async function POST(req: NextRequest) {
               }
 
               const expAmount = isReaction ? 4 : 8;
-              await supabaseAdmin.from('exp_events').insert({
+              await supabaseAdmin().from('exp_events').insert({
                 member_id: memberId,
                 amount: expAmount,
                 reason: isReaction
@@ -396,12 +458,12 @@ export async function POST(req: NextRequest) {
                   : `Conversation with ${thinkerId}`,
               });
 
-              const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
+              const { error: rpcError } = await supabaseAdmin().rpc('increment_exp', {
                 member_id_input: memberId,
                 amount_input: expAmount,
               });
               if (rpcError) {
-                await supabaseAdmin
+                await supabaseAdmin()
                   .from('members')
                   .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
                   .eq('id', memberId);
@@ -412,7 +474,7 @@ export async function POST(req: NextRequest) {
                 aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
               };
               recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
-                .catch(err => console.error('Memory update failed:', err));
+                .catch(() => reportThinkerRouteFailure('legacy memory update'));
 
               // Store embeddings + episodes for memory (fire and forget)
               const sessionId = `${isCouncilMode ? 'council' : 'salon'}-${salonId}-${Date.now()}`;
@@ -447,10 +509,10 @@ export async function POST(req: NextRequest) {
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();
-        } catch (err: any) {
-          console.error(`[thinker] FATAL ${thinkerId}:`, err?.message, err?.status, err?.error?.type);
+        } catch {
+          reportThinkerRouteFailure('stream');
           try {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err?.message || 'Stream failed', done: true })}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream failed', done: true })}\n\n`));
             controller.close();
           } catch {
             try { controller.close(); } catch {}
@@ -459,19 +521,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('[thinker] response complete', Date.now(), `(${Date.now() - _startTime}ms)`);
     return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
+      headers: privateSseHeaders(),
     });
-  } catch (err) {
-    console.error('Thinker API error:', err);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+  } catch {
+    reportThinkerRouteFailure('request');
+    return privateJson({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface ArtifactGeneratorProps {
   thinkerId: string;
@@ -7,7 +8,14 @@ interface ArtifactGeneratorProps {
   memberId: string;
   memberProject?: string;
   recentMessages: Array<{ content: string; sender_type: string }>;
-  onArtifactCreated?: (artifact: any) => void;
+  onArtifactCreated?: (artifact: GeneratedArtifact) => void;
+}
+
+interface GeneratedArtifact {
+  title: string;
+  image_url?: string | null;
+  philosophical_note?: string | null;
+  vision?: { philosophicalNote?: string | null } | null;
 }
 
 const gold = '#c9a84c';
@@ -16,7 +24,7 @@ export default function ArtifactGenerator({ thinkerId, memberName, memberId, mem
   const [isOpen, setIsOpen] = useState(false);
   const [request, setRequest] = useState('');
   const [status, setStatus] = useState<'idle' | 'generating' | 'done' | 'error'>('idle');
-  const [artifact, setArtifact] = useState<any>(null);
+  const [artifact, setArtifact] = useState<GeneratedArtifact | null>(null);
   const [error, setError] = useState('');
 
   const conversationContext = recentMessages.slice(-10).map(m => `${m.sender_type === 'member' ? 'Explorer' : 'Thinker'}: ${m.content}`).join('\n');
@@ -30,8 +38,9 @@ export default function ArtifactGenerator({ thinkerId, memberName, memberId, mem
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ thinkerId, conversationContext, memberName, memberProject, specificRequest: request, walletMemberId: memberId }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { success?: boolean; error?: string; artifact?: GeneratedArtifact };
       if (!data.success) throw new Error(data.error || 'Generation failed');
+      if (!data.artifact) throw new Error('Generation returned no artifact');
       setArtifact(data.artifact); setStatus('done');
       onArtifactCreated?.(data.artifact);
     } catch (err) { setStatus('error'); setError(String(err)); }
@@ -68,7 +77,17 @@ export default function ArtifactGenerator({ thinkerId, memberName, memberId, mem
         </div>
       ) : (
         <div>
-          {artifact?.image_url && <img src={artifact.image_url} alt={artifact.title} style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', marginBottom: '16px' }} />}
+          {artifact?.image_url && (
+            <Image
+              src={artifact.image_url}
+              alt={artifact.title}
+              width={1024}
+              height={1024}
+              sizes="(max-width: 760px) calc(100vw - 48px), 720px"
+              unoptimized
+              style={{ width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'cover', marginBottom: '16px' }}
+            />
+          )}
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: gold, marginBottom: '8px' }}>{artifact?.title}</div>
           <p style={{ fontSize: '14px', color: 'rgba(232,213,163,0.75)', fontStyle: 'italic', lineHeight: 1.6, marginBottom: '8px' }}>{artifact?.vision?.philosophicalNote || artifact?.philosophical_note}</p>
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px', flexWrap: 'wrap' }}>

@@ -1,9 +1,7 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getBook } from '@/lib/books/catalog';
 import { buildSeminarPrompt } from '@/lib/books/prompts';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,12 +12,14 @@ export async function POST(req: NextRequest) {
     const prompt = buildSeminarPrompt(thinkerId, book.title, passage, discussion);
 
     const encoder = new TextEncoder();
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
     const stream = new ReadableStream({
       async start(controller) {
         let fullText = '';
         try {
           const s = anthropic.messages.stream({
-            model: 'claude-sonnet-4-20250514',
+            model,
             max_tokens: 300,
             messages: [{ role: 'user', content: prompt }],
           });

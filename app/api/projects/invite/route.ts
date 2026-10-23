@@ -10,6 +10,7 @@ import {
 } from '@/lib/blockchain/liveBaseProfile';
 import { isRecord, stableStringify } from '@/lib/movement/podSync';
 import type { MilestoneDefinition, MultisigConfig } from '@/lib/movement/explorerGraph';
+import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -511,7 +512,7 @@ async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<E
     }
   }
 
-  const walletId = parseCookies(req.headers.get('cookie')).get('soe_wallet_id');
+  const walletId = await verifyWalletSessionValue(parseCookies(req.headers.get('cookie')).get('soe_wallet_id'));
   if (walletId && UUID_PATTERN.test(walletId)) {
     const member = await lookupMember(env, 'id', walletId);
     if (member) return member;

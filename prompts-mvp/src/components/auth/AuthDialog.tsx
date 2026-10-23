@@ -12,6 +12,7 @@ interface EthereumProvider {
 
 interface AuthDialogProps {
   open: boolean;
+  returnTo?: string;
   onClose(): void;
   onAuthenticated(): Promise<void> | void;
 }
@@ -23,7 +24,12 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Sign-in could not be completed.";
 }
 
-export function AuthDialog({ open, onClose, onAuthenticated }: AuthDialogProps) {
+export function AuthDialog({
+  open,
+  returnTo = "/",
+  onClose,
+  onAuthenticated,
+}: AuthDialogProps) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<"email" | "google" | "wallet" | null>(null);
   const [notice, setNotice] = useState("");
@@ -38,7 +44,7 @@ export function AuthDialog({ open, onClose, onAuthenticated }: AuthDialogProps) 
     const { error: authError } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnTo)}`,
       },
     });
     if (authError) setError(authError.message);
@@ -52,7 +58,9 @@ export function AuthDialog({ open, onClose, onAuthenticated }: AuthDialogProps) 
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnTo)}`,
+      },
     });
     if (authError) {
       setError(authError.message);
@@ -212,4 +220,3 @@ export function AuthDialog({ open, onClose, onAuthenticated }: AuthDialogProps) 
     </AnimatePresence>
   );
 }
-

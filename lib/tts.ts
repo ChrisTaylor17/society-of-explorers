@@ -1,23 +1,23 @@
 // lib/tts.ts
 // iOS-safe TTS with sentence chunking to prevent ElevenLabs cutoff
 
-const VOICE_IDS: Record<string, string> = {
-  socrates: 'pNInz6obpgDQGcFmaJgB',
-  plato: 'ErXwobaYiN019PkySvjV',
-  nietzsche: 'VR6AewLTigWG4xSOukaG',
-  aurelius: 'pqHfZKP75CvOlQylNhV4',
-  einstein: 'SOYHLrjzK2X1ezoPC6cr',
-  jobs: 'g5CIjZEefAph4nQFvHAz',
-};
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 let audioCtx: AudioContext | null = null;
 let currentSource: AudioBufferSourceNode | null = null;
 let stopRequested = false;
 let playing = false;
 
+type WebkitAudioWindow = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  };
+
 function getAudioContext(): AudioContext {
   if (!audioCtx || audioCtx.state === 'closed') {
-    const AC = window.AudioContext || (window as any).webkitAudioContext;
+    const audioWindow = window as WebkitAudioWindow;
+    const AC = audioWindow.AudioContext || audioWindow.webkitAudioContext;
+    if (!AC) throw new Error('AudioContext unavailable');
     audioCtx = new AC();
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -68,10 +68,15 @@ export async function speakText(text: string, thinkerId: string): Promise<void> 
     if (stopRequested) break;
 
     try {
+      const accessToken = await getSupabaseAccessToken();
       const response = await fetch('/api/tts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: chunk, thinkerId }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        cache: 'no-store',
+        body: JSON.stringify({ text: chunk, thinkerId, consentToVoiceGeneration: true }),
       });
 
       if (!response.ok || stopRequested) continue;

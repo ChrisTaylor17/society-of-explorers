@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 
@@ -173,10 +174,10 @@ export default function DataLayer() {
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, marginBottom: '1rem' }}>RUN A NODE</div>
               <p style={{ fontSize: '0.95rem', color: muted, lineHeight: 1.7 }}>Host thinker inference on your hardware. Earn $EXP daily.</p>
             </div>
-            <a href="/book-salons" style={{ background: bgCard, padding: '2.5rem 2rem', textDecoration: 'none', display: 'block' }}>
+            <Link href="/book-salons" style={{ background: bgCard, padding: '2.5rem 2rem', textDecoration: 'none', display: 'block' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, marginBottom: '1rem' }}>JOIN A SALON</div>
               <p style={{ fontSize: '0.95rem', color: muted, lineHeight: 1.7 }}>Read the Great Books with 7 others. The curriculum is the foundation.</p>
-            </a>
+            </Link>
           </div>
 
           <p style={{ fontSize: '1.1rem', color: gold, fontStyle: 'italic', textAlign: 'center', marginTop: '3rem', opacity: 0.6, lineHeight: 1.8 }}>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getStripe } from "@/lib/billing/stripe";
+import { getStripe, matchesPromptAtlasProPriceTerms } from "@/lib/billing/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -10,33 +10,60 @@ function customerId(value: string | Stripe.Customer | Stripe.DeletedCustomer | n
   return typeof value === "string" ? value : value.id;
 }
 
-async function syncSubscription(subscription: Stripe.Subscription) {
+async function syncSubscription(
+  subscription: Stripe.Subscription,
+  eventId: string,
+  eventCreated: number,
+) {
   const memberId = subscription.metadata.soe_member_id;
   const customer = customerId(subscription.customer);
-  if (!memberId || !customer) {
+  const product = subscription.metadata.product;
+  const item = subscription.items.data[0];
+  const price = item?.price;
+  const expectedPriceId = process.env.STRIPE_PROMPTS_PRO_PRICE_ID;
+  if (!expectedPriceId) throw new Error("Prompt Atlas price configuration is missing.");
+
+  if (!memberId || !customer || product !== "prompt_atlas") {
     console.warn("[billing] subscription is missing SoE member metadata", subscription.id);
     return;
   }
+  if (!price) {
+    console.warn("[billing] subscription is missing a price", subscription.id);
+    return;
+  }
 
-  const active = ["active", "trialing"].includes(subscription.status);
+  const eligiblePrice =
+    subscription.items.data.length === 1 &&
+    !subscription.items.has_more &&
+    item?.quantity === 1 &&
+    matchesPromptAtlasProPriceTerms(price, expectedPriceId);
+  if (!eligiblePrice) {
+    console.warn("[billing] subscription no longer matches Prompt Atlas terms", subscription.id);
+  }
+
+  const active = eligiblePrice && ["active", "trialing"].includes(subscription.status);
   const periodEnd = subscription.items.data
     .map((item) => item.current_period_end)
     .filter((value): value is number => typeof value === "number")
     .sort((left, right) => right - left)[0];
 
-  await getSupabaseAdmin().from("prompt_entitlements").upsert(
+  const { data: applied, error } = await getSupabaseAdmin().rpc(
+    "sync_prompt_entitlement",
     {
-      member_id: memberId,
-      plan: active ? "explorer_pro" : "free",
-      stripe_customer_id: customer,
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: subscription.items.data[0]?.price.id || null,
-      subscription_status: subscription.status,
-      current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-      cancel_at_period_end: subscription.cancel_at_period_end,
+      p_member_id: memberId,
+      p_plan: active ? "explorer_pro" : "free",
+      p_stripe_customer_id: customer,
+      p_stripe_subscription_id: subscription.id,
+      p_stripe_price_id: price.id,
+      p_subscription_status: subscription.status,
+      p_current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      p_cancel_at_period_end: subscription.cancel_at_period_end,
+      p_stripe_event_created: eventCreated,
+      p_stripe_event_id: eventId,
     },
-    { onConflict: "member_id" },
   );
+  if (error) throw new Error("Prompt Atlas entitlement persistence failed.");
+  if (!applied) console.info("[billing] ignored stale subscription event", eventId);
 }
 
 export async function POST(request: NextRequest) {
@@ -58,23 +85,37 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
+        if (session.metadata?.product !== "prompt_atlas") break;
         const memberId = session.metadata?.soe_member_id || session.client_reference_id;
         const customer = customerId(session.customer);
         if (memberId && customer) {
-          await getSupabaseAdmin().from("prompt_entitlements").upsert(
+          const { error } = await getSupabaseAdmin().from("prompt_entitlements").upsert(
             { member_id: memberId, stripe_customer_id: customer },
             { onConflict: "member_id" },
           );
+          if (error) throw new Error("Prompt Atlas customer persistence failed.");
         }
-        if (typeof session.subscription === "string") {
-          await syncSubscription(await getStripe().subscriptions.retrieve(session.subscription));
+        if (session.subscription) {
+          const subscriptionId =
+            typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription.id;
+          await syncSubscription(
+            await getStripe().subscriptions.retrieve(subscriptionId),
+            event.id,
+            event.created,
+          );
         }
         break;
       }
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted":
-        await syncSubscription(event.data.object);
+        await syncSubscription(
+          await getStripe().subscriptions.retrieve(event.data.object.id),
+          event.id,
+          event.created,
+        );
         break;
       default:
         break;
@@ -86,4 +127,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ received: true });
 }
-

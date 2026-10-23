@@ -1,6 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+interface VideoRoom {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface LiveSessionSummary {
+  title: string;
+  summary: string;
+  key_moments?: Array<{ speaker: string; insight: string }>;
+  question_of_the_week?: string;
+}
 
 export function getNextSessionDate(): Date {
   const now = new Date();
@@ -22,11 +33,6 @@ export function getNextSessionDate(): Date {
   const year = target.getFullYear();
   const month = String(target.getMonth() + 1).padStart(2, '0');
   const dateStr = String(target.getDate()).padStart(2, '0');
-  // Check DST: if ET offset from UTC is 4h it's EDT, 5h is EST
-  const jan = new Date(year, 0, 1);
-  const jul = new Date(year, 6, 1);
-  const stdOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-  const isDST = etNow.getTimezoneOffset !== undefined; // always use -04:00 for EDT (Apr-Nov)
   // Simpler: April is always EDT (-04:00)
   const offset = (target.getMonth() >= 2 && target.getMonth() <= 10) ? '-04:00' : '-05:00';
 
@@ -45,7 +51,8 @@ export function generateICSContent(sessionDate: Date): string {
   return `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${fmt(sessionDate)}\nDTEND:${fmt(new Date(sessionDate.getTime() + 3600000))}\nRRULE:FREQ=WEEKLY;BYDAY=WE\nSUMMARY:Society of Explorers — Live Council\nURL:https://www.societyofexplorers.com/live\nEND:VEVENT\nEND:VCALENDAR`;
 }
 
-export async function createLiveSession(): Promise<any> {
+export async function createLiveSession(): Promise<VideoRoom | null> {
+  const supabase = getSupabaseAdmin();
   const sessionDate = getNextSessionDate();
   const sessionKey = `live-${sessionDate.toISOString().slice(0, 10)}`;
 
@@ -77,7 +84,8 @@ export async function createLiveSession(): Promise<any> {
   return room;
 }
 
-export async function generateSessionSummary(roomId: string): Promise<any> {
+export async function generateSessionSummary(roomId: string): Promise<LiveSessionSummary | null> {
+  const supabase = getSupabaseAdmin();
   const { data: transcripts } = await supabase.from('room_transcripts')
     .select('speaker_name, content').eq('room_id', roomId).order('created_at', { ascending: true });
 
@@ -85,17 +93,17 @@ export async function generateSessionSummary(roomId: string): Promise<any> {
 
   const transcript = transcripts.map(t => `${t.speaker_name}: ${t.content}`).join('\n');
 
-  const Anthropic = (await import('@anthropic-ai/sdk')).default;
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  const anthropic = createAnthropicClient();
+  const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514', max_tokens: 500,
+    model, max_tokens: 500,
     system: 'Summarize this live council session. Return JSON: {"title":"5 word theme","summary":"3-4 sentences","key_moments":[{"speaker":"name","insight":"one sentence"}],"question_of_the_week":"most provocative question"}',
     messages: [{ role: 'user', content: `TRANSCRIPT:\n${transcript.slice(0, 8000)}` }],
   });
 
   const text = response.content.find(b => b.type === 'text')?.text || '';
-  let parsed: any;
+  let parsed: LiveSessionSummary;
   try { parsed = JSON.parse(text.replace(/```json\n?|```/g, '').trim()); }
   catch { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { title: 'Live Council', summary: '' }; }
 

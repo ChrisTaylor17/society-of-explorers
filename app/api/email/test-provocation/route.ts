@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { Resend } from 'resend';
+import { NextRequest } from 'next/server';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getResend } from '@/lib/email/resend';
+import { privateJson } from '@/lib/http/routeError';
 
 export const runtime = 'nodejs';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const THINKERS = [
   { id: 'socrates', name: 'Socrates' },
@@ -20,11 +18,29 @@ function pickThinker() {
   return THINKERS[Math.floor(Math.random() * THINKERS.length)];
 }
 
+function provocationTestEmailEnabled() {
+  return process.env.PROVOCATION_TEST_EMAIL_NOTIFICATIONS_ENABLED === 'true';
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderProvocationHtml(value: string) {
+  return escapeHtml(value).replace(/\n/g, '<br/>');
+}
+
 async function generateProvocation(thinkerName: string): Promise<string> {
+  const anthropic = createAnthropicClient();
   const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: resolveClaudeModel('content', 'claude-sonnet-4-20250514'),
     max_tokens: 200,
-    system: `You are ${thinkerName}. Write a 2-3 sentence provocation — a question or challenge that makes someone stop and think about their life. Be direct, modern, personal. No archaic language.`,
+    system: `You are ${thinkerName}. Write a 2-3 sentence provocation - a question or challenge that makes someone stop and think about their life. Be direct, modern, personal. No archaic language.`,
     messages: [{ role: 'user', content: 'Give me your provocation for this week.' }],
   });
   const block = msg.content[0];
@@ -32,6 +48,10 @@ async function generateProvocation(thinkerName: string): Promise<string> {
 }
 
 function buildEmailHtml(thinkerName: string, thinkerId: string, provocation: string): string {
+  const safeThinkerName = escapeHtml(thinkerName.toUpperCase());
+  const safeThinkerId = encodeURIComponent(thinkerId);
+  const safeProvocation = renderProvocationHtml(provocation);
+
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -44,15 +64,15 @@ function buildEmailHtml(thinkerName: string, thinkerId: string, provocation: str
         </td></tr>
         <tr><td style="padding:0 0 32px;"><div style="height:1px;background:rgba(201,168,76,0.2);"></div></td></tr>
         <tr><td style="padding:0 0 16px;text-align:center;">
-          <span style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.2em;color:#c9a84c;">${thinkerName.toUpperCase()}</span>
+          <span style="font-family:Georgia,serif;font-size:11px;letter-spacing:0.2em;color:#c9a84c;">${safeThinkerName}</span>
         </td></tr>
         <tr><td style="padding:0 24px 32px;text-align:center;">
           <p style="font-family:Georgia,serif;font-size:20px;line-height:1.8;color:#f5f0e8;margin:0;font-style:italic;">
-            ${provocation}
+            ${safeProvocation}
           </p>
         </td></tr>
         <tr><td style="padding:0 0 40px;text-align:center;">
-          <a href="https://www.societyofexplorers.com/salon?thinker=${thinkerId}" style="display:inline-block;font-family:Georgia,serif;font-size:10px;letter-spacing:0.18em;color:#0a0a0a;background:#c9a84c;padding:14px 28px;text-decoration:none;">
+          <a href="https://www.societyofexplorers.com/salon?thinker=${safeThinkerId}" style="display:inline-block;font-family:Georgia,serif;font-size:10px;letter-spacing:0.18em;color:#0a0a0a;background:#c9a84c;padding:14px 28px;text-decoration:none;">
             CONTINUE THIS CONVERSATION
           </a>
         </td></tr>
@@ -76,10 +96,15 @@ function buildEmailHtml(thinkerName: string, thinkerId: string, provocation: str
 
 export async function POST(req: NextRequest) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return privateJson({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!provocationTestEmailEnabled()) {
+    return privateJson({ success: false, sent: 0, reason: 'email_disabled' });
   }
 
   try {
+    const resend = getResend();
     const thinker = pickThinker();
     const provocation = await generateProvocation(thinker.name);
 
@@ -90,10 +115,9 @@ export async function POST(req: NextRequest) {
       html: buildEmailHtml(thinker.name, thinker.id, provocation),
     });
 
-    console.log(`Test provocation sent: ${thinker.name} → chris@societyofexplorers.com`);
-    return NextResponse.json({ success: true, sent: 1, thinker: thinker.name, provocation });
-  } catch (err) {
-    console.error('Test provocation error:', err);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return privateJson({ success: true, sent: 1, thinker: thinker.name });
+  } catch {
+    console.warn('[email/test-provocation] failed');
+    return privateJson({ error: 'Internal error' }, { status: 500 });
   }
 }

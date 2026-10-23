@@ -38,7 +38,7 @@ function createParticles(): ParticleConfig[] {
 export default function WelcomeModal({ displayName, onEnterSalon, onDismiss }: WelcomeModalProps) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const ctaButtonRef = useRef<HTMLButtonElement | null>(null);
-  const particlesRef = useRef<ParticleConfig[]>(createParticles());
+  const particles = useMemo(() => createParticles(), []);
 
   const safeDisplayName = useMemo(() => {
     const trimmed = displayName.trim();
@@ -74,7 +74,7 @@ export default function WelcomeModal({ displayName, onEnterSalon, onDismiss }: W
       `}</style>
 
       {/* Floating particles */}
-      {particlesRef.current.map((p) => (
+      {particles.map((p) => (
         <div key={p.id} aria-hidden="true" style={{
           position: 'absolute', left: p.left, top: p.top,
           width: `${p.size}px`, height: `${p.size}px`,

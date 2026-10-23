@@ -26,6 +26,10 @@ function remaining(count: number): number {
   return Math.max(0, threshold - count);
 }
 
+function reportPersonalMirrorClientFailure(scope: string) {
+  console.warn(`[movement/personal-ai] ${scope} failed`);
+}
+
 export default function MovementPersonalAiPage() {
   const [state, setState] = useState<MirrorState>('loading');
   const [responseCount, setResponseCount] = useState(0);
@@ -52,9 +56,10 @@ export default function MovementPersonalAiPage() {
           return;
         }
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setStatusText(data.error || 'The mirror is quiet right now.');
+          reportPersonalMirrorClientFailure('rebuild');
+          setStatusText('The mirror is quiet right now.');
           setState('error');
           return;
         }
@@ -73,6 +78,7 @@ export default function MovementPersonalAiPage() {
         }
       } catch {
         if (!cancelled) {
+          reportPersonalMirrorClientFailure('rebuild');
           setStatusText('The mirror is quiet right now.');
           setState('error');
         }
@@ -103,6 +109,7 @@ export default function MovementPersonalAiPage() {
     try {
       const res = await fetch('/api/movement/personal-ai/chat', {
         method: 'POST',
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
@@ -119,7 +126,7 @@ export default function MovementPersonalAiPage() {
           setMessages(baseMessages);
           return;
         }
-        throw new Error(typeof data.error === 'string' ? data.error : 'Mirror failed.');
+        throw new Error('mirror-chat-failed');
       }
 
       const reader = res.body.getReader();
@@ -141,14 +148,15 @@ export default function MovementPersonalAiPage() {
               accumulated += evt.delta;
               setMessages([...baseMessages, { role: 'assistant', content: accumulated }]);
             }
-            if (typeof evt.error === 'string') throw new Error(evt.error);
-          } catch (error) {
-            if (error instanceof Error) throw error;
+            if (typeof evt.error === 'string') throw new Error('mirror-stream-failed');
+          } catch {
+            throw new Error('mirror-stream-event-failed');
           }
         }
       }
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : 'Mirror failed.');
+    } catch {
+      reportPersonalMirrorClientFailure('chat');
+      setStatusText('Mirror failed. Try again.');
       setMessages(baseMessages);
     } finally {
       setStreaming(false);

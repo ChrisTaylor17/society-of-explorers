@@ -1,15 +1,38 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PublicNav from '@/components/PublicNav';
-import { createClient } from '@/lib/supabase/client';
-import { getMemberSession } from '@/lib/auth/getSession';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-const DEFAULT_THINKERS = [
+type Thinker = {
+  id: string;
+  name: string;
+  avatar: string;
+  color: string;
+};
+
+type CommunityThinkerRecord = {
+  thinker_key?: string | null;
+  name?: string | null;
+  avatar?: string | null;
+  color?: string | null;
+};
+
+type CommunityThinkersPayload = {
+  thinkers?: CommunityThinkerRecord[];
+};
+
+type ActionResult = {
+  success?: boolean;
+  type?: string;
+  message?: string;
+};
+
+const DEFAULT_THINKERS: Thinker[] = [
   { id: 'socrates',  name: 'Socrates',  avatar: 'SO', color: '#C9A94E' },
   { id: 'plato',     name: 'Plato',     avatar: 'PL', color: '#7B68EE' },
   { id: 'aurelius',  name: 'Aurelius',  avatar: 'MA', color: '#8B7355' },
@@ -50,7 +73,7 @@ export default function CouncilPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [lastVerdictUrl, setLastVerdictUrl] = useState<string | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
-  const [actionResults, setActionResults] = useState<Record<string, any[]>>({});
+  const [actionResults, setActionResults] = useState<Record<string, ActionResult[]>>({});
   const [onboarded, setOnboarded] = useState(true); // assume true, check on mount
   const [onboardStep, setOnboardStep] = useState(0);
   const [obBuilding, setObBuilding] = useState('');
@@ -71,11 +94,19 @@ export default function CouncilPage() {
       const comm = params.get('community');
       if (comm) {
         setCommunitySlug(comm);
-        fetch(`/api/communities/${comm}/thinkers`).then(r => r.json()).then(d => {
-          if (d.thinkers?.length > 0) {
-            const mapped = d.thinkers.map((t: any) => ({ id: t.thinker_key, name: t.name, avatar: t.avatar, color: t.color }));
+        fetch(`/api/communities/${comm}/thinkers`).then(r => r.json() as Promise<CommunityThinkersPayload>).then(d => {
+          const communityThinkers = d.thinkers || [];
+          if (communityThinkers.length > 0) {
+            const mapped = communityThinkers
+              .map((t): Thinker => ({
+                id: t.thinker_key || '',
+                name: t.name || t.thinker_key || 'Thinker',
+                avatar: t.avatar || 'AI',
+                color: t.color || gold,
+              }))
+              .filter((t) => t.id);
             setThinkers(mapped);
-            setSelectedThinkers(new Set(mapped.map((t: any) => t.id)));
+            setSelectedThinkers(new Set(mapped.map((t) => t.id)));
           }
         }).catch(() => {});
       }
@@ -84,9 +115,8 @@ export default function CouncilPage() {
       try {
         const session = await getMemberSession();
         if (session?.member) setMemberId(session.member.id);
-        const supabase = createClient();
-        const { data: { session: authSession } } = await supabase.auth.getSession();
-        if (authSession?.access_token) setAuthToken(authSession.access_token);
+        const accessToken = await getSupabaseAccessToken();
+        if (accessToken) setAuthToken(accessToken);
       } catch {}
     }
     loadAuth();
@@ -141,9 +171,7 @@ export default function CouncilPage() {
         body: JSON.stringify({
           thinkerId,
           message: userMessage,
-          memberId,
-          walletMemberId: memberId,
-          salonId: `council-${memberId || 'anon'}`,
+          salonId: 'council',
           councilContext: councilCtx,
           isCouncilMode: true,
           community: communitySlug,
@@ -200,7 +228,7 @@ export default function CouncilPage() {
 
     console.log(`[council] ${thinkerId} done: ${finalDisplay.length} chars`);
     return finalDisplay;
-  }, [authToken, memberId, communitySlug]);
+  }, [authToken, communitySlug, thinkers]);
 
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -235,15 +263,14 @@ export default function CouncilPage() {
 
     // Auto-generate verdict card (fire and forget) — only if 2+ real responses
     const realResponses = councilCtx.filter(c => c.response && !c.response.startsWith('['));
-    if (realResponses.length >= 2) {
+    if (realResponses.length >= 2 && authToken) {
       fetch('/api/council/verdict', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({
           sessionId: `council-${Date.now()}`,
           question: text,
           responses: realResponses,
-          memberId,
         }),
       }).then(r => r.json()).then(d => {
         if (d.publicUrl) {
@@ -252,7 +279,7 @@ export default function CouncilPage() {
         }
       }).catch(() => {});
     }
-  }, [input, isStreaming, selectedThinkers, streamThinkerResponse, memberId]);
+  }, [input, isStreaming, selectedThinkers, streamThinkerResponse, authToken, thinkers]);
 
   function completeOnboarding(skip?: boolean) {
     localStorage.setItem('soe_onboarded', 'true');
@@ -260,11 +287,11 @@ export default function CouncilPage() {
     if (!skip && (obBuilding || obChallenge || obSuccess || obBackground)) {
       const contextMsg = `Here's my context: I'm building ${obBuilding || 'something new'}. My biggest challenge is ${obChallenge || 'figuring out next steps'}. In 90 days, success means ${obSuccess || 'meaningful progress'}. Background: ${obBackground || 'varied experience'}. Given all this — what should I focus on first?`;
       // Save to member profile if logged in
-      if (memberId) {
+      if (memberId && authToken) {
         fetch('/api/members/onboarding', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId, answers: { building: obBuilding, challenge: obChallenge, success: obSuccess, background: obBackground } }),
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({ answers: { building: obBuilding, challenge: obChallenge, success: obSuccess, background: obBackground } }),
         }).catch(() => {});
       }
       send(contextMsg);
@@ -274,11 +301,11 @@ export default function CouncilPage() {
   async function handleCreateTask(e: React.FormEvent) {
     e.preventDefault();
     if (!taskTitle.trim()) return;
-    if (memberId) {
+    if (memberId && authToken) {
       try {
         await fetch('/api/tasks', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
           body: JSON.stringify({ title: taskTitle.trim(), description: taskDesc.trim(), priority: 'medium' }),
         });
       } catch {}
@@ -290,6 +317,11 @@ export default function CouncilPage() {
   }
 
   async function handleShareVerdict() {
+    if (!authToken) {
+      setToast('Sign in to generate a verdict link');
+      return;
+    }
+
     const thinkerMessages = messages.filter(m => m.role === 'thinker' && m.content);
     if (thinkerMessages.length < 2) return;
 
@@ -306,12 +338,11 @@ export default function CouncilPage() {
     try {
       const res = await fetch('/api/council/verdict', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({
           sessionId: `council-${Date.now()}`,
           question,
           responses,
-          memberId: memberId || null,
         }),
       });
       const data = await res.json();
@@ -398,7 +429,7 @@ export default function CouncilPage() {
             )}
             {onboardStep === 1 && (
               <div>
-                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What's your biggest challenge right now?</p>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What&apos;s your biggest challenge right now?</p>
                 <input value={obChallenge} onChange={e => setObChallenge(e.target.value)} placeholder="Finding customers, raising capital..."
                   style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
                   onKeyDown={e => { if (e.key === 'Enter') setOnboardStep(2); }} />
@@ -414,7 +445,7 @@ export default function CouncilPage() {
             )}
             {onboardStep === 3 && (
               <div>
-                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What's your background?</p>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What&apos;s your background?</p>
                 <input value={obBackground} onChange={e => setObBackground(e.target.value)} placeholder="Engineer, designer, MBA dropout..."
                   style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
                   onKeyDown={e => { if (e.key === 'Enter') completeOnboarding(); }} />
@@ -491,7 +522,7 @@ export default function CouncilPage() {
                 </p>
                 {msg.thinkerKey && actionResults[msg.thinkerKey] && actionResults[msg.thinkerKey].length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(201,168,76,0.1)' }}>
-                    {actionResults[msg.thinkerKey].map((r: any, i: number) => (
+                    {actionResults[msg.thinkerKey].map((r, i) => (
                       <span key={i} style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '12px',
                         fontSize: '10px', letterSpacing: '0.1em', fontFamily: 'Cinzel, serif',

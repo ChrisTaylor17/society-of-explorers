@@ -14,10 +14,11 @@ export async function GET() {
 
   const { data, error } = await getSupabaseAdmin()
     .from("prompt_community_leaderboard")
-    .select("*")
+    .select(
+      "id, slug, title, description, category, usage_count, favorite_count, vote_count, momentum",
+    )
     .order("momentum", { ascending: false })
     .limit(50);
   if (error) return NextResponse.json({ error: "Community prompts are unavailable." }, { status: 500 });
   return NextResponse.json({ prompts: data, source: "database" });
 }
-

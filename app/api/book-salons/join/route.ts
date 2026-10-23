@@ -1,30 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function safeRequestJson(req: NextRequest): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
-  try {
-    const { cohortId, memberId } = await req.json();
-    if (!cohortId || !memberId) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  const body = await safeRequestJson(req);
+  const cohortId = isRecord(body) && typeof body.cohortId === 'string' ? body.cohortId : '';
+  if (!UUID_RE.test(cohortId)) return privateJson({ error: 'Missing fields' }, { status: 400 });
 
+  const auth = await getAuthenticatedMember(req);
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
     // Check cohort exists and has room
     const { data: cohort } = await supabaseAdmin.from('book_cohorts').select('id, max_members, status').eq('id', cohortId).single();
-    if (!cohort) return NextResponse.json({ error: 'Cohort not found' }, { status: 404 });
-    if (cohort.status === 'completed') return NextResponse.json({ error: 'Cohort is completed' }, { status: 400 });
+    if (!cohort) return privateJson({ error: 'Cohort not found' }, { status: 404 });
+    if (cohort.status === 'completed') return privateJson({ error: 'Cohort is completed' }, { status: 400 });
 
     const { count } = await supabaseAdmin.from('book_cohort_members').select('id', { count: 'exact', head: true }).eq('cohort_id', cohortId);
-    if ((count || 0) >= cohort.max_members) return NextResponse.json({ error: 'Cohort is full' }, { status: 400 });
+    if ((count || 0) >= cohort.max_members) return privateJson({ error: 'Cohort is full' }, { status: 400 });
 
     // Check not already a member
-    const { data: existing } = await supabaseAdmin.from('book_cohort_members').select('id').eq('cohort_id', cohortId).eq('member_id', memberId).single();
-    if (existing) return NextResponse.json({ error: 'Already a member' }, { status: 400 });
+    const { data: existing } = await supabaseAdmin.from('book_cohort_members').select('id').eq('cohort_id', cohortId).eq('member_id', auth.memberId).single();
+    if (existing) return privateJson({ error: 'Already a member' }, { status: 400 });
 
-    const { error } = await supabaseAdmin.from('book_cohort_members').insert({ cohort_id: cohortId, member_id: memberId });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error } = await supabaseAdmin.from('book_cohort_members').insert({ cohort_id: cohortId, member_id: auth.memberId });
+    if (error) return privateJson({ error: 'Failed to join book salon' }, { status: 500 });
 
-    return NextResponse.json({ joined: true });
+    return privateJson({ joined: true });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error('Book salon join failed:', err);
+    return privateJson({ error: 'Failed to join book salon' }, { status: 500 });
   }
 }

@@ -1,12 +1,53 @@
-const CACHE_NAME = 'soe-v1';
+const CACHE_NAME = 'soe-v3';
 const STATIC_ASSETS = [
   '/',
-  '/salon',
   '/labyrinth',
   '/join',
-  '/members',
   '/manifest.json',
 ];
+const CACHEABLE_DESTINATIONS = new Set([
+  'style',
+  'script',
+  'worker',
+  'image',
+  'font',
+  'audio',
+  'video',
+]);
+
+function isCacheableRequest(request) {
+  if (request.method !== 'GET') return false;
+  if (request.mode === 'navigate') return false;
+  if (request.url.includes('/api/')) return false;
+  if (!CACHEABLE_DESTINATIONS.has(request.destination)) return false;
+  if (request.headers.has('authorization')) return false;
+  if (request.headers.has('range')) return false;
+
+  const url = new URL(request.url);
+
+  // Avoid persisting third-party and signed asset URLs on member devices.
+  if (url.origin !== self.location.origin) return false;
+  if (url.search) return false;
+
+  return true;
+}
+
+function isCacheableResponse(response) {
+  if (!response || response.status !== 200 || response.type !== 'basic') return false;
+
+  const cacheControl = (response.headers.get('cache-control') || '').toLowerCase();
+  if (
+    cacheControl.includes('no-store') ||
+    cacheControl.includes('no-cache') ||
+    cacheControl.includes('private')
+  ) {
+    return false;
+  }
+
+  if (response.headers.has('set-cookie')) return false;
+
+  return true;
+}
 
 // Install — cache static assets
 self.addEventListener('install', (event) => {
@@ -28,14 +69,12 @@ self.addEventListener('activate', (event) => {
 
 // Fetch — network first, fall back to cache
 self.addEventListener('fetch', (event) => {
-  // Skip API calls and streaming — those must be live
-  if (event.request.url.includes('/api/')) return;
+  if (!isCacheableRequest(event.request)) return;
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful GET responses
-        if (event.request.method === 'GET' && response.status === 200) {
+        if (isCacheableResponse(response)) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }

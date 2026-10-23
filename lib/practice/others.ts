@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export interface OtherResponse {
   id: string;
@@ -24,10 +24,7 @@ export async function fetchOtherExplorers(params: {
   const { questionId, excludeMemberId, limit = 3 } = params;
   if (!questionId) return [];
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = getSupabaseAdmin();
 
   let query = supabase
     .from('question_responses')

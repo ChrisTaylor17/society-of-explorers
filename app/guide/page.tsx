@@ -2,24 +2,44 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
-const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
 const GUIDE_LEVELS = ['', 'Guide', 'Senior Guide', 'Master Guide'];
 const LEVEL_THRESHOLDS = [0, 1, 3, 10]; // salons completed to reach each level
 const STATUS_COLORS: Record<string, string> = { recruiting: '#4169E1', active: '#4CAF50', graduating: '#FFA726', completed: muted };
 
+type GuideSalon = {
+  id: string;
+  title: string;
+  status: string;
+  stats?: {
+    current_week: number;
+    member_count: number;
+    sessions_completed: number;
+  };
+};
+
+type GuideData = {
+  guide_level: number;
+  salons_led: number;
+  members_graduated: number;
+  guide_earnings_total: number;
+  salons: GuideSalon[];
+};
+
+type GuideApiResponse = Partial<GuideData> & {
+  error?: string;
+};
+
 export default function GuidePage() {
   const router = useRouter();
-  const [memberId, setMemberId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const [guideData, setGuideData] = useState<any>(null);
+  const [guideData, setGuideData] = useState<GuideData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -31,19 +51,24 @@ export default function GuidePage() {
       try {
         const session = await getMemberSession();
         if (!session?.member) { router.push('/salon'); return; }
-        setMemberId(session.member.id);
 
-        const supabase = createClient();
-        const { data: { session: authSession } } = await supabase.auth.getSession();
-        if (authSession?.access_token) setAuthToken(authSession.access_token);
+        const accessToken = await getSupabaseAccessToken();
+        if (accessToken) setAuthToken(accessToken);
 
         const res = await fetch('/api/guide', {
-          headers: authSession?.access_token ? { 'Authorization': `Bearer ${authSession.access_token}` } : {},
+          headers: accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {},
+          cache: 'no-store',
         });
         if (res.status === 403) { router.push('/salon'); return; }
-        const data = await res.json();
+        const data = (await res.json()) as GuideApiResponse;
         if (data.error) { router.push('/salon'); return; }
-        setGuideData(data);
+        setGuideData({
+          guide_level: data.guide_level || 0,
+          salons_led: data.salons_led || 0,
+          members_graduated: data.members_graduated || 0,
+          guide_earnings_total: data.guide_earnings_total || 0,
+          salons: Array.isArray(data.salons) ? data.salons : [],
+        });
       } catch { router.push('/salon'); }
       setLoading(false);
     }
@@ -55,7 +80,7 @@ export default function GuidePage() {
     if (!newTitle.trim()) return;
     setCreating(true);
     try {
-      const completedSalon = guideData?.salons?.find((s: any) => s.status === 'completed');
+      const completedSalon = guideData?.salons.find((s) => s.status === 'completed');
       await fetch('/api/guide/create-salon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
@@ -77,7 +102,7 @@ export default function GuidePage() {
   if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><PublicNav /><span style={{ color: muted, fontFamily: 'Cinzel, serif', fontSize: '11px' }}>LOADING...</span></div>;
   if (!guideData) return null;
 
-  const hasCompleted = guideData.salons?.some((s: any) => s.status === 'completed');
+  const hasCompleted = guideData.salons.some((s) => s.status === 'completed');
   const currentLevel = guideData.guide_level || 1;
   const nextLevel = Math.min(currentLevel + 1, 3);
   const salonsToNext = LEVEL_THRESHOLDS[nextLevel] - (guideData.salons_led || 0);
@@ -138,7 +163,7 @@ export default function GuidePage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(guideData.salons || []).map((s: any) => (
+              {(guideData.salons || []).map((s) => (
                 <div key={s.id} style={{ background: '#0d0d0d', border: `1px solid ${gold}12`, padding: '1.5rem', transition: 'border-color 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = `${gold}44`}
                   onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}12`}>
@@ -148,7 +173,7 @@ export default function GuidePage() {
                   </div>
                   {s.stats && (
                     <div style={{ fontSize: '13px', color: muted, lineHeight: 1.7 }}>
-                      Week {s.stats.current_week}/7 &middot; {s.stats.member_count} members &middot; {s.stats.sessions_completed} sessions &middot; {s.stats.total_exp_awarded} $EXP
+                      Week {s.stats.current_week}/7 &middot; {s.stats.member_count} members &middot; {s.stats.sessions_completed} sessions
                     </div>
                   )}
                   {s.status !== 'completed' && (

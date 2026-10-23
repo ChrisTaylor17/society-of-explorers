@@ -1,11 +1,8 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getBook } from '@/lib/books/catalog';
 import { buildAnnotationPrompt } from '@/lib/books/prompts';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,12 +13,14 @@ export async function POST(req: NextRequest) {
     const prompt = buildAnnotationPrompt(thinkerId, book.title, book.author, passage, question);
 
     const encoder = new TextEncoder();
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
     const stream = new ReadableStream({
       async start(controller) {
         try {
           let fullText = '';
           const anthropicStream = anthropic.messages.stream({
-            model: 'claude-sonnet-4-20250514',
+            model,
             max_tokens: 150,
             messages: [{ role: 'user', content: prompt }],
           });
@@ -35,6 +34,7 @@ export async function POST(req: NextRequest) {
 
           // Save highlight + annotation
           if (memberId) {
+            const supabaseAdmin = getSupabaseAdmin();
             const { error: hlError } = await supabaseAdmin.from('book_highlights').insert({
               member_id: memberId,
               book_id: bookId,
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, response: fullText })}\n\n`));
           controller.close();
-        } catch (err) {
+        } catch {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed', done: true })}\n\n`));
           controller.close();
         }

@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export interface DisburseResult {
   success: boolean;
@@ -13,6 +8,7 @@ export interface DisburseResult {
 }
 
 async function checkLimits(agentKey: string, communityId: string, amount: number): Promise<{ allowed: boolean; requiresApproval: boolean; reason?: string }> {
+  const supabase = getSupabaseAdmin();
   const { data: limits } = await supabase
     .from('agent_spending_limits')
     .select('*')
@@ -48,6 +44,7 @@ async function checkLimits(agentKey: string, communityId: string, amount: number
 export async function disburse(req: {
   agentKey: string; communityId: string; toMemberId: string; amount: number; reason: string; taskId?: string; tokenSymbol?: string;
 }): Promise<DisburseResult> {
+  const supabase = getSupabaseAdmin();
   const { agentKey, communityId, toMemberId, amount, reason, taskId, tokenSymbol = 'EXP' } = req;
   if (amount <= 0) return { success: false, status: 'rejected', message: 'Amount must be positive' };
 
@@ -91,6 +88,7 @@ export async function disburse(req: {
 }
 
 export async function approveTx(txId: string, approverMemberId: string): Promise<{ success: boolean; message: string }> {
+  const supabase = getSupabaseAdmin();
   const { data: tx } = await supabase.from('agent_transactions').select('*').eq('id', txId).eq('status', 'pending').single();
   if (!tx) return { success: false, message: 'Transaction not found or already processed' };
 
@@ -105,6 +103,7 @@ export async function approveTx(txId: string, approverMemberId: string): Promise
 export async function verifyTaskCompletion(
   taskId: string, communityId: string, verifierId: string, verifierType: 'agent' | 'human'
 ): Promise<{ verified: boolean; paidOut: boolean; message: string }> {
+  const supabase = getSupabaseAdmin();
   let { data: verification } = await supabase.from('task_verifications').select('*').eq('task_id', taskId).single();
 
   if (!verification) {

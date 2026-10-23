@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 
@@ -33,6 +34,12 @@ const pillars = [
     title: 'A collective signal without exposing the individual.',
     body:
       'Anonymized themes help the community see consensus, divergence, and the next questions worth asking together.',
+  },
+  {
+    label: 'CONSENT',
+    title: 'Memory that can be inspected and revoked.',
+    body:
+      'Members can review active recall, forget facts that no longer belong, and keep the mirror accountable to lived consent.',
   },
 ];
 
@@ -116,6 +123,24 @@ export default function MovementPage() {
                 TODAY&apos;S QUESTION &rarr;
               </a>
               <a
+                href="/movement/sovereignty"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                SOVEREIGNTY PASSPORT
+              </a>
+              <a
                 href="/movement/pod"
                 style={{
                   fontFamily: 'Cinzel, serif',
@@ -150,6 +175,42 @@ export default function MovementPage() {
                 }}
               >
                 YOUR MIRROR
+              </a>
+              <a
+                href="/movement/memory"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                MEMORY CONSENT
+              </a>
+              <a
+                href="/movement/voice-council"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                LIVE COUNCIL
               </a>
             </div>
           </div>
@@ -255,7 +316,7 @@ export default function MovementPage() {
               Special voices for the Movement.
             </h2>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <a
+              <Link
                 href="/movement/p/lennon-mccartney"
                 style={{
                   fontFamily: 'Cinzel, serif',
@@ -272,8 +333,8 @@ export default function MovementPage() {
                 }}
               >
                 LENNON &amp; MCCARTNEY
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/movement/p/buck-holler"
                 style={{
                   fontFamily: 'Cinzel, serif',
@@ -290,7 +351,7 @@ export default function MovementPage() {
                 }}
               >
                 BUCK HOLLER
-              </a>
+              </Link>
             </div>
           </div>
         </section>

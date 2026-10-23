@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { renderMarkdown } from '@/lib/renderMarkdown';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 interface HubTask {
   id: string;
@@ -29,8 +29,20 @@ const bgElevated = '#141410';
 const ivory = '#e8e0d0';
 const muted = '#7a7060';
 
-export default function HubOverlay({ member, onClose }: { member: any; onClose: () => void }) {
-  const supabase = createClient();
+type HubMember = {
+  id: string;
+};
+
+async function getAuthHeaders(includeContentType = false): Promise<HeadersInit> {
+  const accessToken = await getSupabaseAccessToken();
+  return {
+    ...(includeContentType ? { 'Content-Type': 'application/json' } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
+}
+
+export default function HubOverlay({ member, onClose }: { member: HubMember | null; onClose: () => void }) {
+  const memberId = member?.id ?? null;
   const [tasks,         setTasks]         = useState<HubTask[]>([]);
   const [newTitle,      setNewTitle]      = useState('');
   const [selectedAgent, setSelectedAgent] = useState('socrates');
@@ -40,30 +52,70 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
   const [responseAgent, setResponseAgent] = useState('socrates');
 
   const loadTasks = useCallback(async () => {
-    if (!member?.id) return;
-    const { data } = await supabase
-      .from('hub_tasks')
-      .select('*')
-      .eq('member_id', member.id)
-      .order('created_at', { ascending: true });
-    setTasks(data ?? []);
-    setLoading(false);
-  }, [member?.id, supabase]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/salon-hub/tasks', {
+        headers: await getAuthHeaders(),
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as { tasks?: HubTask[] };
+      setTasks(data.tasks ?? []);
+    } catch (error) {
+      console.error('loadTasks error:', error);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { loadTasks(); }, [loadTasks]);
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!memberId) {
+      Promise.resolve().then(() => {
+        if (cancelled) return;
+        setTasks([]);
+        setLoading(false);
+      });
+      return () => { cancelled = true; };
+    }
+
+    getAuthHeaders()
+      .then((headers) => fetch('/api/salon-hub/tasks', { headers, cache: 'no-store' }))
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json() as Promise<{ tasks?: HubTask[] }>;
+      })
+      .then(({ tasks: nextTasks }) => {
+        if (cancelled) return;
+        setTasks(nextTasks ?? []);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('loadTasks error:', error);
+        setTasks([]);
+        setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [memberId]);
 
   async function addTask(title?: string) {
     const t = (title ?? newTitle).trim();
-    if (!t || !member?.id) return;
-    const { error } = await supabase.from('hub_tasks').insert({
-      title: t,
-      status: 'todo',
-      agent_id: selectedAgent,
-      member_id: member.id,
+    if (!t || !memberId) return;
+    const res = await fetch('/api/salon-hub/tasks', {
+      method: 'POST',
+      headers: await getAuthHeaders(true),
+      body: JSON.stringify({
+        title: t,
+        agentId: selectedAgent,
+      }),
     });
-    if (error) console.error('addTask error:', error);
+    if (!res.ok) console.error('addTask error:', await res.text());
     setNewTitle('');
-    loadTasks();
+    await loadTasks();
   }
 
   async function askAgent() {
@@ -79,14 +131,17 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
     const taskList = tasks.map(t => `[${t.status.toUpperCase()}] ${t.title}`).join('\n');
 
     try {
+      const accessToken = await getSupabaseAccessToken();
       const res = await fetch('/api/thinker', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           thinkerId: selectedAgent,
           message: `Here are my current tasks:\n${taskList}\n\nSpeak to me as ${thinker.name}. Be direct, provocative, and in character. Tell me exactly what to focus on and why. Be specific about which task matters most right now. Keep it under 150 words.`,
           history: [],
-          walletMemberId: member.id,
         }),
       });
 
@@ -116,20 +171,29 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
           } catch {}
         }
       }
-    } catch (err) {
+    } catch {
       setResponse('Something went wrong. Try again.');
     }
     setAskLoading(false);
   }
 
   async function moveTask(id: string, status: HubTask['status']) {
-    await supabase.from('hub_tasks').update({ status }).eq('id', id);
-    loadTasks();
+    const res = await fetch(`/api/salon-hub/tasks/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(true),
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) console.error('moveTask error:', await res.text());
+    await loadTasks();
   }
 
   async function deleteTask(id: string) {
-    await supabase.from('hub_tasks').delete().eq('id', id);
-    loadTasks();
+    const res = await fetch(`/api/salon-hub/tasks/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: await getAuthHeaders(),
+    });
+    if (!res.ok) console.error('deleteTask error:', await res.text());
+    await loadTasks();
   }
 
   const cols: { key: HubTask['status']; label: string; accent: string }[] = [
@@ -142,7 +206,10 @@ export default function HubOverlay({ member, onClose }: { member: any; onClose: 
   const responseThinker = THINKERS.find(t => t.id === responseAgent) ?? THINKERS[0];
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const id = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
   if (!mounted) return null;
 
   return createPortal(

@@ -42,6 +42,40 @@ export default function MusicTherapyPage() {
   const nodesRef = useRef<{ master: GainNode; oscs: OscillatorNode[]; lfos: OscillatorNode[]; noise: AudioBufferSourceNode | null } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animRef = useRef<number | null>(null);
+  const activeSessionRef = useRef<typeof SESSIONS[0] | null>(null);
+  const elapsedRef = useRef(0);
+
+  const endSession = useCallback(() => {
+    if (nodesRef.current) {
+      nodesRef.current.oscs.forEach(o => { try { o.stop(); o.disconnect(); } catch {} });
+      nodesRef.current.lfos.forEach(o => { try { o.stop(); o.disconnect(); } catch {} });
+      if (nodesRef.current.noise) { try { nodesRef.current.noise.stop(); nodesRef.current.noise.disconnect(); } catch {} }
+      try { nodesRef.current.master.disconnect(); } catch {}
+      nodesRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      try { audioCtxRef.current.close(); } catch {}
+      audioCtxRef.current = null;
+    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (animRef.current) { cancelAnimationFrame(animRef.current); animRef.current = null; }
+
+    const completedSession = activeSessionRef.current;
+    const completedElapsed = elapsedRef.current;
+    if (completedSession && completedElapsed > 0) {
+      try {
+        const history = JSON.parse(localStorage.getItem('soe_music_sessions') || '[]');
+        history.push({ session: completedSession.id, duration: completedElapsed, date: new Date().toISOString() });
+        localStorage.setItem('soe_music_sessions', JSON.stringify(history.slice(-50)));
+      } catch {}
+    }
+
+    activeSessionRef.current = null;
+    elapsedRef.current = 0;
+    setActiveSession(null);
+    setElapsed(0);
+    setPulseScale(1);
+  }, []);
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -63,11 +97,12 @@ export default function MusicTherapyPage() {
   // Cleanup on unmount
   useEffect(() => {
     return () => { endSession(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [endSession]);
 
   const startSession = useCallback((session: typeof SESSIONS[0]) => {
     endSession();
+    activeSessionRef.current = session;
+    elapsedRef.current = 0;
     setActiveSession(session);
     setElapsed(0);
 
@@ -205,7 +240,11 @@ export default function MusicTherapyPage() {
 
     // Timer
     timerRef.current = setInterval(() => {
-      setElapsed(prev => prev + 1);
+      setElapsed(prev => {
+        const next = prev + 1;
+        elapsedRef.current = next;
+        return next;
+      });
     }, 1000);
 
     // Pulse animation (~0.1Hz breathing rate)
@@ -216,35 +255,7 @@ export default function MusicTherapyPage() {
       animRef.current = requestAnimationFrame(animate);
     }
     animRef.current = requestAnimationFrame(animate);
-  }, [volume]);
-
-  function endSession() {
-    if (nodesRef.current) {
-      nodesRef.current.oscs.forEach(o => { try { o.stop(); o.disconnect(); } catch {} });
-      nodesRef.current.lfos.forEach(o => { try { o.stop(); o.disconnect(); } catch {} });
-      if (nodesRef.current.noise) { try { nodesRef.current.noise.stop(); nodesRef.current.noise.disconnect(); } catch {} }
-      try { nodesRef.current.master.disconnect(); } catch {}
-      nodesRef.current = null;
-    }
-    if (audioCtxRef.current) {
-      try { audioCtxRef.current.close(); } catch {}
-      audioCtxRef.current = null;
-    }
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    if (animRef.current) { cancelAnimationFrame(animRef.current); animRef.current = null; }
-
-    if (activeSession && elapsed > 0) {
-      try {
-        const history = JSON.parse(localStorage.getItem('soe_music_sessions') || '[]');
-        history.push({ session: activeSession.id, duration: elapsed, date: new Date().toISOString() });
-        localStorage.setItem('soe_music_sessions', JSON.stringify(history.slice(-50)));
-      } catch {}
-    }
-
-    setActiveSession(null);
-    setElapsed(0);
-    setPulseScale(1);
-  }
+  }, [endSession, volume]);
 
   // Volume changes
   useEffect(() => {
@@ -408,8 +419,8 @@ export default function MusicTherapyPage() {
 
           {submitted ? (
             <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}08` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>YOU'RE ON THE LIST</div>
-              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>We'll notify you when hardware integration is ready.</p>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>YOU&apos;RE ON THE LIST</div>
+              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>We&apos;ll notify you when hardware integration is ready.</p>
             </div>
           ) : (
             <form onSubmit={handleInterest} style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>

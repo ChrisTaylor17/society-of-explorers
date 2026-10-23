@@ -3,10 +3,20 @@
 // Handles: **bold**, *italic*, headers (##), bullet lists, line breaks.
 // No external dependencies.
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function renderMarkdown(text: string): string {
   if (!text) return '';
 
-  return text
+  // Escape first so user or model output cannot inject arbitrary HTML.
+  return escapeHtml(text)
     // Headers: ## Title → styled header
     .replace(/^### (.+)$/gm, '<div style="font-family:Cinzel,serif;font-size:10px;letter-spacing:0.15em;color:#c9a84c;margin:20px 0 8px;opacity:0.8">$1</div>')
     .replace(/^## (.+)$/gm, '<div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:0.15em;color:#c9a84c;margin:24px 0 10px">$1</div>')

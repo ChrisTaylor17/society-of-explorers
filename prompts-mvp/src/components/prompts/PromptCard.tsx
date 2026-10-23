@@ -1,7 +1,14 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Bookmark, SlidersHorizontal, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Bookmark,
+  Check,
+  Share2,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
 import type { PromptRecord } from "@/lib/prompts/types";
 
 interface DriftPosition {
@@ -68,9 +75,20 @@ interface FocusedPromptProps {
   onRun(): void;
   onCustomize(): void;
   onFavorite(): void;
+  onSignal(): void;
+  onShare(): void;
+  shareCopied: boolean;
 }
 
-export function FocusedPrompt({ prompt, onRun, onCustomize, onFavorite }: FocusedPromptProps) {
+export function FocusedPrompt({
+  prompt,
+  onRun,
+  onCustomize,
+  onFavorite,
+  onSignal,
+  onShare,
+  shareCopied,
+}: FocusedPromptProps) {
   return (
     <motion.article
       key={prompt.id}
@@ -93,6 +111,32 @@ export function FocusedPrompt({ prompt, onRun, onCustomize, onFavorite }: Focuse
         }`}
       >
         <Bookmark size={18} strokeWidth={1.35} fill={prompt.favorited ? "currentColor" : "none"} />
+      </button>
+      <button
+        type="button"
+        aria-label={prompt.signaled ? "Remove community signal" : "Signal this prompt"}
+        onClick={onSignal}
+        className={`absolute right-12 top-4 cursor-pointer transition-colors ${
+          prompt.signaled ? "text-[#8fb8ce]" : "text-[#6f6a61] hover:text-[#8fb8ce]"
+        }`}
+      >
+        <Sparkles size={18} strokeWidth={1.35} fill={prompt.signaled ? "currentColor" : "none"} />
+      </button>
+      <button
+        type="button"
+        aria-label={
+          shareCopied
+            ? "Share link copied"
+            : `Copy share link for ${prompt.title}`
+        }
+        onClick={onShare}
+        className="absolute right-20 top-4 cursor-pointer text-[#6f6a61] transition-colors hover:text-[#d0aa62]"
+      >
+        {shareCopied ? (
+          <Check size={18} strokeWidth={1.35} />
+        ) : (
+          <Share2 size={18} strokeWidth={1.35} />
+        )}
       </button>
 
       <h2 className="display-type max-w-[370px] text-[clamp(2.15rem,4.2vw,3.2rem)] font-medium leading-[1.18] text-[#eee7d9]">

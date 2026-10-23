@@ -2,7 +2,7 @@
 import { useState, useEffect, use } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -44,9 +44,57 @@ interface Product {
   created_at: string;
 }
 
+interface CommunityMember {
+  member_id: string;
+  display_name: string | null;
+  role: string | null;
+}
+
+interface CommunityRecord {
+  name: string;
+  description: string | null;
+  mission: string | null;
+  owner_member_id: string | null;
+}
+
+interface GovernanceParams {
+  template?: string;
+  reputation_token?: { symbol?: string };
+  governance_token?: { symbol?: string };
+  initial_treasury?: number;
+  rewards?: { contribution?: number; participation?: number; analysis?: number };
+}
+
+interface InfrastructureParams {
+  data_methods?: string[];
+  verification_method?: string;
+  hardware_needed?: string;
+  data_goal?: string;
+  problem_statement?: string;
+}
+
+interface CommunityDashboardData {
+  community: CommunityRecord;
+  contracts?: {
+    governance?: { parameters?: GovernanceParams | null } | null;
+    infrastructure?: { parameters?: InfrastructureParams | null } | null;
+  } | null;
+  memberCount?: number;
+  members?: CommunityMember[];
+  products?: Product[];
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  const maybeMessage =
+    typeof error === 'object' && error !== null && 'message' in error
+      ? (error as { message?: unknown }).message
+      : null;
+  return typeof maybeMessage === 'string' && maybeMessage ? maybeMessage : fallback;
+}
+
 export default function CommunityDashboard({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<CommunityDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -89,22 +137,31 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
 
   // Fetch REP balance when member is known
   useEffect(() => {
-    if (!memberId) { setRepBalance(0); return; }
-    fetch(`/api/store/balance?memberId=${memberId}`)
+    if (!memberId) return;
+    getSupabaseAccessToken()
+      .then(accessToken => fetch('/api/store/balance', {
+        cache: 'no-store',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      }))
       .then(r => r.json())
       .then(d => setRepBalance(Number(d.balance) || 0))
       .catch(() => {});
   }, [memberId]);
 
   async function handleBuy(productId: string) {
-    if (!memberId) { window.location.href = '/login'; return; }
+    if (!memberId) { window.location.assign('/login'); return; }
     setBuying(productId);
     setPurchaseError(null);
     try {
+      const accessToken = await getSupabaseAccessToken();
       const res = await fetch('/api/store/buy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, memberId, communitySlug: slug }),
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ productId, communitySlug: slug }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
@@ -114,8 +171,8 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
         setPurchaseSuccess(productId);
         setTimeout(() => setPurchaseSuccess(prev => (prev === productId ? null : prev)), 2000);
       }
-    } catch (err: any) {
-      setPurchaseError({ productId, message: err?.message || 'Network error' });
+    } catch (err) {
+      setPurchaseError({ productId, message: errorMessage(err, 'Network error') });
     }
     setBuying(null);
   }
@@ -126,16 +183,20 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
     setCreating(true);
     setCreateError(null);
     try {
+      const accessToken = await getSupabaseAccessToken();
       const res = await fetch(`/api/communities/${slug}/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           name: pName.trim(),
           description: pDesc.trim(),
           image_url: pImage.trim(),
           price_rep: pPrice,
           is_token_gated: pTokenGated,
-          memberId,
         }),
       });
       const json = await res.json();
@@ -146,8 +207,8 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
         setPName(''); setPDesc(''); setPPrice(100); setPImage(''); setPTokenGated(false);
         setShowCreate(false);
       }
-    } catch (err: any) {
-      setCreateError(err?.message || 'Network error');
+    } catch (err) {
+      setCreateError(errorMessage(err, 'Network error'));
     }
     setCreating(false);
   }
@@ -188,10 +249,11 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
   const infra = data.contracts?.infrastructure?.parameters || {};
   const memberCount = data.memberCount || 0;
   const members = data.members || [];
-  const isOwner = !!(memberId && members.some((m: any) => m.member_id === memberId && m.role === 'owner'))
+  const isOwner = !!(memberId && members.some((m) => m.member_id === memberId && m.role === 'owner'))
     || (memberId && community.owner_member_id === memberId);
 
-  const templateLabel = TEMPLATE_LABELS[gov.template] || gov.template || 'DAO';
+  const templateKey = gov.template || '';
+  const templateLabel = TEMPLATE_LABELS[templateKey] || templateKey || 'DAO';
   const repSymbol = gov.reputation_token?.symbol || 'REP';
   const govSymbol = gov.governance_token?.symbol || 'GOV';
   const initialTreasury = gov.initial_treasury || 0;
@@ -577,7 +639,7 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {members.map((m: any) => (
+                {members.map((m) => (
                   <div key={m.member_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: `1px solid ${gold}08` }}>
                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${gold}18`, border: `1px solid ${gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold }}>
                       {(m.display_name || '?')[0].toUpperCase()}

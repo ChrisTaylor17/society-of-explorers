@@ -183,7 +183,7 @@ create or replace function public.reserve_prompt_run(
 )
 returns table (run_id uuid, runs_used bigint, runs_limit integer, plan public.prompt_plan)
 language plpgsql
-security definer
+security invoker
 set search_path = public
 as $$
 declare
@@ -255,7 +255,7 @@ create or replace function public.finish_prompt_run(
 )
 returns void
 language plpgsql
-security definer
+security invoker
 set search_path = public
 as $$
 declare

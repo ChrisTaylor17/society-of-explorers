@@ -1,27 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { NextRequest } from 'next/server';
 import { getOrCreateTodayQuestion } from '@/lib/practice/todayQuestion';
 import { renderDailyPracticeEmail } from '@/lib/email/dailyPractice';
+import { getResend } from '@/lib/email/resend';
+import { privateJson } from '@/lib/http/routeError';
 import { THINKER_PROFILES } from '@/lib/claude/thinkers';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-const resend = new Resend(process.env.RESEND_API_KEY!);
+interface DailyEmailSubscriptionRow {
+  id: string;
+  unsubscribe_token: string;
+  member_id: string;
+  last_sent_question_id: string | null;
+  members:
+    | {
+        email: string | null;
+        display_name: string | null;
+      }
+    | Array<{
+        email: string | null;
+        display_name: string | null;
+      }>
+    | null;
+}
+
+function subscriptionMember(sub: DailyEmailSubscriptionRow) {
+  return Array.isArray(sub.members) ? sub.members[0] : sub.members;
+}
+
+function dailyPracticeEmailNotificationsEnabled() {
+  return process.env.DAILY_PRACTICE_EMAIL_NOTIFICATIONS_ENABLED === 'true';
+}
 
 async function handler(req: NextRequest) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return privateJson({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  if (!dailyPracticeEmailNotificationsEnabled()) {
+    return privateJson({ sent: 0, reason: 'email_disabled' });
+  }
+
+  const supabase = getSupabaseAdmin();
 
   const question = await getOrCreateTodayQuestion();
   if (!question) {
-    return NextResponse.json({ error: 'No question' }, { status: 500 });
+    return privateJson({ error: 'No question' }, { status: 500 });
   }
 
   const thinker = THINKER_PROFILES[question.thinker_id];
@@ -34,17 +60,17 @@ async function handler(req: NextRequest) {
     .or(`last_sent_question_id.is.null,last_sent_question_id.neq.${question.id}`)
     .not('members.email', 'is', null);
 
-  console.log('[cron/daily-email] question', question.id, 'subs', subs?.length ?? 0, 'err', subsError?.message);
-
   if (!subs || subs.length === 0) {
-    return NextResponse.json({ sent: 0, reason: subsError?.message ?? 'no-matching-subs' });
+    return privateJson({ sent: 0, reason: subsError ? 'subscription_lookup_failed' : 'no-matching-subs' });
   }
 
+  const resend = getResend();
   let sent = 0;
   let errors = 0;
-  for (const sub of subs as any[]) {
-    const email = sub.members?.email;
-    const displayName = sub.members?.display_name || 'Explorer';
+  for (const sub of subs as DailyEmailSubscriptionRow[]) {
+    const member = subscriptionMember(sub);
+    const email = member?.email;
+    const displayName = member?.display_name || 'Explorer';
     if (!email) continue;
     try {
       const { subject, html } = renderDailyPracticeEmail({
@@ -64,14 +90,14 @@ async function handler(req: NextRequest) {
         .update({ last_sent_at: new Date().toISOString(), last_sent_question_id: question.id })
         .eq('id', sub.id);
       sent++;
-    } catch (e) {
-      console.error('[cron/daily-email] send failed:', e);
+    } catch {
+      console.warn('[cron/daily-email] send failed');
       errors++;
     }
     if (sent % 10 === 0) await new Promise(r => setTimeout(r, 200));
   }
 
-  return NextResponse.json({ sent, errors, total: subs.length });
+  return privateJson({ sent, errors, total: subs.length });
 }
 
 export const GET = handler;

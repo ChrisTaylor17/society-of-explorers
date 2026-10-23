@@ -10,6 +10,7 @@ import {
   type PodSyncEnvelope,
   type PodSyncRpcResult,
 } from '../movement/podSync';
+import { getSupabaseAccessToken } from '../auth/getSession';
 import { createClient } from '../supabase/client';
 
 const STORAGE_SCHEMA_VERSION = 1;
@@ -193,8 +194,14 @@ export function usePodSync<TState, TMutation = unknown>(
   const autoSync = options.autoSync !== false;
   const maxDiagnostics = options.maxDiagnostics ?? 50;
   const maxStreamPhases = options.maxStreamPhases ?? 100;
+  const logger = options.logger;
   const retry = useMemo(
-    () => ({ ...DEFAULT_RETRY, ...options.retry }),
+    () => ({
+      baseDelayMs: options.retry?.baseDelayMs ?? DEFAULT_RETRY.baseDelayMs,
+      maxDelayMs: options.retry?.maxDelayMs ?? DEFAULT_RETRY.maxDelayMs,
+      jitterRatio: options.retry?.jitterRatio ?? DEFAULT_RETRY.jitterRatio,
+      maxConflictRetries: options.retry?.maxConflictRetries ?? DEFAULT_RETRY.maxConflictRetries,
+    }),
     [
       options.retry?.baseDelayMs,
       options.retry?.jitterRatio,
@@ -238,13 +245,13 @@ export function usePodSync<TState, TMutation = unknown>(
         created_at: new Date().toISOString(),
         ...event,
       };
-      options.logger?.(diagnostic);
+      logger?.(diagnostic);
       setStore((previous) => ({
         ...previous,
         diagnostics: [diagnostic, ...previous.diagnostics],
       }));
     },
-    [options.logger, setStore],
+    [logger, setStore],
   );
 
   const getSupabase = useCallback(() => {
@@ -293,8 +300,7 @@ export function usePodSync<TState, TMutation = unknown>(
       };
 
       try {
-        const sessionResult = await getSupabase().auth.getSession();
-        const token = sessionResult.data.session?.access_token;
+        const token = await getSupabaseAccessToken();
         if (token) {
           headers.authorization = `Bearer ${token}`;
         }
@@ -318,7 +324,7 @@ export function usePodSync<TState, TMutation = unknown>(
       const { body, phases } = await readSyncBody(response, auditId);
       return { response, audit_id: auditId, body, phases };
     },
-    [emitDiagnostic, getSupabase, options.stream, syncUrl],
+    [emitDiagnostic, options.stream, syncUrl],
   );
 
   const appendAttemptMetadata = useCallback(

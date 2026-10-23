@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export interface MovementAccess {
   memberId: string;
@@ -23,6 +18,7 @@ export async function getMovementAccess(req: NextRequest): Promise<MovementAcces
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('members')
       .select('id, is_founder')

@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { NextRequest } from 'next/server';
+import { privateJson } from '@/lib/http/routeError';
+import { getMovementAccess } from '@/lib/movement/access';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 // Printful catalog variant IDs.
 // Verify these in: Printful Dashboard → Catalog → pick product → Variant ID column.
@@ -34,41 +36,84 @@ export interface PublishBody {
   product_type: string;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function boundedText(value: unknown, maxLength: number): string | null {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  return text ? text.slice(0, maxLength) : null;
+}
+
+function safeKey(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') return fallback;
+  const key = value.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 80);
+  return key || fallback;
+}
+
+function safePrice(value: unknown): number | null {
+  const price = typeof value === 'number' && Number.isFinite(value) ? value : null;
+  if (price === null) return null;
+  return Math.max(1, Math.min(1_000, Math.round(price * 100) / 100));
+}
+
+function parsePublishBody(value: unknown): PublishBody | null {
+  if (!isRecord(value)) return null;
+  const suggestionId = boundedText(value.suggestionId, 80);
+  const name = boundedText(value.name, 160);
+  const price = safePrice(value.price);
+  if (!suggestionId || !UUID_RE.test(suggestionId) || !name || price === null) return null;
+
+  return {
+    suggestionId,
+    name,
+    tagline: boundedText(value.tagline, 220) || '',
+    price,
+    thinker_id: safeKey(value.thinker_id, 'socrates'),
+    product_type: safeKey(value.product_type, 'poster'),
+  };
+}
+
 export async function POST(request: NextRequest) {
+  const access = await getMovementAccess(request);
+  if (!access) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+  if (!access.canManage) return privateJson({ error: 'Oracle or founder access required' }, { status: 403 });
+
+  let parsed: unknown;
+  try {
+    parsed = await request.json();
+  } catch {
+    return privateJson({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const body = parsePublishBody(parsed);
+  if (!body) {
+    return privateJson({ error: 'Valid suggestionId, name, and price are required' }, { status: 400 });
+  }
+
+  const { suggestionId, name, tagline, price, thinker_id, product_type } = body;
+
   const apiKey = process.env.PRINTFUL_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
+    return privateJson(
       { error: 'PRINTFUL_API_KEY not configured. Add it to Vercel env vars.' },
       { status: 503 },
     );
   }
 
-  let body: PublishBody;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { suggestionId, name, tagline, price, thinker_id, product_type } = body;
-
-  if (!suggestionId || !name) {
-    return NextResponse.json({ error: 'suggestionId and name are required' }, { status: 400 });
-  }
-
-  console.log('Publish called with suggestionId:', suggestionId, '| name:', name, '| type:', product_type);
-
   const variantId = pickVariantId(product_type ?? '');
 
   // Fetch the Flux mockup image URL saved by the AI generator (if any).
-  const supabase = createServiceClient();
-  const { data: suggestion } = await supabase
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data: suggestion } = await supabaseAdmin
     .from('merch_suggestions')
     .select('image_url')
     .eq('id', suggestionId)
     .single();
   const mockupImageUrl: string | null = suggestion?.image_url ?? null;
-  console.log('Fetched image_url:', mockupImageUrl ?? '(none)');
 
   // Use the existing SVG metadata API as the print artwork URL.
   // Printful fetches this URL at product creation time — it must be publicly accessible.
@@ -102,8 +147,6 @@ export async function POST(request: NextRequest) {
     ],
   };
 
-  console.log('Printful payload:', JSON.stringify(printfulBody));
-
   let printfulRes: Response;
   try {
     printfulRes = await fetch('https://api.printful.com/store/products', {
@@ -116,35 +159,27 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('Printful network error:', err);
-    return NextResponse.json({ error: 'Could not reach Printful API' }, { status: 502 });
+    return privateJson({ error: 'Could not reach Printful API' }, { status: 502 });
   }
 
   const printfulData = await printfulRes.json();
-  console.log('Printful response:', JSON.stringify(printfulData).slice(0, 500));
 
   if (!printfulRes.ok) {
-    console.error('Printful create failed:', printfulData);
-    return NextResponse.json(
-      { error: printfulData?.error?.message ?? printfulData?.result ?? 'Printful error' },
-      { status: printfulRes.status },
-    );
+    console.error('Printful create failed with status:', printfulRes.status);
+    return privateJson({ error: 'Printful publish failed' }, { status: printfulRes.status });
   }
 
   const printfulProductId: number = printfulData.result?.id;
   if (!printfulProductId) {
-    console.error('Printful create failed — no product ID:', printfulData);
-    return NextResponse.json(
-      { error: `Printful error: no product ID returned. Response: ${JSON.stringify(printfulData).slice(0, 200)}` },
-      { status: 500 },
-    );
+    console.error('Printful create failed without product id');
+    return privateJson({ error: 'Printful publish failed' }, { status: 500 });
   }
 
   // Extract sync_variant_id — needed for creating Printful orders on purchase.
   const syncVariantId: number | null = printfulData.result?.sync_variants?.[0]?.id ?? null;
-  console.log('Printful product created:', printfulProductId, '| sync_variant_id:', syncVariantId);
 
   // Mark suggestion as 'live' in Supabase and store both IDs.
-  const { error: dbError } = await supabase
+  const { error: dbError } = await supabaseAdmin
     .from('merch_suggestions')
     .update({ status: 'live', printful_product_id: printfulProductId, sync_variant_id: syncVariantId })
     .eq('id', suggestionId);
@@ -154,7 +189,7 @@ export async function POST(request: NextRequest) {
     console.error('DB update failed after Printful publish:', dbError.message);
   }
 
-  return NextResponse.json({
+  return privateJson({
     success:             true,
     printful_product_id: printfulProductId,
     printful_url:        `https://www.printful.com/dashboard/sync?store=17946118`,

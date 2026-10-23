@@ -63,21 +63,24 @@ export default function SalonsPage() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/salons/cities').then(r => r.json()).then(d => setCities(d.cities || [])).catch(() => {});
-    fetch('/api/92b/progress').then(r => r.json()).then(d => setBostonProgress(d)).catch(() => {});
-
-    // Check for ?support=CityName
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const city = params.get('support');
-      if (city) {
-        setSupportCity(decodeURIComponent(city));
-        setTimeout(() => {
-          document.getElementById('support-city')?.scrollIntoView({ behavior: 'smooth' });
-        }, 500);
-      }
-    }
+    fetch('/api/salons/cities', { cache: 'no-store' }).then(r => r.json()).then(d => setCities(d.cities || [])).catch(() => {});
+    fetch('/api/92b/progress', { cache: 'no-store' }).then(r => r.json()).then(d => setBostonProgress(d)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const city = new URLSearchParams(window.location.search).get('support');
+    if (!city) return;
+    const supportTimer = window.setTimeout(() => setSupportCity(city), 0);
+    return () => window.clearTimeout(supportTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!supportCity) return;
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById('support-city')?.scrollIntoView({ behavior: 'smooth' });
+    }, 500);
+    return () => window.clearTimeout(scrollTimer);
+  }, [supportCity]);
 
   async function handlePropose(e: React.FormEvent) {
     e.preventDefault();
@@ -210,7 +213,7 @@ export default function SalonsPage() {
             {sSubmitted ? (
               <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}08` }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>SUPPORT RECORDED</div>
-                <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>You're supporting {supportCity}! Share the link to rally more supporters.</p>
+                <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>You&apos;re supporting {supportCity}! Share the link to rally more supporters.</p>
               </div>
             ) : (
               <>

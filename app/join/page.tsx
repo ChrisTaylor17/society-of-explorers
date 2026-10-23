@@ -1,20 +1,46 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { createClient } from '@/lib/supabase/client';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
+const PAID_TIER_IDS = new Set(['seeker', 'scholar', 'philosopher', 'oracle']);
 
-// Stripe Price IDs (checkout route handles the mapping)
-// Seeker: price_1TLoRO5r4D5OocVfuYznEHL3
-// Philosopher: price_1TLoSN5r4D5OocVfhyeCPI1N
-// Oracle: price_1TLoRy5r4D5OocVf15xtFSyS (one-time payment)
+function membershipReturnPath(tier: string): string {
+  return `/join?intent=membership&tier=${encodeURIComponent(tier)}`;
+}
 
-const TIERS = [
+function isStripeCheckoutUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname === 'checkout.stripe.com';
+  } catch {
+    return false;
+  }
+}
+
+type JoinTier = {
+  id: string;
+  name: string;
+  price: string;
+  period: string;
+  badge: string | null;
+  featured: boolean;
+  cta: string;
+  ctaAction: 'oauth' | 'checkout';
+  tagline: string;
+  features: string[];
+  note?: string;
+};
+
+const TIERS: JoinTier[] = [
   {
     id: 'explorer', name: 'Explorer', price: 'Free', period: '', badge: null, featured: false,
     cta: 'START FREE', ctaAction: 'oauth' as const,
@@ -40,15 +66,27 @@ const TIERS = [
     note: 'Covers our infrastructure costs',
   },
   {
-    id: 'philosopher', name: 'Philosopher', price: '$49', period: '/mo', badge: null, featured: false,
-    cta: 'BECOME A PHILOSOPHER', ctaAction: 'checkout' as const,
-    tagline: 'Lead the way',
+    id: 'scholar', name: 'Scholar', price: '$49', period: '/mo', badge: null, featured: false,
+    cta: 'BECOME A SCHOLAR', ctaAction: 'checkout' as const,
+    tagline: 'Go deeper',
     features: [
       'Everything in Seeker',
       'Priority salon placement',
       'Guide candidacy — lead your own salon',
       '$EXP treasury when you become a Guide',
+      'Scholar-level project rooms',
+    ],
+  },
+  {
+    id: 'philosopher', name: 'Philosopher', price: '$99', period: '/mo', badge: null, featured: false,
+    cta: 'BECOME A PHILOSOPHER', ctaAction: 'checkout' as const,
+    tagline: 'Lead the way',
+    features: [
+      'Everything in Scholar',
       'Advanced memory — thinkers remember everything',
+      'Private ritual rooms',
+      'Priority artifact generation',
+      'Direct oracle consultations',
     ],
   },
   {
@@ -74,7 +112,10 @@ const FAQS = [
 ];
 
 export default function JoinPage() {
+  const router = useRouter();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<{ tier: string; message: string } | null>(null);
+  const [checkoutIntent, setCheckoutIntent] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
@@ -92,26 +133,86 @@ export default function JoinPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tier = params.get('tier');
+    if (params.get('intent') !== 'membership' || !tier || !PAID_TIER_IDS.has(tier)) return;
+
+    let active = true;
+    let timer: number | undefined;
+    getMemberSession()
+      .then((session) => {
+        if (!active) return;
+        if (!session?.member) {
+          router.replace(`/login?next=${encodeURIComponent(membershipReturnPath(tier))}`);
+          return;
+        }
+
+        setCheckoutIntent(tier);
+        window.history.replaceState({}, '', `/join#${tier}`);
+        timer = window.setTimeout(() => {
+          document.getElementById(tier)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      })
+      .catch(() => {
+        if (active) router.replace(`/login?next=${encodeURIComponent(membershipReturnPath(tier))}`);
+      });
+
+    return () => {
+      active = false;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [router]);
+
   async function handleCheckout(tier: string) {
-    if (tier === 'explorer') { window.location.href = '/login'; return; }
+    if (tier === 'explorer') { router.push('/login'); return; }
     setCheckoutLoading(tier);
+    setCheckoutError(null);
+    setCheckoutIntent(null);
     try {
-      let email: string | undefined;
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        email = user?.email ?? undefined;
-      } catch {}
+      const session = await getMemberSession();
+      if (!session?.member) {
+        router.push(`/login?next=${encodeURIComponent(membershipReturnPath(tier))}`);
+        return;
+      }
+
+      const accessToken = await getSupabaseAccessToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier, email }),
+        cache: 'no-store',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify({ tier }),
       });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    } catch {}
-    setCheckoutLoading(null);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push(`/login?next=${encodeURIComponent(membershipReturnPath(tier))}`);
+          return;
+        }
+        setCheckoutError({
+          tier,
+          message: res.status === 409
+            ? 'Add an email to your member profile before choosing this tier.'
+            : res.status === 503
+              ? 'This membership tier is not available right now.'
+              : 'Checkout could not start. Your membership was not changed.',
+        });
+        return;
+      }
+      if (!isStripeCheckoutUrl(data.url)) {
+        setCheckoutError({ tier, message: 'Checkout could not start. Your membership was not changed.' });
+        return;
+      }
+      window.location.assign(data.url);
+    } catch {
+      setCheckoutError({ tier, message: 'Checkout could not start. Your membership was not changed.' });
+    } finally {
+      setCheckoutLoading(null);
+    }
   }
 
   return (
@@ -128,6 +229,11 @@ export default function JoinPage() {
           <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '520px', margin: '0 auto' }}>
             Six thinkers. Seven-week salons. A Council that remembers your journey.
           </p>
+          {checkoutIntent && (
+            <p role="status" aria-live="polite" style={{ fontSize: '14px', color: gold, lineHeight: 1.6, maxWidth: '560px', margin: '1rem auto 0' }}>
+              You are signed in. Review the {checkoutIntent} membership and choose it again when you are ready to open secure checkout.
+            </p>
+          )}
         </div>
       </section>
 
@@ -160,9 +266,9 @@ export default function JoinPage() {
                     </div>
                   ))}
                 </div>
-                {(t as any).note && <div style={{ fontSize: '11px', color: `${gold}88`, fontStyle: 'italic', marginBottom: '0.75rem' }}>{(t as any).note}</div>}
+                {t.note && <div style={{ fontSize: '11px', color: `${gold}88`, fontStyle: 'italic', marginBottom: '0.75rem' }}>{t.note}</div>}
                 <button
-                  onClick={() => t.ctaAction === 'oauth' ? (window.location.href = '/login') : handleCheckout(t.id)}
+                  onClick={() => t.ctaAction === 'oauth' ? router.push('/login') : handleCheckout(t.id)}
                   disabled={checkoutLoading === t.id}
                   style={{
                     fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em',
@@ -173,6 +279,11 @@ export default function JoinPage() {
                 >
                   {checkoutLoading === t.id ? 'REDIRECTING...' : t.cta}
                 </button>
+                {checkoutError?.tier === t.id && (
+                  <p role="alert" aria-live="polite" style={{ color: '#d8a28f', fontSize: '12px', lineHeight: 1.5, margin: '0.75rem 0 0' }}>
+                    {checkoutError.message}
+                  </p>
+                )}
               </div>
             </div>
           ))}

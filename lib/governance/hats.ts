@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const PERMISSIONS = [
   'manage_thinkers', 'manage_members', 'mint_nft', 'use_council',
@@ -24,6 +19,15 @@ export interface CommunityRole {
   sort_order: number;
 }
 
+export interface CommunityMemberWithRole {
+  member_id: string;
+  display_name: string;
+  role_key: string;
+  display_role: string;
+  permissions: string[];
+  joined_at: string;
+}
+
 const DEFAULT_ROLES: Omit<CommunityRole, 'id'>[] = [
   { role_key: 'owner', display_name: 'Owner', description: 'Full control', parent_role_key: null, permissions: ['manage_thinkers', 'manage_members', 'mint_nft', 'use_council', 'manage_roles', 'manage_branding', 'manage_governance', 'deep_dive', 'voice_sessions'], hat_id: null, max_holders: 1, sort_order: 0 },
   { role_key: 'admin', display_name: 'Admin', description: 'Manage thinkers, members, branding', parent_role_key: 'owner', permissions: ['manage_thinkers', 'manage_members', 'mint_nft', 'use_council', 'manage_branding', 'deep_dive', 'voice_sessions'], hat_id: null, max_holders: 5, sort_order: 1 },
@@ -32,6 +36,7 @@ const DEFAULT_ROLES: Omit<CommunityRole, 'id'>[] = [
 ];
 
 export async function initializeRolesForCommunity(communityId: string, ownerMemberId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const { data: roles, error } = await supabase
     .from('community_roles')
     .insert(DEFAULT_ROLES.map(r => ({ community_id: communityId, ...r })))
@@ -48,6 +53,7 @@ export async function initializeRolesForCommunity(communityId: string, ownerMemb
 }
 
 export async function getMemberRoles(memberId: string, communitySlug: string): Promise<{ member_id: string; role_key: string; display_name: string; permissions: Permission[] } | null> {
+  const supabase = getSupabaseAdmin();
   const { data: community } = await supabase.from('communities').select('id').eq('slug', communitySlug).single();
   if (!community) return null;
 
@@ -78,6 +84,7 @@ export async function checkPermission(memberId: string, communitySlug: string, p
 }
 
 export async function assignRole(communityId: string, targetMemberId: string, roleKey: string, actorMemberId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getSupabaseAdmin();
   const { data: role } = await supabase.from('community_roles').select('*').eq('community_id', communityId).eq('role_key', roleKey).single();
   if (!role) return { success: false, error: 'Role not found' };
 
@@ -94,13 +101,15 @@ export async function assignRole(communityId: string, targetMemberId: string, ro
 }
 
 export async function getCommunityRoles(communitySlug: string): Promise<CommunityRole[]> {
+  const supabase = getSupabaseAdmin();
   const { data: community } = await supabase.from('communities').select('id').eq('slug', communitySlug).single();
   if (!community) return [];
   const { data } = await supabase.from('community_roles').select('*').eq('community_id', community.id).order('sort_order');
   return (data || []) as CommunityRole[];
 }
 
-export async function getCommunityMembersWithRoles(communitySlug: string): Promise<any[]> {
+export async function getCommunityMembersWithRoles(communitySlug: string): Promise<CommunityMemberWithRole[]> {
+  const supabase = getSupabaseAdmin();
   const { data: community } = await supabase.from('communities').select('id').eq('slug', communitySlug).single();
   if (!community) return [];
 
@@ -112,7 +121,7 @@ export async function getCommunityMembersWithRoles(communitySlug: string): Promi
 
   if (!data) return [];
 
-  const results: any[] = [];
+  const results: CommunityMemberWithRole[] = [];
   for (const m of data) {
     const { data: member } = await supabase.from('members').select('display_name').eq('id', m.member_id).single();
     let roleInfo = { role_key: m.role || 'member', display_name: m.role || 'Member', permissions: ['use_council'] as string[] };
@@ -133,11 +142,14 @@ export async function getCommunityMembersWithRoles(communitySlug: string): Promi
 }
 
 export async function activateOnChain(_communityId: string, _deployerAddress: string): Promise<{ success: boolean; error?: string }> {
+  void _communityId;
+  void _deployerAddress;
   console.log('[hats] activateOnChain called — not yet implemented');
   return { success: false, error: 'On-chain activation coming soon. Using off-chain governance.' };
 }
 
-async function logGovernanceAction(communityId: string, actorMemberId: string, action: string, targetMemberId: string | null, targetRoleKey: string | null, details: any): Promise<void> {
+async function logGovernanceAction(communityId: string, actorMemberId: string, action: string, targetMemberId: string | null, targetRoleKey: string | null, details: Record<string, unknown>): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const { error } = await supabase.from('governance_log').insert({ community_id: communityId, actor_member_id: actorMemberId, action, target_member_id: targetMemberId, target_role_key: targetRoleKey, details });
   if (error) console.error('[hats] governance log error:', error);
 }

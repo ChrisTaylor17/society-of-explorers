@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
-const dim = '#d4c9a8';
 const muted = '#9a8f7a';
 
 const THINKER_COLORS: Record<string, string> = {
@@ -18,18 +19,20 @@ export default function GreatBooksLibrary() {
   const [progress, setProgress] = useState<Record<string, { section_id?: string }>>({});
 
   useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => {
-        if (s?.member?.id) {
-          fetch(`/api/great-books/progress?memberId=${s.member.id}`)
-            .then(r => r.json())
-            .then(d => {
-              const map: Record<string, any> = {};
-              (d.progress || []).forEach((p: any) => { map[p.book_id] = p; });
-              setProgress(map);
-            }).catch(() => {});
-        }
-      });
+    getMemberSession().then(async s => {
+      if (s?.member?.id) {
+        const accessToken = await getSupabaseAccessToken();
+        fetch('/api/great-books/progress', {
+          cache: 'no-store',
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        })
+          .then(r => r.json())
+          .then(d => {
+            const map: Record<string, { section_id?: string }> = {};
+            (d.progress || []).forEach((p: { book_id: string; section_id?: string }) => { map[p.book_id] = p; });
+            setProgress(map);
+          }).catch(() => {});
+      }
     });
   }, []);
 
@@ -48,9 +51,9 @@ export default function GreatBooksLibrary() {
           The foundational texts of civilization — read alongside Socrates, Nietzsche, Aurelius, and the council. Highlight any passage. A thinker responds in the margin.
         </p>
 
-        <a href="/book-salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '10px 24px', textDecoration: 'none', display: 'inline-block', marginBottom: '2rem' }}>
+        <Link href="/book-salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '10px 24px', textDecoration: 'none', display: 'inline-block', marginBottom: '2rem' }}>
           JOIN A BOOK SALON →
-        </a>
+        </Link>
 
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '3rem' }}>
           {['all', 'socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs'].map(f => (

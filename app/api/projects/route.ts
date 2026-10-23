@@ -1,22 +1,19 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { mergeProjectPledgeTotals } from '@/lib/capital/projectFunding';
+import { privateJson } from '@/lib/http/routeError';
+import { PROJECT_LIST_SELECT, sanitizeProjectListRow } from '@/lib/projects/publicProject';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export async function GET() {
+  const supabase = getSupabaseAdmin();
   const { data: projects, error } = await supabase
     .from('projects')
-    .select('*')
+    .select(PROJECT_LIST_SELECT)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Failed to fetch projects:', error);
-    return NextResponse.json({ projects: [] });
-  }
+  if (error) return privateJson({ projects: [], error: 'Failed to load projects' }, { status: 500 });
 
-  return NextResponse.json({ projects: projects || [] });
+  const sanitized = (projects || []).map(sanitizeProjectListRow).filter((project) => project !== null);
+  const merged = await mergeProjectPledgeTotals(supabase, sanitized);
+  return privateJson({ projects: merged });
 }

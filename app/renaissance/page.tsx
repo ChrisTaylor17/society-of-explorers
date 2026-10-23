@@ -66,13 +66,13 @@ export default function RenaissancePage() {
             In 1400, Florence was a banking town. By 1500, it had produced Leonardo, Michelangelo, Machiavelli, and Botticelli. What changed? A small group of patrons, thinkers, and makers decided that human excellence was worth funding, practicing, and celebrating. They built guilds. They hosted salons. They trained polymaths.
           </p>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2rem' }}>
-            Today, the same ingredients exist — but scattered. AI gives us access to the greatest teachers in history. Blockchain gives us transparent, trustless coordination. Philosophy gives us the framework to ask what's worth building. Music, travel, and community give us the soil.
+            Today, the same ingredients exist — but scattered. AI gives us access to the greatest teachers in history. Blockchain gives us transparent, trustless coordination. Philosophy gives us the framework to ask what&apos;s worth building. Music, travel, and community give us the soil.
           </p>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2rem' }}>
-            What's missing is the guild. The place where these threads come together. The institution that takes becoming a complete human being as seriously as universities take specialization.
+            What&apos;s missing is the guild. The place where these threads come together. The institution that takes becoming a complete human being as seriously as universities take specialization.
           </p>
           <p style={{ fontSize: '20px', color: parchment, lineHeight: 1.9, fontWeight: 500 }}>
-            That's Society of Explorers.
+            That&apos;s Society of Explorers.
           </p>
         </div>
       </section>
@@ -122,7 +122,7 @@ export default function RenaissancePage() {
             This is an invitation.
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2.5rem' }}>
-            The Renaissance didn't happen to everyone. It happened to the people who showed up. The salon is open. The thinkers are waiting. The guild is forming.
+            The Renaissance didn&apos;t happen to everyone. It happened to the people who showed up. The salon is open. The thinkers are waiting. The guild is forming.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a

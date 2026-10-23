@@ -1,12 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import { internalRouteError, privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-async function ensureDailySubscription(memberId: string) {
+async function ensureDailySubscription(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, memberId: string) {
   try {
     const { data: existing } = await supabaseAdmin
       .from('daily_email_subscriptions')
@@ -30,19 +27,40 @@ async function ensureDailySubscription(memberId: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabaseAuthId, displayName, email } = await req.json();
-    if (!supabaseAuthId) return NextResponse.json({ error: 'Missing auth ID' }, { status: 400 });
+    const body = await req.json();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const requestedSupabaseAuthId =
+      typeof body?.supabaseAuthId === 'string' ? body.supabaseAuthId : null;
+
+    if (requestedSupabaseAuthId && requestedSupabaseAuthId !== user.id) {
+      return privateJson({ error: 'Auth mismatch' }, { status: 403 });
+    }
+
+    const supabaseAuthId = user.id;
+    const displayName =
+      typeof body?.displayName === 'string' && body.displayName.trim().length > 0
+        ? body.displayName.trim()
+        : null;
+    const email = user.email?.trim().toLowerCase() || null;
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Check if member exists
     const { data: existing } = await supabaseAdmin
       .from('members')
       .select('*')
       .eq('supabase_auth_id', supabaseAuthId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
-      await ensureDailySubscription(existing.id);
-      return NextResponse.json({ member: existing, created: false });
+      await ensureDailySubscription(supabaseAdmin, existing.id);
+      return privateJson({ member: existing, created: false });
     }
 
     // Fallback: look up by email (handles members created before OAuth)
@@ -55,12 +73,12 @@ export async function POST(req: NextRequest) {
           .from('members')
           .select('*')
           .eq('supabase_auth_id', matchingAuth.id)
-          .single();
+          .maybeSingle();
         if (emailMember) {
           // Link existing member to new OAuth identity
           await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', emailMember.id);
-          await ensureDailySubscription(emailMember.id);
-          return NextResponse.json({ member: { ...emailMember, supabase_auth_id: supabaseAuthId }, created: false });
+          await ensureDailySubscription(supabaseAdmin, emailMember.id);
+          return privateJson({ member: { ...emailMember, supabase_auth_id: supabaseAuthId }, created: false });
         }
       }
 
@@ -69,11 +87,11 @@ export async function POST(req: NextRequest) {
         .from('members')
         .select('*')
         .ilike('display_name', email)
-        .single();
+        .maybeSingle();
       if (byEmail && !byEmail.supabase_auth_id) {
         await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', byEmail.id);
-        await ensureDailySubscription(byEmail.id);
-        return NextResponse.json({ member: { ...byEmail, supabase_auth_id: supabaseAuthId }, created: false });
+        await ensureDailySubscription(supabaseAdmin, byEmail.id);
+        return privateJson({ member: { ...byEmail, supabase_auth_id: supabaseAuthId }, created: false });
       }
     }
 
@@ -91,12 +109,13 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('Member creation failed:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalRouteError('Member creation failed');
     }
 
-    await ensureDailySubscription(member.id);
-    return NextResponse.json({ member, created: true });
+    await ensureDailySubscription(supabaseAdmin, member.id);
+    return privateJson({ member, created: true });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error('[ensure-member] unexpected failure:', err);
+    return internalRouteError('Ensure member failed');
   }
 }

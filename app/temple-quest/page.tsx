@@ -254,7 +254,7 @@ export default function TempleQuest() {
           }
           // Sort gaps and draw segments between them
           const isHoriz = side === 'n' || side === 's';
-          let segments: [number, number][] = [];
+          const segments: [number, number][] = [];
           const gapW = 30;
           let last = isHoriz ? x1 : y1;
           for (const d of doors.sort((a, b) => a.pos - b.pos)) {
@@ -338,7 +338,8 @@ export default function TempleQuest() {
         const angle = (Math.PI / 3) * i - Math.PI / 6;
         const px = PLAYER_SIZE * Math.cos(angle);
         const py = PLAYER_SIZE * Math.sin(angle);
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
       ctx.closePath();
       ctx.fillStyle = GOLD;

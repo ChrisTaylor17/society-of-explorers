@@ -1,11 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getMemberSession } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
 
 const NAV_LINKS = [
+  { l: 'Atlas', h: 'https://prompts-mvp.vercel.app' },
   { l: 'Practice', h: '/practice' },
   { l: 'Feed', h: '/feed' },
   { l: 'Manifesto', h: '/manifesto' },
@@ -65,9 +67,9 @@ export default function PublicNav() {
         backdropFilter: scrolled ? 'blur(8px)' : 'none',
         borderBottom: scrolled ? `1px solid ${gold}11` : 'none', transition: 'all 0.3s',
       }}>
-        <a href="/" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
+        <Link href="/" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
           SOCIETY OF EXPLORERS
-        </a>
+        </Link>
 
         <div style={{ display: 'flex', gap: '1.75rem', alignItems: 'center' }} className="hide-mobile">
           {visibleLinks.map(lk => (

@@ -1,5 +1,17 @@
 import { generateNonce } from 'siwe'
-import { NextResponse } from 'next/server'
+import { privateJson } from '@/lib/http/routeError'
+
 export async function GET() {
-  return NextResponse.json({ nonce: generateNonce() })
+  const nonce = generateNonce()
+  const response = privateJson({ nonce })
+
+  response.cookies.set('soe_siwe_nonce', nonce, {
+    httpOnly: true,
+    maxAge: 60 * 10,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  })
+
+  return response
 }

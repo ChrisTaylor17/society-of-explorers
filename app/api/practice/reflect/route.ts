@@ -1,15 +1,12 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
 import { THINKER_PROFILES } from '@/lib/claude/thinkers';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateEventStreamHeaders } from '@/lib/http/routeError';
 import { writeEpisodes } from '@/lib/memory/episodes';
 import { extractFactsFromAnswer } from '@/lib/memory/extractFacts';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { filterUsableMemoryRows, type MemoryRetrievalRow } from '@/lib/memory/retrievalPolicy';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -29,7 +26,7 @@ interface PriorPair {
   created_at: string;
 }
 
-interface SemanticFact {
+interface SemanticFact extends MemoryRetrievalRow {
   category: string;
   key: string;
   value: string;
@@ -42,6 +39,12 @@ interface ThinkerEpisode {
   created_at: string;
   source: string;
   session_id: string | null;
+}
+
+function parseResponseId(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null;
+  const value = (body as { responseId?: unknown }).responseId;
+  return typeof value === 'string' && UUID_RE.test(value) ? value : null;
 }
 
 function relativeDay(iso: string): string {
@@ -120,28 +123,38 @@ function sseError(message: string, status = 400) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`));
+      const payload = { error: message };
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
       controller.close();
     },
   });
   return new Response(stream, {
     status,
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-    },
+    headers: privateEventStreamHeaders(),
   });
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const responseId: string | undefined = body.responseId;
+  let body: unknown;
 
-  if (!responseId || typeof responseId !== 'string' || !UUID_RE.test(responseId)) {
+  try {
+    body = await req.json();
+  } catch {
+    return sseError('Invalid JSON body', 400);
+  }
+
+  const responseId = parseResponseId(body);
+  if (!responseId) {
     return sseError('Invalid responseId', 400);
   }
+
+  const auth = await getAuthenticatedMember(req);
+  if (!auth) {
+    return sseError('Authentication required', 401);
+  }
+
+  const supabase = getSupabaseAdmin();
 
   // Fetch the answer
   const { data: response, error: respErr } = await supabase
@@ -152,6 +165,10 @@ export async function POST(req: NextRequest) {
 
   if (respErr || !response) {
     return sseError('Response not found', 404);
+  }
+
+  if (response.member_id !== auth.memberId) {
+    return sseError('Cannot generate reflection for another member', 403);
   }
 
   // Fetch the question
@@ -218,7 +235,7 @@ export async function POST(req: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (factRows) semanticFacts = factRows as SemanticFact[];
+      if (factRows) semanticFacts = filterUsableMemoryRows(factRows as SemanticFact[]);
     } catch (e) {
       console.error('[practice/reflect] facts fetch failed (non-fatal):', e);
     }
@@ -250,13 +267,15 @@ export async function POST(req: NextRequest) {
   });
 
   const encoder = new TextEncoder();
+  const anthropic = createAnthropicClient();
+  const model = resolveClaudeModel('content', 'claude-opus-4-7');
 
   const stream = new ReadableStream({
     async start(controller) {
       let fullText = '';
       try {
         const anthropicStream = anthropic.messages.stream({
-          model: 'claude-opus-4-7',
+          model,
           max_tokens: 120,
           system: systemPrompt,
           messages: [{ role: 'user', content: 'Write the reflection now.' }],
@@ -309,10 +328,11 @@ export async function POST(req: NextRequest) {
         }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
-      } catch (err: any) {
-        console.error('[practice/reflect] error:', err?.message || err);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Stream failed';
+        console.error('[practice/reflect] error:', message);
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err?.message || 'Stream failed' })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Reflection failed' })}\n\n`));
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
         } catch {}
       } finally {
@@ -322,10 +342,6 @@ export async function POST(req: NextRequest) {
   });
 
   return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-    },
+    headers: privateEventStreamHeaders(),
   });
 }

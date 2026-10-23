@@ -1,9 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+type RetrievedEmbeddingRow = {
+  content: string;
+  thinker_key: string;
+  conversation_date: string;
+  similarity: number;
+};
+
+function reportEmbeddingFailure(scope: string) {
+  console.warn(`[embeddings] ${scope} failed`);
+}
 
 /**
  * Generate embedding via OpenAI text-embedding-3-small.
@@ -22,8 +28,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Embedding API error: ${res.status} ${err}`);
+    throw new Error('Embedding API request failed');
   }
 
   const data = await res.json();
@@ -44,9 +49,10 @@ export async function storeConversationEmbedding({
   thinkerKey: string;
   role: string;
   content: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }): Promise<void> {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const embedding = await generateEmbedding(content);
     await supabaseAdmin.from('thinker_conversation_embeddings').insert({
       member_id: memberId,
@@ -57,8 +63,8 @@ export async function storeConversationEmbedding({
       metadata,
       conversation_date: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error('[embeddings] Store failed:', err);
+  } catch {
+    reportEmbeddingFailure('store');
   }
 }
 
@@ -77,6 +83,7 @@ export async function retrieveRelevantMemory({
   topK?: number;
 }): Promise<Array<{ content: string; thinker_key: string; conversation_date: string; similarity: number }>> {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const embedding = await generateEmbedding(query);
 
     const { data, error } = await supabaseAdmin.rpc('match_thinker_embeddings', {
@@ -87,18 +94,18 @@ export async function retrieveRelevantMemory({
     });
 
     if (error) {
-      console.error('[embeddings] Retrieve error:', error);
+      reportEmbeddingFailure('retrieve');
       return [];
     }
 
-    return (data || []).map((r: any) => ({
+    return ((data || []) as RetrievedEmbeddingRow[]).map((r) => ({
       content: r.content,
       thinker_key: r.thinker_key,
       conversation_date: r.conversation_date,
       similarity: r.similarity,
     }));
-  } catch (err) {
-    console.error('[embeddings] Retrieve failed:', err);
+  } catch {
+    reportEmbeddingFailure('retrieve');
     return [];
   }
 }
@@ -118,6 +125,7 @@ export async function retrieveCrossThinkerMemory({
   topK?: number;
 }): Promise<Array<{ content: string; thinker_key: string; conversation_date: string; similarity: number }>> {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const embedding = await generateEmbedding(query);
 
     const { data, error } = await supabaseAdmin.rpc('match_cross_thinker_embeddings', {
@@ -128,18 +136,18 @@ export async function retrieveCrossThinkerMemory({
     });
 
     if (error) {
-      console.error('[embeddings] Cross-thinker error:', error);
+      reportEmbeddingFailure('cross-thinker');
       return [];
     }
 
-    return (data || []).map((r: any) => ({
+    return ((data || []) as RetrievedEmbeddingRow[]).map((r) => ({
       content: r.content,
       thinker_key: r.thinker_key,
       conversation_date: r.conversation_date,
       similarity: r.similarity,
     }));
-  } catch (err) {
-    console.error('[embeddings] Cross-thinker failed:', err);
+  } catch {
+    reportEmbeddingFailure('cross-thinker');
     return [];
   }
 }

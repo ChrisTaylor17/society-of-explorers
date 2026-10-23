@@ -54,19 +54,46 @@ interface FeedResponse {
   reflection_created_at: string | null;
 }
 
+interface FeedQuestion {
+  thinker_id: string | null;
+  question_text: string;
+}
+
+interface FeedStats {
+  totalMembers: number;
+  totalResponses: number;
+  activeThinkers: number;
+  todayCount: number;
+}
+
+interface StreakLeader {
+  display_name: string;
+  current_streak: number;
+  total_responses: number;
+}
+
+interface FeedPayload {
+  todayQuestion?: FeedQuestion | null;
+  recentResponses?: FeedResponse[];
+  wisdomMoments?: FeedResponse[];
+  stats?: FeedStats;
+  streakLeaders?: StreakLeader[];
+}
+
 export default function FeedPage() {
-  const [feed, setFeed] = useState<any>(null);
+  const [feed, setFeed] = useState<FeedPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCTA, setShowCTA] = useState(false);
   const [active, setActive] = useState<FeedResponse | null>(null);
+  const [newResponseIds, setNewResponseIds] = useState<Set<string>>(() => new Set());
   const knownIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch('/api/feed/pulse');
-        const data = await res.json();
-        (data.recentResponses || []).forEach((r: any) => knownIds.current.add(r.id));
+        const data = (await res.json()) as FeedPayload;
+        (data.recentResponses || []).forEach((response) => knownIds.current.add(response.id));
         setFeed(data);
       } catch {}
       setLoading(false);
@@ -76,7 +103,13 @@ export default function FeedPage() {
     const iv = setInterval(async () => {
       try {
         const res = await fetch('/api/feed/pulse');
-        const data = await res.json();
+        const data = (await res.json()) as FeedPayload;
+        const unseenIds = new Set<string>();
+        (data.recentResponses || []).forEach((response) => {
+          if (!knownIds.current.has(response.id)) unseenIds.add(response.id);
+          knownIds.current.add(response.id);
+        });
+        setNewResponseIds(unseenIds);
         setFeed(data);
       } catch {}
     }, 15000);
@@ -113,7 +146,7 @@ export default function FeedPage() {
   const responses: FeedResponse[] = feed?.recentResponses || [];
   const wisdomMoments: FeedResponse[] = feed?.wisdomMoments || [];
   const stats = feed?.stats || { totalMembers: 0, totalResponses: 0, activeThinkers: 0, todayCount: 0 };
-  const leaders: any[] = feed?.streakLeaders || [];
+  const leaders = feed?.streakLeaders || [];
 
   const qThinkerId = todayQuestion?.thinker_id || '';
   const qThinkerColor = THINKER_COLORS[qThinkerId] || gold;
@@ -125,8 +158,7 @@ export default function FeedPage() {
     const tName = THINKER_NAMES[r.thinker_id || ''] || r.thinker_id || 'Question';
     const tAvatar = THINKER_AVATARS[r.thinker_id || ''] || '??';
     const featured = variant === 'feature';
-    const isNew = !knownIds.current.has(r.id);
-    if (isNew) knownIds.current.add(r.id);
+    const isNew = newResponseIds.has(r.id);
 
     return (
       <button
@@ -297,7 +329,7 @@ export default function FeedPage() {
           <div style={{ maxWidth: '640px', margin: '0 auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>STREAK LEADERS</div>
             <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15` }}>
-              {leaders.map((l: any, i: number) => (
+              {leaders.map((l, i) => (
                 <div key={`${l.display_name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderBottom: i < leaders.length - 1 ? `1px solid ${gold}08` : 'none' }}>
                   <span style={{ fontFamily: 'Playfair Display, serif', fontSize: i < 3 ? '18px' : '14px', color: RANK_COLORS[i] || muted, width: '22px', textAlign: 'center' }}>{i + 1}</span>
                   <span style={{ flex: 1, fontSize: '15px', color: parchment }}>{l.display_name}</span>

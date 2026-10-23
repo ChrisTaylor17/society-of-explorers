@@ -1,27 +1,100 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const MAX_LIMIT = 50;
+const DEFAULT_LIMIT = 20;
+const MAX_OFFSET = 5000;
+const SCAN_HISTORY_SELECT =
+  'id, space_id, file_size_bytes, scan_type, scan_format, quality_score, verified, verified_at, reward_exp, is_first_scan, location_name, status, created_at';
+const SPACE_SUMMARY_SELECT = 'id, name, city, space_type';
+
+type ScanRow = {
+  id: string;
+  space_id: string | null;
+  file_size_bytes: number | null;
+  scan_type: string | null;
+  scan_format: string | null;
+  quality_score: number | null;
+  reward_exp: number | null;
+  is_first_scan: boolean | null;
+  location_name: string | null;
+  status: string | null;
+  verified: boolean | null;
+  verified_at: string | null;
+  created_at: string | null;
+};
+
+type SpaceSummary = {
+  name: string;
+  city: string | null;
+  space_type: string;
+};
+
+type SpaceRow = SpaceSummary & {
+  id: string;
+};
+
+function parseBoundedInteger(value: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(value || '', 10);
+  if (!Number.isFinite(parsed)) return fallback;
+
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function parseStatus(value: string | null) {
+  return value === 'verified' || value === 'scored' || value === 'pending' ? value : null;
+}
+
+function boundedText(value: unknown, maxLength: number) {
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  return trimmed.slice(0, maxLength);
+}
+
+function publicScanRow(scan: ScanRow, space: SpaceSummary | null) {
+  return {
+    id: scan.id,
+    file_size_bytes: Number(scan.file_size_bytes) || 0,
+    scan_type: boundedText(scan.scan_type, 40) || 'photo',
+    scan_format: boundedText(scan.scan_format, 40) || 'scan',
+    quality_score: scan.quality_score === null ? null : Math.max(0, Math.min(100, Number(scan.quality_score) || 0)),
+    verified: Boolean(scan.verified),
+    verified_at: scan.verified_at,
+    reward_exp: Math.max(0, Number(scan.reward_exp) || 0),
+    is_first_scan: Boolean(scan.is_first_scan),
+    location_name: boundedText(scan.location_name, 160),
+    status: boundedText(scan.status, 40) || (scan.verified ? 'scored' : 'pending'),
+    created_at: scan.created_at,
+    space,
+  };
+}
+
+function scanHistoryFailure() {
+  return privateJson({ error: 'Failed to load scans' }, { status: 500 });
+}
 
 export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthenticatedMember(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = req.nextUrl;
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
-    const offset = parseInt(searchParams.get('offset') || '0', 10) || (page - 1) * limit;
-    const status = searchParams.get('status');
+    const page = parseBoundedInteger(searchParams.get('page'), 1, 1, 500);
+    const limit = parseBoundedInteger(searchParams.get('limit'), DEFAULT_LIMIT, 1, MAX_LIMIT);
+    const requestedOffset = parseBoundedInteger(searchParams.get('offset'), (page - 1) * limit, 0, MAX_OFFSET);
+    const offset = Math.min(MAX_OFFSET, requestedOffset);
+    const status = parseStatus(searchParams.get('status'));
 
     const scannerId = auth.member.supabase_auth_id || auth.memberId;
+    const supabaseAdmin = getSupabaseAdmin();
     let query = supabaseAdmin
       .from('scan_uploads')
-      .select('id, space_id, supabase_path, file_size_bytes, proof_hash, scan_type, scan_format, quality_score, verified, verified_at, reward_exp, is_first_scan, location_name, status, created_at', { count: 'exact' })
+      .select(SCAN_HISTORY_SELECT, { count: 'exact' })
       .or(`scanner_id.eq.${scannerId},scanner_id.eq.${auth.memberId}`)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -31,34 +104,32 @@ export async function GET(req: NextRequest) {
 
     const { data: scans, count, error } = await query;
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return scanHistoryFailure();
 
     // Fetch space names for enrichment
-    const spaceIds = [...new Set((scans || []).map(s => s.space_id))];
-    let spaces: Record<string, { name: string; city: string | null; space_type: string }> = {};
+    const scanRows = (scans || []) as ScanRow[];
+    const spaceIds = [...new Set(scanRows.map((scan) => scan.space_id).filter(Boolean))] as string[];
+    const spaces: Record<string, SpaceSummary> = {};
 
     if (spaceIds.length > 0) {
       const { data: spaceRows } = await supabaseAdmin
         .from('spaces')
-        .select('id, name, city, space_type')
+        .select(SPACE_SUMMARY_SELECT)
         .in('id', spaceIds);
 
       if (spaceRows) {
-        for (const sp of spaceRows) {
+        for (const sp of spaceRows as SpaceRow[]) {
           spaces[sp.id] = { name: sp.name, city: sp.city, space_type: sp.space_type };
         }
       }
     }
 
-    const enriched = (scans || []).map(scan => ({
-      ...scan,
-      space: spaces[scan.space_id] || null,
-    }));
+    const enriched = scanRows.map((scan) => publicScanRow(scan, scan.space_id ? spaces[scan.space_id] || null : null));
 
-    const totalExp = (scans || []).reduce((sum, s) => sum + (s.reward_exp || 0), 0);
-    const verifiedCount = (scans || []).filter(s => s.verified).length;
+    const totalExp = scanRows.reduce((sum, scan) => sum + (scan.reward_exp || 0), 0);
+    const verifiedCount = scanRows.filter((scan) => scan.verified).length;
 
-    return NextResponse.json({
+    return privateJson({
       scans: enriched,
       pagination: {
         page,
@@ -73,7 +144,7 @@ export async function GET(req: NextRequest) {
         totalExpEarned: totalExp,
       },
     });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch {
+    return scanHistoryFailure();
   }
 }

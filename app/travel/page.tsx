@@ -124,7 +124,7 @@ export default function TravelPage() {
             Travel the World<br />as an Explorer
           </h1>
           <p style={{ fontSize: '1.2rem', color: muted, lineHeight: 1.8, maxWidth: '560px', margin: '0 auto 2.5rem' }}>
-            Sovereign booking. Philosophical itineraries. Soulbound passport stamps. Travel isn't tourism — it's transformation.
+            Sovereign booking. Philosophical itineraries. Soulbound passport stamps. Travel isn&apos;t tourism — it&apos;s transformation.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="#destinations" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '14px 32px', textDecoration: 'none' }}>Explore Destinations →</a>
@@ -484,9 +484,9 @@ export default function TravelPage() {
                 <div style={{ paddingTop: '4px' }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: '#f5f0e8', marginBottom: '0.35rem' }}>{item.title}</div>
                   <p style={{ fontSize: '13px', color: muted, lineHeight: 1.8 }}>{item.desc}</p>
-                  {(item as any).note && (
+                  {item.note && (
                     <div style={{ marginTop: '0.5rem', padding: '8px 12px', background: `${gold}08`, border: `1px solid ${gold}18`, fontSize: '12px', color: gold, fontStyle: 'italic', lineHeight: 1.6 }}>
-                      {(item as any).note}
+                      {item.note}
                     </div>
                   )}
                 </div>

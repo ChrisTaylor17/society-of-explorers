@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
@@ -16,7 +17,7 @@ interface FrequencyVector {
 }
 
 interface Match {
-  memberId: string;
+  matchKey: string;
   displayName: string;
   similarity: number;
   vector: FrequencyVector;
@@ -53,14 +54,16 @@ export default function FrequencyMatchPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(session => {
+    getMemberSession().then(session => {
         if (!session) {
           setError('Sign in to discover resonant explorers.');
           setLoading(false);
           return;
         }
-        fetch(`/api/world/match?memberId=${session.member.id}`)
+        getSupabaseAccessToken().then((accessToken) => fetch('/api/world/match', {
+          cache: 'no-store',
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        }))
           .then(r => r.json())
           .then(data => {
             if (data.error) { setError(data.error); }
@@ -73,7 +76,6 @@ export default function FrequencyMatchPage() {
           })
           .catch(() => { setError('Failed to load matches.'); setLoading(false); });
       });
-    });
   }, []);
 
   useEffect(() => {
@@ -135,7 +137,7 @@ export default function FrequencyMatchPage() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1px', background: `${gold}12` }}>
               {matches.map((m, i) => (
-                <div key={m.memberId} style={{ background: '#0d0d0d', padding: '1.5rem 2rem' }}>
+                <div key={m.matchKey} style={{ background: '#0d0d0d', padding: '1.5rem 2rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                     <div>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.06em', color: '#f5f0e8', marginBottom: '2px' }}>{m.displayName}</div>

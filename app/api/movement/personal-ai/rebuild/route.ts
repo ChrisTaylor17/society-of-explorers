@@ -1,22 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { internalRouteError, privateJson } from '@/lib/http/routeError';
 import { buildManifest } from '@/lib/movement/personalAI';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const THRESHOLD = 30;
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
 async function countPracticeResponses(memberId: string): Promise<number> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { count, error } = await supabaseAdmin
     .from('question_responses')
     .select('id', { count: 'exact', head: true })
     .eq('member_id', memberId);
 
-  if (error) throw new Error(`Practice response count failed: ${error.message}`);
+  if (error) throw new Error('practice-response-count-failed');
   return count ?? 0;
 }
 
@@ -26,19 +23,20 @@ export const maxDuration = 120;
 export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthenticatedMember(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
     const responseCount = await countPracticeResponses(auth.memberId);
     const manifest = await buildManifest(auth.memberId);
 
     if (!manifest) {
-      return NextResponse.json({
+      return privateJson({
         ready: false,
         responseCount,
         threshold: THRESHOLD,
       });
     }
 
+    const supabaseAdmin = getSupabaseAdmin();
     const { error } = await supabaseAdmin.from('personal_ai_profiles').upsert(
       {
         member_id: auth.memberId,
@@ -50,17 +48,10 @@ export async function POST(req: NextRequest) {
       { onConflict: 'member_id' },
     );
 
-    if (error) throw new Error(`Personal AI profile upsert failed: ${error.message}`);
+    if (error) throw new Error('personal-ai-profile-upsert-failed');
 
-    return NextResponse.json({ ready: true, manifest });
-  } catch (error) {
-    console.error('[movement/personal-ai/rebuild] failed', error);
-    return NextResponse.json(
-      {
-        error: 'Personal AI rebuild failed',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    );
+    return privateJson({ ready: true, manifest });
+  } catch {
+    return internalRouteError('Personal AI rebuild failed');
   }
 }

@@ -1,8 +1,8 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getMemberSession } from '@/lib/auth/getSession'
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession'
 import { useRouter } from 'next/navigation'
 
 interface Member {
@@ -18,6 +18,57 @@ interface Member {
   tier?: string
   philosophy?: string
   email?: string
+}
+
+type MemberSkillValue = string[] | string | null | undefined
+
+type MemberRecord = Omit<Member, 'skills' | 'exp_tokens'> & {
+  skills?: MemberSkillValue
+  exp_tokens?: number | null
+}
+
+type ProfileDraft = {
+  bio: string
+  discipline: string
+  skills: string
+  project_description: string
+  seeking: string
+  philosophy: string
+}
+
+type ProfileDraftKey = keyof ProfileDraft
+
+const PROFILE_FIELDS: { key: ProfileDraftKey; label: string; placeholder: string }[] = [
+  { key: 'discipline', label: 'YOUR FIELD', placeholder: 'e.g. Blockchain architect, philosopher, builder, artist...' },
+  { key: 'bio', label: 'WHO YOU ARE', placeholder: 'A few sentences about yourself — what drives you, what you believe, where you came from...' },
+  { key: 'project_description', label: 'WHAT YOU ARE BUILDING', placeholder: 'Describe your current project or mission...' },
+  { key: 'seeking', label: 'WHAT YOU SEEK', placeholder: 'What kind of collaborator, conversation, or connection are you looking for?' },
+  { key: 'philosophy', label: 'YOUR PHILOSOPHY', placeholder: 'What do you believe about existence, technology, beauty, truth? What books changed you? What questions haunt you?' },
+  { key: 'skills', label: 'YOUR SKILLS', placeholder: 'Comma-separated: e.g. Solidity, product design, Heidegger, go-to-market, writing...' },
+]
+
+function normalizeSkills(skills: MemberSkillValue): string[] {
+  if (Array.isArray(skills)) return skills
+  if (typeof skills === 'string') {
+    return skills
+      .split(',')
+      .map(skill => skill.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+function skillsDraft(skills: MemberSkillValue): string {
+  if (Array.isArray(skills)) return skills.join(', ')
+  return skills || ''
+}
+
+function normalizeMember(member: MemberRecord): Member {
+  return {
+    ...member,
+    skills: normalizeSkills(member.skills),
+    exp_tokens: member.exp_tokens ?? 0,
+  }
 }
 
 function displayName(m: Member): string {
@@ -50,6 +101,25 @@ interface DM {
   thinker_id?: string
 }
 
+type DirectMessageRecord = Omit<DM, 'sender'> & {
+  sender?: MemberRecord | null
+}
+
+function normalizeDirectMessage(message: DirectMessageRecord): DM {
+  return {
+    ...message,
+    sender: message.sender ? normalizeMember(message.sender) : undefined,
+  }
+}
+
+async function getAuthHeaders(includeContentType = false): Promise<HeadersInit> {
+  const accessToken = await getSupabaseAccessToken()
+  return {
+    ...(includeContentType ? { 'Content-Type': 'application/json' } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  }
+}
+
 const THINKERS = [
   { id: 'socrates',  name: 'Socrates',        symbol: 'Σ' },
   { id: 'nietzsche', name: 'Nietzsche',        symbol: 'N' },
@@ -76,7 +146,7 @@ export default function MembersPage() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile'>('directory')
-  const [profileDraft, setProfileDraft] = useState({ bio: '', discipline: '', skills: '', project_description: '', seeking: '', philosophy: '' })
+  const [profileDraft, setProfileDraft] = useState<ProfileDraft>({ bio: '', discipline: '', skills: '', project_description: '', seeking: '', philosophy: '' })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
   const [matchQuery, setMatchQuery] = useState('')
@@ -89,62 +159,95 @@ export default function MembersPage() {
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+  const currentMemberId = currentMember?.id ?? null
+  const selectedMemberId = selectedMember?.id ?? null
 
   useEffect(() => {
+    let cancelled = false
+
     getMemberSession().then(session => {
+      if (cancelled) return
       if (!session) { router.push('/'); return }
-      setCurrentMember(session.member)
-      const m = session.member as any
+      const sessionMember = session.member as MemberRecord
+      setCurrentMember(normalizeMember(sessionMember))
       setProfileDraft({
-        bio: m.bio || '',
-        discipline: m.discipline || '',
-        skills: Array.isArray(m.skills) ? m.skills.join(', ') : (m.skills || ''),
-        project_description: m.project_description || '',
-        seeking: m.seeking || '',
-        philosophy: m.philosophy || '',
+        bio: sessionMember.bio || '',
+        discipline: sessionMember.discipline || '',
+        skills: skillsDraft(sessionMember.skills),
+        project_description: sessionMember.project_description || '',
+        seeking: sessionMember.seeking || '',
+        philosophy: sessionMember.philosophy || '',
       })
     })
-    supabase.from('members').select('*').order('exp_tokens', { ascending: false })
-      .then(({ data }) => { if (data) setMembers(data) })
-  }, [])
+
+    getAuthHeaders()
+      .then(headers => fetch('/api/members/discover', { headers, cache: 'no-store' }))
+      .then(async res => {
+        if (!res.ok) throw new Error(await res.text())
+        return res.json() as Promise<{ members?: MemberRecord[] }>
+      })
+      .then(({ members: discoveredMembers }) => {
+        if (!cancelled) setMembers((discoveredMembers ?? []).map(normalizeMember))
+      })
+      .catch(error => {
+        if (!cancelled) console.error('member discovery failed:', error)
+      })
+
+    return () => { cancelled = true }
+  }, [router])
 
   // Load unread count
   useEffect(() => {
-    if (!currentMember) return
-    supabase.from('direct_messages')
-      .select('id', { count: 'exact' })
-      .eq('recipient_id', currentMember.id)
-      .eq('read', false)
-      .then(({ count }) => setUnreadCount(count ?? 0))
-  }, [currentMember, messages])
+    if (!currentMemberId) return
+    let cancelled = false
+
+    getAuthHeaders()
+      .then(headers => fetch('/api/message', { headers, cache: 'no-store' }))
+      .then(async res => {
+        if (!res.ok) throw new Error(await res.text())
+        return res.json() as Promise<{ unreadCount?: number }>
+      })
+      .then(data => {
+        if (!cancelled) setUnreadCount(data.unreadCount ?? 0)
+      })
+      .catch(error => {
+        if (!cancelled) console.error('unread count failed:', error)
+      })
+
+    return () => { cancelled = true }
+  }, [currentMemberId, messages])
+
+  const loadMessages = useCallback(async () => {
+    if (!selectedMemberId || !currentMemberId) return
+    const headers = await getAuthHeaders()
+    const res = await fetch(`/api/message?peerId=${encodeURIComponent(selectedMemberId)}`, {
+      headers,
+      cache: 'no-store',
+    })
+    if (!res.ok) {
+      console.error('loadMessages failed:', await res.text())
+      return
+    }
+    const data = await res.json() as { messages?: DirectMessageRecord[] }
+    setMessages((data.messages ?? []).map(normalizeDirectMessage))
+  }, [currentMemberId, selectedMemberId])
 
   useEffect(() => {
-    if (!selectedMember || !currentMember) return
-    loadMessages()
-    const ch = supabase.channel(`dm-${currentMember.id}-${selectedMember.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, () => loadMessages())
+    if (!selectedMemberId || !currentMemberId) return
+    const initialLoadId = window.setTimeout(() => void loadMessages(), 0)
+    const ch = supabase.channel(`dm-${currentMemberId}-${selectedMemberId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, () => void loadMessages())
       .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [selectedMember, currentMember])
+    return () => {
+      window.clearTimeout(initialLoadId)
+      supabase.removeChannel(ch)
+    }
+  }, [currentMemberId, selectedMemberId, loadMessages, supabase])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  async function loadMessages() {
-    if (!selectedMember || !currentMember) return
-    const { data, error } = await supabase.from('direct_messages')
-      .select('*, sender:sender_id(id,display_name,wallet_address)')
-      .or(`and(sender_id.eq.${currentMember.id},recipient_id.eq.${selectedMember.id}),and(sender_id.eq.${selectedMember.id},recipient_id.eq.${currentMember.id})`)
-      .order('created_at', { ascending: true })
-    if (error) console.error('loadMessages error:', error)
-    if (data) setMessages(data as any)
-    await supabase.from('direct_messages').update({ read: true })
-      .eq('recipient_id', currentMember.id)
-      .eq('sender_id', selectedMember.id)
-      .eq('read', false)
-  }
 
   async function sendMessage(text?: string) {
     const msg = (text ?? input).trim()
@@ -152,20 +255,10 @@ export default function MembersPage() {
     setInput(''); setSending(true)
     const res = await fetch('/api/message', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ senderId: currentMember.id, recipientId: selectedMember.id, content: msg })
+      headers: await getAuthHeaders(true),
+      body: JSON.stringify({ recipientId: selectedMember.id, content: msg })
     })
     if (!res.ok) console.error('sendMessage failed:', await res.text())
-    // Fire-and-forget email notification
-    fetch('/api/notify/dm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipientId: selectedMember.id,
-        senderName: currentMember.display_name || 'An Explorer',
-        preview: msg,
-      }),
-    }).catch(() => {})
     setSending(false)
     await loadMessages()
     inputRef.current?.focus()
@@ -184,12 +277,11 @@ export default function MembersPage() {
 
     const res = await fetch('/api/thinker', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(true),
       body: JSON.stringify({
         thinkerId,
         message: `You have been invited into a private conversation between ${currentMember.display_name} and ${selectedMember.display_name}. Here are the recent messages:\n\n${recentMessages}\n\nRespond as ${thinker.name} — in character, direct, under 100 words. Address both people.`,
         history: [],
-        walletMemberId: currentMember.id,
       }),
     })
 
@@ -218,9 +310,8 @@ export default function MembersPage() {
     if (fullResponse) {
       await fetch('/api/message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthHeaders(true),
         body: JSON.stringify({
-          senderId: currentMember.id,
           recipientId: selectedMember.id,
           content: `${thinker.symbol} ${thinker.name.toUpperCase()} SPEAKS: ${fullResponse.replace(/^\[?\w[\w-]*\]?:\s*/i, '')}`
         })
@@ -251,10 +342,8 @@ export default function MembersPage() {
     setProfileSaving(true)
     const res = await fetch('/api/members/profile', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(true),
       body: JSON.stringify({
-        memberId: currentMember.id,
-        display_name: profileDraft.discipline ? undefined : undefined, // preserve existing
         bio: profileDraft.bio || null,
         discipline: profileDraft.discipline || null,
         skills: profileDraft.skills,
@@ -264,11 +353,14 @@ export default function MembersPage() {
       }),
     })
     if (res.ok) {
+      const data = await res.json() as { member?: MemberRecord }
+      const updatedMember = data.member ? normalizeMember(data.member) : currentMember
       setProfileSaved(true)
       setTimeout(() => setProfileSaved(false), 2000)
-      // Refresh member data
-      const { data } = await supabase.from('members').select('*').eq('id', currentMember.id).single()
-      if (data) setCurrentMember(data as any)
+      setCurrentMember(updatedMember)
+      setMembers(previousMembers =>
+        previousMembers.map(member => member.id === updatedMember.id ? { ...member, ...updatedMember } : member)
+      )
     }
     setProfileSaving(false)
   }
@@ -526,18 +618,11 @@ export default function MembersPage() {
                 Your profile is only visible to the Oracle and to other members. The more you reveal, the more profound the connections the Oracle can find.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {[
-                  { key: 'discipline', label: 'YOUR FIELD', placeholder: 'e.g. Blockchain architect, philosopher, builder, artist...' },
-                  { key: 'bio', label: 'WHO YOU ARE', placeholder: 'A few sentences about yourself — what drives you, what you believe, where you came from...' },
-                  { key: 'project_description', label: 'WHAT YOU ARE BUILDING', placeholder: 'Describe your current project or mission...' },
-                  { key: 'seeking', label: 'WHAT YOU SEEK', placeholder: 'What kind of collaborator, conversation, or connection are you looking for?' },
-                  { key: 'philosophy', label: 'YOUR PHILOSOPHY', placeholder: 'What do you believe about existence, technology, beauty, truth? What books changed you? What questions haunt you?' },
-                  { key: 'skills', label: 'YOUR SKILLS', placeholder: 'Comma-separated: e.g. Solidity, product design, Heidegger, go-to-market, writing...' },
-                ].map(field => (
+                {PROFILE_FIELDS.map(field => (
                   <div key={field.key}>
                     <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>{field.label}</label>
                     <textarea
-                      value={(profileDraft as any)[field.key]}
+                      value={profileDraft[field.key]}
                       onChange={e => setProfileDraft(d => ({ ...d, [field.key]: e.target.value }))}
                       rows={field.key === 'philosophy' ? 4 : 2}
                       placeholder={field.placeholder}

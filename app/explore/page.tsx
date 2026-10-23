@@ -8,8 +8,15 @@ const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
+interface CommunitySummary {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+}
+
 export default function ExplorePage() {
-  const [daos, setDaos] = useState<any[]>([]);
+  const [daos, setDaos] = useState<CommunitySummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

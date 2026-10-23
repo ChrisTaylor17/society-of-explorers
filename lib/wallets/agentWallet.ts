@@ -1,17 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getWalletEncryptionKey(): Buffer {
+  const walletEncryptionKey = process.env.WALLET_ENCRYPTION_KEY || '';
+  if (!walletEncryptionKey) {
+    throw new Error('WALLET_ENCRYPTION_KEY is required before storing agent wallet private keys.');
+  }
+  if (!/^[0-9a-fA-F]{64}$/.test(walletEncryptionKey)) {
+    throw new Error('WALLET_ENCRYPTION_KEY must be a 64-character hex string.');
+  }
 
-const WALLET_ENCRYPTION_KEY = process.env.WALLET_ENCRYPTION_KEY || '';
+  return Buffer.from(walletEncryptionKey, 'hex');
+}
 
 function encryptPrivateKey(privateKey: string): { encrypted: string; iv: string } {
-  if (!WALLET_ENCRYPTION_KEY) return { encrypted: 'unencrypted:' + privateKey, iv: '' };
   const iv = crypto.randomBytes(16);
-  const key = Buffer.from(WALLET_ENCRYPTION_KEY, 'hex');
+  const key = getWalletEncryptionKey();
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
   let encrypted = cipher.update(privateKey, 'utf8', 'hex');
   encrypted += cipher.final('hex');
@@ -22,6 +26,7 @@ function encryptPrivateKey(privateKey: string): { encrypted: string; iv: string 
 export async function createAgentWallet(
   agentKey: string, communityId: string, chain: 'base' = 'base'
 ): Promise<{ address: string } | null> {
+  const supabase = getSupabaseAdmin();
   const { data: existing } = await supabase
     .from('agent_wallets')
     .select('wallet_address')
@@ -56,6 +61,7 @@ export async function createAgentWallet(
 }
 
 export async function initializeAgentWallets(communityId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const { data: thinkers } = await supabase
     .from('community_thinkers')
     .select('thinker_key')
@@ -117,6 +123,7 @@ export async function initializeAgentWallets(communityId: string): Promise<void>
 export async function getAgentWallet(
   agentKey: string, communityId: string
 ): Promise<{ address: string; balance: number; totalDisbursed: number } | null> {
+  const supabase = getSupabaseAdmin();
   const { data } = await supabase
     .from('agent_wallets')
     .select('wallet_address, balance_cached, total_disbursed')

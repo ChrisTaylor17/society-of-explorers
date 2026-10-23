@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { getBook, GREAT_BOOKS } from '@/lib/books/catalog';
+import Link from 'next/link';
+import { getBook } from '@/lib/books/catalog';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 import { speakText, stopSpeaking } from '@/lib/tts';
 import { hasAccess } from '@/lib/auth/checkAccess';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -72,36 +74,47 @@ export default function BookReader() {
     readerRef.current?.scrollTo(0, 0);
   }, [bookId, totalSections]);
 
-  useEffect(() => { loadSection(currentSection); }, [currentSection, loadSection]);
+  useEffect(() => {
+    const run = async () => {
+      await loadSection(currentSection);
+    };
+    void run();
+  }, [currentSection, loadSection]);
 
   // Resolve member + load progress
   useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(session => {
-        if (session?.member?.id) {
-          setMemberId(session.member.id);
-          setMemberTier((session.member as any).tier || 'free');
-          // Load saved progress
-          fetch(`/api/great-books/progress?memberId=${session.member.id}&bookId=${bookId}`)
-            .then(r => r.json())
-            .then(d => {
-              const p = d.progress?.[0];
-              if (p?.section_id) setCurrentSection(Number(p.section_id) || 1);
-            })
-            .catch(() => {});
-        }
-      });
+    getMemberSession().then(async session => {
+      if (session?.member?.id) {
+        setMemberId(session.member.id);
+        const member = session.member as { tier?: string | null };
+        setMemberTier(member.tier || 'free');
+        const accessToken = await getSupabaseAccessToken();
+        // Load saved progress
+        fetch(`/api/great-books/progress?bookId=${bookId}`, {
+          cache: 'no-store',
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        })
+          .then(r => r.json())
+          .then(d => {
+            const p = d.progress?.[0];
+            if (p?.section_id) setCurrentSection(Number(p.section_id) || 1);
+          })
+          .catch(() => {});
+      }
     });
   }, [bookId]);
 
   // Save progress when section changes
   useEffect(() => {
     if (!memberId || !bookId) return;
-    fetch('/api/great-books/progress', {
+    getSupabaseAccessToken().then((accessToken) => fetch('/api/great-books/progress', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId, bookId, sectionId: String(currentSection), paragraphIndex: 0 }),
-    }).catch(() => {});
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify({ bookId, sectionId: String(currentSection), paragraphIndex: 0 }),
+    })).catch(() => {});
   }, [currentSection, memberId, bookId]);
 
   // Scroll to highlighted paragraph
@@ -112,7 +125,7 @@ export default function BookReader() {
   }, [readingParagraphIdx]);
 
   // Handle text selection — show gold popup
-  function handleMouseUp(e: React.MouseEvent) {
+  function handleMouseUp() {
     const sel = window.getSelection();
     const text = sel?.toString().trim();
     if (text && text.length > 15 && hasAccess(memberTier, 'seeker')) {
@@ -183,8 +196,13 @@ export default function BookReader() {
   async function awardExp(amount: number, reason: string) {
     if (!memberId) return;
     try {
+      const accessToken = await getSupabaseAccessToken();
       const res = await fetch('/api/exp/award', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ memberId, amount, reason, bookId, section: currentSection }),
       });
       if (res.ok) {
@@ -256,7 +274,7 @@ export default function BookReader() {
       <div style={{ position: 'sticky', top: 0, zIndex: 50, background: '#080808', borderBottom: `1px solid ${gold}15`, padding: '10px 2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1400px', margin: '0 auto' }}>
           <div>
-            <a href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>← LIBRARY</a>
+            <Link href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>← LIBRARY</Link>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.12em', color: parchment, marginTop: '2px' }}>{book.title}</div>
             <div style={{ fontSize: '11px', color: muted, fontStyle: 'italic' }}>{book.author} · {book.year}</div>
             {bookExp > 0 && (

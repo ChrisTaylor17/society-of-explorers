@@ -1,23 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 import { getBook } from '@/lib/books/catalog';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+type GreatBooksSectionRow = {
+  section_number: number;
+  content: string;
+  word_count: number | null;
+};
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ bookId: string }> }) {
   const { bookId } = await params;
   const book = getBook(bookId);
-  if (!book) return NextResponse.json({ error: 'Book not found' }, { status: 404 });
+  if (!book) return privateJson({ error: 'Book not found' }, { status: 404 });
 
   const sectionParam = req.nextUrl.searchParams.get('section');
   const sectionNumber = sectionParam ? Number(sectionParam) : null;
+  const supabase = getSupabaseAdmin();
 
   // Try DB first
   if (sectionNumber !== null) {
-    const { data: section } = await supabaseAdmin
+    const { data: section } = await supabase
       .from('great_books_sections')
       .select('*')
       .eq('book_id', bookId)
@@ -25,33 +28,35 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
       .single();
 
     if (section) {
-      return NextResponse.json({
+      const sectionRow = section as GreatBooksSectionRow;
+      return privateJson({
         bookId, title: book.title, author: book.author,
-        section_number: section.section_number,
-        content: section.content,
-        word_count: section.word_count,
+        section_number: sectionRow.section_number,
+        content: sectionRow.content,
+        word_count: sectionRow.word_count,
       });
     }
   } else {
     // Load all sections from DB
-    const { data: sections } = await supabaseAdmin
+    const { data: sections } = await supabase
       .from('great_books_sections')
       .select('*')
       .eq('book_id', bookId)
       .order('section_number', { ascending: true });
 
-    if (sections && sections.length > 0) {
-      return NextResponse.json({
+    const sectionRows = (sections || []) as GreatBooksSectionRow[];
+    if (sectionRows.length > 0) {
+      return privateJson({
         bookId, title: book.title, author: book.author,
-        totalSections: sections.length,
-        text: sections.map(s => s.content),
+        totalSections: sectionRows.length,
+        text: sectionRows.map((section) => section.content),
       });
     }
   }
 
   // Fallback: fetch from Gutenberg, clean, split, save to DB
   if (!book.gutenberg_id) {
-    return NextResponse.json({
+    return privateJson({
       bookId, title: book.title, author: book.author,
       totalParagraphs: 0,
       text: [`[Full text not yet available for "${book.title}"]`],
@@ -132,11 +137,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
       word_count: s.wordCount,
     }));
 
-    supabaseAdmin.from('great_books_sections').upsert(inserts, { onConflict: 'book_id,section_number' })
+    supabase.from('great_books_sections').upsert(inserts, { onConflict: 'book_id,section_number' })
       .then(({ error }) => { if (error) console.error('Section save error:', error); });
 
     // Update total_sections on the book
-    supabaseAdmin.from('great_books').update({ total_sections: sections.length }).eq('id', bookId)
+    supabase.from('great_books').update({ total_sections: sections.length }).eq('id', bookId)
       .then(({ error }) => { if (error) console.error('Book update error:', error); });
 
     // Return section-paginated paragraphs
@@ -145,7 +150,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
     const startIdx = (reqSection - 1) * SECTION_SIZE;
     const sectionParagraphs = allParagraphs.slice(startIdx, startIdx + SECTION_SIZE);
 
-    return NextResponse.json({
+    return privateJson({
       bookId, title: book.title, author: book.author,
       totalSections: totalSects,
       currentSection: reqSection,
@@ -154,6 +159,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ book
     });
   } catch (err) {
     console.error('Gutenberg fetch error:', err);
-    return NextResponse.json({ error: 'Failed to fetch text', details: String(err) }, { status: 502 });
+    return privateJson({ error: 'Failed to fetch text' }, { status: 502 });
   }
 }

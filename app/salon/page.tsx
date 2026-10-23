@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -14,16 +13,69 @@ const TRACK_COLORS: Record<string, string> = { singularity: '#4169E1', blockchai
 const TRACK_LABELS: Record<string, string> = { singularity: 'Singularity & AI', blockchain: 'Blockchain & Data Sovereignty', consciousness: 'The Secret & Consciousness' };
 const GUIDE_LEVELS = ['', 'Guide', 'Senior Guide', 'Master Guide'];
 
+type RecruitingSalon = {
+  id: string;
+  title: string;
+  description?: string | null;
+  status?: string | null;
+  max_members: number;
+  topic_rotation?: string[];
+  member_count: number;
+  guide_name?: string | null;
+};
+
+type SalonSummary = {
+  id: string;
+  title: string;
+  status?: string | null;
+};
+
+type SalonSession = {
+  id: string;
+  session_date: string;
+  session_number: number;
+  status?: string | null;
+  track?: string | null;
+  topic?: string | null;
+  led_by_name?: string | null;
+};
+
+type SalonMember = {
+  id: string;
+  role?: string | null;
+  sessions_attended?: number | null;
+  sessions_led?: number | null;
+  is_guide_candidate?: boolean | null;
+  members?: {
+    display_name?: string | null;
+  } | null;
+};
+
+type SalonStats = {
+  current_week: number;
+};
+
+type SalonGuide = {
+  display_name: string;
+  guide_level: number;
+};
+
+type MyMembership = {
+  sessions_attended?: number | null;
+  sessions_led?: number | null;
+  is_guide_candidate?: boolean | null;
+};
+
 export default function SalonPage() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const [mySalon, setMySalon] = useState<any>(null);
-  const [recruiting, setRecruiting] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [guide, setGuide] = useState<any>(null);
-  const [myMembership, setMyMembership] = useState<any>(null);
+  const [mySalon, setMySalon] = useState<SalonSummary | null>(null);
+  const [recruiting, setRecruiting] = useState<RecruitingSalon[]>([]);
+  const [sessions, setSessions] = useState<SalonSession[]>([]);
+  const [members, setMembers] = useState<SalonMember[]>([]);
+  const [stats, setStats] = useState<SalonStats | null>(null);
+  const [guide, setGuide] = useState<SalonGuide | null>(null);
+  const [myMembership, setMyMembership] = useState<MyMembership | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState<string | null>(null);
 
@@ -32,12 +84,11 @@ export default function SalonPage() {
       try {
         const session = await getMemberSession();
         if (session?.member) setMemberId(session.member.id);
-        const supabase = createClient();
-        const { data: { session: auth } } = await supabase.auth.getSession();
-        if (auth?.access_token) setAuthToken(auth.access_token);
+        const accessToken = await getSupabaseAccessToken();
+        if (accessToken) setAuthToken(accessToken);
       } catch {}
 
-      const res = await fetch('/api/salons?status=recruiting,active');
+      const res = await fetch('/api/salons?status=recruiting,active', { cache: 'no-store' });
       const data = await res.json();
       setRecruiting(data.salons || []);
       setLoading(false);
@@ -48,7 +99,7 @@ export default function SalonPage() {
   // Check if member is in a salon
   useEffect(() => {
     if (!authToken) return;
-    fetch('/api/salons/my-salon', { headers: { 'Authorization': `Bearer ${authToken}` } })
+    fetch('/api/salons/my-salon', { headers: { 'Authorization': `Bearer ${authToken}` }, cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
         if (d.salon) {
@@ -63,7 +114,7 @@ export default function SalonPage() {
   }, [authToken]);
 
   async function joinSalon(salonId: string) {
-    if (!memberId) { window.location.href = '/login'; return; }
+    if (!memberId) { window.location.assign('/login'); return; }
     setJoining(salonId);
     try {
       const res = await fetch(`/api/salons/${salonId}`, {
@@ -75,6 +126,7 @@ export default function SalonPage() {
       if (data.success) {
         const detail = await fetch(`/api/salons/${salonId}`, {
           headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
+          cache: 'no-store',
         }).then(r => r.json());
         setMySalon(detail.salon);
         setMembers(detail.members || []);
@@ -101,7 +153,6 @@ export default function SalonPage() {
   if (mySalon) {
     const upcomingSessions = sessions.filter(s => s.status === 'scheduled' || s.status === 'live').slice(0, 7);
     const completedSessions = sessions.filter(s => s.status === 'completed');
-    const totalSessions = 35;
     const sessionsLed = myMembership?.sessions_led || 0;
     const sessionsAttended = myMembership?.sessions_attended || 0;
     const isGuideCandidate = myMembership?.is_guide_candidate || false;
@@ -206,7 +257,7 @@ export default function SalonPage() {
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>MEMBERS ({members.length})</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {members.map((m: any) => (
+              {members.map((m) => (
                 <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: '#0d0d0d', border: `1px solid ${gold}08`, transition: 'border-color 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = `${gold}33`}
                   onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}08`}>

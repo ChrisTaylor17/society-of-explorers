@@ -1,5 +1,18 @@
 import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
+
+type HostSessionMember = {
+  id: string;
+  supabase_auth_id?: string | null;
+};
+
+export function isHostedByCurrentMember(
+  hostId: string | null | undefined,
+  member: HostSessionMember | null | undefined,
+): boolean {
+  if (!hostId || !member) return false;
+  return hostId === member.id || hostId === member.supabase_auth_id;
+}
 
 /**
  * Check if the current member can access a space.
@@ -10,7 +23,7 @@ export async function canAccessSpace(spaceId: string): Promise<{ allowed: boolea
   const session = await getMemberSession();
   if (!session) return { allowed: false, memberId: null };
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: space } = await supabase
     .from('spaces')
     .select('status, host_id')
@@ -23,19 +36,21 @@ export async function canAccessSpace(spaceId: string): Promise<{ allowed: boolea
     return { allowed: true, memberId: session.member.id };
   }
 
-  const isHost = space.host_id === session.member.supabase_auth_id;
+  const isHost = isHostedByCurrentMember(space.host_id, session.member);
   return { allowed: isHost, memberId: session.member.id };
 }
 
 /**
- * Grant a member access to a space by making them a collaborator.
- * Only the host can grant access.
+ * Validate a host-initiated access request. The current spaces schema has no
+ * collaborator relation, so this must fail closed until one is introduced.
  */
 export async function grantAccess(spaceId: string, targetMemberId: string): Promise<{ success: boolean; error?: string }> {
+  if (!targetMemberId.trim()) return { success: false, error: 'Target member is required' };
+
   const session = await getMemberSession();
   if (!session) return { success: false, error: 'Not authenticated' };
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: space } = await supabase
     .from('spaces')
     .select('host_id')
@@ -43,9 +58,9 @@ export async function grantAccess(spaceId: string, targetMemberId: string): Prom
     .single();
 
   if (!space) return { success: false, error: 'Space not found' };
-  if (space.host_id !== session.member.supabase_auth_id) {
+  if (!isHostedByCurrentMember(space.host_id, session.member)) {
     return { success: false, error: 'Only the host can grant access' };
   }
 
-  return { success: true };
+  return { success: false, error: 'Space collaboration access is not configured' };
 }

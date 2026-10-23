@@ -9,8 +9,6 @@ export default function Tribekey() {
   const gold = '#c9a84c';
   const dim = '#d4c9a8';
   const muted = '#9a8f7a';
-  const red = '#c0392b';
-
   return (
     <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
 

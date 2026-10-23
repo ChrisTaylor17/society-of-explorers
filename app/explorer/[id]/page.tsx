@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
-import { createClient } from '@supabase/supabase-js';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { loadPublicExplorerProfile } from '@/lib/explorer/publicProfile';
+
+export const dynamic = 'force-dynamic';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -28,63 +30,9 @@ const TIER_LABELS: Record<string, string> = {
   oracle: 'ORACLE',
 };
 
-function getAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-async function loadExplorer(id: string) {
-  const supabase = getAdmin();
-  const { data: explorer } = await supabase
-    .from('members')
-    .select('id, display_name, created_at, current_streak, longest_streak, total_responses, exp_tokens, tier, decision_archetype')
-    .eq('id', id)
-    .single();
-
-  if (!explorer) return null;
-
-  const { data: responses } = await supabase
-    .from('question_responses')
-    .select('id, response_text, created_at, question_id')
-    .eq('member_id', id)
-    .order('created_at', { ascending: false })
-    .limit(30);
-
-  const recentIds = (responses || []).slice(0, 5).map(r => r.question_id);
-  let questionsById: Record<string, any> = {};
-  if (recentIds.length > 0) {
-    const { data: questions } = await supabase
-      .from('daily_questions')
-      .select('id, question_text, thinker_id')
-      .in('id', recentIds);
-    questionsById = Object.fromEntries((questions || []).map(q => [q.id, q]));
-  }
-
-  const recentResponses = (responses || []).slice(0, 5).map(r => ({
-    id: r.id,
-    response_text: r.response_text,
-    created_at: r.created_at,
-    question: questionsById[r.question_id] || null,
-  }));
-
-  const responseDates = (responses || []).map(r => r.created_at as string);
-
-  const { data: expRows } = await supabase
-    .from('exp_events')
-    .select('amount')
-    .eq('member_id', id);
-  const totalExp = (expRows || []).reduce((sum, row: any) => sum + (Number(row.amount) || 0), 0);
-
-  const daysSinceJoined = Math.max(1, Math.floor((Date.now() - new Date(explorer.created_at).getTime()) / 86400000));
-
-  return { explorer, recentResponses, responseDates, stats: { totalExp, daysSinceJoined, responsesCount: (responses || []).length } };
-}
-
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const data = await loadExplorer(id);
+  const data = await loadPublicExplorerProfile(id);
   if (!data) return { title: 'Explorer — Society of Explorers' };
   const { explorer } = data;
   const name = explorer.display_name || 'Explorer';
@@ -135,7 +83,7 @@ function buildStreakGrid(responseDates: string[]): { key: string; active: boolea
 
 export default async function ExplorerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = await loadExplorer(id);
+  const data = await loadPublicExplorerProfile(id);
 
   if (!data) {
     return (

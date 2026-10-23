@@ -5,22 +5,38 @@ import {
   ArrowLeft,
   Bookmark,
   Check,
+  ChevronRight,
   Copy,
   CornerUpLeft,
+  DollarSign,
   LockKeyhole,
   Play,
+  Share2,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import {
+  PROMPT_ATLAS_FREE_MONTHLY_RUNS,
+  PROMPT_ATLAS_HOURLY_RUNS,
+  PROMPT_ATLAS_PRO_MONTHLY_RUNS_LABEL,
+} from "@/lib/billing/plan";
+import { launchSignalForPrompt } from "@/lib/prompts/launchSignals";
+import type { GuidedPathStep } from "./DiscoveryCanvas";
 import type { MemberSummary, PromptRecord, StreamMeta } from "@/lib/prompts/types";
 
 interface PromptWorkspaceProps {
   prompt: PromptRecord;
+  launchPath: GuidedPathStep[];
   member: MemberSummary | null;
   customize: boolean;
+  onSelectPrompt(prompt: PromptRecord): void;
   onBack(): void;
   onAuth(): void;
   onUpgrade(): void;
   onFavorite(): Promise<void> | void;
+  onSignal(): Promise<void> | void;
+  onShare(): Promise<void> | void;
+  shareCopied: boolean;
   onUsage(meta: StreamMeta): void;
 }
 
@@ -46,12 +62,17 @@ function parseEvent(block: string): StreamEvent | null {
 
 export function PromptWorkspace({
   prompt,
+  launchPath,
   member,
   customize,
+  onSelectPrompt,
   onBack,
   onAuth,
   onUpgrade,
   onFavorite,
+  onSignal,
+  onShare,
+  shareCopied,
   onUsage,
 }: PromptWorkspaceProps) {
   const [promptText, setPromptText] = useState(prompt.prompt_text);
@@ -86,7 +107,7 @@ export function PromptWorkspace({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          promptId: prompt.created_by || prompt.id.startsWith("10000000") ? prompt.id : null,
+          promptId: prompt.id,
           promptText,
           context,
         }),
@@ -145,12 +166,31 @@ export function PromptWorkspace({
     window.setTimeout(() => setCopied(false), 1400);
   }
 
-  const remaining = member?.runsLimit === null
-    ? "Unlimited explorations"
-    : `${Math.max((member?.runsLimit ?? 5) - (member?.runsUsed ?? 0), 0)} free runs remaining`;
+  const unlimitedPro = member?.tier === "explorer_pro" && member.runsLimit === null;
+  const runsRemaining = unlimitedPro
+    ? null
+    : Math.max(
+        (member?.runsLimit ?? PROMPT_ATLAS_FREE_MONTHLY_RUNS) - (member?.runsUsed ?? 0),
+        0,
+      );
+  const freeAllowanceUsed = member?.tier === "free" && runsRemaining === 0;
+  const explorationActionLabel = freeAllowanceUsed
+    ? member.canManageBilling
+      ? member.canStartCheckout
+        ? "Restart Pro to keep exploring"
+        : "Manage plan to keep exploring"
+      : "View Pro to keep exploring"
+    : "Begin exploration";
+  const remaining = member?.tier === "explorer_pro"
+    ? unlimitedPro
+      ? "Unlimited Pro explorations this month"
+      : `${runsRemaining} Pro explorations remaining this month`
+    : `${runsRemaining} free runs remaining`;
+  const pathSteps = launchPath.slice(0, 4);
+  const launchSignal = launchSignalForPrompt(prompt);
 
   return (
-    <main className="relative min-h-[calc(100dvh-74px)] pb-[99px]">
+    <main className="relative min-h-[calc(100dvh-74px)] lg:pb-[99px]">
       <div className="grid min-h-[calc(100dvh-173px)] lg:grid-cols-[47.5%_52.5%]">
         <motion.section
           className="border-b border-[#d0aa6230] px-5 py-8 sm:px-10 lg:border-b-0 lg:border-r lg:px-12 lg:py-16"
@@ -179,6 +219,48 @@ export function PromptWorkspace({
             </button>
           </div>
 
+          {pathSteps.length ? (
+            <div className="mt-7 border-y border-[#d0aa6230] py-4 lg:hidden">
+              <div className="mb-3 flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.18em] text-[#d0aa62]">
+                <DollarSign size={14} strokeWidth={1.35} />
+                Launch path
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {pathSteps.map((step, index) => {
+                  const active = step.prompt.id === prompt.id;
+                  return (
+                    <button
+                      key={step.prompt.id}
+                      type="button"
+                      aria-current={active ? "step" : undefined}
+                      aria-label={`Launch path ${index + 1}: ${step.prompt.title}`}
+                      onClick={() => onSelectPrompt(step.prompt)}
+                      className={`group flex min-h-[62px] cursor-pointer items-center justify-between gap-3 border px-3 py-2 text-left transition-colors ${
+                        active
+                          ? "border-[#d0aa6290] bg-[#d0aa6212] text-[#eee7d9]"
+                          : "border-[#d0aa6225] text-[#a9a298] hover:border-[#d0aa6270] hover:text-[#eee7d9]"
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-mono text-[0.6rem] text-[#d0aa62]">
+                          {String(index + 1).padStart(2, "0")} / {step.label}
+                        </span>
+                        <span className="mt-1 block truncate text-sm leading-5">
+                          {step.prompt.title}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={15}
+                        strokeWidth={1.35}
+                        className={active ? "shrink-0 text-[#d0aa62]" : "shrink-0 text-[#625d55] group-hover:text-[#d0aa62]"}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <label htmlFor="prompt-text" className="mb-4 mt-8 block text-[0.65rem] uppercase tracking-[0.18em] text-[#d0aa62]">
             Prompt
           </label>
@@ -188,7 +270,7 @@ export function PromptWorkspace({
             value={promptText}
             onChange={(event) => setPromptText(event.target.value)}
             rows={8}
-            className="prompt-field display-type min-h-[245px] w-full resize-y p-5 text-xl leading-7 sm:min-h-[312px] sm:text-[1.35rem] sm:leading-8"
+            className="prompt-field display-type min-h-[245px] w-full resize-y p-5 text-xl leading-7 sm:min-h-[280px] sm:text-[1.35rem] sm:leading-8"
           />
 
           <label htmlFor="prompt-context" className="mb-4 mt-7 block text-[0.65rem] uppercase tracking-[0.18em] text-[#d0aa62]">
@@ -211,12 +293,16 @@ export function PromptWorkspace({
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={beginExploration}
-              disabled={running || !promptText.trim()}
+              onClick={freeAllowanceUsed ? onUpgrade : beginExploration}
+              disabled={running || (!freeAllowanceUsed && !promptText.trim())}
               className="flex h-13 cursor-pointer items-center justify-center gap-3 bg-[#d0aa62] px-7 text-sm font-medium text-[#080c0e] transition-colors hover:bg-[#e8c77f] disabled:cursor-wait disabled:opacity-55"
             >
-              <Play size={17} strokeWidth={1.45} />
-              {running ? "Exploring..." : "Begin exploration"}
+              {freeAllowanceUsed ? (
+                <LockKeyhole size={17} strokeWidth={1.45} />
+              ) : (
+                <Play size={17} strokeWidth={1.45} />
+              )}
+              {running ? "Exploring..." : explorationActionLabel}
             </button>
             <button
               type="button"
@@ -235,6 +321,73 @@ export function PromptWorkspace({
         >
           <h2 className="text-[0.67rem] uppercase tracking-[0.2em] text-[#d0aa62]">A clearer path</h2>
           <div className="mb-7 mt-4 h-px w-12 bg-[#d0aa62]" />
+
+          {pathSteps.length ? (
+            <div className="mb-8 hidden border-y border-[#d0aa6230] py-4 lg:block">
+              <div className="mb-3 flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.18em] text-[#d0aa62]">
+                <DollarSign size={14} strokeWidth={1.35} />
+                Launch path
+              </div>
+              <div className="grid gap-2 xl:grid-cols-4">
+                {pathSteps.map((step, index) => {
+                  const active = step.prompt.id === prompt.id;
+                  return (
+                    <button
+                      key={step.prompt.id}
+                      type="button"
+                      aria-current={active ? "step" : undefined}
+                      aria-label={`Launch path ${index + 1}: ${step.prompt.title}`}
+                      onClick={() => onSelectPrompt(step.prompt)}
+                      className={`group flex min-h-[62px] cursor-pointer items-center justify-between gap-3 border px-3 py-2 text-left transition-colors ${
+                        active
+                          ? "border-[#d0aa6290] bg-[#d0aa6212] text-[#eee7d9]"
+                          : "border-[#d0aa6225] text-[#a9a298] hover:border-[#d0aa6270] hover:text-[#eee7d9]"
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-mono text-[0.6rem] text-[#d0aa62]">
+                          {String(index + 1).padStart(2, "0")} / {step.label}
+                        </span>
+                        <span className="mt-1 block truncate text-sm leading-5">
+                          {step.prompt.title}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={15}
+                        strokeWidth={1.35}
+                        className={active ? "shrink-0 text-[#d0aa62]" : "shrink-0 text-[#625d55] group-hover:text-[#d0aa62]"}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          <aside className="mb-8 grid gap-3 border border-[#d0aa6228] bg-[#080c0e99] px-4 py-4 sm:grid-cols-[0.82fr_1.18fr]">
+            <div>
+              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[#d0aa62]">
+                Profit loop
+              </p>
+              <p className="mt-2 display-type text-[1.7rem] leading-none text-[#eee7d9]">
+                {launchSignal.phase}
+              </p>
+              <p className="mt-3 text-xs leading-5 text-[#8f887e]">
+                Target artifact: {launchSignal.artifact}
+              </p>
+            </div>
+            <div className="border-t border-[#d0aa6228] pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+              <p className="text-[0.58rem] uppercase tracking-[0.16em] text-[#77736d]">
+                Proof to collect
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[#d8cfbf]">
+                {launchSignal.proof}
+              </p>
+              <p className="mt-3 text-xs leading-5 text-[#858078]">
+                {launchSignal.operatorMove}
+              </p>
+            </div>
+          </aside>
 
           <div className="display-type flex-1 text-[1.18rem] leading-[1.58] text-[#e8dfd0] sm:text-[1.35rem]">
             {response ? (
@@ -273,30 +426,55 @@ export function PromptWorkspace({
             <span className="h-5 w-px bg-[#d0aa6240]" />
             <button
               type="button"
+              onClick={onShare}
+              className="flex cursor-pointer items-center gap-2"
+            >
+              {shareCopied ? (
+                <Check size={17} strokeWidth={1.4} />
+              ) : (
+                <Share2 size={17} strokeWidth={1.4} />
+              )}
+              {shareCopied ? "Link copied" : "Share prompt"}
+            </button>
+            <span className="h-5 w-px bg-[#d0aa6240]" />
+            <button
+              type="button"
+              onClick={onSignal}
+              className="flex cursor-pointer items-center gap-2"
+              title="Signal that this prompt is useful. Only aggregate community counts are shown."
+            >
+              <Sparkles size={17} strokeWidth={1.4} fill={prompt.signaled ? "currentColor" : "none"} />
+              {prompt.signaled ? "Signal sent" : "Signal prompt"}
+            </button>
+            <span className="h-5 w-px bg-[#d0aa6240]" />
+            <button
+              type="button"
               onClick={onFavorite}
               disabled={!response}
               className="flex cursor-pointer items-center gap-2 disabled:cursor-default disabled:opacity-35"
-              title="Save the prompt; private result storage will remain opt-in."
+              title="Save this prompt. Your generated result stays in this browser unless you copy it."
             >
-              <Bookmark size={17} strokeWidth={1.4} /> Save insight
+              <Bookmark size={17} strokeWidth={1.4} />
+              {prompt.favorited ? "Prompt saved" : "Save prompt"}
             </button>
           </div>
         </motion.section>
       </div>
 
-      <section className="atlas-bottom-safe fixed inset-x-0 bottom-0 z-30 flex min-h-[99px] items-center border-t border-[#d0aa6230] bg-[#080c0ef5] px-5 backdrop-blur sm:px-10 lg:px-12">
+      <section className="atlas-bottom-safe relative z-30 flex min-h-[99px] items-center border-t border-[#d0aa6230] bg-[#080c0ef5] px-5 backdrop-blur sm:px-10 lg:fixed lg:inset-x-0 lg:bottom-0 lg:px-12">
         <div className="text-sm text-[#d7cec0]">{remaining}</div>
         <div className="mx-8 hidden h-7 w-px bg-[#d0aa6238] sm:block" />
         <p className="hidden text-sm text-[#8e8981] md:block">
-          Free access includes five explorations each month. Upgrade for unlimited use.
+          Free access includes {PROMPT_ATLAS_FREE_MONTHLY_RUNS} explorations each month. Pro
+          includes {PROMPT_ATLAS_PRO_MONTHLY_RUNS_LABEL.toLowerCase()} monthly explorations with a {PROMPT_ATLAS_HOURLY_RUNS}/hour fair-use pace.
         </p>
-        {member?.runsLimit !== null ? (
+        {member?.tier !== "explorer_pro" ? (
           <button
             type="button"
             onClick={onUpgrade}
             className="ml-auto flex h-11 cursor-pointer items-center gap-2 bg-[#173143] px-5 text-sm text-[#dbe9ef] transition-colors hover:bg-[#22445a]"
           >
-            <LockKeyhole size={16} strokeWidth={1.35} /> Unlock unlimited
+            <LockKeyhole size={16} strokeWidth={1.35} /> View Pro
           </button>
         ) : null}
       </section>

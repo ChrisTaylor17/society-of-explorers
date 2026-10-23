@@ -2,13 +2,50 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { setWalletCookie } from '@/lib/auth/getSession';
+import { getMemberSession, setWalletCookie } from '@/lib/auth/getSession';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
 const muted = '#9a8f7a';
+
+type EthereumProvider = {
+  request(args: { method: string; params?: readonly unknown[] }): Promise<unknown>;
+};
+
+function hasErrorCode(error: unknown, code: number): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function getSafeNextPath(candidate: string | null): string {
+  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) {
+    return '/dashboard';
+  }
+
+  try {
+    const parsed = new URL(candidate, 'http://localhost');
+    if (parsed.origin !== 'http://localhost') return '/dashboard';
+    return parsed.pathname + parsed.search + parsed.hash;
+  } catch {
+    return '/dashboard';
+  }
+}
+
+function requestedNextPath(): string {
+  if (typeof window === 'undefined') return '/dashboard';
+  return getSafeNextPath(new URLSearchParams(window.location.search).get('next'));
+}
+
+function authCallbackUrl(nextPath: string): string {
+  const callback = new URL('/auth/callback', window.location.origin);
+  callback.searchParams.set('next', nextPath);
+  return callback.toString();
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,18 +61,24 @@ export default function LoginPage() {
 
   // If already authed, redirect to dashboard
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) router.push('/dashboard');
-    });
-    if (typeof window !== 'undefined' && localStorage.getItem('soe_wallet_id')) {
-      router.push('/dashboard');
-    }
-  }, [supabase, router]);
+    let active = true;
+
+    getMemberSession()
+      .then((session) => {
+        if (active && session?.member) router.replace(requestedNextPath());
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   async function signInWithGoogle() {
+    const nextPath = requestedNextPath();
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+      options: { redirectTo: authCallbackUrl(nextPath) },
     });
   }
 
@@ -46,17 +89,18 @@ export default function LoginPage() {
     setMessage('');
 
     if (isSignUp) {
+      const nextPath = requestedNextPath();
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+        options: { emailRedirectTo: authCallbackUrl(nextPath) },
       });
       if (error) setError(error.message);
       else setMessage('Check your email to confirm your account.');
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
-      else router.push('/dashboard');
+      else router.push(requestedNextPath());
     }
     setLoading(false);
   }
@@ -65,10 +109,13 @@ export default function LoginPage() {
     setWalletLoading(true);
     setError('');
     try {
-      const eth = (window as any).ethereum;
+      const eth = (window as Window & { ethereum?: EthereumProvider }).ethereum;
       if (!eth) { setError('MetaMask not found. Install it to continue.'); setWalletLoading(false); return; }
 
-      const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
+      const requestedAccounts = await eth.request({ method: 'eth_requestAccounts' });
+      const accounts = Array.isArray(requestedAccounts)
+        ? requestedAccounts.filter((value): value is string => typeof value === 'string')
+        : [];
       if (!accounts?.length) { setError('No accounts found.'); setWalletLoading(false); return; }
 
       const { ethers } = await import('ethers');
@@ -99,14 +146,13 @@ export default function LoginPage() {
 
       if (data.verified && data.member) {
         setWalletCookie(data.member.id);
-        localStorage.setItem('soe_wallet_id', data.member.id);
-        router.push('/dashboard');
+        router.push(requestedNextPath());
       } else {
         setError(data.error || 'Verification failed.');
       }
-    } catch (e: any) {
-      if (e.code === 4001) setError('Signature cancelled.');
-      else setError(e.message || 'Connection failed.');
+    } catch (error: unknown) {
+      if (hasErrorCode(error, 4001)) setError('Signature cancelled.');
+      else setError(errorMessage(error, 'Connection failed.'));
     }
     setWalletLoading(false);
   }

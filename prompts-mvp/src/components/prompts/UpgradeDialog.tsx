@@ -3,17 +3,44 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Sparkles, X } from "lucide-react";
 import { useState } from "react";
+import {
+  PROMPT_ATLAS_HOURLY_RUNS,
+  PROMPT_ATLAS_PRO_MONTHLY_RUNS_LABEL,
+  PROMPT_ATLAS_PRO_MONTHLY_USD,
+} from "@/lib/billing/plan";
 
 interface UpgradeDialogProps {
   open: boolean;
+  canCheckout: boolean;
+  isRestarting: boolean;
+  mustManageExistingPlan: boolean;
   onClose(): void;
+  onManagePlan(): void;
+  onRequireAuth(): void;
 }
 
-export function UpgradeDialog({ open, onClose }: UpgradeDialogProps) {
+export function UpgradeDialog({
+  open,
+  canCheckout,
+  isRestarting,
+  mustManageExistingPlan,
+  onClose,
+  onManagePlan,
+  onRequireAuth,
+}: UpgradeDialogProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   async function checkout() {
+    if (!canCheckout) {
+      onRequireAuth();
+      return;
+    }
+    if (mustManageExistingPlan) {
+      onManagePlan();
+      return;
+    }
+
     setBusy(true);
     setError("");
     try {
@@ -24,7 +51,11 @@ export function UpgradeDialog({ open, onClose }: UpgradeDialogProps) {
       if (!response.ok || !payload?.url) {
         throw new Error(payload?.error || "Checkout is unavailable right now.");
       }
-      window.location.assign(payload.url);
+      const destination = new URL(payload.url);
+      if (destination.protocol !== "https:" || destination.hostname !== "checkout.stripe.com") {
+        throw new Error("Checkout is unavailable right now.");
+      }
+      window.location.assign(destination.toString());
     } catch (checkoutError) {
       setError(
         checkoutError instanceof Error
@@ -66,23 +97,30 @@ export function UpgradeDialog({ open, onClose }: UpgradeDialogProps) {
             </button>
             <Sparkles className="text-[#d0aa62]" size={24} strokeWidth={1.15} />
             <h2 id="upgrade-title" className="display-type mt-5 text-[2.7rem] font-medium leading-none text-[#eee7d9]">
-              Explore without counting.
+              Make room to explore.
             </h2>
             <p className="mt-4 text-sm leading-6 text-[#969087]">
-              Prompt Atlas Pro gives you unlimited monthly explorations while keeping private context out of the usage ledger.
+              {mustManageExistingPlan
+                ? "Your existing subscription needs attention in Stripe before it can restore your Pro allowance."
+                : isRestarting
+                  ? "Your previous plan is no longer active. Review the current terms before starting a new subscription."
+                : `Prompt Atlas Pro includes ${PROMPT_ATLAS_PRO_MONTHLY_RUNS_LABEL.toLowerCase()} explorations each month while keeping private context out of the usage ledger.`}
             </p>
 
             <div className="mt-7 flex items-end gap-2 border-y border-[#d0aa622b] py-6">
-              <span className="display-type text-5xl text-[#e8c77f]">$12</span>
+              <span className="display-type text-5xl text-[#e8c77f]">
+                {`$${PROMPT_ATLAS_PRO_MONTHLY_USD}`}
+              </span>
               <span className="pb-1 text-sm text-[#8d887f]">per month · cancel anytime</span>
             </div>
 
             <ul className="mt-6 space-y-3 text-sm text-[#d3cabd]">
               {[
-                "Unlimited monthly prompt runs",
-                "Private and public custom prompts",
-                "Favorites and community discovery",
-                "No raw personal context stored by default",
+                `${PROMPT_ATLAS_PRO_MONTHLY_RUNS_LABEL} prompt runs each month`,
+                `Up to ${PROMPT_ATLAS_HOURLY_RUNS} starts per hour for reliable shared access`,
+                "No raw personal context added to the usage ledger",
+                "Cancel anytime through Stripe",
+                "Supports a shared, human-centered prompt commons",
               ].map((feature) => (
                 <li key={feature} className="flex items-center gap-3">
                   <Check className="text-[#6b9bb5]" size={16} strokeWidth={1.5} /> {feature}
@@ -97,7 +135,15 @@ export function UpgradeDialog({ open, onClose }: UpgradeDialogProps) {
               disabled={busy}
               className="mt-7 h-13 w-full cursor-pointer bg-[#d0aa62] text-sm font-medium text-[#080c0e] transition-colors hover:bg-[#e8c77f] disabled:cursor-wait disabled:opacity-55"
             >
-              {busy ? "Opening secure checkout..." : "Continue to secure checkout"}
+              {busy
+                ? "Opening secure checkout..."
+                : mustManageExistingPlan
+                  ? "Manage existing plan"
+                  : isRestarting
+                    ? "Restart Pro with secure checkout"
+                  : canCheckout
+                  ? "Continue to secure checkout"
+                  : "Sign in to upgrade"}
             </button>
             <p className="mt-3 text-center text-[0.68rem] leading-5 text-[#6f6c66]">
               Stripe handles payment details. Society of Explorers never receives your card number.
@@ -108,4 +154,3 @@ export function UpgradeDialog({ open, onClose }: UpgradeDialogProps) {
     </AnimatePresence>
   );
 }
-

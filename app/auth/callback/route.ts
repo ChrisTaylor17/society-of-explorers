@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') || '/dashboard'
+  const next = getSafeRedirectPath(searchParams.get('next'))
 
   if (code) {
     const response = NextResponse.redirect(new URL(next, origin))
@@ -40,4 +40,19 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.redirect(new URL(next, origin))
+}
+
+function getSafeRedirectPath(candidate: string | null): string {
+  if (!candidate) return '/dashboard'
+  if (!candidate.startsWith('/')) return '/dashboard'
+  if (candidate.startsWith('//')) return '/dashboard'
+  if (candidate.includes('\\')) return '/dashboard'
+
+  try {
+    const parsed = new URL(candidate, 'http://localhost')
+    if (parsed.origin !== 'http://localhost') return '/dashboard'
+    return parsed.pathname + parsed.search + parsed.hash
+  } catch {
+    return '/dashboard'
+  }
 }

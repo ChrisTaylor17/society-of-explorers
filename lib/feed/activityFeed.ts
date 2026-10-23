@@ -1,9 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export type EventType =
   | 'task_created' | 'task_completed' | 'exp_awarded'
@@ -17,8 +13,9 @@ export async function emitActivity({
   communityId, memberId, agentKey, eventType, title, description, metadata = {}, isPublic = true,
 }: {
   communityId?: string; memberId?: string; agentKey?: string; eventType: EventType;
-  title: string; description?: string; metadata?: Record<string, any>; isPublic?: boolean;
+  title: string; description?: string; metadata?: Record<string, unknown>; isPublic?: boolean;
 }): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const { error } = await supabase.from('activity_feed').insert({
     community_id: communityId || null, member_id: memberId || null, agent_key: agentKey || null,
     event_type: eventType, title, description, metadata, is_public: isPublic,
@@ -29,15 +26,16 @@ export async function emitActivity({
 export async function generateSocialDraft(
   eventId: string, memberId: string, platform: 'twitter' | 'linkedin'
 ): Promise<{ content: string; postId: string } | null> {
+  const supabase = getSupabaseAdmin();
   const { data: event } = await supabase.from('activity_feed').select('*').eq('id', eventId).single();
   if (!event) return null;
 
-  const Anthropic = (await import('@anthropic-ai/sdk')).default;
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  const anthropic = createAnthropicClient();
+  const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
   const charLimit = platform === 'twitter' ? 270 : 600;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514', max_tokens: 200,
+    model, max_tokens: 200,
     system: `Write a ${platform} post for a founder sharing a milestone. Be genuine, not cringe. No hashtag spam. Max ${charLimit} chars. Output ONLY the post text.`,
     messages: [{ role: 'user', content: `Event: ${event.event_type}\nTitle: ${event.title}\nDescription: ${event.description || ''}` }],
   });

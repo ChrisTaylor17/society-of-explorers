@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -12,11 +11,27 @@ const muted = '#9a8f7a';
 
 const THINKER_NAMES: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', aurelius: 'Marcus Aurelius', nietzsche: 'Nietzsche', einstein: 'Einstein', jobs: 'Steve Jobs' };
 
+interface MatchRecord {
+  id: string;
+  partner_name?: string | null;
+  partner_display_name?: string | null;
+  thinker_id: string | null;
+  match_reason: string | null;
+  prompts: Array<{ prompt: string }>;
+  status: string;
+}
+
+function totalResponsesFor(member: unknown): number {
+  if (!member || typeof member !== 'object') return 0;
+  const total = (member as { total_responses?: unknown }).total_responses;
+  return typeof total === 'number' && Number.isFinite(total) ? total : 0;
+}
+
 export default function MatchPage() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const [activeMatch, setActiveMatch] = useState<any>(null);
-  const [matches, setMatches] = useState<any[]>([]);
+  const [activeMatch, setActiveMatch] = useState<MatchRecord | null>(null);
+  const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [totalResponses, setTotalResponses] = useState(0);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -29,11 +44,10 @@ export default function MatchPage() {
         const session = await getMemberSession();
         if (session?.member) {
           setMemberId(session.member.id);
-          setTotalResponses((session.member as any).total_responses || 0);
+          setTotalResponses(totalResponsesFor(session.member));
         }
-        const supabase = createClient();
-        const { data: { session: auth } } = await supabase.auth.getSession();
-        if (auth?.access_token) setAuthToken(auth.access_token);
+        const accessToken = await getSupabaseAccessToken();
+        if (accessToken) setAuthToken(accessToken);
       } catch {}
       setLoading(false);
     }
@@ -43,10 +57,10 @@ export default function MatchPage() {
   useEffect(() => {
     if (!authToken) return;
     fetch('/api/match/history', { headers: { 'Authorization': `Bearer ${authToken}` } })
-      .then(r => r.json()).then(d => {
+      .then(r => r.json()).then((d: { matches?: MatchRecord[] }) => {
         const all = d.matches || [];
-        setMatches(all.filter((m: any) => m.status === 'completed' || m.status === 'declined'));
-        const active = all.find((m: any) => m.status === 'pending' || m.status === 'accepted');
+        setMatches(all.filter((match) => match.status === 'completed' || match.status === 'declined'));
+        const active = all.find((match) => match.status === 'pending' || match.status === 'accepted');
         if (active) setActiveMatch(active);
       }).catch(() => {});
   }, [authToken]);
@@ -59,7 +73,7 @@ export default function MatchPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
         body: '{}',
       });
-      const data = await res.json();
+      const data = (await res.json()) as { match?: MatchRecord };
       if (data.match) setActiveMatch(data.match);
     } catch {}
     setGenerating(false);
@@ -99,14 +113,14 @@ export default function MatchPage() {
                 {activeMatch.status === 'pending' ? 'NEW MATCH' : 'CONVERSATION IN PROGRESS'}
               </div>
               <div style={{ fontSize: '18px', color: parchment, marginBottom: '0.5rem' }}>Matched with <strong>{activeMatch.partner_name || activeMatch.partner_display_name || 'Explorer'}</strong></div>
-              <div style={{ fontSize: '14px', color: muted, marginBottom: '0.5rem' }}>Facilitated by {THINKER_NAMES[activeMatch.thinker_id] || activeMatch.thinker_id}</div>
+              <div style={{ fontSize: '14px', color: muted, marginBottom: '0.5rem' }}>Facilitated by {THINKER_NAMES[activeMatch.thinker_id || ''] || activeMatch.thinker_id}</div>
               {activeMatch.match_reason && <p style={{ fontSize: '14px', color: ivory85, fontStyle: 'italic', marginBottom: '1.5rem' }}>{activeMatch.match_reason}</p>}
 
               {/* Prompts */}
               {activeMatch.prompts && Array.isArray(activeMatch.prompts) && activeMatch.prompts.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: gold, marginBottom: '0.5rem' }}>DISCUSSION PROMPTS</div>
-                  {activeMatch.prompts.map((p: any, i: number) => (
+                  {activeMatch.prompts.map((p, i) => (
                     <div key={i} style={{ padding: '10px 12px', borderLeft: `2px solid ${i === 0 ? gold : `${gold}44`}`, marginBottom: '6px', background: i === 0 ? `${gold}08` : 'transparent' }}>
                       <span style={{ fontSize: '14px', color: parchment }}>{p.prompt}</span>
                     </div>
@@ -153,7 +167,7 @@ export default function MatchPage() {
                 </div>
               ) : (
                 <div>
-                  <p style={{ fontSize: '16px', color: muted, marginBottom: '1.5rem' }}>We'll match you with someone who shares your philosophical interests.</p>
+                  <p style={{ fontSize: '16px', color: muted, marginBottom: '1.5rem' }}>We&apos;ll match you with someone who shares your philosophical interests.</p>
                   <button onClick={generateMatch} disabled={generating} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', padding: '0 28px', cursor: 'pointer', opacity: generating ? 0.5 : 1 }}>
                     {generating ? 'FINDING YOUR MATCH...' : 'FIND MY MATCH'}
                   </button>
@@ -173,7 +187,7 @@ export default function MatchPage() {
               <div key={m.id} style={{ padding: '10px 0', borderBottom: `1px solid ${gold}08`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <span style={{ fontSize: '15px', color: parchment }}>{m.partner_name}</span>
-                  <span style={{ fontSize: '12px', color: muted, marginLeft: '8px' }}>{THINKER_NAMES[m.thinker_id] || ''}</span>
+                  <span style={{ fontSize: '12px', color: muted, marginLeft: '8px' }}>{THINKER_NAMES[m.thinker_id || ''] || ''}</span>
                 </div>
                 <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: m.status === 'completed' ? '#4CAF50' : muted }}>{m.status.toUpperCase()}</span>
               </div>

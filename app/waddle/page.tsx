@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 import { hasAccess } from '@/lib/auth/checkAccess';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -15,6 +16,21 @@ const THINKERS = [
   { id: 'einstein', symbol: 'E', name: 'Einstein' },
   { id: 'jobs', symbol: 'J', name: 'Jobs' },
 ];
+
+type WaddleFeedItem = {
+  id: string;
+  audio_url?: string | null;
+  transcription?: string | null;
+  thinker_id?: string | null;
+  thinker_reaction?: string | null;
+  created_at: string;
+  members?: { display_name?: string | null } | null;
+};
+
+type WaddleMember = {
+  id: string;
+  tier?: string | null;
+};
 
 export default function WaddleForge() {
   const [isRecording, setIsRecording] = useState(false);
@@ -30,7 +46,7 @@ export default function WaddleForge() {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cardStatus, setCardStatus] = useState<'idle' | 'generating' | 'done'>('idle');
-  const [feed, setFeed] = useState<any[]>([]);
+  const [feed, setFeed] = useState<WaddleFeedItem[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [memberTier, setMemberTier] = useState('free');
 
@@ -43,10 +59,17 @@ export default function WaddleForge() {
 
   // Load member + feed
   useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => { if (s?.member?.id) { setMemberId(s.member.id); setMemberTier((s.member as any).tier || 'free'); } });
+    getMemberSession().then(s => {
+      const member = s?.member as WaddleMember | undefined;
+      if (member?.id) {
+        setMemberId(member.id);
+        setMemberTier(member.tier || 'free');
+      }
     });
-    fetch('/api/waddle').then(r => r.json()).then(d => setFeed(d.waddles || [])).catch(() => {});
+    fetch('/api/waddle', { cache: 'no-store' })
+      .then(r => r.json())
+      .then((d: { waddles?: WaddleFeedItem[] }) => setFeed(d.waddles || []))
+      .catch(() => {});
   }, []);
 
   async function startRecording() {
@@ -88,7 +111,18 @@ export default function WaddleForge() {
         try {
           const fd = new FormData();
           fd.append('audio', blob, 'waddle.webm');
-          const res = await fetch('/api/transcribe', { method: 'POST', body: fd });
+          fd.append('consentToTranscription', 'true');
+          const accessToken = await getSupabaseAccessToken();
+          const res = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: fd,
+            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+            cache: 'no-store',
+          });
+          if (!res.ok) {
+            setTranscription('[transcription failed]');
+            return;
+          }
           const data = await res.json();
           setTranscription(data.text || '');
         } catch { setTranscription('[transcription failed]'); }
@@ -103,13 +137,17 @@ export default function WaddleForge() {
     if (!transcription) return;
     setReacting(true);
     try {
+      const accessToken = await getSupabaseAccessToken();
       const res = await fetch('/api/thinker', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           thinkerId: selectedThinker,
           message: `A member recorded a 15-second Waddle. Here is what they said: "${transcription}". Respond in 1-2 sentences. Be sharp and in character.`,
-          history: [], walletMemberId: memberId,
+          history: [],
         }),
       });
       const reader = res.body!.getReader();
@@ -134,17 +172,25 @@ export default function WaddleForge() {
   }
 
   async function saveWaddle() {
-    if (!audioBlob || !transcription) return;
+    if (!memberId || !audioBlob || !transcription) return;
     setSaving(true);
     const fd = new FormData();
     fd.append('audio', audioBlob, 'waddle.webm');
     fd.append('transcription', transcription);
-    if (memberId) fd.append('memberId', memberId);
     if (thinkerReaction) { fd.append('thinkerReaction', thinkerReaction); fd.append('thinkerId', selectedThinker); }
-    await fetch('/api/waddle', { method: 'POST', body: fd }).catch(() => {});
-    setSaving(false); setSaved(true);
+    const accessToken = await getSupabaseAccessToken();
+    const res = await fetch('/api/waddle', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      body: fd,
+    }).catch(() => null);
+    setSaving(false); setSaved(Boolean(res?.ok));
     // Refresh feed
-    fetch('/api/waddle').then(r => r.json()).then(d => setFeed(d.waddles || [])).catch(() => {});
+    fetch('/api/waddle', { cache: 'no-store' })
+      .then(r => r.json())
+      .then((d: { waddles?: WaddleFeedItem[] }) => setFeed(d.waddles || []))
+      .catch(() => {});
   }
 
   function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, maxW: number, lineH: number, maxLines: number): string[] {
@@ -167,7 +213,8 @@ export default function WaddleForge() {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const a = (Math.PI / 3) * i - Math.PI / 6;
-      i === 0 ? ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a)) : ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      if (i === 0) ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      else ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
     }
     ctx.closePath();
   }
@@ -206,7 +253,7 @@ export default function WaddleForge() {
     ctx.textAlign = 'center';
     ctx.letterSpacing = '6px';
     ctx.fillText('SOCIETY OF EXPLORERS', W / 2, 100);
-    (ctx as any).letterSpacing = '0px';
+    ctx.letterSpacing = '0px';
 
     // Transcription
     ctx.fillStyle = '#E8DCC8';
@@ -433,7 +480,7 @@ export default function WaddleForge() {
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted }}>{new Date(w.created_at).toLocaleDateString()}</div>
               </div>
               <p style={{ fontSize: '14px', color: parchment, lineHeight: 1.7, marginBottom: '0.75rem' }}>
-                {w.transcription?.slice(0, 200)}{w.transcription?.length > 200 ? '...' : ''}
+                {(w.transcription || '').slice(0, 200)}{(w.transcription || '').length > 200 ? '...' : ''}
               </p>
               {w.audio_url && (
                 <audio controls src={w.audio_url} style={{ width: '100%', height: '32px', marginBottom: '0.5rem', filter: 'invert(0.8) sepia(0.5) hue-rotate(10deg)' }} />

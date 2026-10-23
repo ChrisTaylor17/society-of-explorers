@@ -99,6 +99,11 @@ select:focus-visible {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
 }
 
+.billing-return-notice.hairline-frame {
+  background: #0a0f12;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.56);
+}
+
 .prompt-field {
   border: 1px solid rgba(208, 170, 98, 0.34);
   background: rgba(8, 12, 14, 0.72);
@@ -146,4 +151,3 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
-

@@ -1,9 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'node:crypto';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+const MAX_TRANSCRIPTION_CHARS = 4_000;
+const MAX_REACTION_CHARS = 2_000;
+
+function optionalText(value: FormDataEntryValue | null, maxLength: number): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
 
 export async function GET() {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('waddles')
     .select('*, members!waddles_member_id_fkey(display_name)')
@@ -19,30 +32,44 @@ export async function GET() {
       .eq('is_public', true)
       .order('created_at', { ascending: false })
       .limit(20);
-    return NextResponse.json({ waddles: fallback || [] });
+    return privateJson({ waddles: fallback || [] });
   }
 
-  return NextResponse.json({ waddles: data || [] });
+  return privateJson({ waddles: data || [] });
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+
     const formData = await req.formData();
-    const audio = formData.get('audio') as File;
-    const memberId = formData.get('memberId') as string;
-    const transcription = formData.get('transcription') as string;
-    const thinkerId = formData.get('thinkerId') as string | null;
-    const thinkerReaction = formData.get('thinkerReaction') as string | null;
+    const audioPart = formData.get('audio');
+    const audio = audioPart instanceof File ? audioPart : null;
+    const transcription = optionalText(formData.get('transcription'), MAX_TRANSCRIPTION_CHARS);
+    const thinkerId = optionalText(formData.get('thinkerId'), 80);
+    const thinkerReaction = optionalText(formData.get('thinkerReaction'), MAX_REACTION_CHARS);
+
+    if (audio && audio.size > MAX_AUDIO_BYTES) {
+      return privateJson({ error: 'Audio file too large' }, { status: 413 });
+    }
+
+    if (!audio && !transcription) {
+      return privateJson({ error: 'Audio or transcription required' }, { status: 400 });
+    }
 
     let audioUrl = '';
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Upload audio to Supabase storage
     if (audio && audio.size > 0) {
-      const filename = `${memberId || 'anon'}/${Date.now()}.webm`;
+      const filename = `${auth.memberId}/${Date.now()}-${randomUUID()}.webm`;
       const arrayBuffer = await audio.arrayBuffer();
-      const { data: uploadData } = await supabaseAdmin.storage
+      const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
         .from('waddles')
         .upload(filename, arrayBuffer, { contentType: audio.type || 'audio/webm' });
+
+      if (uploadError) return privateJson({ error: 'Failed to store Waddle audio' }, { status: 500 });
 
       if (uploadData) {
         const { data: urlData } = supabaseAdmin.storage.from('waddles').getPublicUrl(filename);
@@ -51,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: waddle, error } = await supabaseAdmin.from('waddles').insert({
-      member_id: memberId || null,
+      member_id: auth.memberId,
       audio_url: audioUrl,
       transcription: transcription || '',
       thinker_id: thinkerId || null,
@@ -59,9 +86,9 @@ export async function POST(req: NextRequest) {
       is_public: true,
     }).select().single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ waddle });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    if (error) return privateJson({ error: 'Failed to save Waddle' }, { status: 500 });
+    return privateJson({ waddle });
+  } catch {
+    return privateJson({ error: 'Failed to save Waddle' }, { status: 500 });
   }
 }

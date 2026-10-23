@@ -1,14 +1,59 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
+import '@fontsource/cinzel/latin-400.css'
+import '@fontsource/cinzel/latin-500.css'
+import '@fontsource/cinzel/latin-600.css'
+import '@fontsource/cormorant-garamond/latin-300.css'
+import '@fontsource/cormorant-garamond/latin-300-italic.css'
+import '@fontsource/cormorant-garamond/latin-400.css'
+import '@fontsource/cormorant-garamond/latin-400-italic.css'
+import '@fontsource/cormorant-garamond/latin-500.css'
+import '@fontsource/cormorant-garamond/latin-600.css'
+import '@fontsource/eb-garamond/latin-400.css'
+import '@fontsource/eb-garamond/latin-400-italic.css'
+import '@fontsource/eb-garamond/latin-500.css'
+import '@fontsource/playfair-display/latin-400.css'
+import '@fontsource/playfair-display/latin-500.css'
+import '@fontsource/playfair-display/latin-600.css'
 import './globals.css'
 import { Providers } from '@/components/shared/Providers'
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration'
 
-export const metadata: Metadata = { title: 'Society of Explorers', description: 'A private salon where great minds converge.' }
+export const metadata: Metadata = {
+  metadataBase: new URL('https://www.societyofexplorers.com'),
+  title: {
+    default: 'Society of Explorers',
+    template: '%s | Society of Explorers',
+  },
+  description: 'Prompt Atlas and the Society of Explorers network: privacy-first prompts, community signal, and sovereign collaboration tools.',
+  openGraph: {
+    siteName: 'Society of Explorers',
+    type: 'website',
+  },
+}
+
+const walletExtensionErrorGuard = `
+(function () {
+  function isWalletExtensionEthereumError(event) {
+    var message = String(event && (event.message || (event.error && event.error.message)) || '');
+    var filename = String(event && event.filename || '');
+    return message.indexOf('Cannot redefine property: ethereum') !== -1 && filename.indexOf('chrome-extension://') === 0;
+  }
+
+  window.addEventListener('error', function (event) {
+    if (isWalletExtensionEthereumError(event)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return false;
+    }
+  }, true);
+})();
+`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet"/>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#c9a84c" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -16,6 +61,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="Society of Explorers" />
       </head>
       <body>
+        {process.env.NODE_ENV === 'development' && (
+          <Script
+            id="wallet-extension-error-guard"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{ __html: walletExtensionErrorGuard }}
+          />
+        )}
         <script dangerouslySetInnerHTML={{ __html: "if(!window.location.hash){window.scrollTo(0,0)}" }} />
         <Providers>{children}</Providers>
         <ServiceWorkerRegistration />

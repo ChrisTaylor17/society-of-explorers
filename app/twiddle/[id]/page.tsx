@@ -1,6 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { speakText } from '@/lib/tts';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 
@@ -48,18 +51,23 @@ export default function ThreadPage() {
   const [weaveMode, setWeaveMode] = useState(false);
   const [weaveSelected, setWeaveSelected] = useState<Set<string>>(new Set());
   const [weaving, setWeaving] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
-  useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => { if (s?.member) setMemberId(s.member.id); });
-    });
-    loadThread();
-  }, [id]);
+  const getAuthHeaders = useCallback(async (includeJson = false): Promise<HeadersInit> => {
+    const accessToken = await getSupabaseAccessToken();
+    return {
+      ...(includeJson ? { 'Content-Type': 'application/json' } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+  }, []);
 
-  async function loadThread() {
+  const loadThread = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/twiddle/${id}`);
+      const res = await fetch(`/api/twiddle/${id}`, {
+        cache: 'no-store',
+        headers: await getAuthHeaders(),
+      });
       if (!res.ok) { setLoading(false); return; }
       const data = await res.json();
       setRoot(data.twiddle || null);
@@ -68,17 +76,28 @@ export default function ThreadPage() {
       console.error('Thread load error:', err);
     }
     setLoading(false);
-  }
+  }, [getAuthHeaders, id]);
+
+  useEffect(() => {
+    getMemberSession().then(s => { if (s?.member) setMemberId(s.member.id); });
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => { void Promise.resolve().then(loadThread); }, [loadThread]);
 
   async function postReply() {
     if (!replyContent.trim() || !memberId || posting) return;
     setPosting(true);
     await fetch('/api/twiddle', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(true),
       body: JSON.stringify({
         content: replyContent, twiddle_type: 'text', thread_type: root?.thread_type || 'open',
-        thinker_tags: selectedThinkers, memberId,
+        thinker_tags: selectedThinkers,
         parent_id: replyParent || id, root_id: root?.root_id || id,
       }),
     });
@@ -89,8 +108,8 @@ export default function ThreadPage() {
   async function toggleReaction(twiddleId: string, reactionType: string) {
     if (!memberId) return;
     await fetch(`/api/twiddle/${twiddleId}/react`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reaction_type: reactionType, memberId }),
+      method: 'POST', headers: await getAuthHeaders(true),
+      body: JSON.stringify({ reaction_type: reactionType }),
     });
     loadThread();
   }
@@ -99,8 +118,8 @@ export default function ThreadPage() {
     if (!memberId) return;
     setRespondingTo(twiddleId);
     await fetch(`/api/twiddle/${twiddleId}/respond`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ thinker_key: respondThinker, memberId }),
+      method: 'POST', headers: await getAuthHeaders(true),
+      body: JSON.stringify({ thinker_key: respondThinker }),
     });
     setRespondingTo(null);
     loadThread();
@@ -111,10 +130,10 @@ export default function ThreadPage() {
     setWeaving(true);
     const contents = thread.filter(t => weaveSelected.has(t.id)).map(t => t.content).join('\n\n---\n\n');
     await fetch('/api/twiddle', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: await getAuthHeaders(true),
       body: JSON.stringify({
         content: contents, twiddle_type: 'text', thread_type: 'solo',
-        thinker_tags: root?.thinker_tags || [], memberId,
+        thinker_tags: root?.thinker_tags || [],
         parent_id: id, root_id: root?.root_id || id,
       }),
     });
@@ -124,18 +143,13 @@ export default function ThreadPage() {
   }
 
   function timeAgo(ts: string): string {
-    const diff = Date.now() - new Date(ts).getTime();
+    const diff = now - new Date(ts).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'now';
     if (mins < 60) return `${mins}m`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h`;
     return `${Math.floor(hrs / 24)}d`;
-  }
-
-  // Build tree structure
-  function buildTree(items: Twiddle[], parentId: string | null): Twiddle[] {
-    return items.filter(t => t.parent_id === parentId || (!parentId && t.id === id));
   }
 
   function renderTwiddle(tw: Twiddle, depth: number) {
@@ -168,14 +182,14 @@ export default function ThreadPage() {
 
           {/* Content */}
           <div style={{ fontSize: '15px', lineHeight: 1.8, color: tw.is_thinker_response ? `${parchment}cc` : parchment, fontStyle: tw.is_thinker_response ? 'italic' : 'normal', marginBottom: '0.5rem' }}>
-            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(tw.content || '') }} />
+              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(tw.content || '') }} />
           </div>
 
           {/* Voice */}
           {tw.voice_url && (
             <div style={{ marginBottom: '0.5rem' }}>
               {tw.is_thinker_response ? (
-                <button onClick={() => speakText(tw.content, tw.thinker_key || 'socrates').catch(() => {})} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: t?.color || gold, background: 'none', border: `1px solid ${(t?.color || gold)}22`, padding: '3px 8px', cursor: 'pointer' }}>⬡ LISTEN</button>
+                <button onClick={() => speakText(tw.content || '', tw.thinker_key || 'socrates').catch(() => {})} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: t?.color || gold, background: 'none', border: `1px solid ${(t?.color || gold)}22`, padding: '3px 8px', cursor: 'pointer' }}>⬡ LISTEN</button>
               ) : (
                 <audio controls src={tw.voice_url} style={{ width: '100%', height: '28px', filter: 'invert(0.8) sepia(0.5) hue-rotate(10deg)' }} />
               )}
@@ -183,7 +197,17 @@ export default function ThreadPage() {
           )}
 
           {/* Artifact */}
-          {tw.artifact_url && <img src={tw.artifact_url} alt="" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', marginBottom: '0.5rem', border: `1px solid ${gold}11` }} />}
+          {tw.artifact_url && (
+            <Image
+              src={tw.artifact_url}
+              alt=""
+              width={1024}
+              height={1024}
+              sizes="(max-width: 760px) calc(100vw - 32px), 720px"
+              unoptimized
+              style={{ width: '100%', height: 'auto', maxHeight: '300px', objectFit: 'cover', marginBottom: '0.5rem', border: `1px solid ${gold}11` }}
+            />
+          )}
 
           {/* Reactions */}
           <div style={{ display: 'flex', gap: '3px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -209,7 +233,7 @@ export default function ThreadPage() {
 
             {weaveMode && (
               <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontSize: '7px', color: gold }}>
-                <input type="checkbox" checked={weaveSelected.has(tw.id)} onChange={() => setWeaveSelected(prev => { const n = new Set(prev); n.has(tw.id) ? n.delete(tw.id) : n.add(tw.id); return n; })} />
+                <input type="checkbox" checked={weaveSelected.has(tw.id)} onChange={() => setWeaveSelected(prev => { const n = new Set(prev); if (n.has(tw.id)) n.delete(tw.id); else n.add(tw.id); return n; })} />
                 WEAVE
               </label>
             )}
@@ -228,7 +252,7 @@ export default function ThreadPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/twiddle" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← FEED</a>
+        <Link href="/twiddle" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← FEED</Link>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {root.thread_type === 'collaborative' && memberId && (
             <button onClick={() => setWeaveMode(v => !v)} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: weaveMode ? '#000' : gold, background: weaveMode ? gold : 'none', border: `1px solid ${gold}44`, padding: '5px 12px', cursor: 'pointer' }}>

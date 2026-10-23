@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export interface CommunityThinker {
   thinker_key: string;
@@ -20,13 +15,13 @@ export interface Community {
   slug: string;
   name: string;
   description: string | null;
-  branding: Record<string, any>;
+  branding: Record<string, unknown>;
   theme: string;
   logo_url: string | null;
   hero_image_url: string | null;
   is_public: boolean;
   council_max_tokens: number;
-  onboarding_questions: any[];
+  onboarding_questions: unknown[];
   thinkers: CommunityThinker[];
 }
 
@@ -35,6 +30,7 @@ const cache = new Map<string, { data: Community; expires: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
 
 export async function getCommunity(slug?: string): Promise<Community | null> {
+  const supabase = getSupabaseAdmin();
   const resolvedSlug = slug || DEFAULT_SLUG;
 
   const cached = cache.get(resolvedSlug);
@@ -87,6 +83,7 @@ export async function getCommunityThinkerLenses(slug?: string): Promise<Record<s
 }
 
 export async function getMemberCommunities(memberId: string): Promise<Community[]> {
+  const supabase = getSupabaseAdmin();
   const { data: memberships } = await supabase
     .from('community_members')
     .select('community_id')

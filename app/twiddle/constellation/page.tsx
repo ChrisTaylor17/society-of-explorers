@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
@@ -27,40 +29,57 @@ interface TwiddleNode {
   x: number; y: number; r: number;
 }
 
+type TwiddleRecord = Omit<TwiddleNode, 'x' | 'y' | 'r'>;
+
+function unitHash(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) % 10_000;
+  }
+  return hash / 10_000;
+}
+
 export default function ConstellationPage() {
   const router = useRouter();
   const [memberId, setMemberId] = useState<string | null>(null);
   const [memberName, setMemberName] = useState('Explorer');
-  const [twiddles, setTwiddles] = useState<any[]>([]);
+  const [twiddles, setTwiddles] = useState<TwiddleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [hovered, setHovered] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 640);
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => {
-        if (s?.member) {
-          setMemberId(s.member.id);
-          setMemberName(s.member.display_name && !s.member.display_name.startsWith('0x') ? s.member.display_name : 'Explorer');
-        }
-        setLoading(false);
-      });
+    getMemberSession().then(s => {
+      if (s?.member) {
+        setMemberId(s.member.id);
+        setMemberName(s.member.display_name && !s.member.display_name.startsWith('0x') ? s.member.display_name : 'Explorer');
+      }
+      setLoading(false);
     });
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
     if (!memberId) return;
     setLoading(true);
-    fetch(`/api/twiddle?filter=my&memberId=${memberId}&limit=50`)
+    getSupabaseAccessToken()
+      .then((accessToken) => fetch('/api/twiddle?filter=my&limit=50', {
+        cache: 'no-store',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      }))
       .then(r => r.json())
       .then(d => { setTwiddles(d.twiddles || []); setLoading(false); })
       .catch(() => setLoading(false));
   }, [memberId]);
 
   // Filter by time
-  const now = Date.now();
   const filtered = twiddles.filter(tw => {
     if (timeFilter === '7d') return now - new Date(tw.created_at).getTime() < 7 * 86400000;
     if (timeFilter === '30d') return now - new Date(tw.created_at).getTime() < 30 * 86400000;
@@ -71,7 +90,7 @@ export default function ConstellationPage() {
   const CX = 300, CY = 300, ORBIT = 200;
   const nodes: TwiddleNode[] = filtered.map((tw, i) => {
     const angle = (2 * Math.PI * i) / Math.max(filtered.length, 1) - Math.PI / 2;
-    const jitter = 0.85 + Math.random() * 0.3;
+    const jitter = 0.85 + unitHash(tw.id) * 0.3;
     const rc = tw.reaction_counts || {};
     const reactionTotal = Object.keys(rc).reduce((sum, k) => sum + (Number(rc[k]) || 0), 0);
     const r = Math.min(24, Math.max(8, 8 + reactionTotal * 3));
@@ -100,7 +119,7 @@ export default function ConstellationPage() {
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', background: 'radial-gradient(1px 1px at 10% 20%, rgba(201,168,76,0.15) 0%, transparent 100%), radial-gradient(1px 1px at 30% 60%, rgba(201,168,76,0.1) 0%, transparent 100%), radial-gradient(1px 1px at 50% 10%, rgba(201,168,76,0.12) 0%, transparent 100%), radial-gradient(1px 1px at 70% 80%, rgba(201,168,76,0.08) 0%, transparent 100%), radial-gradient(1px 1px at 90% 40%, rgba(201,168,76,0.1) 0%, transparent 100%), radial-gradient(1px 1px at 15% 85%, rgba(201,168,76,0.12) 0%, transparent 100%), radial-gradient(1px 1px at 60% 35%, rgba(201,168,76,0.1) 0%, transparent 100%), radial-gradient(1px 1px at 80% 15%, rgba(201,168,76,0.08) 0%, transparent 100%), radial-gradient(1px 1px at 40% 95%, rgba(201,168,76,0.12) 0%, transparent 100%), radial-gradient(1px 1px at 25% 45%, rgba(201,168,76,0.1) 0%, transparent 100%)' }} />
 
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #0a0a0a, transparent)' }}>
-        <a href="/twiddle" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← FEED</a>
+        <Link href="/twiddle" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← FEED</Link>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.4 }}>MY CONSTELLATION</div>
       </nav>
 
@@ -129,7 +148,7 @@ export default function ConstellationPage() {
           <div style={{ textAlign: 'center', padding: '4rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: gold, opacity: 0.15, marginBottom: '1rem' }}>⬡</div>
             <p style={{ fontSize: '15px', color: muted, fontStyle: 'italic', marginBottom: '1.5rem' }}>Your constellation is empty. Drop your first twiddle to begin.</p>
-            <a href="/twiddle" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '10px 24px', textDecoration: 'none' }}>DROP A TWIDDLE</a>
+            <Link href="/twiddle" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '10px 24px', textDecoration: 'none' }}>DROP A TWIDDLE</Link>
           </div>
         ) : isMobile ? (
           /* Mobile: vertical list */
@@ -160,8 +179,8 @@ export default function ConstellationPage() {
             <svg viewBox="0 0 600 600" style={{ width: '100%', maxHeight: '600px' }}>
               {/* Edges */}
               {edges.map((e, i) => {
-                const mx = (e.from.x + e.to.x) / 2 + (Math.random() - 0.5) * 40;
-                const my = (e.from.y + e.to.y) / 2 + (Math.random() - 0.5) * 40;
+                const mx = (e.from.x + e.to.x) / 2 + (unitHash(`${e.from.id}:${e.to.id}:x`) - 0.5) * 40;
+                const my = (e.from.y + e.to.y) / 2 + (unitHash(`${e.from.id}:${e.to.id}:y`) - 0.5) * 40;
                 return <path key={i} d={`M${e.from.x},${e.from.y} Q${mx},${my} ${e.to.x},${e.to.y}`} fill="none" stroke={gold} strokeWidth="0.5" opacity="0.1" />;
               })}
 
@@ -246,7 +265,7 @@ export default function ConstellationPage() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '2rem' }}>
             {[
               { label: 'TWIDDLES', value: filtered.length },
-              { label: 'THINKERS TAGGED', value: [...new Set(filtered.flatMap((t: any) => t.thinker_tags || []))].length },
+              { label: 'THINKERS TAGGED', value: [...new Set(filtered.flatMap((t) => t.thinker_tags || []))].length },
               { label: 'CONNECTIONS', value: edges.length },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center' }}>

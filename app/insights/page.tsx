@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -46,6 +45,35 @@ const SOURCE_LABELS: Record<string, string> = {
   council: 'COUNCIL',
 };
 
+interface SemanticFact {
+  id: string;
+  category: string | null;
+  value: string;
+  thinker_id: string | null;
+  created_at: string;
+}
+
+interface InsightMessage {
+  content: string;
+  created_at: string;
+}
+
+interface InsightThread {
+  session_id: string | null;
+  thinker_id: string | null;
+  source: string | null;
+  created_at: string;
+  user: InsightMessage | null;
+  assistant: InsightMessage | null;
+}
+
+interface InsightsPayload {
+  member?: { display_name?: string | null };
+  semanticFacts?: SemanticFact[];
+  threads?: InsightThread[];
+  openingHeadline?: string | null;
+}
+
 function relativeDay(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
@@ -69,7 +97,7 @@ function truncate(s: string, max: number): string {
 export default function InsightsPage() {
   const [loading, setLoading] = useState(true);
   const [unauthenticated, setUnauthenticated] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<InsightsPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,9 +108,7 @@ export default function InsightsPage() {
 
         let authToken: string | null = null;
         try {
-          const supabase = createClient();
-          const { data: { session: auth } } = await supabase.auth.getSession();
-          authToken = auth?.access_token || null;
+          authToken = await getSupabaseAccessToken();
         } catch {}
 
         const res = await fetch('/api/insights', {
@@ -90,10 +116,10 @@ export default function InsightsPage() {
         });
         if (res.status === 401) { setUnauthenticated(true); setLoading(false); return; }
         if (!res.ok) { setError('Could not load insights.'); setLoading(false); return; }
-        const json = await res.json();
+        const json = (await res.json()) as InsightsPayload;
         setData(json);
-      } catch (err: any) {
-        setError(err?.message || 'Network error');
+      } catch {
+        setError('Network error');
       }
       setLoading(false);
     }
@@ -143,15 +169,16 @@ export default function InsightsPage() {
     );
   }
 
-  const facts: any[] = data?.semanticFacts || [];
-  const threads: any[] = data?.threads || [];
+  const facts = data?.semanticFacts || [];
+  const threads = data?.threads || [];
   const displayName = data?.member?.display_name || 'Explorer';
   const openingHeadline: string = (data?.openingHeadline || '').trim() || 'What the Thinkers Know About You';
 
-  const factsByCategory: Record<string, any[]> = {};
+  const factsByCategory: Record<string, SemanticFact[]> = {};
   for (const f of facts) {
-    if (!factsByCategory[f.category]) factsByCategory[f.category] = [];
-    factsByCategory[f.category].push(f);
+    const category = f.category || 'uncategorized';
+    if (!factsByCategory[category]) factsByCategory[category] = [];
+    factsByCategory[category].push(f);
   }
   const orderedCategories = CATEGORY_ORDER.filter(c => factsByCategory[c]?.length > 0);
 
@@ -306,10 +333,12 @@ export default function InsightsPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {threads.map((t, i) => {
-                const tColor = THINKER_COLORS[t.thinker_id] || gold;
-                const tName = THINKER_NAMES[t.thinker_id] || t.thinker_id || 'Thinker';
-                const tSymbol = THINKER_SYMBOLS[t.thinker_id] || '\u00B7';
-                const sourceLabel = SOURCE_LABELS[t.source] || (t.source ? t.source.toUpperCase() : 'EXCHANGE');
+                const thinkerId = t.thinker_id || '';
+                const source = t.source || '';
+                const tColor = THINKER_COLORS[thinkerId] || gold;
+                const tName = THINKER_NAMES[thinkerId] || thinkerId || 'Thinker';
+                const tSymbol = THINKER_SYMBOLS[thinkerId] || '\u00B7';
+                const sourceLabel = SOURCE_LABELS[source] || (source ? source.toUpperCase() : 'EXCHANGE');
 
                 return (
                   <div key={t.session_id || `thread-${i}`} className="thread-card" style={{

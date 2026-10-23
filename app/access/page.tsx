@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -23,7 +24,7 @@ const TIERS = [
     ],
   },
   {
-    name: 'SEEKER', subtitle: '$9.99/mo', icon: '⬡', locked: true,
+    name: 'SEEKER', subtitle: '$19/mo', icon: '⬡', locked: true,
     features: [
       'Full thinker conversations',
       'Voice mode with distinct voices',
@@ -35,15 +36,25 @@ const TIERS = [
     ],
   },
   {
-    name: 'SCHOLAR', subtitle: '$99/mo', icon: '◆', locked: true,
+    name: 'SCHOLAR', subtitle: '$49/mo', icon: '◆', locked: true,
     features: [
-      'Everything in LOCKED',
+      'Everything in SEEKER',
       'Private ritual rooms',
       'Founding dinner invitations',
       'Governance voting',
       'Priority artifact generation',
-      'Direct oracle consultations',
       'Physical space at 92B South St',
+    ],
+  },
+  {
+    name: 'PHILOSOPHER', subtitle: '$99/mo', icon: '◇', locked: true,
+    features: [
+      'Everything in SCHOLAR',
+      'Advanced memory',
+      'Direct oracle consultations',
+      'Priority Council access',
+      'Founder briefing invitations',
+      'Movement strategy sessions',
     ],
   },
 ];
@@ -58,13 +69,18 @@ export default function AccessPage() {
 
   useEffect(() => {
     import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => {
+      getMemberSession().then(async s => {
         if (s?.member) {
-          setMemberId(s.member.id);
-          setMemberName(s.member.display_name || 'Explorer');
-          setMemberTier((s.member as any).tier || 'free');
+          const member = s.member as { id: string; display_name?: string | null; tier?: string | null };
+          setMemberId(member.id);
+          setMemberName(member.display_name || 'Explorer');
+          setMemberTier(member.tier || 'free');
           setLoadingSafe(true);
-          fetch(`/api/safe?memberId=${s.member.id}`)
+          const accessToken = await getSupabaseAccessToken();
+          fetch('/api/safe', {
+            cache: 'no-store',
+            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+          })
             .then(r => r.json())
             .then(d => { setSafeData(d); setLoadingSafe(false); })
             .catch(() => setLoadingSafe(false));
@@ -107,9 +123,8 @@ export default function AccessPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}12` }}>
           {TIERS.map(tier => {
-            const tierMap: Record<string, string> = { FREE: 'free', SEEKER: 'seeker', SCHOLAR: 'scholar' };
+            const tierMap: Record<string, string> = { FREE: 'free', SEEKER: 'seeker', SCHOLAR: 'scholar', PHILOSOPHER: 'philosopher' };
             const isCurrentTier = memberTier === tierMap[tier.name] || (tier.name === 'OPEN' && memberTier === 'free');
-            const isUnlocked = memberId && !tier.locked;
             return (
             <div key={tier.name} style={{ background: isCurrentTier ? '#111' : '#0d0d0d', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', borderTop: isCurrentTier ? `2px solid ${gold}` : '2px solid transparent' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>

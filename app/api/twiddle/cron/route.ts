@@ -1,17 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const THINKER_KEYS = ['socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs'] as const;
+type ThinkerKey = (typeof THINKER_KEYS)[number];
+type TwiddleCandidate = {
+  id: string;
+  content: string | null;
+  thinker_tags?: string[] | null;
+  author_id?: string | null;
+  _reactions?: number;
+};
+
+function cronAuthorized(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  return Boolean(cronSecret) && req.headers.get('authorization') === `Bearer ${cronSecret}`;
+}
 
 async function classifyThinker(content: string): Promise<string> {
   try {
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
     const res = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 10,
       messages: [{ role: 'user', content: `Classify this text into ONE category. Reply with ONLY the category word, nothing else.\nCategories: philosophy, ethics, science, creativity, metaphysics, will\nText: "${content.slice(0, 300)}"` }],
     });
@@ -24,13 +36,12 @@ async function classifyThinker(content: string): Promise<string> {
 }
 
 export async function GET(req: NextRequest) {
-  // Verify cron authorization
-  const authHeader = req.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
     // Find open twiddles from last 12h with reactions but no thinker response yet
@@ -49,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Filter to those with reactions and no existing thinker response
-    const eligible: typeof candidates = [];
+    const eligible: TwiddleCandidate[] = [];
     for (const tw of candidates) {
       const { count: reactionCount } = await supabaseAdmin
         .from('twiddle_reactions')
@@ -66,11 +77,11 @@ export async function GET(req: NextRequest) {
 
       if ((thinkerCount || 0) > 0) continue;
 
-      eligible.push({ ...tw, _reactions: reactionCount || 0 } as any);
+      eligible.push({ ...tw, _reactions: reactionCount || 0 });
     }
 
     // Sort by reactions descending, take top 3
-    eligible.sort((a: any, b: any) => (b._reactions || 0) - (a._reactions || 0));
+    eligible.sort((a, b) => (b._reactions || 0) - (a._reactions || 0));
     const top = eligible.slice(0, 3);
 
     let generated = 0;
@@ -80,7 +91,7 @@ export async function GET(req: NextRequest) {
       let thinkerId: string;
       if (tw.thinker_tags?.length) {
         thinkerId = tw.thinker_tags[0];
-        if (!THINKER_KEYS.includes(thinkerId as any)) thinkerId = 'socrates';
+        if (!THINKER_KEYS.includes(thinkerId as ThinkerKey)) thinkerId = 'socrates';
       } else {
         thinkerId = await classifyThinker(tw.content || '');
       }
@@ -90,8 +101,10 @@ export async function GET(req: NextRequest) {
       systemPrompt += '\n\nYou are responding autonomously to a TwiddleTwattle post that caught the community\'s attention. Keep your response to 2-4 sentences. Be sharp, specific, in character. This is a proactive contribution, not a requested one — make it worth the interruption.';
 
       try {
+        const anthropic = createAnthropicClient();
+        const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
         const response = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model,
           max_tokens: 200,
           system: systemPrompt,
           messages: [{ role: 'user', content: tw.content || 'No content' }],

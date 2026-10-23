@@ -1,16 +1,11 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { internalRouteError, privateJson } from '@/lib/http/routeError';
 import { systemPromptFor, type Manifest } from '@/lib/movement/personalAI';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const THRESHOLD = 30;
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 type ChatRole = 'user' | 'assistant';
 
@@ -49,18 +44,19 @@ function isManifest(value: unknown): value is Manifest {
 }
 
 async function countPracticeResponses(memberId: string): Promise<number> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { count, error } = await supabaseAdmin
     .from('question_responses')
     .select('id', { count: 'exact', head: true })
     .eq('member_id', memberId);
 
-  if (error) throw new Error(`Practice response count failed: ${error.message}`);
+  if (error) throw new Error('practice-response-count-failed');
   return count ?? 0;
 }
 
 function notReady(responseCount: number) {
   const remaining = Math.max(0, THRESHOLD - responseCount);
-  return NextResponse.json({
+  return privateJson({
     ready: false,
     responseCount,
     threshold: THRESHOLD,
@@ -74,19 +70,20 @@ export const maxDuration = 120;
 export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthenticatedMember(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const message = typeof body.message === 'string' ? body.message.trim() : '';
-    if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 });
+    if (!message) return privateJson({ error: 'message required' }, { status: 400 });
 
+    const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('personal_ai_profiles')
       .select('manifest, response_count_at_build')
       .eq('member_id', auth.memberId)
       .maybeSingle();
 
-    if (error) throw new Error(`Personal AI profile lookup failed: ${error.message}`);
+    if (error) throw new Error('personal-ai-profile-lookup-failed');
 
     const profile = data as PersonalAiProfileRow | null;
     const currentResponseCount = await countPracticeResponses(auth.memberId);
@@ -98,11 +95,14 @@ export async function POST(req: NextRequest) {
 
     const encoder = new TextEncoder();
     const history = cleanHistory(body.history);
+    const anthropic = createAnthropicClient();
+    const claudeModel = resolveClaudeModel('personal-ai');
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          const startedAt = Date.now();
           const anthropicStream = anthropic.messages.stream({
-            model: process.env.MOVEMENT_CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+            model: claudeModel,
             max_tokens: 700,
             system: systemPromptFor(profile.manifest),
             messages: [...history, { role: 'user', content: message }],
@@ -112,14 +112,20 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
           });
 
-          await anthropicStream.finalMessage();
+          const finalMessage = await anthropicStream.finalMessage();
+          logClaudeUsage({
+            purpose: 'personal-ai',
+            model: claudeModel,
+            operation: 'messages.stream',
+            latencyMs: Date.now() - startedAt,
+            usage: finalMessage.usage,
+          });
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
-        } catch (streamError) {
-          console.error('[movement/personal-ai/chat] stream failed', streamError);
+        } catch {
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                error: streamError instanceof Error ? streamError.message : 'Mirror stream failed',
+                error: 'Mirror stream failed',
               })}\n\n`,
             ),
           );
@@ -133,18 +139,11 @@ export async function POST(req: NextRequest) {
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
+        'Cache-Control': 'no-store, no-transform',
         Connection: 'keep-alive',
       },
     });
-  } catch (error) {
-    console.error('[movement/personal-ai/chat] failed', error);
-    return NextResponse.json(
-      {
-        error: 'Personal AI chat failed',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    );
+  } catch {
+    return internalRouteError('Personal AI chat failed');
   }
 }

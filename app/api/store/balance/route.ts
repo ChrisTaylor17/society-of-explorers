@@ -1,24 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+type ExpAmountRow = {
+  amount: number | string | null;
+};
 
 export async function GET(req: NextRequest) {
-  const memberId = req.nextUrl.searchParams.get('memberId');
-  if (!memberId) return NextResponse.json({ balance: 0 });
+  try {
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
-    .from('exp_events')
-    .select('amount')
-    .eq('member_id', memberId);
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('exp_events')
+      .select('amount')
+      .eq('member_id', auth.memberId);
 
-  if (error) {
-    return NextResponse.json({ balance: 0, error: error.message });
+    if (error) {
+      return privateJson({ balance: 0, error: 'Failed to load balance' }, { status: 500 });
+    }
+
+    const rows = (data || []) as ExpAmountRow[];
+    const balance = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+    return privateJson({ balance });
+  } catch {
+    return privateJson({ balance: 0, error: 'Failed to load balance' }, { status: 500 });
   }
-
-  const balance = (data || []).reduce((sum, row: any) => sum + (Number(row.amount) || 0), 0);
-  return NextResponse.json({ balance });
 }

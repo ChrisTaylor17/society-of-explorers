@@ -1,6 +1,8 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 
@@ -8,11 +10,39 @@ const gold = '#C5A55A';
 const parchment = '#E8DCC8';
 const muted = '#9a8f7a';
 
+type BookSalonCohort = {
+  id: string;
+  book_id: string;
+  title: string;
+  description?: string | null;
+  status?: string | null;
+};
+
+type BookSalonMember = {
+  members?: { display_name?: string | null } | null;
+};
+
+type SeminarMessage = {
+  id: string;
+  member_name?: string | null;
+  content: string;
+  created_at: string;
+  is_mine?: boolean;
+};
+
+async function bookSalonHeaders(json = false): Promise<Record<string, string>> {
+  const accessToken = await getSupabaseAccessToken();
+  return {
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
+}
+
 export default function CohortDetail() {
   const { cohortId } = useParams() as { cohortId: string };
-  const [cohort, setCohort] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [cohort, setCohort] = useState<BookSalonCohort | null>(null);
+  const [members, setMembers] = useState<BookSalonMember[]>([]);
+  const [messages, setMessages] = useState<SeminarMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -20,39 +50,42 @@ export default function CohortDetail() {
   const [loading, setLoading] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => {
-        if (s?.member) { setMemberId(s.member.id); setMemberName(s.member.display_name || 'Explorer'); }
-      });
-    });
-    loadCohort();
-  }, [cohortId]);
-
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-
-  async function loadCohort() {
+  const loadCohort = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/book-salons/${cohortId}`);
+      const res = await fetch(`/api/book-salons/${cohortId}`, {
+        cache: 'no-store',
+        headers: await bookSalonHeaders(),
+      });
       const data = await res.json();
       setCohort(data.cohort);
       setMembers(data.members || []);
       setMessages(data.messages || []);
     } catch {}
     setLoading(false);
-  }
+  }, [cohortId]);
+
+  useEffect(() => {
+    getMemberSession().then(s => {
+      if (s?.member) { setMemberId(s.member.id); setMemberName(s.member.display_name || 'Explorer'); }
+    });
+    void Promise.resolve().then(() => loadCohort());
+  }, [loadCohort]);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   async function sendMessage() {
     if (!input.trim() || sending) return;
+    if (!memberId) { window.location.assign('/login'); return; }
     const text = input.trim();
     setInput(''); setSending(true);
     // Optimistic add
-    setMessages(prev => [...prev, { id: `opt-${Date.now()}`, member_name: memberName, content: text, member_id: memberId, created_at: new Date().toISOString() }]);
+    setMessages(prev => [...prev, { id: `opt-${Date.now()}`, member_name: memberName, content: text, is_mine: true, created_at: new Date().toISOString() }]);
     await fetch(`/api/book-salons/${cohortId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId, content: text, memberName }),
+      cache: 'no-store',
+      headers: await bookSalonHeaders(true),
+      body: JSON.stringify({ content: text }),
     });
     setSending(false);
   }
@@ -72,16 +105,16 @@ export default function CohortDetail() {
       {/* Header */}
       <div style={{ padding: '12px 2rem', borderBottom: `1px solid ${gold}22`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div>
-          <a href="/book-salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', opacity: 0.6 }}>← BOOK SALONS</a>
+          <Link href="/book-salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', opacity: 0.6 }}>← BOOK SALONS</Link>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.1em', color: parchment, marginTop: '2px' }}>{cohort.title}</div>
           <div style={{ fontSize: '11px', color: muted, fontStyle: 'italic' }}>
             {book?.author} · {members.length} members · {cohort.status}
           </div>
         </div>
         {book && (
-          <a href={`/great-books/${book.id}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}33`, padding: '6px 14px' }}>
+          <Link href={`/great-books/${book.id}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}33`, padding: '6px 14px' }}>
             READ THE TEXT
-          </a>
+          </Link>
         )}
       </div>
 
@@ -96,7 +129,7 @@ export default function CohortDetail() {
               </div>
             )}
             {messages.map(msg => {
-              const isMe = msg.member_id === memberId;
+              const isMe = Boolean(msg.is_mine);
               return (
                 <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: isMe ? gold : muted, marginBottom: '4px' }}>

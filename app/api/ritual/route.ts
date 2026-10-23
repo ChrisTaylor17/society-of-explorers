@@ -1,12 +1,8 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const MEMBER_SELECT = 'id, display_name, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens';
 
@@ -17,6 +13,50 @@ interface RitualConfig {
   title: string;
   artifactTitle: (memberName: string) => string;
   buildPrompt: (profile: string, recentContext: string) => string;
+}
+
+type MemberProfileRow = {
+  display_name: string | null;
+  bio: string | null;
+  discipline: string | null;
+  skills: string[] | null;
+  project_description: string | null;
+  seeking: string | null;
+  philosophy: string | null;
+};
+
+type RecentMessageRow = {
+  content: string | null;
+  message_type: string | null;
+  thinker_id: string | null;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+async function safeRequestJson(req: NextRequest): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+
+function privateSseHeaders(): HeadersInit {
+  return {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate, no-transform',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'X-Content-Type-Options': 'nosniff',
+    'Vary': 'Cookie, Authorization',
+    'Connection': 'keep-alive',
+  };
+}
+
+function sseData(payload: unknown): Uint8Array {
+  return new TextEncoder().encode(`data: ${JSON.stringify(payload)}\n\n`);
 }
 
 const RITUALS: Record<string, RitualConfig> = {
@@ -208,70 +248,69 @@ const RITUAL_ID_MAP: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { ritualId, memberId } = body;
+    const body = await safeRequestJson(req);
+    if (!isRecord(body)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
-    if (!ritualId || !memberId) {
-      return new Response(JSON.stringify({ error: 'ritualId and memberId required' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    const ritualId = typeof body.ritualId === 'string' || typeof body.ritualId === 'number'
+      ? String(body.ritualId)
+      : null;
+
+    if (!ritualId) return privateJson({ error: 'ritualId required' }, { status: 400 });
 
     const ritualKey = RITUAL_ID_MAP[String(ritualId)] || String(ritualId);
     const ritual = RITUALS[ritualKey];
-    if (!ritual) {
-      return new Response(JSON.stringify({ error: 'Unknown ritual' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    if (!ritual) return privateJson({ error: 'Unknown ritual' }, { status: 400 });
+
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { data: member } = await supabaseAdmin
       .from('members')
       .select(MEMBER_SELECT)
-      .eq('id', memberId)
+      .eq('id', auth.memberId)
       .single();
 
-    if (!member) {
-      return new Response(JSON.stringify({ error: 'Member not found' }), {
-        status: 404, headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    if (!member) return privateJson({ error: 'Member not found' }, { status: 404 });
 
-    const memberName = member.display_name && !member.display_name.startsWith('0x')
-      ? member.display_name : 'Explorer';
+    const memberRow = member as MemberProfileRow;
+    const memberName = memberRow.display_name && !memberRow.display_name.startsWith('0x')
+      ? memberRow.display_name : 'Explorer';
 
     const profile = [
       `Name: ${memberName}`,
-      member.bio ? `Bio: ${member.bio}` : null,
-      member.discipline ? `Discipline: ${member.discipline}` : null,
-      member.skills?.length ? `Skills: ${member.skills.join(', ')}` : null,
-      member.project_description ? `Building: ${member.project_description}` : null,
-      member.seeking ? `Seeking: ${member.seeking}` : null,
-      member.philosophy ? `Philosophy: ${member.philosophy}` : null,
+      memberRow.bio ? `Bio: ${memberRow.bio}` : null,
+      memberRow.discipline ? `Discipline: ${memberRow.discipline}` : null,
+      memberRow.skills?.length ? `Skills: ${memberRow.skills.join(', ')}` : null,
+      memberRow.project_description ? `Building: ${memberRow.project_description}` : null,
+      memberRow.seeking ? `Seeking: ${memberRow.seeking}` : null,
+      memberRow.philosophy ? `Philosophy: ${memberRow.philosophy}` : null,
     ].filter(Boolean).join('\n');
 
     const { data: recentMsgs } = await supabaseAdmin
       .from('salon_messages')
       .select('content, message_type, thinker_id')
-      .eq('member_id', memberId)
+      .eq('member_id', auth.memberId)
       .order('created_at', { ascending: false })
       .limit(10);
 
-    const recentContext = (recentMsgs || [])
+    const recentContext = ((recentMsgs || []) as RecentMessageRow[])
       .reverse()
       .map(m => m.message_type === 'user' ? `Member: ${m.content}` : `${m.thinker_id || 'Thinker'}: ${m.content}`)
       .join('\n');
 
     const systemPrompt = ritual.buildPrompt(profile, recentContext);
 
-    const encoder = new TextEncoder();
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
     const stream = new ReadableStream({
       async start(controller) {
         try {
           let fullText = '';
 
           const anthropicStream = anthropic.messages.stream({
-            model: 'claude-sonnet-4-20250514',
+            model,
             max_tokens: 1500,
             system: systemPrompt,
             messages: [{ role: 'user', content: `Perform the ${ritual.title} ritual for me. I have burned tokens and I am ready to receive.` }],
@@ -279,41 +318,37 @@ export async function POST(req: NextRequest) {
 
           anthropicStream.on('text', (text) => {
             fullText += text;
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
+            controller.enqueue(sseData({ delta: text }));
           });
 
           await anthropicStream.finalMessage();
 
           const artifactTitle = ritual.artifactTitle(memberName);
           await supabaseAdmin.from('ritual_artifacts').insert({
-            member_id: memberId,
+            member_id: auth.memberId,
             ritual_id: ritual.id,
             thinker_id: ritual.thinkerId,
             title: artifactTitle,
             content: fullText,
           });
 
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          controller.enqueue(sseData({
             done: true,
             response: fullText,
             artifact: { title: artifactTitle, thinker: ritual.thinkerName },
-          })}\n\n`));
+          }));
           controller.close();
-        } catch (err) {
-          console.error('Ritual stream error:', err);
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Ritual failed', done: true })}\n\n`));
+        } catch {
+          controller.enqueue(sseData({ error: 'Ritual failed', done: true }));
           controller.close();
         }
       },
     });
 
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' }
+      headers: privateSseHeaders(),
     });
-  } catch (err) {
-    console.error('Ritual API error:', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' }
-    });
+  } catch {
+    return privateJson({ error: 'Ritual failed' }, { status: 500 });
   }
 }

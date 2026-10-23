@@ -1,41 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import {
+  boundedLeadText,
+  normalizeLeadEmail,
+  safePublicLeadRequestJson as safeRequestJson,
+  sendPublicLeadNotification,
+} from '@/lib/leads/publicLeadCapture';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const HARDWARE_STATUS = new Set(['learn', 'have_device', 'need_device', 'other']);
+
+function normalizeHardwareStatus(value: unknown) {
+  const hardwareStatus = boundedLeadText(value, 60).toLowerCase();
+  return HARDWARE_STATUS.has(hardwareStatus) ? hardwareStatus : 'learn';
+}
 
 export async function POST(req: NextRequest) {
-  const { name, email, hardware_status } = await req.json();
-  if (!name || !email) return NextResponse.json({ error: 'Name and email required' }, { status: 400 });
+  const body = await safeRequestJson(req);
 
+  if (!body) {
+    return privateJson({ error: 'Invalid body' }, { status: 400 });
+  }
+
+  const name = boundedLeadText(body.name, 120);
+  const email = normalizeLeadEmail(body.email);
+  const hardwareStatus = normalizeHardwareStatus(body.hardware_status);
+
+  if (!name || !email) {
+    return privateJson({ error: 'Name and email required' }, { status: 400 });
+  }
+
+  const supabase = getSupabaseAdmin();
   const { error } = await supabase.from('founding_interest').insert({
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    why: `[Music Therapy Waitlist] ${hardware_status || 'learn'}`,
+    name,
+    email,
+    why: `[Music Therapy Waitlist] ${hardwareStatus}`,
     created_at: new Date().toISOString(),
   });
 
-  if (error) console.error('Music therapy interest error:', error);
-
-  if (process.env.RESEND_API_KEY) {
-    fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Society of Explorers <notifications@societyofexplorers.com>',
-        to: 'chris@societyofexplorers.com',
-        subject: `Music Therapy Interest: ${name.trim()}`,
-        html: `<div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;max-width:500px;">
-          <div style="font-size:10px;letter-spacing:3px;color:#c9a84c;opacity:0.5;margin-bottom:20px;">MUSIC THERAPY WAITLIST</div>
-          <p><strong style="color:#c9a84c;">Name:</strong> ${name.trim()}</p>
-          <p><strong style="color:#c9a84c;">Email:</strong> ${email.trim()}</p>
-          <p><strong style="color:#c9a84c;">Hardware:</strong> ${hardware_status}</p>
-        </div>`,
-      }),
-    }).catch(err => console.error('Music therapy email failed:', err));
+  if (error) {
+    console.warn('[music-therapy/interest] founding interest insert failed');
+    return privateJson({ error: 'Failed to record music therapy interest' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  await sendPublicLeadNotification({
+    heading: 'MUSIC THERAPY WAITLIST',
+    subject: `Music Therapy Interest: ${name}`,
+    fields: [
+      { label: 'Name', value: name },
+      { label: 'Email', value: email },
+      { label: 'Hardware', value: hardwareStatus },
+    ],
+  });
+
+  return privateJson({ success: true });
 }

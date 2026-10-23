@@ -1,10 +1,66 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { generateEmbedding } from './embeddings';
+import { filterUsableMemoryRows } from './retrievalPolicy';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+interface ProfileGoal {
+  goal?: string;
+  deadline?: string;
+  status?: string;
+}
+
+interface ProfileCommitment {
+  commitment?: string;
+  due_date?: string;
+}
+
+interface MatchedFact {
+  category?: string;
+  key?: string;
+  value?: string;
+  similarity?: number;
+  valid_until?: string | null;
+  suppressed_at?: string | null;
+  status?: string | null;
+  state?: string | null;
+  consent_state?: string | null;
+}
+
+interface MatchedEpisode {
+  thinker_id?: string;
+  summary?: string;
+  content?: string;
+  created_at?: string;
+  similarity?: number;
+}
+
+interface ExtractedFact {
+  op?: 'ADD' | 'UPDATE';
+  category?: string;
+  key?: string;
+  value?: string;
+  existing_key_to_update?: string | null;
+}
+
+interface ExtractedTrigger {
+  type?: string;
+  thinker?: string;
+  context?: string;
+  delay_hours?: number;
+}
+
+interface ExtractedMemory {
+  facts?: ExtractedFact[];
+  emotional_tone?: string;
+  profile_summary?: string;
+  active_goals?: unknown[];
+  pending_commitments?: unknown[];
+  suggested_triggers?: ExtractedTrigger[];
+}
+
+function reportSharedMemoryFailure(scope: string) {
+  console.warn(`[sharedMemory] ${scope} failed`);
+}
 
 // ── PERSONA LENSES ──────────────────────────────────────────
 export const PERSONA_LENSES: Record<string, string> = {
@@ -25,6 +81,7 @@ export async function getThinkerContext(
 ): Promise<string> {
   const { isCouncil = false, maxTokens = 1500 } = options;
   const parts: string[] = [];
+  const supabase = getSupabaseAdmin();
 
   try {
     // Profile summary (fast)
@@ -39,15 +96,15 @@ export async function getThinkerContext(
     }
 
     if (profile?.active_goals && Array.isArray(profile.active_goals) && profile.active_goals.length > 0) {
-      const goalLines = profile.active_goals.slice(0, 3)
-        .map((g: any) => `- ${g.goal}${g.deadline ? ` (by ${g.deadline})` : ''}${g.status ? ` [${g.status}]` : ''}`)
+      const goalLines = (profile.active_goals as ProfileGoal[]).slice(0, 3)
+        .map((g) => `- ${g.goal}${g.deadline ? ` (by ${g.deadline})` : ''}${g.status ? ` [${g.status}]` : ''}`)
         .join('\n');
       parts.push(`ACTIVE GOALS:\n${goalLines}`);
     }
 
     if (profile?.pending_commitments && Array.isArray(profile.pending_commitments) && profile.pending_commitments.length > 0) {
-      const commitLines = profile.pending_commitments.slice(0, 3)
-        .map((c: any) => `- ${c.commitment}${c.due_date ? ` (due ${c.due_date})` : ''}`)
+      const commitLines = (profile.pending_commitments as ProfileCommitment[]).slice(0, 3)
+        .map((c) => `- ${c.commitment}${c.due_date ? ` (due ${c.due_date})` : ''}`)
         .join('\n');
       parts.push(`COMMITMENTS:\n${commitLines}`);
     }
@@ -65,10 +122,11 @@ export async function getThinkerContext(
         match_count: isCouncil ? 5 : 8,
       });
 
-      if (facts && facts.length > 0) {
-        const factLines = facts
-          .filter((f: any) => f.similarity > 0.3)
-          .map((f: any) => `[${f.category}] ${f.key}: ${f.value}`)
+      const matchedFacts = filterUsableMemoryRows((facts || []) as MatchedFact[]);
+      if (matchedFacts.length > 0) {
+        const factLines = matchedFacts
+          .filter((f) => (f.similarity || 0) > 0.3)
+          .map((f) => `[${f.category}] ${f.key}: ${f.value}`)
           .join('\n');
         if (factLines) parts.push(`RELEVANT FACTS:\n${factLines}`);
       }
@@ -87,11 +145,12 @@ export async function getThinkerContext(
           min_significance: 0.5,
         });
 
-        if (episodes && episodes.length > 0) {
-          const episodeLines = episodes
-            .filter((e: any) => e.similarity > 0.35)
-            .map((e: any) => {
-              const date = new Date(e.created_at).toLocaleDateString();
+        const matchedEpisodes = (episodes || []) as MatchedEpisode[];
+        if (matchedEpisodes.length > 0) {
+          const episodeLines = matchedEpisodes
+            .filter((e) => (e.similarity || 0) > 0.35)
+            .map((e) => {
+              const date = e.created_at ? new Date(e.created_at).toLocaleDateString() : 'recently';
               return `[${date} with ${e.thinker_id}] ${(e.summary || e.content || '').slice(0, 150)}`;
             })
             .join('\n');
@@ -113,8 +172,8 @@ export async function getThinkerContext(
     }
     if (lens) parts.push(lens);
 
-  } catch (err) {
-    console.error('[sharedMemory] getThinkerContext error:', err);
+  } catch {
+    reportSharedMemoryFailure('getThinkerContext');
   }
 
   const assembled = parts.join('\n\n');
@@ -129,6 +188,7 @@ export async function storeEpisode({
   memberId: string; thinkerId: string; role: string; content: string; sessionId: string; isCouncil?: boolean;
 }): Promise<void> {
   try {
+    const supabase = getSupabaseAdmin();
     const embedding = await generateEmbedding(content.slice(0, 4000));
     await supabase.from('user_episodes').insert({
       member_id: memberId,
@@ -140,8 +200,8 @@ export async function storeEpisode({
       is_council: isCouncil,
       significance_score: 0.5,
     });
-  } catch (err) {
-    console.error('[sharedMemory] storeEpisode error:', err);
+  } catch {
+    reportSharedMemoryFailure('storeEpisode');
   }
 }
 
@@ -153,8 +213,9 @@ export async function extractMemory(
   if (recentEpisodes.length === 0) return;
 
   try {
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const supabase = getSupabaseAdmin();
+    const anthropic = createAnthropicClient();
+    const claudeModel = resolveClaudeModel('memory');
 
     const { data: existingFacts } = await supabase
       .from('user_semantic_memory')
@@ -163,34 +224,44 @@ export async function extractMemory(
       .is('valid_until', null)
       .limit(30);
 
-    const existingStr = existingFacts?.length
-      ? `EXISTING FACTS:\n${existingFacts.map((f: any) => `[${f.category}] ${f.key}: ${f.value}`).join('\n')}`
+    const existingMemory = filterUsableMemoryRows((existingFacts || []) as MatchedFact[]);
+    const existingStr = existingMemory.length
+      ? `EXISTING FACTS:\n${existingMemory.map((f) => `[${f.category}] ${f.key}: ${f.value}`).join('\n')}`
       : '';
 
     const transcript = recentEpisodes
       .map(e => `${e.role === 'user' ? 'Member' : e.thinker_id}: ${e.content}`)
       .join('\n\n');
 
+    const startedAt = Date.now();
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: claudeModel,
       max_tokens: 600,
       system: `Extract facts from this conversation. Return ONLY valid JSON.\n\n${existingStr}\n\nOutput: {"facts":[{"op":"ADD|UPDATE","category":"identity|goal|challenge|value|preference|commitment","key":"string","value":"string","existing_key_to_update":"string or null"}],"emotional_tone":"calm|anxious|excited|frustrated|determined|confident","profile_summary":"2-3 sentence summary of who this person is","active_goals":[{"goal":"string","status":"active|completed|stalled"}],"pending_commitments":[{"commitment":"string","due_date":"string or null"}],"suggested_triggers":[{"type":"goal_checkin|commitment_reminder","thinker":"string","context":"string","delay_hours":48}]}`,
       messages: [{ role: 'user', content: `CONVERSATION:\n${transcript}` }],
     });
+    logClaudeUsage({
+      purpose: 'memory',
+      model: claudeModel,
+      operation: 'messages.create',
+      latencyMs: Date.now() - startedAt,
+      usage: response.usage,
+    });
 
     const text = response.content.find(b => b.type === 'text')?.text || '';
-    let extracted: any;
+    let extracted: ExtractedMemory;
     try {
-      extracted = JSON.parse(text.replace(/```json\n?|```/g, '').trim());
+      extracted = JSON.parse(text.replace(/```json\n?|```/g, '').trim()) as ExtractedMemory;
     } catch {
       const match = text.match(/\{[\s\S]*\}/);
-      if (match) extracted = JSON.parse(match[0]);
+      if (match) extracted = JSON.parse(match[0]) as ExtractedMemory;
       else return;
     }
 
     // Process facts
     if (extracted.facts && Array.isArray(extracted.facts)) {
       for (const fact of extracted.facts) {
+        if (!fact.category || !fact.key || !fact.value) continue;
         try {
           const factEmbedding = await generateEmbedding(`${fact.category} ${fact.key}: ${fact.value}`);
           if (fact.op === 'UPDATE' && fact.existing_key_to_update) {
@@ -233,8 +304,8 @@ export async function extractMemory(
         });
       }
     }
-  } catch (err) {
-    console.error('[sharedMemory] extractMemory error:', err);
+  } catch {
+    reportSharedMemoryFailure('extractMemory');
   }
 }
 

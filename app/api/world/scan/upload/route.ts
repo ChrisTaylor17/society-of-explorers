@@ -1,65 +1,122 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const MAX_WORLD_SCAN_UPLOAD_BYTES = 500 * 1024 * 1024;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ALLOWED_SCAN_TYPES = new Set(['photo', 'lidar', 'photogrammetry', 'video', 'audio']);
+const SPACE_UPLOAD_SELECT = 'id, total_scans';
+const DUPLICATE_SCAN_SELECT = 'id';
+const WORLD_SCAN_UPLOAD_INSERT_SELECT = 'id';
+
+type WorldScanUploadForm = {
+  file: File;
+  spaceId: string;
+  scanType: string;
+};
+
+function normalizeUuid(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return UUID_PATTERN.test(trimmed) ? trimmed : null;
+}
+
+function normalizeScanType(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== 'string') return 'photo';
+  const scanType = value.trim().toLowerCase();
+  return ALLOWED_SCAN_TYPES.has(scanType) ? scanType : null;
+}
+
+function normalizeFileExtension(fileName: string): string {
+  const extension = fileName.split('.').pop()?.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  return extension ? extension.slice(0, 16) : 'bin';
+}
+
+function isValidUploadFile(value: FormDataEntryValue | null): value is File {
+  return value instanceof File && value.size > 0 && value.size <= MAX_WORLD_SCAN_UPLOAD_BYTES;
+}
+
+function normalizeWorldScanUploadForm(formData: FormData): WorldScanUploadForm | null {
+  const file = formData.get('file');
+  const spaceId = normalizeUuid(formData.get('spaceId'));
+  const scanType = normalizeScanType(formData.get('scanType'));
+
+  if (!isValidUploadFile(file) || !spaceId || !scanType) return null;
+
+  return { file, spaceId, scanType };
+}
+
+function publicWorldScanUploadReceipt(scanId: string, isFirstScan: boolean) {
+  return {
+    success: true,
+    scanId,
+    message: 'Scan uploaded successfully.',
+    isFirstScan,
+  };
+}
+
+function worldScanUploadFailure() {
+  return privateJson({ error: 'Failed to upload scan' }, { status: 500 });
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const spaceId = formData.get('spaceId') as string;
-    const scannerId = formData.get('scannerId') as string;
-    const scanType = (formData.get('scanType') as string) || 'photo';
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!file || !spaceId || !scannerId) {
-      return NextResponse.json({ error: 'Missing required fields: file, spaceId, scannerId' }, { status: 400 });
+    const formData = await req.formData();
+    const uploadForm = normalizeWorldScanUploadForm(formData);
+
+    if (!uploadForm) {
+      return privateJson({ error: 'Missing required fields: file, spaceId' }, { status: 400 });
     }
 
-    // Verify space exists
-    const { data: space } = await supabaseAdmin
+    const { file, spaceId, scanType } = uploadForm;
+    const supabaseAdmin = getSupabaseAdmin();
+    const scannerId = auth.member.supabase_auth_id || auth.memberId;
+
+    const { data: space, error: spaceError } = await supabaseAdmin
       .from('spaces')
-      .select('id, total_scans')
+      .select(SPACE_UPLOAD_SELECT)
       .eq('id', spaceId)
-      .single();
+      .maybeSingle();
 
-    if (!space) return NextResponse.json({ error: 'Space not found' }, { status: 404 });
+    if (spaceError) return worldScanUploadFailure();
+    if (!space) return privateJson({ error: 'Space not found' }, { status: 404 });
 
-    // Generate SHA-256 proof hash
     const fileBuffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const proofHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    // Check for duplicate upload
-    const { data: duplicate } = await supabaseAdmin
+    const { data: duplicate, error: duplicateError } = await supabaseAdmin
       .from('scan_uploads')
-      .select('id')
+      .select(DUPLICATE_SCAN_SELECT)
       .eq('proof_hash', proofHash)
-      .single();
+      .maybeSingle();
 
+    if (duplicateError) return worldScanUploadFailure();
     if (duplicate) {
-      return NextResponse.json({ error: 'Duplicate scan — this file has already been uploaded' }, { status: 409 });
+      return privateJson({ error: 'Duplicate scan - this file has already been uploaded' }, { status: 409 });
     }
 
-    // Upload to Supabase Storage
-    const ext = file.name.split('.').pop() || 'bin';
+    const ext = normalizeFileExtension(file.name);
     const filename = `${spaceId}/${scannerId}/${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('world-scans')
       .upload(filename, fileBuffer, { contentType: file.type });
 
     if (uploadError) {
-      return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 });
+      return privateJson({ error: 'Upload failed' }, { status: 500 });
     }
 
     const { data: urlData } = supabaseAdmin.storage
       .from('world-scans')
       .getPublicUrl(filename);
 
-    // Determine if first scan for this space
     const isFirstScan = (space.total_scans || 0) === 0;
 
-    // Create scan record
     const { data: scan, error: insertError } = await supabaseAdmin
       .from('scan_uploads')
       .insert({
@@ -71,21 +128,22 @@ export async function POST(req: NextRequest) {
         scan_type: scanType,
         is_first_scan: isFirstScan,
       })
-      .select()
-      .single();
+      .select(WORLD_SCAN_UPLOAD_INSERT_SELECT)
+      .maybeSingle();
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    if (insertError || !scan) {
+      return privateJson({ error: 'Failed to record scan' }, { status: 500 });
     }
 
-    // Increment space total_scans
-    await supabaseAdmin
+    const { error: spaceUpdateError } = await supabaseAdmin
       .from('spaces')
       .update({ total_scans: (space.total_scans || 0) + 1 })
       .eq('id', spaceId);
 
-    return NextResponse.json({ scan, proofHash, isFirstScan });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    if (spaceUpdateError) return worldScanUploadFailure();
+
+    return privateJson(publicWorldScanUploadReceipt(scan.id, isFirstScan));
+  } catch {
+    return worldScanUploadFailure();
   }
 }

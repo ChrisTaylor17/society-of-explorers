@@ -1,12 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { NextRequest } from 'next/server';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getResend } from '@/lib/email/resend';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const MEMBER_SELECT = 'id, display_name, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens, supabase_auth_id';
 
@@ -91,31 +87,76 @@ Be steady, grounded, warm. Every word should earn its place.`
   }
 ];
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function safeRequestJson(req: NextRequest): Promise<Record<string, unknown> | null> {
+  try {
+    const body = await req.json();
+    return isRecord(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+function boundedString(value: unknown, maxLength: number) {
+  if (typeof value !== 'string') return '';
+  return value.trim().slice(0, maxLength);
+}
+
+function parseStep(value: unknown) {
+  const step = typeof value === 'number' ? value : Number(value);
+  return Number.isInteger(step) ? step : -1;
+}
+
+function onboardingEmailNotificationsEnabled() {
+  return process.env.ONBOARDING_EMAIL_NOTIFICATIONS_ENABLED === 'true';
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 export async function POST(req: NextRequest) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return privateJson({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { memberId, step } = await req.json();
+    const body = await safeRequestJson(req);
 
-    if (!memberId || step === undefined) {
-      return NextResponse.json({ error: 'memberId and step required' }, { status: 400 });
+    if (!body) {
+      return privateJson({ error: 'Invalid body' }, { status: 400 });
+    }
+
+    const memberId = boundedString(body.memberId, 128);
+    const step = parseStep(body.step);
+
+    if (!memberId || step < 0) {
+      return privateJson({ error: 'memberId and step required' }, { status: 400 });
     }
 
     const onboardingStep = ONBOARDING_STEPS[step];
     if (!onboardingStep) {
-      return NextResponse.json({ error: 'Invalid step' }, { status: 400 });
+      return privateJson({ error: 'Invalid step' }, { status: 400 });
     }
 
-    const { data: member } = await supabaseAdmin
+    const supabaseAdmin = getSupabaseAdmin();
+
+    const { data: member, error: memberError } = await supabaseAdmin
       .from('members')
       .select(MEMBER_SELECT)
       .eq('id', memberId)
       .single();
 
-    if (!member) {
-      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    if (memberError || !member) {
+      return privateJson({ error: 'Member not found' }, { status: 404 });
     }
 
     // Get member email
@@ -138,8 +179,10 @@ export async function POST(req: NextRequest) {
       member.philosophy ? `Philosophy: ${member.philosophy}` : null,
     ].filter(Boolean).join('\n');
 
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model,
       max_tokens: 600,
       system: onboardingStep.buildPrompt(profile),
       messages: [{ role: 'user', content: `Write the Day ${onboardingStep.day} message for this member.` }],
@@ -156,41 +199,13 @@ export async function POST(req: NextRequest) {
       message_type: 'thinker',
     });
 
-    // Send email if available
-    if (email && process.env.RESEND_API_KEY) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'Society of Explorers <notifications@societyofexplorers.com>',
-          to: email,
-          subject: onboardingStep.subject,
-          html: `
-            <div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;max-width:500px;margin:0 auto;">
-              <div style="font-size:10px;letter-spacing:0.3em;color:#c9a84c;opacity:0.5;margin-bottom:24px;">
-                SOCIETY OF EXPLORERS · DAY ${onboardingStep.day}
-              </div>
-              <p style="font-size:16px;color:#d4c9a8;line-height:1.8;margin-bottom:24px;">
-                ${messageText.replace(/\n/g, '<br/>').replace(/\*\*(.+?)\*\*/g, '<strong style="color:#c9a84c">$1</strong>')}
-              </p>
-              <div style="margin-top:8px;font-size:11px;color:#6a6050;font-style:italic;margin-bottom:24px;">
-                — ${onboardingStep.thinkerName}, Society of Explorers
-              </div>
-              <a href="https://www.societyofexplorers.com/salon"
-                 style="display:inline-block;background:#c9a84c;color:#000;padding:12px 28px;text-decoration:none;font-size:11px;letter-spacing:0.2em;">
-                ENTER THE SALON
-              </a>
-              <div style="margin-top:32px;border-top:1px solid #c9a84c22;padding-top:16px;font-size:11px;color:#5a5040;">
-                92B South St · Downtown Boston
-              </div>
-            </div>
-          `,
-        }),
-      });
-    }
+    await sendOnboardingEmail({
+      email,
+      subject: onboardingStep.subject,
+      day: onboardingStep.day,
+      messageText,
+      thinkerName: onboardingStep.thinkerName,
+    });
 
     // Record step (table may not exist yet)
     const { error: logError } = await supabaseAdmin.from('onboarding_log').insert({
@@ -199,16 +214,65 @@ export async function POST(req: NextRequest) {
       thinker_id: onboardingStep.thinkerId,
       sent_at: new Date().toISOString(),
     });
-    if (logError) console.warn('onboarding_log insert skipped:', logError.message);
+    if (logError) console.warn('[onboarding/trigger] onboarding_log insert skipped');
 
-    return NextResponse.json({
+    return privateJson({
       sent: true,
       step,
       thinker: onboardingStep.thinkerName,
       hasEmail: !!email,
     });
-  } catch (err) {
-    console.error('Onboarding error:', err);
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+  } catch {
+    console.warn('[onboarding/trigger] failed');
+    return privateJson({ error: 'Failed' }, { status: 500 });
+  }
+}
+
+function renderMessageHtml(message: string) {
+  return escapeHtml(message)
+    .replace(/\n/g, '<br/>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#c9a84c">$1</strong>');
+}
+
+async function sendOnboardingEmail(input: {
+  email: string | null;
+  subject: string;
+  day: number;
+  messageText: string;
+  thinkerName: string;
+}) {
+  if (!input.email || !onboardingEmailNotificationsEnabled()) return;
+
+  try {
+    const resend = getResend();
+    const safeMessageHtml = renderMessageHtml(input.messageText);
+    const safeThinkerName = escapeHtml(input.thinkerName);
+    await resend.emails.send({
+      from: 'Society of Explorers <notifications@societyofexplorers.com>',
+      to: input.email,
+      subject: input.subject,
+      html: `
+        <div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;max-width:500px;margin:0 auto;">
+          <div style="font-size:10px;letter-spacing:0.3em;color:#c9a84c;opacity:0.5;margin-bottom:24px;">
+            SOCIETY OF EXPLORERS &middot; DAY ${input.day}
+          </div>
+          <p style="font-size:16px;color:#d4c9a8;line-height:1.8;margin-bottom:24px;">
+            ${safeMessageHtml}
+          </p>
+          <div style="margin-top:8px;font-size:11px;color:#6a6050;font-style:italic;margin-bottom:24px;">
+            &mdash; ${safeThinkerName}, Society of Explorers
+          </div>
+          <a href="https://www.societyofexplorers.com/salon"
+             style="display:inline-block;background:#c9a84c;color:#000;padding:12px 28px;text-decoration:none;font-size:11px;letter-spacing:0.2em;">
+            ENTER THE SALON
+          </a>
+          <div style="margin-top:32px;border-top:1px solid #c9a84c22;padding-top:16px;font-size:11px;color:#5a5040;">
+            92B South St &middot; Downtown Boston
+          </div>
+        </div>
+      `,
+    });
+  } catch {
+    console.warn('[onboarding/trigger] notification email skipped');
   }
 }

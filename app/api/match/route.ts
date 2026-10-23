@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -60,7 +62,6 @@ interface EdgeMember {
 interface SupabaseEnv {
   url: string;
   anonKey: string;
-  serviceRoleKey: string;
 }
 
 interface MatchAuditContext {
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const env = getSupabaseEnv();
+    const env = getSupabasePublicEnv();
     const auth = await authenticateMember(req, env);
     if (!auth) {
       auditLog(audit, 'auth_rejected', 'warn', { http_status: 401 });
@@ -101,8 +102,8 @@ export async function POST(req: NextRequest) {
     if (sourceProjection.value.member_id !== auth.id) {
       auditLog(audit, 'member_mismatch', 'warn', {
         http_status: 403,
-        authenticated_member_id: auth.id,
-        submitted_member_id: sourceProjection.value.member_id,
+        authenticated_member_present: true,
+        submitted_member_valid: true,
       });
       return jsonWithAudit(
         { audit_id: audit.auditId, error: 'Projection member_id does not match authenticated member.' },
@@ -112,12 +113,7 @@ export async function POST(req: NextRequest) {
     }
 
     audit.sourceMemberId = auth.id;
-    const supabase = createClient(env.url, env.serviceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('consented_match_projections')
@@ -126,7 +122,12 @@ export async function POST(req: NextRequest) {
       .limit(MAX_CANDIDATES);
 
     if (error) {
-      throw new Error(`Match projection query failed: ${error.message}`);
+      auditLog(audit, 'candidate_query_failed', 'error', { http_status: 500 });
+      return jsonWithAudit(
+        { audit_id: audit.auditId, error: 'Unable to calculate matches.' },
+        audit.auditId,
+        500,
+      );
     }
 
     const candidates = normalizeCandidates(data);
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     auditLog(audit, 'execution_failed', 'error', {
       http_status: 500,
-      error: errorMessage(error),
+      error_type: classifyError(error),
     });
     return jsonWithAudit(
       { audit_id: audit.auditId, error: 'Internal edge matching failure.' },
@@ -443,14 +444,14 @@ async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<E
     const token = authHeader.slice('Bearer '.length).trim();
     const user = await getSupabaseUser(env, token);
     if (user?.id) {
-      const member = await lookupMember(env, 'supabase_auth_id', user.id);
+      const member = await lookupMember('supabase_auth_id', user.id);
       if (member) return member;
     }
   }
 
-  const walletId = parseCookies(req.headers.get('cookie')).get('soe_wallet_id');
+  const walletId = await verifyWalletSessionValue(parseCookies(req.headers.get('cookie')).get('soe_wallet_id'));
   if (walletId && UUID_PATTERN.test(walletId)) {
-    return lookupMember(env, 'id', walletId);
+    return lookupMember('id', walletId);
   }
 
   return null;
@@ -472,17 +473,8 @@ async function getSupabaseUser(env: SupabaseEnv, token: string): Promise<{ id: s
   return isRecord(body) && typeof body.id === 'string' ? { id: body.id } : null;
 }
 
-async function lookupMember(
-  env: SupabaseEnv,
-  field: 'id' | 'supabase_auth_id',
-  value: string,
-): Promise<EdgeMember | null> {
-  const supabase = createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+async function lookupMember(field: 'id' | 'supabase_auth_id', value: string): Promise<EdgeMember | null> {
+  const supabase = getSupabaseAdmin();
 
   const { data, error } = await supabase
     .from('members')
@@ -491,7 +483,7 @@ async function lookupMember(
     .limit(1)
     .maybeSingle();
 
-  if (error) throw new Error(`Member lookup failed: ${error.message}`);
+  if (error) throw new Error('Member lookup failed');
   return data ? (data as EdgeMember) : null;
 }
 
@@ -503,23 +495,21 @@ async function safeRequestJson(req: NextRequest): Promise<unknown> {
   }
 }
 
-function getSupabaseEnv(): SupabaseEnv {
+function getSupabasePublicEnv(): SupabaseEnv {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !anonKey || !serviceRoleKey) {
-    throw new Error('Supabase environment is not configured.');
+  if (!url || !anonKey) {
+    throw new Error('Supabase public environment is not configured.');
   }
 
-  return { url, anonKey, serviceRoleKey };
+  return { url, anonKey };
 }
 
 function jsonWithAudit(body: Record<string, unknown>, auditId: string, status: number) {
-  return NextResponse.json(body, {
+  return privateJson(body, {
     status,
     headers: {
-      'cache-control': 'no-store',
       'x-match-audit-id': auditId,
     },
   });
@@ -538,7 +528,7 @@ function auditLog(
     audit_id: audit.auditId,
     at: new Date().toISOString(),
     elapsed_ms: Math.round((performance.now() - audit.startedAtMs) * 100) / 100,
-    source_member_id: audit.sourceMemberId,
+    source_member_authenticated: Boolean(audit.sourceMemberId),
     candidates_processed: audit.candidatesProcessed,
     ...details,
   });
@@ -600,11 +590,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
+function classifyError(error: unknown): string {
+  if (error instanceof Error) return error.name || 'Error';
   if (typeof error === 'string') return error;
   try {
-    return JSON.stringify(error);
+    return JSON.stringify(error)?.slice(0, 80) || 'Unknown';
   } catch {
     return 'Unknown error';
   }

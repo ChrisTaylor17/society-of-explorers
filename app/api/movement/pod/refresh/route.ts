@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import type { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { internalRouteError, privateJson } from '@/lib/http/routeError';
 import { writePodCommitment } from '@/lib/movement/commitment';
 import { buildPodPayload, bufferToBytea, derivePodKey, encryptPod, getPodStats } from '@/lib/movement/pod';
 import {
@@ -10,20 +10,17 @@ import {
   SYNC_ENVELOPE_VERSION,
   canonicalSyncCommitmentInput,
 } from '@/lib/movement/podSync';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
 export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthenticatedMember(req);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
+    const supabaseAdmin = getSupabaseAdmin();
     const payload = await buildPodPayload(auth.memberId);
     const key = derivePodKey(auth.memberId);
     const encrypted = encryptPod(payload, key);
@@ -40,8 +37,15 @@ export async function POST(req: NextRequest) {
     const baseSyncVersion = currentPod?.sync_version ?? 0;
     const metadata = {
       source: 'server-refresh',
+      key_mode: 'server_derived',
+      custody: 'server_holds_encryption_material',
+      key_derivation: 'server_secret_sha256_v1',
+      sovereignty_level: 'encrypted_at_rest_migration_mode',
+      server_can_decrypt_pod: true,
+      attestation: 'server_generated',
       generated_at: payload.generated_at,
       response_count: payload.practice_responses.length,
+      base_sync_version: baseSyncVersion,
     };
     const commitmentHash = createHash('sha256')
       .update(
@@ -81,12 +85,11 @@ export async function POST(req: NextRequest) {
 
     const stats = await getPodStats(auth.memberId);
     const accepted = syncResult?.accepted !== false;
-    return NextResponse.json(
+    return privateJson(
       { ok: accepted, sync: syncResult, stats },
       { status: accepted ? 200 : 409 },
     );
-  } catch (err) {
-    console.error('[movement/pod/refresh] failed', err);
-    return NextResponse.json({ error: 'Pod refresh failed', details: String(err) }, { status: 500 });
+  } catch {
+    return internalRouteError('Pod refresh failed');
   }
 }

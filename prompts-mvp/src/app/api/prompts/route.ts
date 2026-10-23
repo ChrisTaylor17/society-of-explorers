@@ -14,6 +14,17 @@ const createPromptSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(32)).max(8).default([]),
 });
 
+const promptListSelect =
+  "id, slug, title, description, category, prompt_text, tags, usage_count, is_featured, created_at";
+const promptKeySchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120)
+  .regex(/^[a-z0-9-]+$|^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+  .optional()
+  .catch(undefined);
+
 function slugify(title: string): string {
   return title
     .toLowerCase()
@@ -26,20 +37,27 @@ function slugify(title: string): string {
 export async function GET(request: NextRequest) {
   const category = request.nextUrl.searchParams.get("category");
   const sort = request.nextUrl.searchParams.get("sort") || "trending";
+  const promptKey = promptKeySchema.parse(request.nextUrl.searchParams.get("prompt") || undefined);
 
   if (!hasSupabaseAdminConfig()) {
     const filtered = category && PROMPT_CATEGORIES.includes(category as never)
       ? FALLBACK_PROMPTS.filter((prompt) => prompt.category === category)
       : FALLBACK_PROMPTS;
-    return NextResponse.json({ prompts: filtered, source: "seed" });
+    const requested = promptKey
+      ? filtered.find((prompt) => prompt.slug === promptKey || prompt.id === promptKey)
+      : null;
+    return NextResponse.json({
+      prompts: requested
+        ? [requested, ...filtered.filter((prompt) => prompt.id !== requested.id)]
+        : filtered,
+      source: "seed",
+    });
   }
 
   const admin = getSupabaseAdmin();
   let query = admin
     .from("prompts")
-    .select(
-      "id, slug, title, description, category, prompt_text, tags, usage_count, created_by, is_featured, created_at",
-    )
+    .select(promptListSelect)
     .eq("visibility", "public")
     .not("published_at", "is", null)
     .lte("published_at", new Date().toISOString())
@@ -58,19 +76,44 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ prompts: FALLBACK_PROMPTS, source: "seed" });
   }
 
+  const rows = [...(data as PromptRecord[])];
+  if (promptKey && !rows.some((prompt) => prompt.slug === promptKey || prompt.id === promptKey)) {
+    let requestedQuery = admin
+      .from("prompts")
+      .select(promptListSelect)
+      .eq("visibility", "public")
+      .not("published_at", "is", null)
+      .lte("published_at", new Date().toISOString());
+
+    requestedQuery = promptKey.includes("-") && promptKey.length === 36
+      ? requestedQuery.eq("id", promptKey)
+      : requestedQuery.eq("slug", promptKey);
+
+    const { data: requested } = await requestedQuery.maybeSingle<PromptRecord>();
+    if (requested) rows.unshift(requested);
+  }
+
   const member = await getAuthenticatedMember(request).catch(() => null);
   const favorites = new Set<string>();
+  const signals = new Set<string>();
   if (member) {
-    const { data: rows } = await admin
+    const { data: favoriteRows } = await admin
       .from("prompt_favorites")
       .select("prompt_id")
       .eq("member_id", member.id);
-    rows?.forEach((row) => favorites.add(row.prompt_id));
+    favoriteRows?.forEach((row) => favorites.add(row.prompt_id));
+
+    const { data: signalRows } = await admin
+      .from("prompt_votes")
+      .select("prompt_id")
+      .eq("member_id", member.id);
+    signalRows?.forEach((row) => signals.add(row.prompt_id));
   }
 
-  const prompts = (data as PromptRecord[]).map((prompt) => ({
+  const prompts = rows.map((prompt) => ({
     ...prompt,
     favorited: favorites.has(prompt.id),
+    signaled: signals.has(prompt.id),
   }));
   return NextResponse.json({ prompts, source: "database" });
 }
@@ -105,7 +148,9 @@ export async function POST(request: NextRequest) {
       created_by: member.id,
       published_at: parsed.data.visibility === "public" ? new Date().toISOString() : null,
     })
-    .select("*")
+    .select(
+      promptListSelect,
+    )
     .single();
 
   if (error) {
@@ -114,4 +159,3 @@ export async function POST(request: NextRequest) {
   }
   return NextResponse.json({ prompt: data }, { status: 201 });
 }
-

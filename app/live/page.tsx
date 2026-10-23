@@ -1,13 +1,52 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
+
+type LiveSessionSummary = {
+  title?: string;
+  summary?: string;
+  question_of_the_week?: string;
+};
+
+type LiveSession = {
+  id: string;
+  title: string;
+  daily_room_url?: string | null;
+  scheduled_for?: string | null;
+  started_at?: string | null;
+  is_live?: boolean | null;
+  metadata?: {
+    summary?: LiveSessionSummary | null;
+  } | null;
+};
+
+type LivePayload = {
+  upcoming?: LiveSession | null;
+  past?: LiveSession[];
+  nextSessionDate?: string | null;
+  calendarLinks?: { google: string; ics: string } | null;
+};
+
+async function liveHeaders(json = false): Promise<Record<string, string>> {
+  const accessToken = await getSupabaseAccessToken();
+  return {
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
+}
+
+function formatSessionDate(session: LiveSession) {
+  const dateValue = session.scheduled_for || session.started_at;
+  if (!dateValue) return 'Date pending';
+  return new Date(dateValue).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
 
 function useCountdown(targetDate: string | null) {
   const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -30,8 +69,8 @@ function useCountdown(targetDate: string | null) {
 }
 
 export default function LivePage() {
-  const [upcoming, setUpcoming] = useState<any>(null);
-  const [past, setPast] = useState<any[]>([]);
+  const [upcoming, setUpcoming] = useState<LiveSession | null>(null);
+  const [past, setPast] = useState<LiveSession[]>([]);
   const [nextDate, setNextDate] = useState<string | null>(null);
   const [calLinks, setCalLinks] = useState<{ google: string; ics: string } | null>(null);
   const [isLive, setIsLive] = useState(false);
@@ -40,25 +79,43 @@ export default function LivePage() {
   const [loading, setLoading] = useState(true);
   const countdown = useCountdown(nextDate);
 
-  useEffect(() => {
-    getMemberSession().then(s => { if (s?.member) setMemberId(s.member.id); }).catch(() => {});
-    fetch('/api/live').then(r => r.json()).then(d => {
-      setUpcoming(d.upcoming);
-      setPast(d.past || []);
-      setNextDate(d.nextSessionDate);
-      setCalLinks(d.calendarLinks);
-      if (d.upcoming?.is_live) { setIsLive(true); setDailyUrl(d.upcoming.daily_room_url); }
-    }).catch(() => {}).finally(() => setLoading(false));
+  const loadLive = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/live', {
+        cache: 'no-store',
+        headers: await liveHeaders(),
+      });
+      const data = (await res.json()) as LivePayload;
+      setUpcoming(data.upcoming || null);
+      setPast(data.past || []);
+      setNextDate(data.nextSessionDate || null);
+      setCalLinks(data.calendarLinks || null);
+      if (data.upcoming?.is_live) {
+        setIsLive(true);
+        setDailyUrl(data.upcoming.daily_room_url || null);
+      }
+    } catch {}
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    getMemberSession().then(s => { if (s?.member?.id) setMemberId(s.member.id); }).catch(() => {});
+    void Promise.resolve().then(() => loadLive());
+  }, [loadLive]);
 
   async function joinSession() {
     if (!upcoming?.id) return;
+    if (!memberId) { window.location.assign('/login'); return; }
+
     const res = await fetch(`/api/live/${upcoming.id}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'join', memberId }),
+      method: 'POST',
+      cache: 'no-store',
+      headers: await liveHeaders(true),
+      body: JSON.stringify({ action: 'join' }),
     });
-    const d = await res.json();
-    if (d.dailyUrl) setDailyUrl(d.dailyUrl);
+    const data = (await res.json()) as { dailyUrl?: string | null };
+    if (data.dailyUrl) setDailyUrl(data.dailyUrl);
   }
 
   const boxStyle: React.CSSProperties = {
@@ -132,7 +189,7 @@ export default function LivePage() {
       {dailyUrl && (
         <section style={{ padding: '0 2rem 3rem' }}>
           <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-            <iframe src={dailyUrl} style={{ width: '100%', height: '500px', border: `1px solid rgba(201,168,76,0.15)` }}
+            <iframe title="Society of Explorers Live Council" src={dailyUrl} style={{ width: '100%', height: '500px', border: `1px solid rgba(201,168,76,0.15)` }}
               allow="camera; microphone; fullscreen; display-capture" />
           </div>
         </section>
@@ -147,9 +204,9 @@ export default function LivePage() {
               {past.map(s => {
                 const summary = s.metadata?.summary;
                 return (
-                  <div key={s.id} style={{ background: '#0d0d0d', padding: '1.5rem', border: `1px solid rgba(201,168,76,0.1)` }}>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, marginBottom: '0.5rem' }}>{summary?.title || s.title}</div>
-                    <div style={{ fontSize: '12px', color: muted, marginBottom: '0.75rem' }}>{new Date(s.scheduled_for || s.started_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                    <div key={s.id} style={{ background: '#0d0d0d', padding: '1.5rem', border: `1px solid rgba(201,168,76,0.1)` }}>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, marginBottom: '0.5rem' }}>{summary?.title || s.title}</div>
+                    <div style={{ fontSize: '12px', color: muted, marginBottom: '0.75rem' }}>{formatSessionDate(s)}</div>
                     {summary?.summary && <p style={{ fontSize: '14px', color: ivory85, lineHeight: 1.6, marginBottom: '0.75rem' }}>{summary.summary}</p>}
                     {summary?.question_of_the_week && <p style={{ fontSize: '14px', color: gold, fontStyle: 'italic' }}>&ldquo;{summary.question_of_the_week}&rdquo;</p>}
                   </div>

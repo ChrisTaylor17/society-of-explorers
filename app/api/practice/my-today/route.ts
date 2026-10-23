@@ -1,18 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
 import { getOrCreateTodayQuestion, DailyQuestion } from '@/lib/practice/todayQuestion';
 import { fetchOtherExplorers, OtherResponse } from '@/lib/practice/others';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export async function GET(req: NextRequest) {
   const question = await getOrCreateTodayQuestion();
   if (!question) {
-    return NextResponse.json(
+    return privateJson(
       {
         question: null,
         myResponse: null,
@@ -27,6 +23,7 @@ export async function GET(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
   const memberId = auth?.memberId || null;
 
+  const supabase = getSupabaseAdmin();
   const todayCountPromise = supabase
     .from('question_responses')
     .select('id', { count: 'exact', head: true })
@@ -41,7 +38,7 @@ export async function GET(req: NextRequest) {
       }),
       todayCountPromise,
     ]);
-    return NextResponse.json({
+    return privateJson({
       question,
       myResponse: null,
       myReflection: null,
@@ -121,5 +118,5 @@ export async function GET(req: NextRequest) {
     todayCount: todayCountResult.count ?? 0,
   };
 
-  return NextResponse.json(payload);
+  return privateJson(payload);
 }

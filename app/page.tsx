@@ -39,12 +39,17 @@ const THINKER_AVATARS: Record<string, string> = {
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string; }
 type NetworkPanel = 'survey' | 'sandbox';
+interface PracticeQuestion {
+  thinker_id?: string | null;
+  question_text?: string | null;
+}
 
 const DEMO_STORAGE_KEY = 'soe_demo_messages';
 const DEMO_LIMIT = 3;
 const HOMEPAGE_PROJECT_ID = '11111111-1111-4111-8111-111111111111';
 const HOMEPAGE_POD_KEY_STORAGE = 'soe:homepage-pod-key:v1';
 const HOMEPAGE_GRAPH_STORAGE = 'soe:homepage-explorer-graph:v1';
+const PROMPT_ATLAS_URL = 'https://prompts-mvp.vercel.app';
 
 function loadDemoMessages(): ChatMessage[] {
   if (typeof window === 'undefined') return [];
@@ -56,7 +61,7 @@ function saveDemoMessages(msgs: ChatMessage[]) {
 function countUserMessages(msgs: ChatMessage[]): number { return msgs.filter(m => m.role === 'user').length; }
 
 export default function HomePage() {
-  const [question, setQuestion] = useState<any>(null);
+  const [question, setQuestion] = useState<PracticeQuestion | null>(null);
   const [networkPanel, setNetworkPanel] = useState<NetworkPanel>('survey');
   const [surveyProjection, setSurveyProjection] = useState<PhilosophicalProjection | null>(null);
   const podSync = usePodSync<ExplorerGraph, ProjectEscrowMutation>({
@@ -108,15 +113,17 @@ export default function HomePage() {
   useEffect(() => {
     fetch('/api/practice/today')
       .then(r => r.json())
-      .then(d => { if (d.question) setQuestion(d.question); })
+      .then((d: { question?: PracticeQuestion }) => { if (d.question) setQuestion(d.question); })
       .catch(() => {});
   }, []);
 
   // Socrates demo init
   useEffect(() => {
-    const stored = loadDemoMessages();
-    setMessages(stored);
-    if (countUserMessages(stored) >= DEMO_LIMIT) setGated(true);
+    queueMicrotask(() => {
+      const stored = loadDemoMessages();
+      setMessages(stored);
+      setGated(countUserMessages(stored) >= DEMO_LIMIT);
+    });
   }, []);
 
   useEffect(() => {
@@ -173,8 +180,9 @@ export default function HomePage() {
         setStreamText('');
         if (userCount >= DEMO_LIMIT) setGated(true);
       }
-    } catch (e: any) {
-      if (e.name !== 'AbortError') {
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : '';
+      if (errorName !== 'AbortError') {
         setMessages(prev => [...prev, { role: 'assistant', content: 'Something went wrong. Try again.' }]);
       }
     }
@@ -193,25 +201,28 @@ export default function HomePage() {
       <PublicNav />
 
       {/* HERO */}
-      <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+      <section style={{ minHeight: 'calc(100vh - 56px)', padding: '8rem 2rem 4rem', textAlign: 'center', display: 'flex', alignItems: 'center' }}>
+        <div style={{ maxWidth: '760px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>
-            A DAILY PHILOSOPHICAL PRACTICE
+            PROMPT ATLAS
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.2, marginBottom: '1.5rem', color: parchment }}>
-            Six thinkers pose the question.<br />You notice what you think.
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(40px, 7vw, 72px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.05, marginBottom: '1.5rem', color: parchment }}>
+            Find the prompt that turns an idea into a real offer.
           </h1>
-          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '18px', color: ivory85, lineHeight: 1.7, maxWidth: '540px', margin: '0 auto 2.5rem' }}>
-            Every morning, one of six philosophers asks a single question. You answer in 280 characters. They notice what you wrote.
+          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: ivory85, lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 2.5rem' }}>
+            Society of Explorers is pivoting into a privacy-first prompt marketplace and launch workspace. Explore public prompts, follow revenue paths, and build with community signal without giving up your data.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
-            <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
-              TRY TODAY&apos;S QUESTION &rarr;
+            <a href={PROMPT_ATLAS_URL} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
+              OPEN PROMPT ATLAS &rarr;
+            </a>
+            <a href={`${PROMPT_ATLAS_URL}/p/create-a-one-page-business`} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
+              VIEW A PUBLIC PROMPT
             </a>
           </div>
-          <a href="/manifesto" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: muted, textDecoration: 'none', opacity: 0.8 }}>
-            Read the manifesto
-          </a>
+          <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: muted, lineHeight: 1.8, margin: '1.25rem auto 0', maxWidth: '620px' }}>
+            Public discovery stays aggregate. Your private context stays yours. The goal is real human value, not extraction.
+          </p>
         </div>
       </section>
 
@@ -551,6 +562,14 @@ async function buildHomepagePodEnvelope(
     metadata: {
       surface: 'homepage-collaboration-sandbox',
       schema_version: state.schema_version,
+      key_mode: 'client_local',
+      custody: 'browser_local_storage',
+      key_derivation: 'browser_random_aes_gcm_v1',
+      sovereignty_level: 'client_held_prototype',
+      key_exportable: false,
+      server_can_decrypt_pod: false,
+      attestation: 'client_local_browser_key',
+      base_sync_version: context.base_sync_version,
     },
   };
   const commitmentInput = canonicalSyncCommitmentInput(envelopeWithoutCommitment);

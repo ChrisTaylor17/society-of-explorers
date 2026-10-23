@@ -1,14 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const AXES = ['epistemology', 'ethics', 'metaphysics', 'aesthetics', 'politics'] as const;
 
-export function computePhilosophicalVector(answers: Record<string, any>, questions: any[]): Record<string, number> {
+interface MatchQuestion {
+  id: string;
+  philosophical_axis?: string | null;
+}
+
+export function computePhilosophicalVector(answers: Record<string, unknown>, questions: MatchQuestion[]): Record<string, number> {
   const vector: Record<string, number> = {};
   for (const axis of AXES) vector[axis] = 0;
 
-  let counts: Record<string, number> = {};
+  const counts: Record<string, number> = {};
   for (const axis of AXES) counts[axis] = 0;
 
   for (const q of questions) {
@@ -50,6 +53,7 @@ function findTensionAxes(a: Record<string, number>, b: Record<string, number>): 
 }
 
 export async function runMatching(communityId: string, memberId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const { data: myProfile } = await supabase
     .from('community_match_profiles')
     .select('philosophical_vector')

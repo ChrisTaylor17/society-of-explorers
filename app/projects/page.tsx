@@ -22,15 +22,15 @@ interface Project {
 
 const STEPS = [
   { num: 1, title: 'Propose', desc: 'Any explorer can pitch a project. AI thinkers help refine your idea, challenge your assumptions, and sharpen your pitch.' },
-  { num: 2, title: 'Fund', desc: 'Members pledge capital. Smart contracts hold funds in escrow. No middlemen, no banks, no gatekeepers.' },
-  { num: 3, title: 'Build', desc: 'Milestone-based releases. The community tracks progress. Thinkers serve as advisors. Full transparency on-chain.' },
-  { num: 4, title: 'Return', desc: 'Profits split automatically via smart contracts. Investors see their capital working in real time. Money stays in the ecosystem.' },
+  { num: 2, title: 'Pledge', desc: 'Members and patrons support specific work with clear goals, plain-language use of funds, and visible progress.' },
+  { num: 3, title: 'Build', desc: 'The founder posts updates, blockers, and next milestones. The community can see whether the work is becoming real.' },
+  { num: 4, title: 'Invite', desc: 'Successful projects become rituals, tools, artifacts, or physical experiences that strengthen the Society.' },
 ];
 
 const CARDS = [
-  { title: 'Kiva Model', body: 'Micro-investment with personal connection. See exactly where your money goes. Get it back when the project succeeds.' },
-  { title: 'Prediction Markets', body: 'Stake on outcomes. Skin in the game creates honest signals about which projects will actually succeed.' },
-  { title: 'Living Stories', body: 'Follow founders like a show. Video updates, milestone celebrations, real-time progress. Not boring status reports — compelling narratives.' },
+  { title: 'Patronage Model', body: 'Support the people, spaces, and tools you want to exist. The value is participation, recognition, and the thing being built.' },
+  { title: 'Honest Signals', body: 'Pledges show where community energy is real. Projects with momentum earn more attention and deeper support.' },
+  { title: 'Living Stories', body: 'Follow founders through updates, milestones, blockers, and rituals. The build becomes part of the Movement narrative.' },
 ];
 
 const CATEGORIES: Record<string, string> = {
@@ -118,7 +118,7 @@ export default function ProjectsPage() {
             Fund what matters.<br />Build what lasts.
           </h1>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, maxWidth: '600px', margin: '0 auto 2.5rem' }}>
-            A philosophical funding platform where entrepreneurs find capital, investors find meaning, and smart contracts ensure accountability.
+            A philosophical patronage platform where entrepreneurs find support, patrons find meaning, and the community can see what is becoming real.
           </p>
           <a href="#submit" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>SUBMIT A PROJECT</a>
         </div>
@@ -189,7 +189,7 @@ export default function ProjectsPage() {
           {submitted ? (
             <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}08` }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>SUBMISSION RECEIVED</div>
-              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>Your project has been submitted for review. We'll be in touch.</p>
+              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>Your project has been submitted for review. We&apos;ll be in touch.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
@@ -237,10 +237,10 @@ export default function ProjectsPage() {
             We lost the ability to build great things together. Cathedrals took generations. The pyramids coordinated thousands. Modern bureaucracy killed that spirit.
           </p>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, marginBottom: '2rem' }}>
-            Blockchain brings it back. Instant, secure, transparent capital flows. AI coordinates the work. Philosophy ensures we build things worth building.
+            The Movement brings it back with clear pledges, visible milestones, AI-assisted coordination, and philosophy strong enough to ask whether each thing is worth building.
           </p>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8 }}>
-            Society of Explorers is where the world's most ambitious people compete to fund and build meaningful things.
+            Society of Explorers is where the world&apos;s most ambitious people compete to fund and build meaningful things.
           </p>
         </div>
       </section>
@@ -252,7 +252,7 @@ export default function ProjectsPage() {
             The Renaissance needs builders.
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2.5rem' }}>
-            Whether you're proposing a project or funding one, you're part of something that matters.
+            Whether you&apos;re proposing a project or funding one, you&apos;re part of something that matters.
           </p>
           <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>BECOME AN EXPLORER</a>
         </div>

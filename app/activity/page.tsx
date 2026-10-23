@@ -5,7 +5,6 @@ import PublicFooter from '@/components/PublicFooter';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
-const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
 const ICONS: Record<string, string> = {
@@ -14,6 +13,14 @@ const ICONS: Record<string, string> = {
   room_started: '\ud83d\udcf9', member_joined: '\ud83d\udc64', verdict_shared: '\ud83d\udccb',
   thinker_insight: '\ud83d\udca1',
 };
+
+interface ActivityEvent {
+  id: string;
+  event_type: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -26,7 +33,7 @@ function timeAgo(iso: string): string {
 }
 
 export default function ActivityPage() {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,7 +45,7 @@ export default function ActivityPage() {
       <PublicNav />
       <section style={{ padding: '8rem 2rem 2rem', textAlign: 'center' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>ACTIVITY</div>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment }}>What's happening</h1>
+        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment }}>What&apos;s happening</h1>
       </section>
 
       <section style={{ padding: '0 2rem 4rem' }}>
