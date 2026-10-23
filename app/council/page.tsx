@@ -343,10 +343,12 @@ export default function CouncilPage() {
           sessionId: `council-${Date.now()}`,
           question,
           responses,
+          makePublic: true, // the explicit "share verdict" click is the opt-in (security fix S6c)
         }),
       });
       const data = await res.json();
-      const url = data.publicUrl || `https://www.societyofexplorers.com/council/verdict/${data.slug}`;
+      if (!res.ok || !data.publicUrl) throw new Error('verdict not shared');
+      const url = data.publicUrl;
       setLastVerdictUrl(url);
       await navigator.clipboard.writeText(url);
       setToast('Verdict link copied!');

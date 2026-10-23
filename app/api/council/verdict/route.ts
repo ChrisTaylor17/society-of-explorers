@@ -3,6 +3,7 @@ import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { limitModelCall } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -110,6 +111,25 @@ export async function POST(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
+  // Security fix S6c: a verdict is private unless the member explicitly asks to share it.
+  const makePublic = parsed.makePublic === true;
+
+  // Security fix S6d: a sessionId already owned by another member can't be overwritten.
+  const supabase = getSupabaseAdmin();
+  const { data: existingSessions, error: existingError } = await supabase
+    .from('council_sessions')
+    .select('member_id')
+    .eq('session_id', sessionId)
+    .limit(1);
+  if (existingError) return privateJson({ error: 'Failed to save verdict' }, { status: 500 });
+  const existingOwner = (existingSessions || [])[0]?.member_id ?? null;
+  if (existingSessions && existingSessions.length > 0 && existingOwner !== auth.memberId) {
+    return privateJson({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const limited = limitModelCall(req, auth.memberId, 'council-verdict');
+  if (limited) return limited;
+
   const anthropic = createAnthropicClient();
   const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
   let analysisText = '';
@@ -138,14 +158,13 @@ export async function POST(req: NextRequest) {
     return { ...r, vote_position: vote?.position || 'REFRAME', one_liner: vote?.one_liner || '' };
   });
 
-  const supabase = getSupabaseAdmin();
   const { data: session, error } = await supabase.from('council_sessions').upsert({
     session_id: sessionId,
     member_id: auth.memberId,
     question,
     thinker_responses: thinkerResponses,
     public_url_slug: slug,
-    is_public: true,
+    is_public: makePublic,
   }, { onConflict: 'session_id' }).select().single();
 
   if (error) return privateJson({ error: 'Failed to save verdict' }, { status: 500 });
@@ -153,7 +172,7 @@ export async function POST(req: NextRequest) {
   return privateJson({
     session,
     analysis,
-    publicUrl: buildPublicVerdictUrl(req, slug),
-    slug,
+    publicUrl: makePublic ? buildPublicVerdictUrl(req, slug) : null,
+    slug: makePublic ? slug : null,
   });
 }
