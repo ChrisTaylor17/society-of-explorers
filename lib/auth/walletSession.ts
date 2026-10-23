@@ -1,7 +1,18 @@
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/;
-const SESSION_VERSION = 'v1';
+const SESSION_VERSION = 'v2';
+const LEGACY_SESSION_VERSION = 'v1';
+const EXPIRY_PATTERN = /^[1-9][0-9]{0,11}$/;
+
+// v2 cookies carry a signed expiry that the server checks (the browser maxAge alone is not enforced).
+export const WALLET_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+const CLOCK_SKEW_SECONDS = 5 * 60;
+
+// v1 cookies (no expiry, issued before this release) are accepted until this instant so nobody is logged out
+// at deploy time. Browser maxAge for those cookies is 30 days, so this must be >= deploy date + 30 days.
+// Recompute it if the release ships after 2026-12-01.
+export const LEGACY_V1_ACCEPT_UNTIL = '2026-12-31T00:00:00Z';
 
 function getWalletSessionSecret(): string {
   return process.env.WALLET_SESSION_SECRET || process.env.NEXTAUTH_SECRET || '';
@@ -36,26 +47,63 @@ function secureEqual(left: string, right: string): boolean {
   return mismatch === 0;
 }
 
-export async function createWalletSessionValue(memberId: string): Promise<string | null> {
+export async function createWalletSessionValue(memberId: string, nowMs: number = Date.now()): Promise<string | null> {
   if (!UUID_PATTERN.test(memberId)) return null;
 
-  const payload = `${SESSION_VERSION}:${memberId}`;
+  const expiresAt = Math.floor(nowMs / 1000) + WALLET_SESSION_TTL_SECONDS;
+  const payload = `${SESSION_VERSION}:${memberId}:${expiresAt}`;
   const signature = await signPayload(payload);
   if (!signature) return null;
 
-  return `${SESSION_VERSION}.${memberId}.${signature}`;
+  return `${SESSION_VERSION}.${memberId}.${expiresAt}.${signature}`;
 }
 
-export async function verifyWalletSessionValue(value: string | null | undefined): Promise<string | null> {
-  if (!value) return null;
+/** Test helper only: mints a pre-release v1 cookie (no expiry) to check the legacy cutoff. */
+export async function createLegacyV1WalletSessionValueForTests(memberId: string): Promise<string | null> {
+  if (!UUID_PATTERN.test(memberId)) return null;
+  const signature = await signPayload(`${LEGACY_SESSION_VERSION}:${memberId}`);
+  return signature ? `${LEGACY_SESSION_VERSION}.${memberId}.${signature}` : null;
+}
 
-  const [version, memberId, signature] = value.split('.');
-  if (version !== SESSION_VERSION || !UUID_PATTERN.test(memberId) || !SIGNATURE_PATTERN.test(signature)) {
-    return null;
+export async function verifyWalletSessionValue(
+  value: string | null | undefined,
+  nowMs: number = Date.now(),
+): Promise<string | null> {
+  if (!value || value.length > 256) return null;
+
+  const parts = value.split('.');
+  const nowSeconds = Math.floor(nowMs / 1000);
+
+  if (parts.length === 4) {
+    const [version, memberId, expiresAtText, signature] = parts;
+    if (
+      version !== SESSION_VERSION ||
+      !UUID_PATTERN.test(memberId) ||
+      !EXPIRY_PATTERN.test(expiresAtText) ||
+      !SIGNATURE_PATTERN.test(signature)
+    ) {
+      return null;
+    }
+    const expiresAt = Number(expiresAtText);
+    if (expiresAt <= nowSeconds) return null;
+    if (expiresAt > nowSeconds + WALLET_SESSION_TTL_SECONDS + CLOCK_SKEW_SECONDS) return null;
+
+    const expectedSignature = await signPayload(`${version}:${memberId}:${expiresAtText}`);
+    if (!expectedSignature || !secureEqual(signature, expectedSignature)) return null;
+    return memberId;
   }
 
-  const expectedSignature = await signPayload(`${version}:${memberId}`);
-  if (!expectedSignature || !secureEqual(signature, expectedSignature)) return null;
+  if (parts.length === 3) {
+    const [version, memberId, signature] = parts;
+    if (version !== LEGACY_SESSION_VERSION || !UUID_PATTERN.test(memberId) || !SIGNATURE_PATTERN.test(signature)) {
+      return null;
+    }
+    if (nowMs >= Date.parse(LEGACY_V1_ACCEPT_UNTIL)) return null;
 
-  return memberId;
+    const expectedSignature = await signPayload(`${version}:${memberId}`);
+    if (!expectedSignature || !secureEqual(signature, expectedSignature)) return null;
+    return memberId;
+  }
+
+  return null;
 }
