@@ -615,7 +615,13 @@ const checks = [
       routes.salonMessage.includes('safeRequestJson(req)') &&
       routes.salonMessage.includes('const content = boundedText(body.content, MAX_CONTENT_LENGTH)') &&
       routes.salonMessage.includes('const salonId = normalizeSalonId(body.salon_id)') &&
-      routes.salonMessage.includes('normalizeSenderType(body.sender_type)') &&
+      // Security fix S9: author/sender type come from the session, never the body.
+      !routes.salonMessage.includes('body.sender_type') &&
+      !routes.salonMessage.includes('body.sender_name') &&
+      routes.salonMessage.includes("sender_type: 'member'") &&
+      [routes.salonMessage, routes.salonMessageLoad].every(
+        (source) => source.includes('getAuthenticatedMember(req)') && source.includes('memberCanUseSharedSalon('),
+      ) &&
       routes.salonMessage.includes('MAX_CONTENT_LENGTH') &&
       routes.salonMessage.includes('Failed to save salon message') &&
       routes.salonMessageLoad.includes('SALON_MESSAGE_SELECT') &&
@@ -2328,7 +2334,10 @@ const checks = [
       routes.councilVerdict.includes('member_id: auth.memberId') &&
       routes.councilVerdict.indexOf('Missing fields') < routes.councilVerdict.indexOf('getAuthenticatedMember(req)') &&
       routes.councilVerdict.indexOf('getAuthenticatedMember(req)') < routes.councilVerdict.indexOf('createAnthropicClient()') &&
-      routes.councilVerdict.indexOf('createAnthropicClient()') < routes.councilVerdict.indexOf('getSupabaseAdmin()') &&
+      // Security fix S6d: the session-ownership check reads Supabase after auth but before any model call.
+      routes.councilVerdict.indexOf('getAuthenticatedMember(req)') < routes.councilVerdict.indexOf('getSupabaseAdmin()') &&
+      routes.councilVerdict.indexOf('Forbidden') < routes.councilVerdict.indexOf('createAnthropicClient()') &&
+      routes.councilVerdict.includes('is_public: makePublic') &&
       routes.councilVerdictDetail.includes('publicNoStoreJson') &&
       routes.councilVerdictDetail.includes('getSupabaseAdmin()') &&
       !routes.councilVerdict.includes('NextResponse') &&
