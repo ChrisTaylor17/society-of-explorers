@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { track } from '@/lib/analytics/client';
+import { FREE_SIGNUP_PATH } from '@/lib/join/content';
 import { PhilosophicalSurvey, type PhilosophicalProjection } from '@/components/onboarding/PhilosophicalSurvey';
 import { CollaborationSandbox } from '@/components/workspace/CollaborationSandbox';
 import { usePodSync, type PodSyncBuildContext } from '@/lib/hooks/usePodSync';
@@ -213,10 +215,10 @@ export default function HomePage() {
             Society of Explorers is pivoting into a privacy-first prompt marketplace and launch workspace. Explore public prompts, follow revenue paths, and build with community signal without giving up your data.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
-            <a href={PROMPT_ATLAS_URL} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
+            <a href={PROMPT_ATLAS_URL} onClick={() => track('cta_click', { cta: 'hero_prompt_atlas' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
               OPEN PROMPT ATLAS &rarr;
             </a>
-            <a href={`${PROMPT_ATLAS_URL}/p/create-a-one-page-business`} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
+            <a href={`${PROMPT_ATLAS_URL}/p/create-a-one-page-business`} onClick={() => track('cta_click', { cta: 'hero_public_prompt' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
               VIEW A PUBLIC PROMPT
             </a>
           </div>
@@ -242,7 +244,7 @@ export default function HomePage() {
               &ldquo;{question.question_text}&rdquo;
             </p>
             <div style={{ textAlign: 'center' }}>
-              <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>
+              <a href="/practice" onClick={() => track('cta_click', { cta: 'daily_question_respond' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>
                 RESPOND TO THIS QUESTION &rarr;
               </a>
             </div>
@@ -417,7 +419,7 @@ export default function HomePage() {
               {gated ? (
                 <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
                   <p style={{ fontSize: '14px', color: parchment, marginBottom: '1rem' }}>Socrates has more to say. Create a free account to continue.</p>
-                  <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>Create Free Account</a>
+                  <a href={FREE_SIGNUP_PATH} onClick={() => track('signup_start', { tier: 'explorer', source: 'demo_gate' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>Create Free Account</a>
                   <button onClick={() => { localStorage.removeItem(DEMO_STORAGE_KEY); setMessages([]); setGated(false); }}
                     style={{ display: 'block', margin: '0.75rem auto 0', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, background: 'none', border: 'none', cursor: 'pointer' }}>
                     START OVER
@@ -453,7 +455,7 @@ export default function HomePage() {
           <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 2rem' }} />
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 28px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>Start your practice.</h2>
           <p style={{ fontSize: '15px', color: muted, marginBottom: '1.75rem' }}>Free. One question. Every morning.</p>
-          <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>TODAY&apos;S QUESTION &rarr;</a>
+          <a href="/practice" onClick={() => track('cta_click', { cta: 'footer_todays_question' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>TODAY&apos;S QUESTION &rarr;</a>
         </div>
       </section>
 

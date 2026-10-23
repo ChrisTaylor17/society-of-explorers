@@ -11,6 +11,8 @@ function read(relativePath) {
 
 const files = {
   join: read('app/join/page.tsx'),
+  joinContent: read('lib/join/content.ts'),
+  stripeMode: read('lib/payments/stripeMode.ts'),
   login: read('app/login/page.tsx'),
   callback: read('app/auth/callback/route.ts'),
   checkout: read('app/api/checkout/route.ts'),
@@ -25,17 +27,21 @@ const checks = [
   {
     name: 'join page exposes the four paid membership tiers at the intended prices',
     ok:
-      files.join.includes("id: 'seeker', name: 'Seeker', price: '$19'") &&
-      files.join.includes("id: 'scholar', name: 'Scholar', price: '$49'") &&
-      files.join.includes("id: 'philosopher', name: 'Philosopher', price: '$99'") &&
-      files.join.includes("id: 'oracle', name: 'Oracle', price: '$499'"),
+      files.joinContent.includes("id: 'seeker', name: 'Seeker', price: '$19'") &&
+      files.joinContent.includes("id: 'scholar', name: 'Scholar', price: '$49'") &&
+      files.joinContent.includes("id: 'philosopher', name: 'Philosopher', price: '$99'") &&
+      files.joinContent.includes("id: 'oracle', name: 'Oracle', price: '$499'"),
   },
   {
     name: 'checkout maps every displayed paid tier to an environment price',
     ok:
       files.checkout.includes("new Set(['seeker', 'scholar', 'philosopher', 'oracle'])") &&
       ['SEEKER', 'SCHOLAR', 'PHILOSOPHER', 'ORACLE'].every((tier) =>
-        files.checkout.includes(`process.env.STRIPE_PRICE_${tier}`),
+        files.stripeMode.includes(`'STRIPE_PRICE_${tier}'`),
+      ) &&
+      files.checkout.includes('membershipPriceId(') &&
+      ['SEEKER', 'SCHOLAR', 'PHILOSOPHER', 'ORACLE'].every((tier) =>
+        files.stripeMode.includes(`'STRIPE_TEST_PRICE_${tier}'`),
       ),
   },
   {
@@ -45,7 +51,7 @@ const checks = [
       files.checkout.includes("return privateJson({ error: 'Invalid request body' }, 400)") &&
       files.checkout.includes('if (!MEMBERSHIP_TIERS.has(tier))') &&
       files.checkout.includes('const authenticated = await getAuthenticatedMember(req)') &&
-      files.checkout.includes("return privateJson({ error: 'Sign in before choosing a paid membership' }, 401)") &&
+      files.checkout.includes("return privateJson({ error: 'Sign in before choosing a paid membership', code: 'sign_in_required' }, 401)") &&
       files.checkout.indexOf('if (!MEMBERSHIP_TIERS.has(tier))') <
         files.checkout.indexOf('checkout.sessions.create') &&
       files.checkout.indexOf('const authenticated = await getAuthenticatedMember(req)') <

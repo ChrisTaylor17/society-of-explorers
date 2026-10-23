@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { track } from '@/lib/analytics/client';
+import { FAQS, FREE_SIGNUP_PATH, TIERS, checkoutErrorMessage } from '@/lib/join/content';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -26,91 +28,6 @@ function isStripeCheckoutUrl(value: unknown): value is string {
   }
 }
 
-type JoinTier = {
-  id: string;
-  name: string;
-  price: string;
-  period: string;
-  badge: string | null;
-  featured: boolean;
-  cta: string;
-  ctaAction: 'oauth' | 'checkout';
-  tagline: string;
-  features: string[];
-  note?: string;
-};
-
-const TIERS: JoinTier[] = [
-  {
-    id: 'explorer', name: 'Explorer', price: 'Free', period: '', badge: null, featured: false,
-    cta: 'START FREE', ctaAction: 'oauth' as const,
-    tagline: 'Begin your journey',
-    features: [
-      '3 Council questions per day',
-      'Daily Practice included — start your streak today',
-      'Browse the Constellation',
-      'Read verdict cards',
-    ],
-  },
-  {
-    id: 'seeker', name: 'Seeker', price: '$19', period: '/mo', badge: 'MOST POPULAR', featured: true,
-    cta: 'BECOME A SEEKER', ctaAction: 'checkout' as const,
-    tagline: 'Find your people',
-    features: [
-      'Unlimited Council access',
-      'Matched philosophical conversations — AI pairs you with fellow explorers',
-      'Join a 7-week salon',
-      'Earn $EXP tokens',
-      'Voice conversations with thinkers',
-    ],
-    note: 'Covers our infrastructure costs',
-  },
-  {
-    id: 'scholar', name: 'Scholar', price: '$49', period: '/mo', badge: null, featured: false,
-    cta: 'BECOME A SCHOLAR', ctaAction: 'checkout' as const,
-    tagline: 'Go deeper',
-    features: [
-      'Everything in Seeker',
-      'Priority salon placement',
-      'Guide candidacy — lead your own salon',
-      '$EXP treasury when you become a Guide',
-      'Scholar-level project rooms',
-    ],
-  },
-  {
-    id: 'philosopher', name: 'Philosopher', price: '$99', period: '/mo', badge: null, featured: false,
-    cta: 'BECOME A PHILOSOPHER', ctaAction: 'checkout' as const,
-    tagline: 'Lead the way',
-    features: [
-      'Everything in Scholar',
-      'Advanced memory — thinkers remember everything',
-      'Private ritual rooms',
-      'Priority artifact generation',
-      'Direct oracle consultations',
-    ],
-  },
-  {
-    id: 'oracle', name: 'Oracle', price: '$499', period: ' lifetime', badge: 'FOUNDING', featured: false,
-    cta: 'BECOME AN ORACLE', ctaAction: 'checkout' as const,
-    tagline: 'Founding member',
-    features: [
-      'Everything in Philosopher, forever',
-      'Founding member status',
-      'Direct line to all 6 thinkers',
-      'Governance votes (HATS)',
-      'Name on the founders wall at 92B South St',
-    ],
-  },
-];
-
-const FAQS = [
-  { q: 'What is a salon?', a: 'A 7-week program with 7 people. You meet 5 days a week, rotating through three tracks: Singularity & AI, Blockchain & Data Sovereignty, and The Secret & Consciousness. Every member leads sessions. Graduates become Guides with their own salon.' },
-  { q: 'What are AI thinkers?', a: 'Six historical minds — Socrates, Plato, Marcus Aurelius, Nietzsche, Einstein, and Steve Jobs — reimagined as modern advisors. They debate your questions in Council Mode, remember your journey across sessions, and can create tasks, award $EXP, and take real actions on your behalf.' },
-  { q: 'What is $EXP?', a: '$EXP is a non-transferable reputation token earned by participating. Attend sessions, lead discussions, complete tasks, receive awards from thinkers. It\'s proof of intellectual contribution, not a speculative asset.' },
-  { q: 'Can I cancel anytime?', a: 'Yes. Monthly memberships can be cancelled at any time. Oracle (lifetime) is a one-time purchase.' },
-  { q: 'What if I\'m not in Boston?', a: 'Digital salons are available for all members. Video sessions run on Daily.co. The full Council Mode and thinker experience works from anywhere.' },
-];
-
 export default function JoinPage() {
   const router = useRouter();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -119,11 +36,7 @@ export default function JoinPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) (e.target as HTMLElement).style.opacity = '1'; });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('[data-fade]').forEach(el => obs.observe(el));
-    return () => obs.disconnect();
+    track('join_view');
   }, []);
 
   useEffect(() => {
@@ -164,18 +77,26 @@ export default function JoinPage() {
     };
   }, [router]);
 
+  function startFree() {
+    track('signup_start', { tier: 'explorer', source: 'free_tier' });
+    router.push(FREE_SIGNUP_PATH);
+  }
+
   async function handleCheckout(tier: string) {
-    if (tier === 'explorer') { router.push('/login'); return; }
+    if (tier === 'explorer') { startFree(); return; }
+    track('tier_select', { tier });
     setCheckoutLoading(tier);
     setCheckoutError(null);
     setCheckoutIntent(null);
     try {
       const session = await getMemberSession();
       if (!session?.member) {
+        track('signup_start', { tier, source: 'paid_tier' });
         router.push(`/login?next=${encodeURIComponent(membershipReturnPath(tier))}`);
         return;
       }
 
+      track('checkout_start', { tier });
       const accessToken = await getSupabaseAccessToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -193,22 +114,20 @@ export default function JoinPage() {
           router.push(`/login?next=${encodeURIComponent(membershipReturnPath(tier))}`);
           return;
         }
-        setCheckoutError({
-          tier,
-          message: res.status === 409
-            ? 'Add an email to your member profile before choosing this tier.'
-            : res.status === 503
-              ? 'This membership tier is not available right now.'
-              : 'Checkout could not start. Your membership was not changed.',
-        });
+        const code = typeof data.code === 'string' ? data.code : `http_${res.status}`;
+        track('checkout_error', { tier, code });
+        setCheckoutError({ tier, message: checkoutErrorMessage(res.status, code) });
         return;
       }
       if (!isStripeCheckoutUrl(data.url)) {
+        track('checkout_error', { tier, code: 'invalid_destination' });
         setCheckoutError({ tier, message: 'Checkout could not start. Your membership was not changed.' });
         return;
       }
+      track('checkout_redirect', { tier, mode: data.mode === 'test' ? 'test' : 'live' });
       window.location.assign(data.url);
     } catch {
+      track('checkout_error', { tier, code: 'network' });
       setCheckoutError({ tier, message: 'Checkout could not start. Your membership was not changed.' });
     } finally {
       setCheckoutLoading(null);
@@ -238,7 +157,7 @@ export default function JoinPage() {
       </section>
 
       {/* Pricing Grid */}
-      <section data-fade style={{ padding: '0 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+      <section aria-label="Membership tiers" style={{ padding: '0 2rem 4rem' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1px', background: `${gold}10` }}>
           {TIERS.map(t => (
             <div key={t.id} id={t.id} style={{
@@ -268,7 +187,7 @@ export default function JoinPage() {
                 </div>
                 {t.note && <div style={{ fontSize: '11px', color: `${gold}88`, fontStyle: 'italic', marginBottom: '0.75rem' }}>{t.note}</div>}
                 <button
-                  onClick={() => t.ctaAction === 'oauth' ? router.push('/login') : handleCheckout(t.id)}
+                  onClick={() => t.ctaAction === 'oauth' ? startFree() : handleCheckout(t.id)}
                   disabled={checkoutLoading === t.id}
                   style={{
                     fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em',
@@ -291,7 +210,7 @@ export default function JoinPage() {
       </section>
 
       {/* FAQ */}
-      <section data-fade style={{ padding: '2rem 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+      <section aria-label="Frequently asked questions" style={{ padding: '2rem 2rem 4rem' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1.5rem', textAlign: 'center' }}>FREQUENTLY ASKED</div>
           {FAQS.map((faq, i) => (

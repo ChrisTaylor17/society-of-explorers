@@ -59,6 +59,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
+  // Links from "Start free" open the form in create-account mode.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') === 'signup') setIsSignUp(true);
+  }, []);
+
   // If already authed, redirect to dashboard
   useEffect(() => {
     let active = true;

@@ -348,7 +348,7 @@ export default function RoadmapPage() {
               }}>
                 {t.featured && (
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, textAlign: 'center', marginBottom: '0.75rem' }}>
-                    MOST POPULAR
+                    RECOMMENDED
                   </div>
                 )}
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.12em', color: gold, marginBottom: '0.5rem' }}>

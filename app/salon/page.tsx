@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import CheckoutWelcome from '@/components/CheckoutWelcome';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
@@ -161,6 +162,7 @@ export default function SalonPage() {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>
         <PublicNav />
+        <CheckoutWelcome />
 
         {/* Header */}
         <section style={{ padding: '8rem 2rem 2rem', textAlign: 'center' }}>
@@ -290,6 +292,7 @@ export default function SalonPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>
       <PublicNav />
+      <CheckoutWelcome />
 
       {/* Hero */}
       <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
