@@ -4,6 +4,25 @@ import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import {
+  PRACTICE_MAX_CHARS,
+  PRACTICE_SIGNIN_PATH,
+  PRACTICE_SIGNUP_PATH,
+  classifyTodayResponse,
+  clampDraft,
+  clearDraft,
+  loadDraft,
+  saveDraft,
+  submitErrorMessage,
+} from '@/lib/practice/draft';
+
+function draftStorage(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 const CINZEL = 'Cinzel, serif';
 const CORMORANT = 'Cormorant Garamond, serif';
@@ -135,6 +154,8 @@ export default function PracticePage() {
   const [commonsMounted, setCommonsMounted] = useState(false);
   const [textareaFocused, setTextareaFocused] = useState(false);
   const [todayCount, setTodayCount] = useState<number>(0);
+  const [loadError, setLoadError] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -160,13 +181,17 @@ export default function PracticePage() {
         const res = await fetch('/api/practice/my-today', {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         if (cancelled) return;
-        if (!data.question) {
+        const state = classifyTodayResponse(res.ok, data);
+        if (state !== 'question') {
+          setLoadError(state === 'error');
           setPhase('composing');
           return;
         }
         setQuestion(data.question);
+        const saved = loadDraft(draftStorage(), data.question.id);
+        if (saved && !data.myResponse) setDraft(saved);
         setOthers(Array.isArray(data.others) ? data.others : []);
         if (typeof data.todayCount === 'number') setTodayCount(data.todayCount);
         if (data.streak) setStreak(data.streak);
@@ -182,7 +207,10 @@ export default function PracticePage() {
           setPhase('composing');
         }
       } catch {
-        if (!cancelled) setPhase('composing');
+        if (!cancelled) {
+          setLoadError(true);
+          setPhase('composing');
+        }
       }
     }
 
@@ -202,9 +230,11 @@ export default function PracticePage() {
   async function handleSubmit() {
     if (!question || !draft.trim()) return;
     if (!memberId) {
-      window.location.assign('/join');
+      saveDraft(draftStorage(), question.id, draft);
+      window.location.assign(PRACTICE_SIGNUP_PATH);
       return;
     }
+    setSubmitError('');
     setPhase('submitting');
     try {
       const res = await fetch('/api/practice/respond', {
@@ -218,11 +248,14 @@ export default function PracticePage() {
           responseText: draft.trim(),
         }),
       });
-      const data = await res.json();
-      if (!data?.success || !data?.responseId) {
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success || !data?.responseId) {
+        saveDraft(draftStorage(), question.id, draft);
+        setSubmitError(submitErrorMessage(res.status));
         setPhase('composing');
         return;
       }
+      clearDraft(draftStorage());
 
       const responseId: string = data.responseId;
       const nowIso = new Date().toISOString();
@@ -259,6 +292,8 @@ export default function PracticePage() {
       setCommonsMounted(true);
       setPhase('complete');
     } catch {
+      if (question) saveDraft(draftStorage(), question.id, draft);
+      setSubmitError(submitErrorMessage(0));
       setPhase('composing');
     }
   }
@@ -502,13 +537,17 @@ export default function PracticePage() {
                   <textarea
                     ref={textareaRef}
                     value={draft}
-                    onChange={(e) => setDraft(e.target.value.slice(0, 280))}
-                    onClick={() => {
-                      if (loggedOut) window.location.href = '/join';
+                    onChange={(e) => {
+                      const next = clampDraft(e.target.value);
+                      setDraft(next);
+                      if (submitError) setSubmitError('');
+                      if (loggedOut && question) saveDraft(draftStorage(), question.id, next);
                     }}
                     onFocus={() => setTextareaFocused(true)}
                     onBlur={() => setTextareaFocused(false)}
-                    readOnly={loggedOut}
+                    aria-label={`Your answer to today's question, up to ${PRACTICE_MAX_CHARS} characters`}
+                    aria-describedby="practice-composer-hint"
+                    maxLength={PRACTICE_MAX_CHARS}
                     placeholder="What do you notice?"
                     rows={3}
                     className="practice-textarea"
@@ -563,7 +602,10 @@ export default function PracticePage() {
 
                     {loggedOut ? (
                       <Link
-                        href="/join"
+                        href={PRACTICE_SIGNUP_PATH}
+                        onClick={() => {
+                          if (question) saveDraft(draftStorage(), question.id, draft);
+                        }}
                         style={{
                           fontFamily: CINZEL,
                           fontSize: '11px',
@@ -575,7 +617,7 @@ export default function PracticePage() {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Sign in to commit
+                        Save with a free account
                       </Link>
                     ) : (
                       <button
@@ -599,6 +641,20 @@ export default function PracticePage() {
                         COMMIT YOUR ANSWER
                       </button>
                     )}
+                  </div>
+                  <div id="practice-composer-hint" aria-live="polite" style={{ marginTop: '12px', fontSize: '15px', fontStyle: 'italic', color: '#a8a29e' }}>
+                    {submitError ? (
+                      <span role="alert" style={{ color: '#f0a0a0', fontStyle: 'normal' }}>{submitError}</span>
+                    ) : loggedOut ? (
+                      <span>
+                        Write freely. Your answer is kept on this device for a few hours while you create a free account.{' '}
+                        <Link href={PRACTICE_SIGNIN_PATH} style={{ color: '#fde68a' }} onClick={() => {
+                          if (question) saveDraft(draftStorage(), question.id, draft);
+                        }}>
+                          Already a member? Sign in
+                        </Link>
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               )}
@@ -852,7 +908,25 @@ export default function PracticePage() {
             className="flex items-center justify-center"
             style={{ minHeight: '60vh', color: '#78716c', fontStyle: 'italic' }}
           >
-            <span>No question today. Return tomorrow.</span>
+            {loadError ? (
+              <div role="alert" style={{ textAlign: 'center' }}>
+                <p style={{ margin: 0 }}>We could not open today&rsquo;s question.</p>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  style={{
+                    marginTop: '16px', background: 'transparent', color: '#fde68a',
+                    border: '1px solid rgba(253, 230, 138, 0.4)', padding: '10px 24px',
+                    fontFamily: CINZEL, fontSize: '11px', letterSpacing: '0.2em', cursor: 'pointer',
+                    fontStyle: 'normal',
+                  }}
+                >
+                  TRY AGAIN
+                </button>
+              </div>
+            ) : (
+              <span>No question today. Return tomorrow.</span>
+            )}
           </div>
         )}
       </main>
