@@ -5,6 +5,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { TIERS, FREE_SIGNUP_PATH, checkoutErrorMessage } from '../../lib/join/content';
 import { membershipOffersJsonLd, serializeJsonLd } from '../../lib/join/structuredData';
+import { modeFromSearch } from '../../lib/auth/loginForm';
 
 const root = join(import.meta.dir, '../..');
 const read = (p: string) => readFileSync(join(root, p), 'utf8');
@@ -54,7 +55,9 @@ test('G4e free sign-up opens create-account mode and lands on the Daily Practice
   expect(u.pathname).toBe('/login');
   expect(u.searchParams.get('mode')).toBe('signup');
   expect(u.searchParams.get('next')).toBe('/practice');
-  expect(read('app/login/page.tsx')).toContain("get('mode') === 'signup'");
+  // The mode check moved into lib/auth/loginForm (G10); assert it behaviorally.
+  expect(modeFromSearch(u.search)).toBe('signup');
+  expect(read('app/login/page.tsx')).toContain("modeFromSearch(window.location.search) === 'signup'");
   expect(read('app/page.tsx')).toContain('href={FREE_SIGNUP_PATH}');
 });
 
