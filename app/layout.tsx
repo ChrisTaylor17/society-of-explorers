@@ -1,4 +1,5 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
+import { SITE_DESCRIPTION } from '@/lib/site/shareCard'
 import Script from 'next/script'
 import '@fontsource/cinzel/latin-400.css'
 import '@fontsource/cinzel/latin-500.css'
@@ -25,11 +26,27 @@ export const metadata: Metadata = {
     default: 'Society of Explorers',
     template: '%s | Society of Explorers',
   },
-  description: 'Prompt Atlas and the Society of Explorers network: privacy-first prompts, community signal, and sovereign collaboration tools.',
+  description: SITE_DESCRIPTION,
+  applicationName: 'Society of Explorers',
   openGraph: {
     siteName: 'Society of Explorers',
     type: 'website',
+    locale: 'en_US',
+    title: 'Society of Explorers',
+    description: SITE_DESCRIPTION,
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Society of Explorers',
+    description: SITE_DESCRIPTION,
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#c9a84c',
+  colorScheme: 'dark',
 }
 
 const walletExtensionErrorGuard = `
@@ -55,7 +72,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#c9a84c" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="apple-mobile-web-app-title" content="Society of Explorers" />
