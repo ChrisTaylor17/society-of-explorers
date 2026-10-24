@@ -13,3 +13,12 @@ export const SHARE_CARD = {
 
 export const SITE_DESCRIPTION =
   'Society of Explorers: a daily question to answer, reflections from Great Thinker guides, and a privacy-first community for deep conversation. Free to start.';
+
+// A route that sets its own `openGraph`/`twitter` object replaces the root one,
+// which drops the root opengraph-image. Spread these into such routes so their
+// link previews keep the share card.
+export const SHARE_IMAGE_PATH = '/opengraph-image';
+export const SHARE_OG_IMAGES = [
+  { url: SHARE_IMAGE_PATH, width: SHARE_CARD.width, height: SHARE_CARD.height, alt: SHARE_CARD.alt },
+];
+export const SHARE_TWITTER_IMAGES = [SHARE_IMAGE_PATH];

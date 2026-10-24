@@ -4,7 +4,7 @@ import { test, expect } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RECOVERY_LINKS } from '../../lib/site/recoveryLinks';
-import { SHARE_CARD, SITE_DESCRIPTION } from '../../lib/site/shareCard';
+import { SHARE_CARD, SHARE_IMAGE_PATH, SHARE_OG_IMAGES, SITE_DESCRIPTION } from '../../lib/site/shareCard';
 import sitemap from '../../app/sitemap';
 import robots from '../../app/robots';
 
@@ -71,5 +71,17 @@ test('G12g every sitemap URL is a real page and not blocked by robots', () => {
     expect(existsSync(pageFor(path))).toBe(true);
     const blocked = disallow.some((d) => (d.endsWith('/') ? path.startsWith(d) : path === d || path.startsWith(d + '/')));
     expect(`${path} blocked=${blocked}`).toBe(`${path} blocked=false`);
+  }
+});
+
+test('G12h routes that override openGraph keep the share card image', () => {
+  // A child openGraph object replaces the root one, so without this the
+  // root opengraph-image silently disappears from these routes' previews.
+  expect(existsSync('app/opengraph-image.tsx')).toBe(true);
+  expect(SHARE_OG_IMAGES[0]).toEqual({ url: SHARE_IMAGE_PATH, width: 1200, height: 630, alt: SHARE_CARD.alt });
+  for (const r of ['practice', 'salons', 'projects']) {
+    const src = read(`app/${r}/layout.tsx`);
+    expect(src).toContain('images: SHARE_OG_IMAGES');
+    expect(src).toContain('images: SHARE_TWITTER_IMAGES');
   }
 });
