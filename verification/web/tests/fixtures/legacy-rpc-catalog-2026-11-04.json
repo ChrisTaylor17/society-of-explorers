@@ -1,0 +1,326 @@
+{
+  "version": 1,
+  "kind": "read-only bounded signatures/ACL/dependency/body-digest metadata; no function bodies or user rows returned",
+  "projectId": "woqvlkeluxkxplpgzdgv",
+  "startedAt": "2026-11-04 16:22:13 UTC",
+  "completedAt": "2026-11-04 16:22:13 UTC",
+  "query": "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET LOCAL statement_timeout='2s';\nSELECT coalesce(jsonb_agg(jsonb_build_object(\n 'schema',n.nspname,'name',p.proname,'identity_arguments',pg_get_function_identity_arguments(p.oid),'result',pg_get_function_result(p.oid),\n 'language',l.lanname,'owner',pg_get_userbyid(p.proowner),'security_definer',p.prosecdef,'volatility',p.provolatile,\n 'config',p.proconfig,'body_md5',md5(p.prosrc),'body_characters',length(p.prosrc),\n 'acl',(SELECT coalesce(jsonb_agg(jsonb_build_object('grantor',pg_get_userbyid(a.grantor),'grantee',CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,'privilege',a.privilege_type,'grantable',a.is_grantable) ORDER BY a.grantee,a.privilege_type),'[]'::jsonb) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a),\n 'effective_browser_execute',has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'),\n 'effective_service_execute',has_function_privilege('service_role',p.oid,'EXECUTE'),\n 'referencing_policies',(SELECT coalesce(jsonb_agg(jsonb_build_object('schema',tn.nspname,'table',t.relname,'name',pol.polname,'command',pol.polcmd,'permissive',pol.polpermissive) ORDER BY tn.nspname,t.relname,pol.polname),'[]'::jsonb)\n   FROM pg_policy pol JOIN pg_class t ON t.oid=pol.polrelid JOIN pg_namespace tn ON tn.oid=t.relnamespace\n   WHERE EXISTS(SELECT 1 FROM pg_depend d WHERE d.classid='pg_policy'::regclass AND d.objid=pol.oid AND d.refclassid='pg_proc'::regclass AND d.refobjid=p.oid)),\n 'direct_dependents',(SELECT coalesce(jsonb_agg(jsonb_build_object('catalog',d.classid::regclass::text,'type',d.deptype,'subid',d.objsubid) ORDER BY d.classid,d.objid,d.objsubid),'[]'::jsonb) FROM pg_depend d WHERE d.refclassid='pg_proc'::regclass AND d.refobjid=p.oid)\n) ORDER BY p.proname,pg_get_function_identity_arguments(p.oid)),'[]'::jsonb) AS metadata\nFROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_language l ON l.oid=p.prolang\nWHERE n.nspname='public' AND p.proname IN('add_exp','increment_exp','increment_exp_tokens','current_prompt_member_id');\nCOMMIT;",
+  "data": [
+    {
+      "acl": [
+        {
+          "grantee": "PUBLIC",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ],
+      "name": "add_exp",
+      "owner": "postgres",
+      "config": null,
+      "result": "void",
+      "schema": "public",
+      "body_md5": "45c3f91859a6c157ddbc6b155e40d524",
+      "language": "plpgsql",
+      "volatility": "v",
+      "body_characters": 201,
+      "security_definer": true,
+      "direct_dependents": [],
+      "identity_arguments": "p_member_id uuid, p_amount integer, p_reason text",
+      "referencing_policies": [],
+      "effective_browser_execute": true,
+      "effective_service_execute": true
+    },
+    {
+      "acl": [
+        {
+          "grantee": "PUBLIC",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ],
+      "name": "current_prompt_member_id",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "result": "uuid",
+      "schema": "public",
+      "body_md5": "182a380be15d0befdd53a047060dd37b",
+      "language": "sql",
+      "volatility": "s",
+      "body_characters": 84,
+      "security_definer": true,
+      "direct_dependents": [
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        },
+        {
+          "type": "n",
+          "subid": 0,
+          "catalog": "pg_policy"
+        }
+      ],
+      "identity_arguments": "",
+      "referencing_policies": [
+        {
+          "name": "Members read their entitlement",
+          "table": "prompt_entitlements",
+          "schema": "public",
+          "command": "r",
+          "permissive": true
+        },
+        {
+          "name": "Members manage their favorites",
+          "table": "prompt_favorites",
+          "schema": "public",
+          "command": "*",
+          "permissive": true
+        },
+        {
+          "name": "Members read aggregate run metadata",
+          "table": "prompt_runs",
+          "schema": "public",
+          "command": "r",
+          "permissive": true
+        },
+        {
+          "name": "Members manage their votes",
+          "table": "prompt_votes",
+          "schema": "public",
+          "command": "*",
+          "permissive": true
+        },
+        {
+          "name": "Members create their own prompts",
+          "table": "prompts",
+          "schema": "public",
+          "command": "a",
+          "permissive": true
+        },
+        {
+          "name": "Members delete their own prompts",
+          "table": "prompts",
+          "schema": "public",
+          "command": "d",
+          "permissive": true
+        },
+        {
+          "name": "Members update their own prompts",
+          "table": "prompts",
+          "schema": "public",
+          "command": "w",
+          "permissive": true
+        },
+        {
+          "name": "Published prompts are discoverable",
+          "table": "prompts",
+          "schema": "public",
+          "command": "r",
+          "permissive": true
+        }
+      ],
+      "effective_browser_execute": true,
+      "effective_service_execute": true
+    },
+    {
+      "acl": [
+        {
+          "grantee": "PUBLIC",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ],
+      "name": "increment_exp",
+      "owner": "postgres",
+      "config": null,
+      "result": "void",
+      "schema": "public",
+      "body_md5": "d18f4bd9730603002d5c779f9843fc1d",
+      "language": "sql",
+      "volatility": "v",
+      "body_characters": 104,
+      "security_definer": false,
+      "direct_dependents": [],
+      "identity_arguments": "member_id_input uuid, amount_input integer",
+      "referencing_policies": [],
+      "effective_browser_execute": true,
+      "effective_service_execute": true
+    },
+    {
+      "acl": [
+        {
+          "grantee": "PUBLIC",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "postgres",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "anon",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantor": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ],
+      "name": "increment_exp_tokens",
+      "owner": "postgres",
+      "config": null,
+      "result": "void",
+      "schema": "public",
+      "body_md5": "8185aee4259a8ede92b7e14b5b7132af",
+      "language": "sql",
+      "volatility": "v",
+      "body_characters": 102,
+      "security_definer": false,
+      "direct_dependents": [],
+      "identity_arguments": "member_id_input uuid, amount_input integer",
+      "referencing_policies": [],
+      "effective_browser_execute": true,
+      "effective_service_execute": true
+    }
+  ],
+  "limitations": [
+    "Catalog dependencies do not establish every dynamic or application caller.",
+    "Body digest and length do not establish authorization semantics.",
+    "No function invoked; no schema/grant/data mutation."
+  ]
+}

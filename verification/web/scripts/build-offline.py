@@ -1,6 +1,11 @@
 from pathlib import Path
 import subprocess,os,json,time,signal,hashlib,sys
 ROOT=Path(__file__).resolve().parents[1];APP=ROOT.parents[1]
+def materialized_bytes(file):
+ info=file.stat()
+ if info.st_size and not info.st_blocks:
+  raise RuntimeError(f'Refusing to materialize source placeholder: {file}')
+ return file.read_bytes()
 def source_snapshot():
  result={}
  directories=['app','components','lib','public','content','styles','platforms/quest','platforms/shared','platforms/native/src/circles']
@@ -11,10 +16,10 @@ def source_snapshot():
    dirs[:]=[d for d in dirs if d not in ['node_modules','.next','.git','__pycache__'] and not (Path(base)/d).is_symlink()]
    for filename in files:
     file=Path(base)/filename
-    if not file.is_symlink():result[str(file.relative_to(APP))]=hashlib.sha256(file.read_bytes()).hexdigest()
+    if not file.is_symlink():result[str(file.relative_to(APP))]=hashlib.sha256(materialized_bytes(file)).hexdigest()
  for name in ['package.json','package-lock.json','next.config.ts','proxy.ts','tsconfig.json','postcss.config.mjs']:
   file=APP/name
-  if file.exists():result[name]=hashlib.sha256(file.read_bytes()).hexdigest()
+  if file.exists():result[name]=hashlib.sha256(materialized_bytes(file)).hexdigest()
  return dict(sorted(result.items()))
 
 before=source_snapshot()

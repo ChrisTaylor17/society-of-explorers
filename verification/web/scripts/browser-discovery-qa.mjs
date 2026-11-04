@@ -8,8 +8,13 @@ import { createHash } from 'node:crypto';
 
 const root = path.resolve('.'), port = 3199, origin = `http://127.0.0.1:${port}`, require = createRequire(import.meta.url);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex'), pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+function materializedRead(file, encoding) {
+  const info = fs.statSync(file);
+  assert.ok(!info.size || info.blocks, `Refusing to materialize placeholder: ${file}`);
+  return fs.readFileSync(file, encoding);
+}
 const evidence = { status: 'RUNNING', stage: 'setup', startedAt: new Date().toISOString(), boundary: 'Built Next UI with actual TypeScript public GET handler and disposable SQL; discovery PostgREST transport is synthetic and intercepted discovery calls do not execute inside the built Next server. The signed-out profile story separately uses the actual built Next cookie/token-free auth/member and owner-profile GET handlers. No authenticated account, real Circle, provider transport or production system is used.', command: 'node --require ./scripts/deny-build-network.cjs scripts/browser-discovery-qa.mjs with existing explicit Playwright/Chromium paths in a clean environment', checks: [], requests: [], pages: [], profileRequests: [], profileExpectedConsoleErrors: [], externalRequestsBlocked: [], pageErrors: [], routeErrors: [], consoleErrors: [], cleanupErrors: [], retiredResponses: [] };
-let server, serverError, browser, system, failed, holdNextPage = false, heldPage = null, allowSignedOutProfileGets = false, allowUnconfiguredHallGets = false, ownedBrowserPid;
+let server, serverError, browser, system, failed, holdNextPage = false, heldPage = null, allowSignedOutProfileGets = false, allowUnconfiguredHallGets = false, allowLeaderboardGets = false, ownedBrowserPid;
 function progress() {
   evidence.progressAt = new Date().toISOString();
   fs.mkdirSync('evidence', { recursive: true });
@@ -63,8 +68,8 @@ function startLink(page) { return page.getByRole('link', { name: 'Start a circle
 try {
   assert.ok([...process.execArgv, process.env.NODE_OPTIONS || ''].join(' ').includes('deny-build-network.cjs'));
   assert.equal(await portOpen(), false, 'Owned QA port is not free'); fs.mkdirSync('evidence', { recursive: true });
-  evidence.buildId = fs.readFileSync('../../.next/BUILD_ID', 'utf8').trim(); evidence.runnerSha256 = hash(fs.readFileSync('scripts/browser-discovery-qa.mjs'));
-  evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs', '../../app/account/profile/page.tsx', '../../app/account/profile/ProfileEditor.tsx', '../../app/account/profile/profile.module.css', '../../app/api/auth/member/route.ts', '../../app/api/members/profile/route.ts', '../../lib/members/profile.ts', '../../app/hall/page.tsx', '../../app/api/hall/route.ts', '../../lib/hall/public.ts'].map(file => [file, hash(fs.readFileSync(file))]));
+  evidence.buildId = materializedRead('../../.next/BUILD_ID', 'utf8').trim(); evidence.runnerSha256 = hash(materializedRead('scripts/browser-discovery-qa.mjs'));
+  evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs', '../../app/account/profile/page.tsx', '../../app/account/profile/ProfileEditor.tsx', '../../app/account/profile/profile.module.css', '../../app/api/auth/member/route.ts', '../../app/api/members/profile/route.ts', '../../lib/members/profile.ts', '../../app/hall/page.tsx', '../../app/api/hall/route.ts', '../../lib/hall/public.ts', '../../app/leaderboard/page.tsx', '../../app/api/leaderboard/route.ts'].map(file => [file, hash(materializedRead(file))]));
   system = await (await import('../tests/support/discovery-app.mjs')).discoveryApp(); await system.excludeOriginalCircles();
   const ended = await system.seedCircles(205, { ended: true, title: 'Discovery ended archive' });
   const matching = await system.seedCircles(31, { title: 'Álpha Discovery', sameTitle: true, description: 'Literal 100% [wisdom] and welcoming readers.', format: 'hybrid' });
@@ -72,7 +77,7 @@ try {
   await system.db.query("UPDATE book_cohorts SET start_date=(CURRENT_DATE+180)::timestamp AT TIME ZONE 'UTC',circle_weekday=extract(dow FROM CURRENT_DATE+180)::smallint WHERE id=$1", [late]);
   const [current] = await system.seedCircles(1, { title: 'Current Together', city: 'Boston' });
   await system.db.query("UPDATE book_cohorts SET start_date=(CURRENT_DATE-7)::timestamp AT TIME ZONE 'UTC',circle_weekday=extract(dow FROM CURRENT_DATE-7)::smallint WHERE id=$1", [current]);
-  const pins = JSON.parse(fs.readFileSync('../../lib/circles/reading-program-editions.json')), hamlet = pins.find(pin => pin.bookId === 'hamlet');
+  const pins = JSON.parse(materializedRead('../../lib/circles/reading-program-editions.json')), hamlet = pins.find(pin => pin.bookId === 'hamlet');
   const [bookCircle] = await system.seedCircles(1, { title: 'Pinned Hamlet Readers', readingProgram: { version: 1, bookId: 'hamlet', editionId: hamlet.editionId, sessions: [{ from: 35, to: 45 }] } });
   evidence.fixture = { endedRows: ended.length, equalTitleDateMatches: matching.length, eligibleRows: 34, lateFutureCircle: late, currentCircle: current, bookCircle };
   const env = Object.fromEntries(['PATH', 'HOME', 'USER', 'SHELL', 'TMPDIR', 'LANG', 'LC_ALL'].filter(key => process.env[key]).map(key => [key, process.env[key]]));
@@ -95,6 +100,13 @@ try {
       const request = route.request(), url = new URL(request.url());
       if (url.origin !== origin) { evidence.externalRequestsBlocked.push(url.origin + url.pathname); return route.abort(); }
       if (!url.pathname.startsWith('/api/')) return route.continue();
+      if (url.pathname === '/api/leaderboard') {
+        assert.equal(allowLeaderboardGets, true, 'Unexpected guide recognition request');
+        assert.equal(request.method(), 'GET');
+        for (const header of ['authorization', 'cookie', 'referer']) assert.equal(request.headers()[header], undefined);
+        (evidence.leaderboardRequests ??= []).push({ method: request.method(), credentials: 'omitted', boundary: 'actual built Next closed GET; no SDK or member-table access' });
+        return route.continue();
+      }
       if (url.pathname === '/api/hall') {
         assert.equal(allowUnconfiguredHallGets, true, 'Unexpected Hall request');
         assert.equal(request.method(), 'GET');
@@ -232,7 +244,7 @@ try {
   const profileLoad = page.getByRole('button', { name: 'Load your profile', exact: true });
   await profileLoad.focus(); assert.equal(await profileLoad.evaluate(element => element === document.activeElement), true);
   await layout(page, 'profile-initial-320.png');
-  evidence.profileInitial = { initialAuthOrPrivateRequests: 0, viewportWidth: 320, screenshot: 'evidence/profile-initial-320.png', screenshotSHA256: hash(fs.readFileSync('evidence/profile-initial-320.png')) }; progress();
+  evidence.profileInitial = { initialAuthOrPrivateRequests: 0, viewportWidth: 320, screenshot: 'evidence/profile-initial-320.png', screenshotSHA256: hash(materializedRead('evidence/profile-initial-320.png')) }; progress();
   allowSignedOutProfileGets = true;
   const authorityResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/member', { timeout: 5000 });
   const ownerResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/members/profile', { timeout: 5000 });
@@ -268,8 +280,30 @@ try {
   allowUnconfiguredHallGets = false;
   check('Actual built Hall uses the canonical text-only UI and public GET503 when service configuration is absent; explicit keyboard retry preserves unavailable rather than fabricated empty/success, with320px/44px controls and no credential/referrer/auth/private/media requests');
 
+  evidence.stage = 'actual built guide recognition privacy closure'; progress();
+  allowLeaderboardGets = true;
+  const assertRecognitionClosed = async response => {
+    assert.equal(response.status(), 503);
+    assert.deepEqual(await response.json(), { error: 'Leaderboard unavailable.', code: 'leaderboard_unavailable' });
+    assert.match(response.headers()['cache-control'], /private.*no-store/);
+    await page.getByRole('status').filter({ hasText: 'The guide leaderboard is unavailable.' }).waitFor();
+    assert.equal(await page.getByText('No Guides yet', { exact: false }).count(), 0);
+    assert.equal(await page.locator('main table,main article,main img,main video,main audio').count(), 0);
+    assert.equal(evidence.profileRequests.length, 2, 'Guide recognition must not load private/auth endpoints');
+  };
+  let recognitionResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/leaderboard', { timeout: 5000 });
+  await page.goto(`${origin}/leaderboard`);
+  await assertRecognitionClosed(await recognitionResponse);
+  recognitionResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/leaderboard', { timeout: 5000 });
+  await keyboard(page, page.getByRole('button', { name: 'Retry leaderboard availability', exact: true }));
+  await assertRecognitionClosed(await recognitionResponse);
+  assert.equal(evidence.leaderboardRequests.length, 2);
+  await layout(page, 'leaderboard-unavailable-320.png');
+  allowLeaderboardGets = false;
+  check('Actual built guide recognition page and GET remain explicitly unavailable with keyboard retry, private/no-store503, no names/activity/earnings DTO, no SDK/auth/member-table call and no fabricated empty ranking at320px');
+
   evidence.stage = 'nonpublic artwork and first-party share card'; progress();
-  const artwork = JSON.parse(fs.readFileSync('../../archive/unverified-hero-images/manifest.json'));
+  const artwork = JSON.parse(materializedRead('../../archive/unverified-hero-images/manifest.json'));
   evidence.artworkRequests = [];
   evidence.artworkExpectedPaths = artwork.assets.flatMap(asset => ['/' + asset.originalPublicPath.replace(/^public\//, ''), '/' + asset.archivePath]);
   for (const asset of artwork.assets) {

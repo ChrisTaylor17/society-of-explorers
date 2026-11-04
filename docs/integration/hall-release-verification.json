@@ -30,7 +30,7 @@
     "sourceFiles": 967,
     "sourceSha256": "6fbb923815122807fd3799700a23de32ae8275a2dded93014552ecd3305920e0",
     "sourceUnchangedDuringBuild": true,
-    "log": "evidence/next-build.log",
+    "log": "evidence/checkpoint-6d5bccf/next-build.log",
     "buildId": "WGQEsLmWyuQXRDde36Nv5",
     "fullNextTypeCheck": "PASS22.2seconds",
     "sourceStillMatches": true
@@ -222,9 +222,9 @@
     "cleanupErrors": []
   },
   "evidenceSha256": {
-    "verification/web/evidence/next-build.json": "69ac3536413688820dd239faf71597aebfb8f986ec9942cb446b285d9c24d1ff",
-    "verification/web/evidence/next-build.log": "0b14ee0cbf934265313630c0a271b25e2eaa743653c423117e6412f7dcc09a4e",
-    "verification/web/evidence/build-source-sha256.json": "cd93d289f076e0f25e73d8fcf233d28dfae528f973b6f5f7051a8aedd02bda5b",
+    "verification/web/evidence/checkpoint-6d5bccf/next-build.json": "69ac3536413688820dd239faf71597aebfb8f986ec9942cb446b285d9c24d1ff",
+    "verification/web/evidence/checkpoint-6d5bccf/next-build.log": "0b14ee0cbf934265313630c0a271b25e2eaa743653c423117e6412f7dcc09a4e",
+    "verification/web/evidence/checkpoint-6d5bccf/build-source-sha256.json": "cd93d289f076e0f25e73d8fcf233d28dfae528f973b6f5f7051a8aedd02bda5b",
     "verification/web/evidence/hall-complete-tests.log": "78b0a65c062130bb332650847380e38cb5a66bbbe6972ab30270df249f36f994",
     "verification/web/evidence/hall-complete-tests-selection.json": "f410a3ea99a7626ae85fdbcbbdcf88d4b2e2da87b0db4179c9a6f9d86c1e0f1a",
     "verification/web/evidence/hall-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
@@ -233,13 +233,13 @@
     "verification/web/evidence/hall-test-freeze.json": "312e379c2ad2fd21531a74c0db41c53ec45c88478c8470ecb43ded0d19a71ea0",
     "verification/web/evidence/hall-browser.json": "06becd1d89dac93316ff770d68688afcf63d562be6d2df2db9ac7c0735962692",
     "verification/web/evidence/hall-mobile-320.png": "9bab5ac69558740afd8319285b797cc7c8b31f6c5fc741d9b74c43f86736104f",
-    "verification/web/evidence/hall-unconfigured-320.png": "a90bac1db5725d5d0725939c0117668fb45b8b709bbddba4948da80316288736",
+    "verification/web/evidence/checkpoint-6d5bccf/hall-unconfigured-320.png": "a90bac1db5725d5d0725939c0117668fb45b8b709bbddba4948da80316288736",
     "verification/web/evidence/artifact-containment-final-tests.log": "34e9c875f75ebb5ad131aa473290e46381b889d7c6fa387f76b55d2c2ff9b499",
     "verification/web/evidence/release-boundaries.json": "29cdb6154f5adfb1ba66d48e9a8d89bff9cd8459fc83d8e53c70dbfcb59e2a34",
     "verification/web/evidence/release-boundaries-final-tests.log": "4249360c6b458021336091c447ef981c4bb290f1ee6bf1940f14148165ed7f28",
-    "verification/web/evidence/browser-discovery-qa.json": "270b1d7db4c059cd3fd1b53c09b9eb0360242249872208ca054ab9391ed8a9d4",
+    "verification/web/evidence/checkpoint-6d5bccf/browser-discovery-qa.json": "270b1d7db4c059cd3fd1b53c09b9eb0360242249872208ca054ab9391ed8a9d4",
     "verification/web/evidence/browser-discovery-hall-final.log": "36a3f1cb515362b4a3e1edce0c3f5f9b4460bb9bc3e364681c565325fd0cf9cb",
-    "verification/web/evidence/browser-discovery-progress.json": "1b5241965209e0b38223d92871e0a287ecb7f50ccdc5713e5a7c984e06597e39",
+    "verification/web/evidence/checkpoint-6d5bccf/browser-discovery-progress.json": "1b5241965209e0b38223d92871e0a287ecb7f50ccdc5713e5a7c984e06597e39",
     "verification/web/evidence/hall-catalog-2026-11-04.json": "11a86194c0ebbef4cb2454aed760e6e64bd3d3896298469514d7fff02caed8e4",
     "verification/web/evidence/hall-catalog-supplement-2026-11-04.json": "0a1e2bf6b9c67666949906a154733e50b5da97249551521913560eac8f09902e",
     "verification/web/evidence/local-device-tooling-2026-11-04.json": "e6a0bbe1772b874c3a45f4b2d0b0458eeaada5dc7d26d89c02abd05ca1da63a6",
@@ -284,5 +284,6 @@
     "projectHealthyAtUTC": "2026-11-04 16:19:36 UTC",
     "developmentBranches": 0,
     "backupReceipt": "Unknown; no tested receipt in named local docs. Empty branches do not establish absence of backups. User clarification pending."
-  }
+  },
+  "evidenceArchiveNote": "Build and shared built-browser outputs copied byte-for-byte to checkpoint-6d5bccf before the next milestone; receipt digests unchanged."
 }

@@ -29,6 +29,9 @@ def main():
             return seen[path]
         if path in trail:
             return False
+        info = path.stat()
+        if info.st_size and not info.st_blocks:
+            raise RuntimeError(f'Refusing to materialize test placeholder: {path}')
         text = path.read_text()
         result = 'jsdom' in text
         for relative in re.findall(r'''(?:from\s*|import\s*)["'](\.[^"']+\.mjs)["']''', text):

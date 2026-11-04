@@ -1244,10 +1244,10 @@ const checks = [
       !routes.communityQuestionnaire.includes('console.error'),
   },
   {
-    name: 'safe stats and leaderboard routes use lazy Supabase admin clients',
+    name: 'safe stats stay owner-scoped and public guide recognition stays closed without database access',
     ok:
       [routes.safe, routes.leaderboard].every(lacksModuleScopeClients) &&
-      [routes.safe, routes.leaderboard].every((source) => source.includes('getSupabaseAdmin()')) &&
+      routes.safe.includes('getSupabaseAdmin()') &&
       routes.safe.includes('privateJson') &&
       routes.safe.includes('getAuthenticatedMember(req)') &&
       routes.safe.indexOf('getAuthenticatedMember(req)') < routes.safe.lastIndexOf('getSupabaseAdmin()') &&
@@ -1260,32 +1260,24 @@ const checks = [
       pages.access.includes("cache: 'no-store'") &&
       !pages.access.includes('/api/safe?memberId=') &&
       !routes.safe.includes(': any') &&
-      routes.leaderboard.indexOf('export async function GET()') < routes.leaderboard.indexOf('getSupabaseAdmin()') &&
       routes.leaderboard.includes('privateJson') &&
-      routes.leaderboard.includes('GUIDE_LEADERBOARD_SELECT') &&
-      routes.leaderboard.includes('PublicGuideLeaderboardEntry') &&
-      routes.leaderboard.includes('publicGuideLeaderboardEntry') &&
-      routes.leaderboard.includes('rankKey: `guide-rank-${index + 1}`') &&
-      routes.leaderboard.includes("return privateJson({ guides: [], error: 'Failed to load leaderboard' }") &&
-      routes.leaderboard.includes('MAX_DISPLAY_NAME_LENGTH') &&
-      pages.leaderboard.includes('GuideLeaderboardEntry') &&
-      pages.leaderboard.includes("fetch('/api/leaderboard', { cache: 'no-store' })") &&
-      pages.leaderboard.includes('rankKey: string') &&
-      pages.leaderboard.includes('displayName: string') &&
-      !routes.leaderboard.includes('NextResponse') &&
-      !routes.leaderboard.includes('id, display_name') &&
-      !routes.leaderboard.includes('guide_since') &&
+      routes.leaderboard.includes("code: 'leaderboard_unavailable'") &&
+      routes.leaderboard.includes('status: 503') &&
+      !routes.leaderboard.includes('getSupabaseAdmin') &&
+      !routes.leaderboard.includes('.from(') &&
+      !routes.leaderboard.includes('guides:') &&
+      pages.leaderboard.includes("fetch('/api/leaderboard'") &&
+      pages.leaderboard.includes("credentials: 'omit'") &&
+      pages.leaderboard.includes("referrerPolicy: 'no-referrer'") &&
+      pages.leaderboard.includes('CHECK_DEADLINE_MS') &&
+      pages.leaderboard.includes('Retry leaderboard availability') &&
+      !pages.leaderboard.includes('No Guides yet') &&
+      !pages.leaderboard.includes('guideExp') &&
+      !pages.leaderboard.includes('displayName') &&
+      !pages.leaderboard.includes('membersGraduated') &&
       !routes.leaderboard.includes('error.message') &&
-      !routes.leaderboard.includes('String(err)') &&
       !routes.leaderboard.includes('console.error') &&
-      !routes.leaderboard.includes('as any') &&
-      !routes.leaderboard.includes(': any') &&
-      !pages.leaderboard.includes('useState<any') &&
-      !pages.leaderboard.includes('g.id') &&
-      !pages.leaderboard.includes('g.display_name') &&
-      !pages.leaderboard.includes('g.guide_earnings_total') &&
-      !pages.leaderboard.includes('g.salons_led') &&
-      !pages.leaderboard.includes('g.members_graduated'),
+      !routes.leaderboard.includes(': any'),
   },
   {
     name: 'ensure-member route uses lazy Supabase admin clients and private no-store JSON',

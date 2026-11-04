@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "preservedAtUTC": "2026-11-04T16:32:34.530281+00:00",
+  "source": "/Users/christaylor/Documents/Codex/2026-11-01/task-4/soe-account-handover/native-policy/apple/MemberPolicy.swift",
+  "destination": "platforms/source/apple-member-policy/MemberPolicy.swift",
+  "bytes": 5916,
+  "sha256": "a86db864be7bb7068239a60818caa162dab42271a3fc8f3ccfbac31889d71c08",
+  "sourceMetadataBefore": {
+    "bytes": 5916,
+    "blocks": 16,
+    "flags": 64
+  },
+  "sourceMetadataAfter": {
+    "bytes": 5916,
+    "blocks": 16,
+    "flags": 64
+  },
+  "scope": "Exact copy of one already materialized reviewed source. Not a complete Apple project or registered bridge.",
+  "deploymentExcludedBy": ".vercelignore platforms/source/",
+  "nativeBuild": false,
+  "sdkDownload": false,
+  "sourceEdited": false
+}
