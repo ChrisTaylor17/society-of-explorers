@@ -66,7 +66,7 @@ test('missing Quest markup is rejected before provider or host subscription work
 });
 test('native bridge adapter permits only canonical archive GET modes in addition to its existing narrow post',async()=>{
  const {createNativeMemberPorts}=sourceLoader()('platforms/native/src/circles/native-ports.ts');const calls=[];
- const bridge={capabilities:async()=>({version:1,origin,storageKey:'fixture-key',redirectPolicy:'reject-before-send',storagePolicy:'os-protected'}),begin:async()=>'request-1',send:async(id,r)=>{calls.push(r);return{status:200,url:r.url,body:'{}',redirected:false};},cancel:async()=>{},read:async()=>null,write:async()=>{},remove:async()=>{}};
+ const bridge={capabilities:async()=>({version:2,storageGeneration:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',origin,storageKey:'fixture-key',redirectPolicy:'reject-before-send',storagePolicy:'os-protected'}),begin:async()=>'request-1',send:async(id,r)=>{calls.push(r);return{status:200,url:r.url,body:'{}',redirected:false};},cancel:async()=>{},read:async()=>null,write:async()=>{},remove:async()=>{},resetAccountStorage:async()=>({previousGeneration:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',generation:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',cleared:true})};
  const ports=await createNativeMemberPorts(bridge,{origin,storageKey:'fixture-key'}),init={method:'GET',headers:{Authorization:'Bearer NONISSUED_FIXTURE'},cache:'no-store',redirect:'error',credentials:'omit',signal:new AbortController().signal};
  await ports.transport(origin+`/api/circles/${circle}/discussion?message=${root}&after=${child}&limit=25`,init);assert.equal(calls.length,1);
  for(const suffix of ['?limit=26','?limit=025',`?requestId=${child}`,`?before=${child}&before=${root}`,`?message=${root}&before=${child}`,'?memberId=forged','#private'])await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion${suffix}`,init));
@@ -75,8 +75,8 @@ test('native bridge adapter permits only canonical archive GET modes in addition
 function nativeBridgeFixture(timeoutMs=1000){
  const {createNativeMemberPorts}=sourceLoader()('platforms/native/src/circles/native-ports.ts');
  const calls={begin:0,send:[],cancel:[]},began=gate();let begin=async()=>'owned-request',send=async(id,r)=>({status:200,url:r.url,body:'{"ok":true}',redirected:false});
- const bridge={capabilities:async()=>({version:1,origin,storageKey:'late-begin-fixture',redirectPolicy:'reject-before-send',storagePolicy:'os-protected'}),
-  begin(){calls.begin++;began.resolve();return begin();},send(id,r){calls.send.push(id);return send(id,r);},cancel:async id=>{calls.cancel.push(id);},read:async()=>null,write:async()=>{},remove:async()=>{}};
+ const bridge={capabilities:async()=>({version:2,storageGeneration:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',origin,storageKey:'late-begin-fixture',redirectPolicy:'reject-before-send',storagePolicy:'os-protected'}),
+  begin(){calls.begin++;began.resolve();return begin();},send(id,r){calls.send.push(id);return send(id,r);},cancel:async id=>{calls.cancel.push(id);},read:async()=>null,write:async()=>{},remove:async()=>{},resetAccountStorage:async()=>({previousGeneration:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',generation:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',cleared:true})};
  const controller=new AbortController(),init={method:'GET',headers:{Authorization:'Bearer NONISSUED_FIXTURE'},cache:'no-store',redirect:'error',credentials:'omit',signal:controller.signal};
  return{calls,began:began.promise,controller,setBegin:fn=>{begin=fn;},setSend:fn=>{send=fn;},async open(){const ports=await createNativeMemberPorts(bridge,{origin,storageKey:'late-begin-fixture',timeoutMs});return{ports,request:()=>ports.transport(origin+`/api/book-salons/${circle}`,init)};}};
 }

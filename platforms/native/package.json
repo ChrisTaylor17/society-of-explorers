@@ -3,6 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "main": "index.ts",
+  "codegenConfig": {
+    "name": "SoeMemberSpecs",
+    "type": "modules",
+    "jsSrcsDir": "specs",
+    "android": { "javaPackageName": "com.anonymous.soesyntheticdemo.member" }
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",

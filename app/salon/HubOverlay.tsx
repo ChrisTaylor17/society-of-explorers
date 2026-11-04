@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 import { getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice';
 
 interface HubTask {
   id: string;
@@ -42,6 +43,7 @@ async function getAuthHeaders(includeContentType = false): Promise<HeadersInit> 
 }
 
 export default function HubOverlay({ member, onClose }: { member: HubMember | null; onClose: () => void }) {
+  const reward = useThinkerRewards();
   const memberId = member?.id ?? null;
   const [tasks,         setTasks]         = useState<HubTask[]>([]);
   const [newTitle,      setNewTitle]      = useState('');
@@ -129,6 +131,8 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
     setResponseAgent(selectedAgent);
     const thinker = THINKERS.find(t => t.id === selectedAgent) ?? THINKERS[0];
     const taskList = tasks.map(t => `[${t.status.toUpperCase()}] ${t.title}`).join('\n');
+    const requestId = reward.begin(thinker.name);
+    if (!requestId) { setAskLoading(false); return; }
 
     try {
       const accessToken = await getSupabaseAccessToken();
@@ -139,6 +143,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({
+          requestId,
           thinkerId: selectedAgent,
           message: `Here are my current tasks:\n${taskList}\n\nSpeak to me as ${thinker.name}. Be direct, provocative, and in character. Tell me exactly what to focus on and why. Be specific about which task matters most right now. Keep it under 150 words.`,
           history: [],
@@ -166,6 +171,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
           if (payload === '[DONE]') continue;
           try {
             const evt = JSON.parse(payload);
+            if (evt.reward) reward.observe(requestId, evt.reward);
             if (evt.delta) setResponse(p => p + evt.delta);
             if (evt.text)  setResponse(p => p + evt.text);
           } catch {}
@@ -173,7 +179,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
       }
     } catch {
       setResponse('Something went wrong. Try again.');
-    }
+    } finally { reward.finish(requestId); }
     setAskLoading(false);
   }
 
@@ -222,6 +228,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
         onClick={e => e.stopPropagation()}
       >
     <>
+        <ThinkerRewardNotice reward={reward} />
         {/* HEADER */}
         <div style={{ padding: '16px 24px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: bgCard }}>
           <div>

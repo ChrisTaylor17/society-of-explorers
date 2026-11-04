@@ -1,7 +1,7 @@
 {
   "version": 1,
   "recordedAtUTC": "2026-11-04T18:58:20.200757+00:00",
-  "status": "LOCAL_PLATFORM_REWARD_PASS_PRODUCTION_HOLD",
+  "status": "HISTORICAL_LOCAL_PLATFORM_REWARD_PASS_PRODUCTION_HOLD",
   "priorCheckpoint": "0435dcc8dc140aad08f14463e9307573a95d7b81",
   "build": {
     "argv": [
@@ -23,7 +23,7 @@
     "sourceFiles": 983,
     "sourceSha256": "0f2b17765ae08721762dc5db22fe7520a187ab2e3b760fecbb50a39d9502c463",
     "sourceUnchangedDuringBuild": true,
-    "log": "verification/web/evidence/next-build.log",
+    "log": "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/next-build.log",
     "buildId": "TfL6fSl_IUIX_CtiNi1U6",
     "allCurrentInputHashesVerified": true,
     "nativeApplicationTypechecked": false
@@ -259,27 +259,34 @@
     "verification/web/tests/support/reward-rpc-fixture.mjs": "f1da999f13cbc3c6ffa2856d0c37e3b97125b577e14e66b1709d5fc66bcc03cb"
   },
   "evidenceSha256": {
-    "verification/web/evidence/next-build.json": "6c08659451aba44a023f3e764f678df3637e23fb8efa36de6ab6b1e458427a16",
-    "verification/web/evidence/next-build.log": "b42670715fb977323a2a18913d1ab5ed6e5eafd43399a56d46c5a30d3c574ac6",
-    "verification/web/evidence/build-source-sha256.json": "624ccb531270e7c80d28c50dd17b28e58a85b42fb6230145719f45cf850b6716",
-    "verification/web/evidence/browser-discovery-qa.json": "f3bbc0c2904d054244061cb8fd537f6ba0f163ef9c99474313cb060984eb09af",
-    "verification/web/evidence/browser-discovery-platform-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
-    "verification/web/evidence/native-connectivity-unit.log": "99b2ae6619a12b9021d51335b43f69fafd43bcaf127862ad57028c9322cb5c49",
-    "verification/web/evidence/native-connectivity-browser.json": "1ae6a36b2fd33cdd6272f60c07c68da012067351835abdc771196fe0460fed16",
-    "verification/web/evidence/native-connectivity-browser.log": "8ff849186b0a25322e5016d0c48a71721236ff790c3aa19d2e1cfd092e646ffb",
-    "verification/web/evidence/native-connectivity-lint.json": "ccd6483765ff1b467fff5922ec013bce34dfe2b5177085484ed821c4dff9ba04",
-    "verification/web/evidence/native-connectivity-fixture/source-manifest.json": "af0258dbf0bba069f6bc310ffbca71053e9cda56b459ee6ff0c070f4e89c5324",
-    "verification/web/evidence/native-connectivity-fixture/page.js": "d705d45f2d9ab64a6701db7fc6c649f9fba037ee2b8bc0263c130e3dba78cfd8",
-    "verification/web/evidence/reward-live-body-rehearsal.json": "96025675790c9a53de7b955840e7e9c120e200007ff9db4d2f4ad1338e09cff8",
-    "verification/web/evidence/reward-live-body-db.log": "c5801ec71eb4c7bae91b1b3c9772343e90fc2028af72dbcd5f6f3a0a824c4fa4",
-    "verification/web/evidence/platform-quest-root-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/original-status-connectivity-check.json": "bc232dba78b8910e900fdc66d2bc8a693a7c17c966e99e85b76eff56849c256e",
-    "platforms/evidence/quest-member-composed.json": "0843a43a7fb044821d3318954dc09e4e74d884a2ce1f7a7704b0ab6564b6d373",
-    "platforms/evidence/quest-member-composed.log": "25e03581f0a31c2f5296cd53410c41235e690582495764684d9911563d1a0603",
-    "platforms/evidence/quest-member-composed-fixture/source-manifest.json": "e05c066f36c7f7fcb49b637db19f7be04204496ef102b6f01f07a4df9958b3c0",
-    "platforms/evidence/quest-member-composed-fixture/page.js": "99d7778164b3f7fa62690c84e557765004b66362d33a876141d24fe3a5f6cf3a",
-    "platforms/evidence/quest-member-composed-fixture/page.css": "5fd1eaf1efc6d140987709158842f96f4e2184353f6c068938f9be742930f839",
-    "platforms/evidence/quest-member-composed-320.png": "d95e420189852be30bb32a2f2ef5bcfa94f42879d49f9e6778627eed490af6b8",
-    "verification/web/evidence/checkpoint-0435dcc/circle-review-coverage-verification.original.json": "66ede12ca86f7f57695ffd8870377f69b4dc00617c1c5b066bad1a163314add8"
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/next-build.json": "6c08659451aba44a023f3e764f678df3637e23fb8efa36de6ab6b1e458427a16",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/next-build.log": "b42670715fb977323a2a18913d1ab5ed6e5eafd43399a56d46c5a30d3c574ac6",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/build-source-sha256.json": "624ccb531270e7c80d28c50dd17b28e58a85b42fb6230145719f45cf850b6716",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/browser-discovery-qa.json": "f3bbc0c2904d054244061cb8fd537f6ba0f163ef9c99474313cb060984eb09af",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/browser-discovery-platform-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/native-connectivity-unit.log": "99b2ae6619a12b9021d51335b43f69fafd43bcaf127862ad57028c9322cb5c49",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/native-connectivity-browser.json": "1ae6a36b2fd33cdd6272f60c07c68da012067351835abdc771196fe0460fed16",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/native-connectivity-browser.log": "8ff849186b0a25322e5016d0c48a71721236ff790c3aa19d2e1cfd092e646ffb",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/native-connectivity-lint.json": "ccd6483765ff1b467fff5922ec013bce34dfe2b5177085484ed821c4dff9ba04",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/native-connectivity-fixture/source-manifest.json": "af0258dbf0bba069f6bc310ffbca71053e9cda56b459ee6ff0c070f4e89c5324",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/native-connectivity-fixture/page.js": "d705d45f2d9ab64a6701db7fc6c649f9fba037ee2b8bc0263c130e3dba78cfd8",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/reward-live-body-rehearsal.json": "96025675790c9a53de7b955840e7e9c120e200007ff9db4d2f4ad1338e09cff8",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/reward-live-body-db.log": "c5801ec71eb4c7bae91b1b3c9772343e90fc2028af72dbcd5f6f3a0a824c4fa4",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/platform-quest-root-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/original-status-connectivity-check.json": "bc232dba78b8910e900fdc66d2bc8a693a7c17c966e99e85b76eff56849c256e",
+    "verification/web/evidence/checkpoint-29a6459/files/platforms/evidence/quest-member-composed.json": "0843a43a7fb044821d3318954dc09e4e74d884a2ce1f7a7704b0ab6564b6d373",
+    "verification/web/evidence/checkpoint-29a6459/files/platforms/evidence/quest-member-composed.log": "25e03581f0a31c2f5296cd53410c41235e690582495764684d9911563d1a0603",
+    "verification/web/evidence/checkpoint-29a6459/files/platforms/evidence/quest-member-composed-fixture/source-manifest.json": "e05c066f36c7f7fcb49b637db19f7be04204496ef102b6f01f07a4df9958b3c0",
+    "verification/web/evidence/checkpoint-29a6459/files/platforms/evidence/quest-member-composed-fixture/page.js": "99d7778164b3f7fa62690c84e557765004b66362d33a876141d24fe3a5f6cf3a",
+    "verification/web/evidence/checkpoint-29a6459/files/platforms/evidence/quest-member-composed-fixture/page.css": "5fd1eaf1efc6d140987709158842f96f4e2184353f6c068938f9be742930f839",
+    "verification/web/evidence/checkpoint-29a6459/files/platforms/evidence/quest-member-composed-320.png": "d95e420189852be30bb32a2f2ef5bcfa94f42879d49f9e6778627eed490af6b8",
+    "verification/web/evidence/checkpoint-29a6459/files/verification/web/evidence/checkpoint-0435dcc/circle-review-coverage-verification.original.json": "66ede12ca86f7f57695ffd8870377f69b4dc00617c1c5b066bad1a163314add8"
+  },
+  "checkpoint": "29a64593ace205a29b09d49a9ecd5988f1cad28b",
+  "evidenceArchive": {
+    "directory": "verification/web/evidence/checkpoint-29a6459",
+    "originalReceipt": "verification/web/evidence/checkpoint-29a6459/platform-reward-verification.original.json",
+    "pinnedFiles": 22,
+    "scope": "Preserved before durable native bridge and atomic Thinker reward implementation."
   }
 }

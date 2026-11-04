@@ -89,10 +89,11 @@ test('exact live body drift after containment refuses rollback before restoring 
  const db=await fixture(t);await run(db,'apply');await db.exec(LIVE_BODIES.find(f=>f.signature==='increment_exp(uuid,integer)').definition.replace('  update members','  -- SYNTHETIC_OWNER_DRIFT\n  update members'));const changed=await liveRewardMetadata(db);await reject(()=>run(db,'rollback'),'PT409');assert.deepEqual(await liveRewardMetadata(db),changed);
  for(const signature of SIGNATURES)assert.equal(await scalar(db,'SELECT has_function_privilege($1,$2,$3)',['anon',signature,'EXECUTE']),false);
 });
-test('actual Thinker route ignores forged body memberId, invokes exact service increment and records exactly one event without a profile edit',async t=>{
- const db=await fixture(t);await run(db,'apply');const app=await thinkerFixture(db),before=await rewardRows(db);
- const response=await app.post({thinkerId:'socrates',message:'Synthetic local exact-body request',isCouncilMode:true,memberId:B});assert.equal(response.status,200);assert.match(await response.text(),/Synthetic exact-body offline reply/);
- assert.equal(app.stats.authCalls,1);assert.equal(app.stats.providerCalls,1);assert.equal(app.stats.fallbacks,0);assert.equal(app.stats.eventInserts,1);assert.deepEqual(app.stats.rpcCalls,[{name:'increment_exp',params:{member_id_input:A,amount_input:8}}]);
+test('current actual Thinker route ignores forged body memberId and atomically records one event without a profile edit',async t=>{
+ const db=await fixture(t);await run(db,'apply');const {installAccounting}=await import('./support/thinker-reward-db.mjs');await installAccounting(db);const app=await thinkerFixture(db),before=await rewardRows(db);
+ const requestId='33333333-3333-4333-8333-333333333333';
+ const response=await app.post({requestId,thinkerId:'socrates',message:'Synthetic local exact-body request',isCouncilMode:true,memberId:B});assert.equal(response.status,200);assert.match(await response.text(),/Synthetic exact-body offline reply/);
+ assert.equal(app.stats.authCalls,1);assert.equal(app.stats.providerCalls,1);assert.equal(app.stats.fallbacks,0);assert.equal(app.stats.eventInserts,0);assert.equal(app.stats.rpcCalls.length,1);assert.equal(app.stats.rpcCalls[0].name,'soe_thinker_reward_award');assert.deepEqual({...app.stats.rpcCalls[0].params,p_request_hash:'HASH'}, {p_actor:A,p_request_id:requestId,p_request_hash:'HASH',p_thinker_id:'socrates',p_is_reaction:false});assert.match(app.stats.rpcCalls[0].params.p_request_hash,/^[a-f0-9]{64}$/);
  const after=await rewardRows(db);assert.equal(after.members[0].exp_tokens,before.members[0].exp_tokens+8);assert.equal(after.members[0].profile_revision,0);assert.deepEqual({...after.members[0],exp_tokens:before.members[0].exp_tokens},before.members[0]);assert.deepEqual(after.members[1],before.members[1]);assert.deepEqual(await events(db),[{member_id:A,amount:8,reason:'Conversation with socrates'}]);
  assert.notEqual(A,AUTH_A,'Verified subject and member ID are deliberately distinct in the auth double');
 });

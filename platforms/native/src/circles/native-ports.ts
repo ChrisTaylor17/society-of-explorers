@@ -2,20 +2,24 @@ import { approvedOrigin, type CircleTransport } from './host';
 import { parseDiscussionQuery } from '../../../../lib/circles/thread';
 import { isUuid } from '../../../../lib/ids/uuid';
 
-/** Contract only: a platform bridge must implement serial secure storage and
- * reject redirects before forwarding credentials. No bridge is installed here. */
+/** The native implementation owns the durable storage generation. Every storage
+ * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string }>;
-  begin(): Promise<string>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string }>;
+  begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   cancel(id: string): Promise<void>;
-  read(slot: 'session' | 'pkce' | 'user'): Promise<string | null>;
-  write(slot: 'session' | 'pkce' | 'user', value: string): Promise<void>;
-  remove(slot: 'session' | 'pkce' | 'user'): Promise<void>;
+  read(slot: 'session' | 'pkce' | 'user', generation: string): Promise<string | null>;
+  write(slot: 'session' | 'pkce' | 'user', value: string, generation: string): Promise<void>;
+  remove(slot: 'session' | 'pkce' | 'user', generation: string): Promise<void>;
+  resetAccountStorage(generation: string): Promise<{ previousGeneration: string; generation: string; cleared: boolean }>;
 };
 const fail = () => Error('Native member service unavailable');
 const size = (s: string) => { let n=0; for (let i=0;i<s.length;i++) { const c=s.charCodeAt(i); if(c<128)n++;else if(c<2048)n+=2;else if(c>=0xd800&&c<=0xdbff&&i+1<s.length&&s.charCodeAt(i+1)>=0xdc00&&s.charCodeAt(i+1)<=0xdfff){n+=4;i++;}else n+=3; } return n; };
-const lanes = new WeakMap<NativeMemberBridge, Map<string, { tail: Promise<void>; generation: number; quarantined: boolean; requests: Set<AbortController>; retirements: Set<() => void> }>>();
+// Trusted composition may wrap the same native account more than once. Retire
+// every wrapper in this JS runtime together, including already-computed replies.
+// The native persisted epoch separately fences future work and process restarts.
+const lanes = new Map<string, { tail: Promise<void>; generation: number; capabilitySequence: number; nativeGeneration: string | null; quarantined: boolean; requests: Set<AbortController>; retirements: Set<() => void> }>();
 function timed<T>(p: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   return Promise.race([p,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(fail()),ms);})]).finally(()=>clearTimeout(timer));
@@ -23,19 +27,29 @@ function timed<T>(p: Promise<T>, ms: number): Promise<T> {
 export async function createNativeMemberPorts(bridge: NativeMemberBridge | null, config: { origin: string; storageKey: string; timeoutMs?: number }) {
   const origin=approvedOrigin(config.origin), key=config.storageKey, timeout=config.timeoutMs??15000;
   if(!bridge || !/^[A-Za-z0-9._-]{1,160}$/.test(key) || !Number.isSafeInteger(timeout) || timeout<1 || timeout>60000) throw fail();
-  if (!(['capabilities','begin','send','cancel','read','write','remove'] as const).every(name => typeof bridge[name] === 'function')) throw fail();
+  if (!(['capabilities','begin','send','cancel','read','write','remove','resetAccountStorage'] as const).every(name => typeof bridge[name] === 'function')) throw fail();
+  const namespace=JSON.stringify([origin,key]);let lane=lanes.get(namespace);if(!lane){lane={tail:Promise.resolve(),generation:0,capabilitySequence:0,nativeGeneration:null,quarantined:false,requests:new Set(),retirements:new Set()};lanes.set(namespace,lane);}
+  const queue=lane, beforeGeneration=queue.generation, capabilitySequence=++queue.capabilitySequence;
   let caps: Awaited<ReturnType<NativeMemberBridge['capabilities']>>;
   try { caps=await timed(bridge.capabilities(),timeout); } catch { throw fail(); }
-  if(caps?.version!==1 || caps.origin!==origin || caps.storageKey!==key || caps.redirectPolicy!=='reject-before-send' || caps.storagePolicy!=='os-protected') throw fail();
-  let map=lanes.get(bridge); if(!map){map=new Map();lanes.set(bridge,map);} let lane=map.get(key);if(!lane){lane={tail:Promise.resolve(),generation:0,quarantined:false,requests:new Set(),retirements:new Set()};map.set(key,lane);}
-  const queue=lane, generation=lane.generation; let retired=false;
-  const current=()=>queue.generation===generation&&!queue.quarantined;
+  if(caps?.version!==2 || caps.origin!==origin || caps.storageKey!==key || caps.redirectPolicy!=='reject-before-send' || caps.storagePolicy!=='os-protected' || !isUuid(caps.storageGeneration) || beforeGeneration!==queue.generation || capabilitySequence!==queue.capabilitySequence) throw fail();
+  if(queue.nativeGeneration!==null && queue.nativeGeneration!==caps.storageGeneration){
+    // A fresh native ready-generation is the authority after process recovery or
+    // a lost reset reply. An old capability reply cannot undo a local retirement.
+    queue.generation++;for(const request of queue.requests)request.abort();
+    for(const listener of Array.from(queue.retirements)){try{listener();}catch{}}queue.retirements.clear();
+    queue.tail=Promise.resolve();queue.quarantined=false;
+  }
+  if(queue.quarantined)throw fail();
+  queue.nativeGeneration=caps.storageGeneration;
+  const generation=queue.generation,nativeGeneration=caps.storageGeneration;let retired=false;
+  const current=()=>!retired&&queue.generation===generation&&queue.nativeGeneration===nativeGeneration&&!queue.quarantined;
   const slot=(value:string): 'session'|'pkce'|'user' => { if(value===key)return 'session';if(value===key+'-code-verifier')return 'pkce';if(value===key+'-user')return 'user';throw fail(); };
   const enqueue=<T>(work:()=>Promise<T>, keepAfterTimeout=false) => { if(!current())return Promise.reject(fail());let expired=false; const pending=queue.tail.then(()=>{if(!current()||(expired && !keepAfterTimeout))throw fail();return work();});queue.tail=pending.then(()=>{},()=>{});return timed(pending,timeout).catch(()=>{expired=true;throw fail();}); };
   const storage={
-    getItem(name:string):Promise<string|null>{const s=slot(name);return enqueue(async()=>{if(retired)throw fail();const value=await bridge.read(s);if(retired||!current()||value!==null&&(typeof value!=='string'||size(value)>65536))throw fail();return value;});},
-    setItem(name:string,value:string):Promise<void>{const s=slot(name);if(typeof value!=='string'||size(value)>65536)throw fail();return enqueue(async()=>{if(retired)throw fail();await bridge.write(s,value);if(!current())throw fail();});},
-    removeItem(name:string):Promise<void>{const s=slot(name);return enqueue(()=>{if(retired)throw fail();return bridge.remove(s);});},
+    getItem(name:string):Promise<string|null>{const s=slot(name);return enqueue(async()=>{const value=await bridge.read(s,nativeGeneration);if(!current()||value!==null&&(typeof value!=='string'||size(value)>65536))throw fail();return value;});},
+    setItem(name:string,value:string):Promise<void>{const s=slot(name);if(typeof value!=='string'||size(value)>65536)throw fail();return enqueue(async()=>{await bridge.write(s,value,nativeGeneration);if(!current())throw fail();});},
+    removeItem(name:string):Promise<void>{const s=slot(name);return enqueue(async()=>{await bridge.remove(s,nativeGeneration);if(!current())throw fail();});},
   };
   const transport:CircleTransport=async(url,init)=>{
     let id:string|undefined;
@@ -63,7 +77,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
         // allocate a native handle late, which still belongs to this attempt.
         const begun=Promise.resolve().then(()=>{
           if(finished||signal.aborted||!current())throw fail();
-          return bridge.begin();
+          return bridge.begin(nativeGeneration);
         }).then(value=>{
           if(typeof value!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(value))throw fail();
           id=value;
@@ -74,7 +88,12 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
         if(signal.aborted||!current())throw fail();
         const response=await timed(Promise.race([bridge.send(requestId,{url,method:init.method,bearer:match[1],...(init.body===undefined?{}:{body:init.body})}),aborted]),timeout);
         if(signal.aborted||!current()||!Number.isInteger(response.status)||response.status<100||response.status>599||response.status>=300&&response.status<400||response.redirected!==false||response.url!==url||typeof response.body!=='string'||size(response.body)>1048576)throw fail();
-        return {status:response.status,url:response.url,redirected:false,json:async()=>JSON.parse(response.body)};
+        return {status:response.status,url:response.url,redirected:false,json:async()=>{
+          // A caller may retain the response after transport has completed.
+          // Reading its private body still belongs to the original lifetime.
+          if(!current()||signal.aborted||init.signal.aborted)throw fail();
+          return JSON.parse(response.body);
+        }};
       } finally {signal.removeEventListener('abort',abort);}
     } catch { cancel();throw fail(); }
     finally {finished=true;queue.requests.delete(lifetime);init.signal.removeEventListener('abort',abortLifetime);}
@@ -82,12 +101,14 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
   return { transport, storage, retireStorage(){retired=true;},
     onAccountRetired(listener:()=>void) { if(!current()){listener();return ()=>{};}queue.retirements.add(listener);return ()=>{queue.retirements.delete(listener);}; },
     async resetAccountStorage() {
-      if(retired||queue.generation!==generation)throw fail();
+      if(!current())throw fail();
       const transition=++queue.generation;queue.quarantined=true;for(const request of queue.requests)request.abort();for(const listener of Array.from(queue.retirements)){try{listener();}catch{}}queue.retirements.clear();let expired=false;
-      const pending=queue.tail.then(async()=>{
-        for(const s of ['session','pkce','user'] as const)await bridge.remove(s);
-        if(expired||queue.generation!==transition)throw fail();
-        queue.quarantined=false;
+      // Native serialization and epoch checks fence even a delayed old write.
+      // Do not wait behind a JS reply that may never arrive before requesting the
+      // durable native reset. A timeout keeps this lifetime quarantined.
+      const pending=Promise.resolve().then(()=>bridge.resetAccountStorage(nativeGeneration)).then(receipt=>{
+        if(receipt?.cleared!==true||receipt.previousGeneration!==nativeGeneration||!isUuid(receipt.generation)||receipt.generation===nativeGeneration||expired||queue.generation!==transition)throw fail();
+        queue.nativeGeneration=receipt.generation;queue.quarantined=false;
       });
       queue.tail=pending.then(()=>{},()=>{});
       try { await timed(pending,timeout); } catch { expired=true;throw fail(); }

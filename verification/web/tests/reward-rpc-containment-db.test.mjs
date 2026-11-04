@@ -64,14 +64,14 @@ test('body and uncaptured function attribute or ACL drift refuse exact rollback 
 test('non-owner roles cannot run any containment stage or read the owner receipt',async t=>{
  const db=await rewardDb(t),before=await rewardMetadata(db);for(const role of ['anon','authenticated','service_role']){await db.exec('SET ROLE '+role);try{for(const stage of ['preflight','apply','rollback'])await assert.rejects(run(db,stage),refused);}finally{await db.exec('SET ROLE postgres');}}assert.deepEqual(await rewardMetadata(db),before);
 });
-test('actual canonical Thinker route still uses the service increment RPC and auth-bound actor without a profile edit',async t=>{
- const db=await rewardDb(t);await run(db,'apply');const app=offlineApp(),rpcCalls=[];let fallback=0;
+test('current canonical Thinker route uses atomic reward RPC and auth-bound actor without a profile edit',async t=>{
+ const db=await rewardDb(t);await run(db,'apply');const {installAccounting}=await import('./support/thinker-reward-db.mjs');await installAccounting(db);const app=offlineApp(),rpcCalls=[];let fallback=0;
  const noop=async()=>undefined;
  app.setMock('@/lib/ai/anthropic',()=>({createAnthropicClient:()=>({messages:{stream:()=>({on:(kind,callback)=>{if(kind==='text')callback('Synthetic offline reply.');},finalMessage:async()=>({usage:{}})})}}),resolveClaudeModel:()=> 'SYNTHETIC_MODEL',logClaudeUsage:()=>{}}));
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>({memberId:A,member:(await db.query('SELECT * FROM members WHERE id=$1',[A])).rows[0],auth:{provider:'supabase',subject:A}})}));
  app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({
   from(table){if(table==='exp_events')return{insert:async row=>{await asRole(db,'service_role',tx=>tx.query('INSERT INTO exp_events(member_id,amount,reason) VALUES($1,$2,$3)',[row.member_id,row.amount,row.reason]));return{error:null};}};fallback++;throw Error('Unexpected fallback/table '+table);},
-  rpc:async(name,params)=>{rpcCalls.push({name,params:{...params}});await callReward(db,'public.increment_exp(uuid,integer)',[params.member_id_input,params.amount_input]);return{error:null};},
+   rpc:async(name,params)=>{rpcCalls.push({name,params:{...params}});assert.equal(name,'soe_thinker_reward_award');const result=await asRole(db,'service_role',tx=>tx.query('SELECT public.soe_thinker_reward_award($1,$2,$3,$4,$5) value',[params.p_actor,params.p_request_id,params.p_request_hash,params.p_thinker_id,params.p_is_reaction]));return{data:result.rows[0].value,error:null};},
  })}));
  app.setMock('@/lib/claude/thinkers',()=>({buildSystemPrompt:()=> 'Synthetic system'}));
  app.setMock('@/lib/thinkerMemory',()=>({getMemory:async()=>null,recordInteraction:noop}));
@@ -84,8 +84,8 @@ test('actual canonical Thinker route still uses the service increment RPC and au
  app.setMock('@/lib/community/getCommunity',()=>({getCommunityThinkerPrompts:async()=>({})}));
  app.setMock('@/lib/governance/hats',()=>({checkPermission:async()=>true}));
  const route=app.load('app/api/thinker/route.ts'),before=(await db.query('SELECT * FROM members ORDER BY id')).rows;
- const request=new Request('https://soe.invalid/api/thinker',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({thinkerId:'socrates',message:'Synthetic local council request',isCouncilMode:true,memberId:B})});
- const response=await route.POST(request);assert.equal(response.status,200);const text=await response.text();assert.match(text,/Synthetic offline reply/);assert.equal(fallback,0);assert.deepEqual(rpcCalls,[{name:'increment_exp',params:{member_id_input:A,amount_input:8}}]);
+  const requestId='33333333-3333-4333-8333-333333333333';const request=new Request('https://soe.invalid/api/thinker',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({requestId,thinkerId:'socrates',message:'Synthetic local council request',isCouncilMode:true,memberId:B})});
+  const response=await route.POST(request);assert.equal(response.status,200);const text=await response.text();assert.match(text,/Synthetic offline reply/);assert.equal(fallback,0);assert.equal(rpcCalls.length,1);assert.equal(rpcCalls[0].name,'soe_thinker_reward_award');assert.equal(rpcCalls[0].params.p_actor,A);assert.equal(rpcCalls[0].params.p_request_id,requestId);assert.match(rpcCalls[0].params.p_request_hash,/^[a-f0-9]{64}$/);
  const after=(await db.query('SELECT * FROM members ORDER BY id')).rows;assert.equal(after[0].exp_tokens,before[0].exp_tokens+8);assert.equal(after[0].profile_revision,0);assert.deepEqual({...after[0],exp_tokens:before[0].exp_tokens},before[0]);assert.deepEqual(after[1],before[1]);assert.equal((await db.query('SELECT member_id,amount FROM exp_events')).rows[0].member_id,A);
 });
 test('delegated function grantors refuse instead of cascading grants or changing unrelated access',async t=>{

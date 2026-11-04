@@ -1,8 +1,9 @@
 // UNKNOWN live reward bodies: these marked representative functions prove ACL behavior only.
-import {readFile} from 'node:fs/promises';
+import {readFile as fsReadFile,lstat,stat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {PGlite} from '../../tooling/node_modules/@electric-sql/pglite/dist/index.js';
 const ROOT=new URL('../../../../',import.meta.url);
+async function readFile(file,encoding){const link=await lstat(file),info=await stat(file);if(link.isSymbolicLink()||(info.size&&!info.blocks))throw Error('Refuse reward fixture symlink or placeholder');return fsReadFile(file,encoding);}
 export const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222';
 export const SIGNATURES=['public.add_exp(uuid,integer,text)','public.increment_exp(uuid,integer)','public.increment_exp_tokens(uuid,integer)'];
 const receipt=await readFile(new URL('../fixtures/legacy-rpc-catalog-2026-11-04.json',import.meta.url),'utf8');
@@ -23,7 +24,7 @@ export async function runRewardSql(db,name){
 export async function rewardDb(t){
  const db=new PGlite();await db.waitReady;t.after(()=>db.close());
  await db.exec('CREATE ROLE postgres NOLOGIN SUPERUSER;CREATE ROLE anon NOLOGIN;CREATE ROLE authenticated NOLOGIN;CREATE ROLE service_role NOLOGIN BYPASSRLS;CREATE ROLE unrelated_executor NOLOGIN;SET ROLE postgres;GRANT USAGE ON SCHEMA public TO anon,authenticated,service_role,unrelated_executor;');
- await db.exec('CREATE TABLE members(id uuid PRIMARY KEY,supabase_auth_id uuid,display_name text NOT NULL,bio text,discipline text,skills text[],project_description text,seeking text,philosophy text,exp_tokens integer,email text,tier text);ALTER TABLE members ENABLE ROW LEVEL SECURITY;GRANT SELECT,INSERT,UPDATE,DELETE ON members TO service_role;CREATE TABLE exp_events(id uuid DEFAULT gen_random_uuid(),member_id uuid,amount integer,reason text);GRANT INSERT,SELECT ON exp_events TO service_role;');
+  await db.exec('CREATE TABLE members(id uuid PRIMARY KEY,supabase_auth_id uuid,display_name text NOT NULL,bio text,discipline text,skills text[],project_description text,seeking text,philosophy text,exp_tokens integer,email text,tier text);ALTER TABLE members ENABLE ROW LEVEL SECURITY;GRANT SELECT,INSERT,UPDATE,DELETE ON members TO service_role;CREATE TABLE exp_events(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),member_id uuid,amount integer NOT NULL,reason text);ALTER TABLE exp_events ENABLE ROW LEVEL SECURITY;GRANT INSERT,SELECT ON exp_events TO service_role;');
  await db.query("INSERT INTO members(id,supabase_auth_id,display_name,exp_tokens,email,tier) VALUES($1,$1,'Synthetic A',7,'PRIVATE_SYNTHETIC_EMAIL','protected'),($2,$2,'Synthetic B',3,NULL,'free')",[A,B]);
  await db.exec(await readFile(new URL('docs/sql/member-profile-apply.sql',ROOT),'utf8'));
  await db.exec([

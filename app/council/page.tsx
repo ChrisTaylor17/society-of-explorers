@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PublicNav from '@/components/PublicNav';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -57,6 +58,8 @@ interface Message {
 }
 
 export default function CouncilPage() {
+  const reward = useThinkerRewards();
+  const { begin: beginReward, observe: observeReward, finish: finishReward } = reward;
   const [thinkers, setThinkers] = useState(DEFAULT_THINKERS);
   const [communitySlug, setCommunitySlug] = useState('society-of-explorers');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -152,6 +155,8 @@ export default function CouncilPage() {
   ): Promise<string> => {
     const streamId = `thinker-${thinkerId}-${Date.now()}`;
     const thinker = thinkers.find(t => t.id === thinkerId)!;
+    const requestId = beginReward(thinker.name);
+    if (!requestId) return `[${thinker.name} reward check required]`;
     console.log(`[council] starting ${thinkerId}`);
 
     setMessages(prev => [...prev, {
@@ -169,6 +174,7 @@ export default function CouncilPage() {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
+          requestId,
           thinkerId,
           message: userMessage,
           salonId: 'council',
@@ -193,6 +199,7 @@ export default function CouncilPage() {
             if (!line.startsWith('data: ')) continue;
             try {
               const evt = JSON.parse(line.slice(6));
+              if (evt.reward) observeReward(requestId, evt.reward);
               if (evt.delta) {
                 fullText += evt.delta;
                 const display = fullText.split('|||ACTIONS|||')[0].trim();
@@ -219,7 +226,7 @@ export default function CouncilPage() {
     } catch (err) {
       console.error(`[council] ${thinkerId} error:`, err);
       if (!fullText) fullText = `[${thinker.name} unavailable]`;
-    }
+    } finally { finishReward(requestId); }
 
     // Ensure message has content
     if (!fullText.trim()) fullText = `[${thinker.name} unavailable]`;
@@ -228,7 +235,7 @@ export default function CouncilPage() {
 
     console.log(`[council] ${thinkerId} done: ${finalDisplay.length} chars`);
     return finalDisplay;
-  }, [authToken, communitySlug, thinkers]);
+  }, [authToken, communitySlug, thinkers, beginReward, observeReward, finishReward]);
 
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -366,6 +373,7 @@ export default function CouncilPage() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
+      <ThinkerRewardNotice reward={reward} />
 
       {/* Sign-in banner for anonymous users after 3 exchanges */}
       {showSignInBanner && (

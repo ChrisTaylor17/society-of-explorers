@@ -1,5 +1,8 @@
 # Native and Quest integration milestone
 
+Current continuation: Android now has an uncompiled v2 member bridge, durable-reset source, native connectivity source and explicit JS adapter. See [Android bridge scope and remaining gates](android-member-bridge.md). The initial milestone commands/results below are historical; do not run the aggregate import verifier against offloaded source archives. The current focused checks and source bindings are recorded in the release status.
+
+
 The canonical branch is `codex/soe-first-release` in `/Users/christaylor/Documents/Codex/soe-release`. This milestone integrates existing app-bearing platform source with the current web discussion archive. It is tested local implementation, not a released or production-ready cross-device product.
 
 ## Source and preservation
@@ -36,7 +39,7 @@ The inherited fictional Quest launcher is not an active default. WebXR renderer/
 
 ## Verification
 
-Run from the canonical repository root:
+**Historical command — do not run on the current offloaded tree.** The aggregate runner invokes the archive importer and overwrites shared historical outputs. Use the focused commands in current milestone receipts instead:
 
 ```sh
 env -i PATH=/opt/homebrew/bin:/usr/bin:/bin HOME=/Users/christaylor python3 platforms/scripts/checks.py
@@ -57,9 +60,9 @@ The React review checked stable hook ordering, lifetime cleanup, bounded lists, 
 ## Remaining release gates
 
 1. **Native authentication and storage:** connect the actual application-owned member client, login/refresh/sign-out flow and registered secure storage/transport. A supplied JavaScript interface or self-reported bridge capability does not establish OS security or provider configuration.
-2. **Durable account transitions:** existing in-process handover protects one bridge object/key. Separate proxies/processes, crashes, restarts, ambiguous reset acknowledgements and durable recovery remain unresolved. The authority model has not solved them in the app.
-3. **Native builds and tools:** a current metadata scan found **15,168 offloaded files out of 20,351** in the linked native runtime. Full native typechecks/exports were not retried against that incomplete tree. There is no iPhone SDK/simctl or generated iOS native project. The older workspace Android Java/toolchain exists, but adb/emulator files are offloaded. No package download, tool installation, SDK restoration, simulator or user device was launched.
-4. **Android binary policy:** inherited application IDs/instrumentation remain synthetic; release Gradle currently selects debug signing. The main manifest also retains storage/overlay permissions and `allowBackup=true`. Review and test signing, identity, permissions, backup and secure storage before any distributable binary. No binary readiness is claimed.
+2. **Durable account transitions:** v2 ports retire wrappers sharing an exact origin/storage namespace; Android source persists an epoch and interrupted-reset marker. Synthetic JS tests cover held replies, stale writes and ambiguous receipts. Actual Codegen, process/crash recovery, Keystore and device acceptance remain unresolved; source does not establish them.
+3. **Native builds and tools:** a current metadata scan found **15,168 offloaded files out of 20,351** in the linked native runtime. Full native typechecks/exports were not retried against that incomplete tree. No iOS SDK/simulator toolchain was verified; usual paths were absent, and no generated iOS native project exists in this package. The older workspace Android Java/toolchain exists, but adb/emulator files are offloaded. No package download, tool installation, SDK restoration, simulator or user device was launched.
+4. **Android binary policy:** inherited application IDs/instrumentation remain synthetic. The later release guard rejects default debug signing and requires an owned external descriptor. Storage/overlay permissions were removed, app backup is disabled, and the bridge adds only network-state permission. Review and test signing, identity, permissions, backup and secure storage before any distributable binary. No binary readiness is claimed.
 5. **Feature parity:** add current discovery/Circle selection, member profiles, lawful reading/passage actions, keyed thread replies, report/withdrawal and moderation experiences to native/Quest using the canonical services. Do not promote the preserved fictional plan/consent backend as current membership authority.
 6. **Quest acceptance:** connect a credible authenticated immersive experience if supported, and test headset lifecycle, controller/keyboard input, readable text, comfort, accessibility and browser fallback. The preserved WebXR panel is still a prototype.
 7. **Release integration:** verify real auth/provider behavior, database authorization/grants/RLS, migration compatibility with the deployed security baseline, lawful content/clip rights, moderation operations and the complete integrated app. These local fixtures do not prove those requirements.

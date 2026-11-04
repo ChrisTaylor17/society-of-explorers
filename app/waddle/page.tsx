@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import { hasAccess } from '@/lib/auth/checkAccess';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -33,6 +34,7 @@ type WaddleMember = {
 };
 
 export default function WaddleForge() {
+  const reward = useThinkerRewards();
   const [isRecording, setIsRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -135,6 +137,8 @@ export default function WaddleForge() {
 
   async function getThinkerReaction() {
     if (!transcription) return;
+    const requestId = reward.begin(THINKERS.find(thinker => thinker.id === selectedThinker)?.name ?? 'Thinker');
+    if (!requestId) return;
     setReacting(true);
     try {
       const accessToken = await getSupabaseAccessToken();
@@ -145,6 +149,7 @@ export default function WaddleForge() {
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({
+          requestId,
           thinkerId: selectedThinker,
           message: `A member recorded a 15-second Waddle. Here is what they said: "${transcription}". Respond in 1-2 sentences. Be sharp and in character.`,
           history: [],
@@ -163,11 +168,12 @@ export default function WaddleForge() {
           if (!line.startsWith('data: ')) continue;
           try {
             const evt = JSON.parse(line.slice(6));
+            if (evt.reward) reward.observe(requestId, evt.reward);
             if (evt.delta) { full += evt.delta; setThinkerReaction(full); }
           } catch {}
         }
       }
-    } catch {}
+    } catch {} finally { reward.finish(requestId); }
     setReacting(false);
   }
 
@@ -338,6 +344,7 @@ export default function WaddleForge() {
 
       {/* Recorder */}
       <div style={{ maxWidth: '500px', margin: '0 auto', padding: '0 2rem 4rem', textAlign: 'center' }}>
+        <ThinkerRewardNotice reward={reward} />
         {!hasAccess(memberTier, 'seeker') && !transcription && (
           <div style={{ padding: '2rem', border: `1px solid ${gold}22`, background: '#0d0d0d', marginBottom: '2rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1rem' }}>⬡</div>

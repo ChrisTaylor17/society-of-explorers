@@ -13,6 +13,10 @@ import { getCommunityThinkerPrompts } from '@/lib/community/getCommunity';
 import { checkPermission } from '@/lib/governance/hats';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { createHash } from 'node:crypto';
+import { isUuid } from '@/lib/ids/uuid';
+import { authWriteOriginAllowed } from '@/lib/auth/request';
+import { parseThinkerRewardReceipt, type ThinkerRewardReceipt } from '@/lib/rewards/thinker';
 
 const DIRECT_MAX_TOKENS = 600;
 const COUNCIL_MAX_TOKENS = 800;
@@ -51,6 +55,7 @@ interface DemoMessage {
 }
 
 interface ThinkerRequestBody {
+  requestId?: string;
   demo?: boolean;
   thinkerId?: string;
   thinker?: string;
@@ -61,6 +66,36 @@ interface ThinkerRequestBody {
   councilContext?: { thinker: string; response: string }[];
   community?: string;
   messages?: unknown;
+}
+
+async function boundedRewardCall<T>(work: PromiseLike<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([Promise.resolve(work), new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Reward result unconfirmed')), 8_000);
+    })]);
+  } finally { if (timer) clearTimeout(timer); }
+}
+
+// Confirmation only: no model call, event insert, or credit retry. An absent
+// receipt cannot prove that a different in-flight transaction will not commit.
+export async function GET(req: NextRequest) {
+  try {
+    if (!authWriteOriginAllowed(req)) return privateJson({ error: 'Forbidden' }, { status: 403 });
+    const query = new URL(req.url).searchParams;
+    if (query.size !== 1 || !isUuid(query.get('requestId'))) return privateJson({ error: 'Use a valid requestId' }, { status: 400 });
+    const requestId = query.get('requestId')!.toLowerCase();
+    const actor = await getAuthenticatedMember(req);
+    if (!actor) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const { data, error } = await boundedRewardCall(getSupabaseAdmin().rpc('soe_thinker_reward_receipt', {
+      p_actor: actor.memberId, p_request_id: requestId,
+    }));
+    if (error) return privateJson({ requestId, status: 'unknown' }, { status: 503 });
+    if (data === null) return privateJson({ requestId, status: 'unknown' });
+    const receipt = parseThinkerRewardReceipt(data);
+    if (!receipt || receipt.requestId !== requestId || !receipt.replayed) return privateJson({ requestId, status: 'unknown' }, { status: 503 });
+    return privateJson({ status: 'confirmed', ...receipt });
+  } catch { return privateJson({ status: 'unknown' }, { status: 503 }); }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -143,6 +178,8 @@ function buildMemberContext(m: MemberContextProfile): string {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!authWriteOriginAllowed(req)) return privateJson({ error: 'Forbidden' }, { status: 403 });
+    if (new URL(req.url).searchParams.size) return privateJson({ error: 'Invalid query' }, { status: 400 });
     const parsed = await safeRequestJson(req);
     if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
@@ -156,7 +193,7 @@ export async function POST(req: NextRequest) {
     const isDemo = body.demo === true;
     const thinkerId = textField(body.thinkerId, 80) ?? textField(body.thinker, 80);
     const message = textField(body.message, 8_000);
-    const isReaction = body.isReaction ?? false;
+    const isReaction = body.isReaction === true;
     const salonId = textField(body.salonId, 120) ?? 'general';
     const councilContext = normalizeCouncilContext(body.councilContext);
     const communitySlug = textField(body.community, 120) ?? 'society-of-explorers';
@@ -215,6 +252,14 @@ export async function POST(req: NextRequest) {
         return privateJson({ error: 'You do not have council access in this community' }, { status: 403 });
       }
     }
+
+    if (!isDemo && !isUuid(body.requestId)) {
+      return privateJson({ error: 'A logical requestId UUID is required' }, { status: 400 });
+    }
+    const requestId = !isDemo ? body.requestId!.toLowerCase() : null;
+    const requestHash = createHash('sha256').update(JSON.stringify([
+      'thinker-reward-v1', thinkerId, message, isReaction, salonId, isCouncilMode, councilContext, communitySlug,
+    ])).digest('hex');
 
     // --- SAVE USER MESSAGE (skip for demo, council mode, and system-generated prompts) ---
     if (!isDemo && !isCouncilMode) {
@@ -375,6 +420,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           let fullText = '';
+          let rewardReceipt: ThinkerRewardReceipt | null = null;
 
           // Retry once on failure
           let lastErr: unknown = null;
@@ -464,25 +510,15 @@ export async function POST(req: NextRequest) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: actionResults })}\n\n`));
               }
 
-              const expAmount = isReaction ? 4 : 8;
-              await supabaseAdmin().from('exp_events').insert({
-                member_id: memberId,
-                amount: expAmount,
-                reason: isReaction
-                  ? `Thinker reaction from ${thinkerId}`
-                  : `Conversation with ${thinkerId}`,
-              });
-
-              const { error: rpcError } = await supabaseAdmin().rpc('increment_exp', {
-                member_id_input: memberId,
-                amount_input: expAmount,
-              });
-              if (rpcError) {
-                await supabaseAdmin()
-                  .from('members')
-                  .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
-                  .eq('id', memberId);
-              }
+              try {
+                const { data, error } = await boundedRewardCall(supabaseAdmin().rpc('soe_thinker_reward_award', {
+                  p_actor: memberId, p_request_id: requestId!, p_request_hash: requestHash,
+                  p_thinker_id: thinkerId, p_is_reaction: isReaction,
+                }));
+                const parsed = !error ? parseThinkerRewardReceipt(data) : null;
+                if (parsed && parsed.requestId === requestId && parsed.amount === (isReaction ? 4 : 8)) rewardReceipt = parsed;
+                else reportThinkerRouteFailure('reward confirmation');
+              } catch { reportThinkerRouteFailure('reward confirmation'); }
 
               const thinkerNames: Record<string, string> = {
                 socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
@@ -518,7 +554,8 @@ export async function POST(req: NextRequest) {
             done: true,
             response: cleanText,
             ...(!isDemo && {
-              expAwarded: isReaction ? 4 : 8,
+              ...(rewardReceipt ? { expAwarded: rewardReceipt.replayed ? 0 : rewardReceipt.amount } : {}),
+              reward: rewardReceipt ? { status: 'confirmed', ...rewardReceipt } : { status: 'unknown', requestId },
               actions: actions.length > 0 ? actions : undefined,
             }),
           });

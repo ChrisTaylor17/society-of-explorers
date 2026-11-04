@@ -6,6 +6,7 @@ import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession'
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice'
 
 interface Member {
   id: string
@@ -109,6 +110,7 @@ const ivory = '#e8e0d0'
 const muted = '#7a7060'
 
 export default function MembersPage() {
+  const reward = useThinkerRewards()
   const [members, setMembers] = useState<Member[]>([])
   const [currentMember, setCurrentMember] = useState<Member | null>(null)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -253,9 +255,12 @@ export default function MembersPage() {
   async function inviteThinker(thinkerId: string) {
     const generation = authorityEpoch.current
     setShowThinkerPicker(false)
-    setThinkerLoading(true)
     const thinker = THINKERS.find(t => t.id === thinkerId)
     if (!thinker || !selectedMember || !currentMember) return
+    setThinkerLoading(true)
+    const requestId = reward.begin(thinker.name)
+    if (!requestId) { setThinkerLoading(false); return }
+    try {
 
     const recentMessages = messages.slice(-6).map(m => {
       const name = m.sender_id === currentMember.id ? currentMember.display_name : selectedMember.display_name
@@ -268,6 +273,7 @@ export default function MembersPage() {
       method: 'POST',
       headers,
       body: JSON.stringify({
+        requestId,
         thinkerId,
         message: `You have been invited into a private conversation between ${currentMember.display_name} and ${selectedMember.display_name}. Here are the recent messages:\n\n${recentMessages}\n\nRespond as ${thinker.name} — in character, direct, under 100 words. Address both people.`,
         history: [],
@@ -291,6 +297,7 @@ export default function MembersPage() {
         if (payload === '[DONE]') continue
         try {
           const evt = JSON.parse(payload)
+          if (evt.reward) reward.observe(requestId, evt.reward)
           if (evt.delta) fullResponse += evt.delta
           if (evt.text) fullResponse += evt.text
         } catch {}
@@ -311,7 +318,7 @@ export default function MembersPage() {
       if (generation !== authorityEpoch.current) return
       await loadMessages()
     }
-    setThinkerLoading(false)
+    } finally { reward.finish(requestId); setThinkerLoading(false) }
   }
 
   async function findMatch() {
@@ -349,6 +356,7 @@ export default function MembersPage() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: bg, fontFamily: 'Cormorant Garamond, serif', color: ivory, overflow: 'hidden' }}>
+      <ThinkerRewardNotice reward={reward} />
 
       {/* TOPBAR */}
       <div style={{ height: '52px', background: bgCard, borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>

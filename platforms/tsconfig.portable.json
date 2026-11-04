@@ -4,5 +4,6 @@
     "module": "ESNext", "moduleResolution": "Bundler", "strict": true,
     "noEmit": true, "skipLibCheck": true, "baseUrl": "..", "paths": { "@/*": ["./*"] }
   },
-  "include": ["shared/**/*.ts", "native/src/circles/**/*.ts"]
+  "include": ["shared/**/*.ts", "native/src/circles/**/*.ts"],
+  "exclude": ["native/src/circles/android-member.ts"]
 }

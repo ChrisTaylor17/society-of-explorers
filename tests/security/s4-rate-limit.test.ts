@@ -67,11 +67,11 @@ test('signed-in members get their own (larger) budget, not the IP one, and are l
   const demo50 = () => makeReq({ thinkerId: 'socrates', message: 'hi', demo: true }, { headers: { 'x-forwarded-for': '203.0.113.50' } });
   for (let i = 0; i < LIMITS.anonymous.max; i++) { const r = await thinker.POST(demo50()); await drain(r); await settle(); }
   expect((await thinker.POST(demo50())).status).toBe(429); // that IP's anonymous budget is spent
-  const r = await thinker.POST(makeReq({ thinkerId: 'socrates', message: 'hello', isCouncilMode: true }, { headers: { 'x-forwarded-for': '203.0.113.50' }, cookies: { soe_wallet_id: await walletCookie(ADA) } }));
+  const r = await thinker.POST(makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'hello', isCouncilMode: true }, { headers: { 'x-forwarded-for': '203.0.113.50' }, cookies: { soe_wallet_id: await walletCookie(ADA) } }));
   await drain(r); await settle();
   expect(r.status).not.toBe(429);
   const cookie = await walletCookie(ADA);
-  const member = () => makeReq({ thinkerId: 'socrates', message: 'hello', isCouncilMode: true }, { headers: { 'x-forwarded-for': '203.0.113.51' }, cookies: { soe_wallet_id: cookie } });
+  const member = () => makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'hello', isCouncilMode: true }, { headers: { 'x-forwarded-for': '203.0.113.51' }, cookies: { soe_wallet_id: cookie } });
   for (let i = 1; i < LIMITS.member.max; i++) { const x = await thinker.POST(member()); await drain(x); }
   expect((await thinker.POST(member())).status).toBe(429);
 });

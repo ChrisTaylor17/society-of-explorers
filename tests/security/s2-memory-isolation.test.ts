@@ -66,7 +66,7 @@ test("S2c Ada's own private salon still feeds Ada's memory (feature preserved)",
 test("S2d Ada can still use her own private salon through the thinker route", async () => {
   resetDb(seed(0));
   (globalThis as any).__authUser = { id: 'auth-ada' };
-  const res = await thinker.POST(makeReq({ thinkerId: 'socrates', message: 'continue', salonId: `private-${ADA}` }));
+  const res = await thinker.POST(makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'continue', salonId: `private-${ADA}` }));
   await drain(res); await settle();
   expect(res.status).toBe(200);
   expect(allPrompts()).toContain(ADA_OWN);
