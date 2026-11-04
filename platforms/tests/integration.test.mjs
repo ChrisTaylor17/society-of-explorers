@@ -18,12 +18,13 @@ test('member bootstrap accepts only an explicit UUID, HTTPS origin, verifying ex
  const newRequestId=async()=>root;assert.equal(memberCircleConfig({...base,newRequestId}).newRequestId,newRequestId);
  for(const extra of [{circleId:'fictional-person'},{circleId:'11111111-1111-0111-0111-111111111111'},{origin:'http://localhost'},{origin:origin+'/path'},{origin:'https://private@platform-fixture.invalid'},{auth:{getSession(){}}},{transport:undefined},{verificationTimeoutMs:Infinity},{newRequestId:'browser-global'}])assert.equal(memberCircleConfig({...base,...extra}),null);
 });
-test('registered native App gates Circle entry on the existing account and has no synthetic fallback or implicit provider call',()=>{
+test('registered native App offers deliberate owned sign-in and preserves existing-account Circle gating without an implicit provider call',()=>{
  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
- const primitive=tag=>p=>React.createElement(tag,{'aria-label':p.accessibilityLabel},p.children);
- const rn={SafeAreaView:primitive('main'),ScrollView:primitive('div'),Text:primitive('span'),View:primitive('div'),Pressable:primitive('button'),TextInput:primitive('textarea'),ActivityIndicator:primitive('span'),StyleSheet:{create:x=>x},AppState:{currentState:'active'},Platform:{OS:'android'}};
+ const primitive=tag=>function Primitive(p){return React.createElement(tag,{'aria-label':p.accessibilityLabel},p.children);};
+ const rn={SafeAreaView:primitive('main'),ScrollView:primitive('div'),Text:primitive('span'),View:primitive('div'),Pressable:primitive('button'),TextInput:primitive('textarea'),ActivityIndicator:primitive('span'),StyleSheet:{create:x=>x},AppState:{currentState:'active'},Platform:{OS:'android'},TurboModuleRegistry:{get:()=>null}};
  const load=sourceLoader({'react-native':rn}),App=load('platforms/native/App.tsx').default;
- const empty=renderToStaticMarkup(React.createElement(App));assert.match(empty,/Member sign-in is not connected/);assert.doesNotMatch(empty,/Jules|Ada|Synthetic|fixture|Open member circle/);
+ let preparations=0;const prepare=async()=>{preparations++;throw Error('SSR must not prepare an account');};
+ const empty=renderToStaticMarkup(React.createElement(App,{ownedAccountPrepare:prepare}));assert.match(empty,/Connect my account/);assert.equal(preparations,0);assert.doesNotMatch(empty,/Jules|Ada|Synthetic|fixture|Open member circle|aria-label="Password"/);
  const auth={getSession(){throw Error('SSR must not call');},getUser(){throw Error('SSR must not call');},onAuthStateChange(){throw Error('SSR must not call');}};
  const configured=renderToStaticMarkup(React.createElement(App,{memberCircle:{circleId:circle,origin,auth,transport:()=>{throw Error('SSR must not call');}}}));
  assert.match(configured,/Check my member account/);assert.match(configured,/Continue to Circle/);assert.match(configured,/Check existing sign-in/);

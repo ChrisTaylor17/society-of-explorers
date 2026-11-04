@@ -8,7 +8,9 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 // Empty policy keeps NativeSoeMember unavailable; partial/invalid policy aborts.
 def soeMemberPolicyProcess = new ProcessBuilder('node', rootProject.file('member-config.cjs').absolutePath,
     providers.gradleProperty('soeMemberOrigin').orElse('').get(),
-    providers.gradleProperty('soeMemberStorageKey').orElse('').get()).directory(rootDir).start()
+    providers.gradleProperty('soeMemberStorageKey').orElse('').get(),
+    providers.gradleProperty('soeProviderOrigin').orElse('').get(),
+    providers.gradleProperty('soePublishableKey').orElse('').get()).directory(rootDir).start()
 def soeMemberPolicyJson = soeMemberPolicyProcess.inputStream.getText('UTF-8')
 soeMemberPolicyProcess.errorStream.getText('UTF-8')
 if (soeMemberPolicyProcess.waitFor() != 0) throw new GradleException('SoE member public configuration rejected.')
@@ -148,6 +150,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "boolean", "SOE_EMBEDDED_SYNTHETIC", "false"
         buildConfigField "String", "SOE_MEMBER_ORIGIN", '"' + soeMemberPolicy.origin + '"'
+        buildConfigField "String", "SOE_PROVIDER_ORIGIN", '"' + (soeMemberPolicy.providerOrigin ?: '') + '"'
+        buildConfigField "String", "SOE_PUBLISHABLE_KEY", '"' + (soeMemberPolicy.publishableKey ?: '') + '"'
         buildConfigField "String", "SOE_MEMBER_STORAGE_KEY", '"' + soeMemberPolicy.storageKey + '"'
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""

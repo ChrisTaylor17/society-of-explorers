@@ -7,7 +7,9 @@
     "name": "SoeMemberSpecs",
     "type": "modules",
     "jsSrcsDir": "specs",
-    "android": { "javaPackageName": "com.anonymous.soesyntheticdemo.member" }
+    "android": {
+      "javaPackageName": "com.anonymous.soesyntheticdemo.member"
+    }
   },
   "scripts": {
     "start": "expo start",
@@ -17,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/auth-js": "2.99.3",
     "expo": "~58.0.12",
     "expo-status-bar": "~58.0.3",
     "react": "19.3.0",

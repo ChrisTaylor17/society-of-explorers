@@ -2,13 +2,13 @@ import { useLayoutEffect, useMemo, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CircleScreen } from './CircleScreen';
 import { ContributionsScreen } from './ContributionsScreen';
-import { createVerifiedSupabaseCircleOwner, type ExistingMemberCircleConfig } from './src/circles/verified-member-session';
+import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { createMemberAccountSession } from '../shared/account-session';
 
 /** Uses the app's existing verified account. Member setup is deliberate; this
  * screen does not create an auth client, sign in or choose an account. */
-export function MemberCircleScreen({ config, connectivity, onClose }: { config: ExistingMemberCircleConfig; connectivity?: NativeConnectivityPort; onClose(): void }) {
+export function MemberCircleScreen({ config, connectivity, onClose }: { config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; onClose(): void }) {
   const connection = useMemo(() => {
     try {
       const { auth, verificationTimeoutMs, ...host } = config;
@@ -52,7 +52,7 @@ export function MemberCircleScreen({ config, connectivity, onClose }: { config: 
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
       onBack={() => setEntered(null)} onClose={close}/>;
-    return <CircleScreen config={connection.host} connectivity={connection.connectivity} onClose={close}/>;
+    if (connection.host.circleId) return <CircleScreen config={{ ...connection.host, circleId: connection.host.circleId }} connectivity={connection.connectivity} onClose={close}/>;
   }
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
@@ -79,8 +79,8 @@ export function MemberCircleScreen({ config, connectivity, onClose }: { config: 
       <Action label={account.phase === 'preparing' ? 'Setting up my member account…' : account.phase === 'unknown' ? 'Retry member setup' : 'Set up my member account'} disabled={!account.canPrepare}
         onPress={() => { setEntered(null); void connection?.account.prepare(); }}/>
     </View> : null}
-    <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); }}/>
+    {connection?.host.circleId ? <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
+      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); }}/> : null}
     <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'contributions' }); }}/>
     <Action label="Close member view" onPress={close}/>

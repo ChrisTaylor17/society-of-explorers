@@ -9,7 +9,8 @@ export type MemberSessionModel = {
   phase: 'stopped' | 'checking' | 'signed_out' | 'unavailable' | 'ready' | 'paused';
   active: boolean; busy: boolean; canCheck: boolean; message: string;
 };
-export type ExistingMemberCircleConfig = Omit<CircleHostConfig, 'owner'> & { auth: ExistingVerifiedAuth; verificationTimeoutMs?: number };
+export type ExistingMemberAccountConfig = Omit<CircleHostConfig, 'owner' | 'circleId'> & { circleId?: string; auth: ExistingVerifiedAuth; verificationTimeoutMs?: number };
+export type ExistingMemberCircleConfig = ExistingMemberAccountConfig & { circleId: string };
 export type VerifiedAccountOwner = CircleOwner & {
   credentials(expectedScope: string): Promise<{ bearer: string; subject: string } | null>;
 };

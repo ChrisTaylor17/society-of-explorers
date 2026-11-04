@@ -44,6 +44,9 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
       putDouble("version", 2.0); putString("origin", config.origin); putString("storageKey", config.storageKey)
       putString("redirectPolicy", "reject-before-send"); putString("storagePolicy", "os-protected"); putString("storageGeneration", generation)
       putString("requestIdPolicy", "os-random-uuid")
+      if (config.providerOrigin.isNotEmpty()) {
+        putString("authPolicy", "supabase-password-v1"); putString("providerOrigin", config.providerOrigin); putString("publishableKey", config.publishableKey)
+      }
     })
   }
   override fun begin(generation: String, promise: Promise) = work(promise) { it.resolve(transport().begin(generation)) }
@@ -52,6 +55,13 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
   }
   override fun send(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
     transport().send(id, MemberTransport.input(request), { result ->
+      reply.resolve(Arguments.createMap().apply {
+        putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
+      })
+    }, { reply.fail() })
+  }
+  override fun sendAuth(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
+    transport().sendAuth(id, MemberTransport.authInput(request), { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
       })

@@ -17,6 +17,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import java.util.UUID
+import org.json.JSONObject
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /** Dedicated client, never the RN global client or the synthetic HTTP policy. */
 internal class MemberTransport(private val config: MemberConfig, private val store: MemberSecureStore) {
   data class Input(val url: String, val method: String, val bearer: String, val body: String?)
+  data class AuthInput(val url: String, val method: String, val bearer: String?, val body: String?)
   data class Result(val status: Int, val url: String, val body: String)
   private class Handle(val generation: String, val deadline: Long) {
     var consumed = false
@@ -63,8 +65,18 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     }
   }
   fun send(id: String, input: Input, success: (Result) -> Unit, failure: () -> Unit) {
+    try { validate(input); transmit(id, input.url, input.method, input.body, mapOf("Authorization" to "Bearer " + input.bearer), success, failure) }
+    catch (_: Exception) { cancel(id); failure() }
+  }
+  fun sendAuth(id: String, input: AuthInput, success: (Result) -> Unit, failure: () -> Unit) {
     try {
-      validate(input)
+      validateAuth(input)
+      transmit(id, input.url, input.method, input.body, mapOf("apikey" to config.publishableKey,
+        "Authorization" to "Bearer " + (input.bearer ?: config.publishableKey), "X-Supabase-Api-Version" to "2024-01-01"), success, failure)
+    } catch (_: Exception) { cancel(id); failure() }
+  }
+  private fun transmit(id: String, url: String, method: String, body: String?, headers: Map<String, String>, success: (Result) -> Unit, failure: () -> Unit) {
+    try {
       val generation = synchronized(lock) { require(!closed); handles[id]?.generation ?: throw IllegalStateException() }
       store.withGeneration(generation) {
         synchronized(lock) {
@@ -72,11 +84,11 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
           require(!closed && !handle.consumed && handle.generation == generation && System.nanoTime() < handle.deadline)
           // A handle is consumed once even if construction, transmission or receipt fails.
           handle.consumed = true; handle.cancelled = failure
-          val builder = Request.Builder().url(input.url).header("Authorization", "Bearer " + input.bearer)
+          val builder = Request.Builder().url(url).apply { headers.forEach { (name, value) -> header(name, value) } }
             .header("Cache-Control", "no-store").header("Pragma", "no-cache")
             .tag(Transmission::class.java, Transmission())
-          if (input.method == "GET") builder.get()
-          else builder.post(input.body!!.toRequestBody("application/json".toMediaType()))
+          if (method == "GET") builder.get()
+          else builder.post((body ?: "").toRequestBody("application/json".toMediaType()))
           val call = client.newCall(builder.build()); handle.call = call
           call.timeout().deadlineNanoTime(handle.deadline)
           require(System.nanoTime() < handle.deadline)
@@ -86,7 +98,7 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
             override fun onResponse(call: Call, response: Response) {
               try {
                 val result = response.use {
-                  require(it.code in 100..599 && it.code !in 300..399 && it.request.url.toString() == input.url)
+                  require(it.code in 100..599 && it.code !in 300..399 && it.request.url.toString() == url)
                   val body = it.body ?: throw IllegalStateException()
                   require(body.contentLength() <= MAX_RESPONSE)
                   val bytes = body.byteStream().use { stream ->
@@ -96,7 +108,7 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
                   }
                   val text = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
-                  Result(it.code, input.url, text)
+                  Result(it.code, url, text)
                 }
                 store.withGeneration(generation) {
                   synchronized(lock) {
@@ -121,6 +133,44 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     synchronized(lock) { closed = true }
     cancelAll(); offReset(); timer.shutdownNow()
     client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll()
+  }
+  /** Independent provider allowlist; member paths below remain unchanged. */
+  private fun validateAuth(input: AuthInput) {
+    require(config.providerOrigin.isNotEmpty() && Regex("sb_publishable_[A-Za-z0-9_-]{20,200}").matches(config.publishableKey))
+    val url = input.url.toHttpUrl()
+    val origin = "https://" + url.host + if (url.port == 443) "" else ":" + url.port
+    require(url.scheme == "https" && origin == config.providerOrigin && url.username.isEmpty() && url.password.isEmpty() && url.fragment == null && url.toString() == input.url)
+    val endpoint = input.url.removePrefix(config.providerOrigin)
+    val operation = when {
+      input.method == "POST" && endpoint == "/auth/v1/token?grant_type=password" -> "password"
+      input.method == "POST" && endpoint == "/auth/v1/token?grant_type=refresh_token" -> "refresh"
+      input.method == "GET" && endpoint == "/auth/v1/user" -> "user"
+      input.method == "POST" && endpoint == "/auth/v1/logout?scope=local" -> "logout"
+      else -> throw IllegalArgumentException()
+    }
+    if (operation == "user" || operation == "logout") require(input.bearer != null && input.bearer != config.publishableKey && input.bearer.length <= 16384 && Regex("[A-Za-z0-9._~+/-]+=*").matches(input.bearer))
+    else require(input.bearer == null)
+    if (operation == "user" || operation == "logout") require(input.body == null)
+    else {
+      val body = input.body ?: throw IllegalArgumentException()
+      require(body.toByteArray(Charsets.UTF_8).size <= 16384); MemberConfig.value(body)
+      val parsed = JSONObject(body); val keys = parsed.keys().asSequence().toSet()
+      if (operation == "password") {
+        require(keys == setOf("email", "password") || keys == setOf("email", "password", "gotrue_meta_security"))
+        require(parsed.get("email") is String && parsed.get("password") is String)
+        val email = parsed.getString("email"); val password = parsed.getString("password")
+        require(authText(email, 320) && Regex("[^\\s@]+@[^\\s@]+\\.[^\\s@]+").matches(email) && authText(password, 4096))
+        if (parsed.has("gotrue_meta_security")) require(parsed.get("gotrue_meta_security") is JSONObject && parsed.getJSONObject("gotrue_meta_security").length() == 0)
+      } else {
+        require(keys == setOf("refresh_token") && parsed.get("refresh_token") is String)
+        val token = parsed.getString("refresh_token")
+        require(token.length in 1..16384 && Regex("[A-Za-z0-9._~+/-]+=*").matches(token))
+      }
+    }
+  }
+  private fun authText(value: String, maximum: Int): Boolean {
+    MemberConfig.value(value)
+    return value.isNotEmpty() && value.toByteArray(Charsets.UTF_8).size <= maximum && value.none { it.code < 32 || it.code == 127 }
   }
   private fun validate(input: Input) {
     require(Regex("[A-Za-z0-9._~+/-]+=*").matches(input.bearer) && input.bearer.length <= 16384)
@@ -165,6 +215,15 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
   companion object {
     private const val MAX_RESPONSE = 1048576
     private fun uuid(value: String) = MemberConfig.UUID_PATTERN.matches(value.lowercase())
+    fun authInput(value: ReadableMap): AuthInput {
+      val keys = value.keySetIterator(); val names = mutableSetOf<String>()
+      while (keys.hasNextKey()) names.add(keys.nextKey())
+      require(names.containsAll(setOf("url", "method")) && names.all { it in setOf("url", "method", "bearer", "body") })
+      for (key in names) require(value.getType(key) == ReadableType.String)
+      return AuthInput(value.getString("url")!!, value.getString("method")!!,
+        if (value.hasKey("bearer")) value.getString("bearer") else null,
+        if (value.hasKey("body")) value.getString("body") else null)
+    }
     fun input(value: ReadableMap): Input {
       val keys = value.keySetIterator(); val names = mutableSetOf<String>()
       while (keys.hasNextKey()) names.add(keys.nextKey())

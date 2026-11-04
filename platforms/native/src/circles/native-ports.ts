@@ -5,10 +5,11 @@ import { isUuid } from '../../../../lib/ids/uuid';
 /** The native implementation owns the durable storage generation. Every storage
  * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string }>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string }>;
   newRequestId?(generation: string): Promise<string>;
   begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
+  sendAuth?(id: string, request: { url: string; method: 'GET' | 'POST'; bearer?: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   cancel(id: string): Promise<void>;
   read(slot: 'session' | 'pkce' | 'user', generation: string): Promise<string | null>;
   write(slot: 'session' | 'pkce' | 'user', value: string, generation: string): Promise<void>;

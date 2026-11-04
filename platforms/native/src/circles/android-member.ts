@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import NativeSoeMember, { type Spec } from '../../specs/NativeSoeMember';
 import { prepareNativeMemberBinding } from './native-member-binding';
+import { createNativeAuthPorts } from '../auth/native-auth-ports';
 import type { NativeMemberBridge } from './native-ports';
 import type { NativeConnectivityPort, NativeConnectivityState } from './native-connectivity';
 
@@ -20,6 +21,7 @@ export function createAndroidMemberAdapter(module: Spec | null): AndroidMemberAd
     capabilities: () => module.capabilities(),
     begin: generation => module.begin(generation),
     send: (id, request) => module.send(id, request),
+    ...(typeof module.sendAuth === 'function' ? { sendAuth: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendAuth']>>[1]) => module.sendAuth(id, request) } : {}),
     cancel: id => module.cancel(id),
     read: (slot, generation) => module.read(slot, generation),
     write: (slot, value, generation) => module.write(slot, value, generation),
@@ -69,4 +71,17 @@ export async function prepareAndroidMemberBinding(options: {
   const { bridge, connectivity } = createAndroidMemberAdapter(NativeSoeMember);
   const binding = await prepareNativeMemberBinding({ ...options, bridge });
   return { ...binding, connectivity };
+}
+
+/** Public policy comes only from the trusted installed native module. No launch
+ * extras, environment, global credential or invented Circle is consulted. */
+export async function prepareAndroidAuthPorts() {
+  if (Platform.OS !== 'android') throw unavailable();
+  const { bridge, connectivity } = createAndroidMemberAdapter(NativeSoeMember);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const caps = await Promise.race([bridge.capabilities(), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(unavailable()), 15000); })]).finally(() => clearTimeout(timer));
+  if (caps.authPolicy !== 'supabase-password-v1' || typeof caps.providerOrigin !== 'string' || typeof caps.publishableKey !== 'string') throw unavailable();
+  const ports = await createNativeAuthPorts(bridge, { origin: caps.origin, storageKey: caps.storageKey,
+    providerOrigin: caps.providerOrigin, publishableKey: caps.publishableKey });
+  return { ports, publishableKey: caps.publishableKey, connectivity };
 }
