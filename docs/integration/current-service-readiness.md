@@ -1,0 +1,44 @@
+# Current service readiness — 2026-11-04
+
+**Production access/privacy gate remains HOLD.** The connected SoE Supabase service is healthy, but the live database does not have the first-release Circle schema or the access boundaries exercised by the local fixtures. No production fix, migration, role change, provider sign-in or deployment was performed.
+
+Root verified project `woqvlkeluxkxplpgzdgv` as `ACTIVE_HEALTHY`, `us-east-1`, PostgreSQL `17.6.1.084`: 95 public tables and 13 recorded migrations, latest `20260619183311` prompt catalog expansion. This supersedes older notes describing a paused project. Health is control-plane evidence, not proof of correct permissions, app configuration, deployment or customer use.
+
+The account audit independently inspected bounded `pg_catalog` metadata around 14:01 UTC. Sanitized queries/results and advisory links are in `verification/web/evidence/live-service-metadata-2026-11-04.json`. No account identifier, credential, row value or private record was selected. One separately authorized aggregate ran inside a read-only transaction with a one-second statement timeout; it returned only duplicate counts.
+
+## Verified live boundary
+
+| Area | Current metadata | Release consequence |
+| --- | --- | --- |
+| Member identity | `id uuid NOT NULL` primary key; nullable `supabase_auth_id uuid`; only indexes are `members_pkey` and unique `members_wallet_address_key` | No database uniqueness protection for Supabase subjects. The bounded aggregate found **0 duplicate non-null subject groups / 0 rows in those groups**, at that snapshot only. Concurrent/future duplicates remain possible until an approved constraint exists. |
+| Raw member reads | RLS enabled, but `Members readable by all` is permissive `SELECT TO PUBLIC USING (true)`; anon/authenticated have table-wide SELECT | Database permissions permit raw member columns, including email, billing, identity and coherence fields, to browser roles. Canonical web DTO whitelists do not close direct Data API access. No live data read or exploit probe was used to establish this finding. |
+| Raw member writes | anon/authenticated have table-wide INSERT/UPDATE/DELETE/TRUNCATE; insert/update policies use `auth.uid() = supabase_auth_id`, with no column whitelist | Own-row checks do not limit sensitive columns. Do not infer protected billing/tier/identity updates from RLS being enabled. TRUNCATE is a database privilege and is not governed by RLS; this audit did not claim that PostgREST exposes a truncate endpoint. |
+| Private reading and memory | `reading_progress`, `book_highlights`, `great_books_progress`, `great_books_highlights`, `book_reflections`, `thinker_memory`: RLS disabled, no policies in the bounded result, broad anon/authenticated SELECT/INSERT/UPDATE/DELETE/TRUNCATE | Existing rows are not isolated by those roles' database permission boundary. Concrete seven-table containment is drafted and tested locally, not applied. |
+| Existing Circle base | `book_cohorts`, `book_cohort_members`: RLS disabled and no policies; broad anon/authenticated grants. No `circle_*` columns on `book_cohorts`; sampled Circle private/receipt/message tables absent; all public function names containing `soe_circle` absent | Current Circle features are **not deployed**. Existing migration order cannot simply be pasted into this baseline. |
+| Service/browser roles | anon/authenticated are not superusers and do not bypass RLS; service_role bypasses RLS; all three have public-schema USAGE | Existing service-role access can be preserved by targeted browser-grant removal. This is not approval to widen service credentials or put them in clients. |
+| Reward/member RPCs | `add_exp(uuid,integer,text)` is postgres-owned SECURITY DEFINER, no fixed search_path; PUBLIC/anon/authenticated/service_role can EXECUTE. `current_prompt_member_id()` is also SECURITY DEFINER and executable by those roles; its path is public. `increment_exp`/`increment_exp_tokens` are INVOKER but equally executable | Function-body/caller/security review is still required. No function was invoked or its body inspected. Removing table grants alone must not be represented as sealing every SECURITY DEFINER route. Do not blindly revoke a prompt-policy dependency or change function security mode. |
+
+The table grants above are effective database privileges, checked with catalog privilege functions. HTTP row access was deliberately not exercised. This bounded audit does not cover every public table, view, storage object, edge function, Auth setting, function body, role inheritance path or production caller.
+
+Root's parallel source inventory also identified service-role-backed public profile/recent-response projections without explicit opt-in. Revoking raw member grants does not close those application endpoints. The next local milestone must address verified member/profile clients and explicit public-profile consent (default private); no consent is inferred or backfilled by this draft.
+
+## Advisory evidence
+
+Security advisor observation at `2026-11-04T13:58:51.050Z` reports:
+
+- **29 ERROR findings:** [RLS disabled in public](https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public). The seven-table containment is intentionally narrower than these 29 tables; public catalog data and private user data need different reviewed behavior.
+- **11 WARN findings:** [mutable function search_path](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable).
+- **2 anonymous / 2 authenticated WARN findings:** SECURITY DEFINER execution for `add_exp` and `current_prompt_member_id`: [anonymous execution](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), [authenticated execution](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+- One INFO no-policy table and disabled leaked-password protection WARN are also recorded in the sanitized evidence. [Password protection guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+Of the 29 RLS-disabled findings, Stage 1 addresses six private tables (plus already-RLS-enabled `members`). The following 23 findings remain outside that draft: `merch_suggestions`, `ritual_artifacts`, `onboarding_log`, `great_books_seminars`, `great_books`, `great_books_sections`, `night_shift_sessions`, `night_shift_messages`, `morning_reports`, `founding_interest`, `book_cohorts`, `book_cohort_members`, `waddles`, `seminar_messages`, `pending_mints`, `agent_tasks`, `video_rooms`, `social_posts`, `room_participants`, `room_transcripts`, `project_members`, `activity_feed`, `consented_match_projections`. Their desired public/private behavior and live effective privileges need separate review; absence from containment is not a safety finding.
+
+Advisories identify configurations to review; they do not establish whether records were read or changed. The relevant primary guidance distinguishes [row policies](https://supabase.com/docs/guides/database/postgres/row-level-security), [column privileges](https://supabase.com/docs/guides/database/postgres/column-level-security), and [function execution/security modes](https://supabase.com/docs/guides/database/functions).
+
+## Available local remedies and remaining gates
+
+The concrete unapplied containment/preflight/rollback is described in [production-migration-plan.md](production-migration-plan.md), with **14/14 actual local PostgreSQL cases passing**. It removes raw table and column access to exactly seven private core tables while retaining service access and existing policies; if service access relied solely on PUBLIC, it aborts without changing the baseline. It deliberately breaks any legacy caller that reads/writes those tables directly as anon/authenticated; that impact must be reviewed before approval. It does not invent public-profile consent, provision an owner/reviewer, merge accounts, repair data or fix all 29 findings.
+
+The identity uniqueness draft has 12 passing disposable PostgreSQL tests; auth/logout/local-browser tests pass as recorded in `account-security-reconciliation.md`. Circle/discovery tests run on constructed local schemas. Neither those fixtures nor the healthy live project prove real-provider behavior, safe production grants, a deployable full migration, native-device acceptance, actual user activity or revenue.
+
+First release requires an approved restore/impact plan, targeted live-boundary repair, strict service-only Circle baseline reconciliation, a complete sanitized-live-schema rehearsal, approved schema application, and subsequent deployed HTTP/provider/device verification. The current task performs none of those production actions.
