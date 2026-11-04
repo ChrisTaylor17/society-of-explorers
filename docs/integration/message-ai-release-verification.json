@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "recordedAtUTC": "2026-11-04T17:43:22.682329+00:00",
+  "status": "LOCAL_MESSAGE_AI_CONSENT_AND_NATIVE_LIFETIME_PASS_PRODUCTION_HOLD",
+  "priorCheckpoint": "e1fbb2de9dda747e9ff50e9ddb46ded8687c6d51",
+  "decision": {
+    "perMessageAuthorOptIn": "explicit user choice 2026-11-04",
+    "policy": "anthropic-message-review-v1",
+    "legacyConsent": false,
+    "provider": "direct Anthropic",
+    "model": "claude-sonnet-4-6",
+    "apiVersion": "2026-10-21"
+  },
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Documents/Codex/soe-release",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 41.64,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 974,
+    "sourceSha256": "8494e5f5a60c19a5ae565937a475653c264ed413be0ccc4204a1daa7d54a420c",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/next-build.log",
+    "buildId": "R2074VA-O4be5LYJTNT36",
+    "fullTypeScriptSeconds": 18.8
+  },
+  "sourceStability": {
+    "sourceFiles": 974,
+    "unchangedSinceBuild": true,
+    "manifestSha256": "4dc80bf60fcaa8c6948a7d1b8438d04aeae85998ffdad22cc031c2274023899f"
+  },
+  "selectedNonDom": {
+    "tests": 749,
+    "pass": 749,
+    "fail": 0,
+    "skipped": 0,
+    "files": 63,
+    "excludedDatalessDomFiles": 14,
+    "note": "Broad run preceded final elapsed-deadline guard; afterward13adviceAPI+3actualAPI/SQL cases passed on final source, followed by final full build and browser runs. Counts overlap."
+  },
+  "finalFocused": {
+    "adviceApi": 13,
+    "actualApiSqlIntegration": 3,
+    "pass": 16,
+    "fail": 0,
+    "skipped": 0
+  },
+  "dedicated": {
+    "consentDatabaseCases": 14,
+    "consentApiParserCases": 11,
+    "actualSdkSyntheticTransportCases": 12,
+    "nativePortableCases": 15,
+    "nativeIndependentReview": "clear; valid late handles get one cancellation attempt and no late send; no OS bridge acceptance"
+  },
+  "componentBrowser": {
+    "stories": 7,
+    "apiRequests": 31,
+    "provider": {
+      "synthetic": true,
+      "calls": 4,
+      "inputExactlyMessageText": true
+    },
+    "decisions": {
+      "expected": 0,
+      "observed": 0
+    },
+    "cleanup": {
+      "browser": "closed",
+      "database": "closed"
+    },
+    "limits": {
+      "database": "Tracked sanitized three-table catalog plus explicitly synthetic members/administrative roles/external child/default exceptions; not a hosted restore.",
+      "grants": "Broad synthetic extra defaults for ai_unrelated/PUBLIC stress only the new objects; no live role changes.",
+      "concurrency": "Single PGlite backend proves sequential CAS/recheck and transactional rollback, not multi-backend lock scheduling.",
+      "identity": "Actors and member records are synthetic. No JWT, selected-provider, issued credential, SDK or provider acceptance."
+    },
+    "scope": "Actual Contributions/consent/MessageReviews React components and Bun CSS modules, actual consent/safety/advice route modules and exact strict SQL chain in disposable PGlite. Existing offline NextResponse JSON/header + PostgREST/auth transports are explicit doubles; browser credential supplier, SDK event subscription and NextLink adapters are explicit. Provider is synthetic; no remote account/provider/SDK/device/hosted/deployment acceptance. Fixture body has16px padding; global Next/PostCSS/fonts excluded.",
+    "sourceAndSqlBindingsVerified": 48
+  },
+  "builtBrowser": {
+    "stories": 13,
+    "buildId": "R2074VA-O4be5LYJTNT36",
+    "runnerSha256": "a5eed3a19d03c72e0fdbc6529ac0f539f47a654594b55cade359ec0079a04d49",
+    "ownedServerStopped": true,
+    "cleanupStage": "complete",
+    "errorArraysEmpty": true,
+    "unexpectedConsoleErrors": 0,
+    "note": "localhost browser origin matches installed NextURL loopback normalization. Disabled advice POST503/private and publicpolicy320px verified; actual account/provider/production behavior not tested."
+  },
+  "review": {
+    "providerConsentAndNative": "independent scoped clear",
+    "adviceSqlAndUi": "independent scoped clear after elapsed-deadline fix",
+    "harness": "post-cleanup error checks fixed and affected browser runs repeated",
+    "lint": "all11changed app/lib TypeScript files pass"
+  },
+  "originalCheckout": {
+    "matchesPriorBaseline": true,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "bytes": 26781,
+    "mode": "read-only optional-locks disabled; no source content output"
+  },
+  "production": {
+    "ready": false,
+    "issuedCredentialsUsed": false,
+    "realProviderCalls": 0,
+    "schemaApplied": false,
+    "deployments": 0,
+    "nativeBuilds": 0,
+    "sdkDownloads": 0,
+    "remaining": [
+      "tested backup/restore receipt and existing live privacy/access repair",
+      "separate authorization for SQL/provider/deployment",
+      "shared production spend limit and real-model fairness/quality evaluation",
+      "complete review workflow for >100open reports",
+      "registered native bridge, approved toolchain acquisition/storage and device acceptance",
+      "live account, cookie, PostgREST and deployment-origin acceptance"
+    ],
+    "providerActivationPerformed": false,
+    "localDefaultProviderEnabled": false,
+    "liveProviderConfigurationInspected": false
+  },
+  "sourceSha256": {
+    "app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts": "5272789cd2fcfe9f9f477a16bb7eb63209a00418173e9a87028a6650bf0766d0",
+    "app/api/circles/[circleId]/messages/[messageId]/ai-consent/route.ts": "1e6fa542cd7c0036f3f0f17482a09a86582de3536fdecf76641462a7b4bb0393",
+    "app/circles/contributions/Contributions.tsx": "b802dc55eaa31547713ea8923203892c68efdb2d38256056404e0ce3e198b2b6",
+    "app/circles/contributions/MessageAiConsent.tsx": "e3204dbaf417e0291fed25b09a818dbbd926bb7e1b5a13b12a93cb7f7a26aa6f",
+    "app/circles/message-ai-policy/page.tsx": "df842d363c834e15bd1d38b144a1b5a289c1c9e5a00db87be3a6d4ddad003604",
+    "app/moderation/messages/MessageReviews.tsx": "5570739fdf617f0e32ebb77fac983c46df80dd0e5538afd9ca60589b46533be2",
+    "docs/integration/message-ai-moderation.md": "369827f42138982ca015d49180168d2e0456a6ddaa581e3edde1b359a126b2ac",
+    "docs/integration/native-toolchain-unblock.md": "52639ba3739cec816ade9671e83fd495e8365d621da5144f7edf59b2719a151f",
+    "docs/integration/rpc-guide-release-verification.json": "128df172267d87fb5143bf3e5c19003633678fb41d627c2420e65cdbfb29abfc",
+    "docs/integration/rpc-guide-release-verification.md": "faa1ce104975a463c46c66f8801e2ff18da444e732dec29ad1c212fe4462f43a",
+    "docs/sql/circle-message-ai-consent.sql": "c821de7dbcb4304f160510a9191a8c82e4769e200e72aa678c9e43987fbb937d",
+    "lib/circles/message-ai-consent.ts": "eb454a9dad8d36b89f3e15c3c42480e93b0a55e76ea29c86d7080e6b77ec76a3",
+    "lib/circles/message-ai-provider.ts": "e72c317921c5835908e3a630898cb36c6efdb4c473aa34bd6ddb60330a1fe7bb",
+    "lib/circles/message-ai.ts": "c7b5639f92d02182f5511c9679c4cfd12d9214e9fa8e33d5dcd0346c7a47a84d",
+    "lib/circles/message-moderation-server.ts": "e1ee7cf01f1212c7e34160f033b0bca44e4cd593b489b05024553ab958be6973",
+    "lib/circles/moderation-server.ts": "c2e32ca04ed639bb8c84e903e377861211fbcb8a70e0a1d3d3655de2f5141470",
+    "platforms/native/README.md": "e37dc0b6c2a258488a2a2d75e9363e498c4a472a28083c3909ca7d39e34e438f",
+    "platforms/native/src/circles/native-ports.ts": "9a12dfba7ef66cdb804f2dca92a0dae2c280743990be02aea98336a51cf1929c",
+    "platforms/tests/integration.test.mjs": "cea0bacf56bcf2d0e3c6012e12966666de15d2af18502b5911bf455691bc0530",
+    "verification/web/scripts/browser-discovery-qa.mjs": "a5eed3a19d03c72e0fdbc6529ac0f539f47a654594b55cade359ec0079a04d49",
+    "verification/web/scripts/bundle-message-ai-test.mjs": "bd36733b51ce4791f1f6af871fae24f8617b943764690521da931a942c900f72",
+    "verification/web/scripts/probe-built-advice-origin.mjs": "36ad5ca589dc82dabf4ba2a62c6104bde5338c3d8c4653d7c0a79dae76a7f430",
+    "verification/web/tests/browser-message-ai.mjs": "6e93c632e96d4605a3d9582b0a1d022aca69c22ec6ddb447e2b3357801b20956",
+    "verification/web/tests/message-ai-advice-api.test.mjs": "b6220820755c9a1ec8469f6ea1ec038b0126deffc68bf51ed10a98469ad9fb95",
+    "verification/web/tests/message-ai-consent-api.test.mjs": "6f886927a558c3ce448ab2ecf0a6f62fc6e6a0201d4f619629950f55ca244845",
+    "verification/web/tests/message-ai-consent-db.test.mjs": "09097fff9052ae708d0b7acfa642efda9b68230a3780cda32e5f8b49f73713b5",
+    "verification/web/tests/message-ai-entry.tsx": "d3c2e8902b1f90b8e8edddad6f866434fb79e3e78089fd0a4eec2929c3cf619b",
+    "verification/web/tests/message-ai-integration.test.mjs": "ccbf6b3fb37c99675bf043944fbdf131d7a2329a0bed4a5cdbc18059ae3e535a",
+    "verification/web/tests/message-ai-provider.test.mjs": "b74735e5b5f8bbb060769940cdcaf5c2d064f0427690260b8d676e04b0f05a15",
+    "verification/web/tests/support/message-ai-app.mjs": "3c4b57f20875c601d2d14e6843bd0201260261a6b833a49cb48dc5d03e6c6151",
+    "verification/web/tests/support/message-ai-db.mjs": "e013d5a4154c8697af38e50a3fab858db4003d01a090943b16789685d1a03ebe",
+    "verification/web/tests/support/offline-app.mjs": "d1004b3bc90aa29c81cc2481f6b9047e95f59d2376dc4bf8d1f4459cf12bac87"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/next-build.json": "eb61b06d2c1ba5e49264b4f21cd4ea798e15eb777f3cfc23b86f386f9c71a49c",
+    "verification/web/evidence/next-build.log": "99fe1ce14b1bb3028664f1df5ee758eb929acd20c01955e3a9b0bd8a12b94461",
+    "verification/web/evidence/build-source-sha256.json": "4dc80bf60fcaa8c6948a7d1b8438d04aeae85998ffdad22cc031c2274023899f",
+    "verification/web/evidence/message-ai-complete-tests.log": "0fe61c1ba1e7a6813737010ee120e47d8959a37497c6737ffe9c74e3c014bca5",
+    "verification/web/evidence/message-ai-complete-tests-selection.json": "f6770c316e1a8303e836a48c5ba97d4a850ac8bdcc8d25747ad2bd84e06b7e73",
+    "verification/web/evidence/message-ai-final-focused.log": "1455af6b70dffafefa4493cebda30fc276f3b7f7769de0d9d57592aaec7d5a2c",
+    "verification/web/evidence/message-ai-consent-db-tests.log": "c1cb3923cc4ac22661bcffd88f5ad284c7a193c1c43de6674c2e9b406fa2700e",
+    "verification/web/evidence/message-ai-provider.json": "05f1f608a1f05546a6039a9087af138dc30e9b87a1ba3c39f78b78344b3d3f85",
+    "verification/web/evidence/message-ai-browser.json": "65802bd58089114623d0a75a06a2ce19a26ffb506b30437e47344990448b7495",
+    "verification/web/evidence/message-ai-browser.log": "7a9211990a16bbabdb60db5b1eaccdb94d5ee70069f5f3af6771447f068ebe7b",
+    "verification/web/evidence/message-ai-final-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/native-late-handle-tests.log": "cadbb9122c0e091d0a3a8a5ebfaffe784dfa6a8766636e0a2cca49629984a135",
+    "verification/web/evidence/original-status-message-ai-check.json": "756e006fb54d65f6fe3b7fbf4937ab0922f2bb94b7c71a7e9f6777e15b10e8e3",
+    "verification/web/evidence/browser-discovery-qa.json": "73054309b538acd787912a31e9614d5f4a0006eb07f2e230c708c473c6b93ee5",
+    "verification/web/evidence/browser-discovery-progress.json": "7dc34c429b108790a9586abdeb33e1ca175a435119a57dc76b585dfc2015d277",
+    "verification/web/evidence/browser-discovery-message-ai-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
+    "verification/web/evidence/message-ai-policy-320.png": "368b42da64d8670cf56ca84490b07b6cea3c70540f41c7e743c07882770dadd6",
+    "verification/web/evidence/probe-built-advice-origin.json": "7a04c6748b785c2b564198f280ad09a63d4bdab9e7941ae47a21b17f5d0b4580"
+  },
+  "historicalEvidence": "Prior e1fbb2d15digests and Hall24digests verified preserved. Initial build, initial composed receipt/runner, numeric-loopback failure/diagnosis and successful pre-cleanup-hardening localhost outputs remain explicitly separate; no old output relabeled as final."
+}

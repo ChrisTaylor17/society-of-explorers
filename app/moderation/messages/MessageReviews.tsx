@@ -1,10 +1,12 @@
 'use client';
+import Link from 'next/link';
 import { useCallback, useId, useRef, useState } from 'react';
 import {
   parseMessageDecisionReceipt, parseMessageReviewDetail, parseMessageReviewQueue,
   type MessageReviewDetail, type MessageReviewQueue,
 } from '@/lib/circles/message-moderation';
 import { useReviewAccess } from '@/lib/circles/useReviewAccess';
+import { parseMessageAdviceReceipt, type MessageAdvice } from '@/lib/circles/message-ai';
 import { body, button, card, fieldLabel, h2, input, lead, primary, small } from '@/lib/circles/ui';
 import { messageReasonLabel } from '@/app/circles/messages/MessageActions';
 import styles from '@/app/circles/messages/safety.module.css';
@@ -17,6 +19,7 @@ export default function MessageReviews() {
   const id = useId();
   const [queue, setQueue] = useState<MessageReviewQueue | null>(null);
   const [detail, setDetail] = useState<MessageReviewDetail | null>(null);
+  const [advice, setAdvice] = useState<MessageAdvice | null>(null);
   const [notice, setNotice] = useState('Load your assigned message reviews to check current access.');
   const [action, setAction] = useState<'' | 'hide' | 'restore'>('');
   const [reason, setReason] = useState('');
@@ -27,7 +30,7 @@ export default function MessageReviews() {
   const [pending, setPending] = useState<Pending | null>(null);
   const sending = useRef(false);
   const focusCase = useCallback((element: HTMLHeadingElement | null) => { element?.focus({ preventScroll: true }); }, []);
-  const clearDraft = useCallback(() => { setAction(''); setReason(''); setSummary(''); setSource('message'); setExcerpt(''); setConfirmed(false); }, []);
+  const clearDraft = useCallback(() => { setAction(''); setReason(''); setSummary(''); setSource('message'); setExcerpt(''); setConfirmed(false); setAdvice(null); }, []);
   const retire = useCallback(() => {
     setQueue(null); setDetail(null); setPending(null); clearDraft(); sending.current = false;
     setNotice('Private reports, evidence and drafts cleared. Load assigned message reviews to check access again. A decision already sent may still have been saved.');
@@ -83,6 +86,22 @@ export default function MessageReviews() {
       setNotice(sent ? 'The decision reply was lost. It may have been saved. Retry the exact same decision manually or load a fresh queue.' : 'The decision was not sent. Retry it manually or load a fresh queue to check access.');
     });
   }
+  function requestAdvice() {
+    if (!detail || disabled || sending.current || !detail.complete || detail.message.visibility === 'withdrawn') return;
+    const snapshot = detail;
+    setAdvice(null); setConfirmed(false); setNotice('Checking author consent and requesting AI observations…');
+    void perform(`${endpoint(snapshot.circle.id, snapshot.message.id)}/advice`, {
+      method: 'POST', body: JSON.stringify({ expectedRevision: snapshot.revision, contentHash: snapshot.contentHash }),
+    }, ({ status, body }) => {
+      const value = status === 200 ? parseMessageAdviceReceipt(body, snapshot.message.content) : null;
+      if (!value || value.circleId !== snapshot.circle.id || value.messageId !== snapshot.message.id || value.revision !== snapshot.revision || value.contentHash !== snapshot.contentHash) {
+        setAdvice(null);
+        if ([401, 403, 404, 409].includes(status)) { unavailable(status); return; }
+        setNotice('AI advice could not be confirmed. You can continue human review. No decision was made.'); return;
+      }
+      setAdvice(value.advice); setNotice('AI observations loaded for this message only. Check every observation and the full evidence yourself. No decision was made.');
+    }, () => { setAdvice(null); setNotice('AI advice could not be confirmed. It may already have been requested; nothing is retried automatically. Human review remains available.'); });
+  }
   function decide(event: React.FormEvent) {
     event.preventDefault();
     if (!detail || disabled || sending.current || !detail.complete || !confirmed || !action || !reason) return;
@@ -118,6 +137,23 @@ export default function MessageReviews() {
       <ol className={styles.list}>{detail.reports.map((report, index) => <li key={report.id} style={card}>
         <h4 style={fieldLabel}>Report {index + 1}: {messageReasonLabel(report.reason)}</h4><p style={{ ...body, whiteSpace: 'pre-wrap' }}>{report.note || 'No additional details.'}</p><time style={small} dateTime={report.created_at}>{new Date(report.created_at).toUTCString()}</time>
       </li>)}</ol>
+      <section aria-label="AI assistance" className={styles.stack}>
+        <h3 style={h2}>Optional AI assistance</h3>
+        <p style={small}>Available only when the author opted in for this message and AI assistance is enabled. Anthropic receives the message text, which may itself contain names or personal details. Reporter notes, account details and the rest of the conversation are excluded.</p>
+        <button type="button" style={button} disabled={disabled || !detail.complete || detail.message.visibility === 'withdrawn'} onClick={requestAdvice}>Request AI observations</button>
+        {advice && <div style={card}>
+          <p style={body}>These are unverified suggestions about one message, with limited context. They do not establish a violation or factual accuracy. Apply the same conduct standards to all religious and political views. Read the reports yourself and make your own decision.</p>
+          <h4 style={fieldLabel}>Possible conduct concerns</h4>
+          {!advice.observations.length && <p style={small}>No concerns were returned. This does not establish that the message is safe.</p>}
+          <ul>{advice.observations.map((item, index) => <li key={index} style={body}><strong>{item.rule === 'context' ? 'Context to check' : messageReasonLabel(item.rule)}</strong><blockquote style={{ whiteSpace: 'pre-wrap' }}>{item.excerpt}</blockquote><p style={{ whiteSpace: 'pre-wrap' }}>{item.note}</p></li>)}</ul>
+          <h4 style={fieldLabel}>Counterevidence to check</h4>
+          {!advice.counterevidence.length && <p style={small}>No counterevidence was returned. Look for it yourself.</p>}
+          <ul>{advice.counterevidence.map((item, index) => <li key={index} style={body}><blockquote style={{ whiteSpace: 'pre-wrap' }}>{item.excerpt}</blockquote><p style={{ whiteSpace: 'pre-wrap' }}>{item.note}</p></li>)}</ul>
+          <h4 style={fieldLabel}>Missing context</h4>
+          <ul>{advice.questions.map((question, index) => <li key={index} style={{ ...body, whiteSpace: 'pre-wrap' }}>{question}</li>)}</ul>
+          <p style={small}>This page clears advice when you load another case, change accounts, become inactive or leave. The app does not copy it into a decision or save it as evidence. Provider retention is described in the <Link href="/circles/message-ai-policy" prefetch={false} style={{ color: 'inherit' }}>AI review policy</Link>.</p>
+        </div>}
+      </section>
       <form onSubmit={decide}>
         <fieldset disabled={disabled || !detail.complete} className={styles.stack} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
           <legend style={h2}>Human decision</legend>

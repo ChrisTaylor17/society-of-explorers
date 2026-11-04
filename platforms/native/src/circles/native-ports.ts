@@ -39,6 +39,8 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
   };
   const transport:CircleTransport=async(url,init)=>{
     let id:string|undefined;
+    let finished=false,cancelled=false;
+    const cancel=()=>{if(!id||cancelled)return;cancelled=true;const requestId=id;void Promise.resolve().then(()=>bridge.cancel(requestId)).catch(()=>{});};
     const lifetime=new AbortController(), signal=lifetime.signal, abortLifetime=()=>lifetime.abort();
     if(init.signal.aborted)lifetime.abort();else init.signal.addEventListener('abort',abortLifetime,{once:true});
     queue.requests.add(lifetime);
@@ -51,17 +53,31 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
       const query = parseDiscussionQuery(u.searchParams);
       const approvedPath = legacy ? isUuid(legacy[1]) && !u.search : discussion && isUuid(discussion[1]) && init.method === 'GET' && query && query.kind !== 'receipt';
       if(!current()||u.origin!==origin||u.username||u.password||u.hash||!approvedPath||!allowed||!match||match[1].length>16384||init.redirect!=='error'||init.credentials!=='omit'||init.cache!=='no-store'||signal.aborted||!['GET','POST'].includes(init.method)||ct.length>1||(init.method==='GET'&&(init.body!==undefined||ct.length!==0))||(init.method==='POST'&&(ct.length!==1||ct[0][1]!=='application/json'||typeof init.body!=='string'||size(init.body)>16384))) throw fail();
-      id=await timed(bridge.begin(),timeout);if(typeof id!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(id)||signal.aborted||!current())throw fail();
-      const requestId=id;let rejectAbort: (reason: Error)=>void = () => {};const aborted=new Promise<never>((_,reject)=>{rejectAbort=reject;});const abort=()=>{void Promise.resolve().then(()=>bridge.cancel(requestId)).catch(()=>{});rejectAbort(fail());};
+      let rejectAbort: (reason: Error)=>void = () => {};
+      const aborted=new Promise<never>((_,reject)=>{rejectAbort=reject;});
+      const abort=()=>{cancel();rejectAbort(fail());};
       signal.addEventListener('abort',abort,{once:true});
       try {
+        if(signal.aborted||!current())throw fail();
+        // Keep observing begin after the caller's deadline/abort: the bridge may
+        // allocate a native handle late, which still belongs to this attempt.
+        const begun=Promise.resolve().then(()=>{
+          if(finished||signal.aborted||!current())throw fail();
+          return bridge.begin();
+        }).then(value=>{
+          if(typeof value!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(value))throw fail();
+          id=value;
+          if(finished||signal.aborted||!current()){cancel();throw fail();}
+          return value;
+        });
+        const requestId=await timed(Promise.race([begun,aborted]),timeout);
         if(signal.aborted||!current())throw fail();
         const response=await timed(Promise.race([bridge.send(requestId,{url,method:init.method,bearer:match[1],...(init.body===undefined?{}:{body:init.body})}),aborted]),timeout);
         if(signal.aborted||!current()||!Number.isInteger(response.status)||response.status<100||response.status>599||response.status>=300&&response.status<400||response.redirected!==false||response.url!==url||typeof response.body!=='string'||size(response.body)>1048576)throw fail();
         return {status:response.status,url:response.url,redirected:false,json:async()=>JSON.parse(response.body)};
       } finally {signal.removeEventListener('abort',abort);}
-    } catch { if(id)void Promise.resolve().then(()=>bridge.cancel(id!)).catch(()=>{});throw fail(); }
-    finally {queue.requests.delete(lifetime);init.signal.removeEventListener('abort',abortLifetime);}
+    } catch { cancel();throw fail(); }
+    finally {finished=true;queue.requests.delete(lifetime);init.signal.removeEventListener('abort',abortLifetime);}
   };
   return { transport, storage, retireStorage(){retired=true;},
     onAccountRetired(listener:()=>void) { if(!current()){listener();return ()=>{};}queue.retirements.add(listener);return ()=>{queue.retirements.delete(listener);}; },

@@ -63,7 +63,7 @@ export function circleWriteOrigin(req: NextRequest, anonymous = false): Response
 }
 
 /** Bound bytes while reading, rather than parsing an unbounded JSON body first. */
-export async function readCircleReviewJson(req: NextRequest): Promise<Result<unknown>> {
+export async function readCircleReviewJson(req: NextRequest, signal?: AbortSignal): Promise<Result<unknown>> {
   const tooLarge = () => ({ ok: false as const, response: privateJson({ error: 'Use a smaller request.' }, { status: 413 }) });
   const declared = req.headers.get('content-length');
   if (declared && /^\d+$/.test(declared) && Number(declared) > CIRCLE_REVIEW_BODY_MAX_BYTES) return tooLarge();
@@ -71,19 +71,23 @@ export async function readCircleReviewJson(req: NextRequest): Promise<Result<unk
     let text: string;
     if (req.body) {
       const reader = req.body.getReader();
+      const cancel = () => { void reader.cancel().catch(() => {}); };
+      signal?.addEventListener('abort', cancel, { once: true });
       const decoder = new TextDecoder('utf-8', { fatal: true });
       let bytes = 0;
       text = '';
       try {
+        if (signal?.aborted) { cancel(); throw new Error('Request retired'); }
         while (true) {
           const chunk = await reader.read();
+          if (signal?.aborted) throw new Error('Request retired');
           if (chunk.done) break;
           bytes += chunk.value.byteLength;
           if (bytes > CIRCLE_REVIEW_BODY_MAX_BYTES) { void reader.cancel().catch(() => {}); return tooLarge(); }
           text += decoder.decode(chunk.value, { stream: true });
         }
         text += decoder.decode();
-      } finally { reader.releaseLock(); }
+      } finally { signal?.removeEventListener('abort', cancel); reader.releaseLock(); }
     } else {
       // Also supports the existing offline request double, which supplies text.
       text = await req.text();

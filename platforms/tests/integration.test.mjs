@@ -72,3 +72,41 @@ test('native bridge adapter permits only canonical archive GET modes in addition
  for(const suffix of ['?limit=26','?limit=025',`?requestId=${child}`,`?before=${child}&before=${root}`,`?message=${root}&before=${child}`,'?memberId=forged','#private'])await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion${suffix}`,init));
  await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion`,{...init,method:'POST',body:'{}',headers:{...init.headers,'Content-Type':'application/json'}}));assert.equal(calls.length,1);ports.retireStorage();
 });
+function nativeBridgeFixture(timeoutMs=1000){
+ const {createNativeMemberPorts}=sourceLoader()('platforms/native/src/circles/native-ports.ts');
+ const calls={begin:0,send:[],cancel:[]},began=gate();let begin=async()=>'owned-request',send=async(id,r)=>({status:200,url:r.url,body:'{"ok":true}',redirected:false});
+ const bridge={capabilities:async()=>({version:1,origin,storageKey:'late-begin-fixture',redirectPolicy:'reject-before-send',storagePolicy:'os-protected'}),
+  begin(){calls.begin++;began.resolve();return begin();},send(id,r){calls.send.push(id);return send(id,r);},cancel:async id=>{calls.cancel.push(id);},read:async()=>null,write:async()=>{},remove:async()=>{}};
+ const controller=new AbortController(),init={method:'GET',headers:{Authorization:'Bearer NONISSUED_FIXTURE'},cache:'no-store',redirect:'error',credentials:'omit',signal:controller.signal};
+ return{calls,began:began.promise,controller,setBegin:fn=>{begin=fn;},setSend:fn=>{send=fn;},async open(){const ports=await createNativeMemberPorts(bridge,{origin,storageKey:'late-begin-fixture',timeoutMs});return{ports,request:()=>ports.transport(origin+`/api/book-salons/${circle}`,init)};}};
+}
+const flushNativeCallbacks=()=>new Promise(resolve=>setTimeout(resolve,0));
+const nativeUnavailable=error=>{assert.equal(error.message,'Native member service unavailable');return true;};
+test('native late begin after timeout is cancelled exactly once and never sends credentials',async()=>{
+ const f=nativeBridgeFixture(10),handle=gate();f.setBegin(()=>handle.promise);const{ports,request}=await f.open();
+ try{await assert.rejects(request(),nativeUnavailable);assert.deepEqual(f.calls.send,[]);assert.deepEqual(f.calls.cancel,[]);
+  handle.resolve('late-timeout-handle');await flushNativeCallbacks();f.controller.abort();await flushNativeCallbacks();
+  assert.equal(f.calls.begin,1);assert.deepEqual(f.calls.send,[]);assert.deepEqual(f.calls.cancel,['late-timeout-handle']);
+ }finally{ports.retireStorage();}
+});
+test('native abort while begin is pending rejects before its handle arrives and reaps that late handle once',async()=>{
+ const f=nativeBridgeFixture(),handle=gate();f.setBegin(()=>handle.promise);const{ports,request}=await f.open();
+ try{const pending=assert.rejects(request(),nativeUnavailable);await f.began;f.controller.abort();
+  assert.equal(await Promise.race([pending.then(()=>'retired'),new Promise(resolve=>setImmediate(()=>resolve('still waiting')))]),'retired');
+  assert.deepEqual(f.calls.send,[]);assert.deepEqual(f.calls.cancel,[]);handle.resolve('late-abort-handle');await flushNativeCallbacks();f.controller.abort();await flushNativeCallbacks();
+  assert.equal(f.calls.begin,1);assert.deepEqual(f.calls.send,[]);assert.deepEqual(f.calls.cancel,['late-abort-handle']);
+ }finally{ports.retireStorage();}
+});
+test('native abort after begin cancels an in-flight send once and ignores its late response',async()=>{
+ const f=nativeBridgeFixture(),response=gate(),sent=gate();f.setSend((id,r)=>{sent.resolve(r);return response.promise;});const{ports,request}=await f.open();
+ try{const pending=assert.rejects(request(),nativeUnavailable),r=await sent.promise;f.controller.abort();await pending;
+  response.resolve({status:200,url:r.url,body:'{"private":"SYNTHETIC_LATE_BODY"}',redirected:false});await flushNativeCallbacks();
+  assert.deepEqual(f.calls.send,['owned-request']);assert.deepEqual(f.calls.cancel,['owned-request']);
+ }finally{ports.retireStorage();}
+});
+test('native ordinary begin/send success returns its response without cancellation or an abort listener leak',async()=>{
+ const f=nativeBridgeFixture(),{ports,request}=await f.open();
+ try{const response=await request();assert.equal(response.status,200);assert.deepEqual(JSON.parse(JSON.stringify(await response.json())),{ok:true});
+  f.controller.abort();await flushNativeCallbacks();assert.equal(f.calls.begin,1);assert.deepEqual(f.calls.send,['owned-request']);assert.deepEqual(f.calls.cancel,[]);
+ }finally{ports.retireStorage();}
+});

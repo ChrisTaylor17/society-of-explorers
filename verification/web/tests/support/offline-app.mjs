@@ -9,6 +9,7 @@ export function offlineApp({root=path.resolve('../..')}={}){
  function load(filename){
    const full=path.resolve(root,filename);if(!full.startsWith(root+path.sep))throw Error('Project import escaped test root');
    if(cache.has(full))return cache.get(full).exports;
+    const info=fs.statSync(full);if(info.size&&!info.blocks)throw Error('Refusing offloaded source: '+full);
    const m={exports:{}};cache.set(full,m);
    if(full.endsWith('.json')) {m.exports=JSON.parse(fs.readFileSync(full,'utf8'));return m.exports;}
    const source=fs.readFileSync(full,'utf8'),compiled=ts.transpileModule(source,{fileName:full,compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;

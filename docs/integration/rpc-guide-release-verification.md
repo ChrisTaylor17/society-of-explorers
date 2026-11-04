@@ -1,6 +1,6 @@
 # Reward, Prompt Atlas and guide privacy checkpoint
 
-**Local milestone PASS; production release remains HOLD.** No production function, grant, schema, provider, account or deployment changed. The first release is not ready.
+**Historical checkpoint `e1fbb2d`: local milestone PASS; production release remains HOLD.** No production function, grant, schema, provider, account or deployment changed. The first release is not ready. Its fifteen pinned generated outputs are preserved byte-for-byte under `verification/web/evidence/checkpoint-e1fbb2d/` before later moderation work; the linked JSON now points there.
 
 The main-app guide leaderboard no longer publishes names, activity or earnings without separate consent. Its route has no database/auth import and returns private/no-store503. The page offers honest availability/retry and community/directory links. The separate reward candidate revokes browser/PUBLIC EXECUTE on exactly three functions, preserves their unknown bodies and explicit service access, and remains unapplied. The existing Prompt Atlas member helper is preserved because eight policies depend on it.
 

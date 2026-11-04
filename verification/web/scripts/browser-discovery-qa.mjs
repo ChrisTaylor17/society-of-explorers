@@ -6,7 +6,9 @@ import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 
-const root = path.resolve('.'), port = 3199, origin = `http://127.0.0.1:${port}`, require = createRequire(import.meta.url);
+// Installed NextURL canonicalizes loopback IP hostnames to "localhost". Use
+// that same browser origin so the real origin guard can be exercised unchanged.
+const root = path.resolve('.'), port = 3199, origin = `http://localhost:${port}`, require = createRequire(import.meta.url);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex'), pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 function materializedRead(file, encoding) {
   const info = fs.statSync(file);
@@ -15,6 +17,8 @@ function materializedRead(file, encoding) {
 }
 const evidence = { status: 'RUNNING', stage: 'setup', startedAt: new Date().toISOString(), boundary: 'Built Next UI with actual TypeScript public GET handler and disposable SQL; discovery PostgREST transport is synthetic and intercepted discovery calls do not execute inside the built Next server. The signed-out profile story separately uses the actual built Next cookie/token-free auth/member and owner-profile GET handlers. No authenticated account, real Circle, provider transport or production system is used.', command: 'node --require ./scripts/deny-build-network.cjs scripts/browser-discovery-qa.mjs with existing explicit Playwright/Chromium paths in a clean environment', checks: [], requests: [], pages: [], profileRequests: [], profileExpectedConsoleErrors: [], externalRequestsBlocked: [], pageErrors: [], routeErrors: [], consoleErrors: [], cleanupErrors: [], retiredResponses: [] };
 let server, serverError, browser, system, failed, holdNextPage = false, heldPage = null, allowSignedOutProfileGets = false, allowUnconfiguredHallGets = false, allowLeaderboardGets = false, ownedBrowserPid;
+let allowDisabledAdvice = false;
+const disabledAdvicePath = '/api/admin/circles/11111111-1111-4111-8111-111111111111/messages/22222222-2222-4222-8222-222222222222/advice';
 function progress() {
   evidence.progressAt = new Date().toISOString();
   fs.mkdirSync('evidence', { recursive: true });
@@ -70,6 +74,7 @@ try {
   assert.equal(await portOpen(), false, 'Owned QA port is not free'); fs.mkdirSync('evidence', { recursive: true });
   evidence.buildId = materializedRead('../../.next/BUILD_ID', 'utf8').trim(); evidence.runnerSha256 = hash(materializedRead('scripts/browser-discovery-qa.mjs'));
   evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs', '../../app/account/profile/page.tsx', '../../app/account/profile/ProfileEditor.tsx', '../../app/account/profile/profile.module.css', '../../app/api/auth/member/route.ts', '../../app/api/members/profile/route.ts', '../../lib/members/profile.ts', '../../app/hall/page.tsx', '../../app/api/hall/route.ts', '../../lib/hall/public.ts', '../../app/leaderboard/page.tsx', '../../app/api/leaderboard/route.ts'].map(file => [file, hash(materializedRead(file))]));
+  for (const file of ['../../app/circles/message-ai-policy/page.tsx', '../../app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts', '../../lib/circles/message-ai-provider.ts', '../../lib/circles/message-ai.ts']) evidence.sourceSha256[file] = hash(materializedRead(file));
   system = await (await import('../tests/support/discovery-app.mjs')).discoveryApp(); await system.excludeOriginalCircles();
   const ended = await system.seedCircles(205, { ended: true, title: 'Discovery ended archive' });
   const matching = await system.seedCircles(31, { title: 'Álpha Discovery', sameTitle: true, description: 'Literal 100% [wisdom] and welcoming readers.', format: 'hybrid' });
@@ -100,6 +105,12 @@ try {
       const request = route.request(), url = new URL(request.url());
       if (url.origin !== origin) { evidence.externalRequestsBlocked.push(url.origin + url.pathname); return route.abort(); }
       if (!url.pathname.startsWith('/api/')) return route.continue();
+      if (url.pathname === disabledAdvicePath) {
+        assert.equal(allowDisabledAdvice, true); assert.equal(request.method(), 'POST');
+        assert.equal(request.headers().authorization, undefined); assert.equal(request.headers().cookie, undefined);
+        (evidence.disabledAdviceRequests ??= []).push({ method: request.method(), boundary: 'actual built Next POST with provider flag and credentials absent' });
+        return route.continue();
+      }
       if (url.pathname === '/api/leaderboard') {
         assert.equal(allowLeaderboardGets, true, 'Unexpected guide recognition request');
         assert.equal(request.method(), 'GET');
@@ -302,6 +313,27 @@ try {
   allowLeaderboardGets = false;
   check('Actual built guide recognition page and GET remain explicitly unavailable with keyboard retry, private/no-store503, no names/activity/earnings DTO, no SDK/auth/member-table call and no fabricated empty ranking at320px');
 
+  evidence.stage = 'actual built AI disclosure and disabled provider route'; progress();
+  await page.goto(`${origin}/circles/message-ai-policy`);
+  await page.getByRole('heading', { name: 'Optional AI review of your message', exact: true }).waitFor();
+  assert.match(await page.textContent('main'), /anthropic-message-review-v1/);
+  assert.match(await page.textContent('main'), /request already in progress may still transmit or complete/);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Policy page must fit320px');
+  const backToPosts = page.getByRole('link', { name: 'Return to my posted messages', exact: true });
+  await backToPosts.focus(); assert.equal(await backToPosts.evaluate(element => element === document.activeElement), true);
+  assert.equal(evidence.profileRequests.length, 2, 'Policy must not request private profile or auth data');
+  allowDisabledAdvice = true;
+  const disabledAdvice = await bounded('Disabled AI advice request', () => page.evaluate(async pathname => {
+    const response = await fetch(pathname, { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' }, credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer' });
+    return { status: response.status, cache: response.headers.get('cache-control'), body: await response.json() };
+  }, disabledAdvicePath));
+  allowDisabledAdvice = false;
+  assert.equal(disabledAdvice.status, 503); assert.match(disabledAdvice.cache, /private.*no-store/);
+  assert.deepEqual(disabledAdvice.body, { error: 'AI advice is unavailable. Human review remains available.' });
+  assert.equal(evidence.disabledAdviceRequests.length, 1);
+  await page.screenshot({ path: 'evidence/message-ai-policy-320.png', fullPage: true });
+  check('Actual built versioned AI disclosure fits320px with keyboard-accessible return link and no account fetch; actual built advice POST fails closed503/private-no-store with provider enable/key absent');
+
   evidence.stage = 'nonpublic artwork and first-party share card'; progress();
   const artwork = JSON.parse(materializedRead('../../archive/unverified-hero-images/manifest.json'));
   evidence.artworkRequests = [];
@@ -330,7 +362,7 @@ try {
   check('All12 retained hero images are404 at both former public and archive URLs on the actual built server; the existing first-party text/gradient share card returns a valid bounded PNG without provider transport');
 
   assert.deepEqual(evidence.externalRequestsBlocked, []); assert.deepEqual(evidence.pageErrors, []); assert.deepEqual(evidence.routeErrors, []); assert.deepEqual(evidence.consoleErrors.filter(text => !text.includes('net::ERR_FAILED') && ![409, 503].some(status => text.includes(`status of ${status} (`))), []);
-  evidence.status = 'PASS'; evidence.stage = 'complete';
+  evidence.status = 'CLEANING_UP'; evidence.stage = 'checks complete';
 } catch (error) { failed = error; evidence.status = 'FAIL'; evidence.error = String(error.stack || error); progress(); }
 finally {
   heldPage?.release();
@@ -344,6 +376,14 @@ finally {
   evidence.cleanupStage = 'server'; progress();
   if (server?.pid) { try { process.kill(-server.pid, 'SIGTERM'); } catch {} for (let count = 0; count < 50 && await portOpen(); count++) await pause(100); evidence.ownedServerStopped = !(await portOpen()); if (!evidence.ownedServerStopped) evidence.cleanupErrors.push('Owned server did not stop'); }
   if (evidence.cleanupErrors.length) { failed ??= Error(evidence.cleanupErrors.join('; ')); evidence.status = 'FAIL'; }
+  // Closing owned transports can deliver pending route/browser errors. Inspect
+  // them after cleanup before recording a final PASS.
+  if (!failed) try {
+    assert.deepEqual(evidence.externalRequestsBlocked, []); assert.deepEqual(evidence.pageErrors, []); assert.deepEqual(evidence.routeErrors, []);
+    assert.deepEqual(evidence.consoleErrors.filter(text => !text.includes('net::ERR_FAILED') && ![409, 503].some(status => text.includes(`status of ${status} (`))), []);
+  } catch (error) { failed = error; evidence.error = String(error.stack || error); }
+  evidence.status = failed ? 'FAIL' : 'PASS';
+  if (!failed) evidence.stage = 'complete';
   evidence.cleanupStage = 'complete';
   evidence.finishedAt = new Date().toISOString(); fs.mkdirSync('evidence', { recursive: true }); fs.writeFileSync('evidence/browser-discovery-qa.json', JSON.stringify(evidence, null, 2) + '\n');
   if (failed) { process.stderr.write(String(failed.stack || failed) + '\n'); process.exitCode = 1; } else process.stdout.write(JSON.stringify({ status: evidence.status, checks: evidence.checks.length, ownedServerStopped: evidence.ownedServerStopped }) + '\n');

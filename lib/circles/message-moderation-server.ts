@@ -7,7 +7,7 @@ import { rateLimit } from '@/lib/rateLimit';
 import { MESSAGE_SAFETY_LIMIT } from './message-moderation';
 
 export type MessageSafetyRpcName = 'soe_circle_message_state' | 'soe_circle_message_action' | 'soe_circle_message_contributions'
-  | 'soe_circle_message_review_queue' | 'soe_circle_message_review_detail' | 'soe_circle_message_review_decide';
+  | 'soe_circle_message_review_queue' | 'soe_circle_message_review_detail' | 'soe_circle_message_review_decide' | 'soe_circle_message_ai_consent_state' | 'soe_circle_message_ai_consent_set';
 type Result<T> = { ok: true; value: T } | { ok: false; response: Response };
 type Args = Record<string, string | number | boolean | null>;
 export function messageSafetyUnavailable(): Response {

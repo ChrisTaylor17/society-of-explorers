@@ -23,7 +23,7 @@
     "sourceFiles": 967,
     "sourceSha256": "1f5f1678692f5411aa42b18c4a4209e7d318c50272a32618f9cadf16c73f1e91",
     "sourceUnchangedDuringBuild": true,
-    "log": "evidence/next-build.log",
+    "log": "evidence/checkpoint-e1fbb2d/next-build.log",
     "buildId": "1RTd0hc6WPNC0uuBC-PfA",
     "fullTypeScriptSeconds": 18.9
   },
@@ -616,21 +616,21 @@
     "platforms/source/apple-member-policy/provenance.json": "e911d99d5eafddb20d05b4e474eb07bee398502887c3f9cd74a081e97bb0fb85"
   },
   "evidenceSha256": {
-    "verification/web/evidence/next-build.json": "0062298a07c3c23de767b5e44864c3fe97f9d16450de532510022b15efafbdc2",
-    "verification/web/evidence/next-build.log": "23d59b9624d96f837010d649fd993fb43ec4d5fe7c58a0f4ad23d7389b53599a",
-    "verification/web/evidence/build-source-sha256.json": "5efdf029ee164749473512d00088c6e43c37373dcd0375bb8e1dd22125a7e123",
-    "verification/web/evidence/rpc-guide-complete-tests.log": "753870bf509da0d3adea51fad62030b09455c3ef40755c6779e41651527d8d4a",
-    "verification/web/evidence/rpc-guide-complete-tests-selection.json": "074c27e1ecd628a8f13dc7099fae4508c6e30ac711e0b2337cf9d2fd438e7fc4",
-    "verification/web/evidence/rpc-guide-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
-    "verification/web/evidence/browser-discovery-qa.json": "65a6370ebb38e34453892dc09f21a09b2ccd4835d7176d3c1186e3907a8ddb31",
-    "verification/web/evidence/browser-discovery-guide-final.log": "a919c432a2effec15a887ea5a150f3be9b8b6aec7f91900b6379978ddc81c0c8",
-    "verification/web/evidence/browser-discovery-progress.json": "6cf9bec27cfa3448a565e0a65431ad70d0054570fdaa9589cc007a6b0db266e5",
-    "verification/web/evidence/leaderboard-unavailable-320.png": "6995943699b047754729e49e630d145a707838441e18afadbe622b81819e9362",
-    "verification/web/evidence/leaderboard-browser.json": "7044a8e0ba2288da9345f5b688148d019b576c2e1c3f9ef7a34758d02cfe8274",
-    "verification/web/evidence/prompt-atlas-core-compatibility.json": "57bf810f7ab806876b469ae8f00565a01e1f72d8382da7376c2ecbaae511e30a",
-    "verification/web/evidence/reward-rpc-containment-final-tests.log": "5e9c2088991eac60aa049b6d82135b1a40c990e7d113568d5072866b52ace07a",
-    "verification/web/evidence/rpc-guide-source-stability.json": "a611be5f0031fe9ff12f12b6fd1896bd86c7bb05fe72621bb5069b36adf5a69a",
-    "verification/web/evidence/release-staging-discovery-2026-11-04.json": "15197408af5e0ce2ab4f6c90e9c04e0d17a87bdebaf0c507f29c42369c8f8ad6"
+    "verification/web/evidence/checkpoint-e1fbb2d/next-build.json": "0062298a07c3c23de767b5e44864c3fe97f9d16450de532510022b15efafbdc2",
+    "verification/web/evidence/checkpoint-e1fbb2d/next-build.log": "23d59b9624d96f837010d649fd993fb43ec4d5fe7c58a0f4ad23d7389b53599a",
+    "verification/web/evidence/checkpoint-e1fbb2d/build-source-sha256.json": "5efdf029ee164749473512d00088c6e43c37373dcd0375bb8e1dd22125a7e123",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-complete-tests.log": "753870bf509da0d3adea51fad62030b09455c3ef40755c6779e41651527d8d4a",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-complete-tests-selection.json": "074c27e1ecd628a8f13dc7099fae4508c6e30ac711e0b2337cf9d2fd438e7fc4",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
+    "verification/web/evidence/checkpoint-e1fbb2d/browser-discovery-qa.json": "65a6370ebb38e34453892dc09f21a09b2ccd4835d7176d3c1186e3907a8ddb31",
+    "verification/web/evidence/checkpoint-e1fbb2d/browser-discovery-guide-final.log": "a919c432a2effec15a887ea5a150f3be9b8b6aec7f91900b6379978ddc81c0c8",
+    "verification/web/evidence/checkpoint-e1fbb2d/browser-discovery-progress.json": "6cf9bec27cfa3448a565e0a65431ad70d0054570fdaa9589cc007a6b0db266e5",
+    "verification/web/evidence/checkpoint-e1fbb2d/leaderboard-unavailable-320.png": "6995943699b047754729e49e630d145a707838441e18afadbe622b81819e9362",
+    "verification/web/evidence/checkpoint-e1fbb2d/leaderboard-browser.json": "7044a8e0ba2288da9345f5b688148d019b576c2e1c3f9ef7a34758d02cfe8274",
+    "verification/web/evidence/checkpoint-e1fbb2d/prompt-atlas-core-compatibility.json": "57bf810f7ab806876b469ae8f00565a01e1f72d8382da7376c2ecbaae511e30a",
+    "verification/web/evidence/checkpoint-e1fbb2d/reward-rpc-containment-final-tests.log": "5e9c2088991eac60aa049b6d82135b1a40c990e7d113568d5072866b52ace07a",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-source-stability.json": "a611be5f0031fe9ff12f12b6fd1896bd86c7bb05fe72621bb5069b36adf5a69a",
+    "verification/web/evidence/checkpoint-e1fbb2d/release-staging-discovery-2026-11-04.json": "15197408af5e0ce2ab4f6c90e9c04e0d17a87bdebaf0c507f29c42369c8f8ad6"
   },
-  "historicalEvidence": "Hall24digests still match preserved checkpoint6d5bccf pointers. Initial pre-lint guide build/browser receipts are retained under initial-guide-build; current final receipts supersede them."
+  "historicalEvidence": "This e1fbb2d receipt is historical. All fifteen pinned generated outputs were copied byte-for-byte to checkpoint-e1fbb2d before later build/browser work. Hall24digests remain preserved at their existing checkpoint6d5bccf pointers. Source bindings describe this historical checkpoint, not later edits."
 }

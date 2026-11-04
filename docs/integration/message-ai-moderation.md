@@ -1,0 +1,37 @@
+# Message AI assistance and author consent
+
+Local implementation of the user's 2026-11-04 choice: **per-message author opt-in**. Production remains on hold. The feature is disabled by default, its SQL is unapplied, and no real provider request or private member data was used in verification.
+
+## Product behavior
+
+An author opens AI review settings for a posted message, explicitly checks its current state, reads the versioned disclosure, checks the consent box and enables permission. Existing messages have no consent row and default to false/revision zero. Permission does not itself submit the message. A receipt and a separate matching readback are required before the UI confirms a change. Uncertain outcomes require a manual check; changes are never retried automatically.
+
+Only an eligible assigned human reviewer can request advice. The server gets the current message from the database, checks the author’s policy/content-bound permission, the reviewer’s active assignment and conflicts, and the completeness of the case. It sends only that message’s text plus static conduct instructions to Anthropic. Profile fields, Circle titles, timestamps, reporter notes, allegations and neighboring messages are excluded. Names or personal details within the text are still sent; this is not anonymous processing.
+
+The pinned policy is `anthropic-message-review-v1`, direct Anthropic, model `claude-sonnet-4-6`, API version `2026-10-21`. Provider/model/input/terms changes require a reviewed new policy and fresh consent; changing an environment model or enabling the operator flag cannot silently change the destination. The public disclosure is `/circles/message-ai-policy`. It describes ordinary retention and safety/legal/agreement exceptions without promising zero retention or verified account-specific terms.
+
+Advice contains bounded conduct observations, exact message quotations, counterevidence and missing-context questions. The server validates every field and quotation independently of the provider’s structured-output schema. Extra action fields, invented citations, oversized or malformed output, refusal, truncation and unexpected response envelopes are rejected. A valid exact quote does not establish that the model’s interpretation is correct. Reviewers must assess context and apply the same conduct rules to differing religious and political views. Advice never populates a decision, changes visibility or writes evidence.
+
+After generation, the server re-authenticates the same actor and rechecks the database snapshot. Changed or revoked consent, revoke/re-enable with a new consent revision, changed content, new reports, withdrawal or lost review access suppress the answer. Revocation cannot undo processing already begun, recall transmitted text or guarantee that a remote provider stops or does not bill. The UI says this. Page/account changes, blur, pagehide, visibility loss and unmount retire private advice and late responses.
+
+## Authority and execution boundaries
+
+`docs/sql/circle-message-ai-consent.sql` follows the strict Circle baseline and nine existing Circle migrations. It creates one private consent table and three service-only invoker RPCs. It refuses object collisions and unsafe prerequisite authority. It closes inherited default grants on its own objects without changing global defaults, existing tables, safety revisions, reports or reviewer assignments. Browser roles cannot read or mutate the new table or execute its RPCs.
+
+Consent uses a separate compare-and-swap revision and the current message hash. Authors may enable it only while their message is visible; they may read/revoke it after leaving the Circle or after hiding/withdrawal. Previously granted permission may be used to assist human review of a moderator-hidden message, but withdrawal always prevents advice. The case must contain no more than 100 open reports. The pre-existing missing workflow for reviewing larger cases remains a release limitation; no cap was removed.
+
+The adapter requires both `SOE_MESSAGE_AI_ENABLED=true` and a nonblank server `ANTHROPIC_API_KEY`. It uses a fixed direct endpoint, explicit API key, no gateway/fallback, one send, zero SDK retries, no tools or content logging, 2,000 output tokens and a 64 KiB response limit. It rebuilds outbound headers and rejects redirects or unexpected origins/status/content types. Its eight-second lifetime includes response-body parsing and late continuations. The route has a twelve-second lifetime including input, identity, database reads and generation, with abort and elapsed-time checks; its body reader is cancelled on retirement.
+
+The existing in-memory limiter permits at most five requests per reviewer and fifty per instance per hour. **This is not a shared production spending cap**; cold starts and other instances reset it. Approved production budget controls and provider terms/evaluation remain activation gates. Local synthetic tests do not prove actual model fairness, account access, cancellation, billing or retention.
+
+The operator policy remains applicable to activation/testing: [external-action matrix](../soe-external-action-approval-matrix.md) requires an approved provider, route, data class and purpose for external private-data processing. No flag, key, deployment or production record was changed. Applying SQL requires the separate restore/impact review and authorization. To stop new advice, disable the feature; do not erase the consent table or safety history as an improvised rollback.
+
+## Verification scope
+
+The dedicated database suite executes twelve actual migration files on the tracked sanitized Circle catalog plus explicitly synthetic members, defaults, roles and external prerequisites. It proves real local SQL authorization and CAS behavior, not a production backup/restore, live PostgREST or multi-backend lock scheduling.
+
+Actual API composition uses those database functions, with synthetic server identity and PostgREST transport. The provider adapter tests execute the installed Anthropic SDK with an intercepted synthetic fetch. Paired-viewpoint, quotation and prompt-injection fixtures test boundaries and prompt construction; they are not a live-model fairness evaluation. Actual browser component tests combine the author/reviewer flows and the local SQL/API while substituting credentials, SDK event subscription, NextLink and remote model responses. A separate full Next build verifies integrated TypeScript/bundling.
+
+Current results and final source/evidence bindings are recorded in `message-ai-release-verification.json`. Earlier checkpoint evidence is retained under `verification/web/evidence/checkpoint-e1fbb2d/`; it is not relabeled as testing this feature.
+
+Independent review found and closed a delayed-timer edge case: the route now checks elapsed time as well as abort state after asynchronous work. Its new regression advances time without firing the timer. Browser runners also check errors after draining/closing owned work before recording PASS. The built-server test initially used a numeric loopback origin; installed Next normalizes that hostname to `localhost`, so the unchanged origin guard correctly refused the mismatch. The diagnostic and failed receipt are retained. The final browser uses the matching `localhost` origin and verifies the disabled endpoint’s private503 response. This does not claim live proxy/deployment-origin acceptance.
