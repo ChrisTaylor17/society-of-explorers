@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="SOE-Q002 — What happens when an agreed limit stops being safe? Open question. Novelty unestablished. No field trial completed." />
+  <meta property="og:title" content="Q2 — What happens when an agreed limit stops being safe? — Society of Explorers" />
+  <meta property="og:description" content="SOE-Q002 — What happens when an agreed limit stops being safe? Open question. Novelty unestablished. No field trial completed." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Q2 — What happens when an agreed limit stops being safe? — Society of Explorers" />
+  <meta name="twitter:description" content="SOE-Q002 — What happens when an agreed limit stops being safe? Open question. Novelty unestablished. No field trial completed." />
+  <title>Q2 — What happens when an agreed limit stops being safe? — Society of Explorers</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="index.html"><span class="wm-full">Society of Explorers <span>· SoE</span></span><span class="wm-short">SoE</span></a>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" data-nav-toggle><span class="burger" aria-hidden="true"><i></i><i></i><i></i></span> Menu</button>
+      <nav class="primary-nav" id="site-nav">
+        <a href="explore.html">Explore</a>
+        <a href="gather.html">Gather</a>
+        <a href="build.html">Build</a>
+        <a href="about.html">About</a>
+        <a href="participate.html">Participate</a>
+        <details class="nav-more">
+          <summary>More</summary>
+          <div class="nav-overflow">
+          <a href="visual-arc.html">Visual Arc</a>
+          <a href="stack.html">Stack</a>
+          <a href="electronic-governor.html">Electronic Governor</a>
+          <a href="power-as-primitive.html">Power as Primitive</a>
+          <a href="notes/index.html">Notes</a>
+          <a href="ai-guide.html">AI Guide</a>
+          <a href="research.html">Research</a>
+          <a href="research-horizon.html">Research horizon</a>
+          <a href="collective.html">Collective</a>
+          <a href="space.html">Space</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <div class="egb-spine" aria-label="Research record">
+      <span class="egb-step"><a href="research.html">Research</a></span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-q1.html">Q1</a></span><span class="arrow">·</span>
+      <span class="egb-step current">Q2</span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-q3.html">Q3</a></span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-evidence.html">Evidence</a></span>
+    </div>
+
+    <p class="eyebrow">SOE-Q002 · version 1.0 · 27 September 2026</p>
+    <h1>What happens when an agreed limit stops being safe?</h1>
+    <p><strong>Research status:</strong> Open question · Novelty unestablished · No field trial completed</p>
+
+    <h2>The question</h2>
+    <p class="lead">For one concrete resource, what should a participant be allowed to do if its permission is still valid on paper but capacity has changed—or a revocation cannot reach it?</p>
+
+    <h2>Why it matters</h2>
+    <p>A promise about capacity is not the capacity itself. An arrangement that works in a fixed model may fail when equipment trips, measurements are wrong, or several users act at once.</p>
+
+    <h2>What is currently known</h2>
+    <p>Dividing a shared allowance can prevent over-allocation in a fixed model. It requires correct accounting and enforcement. A simple example shows the limit: permissions totaling 10 units do not stay safe if actual capacity falls to 8. Real electricity networks add coupled constraints that need more than this arithmetic example.</p>
+
+    <h2>What remains unknown</h2>
+    <p>For a useful application, we need to specify credible changes, what can be detected locally, how long permission lasts, what fallback is acceptable, and who can override it. The safety and service costs of those choices have not been measured here.</p>
+
+    <h2>Contributions that would help</h2>
+    <ul class="clean">
+      <li>A concrete failure sequence: what changed, who knew, which action continued, and why it mattered.</li>
+      <li>A counterexample to a proposed permission, transfer, expiry, or recovery rule.</li>
+      <li>A better uncertainty model or a simpler fail-safe rule.</li>
+      <li>Practical experience with protection, curtailment, communications loss, or unfair allocation.</li>
+    </ul>
+    <p><strong>A useful first contribution:</strong> “This permission would fail if this happened.” You do not need a formal proof to point out a missing assumption.</p>
+
+    <h2>What would change our minds</h2>
+    <p>If preserving safety requires so little permitted use that the arrangement is no longer useful, the case should stop. A specific guarantee that survives credible faults and preserves valuable service would warrant testing.</p>
+
+    <h2>Start with these sources</h2>
+    <ul class="clean">
+      <li><a href="https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/bg94a.pdf">The Demarcation Protocol, especially §6</a> — established work on maintaining constraints with local limits. Reading status: relevant text read, especially §6. Not independently reproduced. The protocol already covers general linear inequalities, including signed coefficients.</li>
+      <li><a href="https://arxiv.org/html/2607.08578v1">Robust Dynamic Operating Envelopes in Unbalanced Three-Phase Distribution Systems</a> — a 2026 preprint on physical feasibility across an envelope. Reading status: formulation and abstract inspected. Not independently reproduced.</li>
+      <li><a href="https://arxiv.org/pdf/1503.09052">Bounded counters</a> — numerical invariants under distributed operation. Reading status: relevant text read. Not independently reproduced. Replication correctness does not by itself enforce a physical actuator.</li>
+    </ul>
+    <p class="muted">The 10-to-8 example is the same kind of arithmetic as illustration T3 on the <a href="research-evidence.html">evidence page</a>. It is not a feeder study.</p>
+
+    <h2>Prompt above the response box</h2>
+    <p>What could make a valid-looking permission unsafe, unfair, or unusable?</p>
+    <div class="arc-exc" aria-label="Contribution intake closed">
+      <div class="arc-exc-rail" data-state="queued"></div>
+      <p class="arc-exc-status">INTAKE · NOT OPEN</p>
+      <h3>Contributions are not open yet</h3>
+      <p class="arc-exc-meta">no response box · nothing is saved · no receipt · no review queue</p>
+      <span class="arc-exc-pill arc-exc-pill--hold">OFF</span>
+    </div>
+
+    <h2>Question record</h2>
+    <div class="arc-step">
+      <h2>SOE-Q002 · version 1.0</h2>
+      <dl>
+        <dt>Question</dt>
+        <dd>For one concrete resource, what should a participant be allowed to do if its permission is still valid on paper but capacity has changed—or a revocation cannot reach it?</dd>
+        <dt>Version / date</dt>
+        <dd>1.0 · 27 September 2026. First public version of this record.</dd>
+        <dt>Scope</dt>
+        <dd>Included: one concrete resource, credible capacity changes, local detection, permission lifetime, fallback, and override. Excluded: treating a fixed-model split as a safety certificate for a live network, and any claim that a ledger can deliver a revocation to a disconnected controller.</dd>
+        <dt>Owner</dt>
+        <dd>Editorial owner when a record changes: Chris Taylor, or a reviewer he designates. That names a person, not a panel. Intake is not open, so no contribution is in review.</dd>
+        <dt>Disposition</dt>
+        <dd>Open. Reason: the safety and service costs of the fallback choices have not been measured. Novelty unestablished. No field trial completed. The original claim that individually feasible actions remain safe together is rejected; see the evidence page.</dd>
+        <dt>Claims</dt>
+        <dd><span class="claim-tag claim-tag--steel">Fact</span> about a fixed model: a partition can keep combined use inside a constant cap if accounting and enforcement hold. <span class="claim-tag claim-tag--steel">Illustration</span> permissions totaling 10 units do not stay safe if capacity falls to 8. <span class="claim-tag claim-tag--dashed">Unknown</span> the measured cost of credible faults for a useful application. <span class="claim-tag claim-tag--copper">Hypothesis</span> that a specific guarantee can survive those faults and still leave valuable service — not established.</dd>
+        <dt>Assumptions</dt>
+        <dd>A valid old allocation is not a guarantee under arbitrary drift. Continued use cannot be guaranteed safe against arbitrary hidden capacity loss solely by presenting an old permission. Possible responses — margins, short validity, local fallback, protection that does not depend on communications — are engineering choices with costs.</dd>
+        <dt>Baseline</dt>
+        <dd>Demarcation-style local limits, bounded counters, and robust or partially coordinated dynamic operating envelopes. The proposal has to differ from those mechanisms in a documented case, not only in vocabulary.</dd>
+        <dt>Contributions</dt>
+        <dd>None. Contributions are not open yet.</dd>
+        <dt>Objections</dt>
+        <dd>Unresolved: if the only safe permission is too small to be useful, the case should stop. Separate feasible requests can jointly violate a limit. No contributor objection is on file.</dd>
+        <dt>Tests</dt>
+        <dd>Proposed, not started. Six arithmetic illustrations exist and are labeled as illustrations. Stop or reformulate if the desired guarantee depends on impossible information or hidden coordination.</dd>
+        <dt>Results</dt>
+        <dd>No field trial. No measured safety or service cost. T1–T6 on the evidence page are toy checks, not this question’s result.</dd>
+        <dt>Revision</dt>
+        <dd>Version 1.0 published 27 September 2026. The rejected commutativity claim is not restated here as a surviving hypothesis.</dd>
+      </dl>
+    </div>
+
+    <p class="muted">Also read <a href="research-q1.html">Q1</a> · <a href="research-q3.html">Q3</a> · <a href="research-evidence.html">Evidence</a> · <a href="research.html">Research</a>.</p>
+
+    <div class="boundaries">
+      <strong>Honest frame.</strong> SOE-Q002 is open. The 10-to-8 example is arithmetic, not a network trial. Contributions are not open yet.
+    </div>
+  </main>
+  <footer><div class="inner">Society of Explorers <span class="footer-sep" aria-hidden="true">·</span> <a class="footer-util" href="participate.html">Participate</a></div></footer>
+</body>
+</html>

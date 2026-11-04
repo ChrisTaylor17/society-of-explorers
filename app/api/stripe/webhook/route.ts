@@ -10,9 +10,11 @@ import { recordPaidPledge } from '@/lib/capital/pledgeLedger';
 import { capitalWebhookEmailSkipReason } from '@/lib/capital/webhookSafety';
 import { getResend } from '@/lib/email/resend';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { findAuthUserIdByEmail, findMembersForPayment, type MemberTarget } from '@/lib/payments/memberLookup';
-import { resolveMembershipTier, shouldPreserveExistingTier, type PriceFacts } from '@/lib/payments/membershipTier';
+import { findAuthUserIdByEmail } from '@/lib/payments/memberLookup';
 import { markEventProcessed, wasEventProcessed } from '@/lib/payments/webhookIdempotency';
+import { isLegacyBillingCandidate, processLegacyBillingEvent } from '@/lib/payments/legacyBilling';
+import { readWebhookBody, WebhookBodyFailure } from '@/lib/payments/readWebhookBody';
+import { privateJson } from '@/lib/http/routeError';
 
 export const runtime = 'nodejs';
 
@@ -21,79 +23,6 @@ let stripe: Stripe | null = null;
 function getStripe(stripeKey: string): Stripe {
   if (!stripe) stripe = new Stripe(stripeKey, { apiVersion: '2026-03-25.dahlia', maxNetworkRetries: 1 });
   return stripe;
-}
-
-type MembershipOutcome = 'updated' | 'preserved_lifetime' | 'no_member';
-
-// Membership entitlements are keyed by price id (see lib/payments/membershipTier.ts).
-// Unknown, missing or $0 prices never grant a paid tier: they are logged and skipped.
-function membershipTierOrNull(facts: PriceFacts, context: string): string | null {
-  const resolved = resolveMembershipTier(facts);
-  if (resolved.ok) {
-    if (resolved.via === 'exact_amount') console.warn(`[webhook] ${context}: price id not configured, matched published price for ${resolved.tier}`);
-    return resolved.tier;
-  }
-  console.warn(`[webhook] ${context}: skipped, ${resolved.reason} does not map to a membership tier`);
-  return null;
-}
-
-async function updateMemberTier(target: MemberTarget, tier: string): Promise<MembershipOutcome> {
-  const supabaseAdmin = getSupabaseAdmin();
-  const match = await findMembersForPayment(supabaseAdmin, target);
-  if (!match) return 'no_member';
-
-  const writable = match.rows.filter((row) => !shouldPreserveExistingTier(row.tier, tier));
-  if (!writable.length) {
-    console.log(`[webhook] Lifetime membership kept; ${tier} not applied (matched by ${match.via})`);
-    return 'preserved_lifetime';
-  }
-
-  const updateData: Record<string, string> = { tier };
-  if (target.customerId) updateData.stripe_customer_id = target.customerId;
-  const { data: updatedMembers, error } = await supabaseAdmin
-    .from('members')
-    .update(updateData)
-    .in('id', writable.map((row) => row.id))
-    .select('id');
-  if (error) throw new Error('Membership entitlement write failed');
-  if (!updatedMembers?.length) return 'no_member';
-  console.log(`[webhook] Membership entitlement updated: ${tier} (matched by ${match.via})`);
-  return 'updated';
-}
-
-function customerIdOf(value: string | { id: string } | null | undefined): string | undefined {
-  if (!value) return undefined;
-  return typeof value === 'string' ? value : value.id;
-}
-
-async function customerEmail(stripe: Stripe, customerId: string): Promise<string | null> {
-  const customer = await stripe.customers.retrieve(customerId);
-  if ((customer as Stripe.DeletedCustomer).deleted) return null;
-  return (customer as Stripe.Customer).email ?? null;
-}
-
-// Subscription states that still entitle the member to the paid tier.
-const ENTITLED_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing', 'past_due']);
-// States after which the paid tier ends.
-const ENDED_SUBSCRIPTION_STATUSES = new Set(['canceled', 'incomplete_expired']);
-
-function subscriptionPriceFacts(subscription: Stripe.Subscription): PriceFacts {
-  const price = subscription.items?.data?.[0]?.price;
-  return {
-    priceId: price?.id ?? null,
-    amountCents: price?.unit_amount ?? null,
-    interval: price?.recurring?.interval ?? null,
-  };
-}
-
-async function activeMembershipTierForCustomer(stripe: Stripe, customerId: string, excludeSubscriptionId: string): Promise<string | null> {
-  const list = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 10 });
-  for (const other of list.data) {
-    if (other.id === excludeSubscriptionId) continue;
-    const resolved = resolveMembershipTier(subscriptionPriceFacts(other));
-    if (resolved.ok) return resolved.tier;
-  }
-  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -106,18 +35,38 @@ export async function POST(req: NextRequest) {
   }
 
   const sig = req.headers.get('stripe-signature') ?? '';
-  const body = await req.text();
+  let body: Uint8Array;
+  try { body = await readWebhookBody(req); }
+  catch (error) { return privateJson({ error: 'Invalid webhook body.' }, { status: error instanceof WebhookBodyFailure ? error.status : 400 }); }
 
   let event: Stripe.Event;
   try {
-    event = getStripe(stripeKey).webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Webhook verification failed';
-    console.error('Stripe webhook sig error:', msg);
-    return NextResponse.json({ error: msg }, { status: 400 });
+    event = getStripe(stripeKey).webhooks.constructEvent(Buffer.from(body), sig, webhookSecret);
+  } catch {
+    return privateJson({ error: 'Webhook verification failed.' }, { status: 400 });
+  }
+  if (!event || typeof event.id !== 'string' || typeof event.type !== 'string' || typeof event.livemode !== 'boolean'
+    || !event.data || !event.data.object || typeof event.data.object !== 'object' || Array.isArray(event.data.object)) {
+    return privateJson({ error: 'Invalid webhook event.' }, { status: 400 });
   }
 
-  console.log('Stripe webhook event:', event.type);
+  // Optional support never grants a historical AI/lifetime tier. Its dedicated
+  // processor owns supporter events, including cancellations delivered to an
+  // older endpoint during a coordinated rollout. Refuse cross-product effects
+  // before any member lookup or legacy receipt write.
+  const eventObject = event.data.object as { metadata?: { type?: string } };
+  if (eventObject.metadata?.type === 'soe_supporter_v1') {
+    return NextResponse.json({ received: true, ignored: 'supporter_event' });
+  }
+
+  // Strict membership reconciliation owns all legacy financial effects. Capital
+  // pledges keep their separate compatibility processing below.
+  const legacyEvent = { id: event.id, type: event.type, livemode: event.livemode, account: event.account,
+    data: { object: event.data.object as unknown as Record<string, unknown> } };
+  if (isLegacyBillingCandidate(legacyEvent)) {
+    try { return privateJson(await processLegacyBillingEvent(legacyEvent, body)); }
+    catch { return privateJson({ error: 'Legacy membership reconciliation could not be verified or persisted.' }, { status: 503 }); }
+  }
 
   let outcome = 'processed';
   let idempotencyAvailable = false;
@@ -135,7 +84,6 @@ export async function POST(req: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const email = session.customer_details?.email || session.customer_email;
-        const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
         // --- 92B PLEDGE HANDLING ---
         if (session.metadata?.type === '92b_pledge') {
@@ -282,116 +230,8 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // --- MEMBERSHIP SUBSCRIPTION HANDLING ---
-        if (session.metadata?.type !== 'membership') {
-          console.log(`[webhook] Ignored non-membership checkout session type: ${session.metadata?.type || 'unclassified'}`);
-          break;
-        }
-
-        if (session.payment_status === 'unpaid') {
-          console.log('[webhook] Membership checkout not paid yet; waiting for async_payment_succeeded');
-          outcome = 'awaiting_payment';
-          break;
-        }
-
-        const memberId = session.metadata?.member_id || session.client_reference_id || null;
-        if (!email && !memberId && !customerId) {
-          throw new Error('Paid membership checkout is missing an email');
-        }
-
-        // Determine tier from the purchased price. A Stripe API failure is retried
-        // (500), never guessed from the amount.
-        const stripe = getStripe(stripeKey);
-        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-        const item = lineItems.data[0];
-        const tier = membershipTierOrNull(
-          {
-            priceId: item?.price?.id ?? null,
-            amountCents: item?.price?.unit_amount ?? item?.amount_total ?? null,
-            interval: item?.price?.recurring?.interval ?? null,
-          },
-          'Membership checkout',
-        );
-        if (!tier) {
-          outcome = 'skipped_unknown_price';
-          break;
-        }
-
-        console.log(`[webhook] Membership checkout completed: ${tier}`);
-        const result = await updateMemberTier({ memberId, customerId, email }, tier);
-        if (result === 'no_member') throw new Error('Paid membership has no matching member');
-        outcome = result;
-        break;
-      }
-
-      case 'customer.subscription.updated': {
-        const stripe = getStripe(stripeKey);
-        const eventSubscription = event.data.object as Stripe.Subscription;
-        // Events can arrive out of order; act on the subscription as it is now.
-        const subscription = await stripe.subscriptions.retrieve(eventSubscription.id);
-        const customerId = customerIdOf(subscription.customer);
-        if (!customerId) {
-          console.warn('[webhook] Subscription update without a customer skipped');
-          outcome = 'skipped_no_customer';
-          break;
-        }
-
-        if (ENDED_SUBSCRIPTION_STATUSES.has(subscription.status)) {
-          console.log(`[webhook] Subscription update reports ${subscription.status}; handled as cancellation`);
-          const replacement = await activeMembershipTierForCustomer(stripe, customerId, subscription.id);
-          const email = await customerEmail(stripe, customerId);
-          const result = await updateMemberTier(
-            { memberId: subscription.metadata?.member_id, customerId, email },
-            replacement || 'free',
-          );
-          if (result === 'no_member') throw new Error('Cancelled membership has no matching member');
-          outcome = result;
-          break;
-        }
-
-        if (!ENTITLED_SUBSCRIPTION_STATUSES.has(subscription.status)) {
-          console.log(`[webhook] Subscription status ${subscription.status} leaves membership unchanged`);
-          outcome = 'skipped_status';
-          break;
-        }
-
-        const tier = membershipTierOrNull(subscriptionPriceFacts(subscription), 'Subscription update');
-        if (!tier) {
-          outcome = 'skipped_unknown_price';
-          break;
-        }
-
-        const email = await customerEmail(stripe, customerId);
-        const result = await updateMemberTier({ memberId: subscription.metadata?.member_id, customerId, email }, tier);
-        if (result === 'no_member') throw new Error('Paid membership has no matching member');
-        outcome = result;
-        break;
-      }
-
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customerId = customerIdOf(subscription.customer);
-        if (!customerId) {
-          outcome = 'skipped_no_customer';
-          break;
-        }
-
-        // Another active membership subscription on the same customer keeps its tier.
-        const stripe = getStripe(stripeKey);
-        const replacement = await activeMembershipTierForCustomer(stripe, customerId, subscription.id);
-        const nextTier = replacement || 'free';
-
-        let result = await updateMemberTier({ memberId: subscription.metadata?.member_id, customerId }, nextTier);
-        if (result === 'no_member') {
-          // Fallback: look up email when the customer id was not attached locally.
-          const email = await customerEmail(stripe, customerId);
-          if (email) result = await updateMemberTier({ customerId, email }, nextTier);
-        }
-        if (result === 'no_member') {
-          throw new Error('Cancelled membership has no matching member');
-        }
-        console.log(`[webhook] Membership subscription ended; tier now ${nextTier === 'free' ? 'free' : nextTier}`);
-        outcome = result;
+        // Unclassified checkout sessions do not establish membership ownership.
+        outcome = 'ignored';
         break;
       }
 

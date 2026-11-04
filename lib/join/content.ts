@@ -1,101 +1,27 @@
-// lib/join/content.ts
-// Membership tiers and FAQ copy for /join. Kept out of the page so the server
-// layout can build structured data from the same prices the page shows.
-// Copy rule: no invented users, testimonials or metrics.
-
-// Free sign-up lands on the Daily Practice so a new member does something on day one.
+// Public copy does not enable a purchase; readiness comes from the server offer.
 export const FREE_SIGNUP_PATH = '/login?mode=signup&next=%2Fpractice';
-
-export type JoinTier = {
-  id: string;
-  name: string;
-  price: string;
-  period: string;
-  badge: string | null;
-  featured: boolean;
-  cta: string;
-  ctaAction: 'oauth' | 'checkout';
-  tagline: string;
-  features: string[];
-  note?: string;
-};
-
+export const SUPPORTER_RETURN_PATH = '/join?intent=supporter';
+export const SUPPORTER_SIGNIN_PATH = `/login?next=${encodeURIComponent(SUPPORTER_RETURN_PATH)}`;
+export const SUPPORTER_SIGNUP_PATH = `/login?mode=signup&next=${encodeURIComponent(SUPPORTER_RETURN_PATH)}`;
+export type JoinTier = { id: string; name: string; price: string; period: string; badge: string | null; featured: boolean; cta: string; ctaAction: 'oauth' | 'checkout'; tagline: string; features: string[]; note?: string };
+// Shared with the roadmap to keep the public offer consistent.
 export const TIERS: JoinTier[] = [
-  {
-    id: 'explorer', name: 'Explorer', price: 'Free', period: '', badge: null, featured: false,
-    cta: 'START FREE', ctaAction: 'oauth' as const,
-    tagline: 'Begin your journey',
-    features: [
-      '3 Council questions per day',
-      'Daily Practice included — start your streak today',
-      'Browse the Constellation',
-      'Read verdict cards',
-    ],
-  },
-  {
-    id: 'seeker', name: 'Seeker', price: '$19', period: '/mo', badge: 'RECOMMENDED', featured: true,
-    cta: 'BECOME A SEEKER', ctaAction: 'checkout' as const,
-    tagline: 'Find your people',
-    features: [
-      'Unlimited Council access',
-      'Matched philosophical conversations — AI pairs you with fellow explorers',
-      'Join a 7-week salon',
-      'Earn $EXP tokens',
-      'Voice conversations with thinkers',
-    ],
-    note: 'Covers our infrastructure costs',
-  },
-  {
-    id: 'scholar', name: 'Scholar', price: '$49', period: '/mo', badge: null, featured: false,
-    cta: 'BECOME A SCHOLAR', ctaAction: 'checkout' as const,
-    tagline: 'Go deeper',
-    features: [
-      'Everything in Seeker',
-      'Priority salon placement',
-      'Guide candidacy — lead your own salon',
-      '$EXP treasury when you become a Guide',
-      'Scholar-level project rooms',
-    ],
-  },
-  {
-    id: 'philosopher', name: 'Philosopher', price: '$99', period: '/mo', badge: null, featured: false,
-    cta: 'BECOME A PHILOSOPHER', ctaAction: 'checkout' as const,
-    tagline: 'Lead the way',
-    features: [
-      'Everything in Scholar',
-      'Advanced memory — thinkers remember everything',
-      'Private ritual rooms',
-      'Priority artifact generation',
-      'Direct oracle consultations',
-    ],
-  },
-  {
-    id: 'oracle', name: 'Oracle', price: '$499', period: ' lifetime', badge: 'FOUNDING', featured: false,
-    cta: 'BECOME AN ORACLE', ctaAction: 'checkout' as const,
-    tagline: 'Founding member',
-    features: [
-      'Everything in Philosopher, forever',
-      'Founding member status',
-      'Direct line to all 6 thinkers',
-      'Governance votes (HATS)',
-      'Name on the founders wall at 92B South St',
-    ],
-  },
+  { id: 'explorer', name: 'Free community', price: 'Free', period: '', badge: null, featured: false, cta: 'READ FREE', ctaAction: 'oauth', tagline: 'Read and meet people', features: ['Complete local source editions, free to read', 'Find, join or host free volunteer reading Circles', 'Save your reading place with a free account', 'Community norms and reporting tools'] },
+  { id: 'supporter', name: 'Supporter', price: '$10', period: '/mo', badge: 'OPTIONAL', featured: true, cta: 'REVIEW SUPPORTER OPTIONS', ctaAction: 'checkout', tagline: 'Help keep the community going', features: ['Contribute toward free books, Circles and community infrastructure', 'The same free reading and Circle access for everyone', 'A monthly subscription, only when new purchases are available'], note: 'Optional support is separate from access to the free community.' },
 ];
-
-export function checkoutErrorMessage(status: number, code: string): string {
-  if (status === 409 || code === 'email_required') return 'Add an email to your member profile before choosing this tier.';
-  if (code === 'checkout_unconfigured') return 'Paid memberships are not open on this site yet. Nothing was charged. You can start free today.';
-  if (status === 503) return 'This membership tier is not available right now. Nothing was charged.';
-  if (status === 429) return 'Too many attempts. Please wait a minute and try again.';
-  return 'Checkout could not start. Your membership was not changed.';
+export function checkoutErrorMessage(status: number, code = ''): string {
+  if (status === 401) return 'Sign in, then explicitly check your billing options again.';
+  if (status === 403) return 'Billing options are not available for this account.';
+  if (status === 409) return 'Billing state changed or needs review. Load current billing status before continuing.';
+  if (status === 429) return 'Billing requests are temporarily limited. Wait before checking again.';
+  if (code === 'sales_closed') return 'New supporter purchases are currently closed. Existing subscription management remains separate.';
+  return 'Billing could not be confirmed. Load current status before making another change.';
 }
-
 export const FAQS = [
-  { q: 'What is a salon?', a: 'A 7-week program with 7 people. You meet 5 days a week, rotating through three tracks: Singularity & AI, Blockchain & Data Sovereignty, and The Secret & Consciousness. Every member leads sessions. Graduates become Guides with their own salon.' },
-  { q: 'What are AI thinkers?', a: 'Six historical minds — Socrates, Plato, Marcus Aurelius, Nietzsche, Einstein, and Steve Jobs — reimagined as modern advisors. They debate your questions in Council Mode, remember your journey across sessions, and can create tasks, award $EXP, and take real actions on your behalf.' },
-  { q: 'What is $EXP?', a: '$EXP is a non-transferable reputation token earned by participating. Attend sessions, lead discussions, complete tasks, receive awards from thinkers. It\'s proof of intellectual contribution, not a speculative asset.' },
-  { q: 'Can I cancel anytime?', a: 'Yes. Monthly memberships can be cancelled at any time. Oracle (lifetime) is a one-time purchase.' },
-  { q: 'What if I\'m not in Boston?', a: 'Digital salons are available for all members. Video sessions run on Daily.co. The full Council Mode and thinker experience works from anywhere.' },
+  { q: 'Do I need to pay to read or join a Circle?', a: 'No. Complete source editions and volunteer reading Circles stay free. A free account is needed for joining, hosting, posting and saved reading progress.' },
+  { q: 'What does optional support provide?', a: 'Support contributes toward maintaining the free books, Circles and community infrastructure. It does not change your reading or Circle access, and it does not include a separate AI-service allowance.' },
+  { q: 'How does the monthly subscription work?', a: 'The proposed supporter price is $10 USD per month. You review the current offer and confirm before a checkout session can be prepared. Stripe shows the final payment terms before you subscribe. New purchases may be closed while billing readiness is checked.' },
+  { q: 'How can I manage an existing subscription?', a: 'Open Billing and explicitly load your current status. If management is available, review and open your own Stripe billing portal to view payment details or cancellation options. New-sales availability does not determine existing subscription access.' },
+  { q: 'What about an older membership?', a: 'Existing Seeker, Scholar, Philosopher and Oracle records remain separate. This supporter offer does not rename them or claim they have been migrated. Billing can show when an existing account needs individual review.' },
+  { q: 'Is support tax-deductible?', a: 'No tax-deductibility claim is made. Review the final amount, any displayed tax and recurring terms in Stripe before deciding.' },
 ];
-

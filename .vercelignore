@@ -16,3 +16,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Web deployment excludes local verification and preserved platform references.
+.git
+verification/
+platforms/source/
+platforms/evidence/
+platforms/tests/
+platforms/native/android/

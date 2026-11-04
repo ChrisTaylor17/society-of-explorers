@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "hamlet",
+  "editionId": "pg-1524-6bcc78cc0b21d3130b1a267990dd41b78f17785eeb089da3c5c9aa4eaac82825",
+  "editionSha256": "6bcc78cc0b21d3130b1a267990dd41b78f17785eeb089da3c5c9aa4eaac82825",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 1524,
+    "landingUrl": "https://www.gutenberg.org/ebooks/1524",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/1524/pg1524-h.zip",
+    "archiveSha256": "8c072f1dc670e6af2307e066fc362f656692bd4ef3bdd7d893d88290621575a7",
+    "archiveBytes": 344955,
+    "retrievedAt": "2026-11-03T18:54:01.159Z",
+    "mainHtmlPath": "pg1524-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "Hamlet",
+    "author": "William Shakespeare",
+    "translators": [],
+    "editors": [],
+    "illustrators": [],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "Original English; no translator is listed. Speaker labels, stage directions and verse line breaks are retained."
+    ]
+  },
+  "reader": {
+    "sha256": "16a07e48f082e5eb760b30923c74c14932ea243799aebf7497b39a7d4f6b6fe7",
+    "bytes": 304408,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 1446,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Hamlet",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE TRAGEDY OF HAMLET, PRINCE OF DENMARK",
+        "level": 1,
+        "readingIndex": 7
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "by William Shakespeare",
+        "level": 2,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "Dramatis Personæ",
+        "level": 3,
+        "readingIndex": 35
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "SCENE. Elsinore.",
+        "level": 3,
+        "readingIndex": 37
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "ACT I",
+        "level": 2,
+        "readingIndex": 38
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "SCENE I. Elsinore. A platform before the Castle.",
+        "level": 3,
+        "readingIndex": 39
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "SCENE II. Elsinore. A room of state in the Castle.",
+        "level": 3,
+        "readingIndex": 111
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "SCENE III. A room in Polonius’s house.",
+        "level": 3,
+        "readingIndex": 195
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "SCENE IV. The platform.",
+        "level": 3,
+        "readingIndex": 228
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "SCENE V. A more remote part of the Castle.",
+        "level": 3,
+        "readingIndex": 269
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "ACT II",
+        "level": 2,
+        "readingIndex": 338
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "SCENE I. A room in Polonius’s house.",
+        "level": 3,
+        "readingIndex": 339
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "SCENE II. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 382
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "ACT III",
+        "level": 2,
+        "readingIndex": 570
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "SCENE I. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 571
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "SCENE II. A hall in the Castle.",
+        "level": 3,
+        "readingIndex": 625
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "SCENE III. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 795
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "SCENE IV. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 815
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "ACT IV",
+        "level": 2,
+        "readingIndex": 882
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "SCENE I. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 883
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "SCENE II. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 899
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "SCENE III. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 920
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "SCENE IV. A plain in Denmark.",
+        "level": 3,
+        "readingIndex": 957
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "SCENE V. Elsinore. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 982
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "SCENE VI. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 1068
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "SCENE VII. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 1082
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "ACT V",
+        "level": 2,
+        "readingIndex": 1133
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "SCENE I. A churchyard.",
+        "level": 3,
+        "readingIndex": 1134
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "SCENE II. A hall in the Castle.",
+        "level": 3,
+        "readingIndex": 1261
+      }
+    ]
+  },
+  "assets": [],
+  "fidelity": {
+    "canonicalTextSha256": "27425755671b2f2b53a69f0a052396fefcd2a91d1611574bd2d024c1d7118f63",
+    "sourceImageCount": 0
+  }
+}

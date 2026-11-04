@@ -1,0 +1,1881 @@
+[
+  {
+    "bookId": "apology",
+    "editionId": "pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+    "blockCount": 125,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Apology",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "Apology",
+        "level": 1,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "by Plato",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Translated by Benjamin Jowett",
+        "level": 3,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "INTRODUCTION.",
+        "level": 2,
+        "readingIndex": 14
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "APOLOGY",
+        "level": 2,
+        "readingIndex": 43
+      }
+    ],
+    "sourceTitle": "Apology",
+    "translators": [
+      {
+        "name": "Benjamin Jowett",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": []
+  },
+  {
+    "bookId": "divine-comedy",
+    "editionId": "pg-8800-e77de137b64fe83297c694a797430e09510f31591e099272edd1d49bdc9b94bb",
+    "blockCount": 440,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The divine comedy",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE DIVINE COMEDY",
+        "level": 1,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "BY DANTE ALIGHIERI",
+        "level": 2,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "LIST OF CANTOS",
+        "level": 2,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "HELL OR THE INFERNO",
+        "level": 2,
+        "readingIndex": 115
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "CANTO I",
+        "level": 2,
+        "readingIndex": 116
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "CANTO II",
+        "level": 2,
+        "readingIndex": 121
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "CANTO III",
+        "level": 2,
+        "readingIndex": 124
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "CANTO IV",
+        "level": 2,
+        "readingIndex": 129
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "CANTO V",
+        "level": 2,
+        "readingIndex": 133
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "CANTO VI",
+        "level": 2,
+        "readingIndex": 139
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "CANTO VII",
+        "level": 2,
+        "readingIndex": 143
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "CANTO VIII",
+        "level": 2,
+        "readingIndex": 148
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "CANTO IX",
+        "level": 2,
+        "readingIndex": 153
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "CANTO X",
+        "level": 2,
+        "readingIndex": 158
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "CANTO XI",
+        "level": 2,
+        "readingIndex": 161
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "CANTO XII",
+        "level": 2,
+        "readingIndex": 164
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "CANTO XIII",
+        "level": 2,
+        "readingIndex": 169
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "CANTO XIV",
+        "level": 2,
+        "readingIndex": 174
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "CANTO XV",
+        "level": 2,
+        "readingIndex": 177
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "CANTO XVI",
+        "level": 2,
+        "readingIndex": 180
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "CANTO XVII",
+        "level": 2,
+        "readingIndex": 182
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "CANTO XVIII",
+        "level": 2,
+        "readingIndex": 186
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "CANTO XIX",
+        "level": 2,
+        "readingIndex": 191
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "CANTO XX",
+        "level": 2,
+        "readingIndex": 194
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "CANTO XXI",
+        "level": 2,
+        "readingIndex": 196
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "CANTO XXII",
+        "level": 2,
+        "readingIndex": 200
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "CANTO XXIII",
+        "level": 2,
+        "readingIndex": 204
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "CANTO XXIV",
+        "level": 2,
+        "readingIndex": 209
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "CANTO XXV",
+        "level": 2,
+        "readingIndex": 212
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "CANTO XXVI",
+        "level": 2,
+        "readingIndex": 215
+      },
+      {
+        "id": "reading-heading-32",
+        "label": "CANTO XXVII",
+        "level": 2,
+        "readingIndex": 218
+      },
+      {
+        "id": "reading-heading-33",
+        "label": "CANTO XXVIII",
+        "level": 2,
+        "readingIndex": 220
+      },
+      {
+        "id": "reading-heading-34",
+        "label": "CANTO XXIX",
+        "level": 2,
+        "readingIndex": 225
+      },
+      {
+        "id": "reading-heading-35",
+        "label": "CANTO XXX",
+        "level": 2,
+        "readingIndex": 230
+      },
+      {
+        "id": "reading-heading-36",
+        "label": "CANTO XXXI",
+        "level": 2,
+        "readingIndex": 234
+      },
+      {
+        "id": "reading-heading-37",
+        "label": "CANTO XXXII",
+        "level": 2,
+        "readingIndex": 238
+      },
+      {
+        "id": "reading-heading-38",
+        "label": "CANTO XXXIII",
+        "level": 2,
+        "readingIndex": 243
+      },
+      {
+        "id": "reading-heading-39",
+        "label": "CANTO XXXIV",
+        "level": 2,
+        "readingIndex": 248
+      },
+      {
+        "id": "reading-heading-40",
+        "label": "PURGATORY",
+        "level": 2,
+        "readingIndex": 251
+      },
+      {
+        "id": "reading-heading-41",
+        "label": "CANTO I",
+        "level": 2,
+        "readingIndex": 252
+      },
+      {
+        "id": "reading-heading-42",
+        "label": "CANTO II",
+        "level": 2,
+        "readingIndex": 256
+      },
+      {
+        "id": "reading-heading-43",
+        "label": "CANTO III",
+        "level": 2,
+        "readingIndex": 260
+      },
+      {
+        "id": "reading-heading-44",
+        "label": "CANTO IV",
+        "level": 2,
+        "readingIndex": 263
+      },
+      {
+        "id": "reading-heading-45",
+        "label": "CANTO V",
+        "level": 2,
+        "readingIndex": 267
+      },
+      {
+        "id": "reading-heading-46",
+        "label": "CANTO VI",
+        "level": 2,
+        "readingIndex": 271
+      },
+      {
+        "id": "reading-heading-47",
+        "label": "CANTO VII",
+        "level": 2,
+        "readingIndex": 273
+      },
+      {
+        "id": "reading-heading-48",
+        "label": "CANTO VIII",
+        "level": 2,
+        "readingIndex": 277
+      },
+      {
+        "id": "reading-heading-49",
+        "label": "CANTO IX",
+        "level": 2,
+        "readingIndex": 280
+      },
+      {
+        "id": "reading-heading-50",
+        "label": "CANTO X",
+        "level": 2,
+        "readingIndex": 284
+      },
+      {
+        "id": "reading-heading-51",
+        "label": "CANTO XI",
+        "level": 2,
+        "readingIndex": 287
+      },
+      {
+        "id": "reading-heading-52",
+        "label": "CANTO XII",
+        "level": 2,
+        "readingIndex": 289
+      },
+      {
+        "id": "reading-heading-53",
+        "label": "CANTO XIII",
+        "level": 2,
+        "readingIndex": 292
+      },
+      {
+        "id": "reading-heading-54",
+        "label": "CANTO XIV",
+        "level": 2,
+        "readingIndex": 296
+      },
+      {
+        "id": "reading-heading-55",
+        "label": "CANTO XV",
+        "level": 2,
+        "readingIndex": 298
+      },
+      {
+        "id": "reading-heading-56",
+        "label": "CANTO XVI",
+        "level": 2,
+        "readingIndex": 301
+      },
+      {
+        "id": "reading-heading-57",
+        "label": "CANTO XVII",
+        "level": 2,
+        "readingIndex": 305
+      },
+      {
+        "id": "reading-heading-58",
+        "label": "CANTO XVIII",
+        "level": 2,
+        "readingIndex": 307
+      },
+      {
+        "id": "reading-heading-59",
+        "label": "CANTO XIX",
+        "level": 2,
+        "readingIndex": 310
+      },
+      {
+        "id": "reading-heading-60",
+        "label": "CANTO XX",
+        "level": 2,
+        "readingIndex": 314
+      },
+      {
+        "id": "reading-heading-61",
+        "label": "CANTO XXI",
+        "level": 2,
+        "readingIndex": 317
+      },
+      {
+        "id": "reading-heading-62",
+        "label": "CANTO XXII",
+        "level": 2,
+        "readingIndex": 319
+      },
+      {
+        "id": "reading-heading-63",
+        "label": "CANTO XXIII",
+        "level": 2,
+        "readingIndex": 321
+      },
+      {
+        "id": "reading-heading-64",
+        "label": "CANTO XXIV",
+        "level": 2,
+        "readingIndex": 324
+      },
+      {
+        "id": "reading-heading-65",
+        "label": "CANTO XXV",
+        "level": 2,
+        "readingIndex": 328
+      },
+      {
+        "id": "reading-heading-66",
+        "label": "CANTO XXVI",
+        "level": 2,
+        "readingIndex": 332
+      },
+      {
+        "id": "reading-heading-67",
+        "label": "CANTO XXVII",
+        "level": 2,
+        "readingIndex": 334
+      },
+      {
+        "id": "reading-heading-68",
+        "label": "CANTO XXVIII",
+        "level": 2,
+        "readingIndex": 337
+      },
+      {
+        "id": "reading-heading-69",
+        "label": "CANTO XXIX",
+        "level": 2,
+        "readingIndex": 340
+      },
+      {
+        "id": "reading-heading-70",
+        "label": "CANTO XXX",
+        "level": 2,
+        "readingIndex": 344
+      },
+      {
+        "id": "reading-heading-71",
+        "label": "CANTO XXXI",
+        "level": 2,
+        "readingIndex": 347
+      },
+      {
+        "id": "reading-heading-72",
+        "label": "CANTO XXXII",
+        "level": 2,
+        "readingIndex": 350
+      },
+      {
+        "id": "reading-heading-73",
+        "label": "CANTO XXXIII",
+        "level": 2,
+        "readingIndex": 352
+      },
+      {
+        "id": "reading-heading-74",
+        "label": "PARADISE",
+        "level": 2,
+        "readingIndex": 354
+      },
+      {
+        "id": "reading-heading-75",
+        "label": "CANTO I",
+        "level": 2,
+        "readingIndex": 355
+      },
+      {
+        "id": "reading-heading-76",
+        "label": "CANTO II",
+        "level": 2,
+        "readingIndex": 357
+      },
+      {
+        "id": "reading-heading-77",
+        "label": "CANTO III",
+        "level": 2,
+        "readingIndex": 359
+      },
+      {
+        "id": "reading-heading-78",
+        "label": "CANTO IV",
+        "level": 2,
+        "readingIndex": 362
+      },
+      {
+        "id": "reading-heading-79",
+        "label": "CANTO V",
+        "level": 2,
+        "readingIndex": 364
+      },
+      {
+        "id": "reading-heading-80",
+        "label": "CANTO VI",
+        "level": 2,
+        "readingIndex": 367
+      },
+      {
+        "id": "reading-heading-81",
+        "label": "CANTO VII",
+        "level": 2,
+        "readingIndex": 369
+      },
+      {
+        "id": "reading-heading-82",
+        "label": "CANTO VIII",
+        "level": 2,
+        "readingIndex": 371
+      },
+      {
+        "id": "reading-heading-83",
+        "label": "CANTO IX",
+        "level": 2,
+        "readingIndex": 374
+      },
+      {
+        "id": "reading-heading-84",
+        "label": "CANTO X",
+        "level": 2,
+        "readingIndex": 376
+      },
+      {
+        "id": "reading-heading-85",
+        "label": "CANTO XI",
+        "level": 2,
+        "readingIndex": 378
+      },
+      {
+        "id": "reading-heading-86",
+        "label": "CANTO XII",
+        "level": 2,
+        "readingIndex": 380
+      },
+      {
+        "id": "reading-heading-87",
+        "label": "CANTO XIII",
+        "level": 2,
+        "readingIndex": 383
+      },
+      {
+        "id": "reading-heading-88",
+        "label": "CANTO XIV",
+        "level": 2,
+        "readingIndex": 385
+      },
+      {
+        "id": "reading-heading-89",
+        "label": "CANTO XV",
+        "level": 2,
+        "readingIndex": 389
+      },
+      {
+        "id": "reading-heading-90",
+        "label": "CANTO XVI",
+        "level": 2,
+        "readingIndex": 391
+      },
+      {
+        "id": "reading-heading-91",
+        "label": "CANTO XVII",
+        "level": 2,
+        "readingIndex": 393
+      },
+      {
+        "id": "reading-heading-92",
+        "label": "CANTO XVIII",
+        "level": 2,
+        "readingIndex": 395
+      },
+      {
+        "id": "reading-heading-93",
+        "label": "CANTO XIX",
+        "level": 2,
+        "readingIndex": 399
+      },
+      {
+        "id": "reading-heading-94",
+        "label": "CANTO XX",
+        "level": 2,
+        "readingIndex": 401
+      },
+      {
+        "id": "reading-heading-95",
+        "label": "CANTO XXI",
+        "level": 2,
+        "readingIndex": 404
+      },
+      {
+        "id": "reading-heading-96",
+        "label": "CANTO XXII",
+        "level": 2,
+        "readingIndex": 407
+      },
+      {
+        "id": "reading-heading-97",
+        "label": "CANTO XXIII",
+        "level": 2,
+        "readingIndex": 409
+      },
+      {
+        "id": "reading-heading-98",
+        "label": "CANTO XXIV",
+        "level": 2,
+        "readingIndex": 411
+      },
+      {
+        "id": "reading-heading-99",
+        "label": "CANTO XXV",
+        "level": 2,
+        "readingIndex": 413
+      },
+      {
+        "id": "reading-heading-100",
+        "label": "CANTO XXVI",
+        "level": 2,
+        "readingIndex": 415
+      },
+      {
+        "id": "reading-heading-101",
+        "label": "CANTO XXVII",
+        "level": 2,
+        "readingIndex": 418
+      },
+      {
+        "id": "reading-heading-102",
+        "label": "CANTO XXVIII",
+        "level": 2,
+        "readingIndex": 420
+      },
+      {
+        "id": "reading-heading-103",
+        "label": "CANTO XXIX",
+        "level": 2,
+        "readingIndex": 423
+      },
+      {
+        "id": "reading-heading-104",
+        "label": "CANTO XXX",
+        "level": 2,
+        "readingIndex": 425
+      },
+      {
+        "id": "reading-heading-105",
+        "label": "CANTO XXXI",
+        "level": 2,
+        "readingIndex": 427
+      },
+      {
+        "id": "reading-heading-106",
+        "label": "CANTO XXXII",
+        "level": 2,
+        "readingIndex": 430
+      },
+      {
+        "id": "reading-heading-107",
+        "label": "CANTO XXXIII",
+        "level": 2,
+        "readingIndex": 432
+      }
+    ],
+    "sourceTitle": "The divine comedy",
+    "translators": [
+      {
+        "name": "Henry Francis Cary",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [
+      "Gustave Doré"
+    ]
+  },
+  {
+    "bookId": "genealogy-of-morals",
+    "editionId": "pg-52319-50880f01d2e0afb107d49cb939f69086d3c1e6fccd2aad4ee68c329a1091e50c",
+    "blockCount": 347,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The Genealogy of Morals",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE GENEALOGY OF MORALS",
+        "level": 1,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "A POLEMIC",
+        "level": 3,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "BY",
+        "level": 3,
+        "readingIndex": 12
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "FRIEDRICH NIETZSCHE",
+        "level": 2,
+        "readingIndex": 13
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "TRANSLATED BY",
+        "level": 4,
+        "readingIndex": 14
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "HORACE B. SAMUEL, M.A.",
+        "level": 4,
+        "readingIndex": 15
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "PEOPLES AND COUNTRIES (FRAGMENT)",
+        "level": 4,
+        "readingIndex": 16
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "TRANSLATED BY J. M. KENNEDY",
+        "level": 4,
+        "readingIndex": 17
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "The Complete Works of Friedrich Nietzsche",
+        "level": 4,
+        "readingIndex": 18
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "The First Complete and Authorised English Translation",
+        "level": 5,
+        "readingIndex": 19
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "Edited by Dr Oscar Levy",
+        "level": 4,
+        "readingIndex": 20
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "Volume Eight",
+        "level": 4,
+        "readingIndex": 21
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "T.N. FOULIS",
+        "level": 5,
+        "readingIndex": 22
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "13 & 15 FREDERICK STREET",
+        "level": 5,
+        "readingIndex": 23
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "EDINBURGH: AND LONDON",
+        "level": 5,
+        "readingIndex": 24
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "1913",
+        "level": 5,
+        "readingIndex": 25
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "EDITOR'S NOTE.",
+        "level": 4,
+        "readingIndex": 27
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "PREFACE.",
+        "level": 4,
+        "readingIndex": 30
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "FIRST ESSAY.",
+        "level": 5,
+        "readingIndex": 53
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "\"GOOD AND EVIL,\" \"GOOD AND BAD.\"",
+        "level": 4,
+        "readingIndex": 54
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "SECOND ESSAY.",
+        "level": 5,
+        "readingIndex": 115
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "\"GUILT,\" \"BAD CONSCIENCE,\" AND THE LIKE.",
+        "level": 4,
+        "readingIndex": 116
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "THIRD ESSAY.",
+        "level": 5,
+        "readingIndex": 181
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "WHAT IS THE MEANING OF ASCETIC IDEALS?",
+        "level": 4,
+        "readingIndex": 182
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "PEOPLES AND COUNTRIES.",
+        "level": 4,
+        "readingIndex": 263
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "Translated by J. M. KENNEDY.",
+        "level": 5,
+        "readingIndex": 264
+      }
+    ],
+    "sourceTitle": "The Genealogy of Morals",
+    "translators": [
+      {
+        "name": "Horace Barnett Samuel",
+        "appliesTo": "The Genealogy of Morals"
+      },
+      {
+        "name": "J. M. Kennedy",
+        "appliesTo": "Appended Peoples and Countries fragment"
+      }
+    ],
+    "editors": [
+      "Oscar Levy"
+    ],
+    "illustrators": []
+  },
+  {
+    "bookId": "hamlet",
+    "editionId": "pg-1524-6bcc78cc0b21d3130b1a267990dd41b78f17785eeb089da3c5c9aa4eaac82825",
+    "blockCount": 1446,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Hamlet",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE TRAGEDY OF HAMLET, PRINCE OF DENMARK",
+        "level": 1,
+        "readingIndex": 7
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "by William Shakespeare",
+        "level": 2,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "Dramatis Personæ",
+        "level": 3,
+        "readingIndex": 35
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "SCENE. Elsinore.",
+        "level": 3,
+        "readingIndex": 37
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "ACT I",
+        "level": 2,
+        "readingIndex": 38
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "SCENE I. Elsinore. A platform before the Castle.",
+        "level": 3,
+        "readingIndex": 39
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "SCENE II. Elsinore. A room of state in the Castle.",
+        "level": 3,
+        "readingIndex": 111
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "SCENE III. A room in Polonius’s house.",
+        "level": 3,
+        "readingIndex": 195
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "SCENE IV. The platform.",
+        "level": 3,
+        "readingIndex": 228
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "SCENE V. A more remote part of the Castle.",
+        "level": 3,
+        "readingIndex": 269
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "ACT II",
+        "level": 2,
+        "readingIndex": 338
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "SCENE I. A room in Polonius’s house.",
+        "level": 3,
+        "readingIndex": 339
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "SCENE II. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 382
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "ACT III",
+        "level": 2,
+        "readingIndex": 570
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "SCENE I. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 571
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "SCENE II. A hall in the Castle.",
+        "level": 3,
+        "readingIndex": 625
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "SCENE III. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 795
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "SCENE IV. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 815
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "ACT IV",
+        "level": 2,
+        "readingIndex": 882
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "SCENE I. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 883
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "SCENE II. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 899
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "SCENE III. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 920
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "SCENE IV. A plain in Denmark.",
+        "level": 3,
+        "readingIndex": 957
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "SCENE V. Elsinore. A room in the Castle.",
+        "level": 3,
+        "readingIndex": 982
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "SCENE VI. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 1068
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "SCENE VII. Another room in the Castle.",
+        "level": 3,
+        "readingIndex": 1082
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "ACT V",
+        "level": 2,
+        "readingIndex": 1133
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "SCENE I. A churchyard.",
+        "level": 3,
+        "readingIndex": 1134
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "SCENE II. A hall in the Castle.",
+        "level": 3,
+        "readingIndex": 1261
+      }
+    ],
+    "sourceTitle": "Hamlet",
+    "translators": [],
+    "editors": [],
+    "illustrators": []
+  },
+  {
+    "bookId": "meditations",
+    "editionId": "pg-2680-299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+    "blockCount": 1186,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Meditations",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "MEDITATIONS",
+        "level": 1,
+        "readingIndex": 7
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "By Marcus Aurelius",
+        "level": 2,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "MARCUS AURELIUS ANTONINUS THE ROMAN EMPEROR",
+        "level": 3,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "BOOKS",
+        "level": 2,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "INTRODUCTION",
+        "level": 2,
+        "readingIndex": 27
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "HIS FIRST BOOK",
+        "level": 2,
+        "readingIndex": 54
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "concerning HIMSELF:",
+        "level": 3,
+        "readingIndex": 55
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "THE FIRST BOOK",
+        "level": 2,
+        "readingIndex": 60
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "THE SECOND BOOK",
+        "level": 2,
+        "readingIndex": 78
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "THE THIRD BOOK",
+        "level": 2,
+        "readingIndex": 95
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "THE FOURTH BOOK",
+        "level": 2,
+        "readingIndex": 113
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "THE FIFTH BOOK",
+        "level": 2,
+        "readingIndex": 157
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "THE SIXTH BOOK",
+        "level": 2,
+        "readingIndex": 189
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "THE SEVENTH BOOK",
+        "level": 2,
+        "readingIndex": 242
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "THE EIGHTH BOOK",
+        "level": 2,
+        "readingIndex": 288
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "THE NINTH BOOK",
+        "level": 2,
+        "readingIndex": 346
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "THE TENTH BOOK",
+        "level": 2,
+        "readingIndex": 390
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "THE ELEVENTH BOOK",
+        "level": 2,
+        "readingIndex": 429
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "THE TWELFTH BOOK",
+        "level": 2,
+        "readingIndex": 461
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "APPENDIX",
+        "level": 2,
+        "readingIndex": 489
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "NOTES",
+        "level": 2,
+        "readingIndex": 589
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "GLOSSARY",
+        "level": 2,
+        "readingIndex": 635
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "Paragraphs with First Lines",
+        "level": 3,
+        "readingIndex": 750
+      }
+    ],
+    "sourceTitle": "Meditations",
+    "translators": [
+      {
+        "name": "Meric Casaubon",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": []
+  },
+  {
+    "bookId": "odyssey",
+    "editionId": "pg-1727-9328957b68516333c6c2f5618e8680f738c3f847756b777a94a5469231a9e569",
+    "blockCount": 1357,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The Odyssey",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "The Odyssey",
+        "level": 1,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "PREFACE TO FIRST EDITION",
+        "level": 2,
+        "readingIndex": 39
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "PREFACE TO SECOND EDITION",
+        "level": 2,
+        "readingIndex": 58
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "THE ODYSSEY",
+        "level": 2,
+        "readingIndex": 70
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "BOOK I",
+        "level": 2,
+        "readingIndex": 71
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "BOOK II",
+        "level": 2,
+        "readingIndex": 105
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "BOOK III",
+        "level": 2,
+        "readingIndex": 142
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "BOOK IV",
+        "level": 2,
+        "readingIndex": 182
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "BOOK V",
+        "level": 2,
+        "readingIndex": 265
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "BOOK VI",
+        "level": 2,
+        "readingIndex": 304
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "BOOK VII",
+        "level": 2,
+        "readingIndex": 332
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "BOOK VIII",
+        "level": 2,
+        "readingIndex": 363
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "BOOK IX",
+        "level": 2,
+        "readingIndex": 415
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "BOOK X",
+        "level": 2,
+        "readingIndex": 461
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "BOOK XI",
+        "level": 2,
+        "readingIndex": 512
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "BOOK XII",
+        "level": 2,
+        "readingIndex": 568
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "BOOK XIII",
+        "level": 2,
+        "readingIndex": 609
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "BOOK XIV",
+        "level": 2,
+        "readingIndex": 649
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "BOOK XV",
+        "level": 2,
+        "readingIndex": 686
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "BOOK XVI",
+        "level": 2,
+        "readingIndex": 736
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "BOOK XVII",
+        "level": 2,
+        "readingIndex": 783
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "BOOK XVIII",
+        "level": 2,
+        "readingIndex": 848
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "BOOK XIX",
+        "level": 2,
+        "readingIndex": 891
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "BOOK XX",
+        "level": 2,
+        "readingIndex": 932
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "BOOK XXI",
+        "level": 2,
+        "readingIndex": 970
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "BOOK XXII",
+        "level": 2,
+        "readingIndex": 1014
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "BOOK XXIII",
+        "level": 2,
+        "readingIndex": 1068
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "BOOK XXIV",
+        "level": 2,
+        "readingIndex": 1099
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "FOOTNOTES:",
+        "level": 2,
+        "readingIndex": 1146
+      }
+    ],
+    "sourceTitle": "The Odyssey",
+    "translators": [
+      {
+        "name": "Samuel Butler",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": []
+  },
+  {
+    "bookId": "relativity",
+    "editionId": "pg-5001-14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+    "blockCount": 550,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Relativity : the Special and General Theory",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "Relativity The Special and General TheoryA Popular Exposition",
+        "level": 1,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "Table of Contents",
+        "level": 2,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Preface",
+        "level": 2,
+        "readingIndex": 97
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "PART I The Special Theory of Relativity",
+        "level": 2,
+        "readingIndex": 101
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "I Physical Meaning of Geometrical Propositions",
+        "level": 3,
+        "readingIndex": 102
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "II The System of Co-ordinates",
+        "level": 3,
+        "readingIndex": 109
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "III Space and Time in Classical Mechanics",
+        "level": 3,
+        "readingIndex": 124
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "IV The Galileian System of Co-ordinates",
+        "level": 3,
+        "readingIndex": 129
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "V The Principle of Relativity in the Restricted Sense",
+        "level": 3,
+        "readingIndex": 131
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "VI The Theorem of the Addition of Velocities Employed in Classical Mechanics",
+        "level": 3,
+        "readingIndex": 139
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "VII The Apparent Incompatibility of the Law of Propagation of Light with the Principle of Relativity",
+        "level": 3,
+        "readingIndex": 141
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "VIII On the Idea of Time in Physics",
+        "level": 3,
+        "readingIndex": 149
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "IX The Relativity of Simultaneity",
+        "level": 3,
+        "readingIndex": 160
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "X On the Relativity of the Conception of Distance",
+        "level": 3,
+        "readingIndex": 170
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "XI The Lorentz Transformation",
+        "level": 3,
+        "readingIndex": 175
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "XII The Behaviour of Measuring-Rods and Clocks in Motion",
+        "level": 3,
+        "readingIndex": 186
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "XIII Theorem of the Addition of Velocities. The Experiment of Fizeau",
+        "level": 3,
+        "readingIndex": 194
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "XIV The Heuristic Value of the Theory of Relativity",
+        "level": 3,
+        "readingIndex": 205
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "XV General Results of the Theory",
+        "level": 3,
+        "readingIndex": 210
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "XVI Experience and the Special Theory of Relativity",
+        "level": 3,
+        "readingIndex": 224
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "XVII Minkowski’s Four-Dimensional Space",
+        "level": 3,
+        "readingIndex": 233
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "PART II The General Theory of Relativity",
+        "level": 2,
+        "readingIndex": 241
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "XVIII Special and General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 242
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "XIX The Gravitational Field",
+        "level": 3,
+        "readingIndex": 256
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "XX The Equality of Inertial and Gravitational Mass as an Argument for the General Postulate of Relativity",
+        "level": 3,
+        "readingIndex": 267
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "XXI In What Respects Are the Foundations of Classical Mechanics and of the Special Theory of Relativity Unsatisfactory?",
+        "level": 3,
+        "readingIndex": 277
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "XXII A Few Inferences from the General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 283
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "XXIII Behaviour of Clocks and Measuring-Rods on a Rotating Body of Reference",
+        "level": 3,
+        "readingIndex": 294
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "XXIV Euclidean and Non-Euclidean Continuum",
+        "level": 3,
+        "readingIndex": 303
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "XXV Gaussian Co-Ordinates",
+        "level": 3,
+        "readingIndex": 312
+      },
+      {
+        "id": "reading-heading-32",
+        "label": "XXVI The Space-Time Continuum of the Special Theory of Relativity Considered as a Euclidean Continuum",
+        "level": 3,
+        "readingIndex": 320
+      },
+      {
+        "id": "reading-heading-33",
+        "label": "XXVII The Space-Time Continuum of the General Theory of Relativity is Not a Euclidean Continuum",
+        "level": 3,
+        "readingIndex": 326
+      },
+      {
+        "id": "reading-heading-34",
+        "label": "XXVIII Exact Formulation of the General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 333
+      },
+      {
+        "id": "reading-heading-35",
+        "label": "XXIX The Solution of the Problem of Gravitation on the Basis of the General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 341
+      },
+      {
+        "id": "reading-heading-36",
+        "label": "PART III Considerations on the Universe as a Whole",
+        "level": 2,
+        "readingIndex": 358
+      },
+      {
+        "id": "reading-heading-37",
+        "label": "XXX Cosmological Difficulties of Newton’s Theory",
+        "level": 3,
+        "readingIndex": 359
+      },
+      {
+        "id": "reading-heading-38",
+        "label": "XXXI The Possibility of a “Finite” and yet “Unbounded” Universe",
+        "level": 3,
+        "readingIndex": 365
+      },
+      {
+        "id": "reading-heading-39",
+        "label": "XXXII The Structure of Space According to the General Theory of Relativity",
+        "level": 3,
+        "readingIndex": 376
+      },
+      {
+        "id": "reading-heading-40",
+        "label": "APPENDIX I Simple Derivation of the Lorentz Transformation [Supplementary to Section XI]",
+        "level": 2,
+        "readingIndex": 382
+      },
+      {
+        "id": "reading-heading-41",
+        "label": "APPENDIX II Minkowski’s Four-Dimensional Space (“World”) [Supplementary to Section XVII]",
+        "level": 2,
+        "readingIndex": 405
+      },
+      {
+        "id": "reading-heading-42",
+        "label": "APPENDIX III The Experimental Confirmation of the General Theory of Relativity",
+        "level": 2,
+        "readingIndex": 411
+      },
+      {
+        "id": "reading-heading-43",
+        "label": "(a) Motion of the Perihelion of Mercury",
+        "level": 3,
+        "readingIndex": 416
+      },
+      {
+        "id": "reading-heading-44",
+        "label": "(b) Deflection of Light by a Gravitational Field",
+        "level": 3,
+        "readingIndex": 421
+      },
+      {
+        "id": "reading-heading-45",
+        "label": "(c) Displacement of Spectral Lines Towards the Red",
+        "level": 3,
+        "readingIndex": 471
+      },
+      {
+        "id": "reading-heading-46",
+        "label": "APPENDIX IV The Structure of Space According to the General Theory of Relativity [Supplementary to Section XXXII]",
+        "level": 2,
+        "readingIndex": 485
+      }
+    ],
+    "sourceTitle": "Relativity : the Special and General Theory",
+    "translators": [
+      {
+        "name": "Robert William Lawson",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [
+      "Hermann Struck (portrait, credited in the ebook metadata)"
+    ]
+  },
+  {
+    "bookId": "republic",
+    "editionId": "pg-1497-c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f9b496dcfb4",
+    "blockCount": 4747,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The Republic",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE REPUBLIC",
+        "level": 1,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "By Plato",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Translated by Benjamin Jowett",
+        "level": 3,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 12
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "INTRODUCTION AND ANALYSIS.",
+        "level": 2,
+        "readingIndex": 26
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "THE REPUBLIC.",
+        "level": 2,
+        "readingIndex": 411
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "PERSONS OF THE DIALOGUE.",
+        "level": 2,
+        "readingIndex": 412
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "BOOK I.",
+        "level": 2,
+        "readingIndex": 422
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "BOOK II.",
+        "level": 2,
+        "readingIndex": 915
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "BOOK III.",
+        "level": 2,
+        "readingIndex": 1265
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "BOOK IV.",
+        "level": 2,
+        "readingIndex": 1763
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "BOOK V.",
+        "level": 2,
+        "readingIndex": 2221
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "BOOK VI.",
+        "level": 2,
+        "readingIndex": 2785
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "BOOK VII.",
+        "level": 2,
+        "readingIndex": 3194
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "BOOK VIII.",
+        "level": 2,
+        "readingIndex": 3567
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "BOOK IX.",
+        "level": 2,
+        "readingIndex": 4015
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "BOOK X.",
+        "level": 2,
+        "readingIndex": 4421
+      }
+    ],
+    "sourceTitle": "The Republic",
+    "translators": [
+      {
+        "name": "Benjamin Jowett",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": []
+  }
+]

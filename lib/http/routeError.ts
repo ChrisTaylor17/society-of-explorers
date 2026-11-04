@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { NextResponse } from 'next/server';
 
 type JsonInit = {
@@ -9,6 +11,10 @@ type AttachmentInit = JsonInit & {
   filename: string;
 };
 
+const MAX_ATTACHMENT_FILENAME_LENGTH = 96;
+const DEFAULT_ATTACHMENT_FILENAME = 'download.json';
+const PRIVATE_PERMISSIONS_POLICY = 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), browsing-topics=()';
+
 function sanitizeAttachmentFilename(filename: string): string {
   const cleaned = filename
     .trim()
@@ -18,7 +24,10 @@ function sanitizeAttachmentFilename(filename: string): string {
     .replace(/\s+/g, ' ')
     .replace(/^[-. ]+|[-. ]+$/g, '');
 
-  return cleaned || 'download.json';
+  if (!cleaned) return DEFAULT_ATTACHMENT_FILENAME;
+  if (cleaned.length <= MAX_ATTACHMENT_FILENAME_LENGTH) return cleaned;
+  const extension = cleaned.toLowerCase().endsWith('.json') ? '.json' : '';
+  return `${cleaned.slice(0, MAX_ATTACHMENT_FILENAME_LENGTH - extension.length).replace(/[-. ]+$/g, '')}${extension}`;
 }
 
 function appendVary(headers: Headers, token: string) {
@@ -76,6 +85,12 @@ function applyPrivateHeaders(target: NextResponse | Headers) {
   headers.set('expires', '0');
   headers.set('content-security-policy', "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
   headers.set('x-frame-options', 'DENY');
+  headers.set('x-download-options', 'noopen');
+  headers.set('x-dns-prefetch-control', 'off');
+  headers.set('x-permitted-cross-domain-policies', 'none');
+  headers.set('cross-origin-opener-policy', 'same-origin');
+  headers.set('origin-agent-cluster', '?1');
+  headers.set('permissions-policy', PRIVATE_PERMISSIONS_POLICY);
   headers.set('x-content-type-options', 'nosniff');
   headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
   headers.set('referrer-policy', 'no-referrer');

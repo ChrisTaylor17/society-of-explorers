@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getMemberSession } from '@/lib/auth/getSession';
+import AccountSignOut from '@/components/AccountSignOut';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
@@ -10,6 +12,7 @@ const NAV_LINKS = [
   { l: 'Atlas', h: 'https://prompts-mvp.vercel.app' },
   { l: 'Practice', h: '/practice' },
   { l: 'Feed', h: '/feed' },
+  { l: 'Circles', h: '/circles' },
   { l: 'Manifesto', h: '/manifesto' },
   { l: 'Roadmap', h: '/roadmap' },
   { l: 'Movement', h: '/movement' },
@@ -35,15 +38,18 @@ export default function PublicNav() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const stop = subscribeAuthProviderChanges(() => { active = false; setDisplayName(null); setAuthChecked(true); });
     getMemberSession()
       .then(session => {
-        if (session?.member) {
+        if (active && session?.member) {
           const name = session.member.display_name || 'Account';
           setDisplayName(truncate(name));
         }
       })
       .catch(() => {})
-      .finally(() => setAuthChecked(true));
+      .finally(() => { if (active) setAuthChecked(true); });
+    return () => { active = false; stop(); };
   }, []);
 
   const linkStyle = { fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: parchment, textDecoration: 'none', opacity: 0.7 } as const;
@@ -83,6 +89,7 @@ export default function PublicNav() {
               transition: 'opacity 0.3s',
             }}
           >{authLabel}</a>
+          <AccountSignOut available={Boolean(displayName)} />
         </div>
 
         <button onClick={() => setMenuOpen(v => !v)} style={{ display: 'none', background: 'none', border: 'none', color: gold, fontSize: '20px', cursor: 'pointer' }} className="show-mobile">
@@ -92,6 +99,7 @@ export default function PublicNav() {
 
       {menuOpen && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,10,0.98)', zIndex: 199, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <AccountSignOut available={Boolean(displayName)} />
           {[...visibleLinks, { l: authLabel, h: authHref }].map(lk => (
             <a key={lk.h + lk.l} href={lk.h} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}

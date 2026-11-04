@@ -34,7 +34,9 @@ const packageJson = read('package.json');
 const operatorSmoke = read('scripts/operator-smoke.mjs');
 
 const patterns = {
-  paymentOrWebhook: /checkout\.sessions\.create|webhooks\.constructEvent/,
+  // Supporter routes delegate to request-time controllers; keep them visible
+  // even though SDK calls live in the dedicated provider adapter.
+  paymentOrWebhook: /checkout\.sessions\.create|webhooks\.constructEvent|supporter(?:CheckoutPost|PortalPost|WebhookPost|StatusGet|ReturnGet)/,
   emailOrNotification: /RESEND_API_KEY|api\.resend\.com\/emails|emails\.send|new Resend|sendPublicLeadNotification/,
   aiOrMediaProvider:
     /Anthropic|anthropic\.messages|createAnthropicClient|api\.openai\.com|OPENAI_API_KEY|FAL_API_KEY|fal\.run|DAILY_API_KEY|api\.daily\.co|ELEVENLABS_API_KEY|elevenlabs\.io|createLiveSession|storeConversationEmbedding|generateEmbedding/,

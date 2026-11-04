@@ -1,0 +1,74 @@
+[
+  {
+    "bookId": "apology",
+    "editionId": "pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+    "blockCount": 125,
+    "documentSha256": "39935b8fd0710a044e2ccfc8af7543ba1070e206daf1bfc133eb1640d962a4fc",
+    "metadataSha256": "05c62c4966fb63dca1ad3bf72edd028e03ab403d363847f2bb83a7d5a8419bab",
+    "indexSha256": "9fdd28fb9c9e72a6f9992f7221e67d4c7d4af44b1b4cdb39cf57859e325a06bf",
+    "indexBytes": 95107
+  },
+  {
+    "bookId": "divine-comedy",
+    "editionId": "pg-8800-e77de137b64fe83297c694a797430e09510f31591e099272edd1d49bdc9b94bb",
+    "blockCount": 440,
+    "documentSha256": "54726c71c3134294ade661003557c192136ace1a02666b74790cd7dc415a82e8",
+    "metadataSha256": "8ca380fada7df8781feb6359be9778f0dcbae5f371884d04414bcb1f1e3d153c",
+    "indexSha256": "cad05e69828d4e6c78344eda73e38a3681c9047a4a08d4c0ec5e0b821c7177f1",
+    "indexBytes": 659614
+  },
+  {
+    "bookId": "genealogy-of-morals",
+    "editionId": "pg-52319-50880f01d2e0afb107d49cb939f69086d3c1e6fccd2aad4ee68c329a1091e50c",
+    "blockCount": 347,
+    "documentSha256": "548408ac3ea88ac0b556442d3bc0a327e02167a4681d1b3a939da5334fb07f90",
+    "metadataSha256": "8cd0065c0beead28eeea2b9dbb612eaf1264ec126dd0876cbad1c5d4d64ccca7",
+    "indexSha256": "a9aacd6442e190bb824f06012c03d33739b8984e4cfc9aac0598e56c9e7d22a6",
+    "indexBytes": 355464
+  },
+  {
+    "bookId": "hamlet",
+    "editionId": "pg-1524-6bcc78cc0b21d3130b1a267990dd41b78f17785eeb089da3c5c9aa4eaac82825",
+    "blockCount": 1446,
+    "documentSha256": "16a07e48f082e5eb760b30923c74c14932ea243799aebf7497b39a7d4f6b6fe7",
+    "metadataSha256": "dbf399e2811795653ad79e54d3299cf79a316c5f8b74e155d897bccfc7806e65",
+    "indexSha256": "41e4c6ce41de0fe04ca1bb37e18e05928a29df0f6cec9d3d93e55fc6e8adf648",
+    "indexBytes": 257379
+  },
+  {
+    "bookId": "meditations",
+    "editionId": "pg-2680-299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+    "blockCount": 1186,
+    "documentSha256": "d729af988c62e47826523d30e35356e98f83175af7887e9d30f602403ead9c90",
+    "metadataSha256": "53ad5c074c3e0c2cdc99e9431f4d8766b1c8c77f9fe0e33fa2ba263f9d60cd0e",
+    "indexSha256": "1d4471993ee1579632cb1c6313d52f47ee104edee9cf5167fd948621da18b6fc",
+    "indexBytes": 490459
+  },
+  {
+    "bookId": "odyssey",
+    "editionId": "pg-1727-9328957b68516333c6c2f5618e8680f738c3f847756b777a94a5469231a9e569",
+    "blockCount": 1357,
+    "documentSha256": "49fc43595dca6722da7dccbaf62a101e68e3354ef597f2a82d12fbaec2e327d9",
+    "metadataSha256": "876db330aa71dd590bd0173cc919cfa946be16d6caa20a16df1fb130d77990d7",
+    "indexSha256": "5461f4453ab60d7afb58821de32c87d7301bb93010304d9412802c3acf1e94a3",
+    "indexBytes": 756587
+  },
+  {
+    "bookId": "relativity",
+    "editionId": "pg-5001-14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+    "blockCount": 550,
+    "documentSha256": "7f3a565f524e4df164ee2e5df8cd24a480ad566934f06974495b2bf1dd04141b",
+    "metadataSha256": "fe375adc9ca35b766cff450804a81a0a072abb2178be753c6560e9afd0e3b25f",
+    "indexSha256": "8dff1791dd3aac9bb3942c661934ab52eb358d018b67ecf7465c766e47774387",
+    "indexBytes": 156863
+  },
+  {
+    "bookId": "republic",
+    "editionId": "pg-1497-c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f9b496dcfb4",
+    "blockCount": 4747,
+    "documentSha256": "ae02d803079893480ab4110e5d84f79a82ff2ba002137ec2217988cff1f18884",
+    "metadataSha256": "585862c5b69501dfcfe8f632fd66174339fbe6de6a32c9b91314a89ffa5d188b",
+    "indexSha256": "4e9440336bf6008aeaa61c338461783d73c09ef0e225db11bbe1535d45e1935e",
+    "indexBytes": 1439793
+  }
+]

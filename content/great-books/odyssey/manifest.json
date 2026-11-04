@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "odyssey",
+  "editionId": "pg-1727-9328957b68516333c6c2f5618e8680f738c3f847756b777a94a5469231a9e569",
+  "editionSha256": "9328957b68516333c6c2f5618e8680f738c3f847756b777a94a5469231a9e569",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 1727,
+    "landingUrl": "https://www.gutenberg.org/ebooks/1727",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/1727/pg1727-h.zip",
+    "archiveSha256": "ac8ac5c64b7134058dfadb9621e3551831082a32b3d1b57c64461fc6e231116d",
+    "archiveBytes": 559197,
+    "retrievedAt": "2026-11-03T18:53:51.870Z",
+    "mainHtmlPath": "pg1727-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "The Odyssey",
+    "author": "Homer",
+    "translators": [
+      {
+        "name": "Samuel Butler",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "English prose translation. Source subtitle: Rendered into English prose for the use of those who cannot read the original."
+    ]
+  },
+  "reader": {
+    "sha256": "49fc43595dca6722da7dccbaf62a101e68e3354ef597f2a82d12fbaec2e327d9",
+    "bytes": 798555,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 1357,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The Odyssey",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "The Odyssey",
+        "level": 1,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "PREFACE TO FIRST EDITION",
+        "level": 2,
+        "readingIndex": 39
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "PREFACE TO SECOND EDITION",
+        "level": 2,
+        "readingIndex": 58
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "THE ODYSSEY",
+        "level": 2,
+        "readingIndex": 70
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "BOOK I",
+        "level": 2,
+        "readingIndex": 71
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "BOOK II",
+        "level": 2,
+        "readingIndex": 105
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "BOOK III",
+        "level": 2,
+        "readingIndex": 142
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "BOOK IV",
+        "level": 2,
+        "readingIndex": 182
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "BOOK V",
+        "level": 2,
+        "readingIndex": 265
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "BOOK VI",
+        "level": 2,
+        "readingIndex": 304
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "BOOK VII",
+        "level": 2,
+        "readingIndex": 332
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "BOOK VIII",
+        "level": 2,
+        "readingIndex": 363
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "BOOK IX",
+        "level": 2,
+        "readingIndex": 415
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "BOOK X",
+        "level": 2,
+        "readingIndex": 461
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "BOOK XI",
+        "level": 2,
+        "readingIndex": 512
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "BOOK XII",
+        "level": 2,
+        "readingIndex": 568
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "BOOK XIII",
+        "level": 2,
+        "readingIndex": 609
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "BOOK XIV",
+        "level": 2,
+        "readingIndex": 649
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "BOOK XV",
+        "level": 2,
+        "readingIndex": 686
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "BOOK XVI",
+        "level": 2,
+        "readingIndex": 736
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "BOOK XVII",
+        "level": 2,
+        "readingIndex": 783
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "BOOK XVIII",
+        "level": 2,
+        "readingIndex": 848
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "BOOK XIX",
+        "level": 2,
+        "readingIndex": 891
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "BOOK XX",
+        "level": 2,
+        "readingIndex": 932
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "BOOK XXI",
+        "level": 2,
+        "readingIndex": 970
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "BOOK XXII",
+        "level": 2,
+        "readingIndex": 1014
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "BOOK XXIII",
+        "level": 2,
+        "readingIndex": 1068
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "BOOK XXIV",
+        "level": 2,
+        "readingIndex": 1099
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "FOOTNOTES:",
+        "level": 2,
+        "readingIndex": 1146
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "images/cover.jpg",
+      "sha256": "c74dd2b86e5b019a7401677cd1ccef733659f7de334b43e9aac199ecda3d3a6d",
+      "bytes": 286444,
+      "mime": "image/jpeg"
+    }
+  ],
+  "fidelity": {
+    "canonicalTextSha256": "134508684078f480faa92619dfd2884bb7bfef9640423eaaff0bd7a238cf34c8",
+    "sourceImageCount": 1
+  }
+}

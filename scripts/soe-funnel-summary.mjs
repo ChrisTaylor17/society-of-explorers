@@ -135,7 +135,15 @@ export function toEastern(iso) {
   if (!iso) return 'n/a';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return 'n/a';
-  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(d);
+  // Intl supplies the time-zone/DST fields; ICU's joining literals vary by runtime
+  // (e.g. a comma versus "at"). Keep the report's established punctuation explicit.
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', calendar: 'gregory', numberingSystem: 'latn',
+    year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric',
+    minute: '2-digit', hour12: true, timeZoneName: 'short',
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(d).map(({ type, value }) => [type, value]));
+  return `${parts.month} ${parts.day}, ${parts.year}, ${parts.hour}:${parts.minute} ${parts.dayPeriod} ${parts.timeZoneName}`;
 }
 
 const pct = (x) => (x == null ? '   -  ' : `${(x * 100).toFixed(1).padStart(5)}%`);

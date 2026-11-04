@@ -39,6 +39,12 @@ function getStripe(key: string) {
 }
 
 export async function POST(req: NextRequest) {
+  // The historical four-tier offer is closed for new sales by default. Existing
+  // subscriptions continue to use their original fulfillment contract. An
+  // operator-controlled compatibility switch is separate from supporter sales.
+  if (process.env.SOE_LEGACY_MEMBERSHIP_SALES_ENABLED !== 'true') {
+    return privateJson({ error: 'These membership plans are closed for new purchases. Free reading and Circles remain available; visit /join for optional support or /billing to manage an existing subscription.', code: 'legacy_sales_closed' }, 410);
+  }
   let body: unknown;
   try {
     body = await req.json();

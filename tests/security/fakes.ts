@@ -30,10 +30,11 @@ export class FakeDb {
 
 class Q {
   op = 'select'; filters: any[] = []; payload: any; conflict?: string;
-  isSingle = false; maybe = false; lim?: number; ord?: [string, boolean]; wantRows = false;
+  isSingle = false; maybe = false; lim?: number; offset = 0; ord: Array<[string, boolean]> = []; wantRows = false;
   constructor(public db: FakeDb, public table: string) {}
   countOnly = false;
-  select(_c?: string, o?: { count?: string; head?: boolean }) { if (o?.head) this.countOnly = true; if (this.op !== 'select') this.wantRows = true; return this; }
+  wantCount = false;
+  select(_c?: string, o?: { count?: string; head?: boolean }) { if (o?.head) this.countOnly = true; if (o?.count) this.wantCount = true; if (this.op !== 'select') this.wantRows = true; return this; }
   // Typing helpers / range filters used by production routes (range filters are not evaluated).
   returns() { return this; }
   neq(c: string, v: any) { this.filters.push(['neq', c, v]); return this; }
@@ -46,12 +47,12 @@ class Q {
   not(c: string, op: string, v: any) { this.filters.push(['not', c, op, v]); return this; }
   is(c: string, v: any) { this.filters.push(['isnull', c, v]); return this; }
   contains(c: string, v: any[]) { this.filters.push(['contains', c, v]); return this; }
-  range(a: number, b: number) { this.lim = b - a + 1; return this; }
+  range(a: number, b: number) { this.offset = a; this.lim = b - a + 1; return this; }
   maybeSingle() { this.isSingle = true; this.maybe = true; return this; }
   delete() { this.op = 'delete'; return this; }
   eq(c: string, v: any) { this.filters.push(['eq', c, v]); return this; }
   or(expr: string) { this.filters.push(['or', expr]); return this; }
-  order(c: string, o?: { ascending?: boolean }) { this.ord = [c, o?.ascending !== false]; return this; }
+  order(c: string, o?: { ascending?: boolean }) { this.ord.push([c, o?.ascending !== false]); return this; }
   limit(n: number) { this.lim = n; return this; }
   single() { this.isSingle = true; return this; }
   insert(p: any) { this.op = 'insert'; this.payload = p; return this; }
@@ -101,13 +102,20 @@ class Q {
     if (this.op === 'delete') { const keep = rows.filter(r => !this.match(r)); rows.length = 0; rows.push(...keep); return { data: null, error: null }; }
     if (this.op === 'update') { rows.filter(r => this.match(r)).forEach(r => Object.assign(r, this.payload)); return { data: null, error: null }; }
     let out = rows.filter(r => this.match(r));
-    if (this.ord) { const [c, asc] = this.ord; out = [...out].sort((a, b) => (a[c] < b[c] ? -1 : a[c] > b[c] ? 1 : 0) * (asc ? 1 : -1)); }
+    if (this.ord.length) out = [...out].sort((a, b) => {
+      for (const [c, asc] of this.ord) {
+        const cmp = (a[c] < b[c] ? -1 : a[c] > b[c] ? 1 : 0) * (asc ? 1 : -1);
+        if (cmp) return cmp;
+      }
+      return 0;
+    });
     if (this.countOnly) return { data: null, count: out.length, error: null };
-    if (this.lim != null) out = out.slice(0, this.lim);
+    const count = this.wantCount ? out.length : undefined;
+    if (this.lim != null) out = out.slice(this.offset, this.offset + this.lim);
     if (this.isSingle && this.db.strictSingle) {
       if (out.length > 1 || (!this.maybe && out.length === 0)) return { data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } };
     }
-    return { data: this.isSingle ? (out[0] ?? null) : out, error: null };
+    return { data: this.isSingle ? (out[0] ?? null) : out, ...(this.wantCount ? { count } : {}), error: null };
   }
   then(res: any, rej: any) { return Promise.resolve().then(() => this.exec()).then(res, rej); }
 }
@@ -133,6 +141,8 @@ export function makeReq(body: any, opts: { cookies?: Record<string, string>; hea
 }
 
 export function installMocks(extra: Record<string, () => any> = {}) {
+  // Test-only module boundary: production keeps Next's server-only enforcement.
+  mock.module('server-only', () => ({}));
   // Trap the network: any fetch is a test failure.
   (globalThis as any).fetch = () => { throw new Error('network access attempted in offline test'); };
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://offline.invalid';

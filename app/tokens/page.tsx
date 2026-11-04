@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '$SOE Token Rituals | Society of Explorers',
+  title: '$SOE Token Rituals',
   description: 'The living uses of $SOE — burn, stake, offer, unlock. Tokens as ritual acts.',
 };
 

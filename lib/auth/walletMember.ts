@@ -1,3 +1,5 @@
+import 'server-only';
+
 // Finds or creates the members row for a verified wallet address, deterministically.
 //
 // Before: `.select('*').eq('wallet_address', lower).single()`. PostgREST's .single() returns no row (with an error)
@@ -9,6 +11,8 @@
 // (created_at, then id), so the same member is always chosen. Insert errors are logged by code and a concurrent or
 // case-variant unique violation re-reads the existing row.
 import { isWellFormedUuid } from '@/lib/auth/walletSession';
+
+const WALLET_MEMBER_SELECT = 'id, created_at, wallet_address';
 
 type Row = { id?: unknown; created_at?: unknown; wallet_address?: unknown; [key: string]: unknown };
 type QueryError = { code?: string; message?: string; details?: string };
@@ -53,12 +57,12 @@ function pickOldest(rows: Row[]): Row | null {
 }
 
 async function lookup(supabase: SupabaseLike, address: string): Promise<{ rows: Row[]; error?: string }> {
-  const exact: QueryResult = await supabase.from('members').select('*').eq('wallet_address', address).limit(25);
+  const exact: QueryResult = await supabase.from('members').select(WALLET_MEMBER_SELECT).eq('wallet_address', address).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(25);
   if (exact.error) return { rows: [], error: classifyDbError('lookup_failed', exact.error, exact.status) };
   const exactRows = Array.isArray(exact.data) ? (exact.data as Row[]) : [];
   if (exactRows.length) return { rows: exactRows };
   // Hex address: no LIKE wildcards possible, so ilike is a case-insensitive exact match.
-  const ci: QueryResult = await supabase.from('members').select('*').ilike('wallet_address', address).limit(25);
+  const ci: QueryResult = await supabase.from('members').select(WALLET_MEMBER_SELECT).ilike('wallet_address', address).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(25);
   if (ci.error) return { rows: [], error: classifyDbError('lookup_ci_failed', ci.error, ci.status) };
   return { rows: Array.isArray(ci.data) ? (ci.data as Row[]) : [] };
 }
@@ -79,7 +83,7 @@ export async function findOrCreateWalletMember(supabase: SupabaseLike, walletAdd
 
   const inserted: QueryResult = await supabase.from('members')
     .insert({ wallet_address: address, display_name: `${address.slice(0, 6)}…${address.slice(-4)}`, exp_tokens: 10 })
-    .select()
+    .select(WALLET_MEMBER_SELECT)
     .maybeSingle();
   if (inserted.error) {
     if (inserted.error.code === '23505') {

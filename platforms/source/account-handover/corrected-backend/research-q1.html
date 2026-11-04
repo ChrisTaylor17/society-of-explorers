@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="SOE-Q001 — Where does waiting actually hurt? Open question. Novelty unestablished. No field trial completed." />
+  <meta property="og:title" content="Q1 — Where does waiting actually hurt? — Society of Explorers" />
+  <meta property="og:description" content="SOE-Q001 — Where does waiting actually hurt? Open question. Novelty unestablished. No field trial completed." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Q1 — Where does waiting actually hurt? — Society of Explorers" />
+  <meta name="twitter:description" content="SOE-Q001 — Where does waiting actually hurt? Open question. Novelty unestablished. No field trial completed." />
+  <title>Q1 — Where does waiting actually hurt? — Society of Explorers</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="index.html"><span class="wm-full">Society of Explorers <span>· SoE</span></span><span class="wm-short">SoE</span></a>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" data-nav-toggle><span class="burger" aria-hidden="true"><i></i><i></i><i></i></span> Menu</button>
+      <nav class="primary-nav" id="site-nav">
+        <a href="explore.html">Explore</a>
+        <a href="gather.html">Gather</a>
+        <a href="build.html">Build</a>
+        <a href="about.html">About</a>
+        <a href="participate.html">Participate</a>
+        <details class="nav-more">
+          <summary>More</summary>
+          <div class="nav-overflow">
+          <a href="visual-arc.html">Visual Arc</a>
+          <a href="stack.html">Stack</a>
+          <a href="electronic-governor.html">Electronic Governor</a>
+          <a href="power-as-primitive.html">Power as Primitive</a>
+          <a href="notes/index.html">Notes</a>
+          <a href="ai-guide.html">AI Guide</a>
+          <a href="research.html">Research</a>
+          <a href="research-horizon.html">Research horizon</a>
+          <a href="collective.html">Collective</a>
+          <a href="space.html">Space</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <div class="egb-spine" aria-label="Research record">
+      <span class="egb-step"><a href="research.html">Research</a></span><span class="arrow">·</span>
+      <span class="egb-step current">Q1</span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-q2.html">Q2</a></span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-q3.html">Q3</a></span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-evidence.html">Evidence</a></span>
+    </div>
+
+    <p class="eyebrow">SOE-Q001 · version 1.0 · 27 September 2026</p>
+    <h1>Where does waiting actually hurt?</h1>
+    <p><strong>Research status:</strong> Open question · Novelty unestablished · No field trial completed</p>
+
+    <h2>The question</h2>
+    <p class="lead">Can you identify a real situation in which a device or operator must decide locally before a deadline, and an existing local controller or operating-envelope arrangement does not meet that need?</p>
+
+    <h2>Why it matters</h2>
+    <p>A faster permission check is useful only if waiting causes a meaningful loss. Before proposing another mechanism, we need to understand a real task, its deadline, and what already works.</p>
+
+    <h2>What is currently known</h2>
+    <p>Existing systems can assign limits and let equipment operate within them. Some implementations also specify behavior during a communications outage. Local autonomy is therefore part of the comparison, not something we can simply claim to have invented.</p>
+
+    <h2>What remains unknown</h2>
+    <p>We have not identified a documented case where the proposed approach improves service enough to justify its added cost and complexity against the strongest existing alternative.</p>
+
+    <h2>Contributions that would help</h2>
+    <ul class="clean">
+      <li>An example from operating a fleet, charging site, energy system, communications network, or another constrained service.</li>
+      <li>The decision that must be made, the deadline, what happens if it is missed, and the current fallback.</li>
+      <li>A source or anonymized trace showing a real delay or outage cost.</li>
+      <li>An existing product, paper, or operating practice that already solves the problem.</li>
+    </ul>
+    <p><strong>A useful first contribution:</strong> “At this kind of site, this decision has to happen within this time. Today we handle it this way. Here is where that works—or fails.” An observation without a paper is welcome; we will distinguish experience from general evidence.</p>
+
+    <h2>What would change our minds</h2>
+    <p>Evidence that existing arrangements meet the same requirement closes that case. A documented shortfall with a fair comparison and measurable consequences would justify a focused study.</p>
+
+    <h2>Start with these sources</h2>
+    <ul class="clean">
+      <li><a href="https://static1.squarespace.com/static/67ec72f228086e2ba4f8e438/t/684f71d7b1a5ec0335fa7edd/1750036960820/CSIP-AUS-v1.2-explainer-May-2025-release.pdf">CSIP-AUS v1.2 explainer, May 2025, communication-loss behavior</a> — dated implementation guidance. Reading status: the loss-of-communications section was read in the 27 September 2026 audit. Not independently reproduced. Not a claim about every current product.</li>
+      <li><a href="https://www.aemo.com.au/initiatives/major-programs/nem-distributed-energy-resources-der-program/der-demonstrations/project-edge/project-edge-reports/dynamic-operating-envelopes">AEMO Project EDGE operating-envelope research</a> — practical allocation questions. Reading status: official report summaries inspected. Secondary report. Not independently reproduced.</li>
+      <li><a href="https://arxiv.org/pdf/2510.08172">SecuLEx</a> — a preprint proposing exchange of operating limits. Reading status: relevant PDF text read, including market-timing assumptions. Not independently reproduced. A preprint is not a deployed product.</li>
+    </ul>
+
+    <h2>Prompt above the response box</h2>
+    <p>What decision, deadline, or existing solution should we examine?</p>
+    <div class="arc-exc" aria-label="Contribution intake closed">
+      <div class="arc-exc-rail" data-state="queued"></div>
+      <p class="arc-exc-status">INTAKE · NOT OPEN</p>
+      <h3>Contributions are not open yet</h3>
+      <p class="arc-exc-meta">no response box · nothing is saved · no receipt · no review queue</p>
+      <span class="arc-exc-pill arc-exc-pill--hold">OFF</span>
+    </div>
+
+    <h2>Question record</h2>
+    <div class="arc-step">
+      <h2>SOE-Q001 · version 1.0</h2>
+      <dl>
+        <dt>Question</dt>
+        <dd>Can you identify a real situation in which a device or operator must decide locally before a deadline, and an existing local controller or operating-envelope arrangement does not meet that need?</dd>
+        <dt>Version / date</dt>
+        <dd>1.0 · 27 September 2026. First public version of this record.</dd>
+        <dt>Scope</dt>
+        <dd>Included: a documented task, its deadline, the cost of missing it, and the incumbent local controller or operating envelope. Excluded: a new protocol, a new token, hardware purchases, and any claim that local autonomy itself is new.</dd>
+        <dt>Owner</dt>
+        <dd>Editorial owner when a record changes: Chris Taylor, or a reviewer he designates. That names a person, not a panel. Intake is not open, so no contribution is in review.</dd>
+        <dt>Disposition</dt>
+        <dd>Open. Reason: no documented case here yet shows an improvement large enough to justify added cost against the strongest existing alternative. Novelty unestablished. No field trial completed.</dd>
+        <dt>Claims</dt>
+        <dd><span class="claim-tag claim-tag--steel">Fact</span> within the cited sources: existing systems can assign limits and let equipment operate within them, and some specify communications-outage behavior. <span class="claim-tag claim-tag--dashed">Unknown</span> whether any documented case justifies another mechanism. <span class="claim-tag claim-tag--copper">Hypothesis</span> that a specific improvement exists — not established. <span class="claim-tag claim-tag--graphite">Not a fact</span> that Society of Explorers has invented local autonomy.</dd>
+        <dt>Assumptions</dt>
+        <dd>A faster permission check matters only if waiting causes a meaningful loss. The comparison includes communication-loss defaults. It does not assume that disconnection leaves every conventional device waiting for a server.</dd>
+        <dt>Baseline</dt>
+        <dd>The strongest existing local controller or operating-envelope arrangement for the same task, including scheduled envelopes and a documented disconnection fallback. SecuLEx is a preprint proposal in that neighborhood, not a result that this question has beaten.</dd>
+        <dt>Contributions</dt>
+        <dd>None. Contributions are not open yet. This is not a count of a community.</dd>
+        <dt>Objections</dt>
+        <dd>Unresolved: existing arrangements may already meet the requirement, which would close that case. No contributor objection is on file.</dd>
+        <dt>Tests</dt>
+        <dd>Proposed, not started. Continue only with a documented requirement and a fair comparator. See the <a href="research-evidence.html">evidence agenda</a>.</dd>
+        <dt>Results</dt>
+        <dd>No field trial. No measurement on this question. Toy arithmetic on the evidence page is an illustration for a different check, not an answer here.</dd>
+        <dt>Revision</dt>
+        <dd>Version 1.0 published 27 September 2026 from the public research handoff after the independent audit. No prior public version of SOE-Q001.</dd>
+      </dl>
+    </div>
+
+    <p class="muted">Also read <a href="research-q2.html">Q2</a> · <a href="research-q3.html">Q3</a> · <a href="research-evidence.html">Evidence</a> · <a href="research.html">Research</a>.</p>
+
+    <div class="boundaries">
+      <strong>Honest frame.</strong> SOE-Q001 is open. Novelty unestablished. No field trial completed. Contributions are not open yet.
+    </div>
+  </main>
+  <footer><div class="inner">Society of Explorers <span class="footer-sep" aria-hidden="true">·</span> <a class="footer-util" href="participate.html">Participate</a></div></footer>
+</body>
+</html>

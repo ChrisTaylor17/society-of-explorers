@@ -1,0 +1,546 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
+      "source": "/hold.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/login",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/login/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/login/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/join",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/join/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/join/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/create-community",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/create-community/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/create-community/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/92b",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/92b/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/92b/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/cart",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/cart/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/cart/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/checkout",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/checkout/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/checkout/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/orders",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/orders/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/orders/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/members",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/members/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/members/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/tribekey",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/tribekey/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/tribekey/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/capital",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/capital/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/capital/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/book",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/book/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/book/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/auth",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/auth/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/api",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/api/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/salon",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/salon/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/salon/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/salons",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/salons/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/salons/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/practice",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/practice/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/practice/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/council",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/council/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/council/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/live",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/live/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/live/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/projects",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/projects/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/projects/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/movement",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/movement/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/movement/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/feed",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/feed/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/feed/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/guide",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/guide/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/guide/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/hall",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/hall/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/hall/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/roadmap",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/roadmap/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/roadmap/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/vision",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/vision/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/vision/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/manifesto",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/manifesto/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/manifesto/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/three-pillars",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/three-pillars/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/three-pillars/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/transparency",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/transparency/",
+      "destination": "/hold.html",
+      "permanent": true
+    },
+    {
+      "source": "/transparency/:path*",
+      "destination": "/hold.html",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/explore",
+      "destination": "/explore.html"
+    },
+    {
+      "source": "/explore/",
+      "destination": "/explore.html"
+    },
+    {
+      "source": "/gather",
+      "destination": "/gather.html"
+    },
+    {
+      "source": "/gather/",
+      "destination": "/gather.html"
+    },
+    {
+      "source": "/build",
+      "destination": "/build.html"
+    },
+    {
+      "source": "/build/",
+      "destination": "/build.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/about/",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/participate",
+      "destination": "/participate.html"
+    },
+    {
+      "source": "/participate/",
+      "destination": "/participate.html"
+    },
+    {
+      "source": "/research",
+      "destination": "/research.html"
+    },
+    {
+      "source": "/research/",
+      "destination": "/research.html"
+    },
+    {
+      "source": "/research-q1",
+      "destination": "/research-q1.html"
+    },
+    {
+      "source": "/research-q1/",
+      "destination": "/research-q1.html"
+    },
+    {
+      "source": "/research-q2",
+      "destination": "/research-q2.html"
+    },
+    {
+      "source": "/research-q2/",
+      "destination": "/research-q2.html"
+    },
+    {
+      "source": "/research-q3",
+      "destination": "/research-q3.html"
+    },
+    {
+      "source": "/research-q3/",
+      "destination": "/research-q3.html"
+    },
+    {
+      "source": "/research-evidence",
+      "destination": "/research-evidence.html"
+    },
+    {
+      "source": "/research-evidence/",
+      "destination": "/research-evidence.html"
+    }
+  ]
+}

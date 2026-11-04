@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { loadPublicExplorerProfile } from '@/lib/explorer/publicProfile';
+import { SHARE_OG_IMAGES, SHARE_TWITTER_IMAGES } from '@/lib/site/shareCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +16,8 @@ const THINKER_NAMES: Record<string, string> = {
   nietzsche: 'Nietzsche', einstein: 'Einstein', jobs: 'Steve Jobs',
 };
 const THINKER_COLORS: Record<string, string> = {
-  socrates: '#C9A94E', plato: '#7B68EE', aurelius: '#8B7355',
-  nietzsche: '#DC143C', einstein: '#4169E1', jobs: '#A0A0A0',
+  socrates: '#C9A94E', plato: '#9B8BF5', aurelius: '#A88D6E',
+  nietzsche: '#F0475F', einstein: '#6F8FF0', jobs: '#A0A0A0',
 };
 const THINKER_AVATARS: Record<string, string> = {
   socrates: 'SO', plato: 'PL', aurelius: 'MA',
@@ -33,15 +34,24 @@ const TIER_LABELS: Record<string, string> = {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const data = await loadPublicExplorerProfile(id);
-  if (!data) return { title: 'Explorer — Society of Explorers' };
+  if (!data) {
+    const title = 'Explorer — Society of Explorers';
+    const description = 'A public explorer profile on Society of Explorers.';
+    return {
+      title: { absolute: title }, description,
+      robots: { index: false },
+      openGraph: { title, description, siteName: 'Society of Explorers', type: 'website', images: SHARE_OG_IMAGES },
+      twitter: { card: 'summary_large_image', title, description, images: SHARE_TWITTER_IMAGES },
+    };
+  }
   const { explorer } = data;
   const name = explorer.display_name || 'Explorer';
   const title = `${name} — Society of Explorers`;
   const description = `${name} has a ${explorer.current_streak || 0}-day streak and has answered ${explorer.total_responses || 0} philosophical questions. Start your own practice.`;
   return {
-    title, description,
-    openGraph: { title, description, type: 'profile' },
-    twitter: { card: 'summary_large_image', title, description },
+    title: { absolute: title }, description,
+    openGraph: { title, description, siteName: 'Society of Explorers', type: 'profile', images: SHARE_OG_IMAGES },
+    twitter: { card: 'summary_large_image', title, description, images: SHARE_TWITTER_IMAGES },
   };
 }
 
@@ -213,12 +223,12 @@ export default async function ExplorerProfilePage({ params }: { params: Promise<
                   <div key={r.id} style={{ background: '#0d0d0d', border: `1px solid ${gold}10`, padding: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
                       <div style={{
-                        width: '26px', height: '26px', borderRadius: '50%',
+                        width: '30px', height: '30px', borderRadius: '50%',
                         background: `${tColor}18`, border: `1.5px solid ${tColor}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: 'Cinzel, serif', fontSize: '9px', color: tColor,
+                        fontFamily: 'Cinzel, serif', fontSize: '12px', lineHeight: 1, color: tColor, flexShrink: 0,
                       }}>{tAvatar}</div>
-                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: tColor }}>{tName.toUpperCase()}</span>
+                      <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: tColor }}>{tName.toUpperCase()}</span>
                       <span style={{ flex: 1 }} />
                       <span style={{ fontSize: '11px', color: muted }}>{timeAgo(r.created_at)}</span>
                     </div>

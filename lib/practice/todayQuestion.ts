@@ -1,5 +1,6 @@
 import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { pickFallbackQuestion } from '@/lib/practice/fallbackQuestions';
 
 export interface DailyQuestion {
   id: string;
@@ -32,6 +33,43 @@ function pickThinker(): typeof THINKERS[number] {
   return THINKERS[dayOfYear % THINKERS.length];
 }
 
+// claude-sonnet-4-20250514 was retired on June 15, 2026 and now returns 404,
+// which left /practice without a question every day. Use a current model.
+export const TODAY_QUESTION_MODEL_FALLBACK = 'claude-sonnet-4-6';
+
+async function generateQuestion(
+  thinker: (typeof THINKERS)[number],
+): Promise<{ question: string; context: string } | null> {
+  try {
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', TODAY_QUESTION_MODEL_FALLBACK);
+    const response = await anthropic.messages.create(
+      {
+        model,
+        max_tokens: 200,
+        system: `You are ${thinker.name}, the AI thinker from Society of Explorers. ${thinker.lens} Generate ONE philosophical question for today's daily practice. The question should be answerable in 280 characters or less, provoke genuine reflection, and reflect your unique perspective. Respond with ONLY a JSON object: {"question": "...", "context": "A 1-sentence note on why you're asking this today."}`,
+        messages: [{ role: 'user', content: "Generate today's daily practice question." }],
+      },
+      { timeout: 15_000, maxRetries: 0 },
+    );
+
+    const text = response.content.find((b) => b.type === 'text')?.text || '';
+    let parsed: { question?: unknown; context?: unknown };
+    try {
+      parsed = JSON.parse(text.replace(/```json\n?|```/g, '').trim());
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      parsed = match ? JSON.parse(match[0]) : { question: text.slice(0, 200), context: '' };
+    }
+    const question = typeof parsed.question === 'string' ? parsed.question.trim() : '';
+    if (!question) return null;
+    return { question, context: typeof parsed.context === 'string' ? parsed.context : '' };
+  } catch (err) {
+    console.error('[practice/todayQuestion] generation failed, using fallback question:', err);
+    return null;
+  }
+}
+
 export async function getOrCreateTodayQuestion(): Promise<DailyQuestion | null> {
   const supabase = getSupabaseAdmin();
   const today = getTodayET();
@@ -44,39 +82,27 @@ export async function getOrCreateTodayQuestion(): Promise<DailyQuestion | null> 
   if (existing) return existing as DailyQuestion;
 
   const thinker = pickThinker();
-  try {
-    const anthropic = createAnthropicClient();
-    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
-    const response = await anthropic.messages.create({
-      model,
-      max_tokens: 200,
-      system: `You are ${thinker.name}, the AI thinker from Society of Explorers. ${thinker.lens} Generate ONE philosophical question for today's daily practice. The question should be answerable in 280 characters or less, provoke genuine reflection, and reflect your unique perspective. Respond with ONLY a JSON object: {"question": "...", "context": "A 1-sentence note on why you're asking this today."}`,
-      messages: [{ role: 'user', content: "Generate today's daily practice question." }],
-    });
+  const generated = await generateQuestion(thinker);
+  const fallback = pickFallbackQuestion(today);
+  const row = generated
+    ? { thinker_id: thinker.id, question_text: generated.question, question_context: generated.context, date: today }
+    : { ...fallback, date: today };
 
-    const text = response.content.find((b) => b.type === 'text')?.text || '';
-    let parsed: { question: string; context: string };
-    try {
-      parsed = JSON.parse(text.replace(/```json\n?|```/g, '').trim());
-    } catch {
-      const match = text.match(/\{[\s\S]*\}/);
-      parsed = match ? JSON.parse(match[0]) : { question: text.slice(0, 200), context: '' };
-    }
+  const { data: inserted, error: insertError } = await supabase
+    .from('daily_questions')
+    .insert(row)
+    .select()
+    .single();
+  if (inserted) return inserted as DailyQuestion;
 
-    const { data: question } = await supabase
-      .from('daily_questions')
-      .insert({
-        thinker_id: thinker.id,
-        question_text: parsed.question,
-        question_context: parsed.context,
-        date: today,
-      })
-      .select()
-      .single();
+  // date is UNIQUE: another request may have created today's row first.
+  const { data: raced } = await supabase
+    .from('daily_questions')
+    .select('*')
+    .eq('date', today)
+    .maybeSingle();
+  if (raced) return raced as DailyQuestion;
 
-    return (question as DailyQuestion) || null;
-  } catch (err) {
-    console.error('[practice/todayQuestion] generation failed:', err);
-    return null;
-  }
+  console.error('[practice/todayQuestion] could not store today\'s question:', insertError?.message);
+  return null;
 }

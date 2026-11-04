@@ -24,6 +24,11 @@ Use this with `docs/soe-external-action-approval-matrix.md`.
 | `app/api/merch/checkout/route.ts` | Creates Stripe Checkout sessions for merch. | Stripe test checkout or live checkout approval. |
 | `app/api/projects/[id]/pledge/route.ts` | Creates Stripe Checkout sessions for project pledges. | Stripe test checkout or live checkout approval. |
 | `app/api/stripe/webhook/route.ts` | Applies Stripe webhook side effects for membership and capital pledges. | Stripe test webhook replay approval. |
+| `app/api/supporter/checkout/route.ts` | Prepares an optional supporter customer and Checkout session through the dedicated provider adapter after canonical identity, fresh provider checks and durable request reservation. Sales default closed. | Exact Stripe sandbox or live provider-write approval before operator-driven calls; synthetic local fixtures require no provider access. |
+| `app/api/supporter/portal/route.ts` | Prepares the authenticated member's verified billing portal session; may bind a freshly verified legacy customer in the dedicated local ledger. New-sales closure does not disable management. | Exact provider-session approval before operator-driven real-account calls; use synthetic objects for local QA. |
+| `app/api/supporter/webhook/route.ts` | Verifies supporter events against current Stripe state and atomically stores the dedicated snapshot and event receipt; never writes member tiers. | Exact webhook replay and target-database approval outside disposable local fixtures. |
+| `app/api/supporter/status/route.ts` | Reads the canonical member's dedicated ledger and current Stripe ownership/catalog/subscription state; never provisions a customer, session or account. | Read-only connected account scope; no production credentials are needed for the local fixture suite. |
+| `app/api/supporter/return/route.ts` | Reads an owned attempt and current Stripe state to check a billing return; a URL flag never proves payment. | Read-only connected account scope; synthetic local provider state is used for QA. |
 | `app/api/webhooks/stripe/route.ts` | Applies merch fulfillment side effects after Stripe checkout. | Stripe test webhook replay plus fulfillment review. |
 
 Current local guards: `capital:checkout-safety:smoke`, `capital:webhook-safety:smoke`, and `capital:webhook-dedupe:smoke`.

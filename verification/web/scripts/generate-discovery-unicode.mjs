@@ -1,0 +1,42 @@
+/** Offline deterministic profile generator. No downloads, provider calls or dependencies.
+ * node --require ./scripts/deny-build-network.cjs scripts/generate-discovery-unicode.mjs [--check]
+ * Profile semantics pin the actual parent JavaScript discovery fold, including
+ * default en-US Final_Sigma context and UTF-16 lexical ordering.
+ */
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+export const PROFILE = Object.freeze({ version: 1, unicode: '17.0', locale: 'en-US',
+ algorithm: 'NFKD/remove-General_Category-M/en-US-lower/Final_Sigma; UTF16BE-sort-v1' });
+export const sha = value => createHash('sha256').update(value).digest('hex');
+export function generateProfile() {
+ assert.equal(process.versions.unicode, PROFILE.unicode, 'Use the pinned Unicode17 runtime; do not silently regenerate another profile');
+ const data={decomposition:{},lower:{},cased:[],caseIgnorable:[]};
+ const marks=/\p{M}/gu,cased=/\p{Cased}/u,ignorable=/\p{Case_Ignorable}/u;
+ let cs=null,is=null,previous=0;
+ for(let cp=1;cp<=0x10ffff;cp++){
+  if(cp>=0xd800&&cp<=0xdfff)continue;
+  const character=String.fromCodePoint(cp),decomposed=character.normalize('NFKD').replace(marks,''),lower=character.toLocaleLowerCase('en-US');
+  if(decomposed!==character)data.decomposition[cp]=decomposed;
+  if(lower!==character&&cp!==0x3a3)data.lower[cp]=lower;
+  const c=cased.test(character),i=ignorable.test(character);
+  if(c&&cs===null)cs=cp;if(!c&&cs!==null){data.cased.push([cs,previous]);cs=null;}
+  if(i&&is===null)is=cp;if(!i&&is!==null){data.caseIgnorable.push([is,previous]);is=null;}
+  previous=cp;
+ }
+ if(cs!==null)data.cased.push([cs,previous]);if(is!==null)data.caseIgnorable.push([is,previous]);
+ return data;
+}
+export function buildSql(data) {
+ const json=JSON.stringify(data),hash=sha(json);assert.equal(json.includes('$unicode_profile$'),false);
+ return `-- GENERATED UNAPPLIED CANDIDATE. Do not hand-edit this profile.\n-- Regenerate with scripts/generate-discovery-unicode.mjs using pinned Unicode${PROFILE.unicode}.\n-- Algorithm: ${PROFILE.algorithm}\n-- Embedded JSON SHA256: ${hash}; bytes: ${Buffer.byteLength(json)}.\n-- Generated from installed JavaScript Unicode data; no locale/ICU/database-version\n-- lookup occurs at SQL runtime. No tables, profiles, dependencies or data writes.\nBEGIN;\nCREATE FUNCTION public._soe_circle_discovery_unicode_profile() RETURNS jsonb\nLANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path=pg_catalog,public AS $$\n SELECT $unicode_profile$${json}$unicode_profile$::jsonb;\n$$;\nCREATE FUNCTION public._soe_circle_discovery_unicode_identity() RETURNS text\nLANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path=pg_catalog,public AS $$\n SELECT '${hash}';\n$$;\n\nCREATE FUNCTION public._soe_circle_discovery_in_ranges(cp integer,ranges jsonb) RETURNS boolean\nLANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path=pg_catalog,public AS $$\nDECLARE lo integer:=0;hi integer:=jsonb_array_length(ranges)-1;mid integer;a integer;b integer;\nBEGIN\n WHILE lo<=hi LOOP\n  mid:=(lo+hi)/2;a:=(ranges->mid->>0)::integer;b:=(ranges->mid->>1)::integer;\n  IF cp<a THEN hi:=mid-1;ELSIF cp>b THEN lo:=mid+1;ELSE RETURN true;END IF;\n END LOOP;RETURN false;\nEND $$;\n\nCREATE FUNCTION public._soe_circle_discovery_fold(p_text text) RETURNS text\nLANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path=pg_catalog,public AS $$\nDECLARE profile jsonb;character text;decomposed text:='';result text:='';\n chars text[];n integer;i integer;j integer;cp integer;prior_cased boolean;next_cased boolean;\nBEGIN\n IF p_text IS NULL OR p_text='' THEN RETURN '';END IF;\n -- ASCII has no decomposition, marks or contextual casing. Avoid loading the\n -- Unicode profile for this common exact case, without locale-dependent lower().\n IF p_text !~ '[^\\x01-\\x7f]' THEN RETURN translate(p_text,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz');END IF;\n profile:=public._soe_circle_discovery_unicode_profile();\n FOR character IN SELECT unnest(string_to_array(p_text,NULL)) LOOP\n  cp:=ascii(character);\n  decomposed:=decomposed||CASE WHEN cp<128 THEN character ELSE coalesce(profile->'decomposition'->>cp::text,character) END;\n END LOOP;\n chars:=string_to_array(decomposed,NULL);n:=coalesce(array_length(chars,1),0);\n IF n=0 THEN RETURN '';END IF;\n FOR i IN 1..n LOOP\n  character:=chars[i];cp:=ascii(character);\n  IF cp=931 THEN\n   prior_cased:=false;next_cased:=false;j:=i-1;\n   WHILE j>=1 LOOP\n    IF public._soe_circle_discovery_in_ranges(ascii(chars[j]),profile->'caseIgnorable') THEN j:=j-1;CONTINUE;END IF;\n    prior_cased:=public._soe_circle_discovery_in_ranges(ascii(chars[j]),profile->'cased');EXIT;\n   END LOOP;\n   j:=i+1;WHILE j<=n LOOP\n    IF public._soe_circle_discovery_in_ranges(ascii(chars[j]),profile->'caseIgnorable') THEN j:=j+1;CONTINUE;END IF;\n    next_cased:=public._soe_circle_discovery_in_ranges(ascii(chars[j]),profile->'cased');EXIT;\n   END LOOP;\n   result:=result||CASE WHEN prior_cased AND NOT next_cased THEN chr(962) ELSE chr(963) END;\n  ELSIF cp BETWEEN 65 AND 90 THEN result:=result||chr(cp+32);\n  ELSIF cp<128 THEN result:=result||character;\n  ELSE result:=result||coalesce(profile->'lower'->>cp::text,character);END IF;\n END LOOP;RETURN result;\nEND $$;\n\n-- PostgreSQL C/UTF8 order is not JavaScript UTF16 order for astral characters.\nCREATE FUNCTION public._soe_circle_discovery_utf16_key(p_text text) RETURNS bytea\nLANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path=pg_catalog,public AS $$\nDECLARE character text;cp integer;result text:='';\nBEGIN\n FOR character IN SELECT unnest(string_to_array(coalesce(p_text,''),NULL)) LOOP\n  cp:=ascii(character);\n  IF cp<=65535 THEN result:=result||lpad(to_hex(cp),4,'0');\n  ELSE cp:=cp-65536;result:=result||lpad(to_hex(55296+cp/1024),4,'0')||lpad(to_hex(56320+cp%1024),4,'0');END IF;\n END LOOP;RETURN decode(result,'hex');\nEND $$;\nCREATE FUNCTION public._soe_circle_discovery_clip(p_text text,p_limit integer) RETURNS text\nLANGUAGE plpgsql IMMUTABLE SECURITY INVOKER SET search_path=pg_catalog,public AS $$\nDECLARE character text;used integer:=0;units integer;result text:='';\nBEGIN\n IF p_limit IS NULL OR p_limit<0 THEN RETURN '';END IF;\n FOR character IN SELECT unnest(string_to_array(coalesce(p_text,''),NULL)) LOOP\n  units:=CASE WHEN ascii(character)>65535 THEN 2 ELSE 1 END;EXIT WHEN used+units>p_limit;\n  result:=result||character;used:=used+units;\n END LOOP;RETURN result;\nEND $$;\nCREATE FUNCTION public._soe_circle_discovery_trim(p_text text) RETURNS text\nLANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path=pg_catalog,public AS $$\n SELECT btrim(p_text,chr(9)||chr(10)||chr(11)||chr(12)||chr(13)||chr(32)||chr(160)||chr(5760)\n ||chr(8192)||chr(8193)||chr(8194)||chr(8195)||chr(8196)||chr(8197)||chr(8198)||chr(8199)||chr(8200)||chr(8201)||chr(8202)\n ||chr(8232)||chr(8233)||chr(8239)||chr(8287)||chr(12288)||chr(65279));\n$$;\nDO $$ DECLARE r record;BEGIN\n FOR r IN SELECT p.oid::regprocedure AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace\n WHERE n.nspname='public' AND p.proname IN('_soe_circle_discovery_unicode_profile','_soe_circle_discovery_unicode_identity',\n '_soe_circle_discovery_in_ranges','_soe_circle_discovery_fold','_soe_circle_discovery_utf16_key','_soe_circle_discovery_clip','_soe_circle_discovery_trim') LOOP\n EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,anon,authenticated',r.signature);\n EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role',r.signature);\n END LOOP;\nEND $$;\nCOMMIT;\n`;
+}
+export async function main(args=process.argv.slice(2)) {
+ assert.equal(args.every(x=>x==='--check'),true,'Only --check is supported');
+ const path=new URL('../../../docs/sql/circle-discovery-unicode.sql',import.meta.url),data=generateProfile(),sql=buildSql(data);
+ if(args.includes('--check'))assert.equal(await readFile(path,'utf8'),sql,'Generated UnicodeSQL differs');else await writeFile(path,sql);
+ process.stdout.write(JSON.stringify({status:args.includes('--check')?'CHECKED':'GENERATED',profile:PROFILE,jsonSHA256:sha(JSON.stringify(data)),sqlSHA256:sha(sql),bytes:Buffer.byteLength(sql)})+'\n');
+}
+if(process.argv[1]&&pathToFileURL(fileURLToPath(new URL(process.argv[1],`file://${process.cwd()}/`))).href===import.meta.url)await main();

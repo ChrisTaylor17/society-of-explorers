@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "assetSha256": "1b1e4331aeb76c5401d9f5f43a709108c5c3330959f2c33b36cca6a63e132155",
+  "sourceSha256": "10ee1ac1a8b353704dfad20eaf0043aac5b0d50a3e30d2e8f750cbeeeaf01852",
+  "captionsSha256": "d5279f41285491f031c889a51b142b3cce48c1c82a76cf908a1a0ce3594a0e1c",
+  "durationMs": 23955,
+  "width": 720,
+  "height": 404,
+  "audioTracks": 0,
+  "videoTracks": 1,
+  "externalAssets": false,
+  "checks": [
+    "source-created-locally",
+    "tracks-inspected",
+    "captions-checked",
+    "frames-reviewed"
+  ],
+  "createdAt": "2026-11-04T13:35:07.098Z",
+  "contentOrigin": "Original SoE onboarding text and canvas graphics authored for this product task; no external imagery, recording, music or voice.",
+  "mime": "video/mp4",
+  "encoderMime": "video/mp4;codecs=avc1.42001f",
+  "chromiumVersion": "149.0.7827.55",
+  "frameSha256": [
+    "4c390918c200304c922d3b2abd45d0c76c865e3b142d9e0031d9b5912abf4889",
+    "944da1de9246c48aeea53f4ee3a6b3a966cbea19c9bf28a91beb55f70eadd27f",
+    "1e71beb8ba9f800ddd9ac8a35381eb0ae1a5cac41f5aa4ee81eed01560911ea0",
+    "8aaa922bab5598b261dcd3309230698a25f4d317ab4ed9c6af90d5d5c193fe60",
+    "0468f32f73650122e77c8ff7a8a374109dba9f07310491c5bfde8733082cc9e0",
+    "ee9a33e85a5ef63998d95012cbdf0b5ce2bf79e894695ca7ac16f0202279ef32"
+  ],
+  "reviewBoundary": "Local automated generation and decoded-track checks. Frame review must be recorded separately; no human approval or production publication is implied.",
+  "frameReview": {
+    "reviewer": "Codex automated visual inspection",
+    "reviewedAt": "2026-11-04T13:36:40.007233+00:00",
+    "frames": 6,
+    "result": "All six authored frames inspected. Text fits the canvas and matches the captions; no external imagery, voice, music, real member information or endorsement claim."
+  }
+}

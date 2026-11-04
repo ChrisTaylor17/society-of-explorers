@@ -1,6 +1,7 @@
-// G5: /api/stripe/webhook membership + pledge handling, driven by Stripe-shaped
-// fixtures (tests/growth/fixtures/stripe) signed with the real stripe signature
-// helper. No live keys, no network.
+// G5: HTTP dispatch and signature boundaries for /api/stripe/webhook. Strict
+// membership payment proof is exercised by the HTTP -> PostgreSQL + adapter
+// tests, not this module mock. Actual capital-pledge handling stays covered here.
+// All fixtures are synthetic and use the real Stripe signature helper offline.
 import { test, expect, beforeEach } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -128,9 +129,30 @@ const fakeSupabase = {
 const ledgerSessions = new Set<string>();
 const emailsSent: any[] = [];
 
+// This exact-module mock proves the route delegates; it does not prove the
+// classifier, provider verification, SQL transactions or membership outcomes.
+const legacyState = {
+  candidateChecks: [] as any[],
+  calls: [] as { event: any; rawBytes: Uint8Array }[],
+  result: { received: true } as { received: true; ignored?: string },
+  error: null as Error | null,
+};
+
 installMocks({
   stripe: () => ({ default: FakeStripe }),
   '@/lib/supabase/admin': () => ({ getSupabaseAdmin: () => fakeSupabase }),
+  '@/lib/payments/legacyBilling': () => ({
+    isLegacyBillingCandidate: (event: any) => {
+      legacyState.candidateChecks.push(event);
+      return event.data.object.metadata?.type === 'membership' ||
+        event.type.startsWith('customer.subscription.') || event.type.startsWith('invoice.');
+    },
+    processLegacyBillingEvent: async (event: any, rawBytes: Uint8Array) => {
+      legacyState.calls.push({ event, rawBytes: rawBytes.slice() });
+      if (legacyState.error) throw legacyState.error;
+      return legacyState.result;
+    },
+  }),
   '@/lib/capital/pledgeLedger': () => ({
     recordPaidPledge: async ({ session }: any) => {
       const isNew = !ledgerSessions.has(session.id);
@@ -158,34 +180,21 @@ function members(): Row[] { return sb.tables.members; }
 function ada(): Row { return members().find((m) => m.id === ADA_MEMBER)!; }
 function memberUpdates() { return sb.writes.filter((w) => w.table === 'members' && w.op === 'update'); }
 
-function deliver(event: any, opts: { secret?: string; header?: string } = {}) {
-  const payload = JSON.stringify(event);
+function deliver(event: any, opts: { secret?: string; header?: string; payload?: string } = {}) {
+  const payload = opts.payload ?? JSON.stringify(event);
   const header = opts.header ?? realWebhooks.generateTestHeaderString({ payload, secret: opts.secret ?? WEBHOOK_SECRET });
-  const req = { text: async () => payload, headers: new Headers({ 'stripe-signature': header }), nextUrl: new URL('https://app.example.test/api/stripe/webhook'), method: 'POST' } as any;
-  return route.POST(req);
+  const req = new Request('https://app.example.test/api/stripe/webhook', {
+    method: 'POST',
+    headers: { 'stripe-signature': header },
+    body: payload,
+  });
+  return route.POST(req as any);
 }
 
 function membershipEvent(mutate?: (session: any, event: any) => void) {
   const event = fixture('checkout.session.completed.membership.json');
   mutate?.(event.data.object, event);
   return event;
-}
-
-function lineItems(price: { id: string; unit_amount: number | null; interval?: string | null }, amountTotal?: number | null) {
-  const li = fixture('checkout.session.line_items.seeker.json');
-  li.data[0].price.id = price.id;
-  li.data[0].price.unit_amount = price.unit_amount;
-  li.data[0].price.recurring = price.interval === null ? null : { interval: price.interval ?? 'month', interval_count: 1, usage_type: 'licensed' };
-  li.data[0].amount_total = amountTotal === undefined ? price.unit_amount : amountTotal;
-  return li;
-}
-
-function subscriptionWith(status: string, priceId: string, unitAmount: number, extra: Record<string, any> = {}) {
-  const sub = fixture('customer.subscription.updated.json').data.object;
-  sub.status = status;
-  sub.items.data[0].price.id = priceId;
-  sub.items.data[0].price.unit_amount = unitAmount;
-  return { ...sub, ...extra };
 }
 
 beforeEach(() => {
@@ -212,6 +221,10 @@ beforeEach(() => {
   stripeState.calls = [];
   ledgerSessions.clear();
   emailsSent.length = 0;
+  legacyState.candidateChecks = [];
+  legacyState.calls = [];
+  legacyState.result = { received: true };
+  legacyState.error = null;
 });
 
 // ---------- signature ----------
@@ -228,228 +241,153 @@ test('G5b missing webhook secret is a 500 Misconfigured, as before', async () =>
   expect(await r.json()).toEqual({ error: 'Misconfigured' });
 });
 
-// ---------- tier mapping ----------
-test('G5c checkout maps the configured price id to its tier and uses member_id, no auth user scan', async () => {
-  const r = await deliver(membershipEvent());
-  expect(r.status).toBe(200);
-  expect(ada().tier).toBe('seeker');
-  expect(ada().stripe_customer_id).toBe('cus_test_fixture_ada');
-  expect(sb.listUsersCalls.length).toBe(0);
-});
+// ---------- strict membership dispatch ----------
+// Retired assumptions from the original G5 suite:
+// - G5c-o price/amount/test-mode tier grants and G5j/l/ac email fallbacks are not
+//   payment proof. Strict HTTP -> PostgreSQL + adapter tests require live-mode,
+//   configured price/currency/quantity and an unambiguous member binding.
+// - G5s missing-ledger success is intentionally replaced by fail-closed 503.
+// - G5x unpaid retention and G5v-aa lifecycle mutation are decided from verified
+//   current billing facts by that processor, never by this route or a mock DB.
+// - G5n/ab preserve legacy Oracle access without manufacturing lifetime proof;
+//   G5o/p/r/u purchase, delayed-payment, replay and retry outcomes need SQL tests.
 
-test('G5d live price ids (STRIPE_PRICE_<TIER>) map too', async () => {
-  process.env.STRIPE_PRICE_SCHOLAR = 'price_live_fixture_scholar';
-  stripeState.lineItems.cs_test_fixture_seeker = lineItems({ id: 'price_live_fixture_scholar', unit_amount: 4900 });
-  expect((await deliver(membershipEvent())).status).toBe(200);
-  expect(ada().tier).toBe('scholar');
-});
-
-test('G5e an unconfigured (legacy) price at exactly a published price still maps: $49/month -> scholar', async () => {
-  stripeState.lineItems.cs_test_fixture_seeker = lineItems({ id: 'price_legacy_2025_scholar', unit_amount: 4900 });
-  expect((await deliver(membershipEvent())).status).toBe(200);
-  expect(ada().tier).toBe('scholar');
-});
-
-test('G5f a $0 line item never grants a paid tier (old code defaulted to seeker)', async () => {
-  stripeState.lineItems.cs_test_fixture_seeker = lineItems({ id: 'price_unknown_free', unit_amount: 0 }, 0);
-  const r = await deliver(membershipEvent());
-  expect(r.status).toBe(200);
+test('G5c signed membership is delegated with exact raw UTF-8 bytes before any old receipt or member write', async () => {
+  const event = membershipEvent((session) => { session.metadata.note = 'Synthetic café — fixture'; });
+  event.account = 'acct_test_fixture_owner';
+  const payload = `  ${JSON.stringify(event)}\n`;
+  // An old completion receipt cannot bypass stricter payment verification.
+  sb.tables.stripe_webhook_events = [{ event_id: event.id, outcome: 'updated' }];
+  const response = await deliver(event, { payload });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ received: true });
+  expect(legacyState.candidateChecks).toEqual([expect.objectContaining({ id: event.id, type: event.type, livemode: event.livemode, data: event.data })]);
+  expect(legacyState.calls).toHaveLength(1);
+  expect(legacyState.calls[0].event).toEqual(expect.objectContaining({ id: event.id, type: event.type, livemode: event.livemode, data: event.data }));
+  expect(legacyState.calls[0].event.account).toBe(event.account);
+  expect(legacyState.calls[0].rawBytes).toBeInstanceOf(Uint8Array);
+  expect(Array.from(legacyState.calls[0].rawBytes)).toEqual(Array.from(new TextEncoder().encode(payload)));
   expect(ada().tier).toBe('free');
-  expect(memberUpdates().length).toBe(0);
-  expect(sb.tables.stripe_webhook_events[0].outcome).toBe('skipped_unknown_price');
+  expect(sb.writes).toEqual([]);
+  expect(sb.listUsersCalls).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
 });
 
-test('G5g missing line items never grant a paid tier', async () => {
-  stripeState.lineItems.cs_test_fixture_seeker = { object: 'list', data: [], has_more: false };
-  expect((await deliver(membershipEvent())).status).toBe(200);
-  expect(ada().tier).toBe('free');
-  expect(memberUpdates().length).toBe(0);
+test('G5d strict processor acknowledgement is returned without a legacy membership fallback', async () => {
+  legacyState.result = { received: true, ignored: 'test_mode' };
+  const response = await deliver(membershipEvent());
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(legacyState.result);
+  expect(legacyState.calls).toHaveLength(1);
+  expect(memberUpdates()).toEqual([]);
+  expect(sb.tables.stripe_webhook_events).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
 });
 
-test('G5h unknown price/amount is logged and skipped (e.g. $25/month, or $49 one-time)', async () => {
-  for (const [price, total] of [[{ id: 'price_mystery', unit_amount: 2500 }, 2500], [{ id: 'price_mystery2', unit_amount: 4900, interval: null }, 4900]] as const) {
-    stripeState.lineItems.cs_test_fixture_seeker = lineItems(price as any, total);
-    const r = await deliver(membershipEvent((_s, e) => { e.id = `evt_test_${price.id}`; }));
-    expect(r.status).toBe(200);
-  }
-  expect(ada().tier).toBe('free');
-  expect(memberUpdates().length).toBe(0);
+test('G5e every processor refusal is a private generic 503, including a numeric status on an error', async () => {
+  const error = new Error('synthetic-sensitive-billing-detail') as Error & { status: number };
+  error.status = 409;
+  legacyState.error = error;
+  const response = await deliver(membershipEvent());
+  expect(response.status).toBe(503);
+  expect(response.headers.get('cache-control')).toContain('private');
+  expect(response.headers.get('cache-control')).toContain('no-store');
+  expect(await response.text()).not.toContain('synthetic-sensitive-billing-detail');
+  expect(legacyState.calls).toHaveLength(1);
+  expect(sb.writes).toEqual([]);
+  expect(sb.listUsersCalls).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
 });
 
-test('G5i a Stripe line-item API failure returns 500 (retry) instead of guessing from the amount', async () => {
-  stripeState.lineItemsError = true;
-  const r = await deliver(membershipEvent());
-  expect(r.status).toBe(500);
-  expect(ada().tier).toBe('free');
-  expect(sb.tables.stripe_webhook_events.length).toBe(0);
-});
-
-// ---------- member lookup ----------
-test('G5j legacy session (no member id, no stored customer) finds a member on page 3 of auth users', async () => {
-  const filler = Array.from({ length: 2400 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, email: `filler${i}@example.test` }));
-  sb.authUsers = [...filler, { id: ADA_AUTH, email: 'Ada@Example.test' }];
-  const r = await deliver(membershipEvent((s) => { delete s.metadata.member_id; s.client_reference_id = null; s.customer = 'cus_test_new'; }));
-  expect(r.status).toBe(200);
-  expect(ada().tier).toBe('seeker');
-  expect(ada().stripe_customer_id).toBe('cus_test_new');
-  expect(sb.listUsersCalls.map((c) => c.page)).toEqual([1, 2, 3]);
-});
-
-test('G5k a stored Stripe customer id is used before any auth user scan', async () => {
-  ada().stripe_customer_id = 'cus_test_fixture_ada';
-  const r = await deliver(membershipEvent((s) => { delete s.metadata.member_id; s.client_reference_id = null; }));
-  expect(r.status).toBe(200);
-  expect(ada().tier).toBe('seeker');
-  expect(sb.listUsersCalls.length).toBe(0);
-});
-
-test('G5l a non-UUID or unknown member_id falls back to email lookup', async () => {
-  const r = await deliver(membershipEvent((s) => { s.metadata.member_id = 'not-a-uuid'; s.client_reference_id = null; }));
-  expect(r.status).toBe(200);
-  expect(ada().tier).toBe('seeker');
-  expect(sb.listUsersCalls.length).toBe(1);
-});
-
-test('G5m paid checkout with no matching member returns 500 so Stripe retries', async () => {
-  sb.authUsers = [];
-  const r = await deliver(membershipEvent((s) => { delete s.metadata.member_id; s.client_reference_id = null; s.customer = 'cus_test_nobody'; }));
-  expect(r.status).toBe(500);
-  expect(sb.tables.stripe_webhook_events.length).toBe(0);
-});
-
-test('G5n a lifetime Oracle member is not overwritten by a subscription checkout', async () => {
-  ada().tier = 'oracle';
-  const r = await deliver(membershipEvent());
-  expect(r.status).toBe(200);
-  expect(ada().tier).toBe('oracle');
-  expect(memberUpdates().length).toBe(0);
-});
-
-test('G5o an Oracle one-time purchase upgrades a subscriber', async () => {
-  ada().tier = 'seeker';
-  stripeState.lineItems.cs_test_fixture_seeker = lineItems({ id: 'price_test_fixture_oracle', unit_amount: 49900, interval: null });
-  expect((await deliver(membershipEvent((s) => { s.mode = 'payment'; s.metadata.tier = 'oracle'; }))).status).toBe(200);
-  expect(ada().tier).toBe('oracle');
-});
-
-test('G5p unpaid (delayed payment) checkout grants nothing until async_payment_succeeded', async () => {
-  const r1 = await deliver(membershipEvent((s) => { s.payment_status = 'unpaid'; }));
-  expect(r1.status).toBe(200);
-  expect(ada().tier).toBe('free');
-  const r2 = await deliver(membershipEvent((s, e) => { e.id = 'evt_test_fixture_async_ok'; e.type = 'checkout.session.async_payment_succeeded'; s.payment_status = 'paid'; }));
-  expect(r2.status).toBe(200);
-  expect(ada().tier).toBe('seeker');
-});
-
-test('G5q non-membership checkout types never touch membership tiers', async () => {
-  const r = await deliver(membershipEvent((s) => { s.metadata.type = 'merch'; }));
-  expect(r.status).toBe(200);
-  expect(memberUpdates().length).toBe(0);
-  expect(stripeState.calls.length).toBe(0);
-});
-
-// ---------- idempotency ----------
-test('G5r the same event id delivered twice is processed once', async () => {
-  expect((await deliver(membershipEvent())).status).toBe(200);
-  ada().tier = 'free'; // if the replay were processed it would be written again
-  const r2 = await deliver(membershipEvent());
-  expect(r2.status).toBe(200);
-  expect(await r2.json()).toEqual({ received: true, duplicate: true });
-  expect(ada().tier).toBe('free');
-  expect(memberUpdates().length).toBe(1);
-  expect(sb.tables.stripe_webhook_events).toEqual([
-    expect.objectContaining({ event_id: 'evt_test_fixture_checkout_seeker', event_type: 'checkout.session.completed', livemode: false, outcome: 'updated' }),
-  ]);
-});
-
-test('G5s before the idempotency migration is applied the webhook still works (no table = old behaviour)', async () => {
+test('G5f missing strict ledger cannot fall back to the old missing-table success path', async () => {
   sb.tableErrors.stripe_webhook_events = { code: 'PGRST205', message: "Could not find the table 'public.stripe_webhook_events' in the schema cache" };
-  expect((await deliver(membershipEvent())).status).toBe(200);
-  expect(ada().tier).toBe('seeker');
-  expect((await deliver(membershipEvent())).status).toBe(200);
+  legacyState.error = new Error('Synthetic strict receipt unavailable');
+  const response = await deliver(membershipEvent());
+  expect(response.status).toBe(503);
+  expect(legacyState.calls).toHaveLength(1);
+  expect(ada().tier).toBe('free');
+  expect(sb.writes).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
 });
 
-test('G5t an idempotency lookup failure (not a missing table) is a retryable 500', async () => {
-  sb.tableErrors.stripe_webhook_events = { code: '08006', message: 'connection failure' };
-  const r = await deliver(membershipEvent());
-  expect(r.status).toBe(500);
+test('G5g processor retry re-enters strict processing and never records a legacy membership receipt', async () => {
+  legacyState.error = new Error('Synthetic transaction unavailable');
+  expect((await deliver(membershipEvent())).status).toBe(503);
+  legacyState.error = null;
+  expect((await deliver(membershipEvent())).status).toBe(200);
+  expect(legacyState.calls).toHaveLength(2);
+  expect(sb.writes).toEqual([]);
   expect(ada().tier).toBe('free');
 });
 
-test('G5u a failed attempt is not marked processed, so the retry succeeds', async () => {
-  stripeState.lineItemsError = true;
-  expect((await deliver(membershipEvent())).status).toBe(500);
-  stripeState.lineItemsError = false;
-  expect((await deliver(membershipEvent())).status).toBe(200);
-  expect(ada().tier).toBe('seeker');
+test('G5h membership with an invalid binding is delegated without an auth-email scan', async () => {
+  legacyState.error = new Error('Synthetic member binding conflict');
+  const event = membershipEvent((session) => { session.metadata.member_id = 'not-a-uuid'; });
+  expect((await deliver(event)).status).toBe(503);
+  expect(legacyState.calls[0].event).toEqual(expect.objectContaining({ id: event.id, data: { object: event.data.object } }));
+  expect(sb.listUsersCalls).toEqual([]);
+  expect(sb.writes).toEqual([]);
 });
 
-// ---------- subscription lifecycle ----------
-test('G5v subscription.updated uses the current subscription and maps its price', async () => {
-  const event = fixture('customer.subscription.updated.json');
-  stripeState.subscriptions.sub_test_fixture_ada = event.data.object;
-  expect((await deliver(event)).status).toBe(200);
-  expect(ada().tier).toBe('philosopher');
-});
-
-test('G5w subscription.updated that is now canceled (out-of-order delivery) returns the member to free', async () => {
-  ada().tier = 'philosopher';
-  const event = fixture('customer.subscription.updated.json'); // payload still says active
-  stripeState.subscriptions.sub_test_fixture_ada = subscriptionWith('canceled', 'price_test_fixture_philosopher', 9900);
-  expect((await deliver(event)).status).toBe(200);
-  expect(ada().tier).toBe('free');
-});
-
-test('G5x subscription.updated with an unpaid/incomplete status leaves the tier unchanged', async () => {
-  ada().tier = 'scholar';
-  const event = fixture('customer.subscription.updated.json');
-  stripeState.subscriptions.sub_test_fixture_ada = subscriptionWith('unpaid', 'price_test_fixture_philosopher', 9900);
-  expect((await deliver(event)).status).toBe(200);
-  expect(ada().tier).toBe('scholar');
-  expect(memberUpdates().length).toBe(0);
-});
-
-test('G5y subscription.updated with an unknown price is skipped, never defaulted to seeker', async () => {
-  ada().tier = 'scholar';
-  const event = fixture('customer.subscription.updated.json');
-  stripeState.subscriptions.sub_test_fixture_ada = subscriptionWith('active', 'price_mystery', 0);
-  expect((await deliver(event)).status).toBe(200);
-  expect(ada().tier).toBe('scholar');
-});
-
-test('G5z subscription.deleted returns a subscriber to free (found by stored customer id)', async () => {
-  ada().tier = 'seeker';
-  ada().stripe_customer_id = 'cus_test_fixture_ada';
-  expect((await deliver(fixture('customer.subscription.deleted.json'))).status).toBe(200);
-  expect(ada().tier).toBe('free');
-  expect(members()[1].tier).toBe('scholar'); // other member untouched
-});
-
-test('G5aa subscription.deleted keeps the tier of another active membership subscription', async () => {
-  ada().tier = 'philosopher';
-  ada().stripe_customer_id = 'cus_test_fixture_ada';
-  stripeState.activeByCustomer.cus_test_fixture_ada = [subscriptionWith('active', 'price_test_fixture_scholar', 4900, { id: 'sub_test_fixture_other' })];
-  expect((await deliver(fixture('customer.subscription.deleted.json'))).status).toBe(200);
-  expect(ada().tier).toBe('scholar');
-});
-
-test('G5ab subscription.deleted never removes a lifetime Oracle membership', async () => {
+test('G5i delayed payment and subscription lifecycle events are owned by the strict processor', async () => {
   ada().tier = 'oracle';
-  ada().stripe_customer_id = 'cus_test_fixture_ada';
-  expect((await deliver(fixture('customer.subscription.deleted.json'))).status).toBe(200);
+  const unpaid = membershipEvent((session) => { session.payment_status = 'unpaid'; });
+  const paid = membershipEvent((session, event) => {
+    event.type = 'checkout.session.async_payment_succeeded';
+    session.payment_status = 'paid';
+  });
+  const invoice = { id: 'evt_test_invoice_paid', type: 'invoice.paid', livemode: false, data: { object: { id: 'in_test_paid', object: 'invoice' } } };
+  const events = [unpaid, paid, fixture('customer.subscription.updated.json'), fixture('customer.subscription.deleted.json'), invoice];
+  for (const event of events) expect((await deliver(event)).status).toBe(200);
+  expect(legacyState.calls.map((call) => call.event.id)).toEqual(events.map((event) => event.id));
+  // This only proves the route cannot overwrite access. Real lifetime evidence
+  // and unpaid/subscription decisions are tested with the actual SQL processor.
   expect(ada().tier).toBe('oracle');
+  expect(sb.writes).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
 });
 
-test('G5ac subscription.deleted falls back to the customer email (paged lookup)', async () => {
-  ada().tier = 'seeker';
-  expect((await deliver(fixture('customer.subscription.deleted.json'))).status).toBe(200);
-  expect(ada().tier).toBe('free');
-  expect(ada().stripe_customer_id).toBe('cus_test_fixture_ada');
+test('G5j non-membership checkout types do not enter the strict membership processor', async () => {
+  const event = membershipEvent((session) => { session.metadata.type = 'merch'; });
+  expect((await deliver(event)).status).toBe(200);
+  expect(legacyState.candidateChecks).toEqual([expect.objectContaining({ id: event.id, type: event.type })]);
+  expect(legacyState.calls).toEqual([]);
+  expect(memberUpdates()).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
 });
 
-test('G5ad subscription.deleted with no matching member returns 500 (retry), as before', async () => {
-  sb.authUsers = [];
-  expect((await deliver(fixture('customer.subscription.deleted.json'))).status).toBe(500);
+test('G5k signature rejection precedes classifier, processor, lookup and receipt work', async () => {
+  const response = await deliver(membershipEvent(), { header: '' });
+  expect(response.status).toBe(400);
+  expect(response.headers.get('cache-control')).toContain('no-store');
+  expect(legacyState.candidateChecks).toEqual([]);
+  expect(legacyState.calls).toEqual([]);
+  expect(sb.writes).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
+});
+
+test('G5l a signed malformed body is rejected before financial dispatch', async () => {
+  const response = await deliver(null, { payload: '{"id":' });
+  expect(response.status).toBe(400);
+  expect(legacyState.candidateChecks).toEqual([]);
+  expect(legacyState.calls).toEqual([]);
+  expect(sb.writes).toEqual([]);
+});
+
+test('G5m a signed event without its object envelope is rejected before financial dispatch', async () => {
+  const response = await deliver({ id: 'evt_test_missing_object', type: 'customer.subscription.updated', livemode: false, data: {} });
+  expect(response.status).toBe(400);
+  expect(legacyState.candidateChecks).toEqual([]);
+  expect(legacyState.calls).toEqual([]);
+  expect(sb.writes).toEqual([]);
+});
+
+test('G5n an oversized raw body is rejected before signature or financial work', async () => {
+  const response = await deliver(null, { payload: 'x'.repeat(3 * 1024 * 1024) });
+  expect(response.status).toBe(413);
+  expect(legacyState.candidateChecks).toEqual([]);
+  expect(legacyState.calls).toEqual([]);
+  expect(sb.writes).toEqual([]);
 });
 
 // ---------- pledges unchanged ----------
@@ -469,8 +407,42 @@ test('G5ae project pledge: ledger-deduped, EXP found via paged lookup, no email 
 });
 
 test('G5af unrelated event types are acknowledged and recorded as ignored', async () => {
-  const event = { id: 'evt_test_fixture_invoice', object: 'event', type: 'invoice.paid', livemode: false, created: 1792800000, data: { object: { id: 'in_test', object: 'invoice' } } };
+  // invoice events belong to strict billing; use a genuinely unrelated event.
+  const event = { id: 'evt_test_fixture_customer', object: 'event', type: 'customer.created', livemode: false, created: 1792800000, data: { object: { id: 'cus_test_unrelated', object: 'customer' } } };
   expect((await deliver(event)).status).toBe(200);
   expect(sb.tables.stripe_webhook_events[0].outcome).toBe('ignored');
   expect(sb.writes.filter((w) => w.table !== 'stripe_webhook_events').length).toBe(0);
+  expect(legacyState.calls).toEqual([]);
+});
+
+test('G5ag supporter checkout and subscription events never enter legacy entitlement or receipt processing', async () => {
+  ada().tier = 'oracle';
+  for (const event of [membershipEvent(), fixture('customer.subscription.updated.json'), fixture('customer.subscription.deleted.json')]) {
+    event.data.object.metadata = { type: 'soe_supporter_v1', supporter_account: 'opaque-account-fixture' };
+    const response = await deliver(event);
+    expect(response.status).toBe(200);
+    expect((await response.json()).ignored).toBe('supporter_event');
+    expect(ada().tier).toBe('oracle');
+    expect(sb.writes.length).toBe(0);
+    expect(stripeState.calls.length).toBe(0);
+    expect(legacyState.candidateChecks).toEqual([]);
+    expect(legacyState.calls).toEqual([]);
+  }
+});
+
+test('G5ah fresh supporter filtering is delegated rather than downgraded from an older payload', async () => {
+  ada().tier = 'oracle';
+  const event = fixture('customer.subscription.updated.json');
+  delete event.data.object.metadata.type;
+  // This is the actual processor's acknowledgement after fresh-object filtering.
+  // Its provider lookup and marker verification belong to the adapter/SQL tests.
+  legacyState.result = { received: true, ignored: 'not_legacy_membership' };
+  const response = await deliver(event);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(legacyState.result);
+  expect(legacyState.calls).toHaveLength(1);
+  expect(legacyState.calls[0].event).toEqual(expect.objectContaining({ id: event.id, data: { object: event.data.object } }));
+  expect(ada().tier).toBe('oracle');
+  expect(sb.writes).toEqual([]);
+  expect(stripeState.calls).toEqual([]);
 });

@@ -1,39 +1,5 @@
-// lib/join/structuredData.ts
-// schema.org data for /join, built only from the prices shown on the page.
-import { TIERS } from './content';
-
+// Describe the page without claiming that a Product or Offer is available.
 export function membershipOffersJsonLd() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: 'Society of Explorers membership',
-    description: 'Membership in the Society of Explorers: AI thinker councils, seven-week salons and a daily practice.',
-    brand: { '@type': 'Organization', name: 'Society of Explorers' },
-    offers: TIERS.map((tier) => {
-      const amount = tier.price === 'Free' ? '0' : tier.price.replace(/[^0-9.]/g, '');
-      const offer: Record<string, unknown> = {
-        '@type': 'Offer',
-        name: tier.name,
-        price: amount,
-        priceCurrency: 'USD',
-        url: `/join#${tier.id}`,
-        availability: 'https://schema.org/InStock',
-      };
-      if (tier.period === '/mo') {
-        offer.priceSpecification = {
-          '@type': 'UnitPriceSpecification',
-          price: amount,
-          priceCurrency: 'USD',
-          billingDuration: 'P1M',
-          unitText: 'MONTH',
-        };
-      }
-      return offer;
-    }),
-  };
+  return { '@context': 'https://schema.org', '@type': 'WebPage', name: 'Free community and optional support', url: '/join', description: 'Free source editions and reading Circles, with a separate optional supporter plan whose purchase availability must be checked.' };
 }
-
-/** JSON for a <script type="application/ld+json">, with "<" escaped so it cannot close the tag. */
-export function serializeJsonLd(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, '\\u003c');
-}
+export function serializeJsonLd(value: unknown): string { return JSON.stringify(value).replace(/</g, '\\u003c'); }

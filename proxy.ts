@@ -4,6 +4,9 @@ const PRIVATE_RESPONSE_CACHE_CONTROL = 'private, no-store, no-cache, max-age=0, 
 const PRIVATE_RESPONSE_ROBOTS = 'noindex, nofollow, noarchive';
 const PRIVATE_RESPONSE_REFERRER_POLICY = 'no-referrer';
 const PRIVATE_RESPONSE_CROSS_ORIGIN_RESOURCE_POLICY = 'same-origin';
+// Private HTML still needs same-origin microphone/camera on opted-in voice/scan
+// surfaces. JSON/attachments carry a stricter policy in routeError.ts.
+const PRIVATE_RESPONSE_PERMISSIONS_POLICY = 'camera=(self), microphone=(self), geolocation=(self), payment=(), usb=(), serial=(), bluetooth=(), browsing-topics=()';
 
 function appendVaryCookie(headers: Headers) {
   const current = headers.get('vary');
@@ -32,6 +35,7 @@ function applyPrivateRouteHeaders(response: NextResponse) {
   response.headers.set('referrer-policy', PRIVATE_RESPONSE_REFERRER_POLICY);
   response.headers.set('cross-origin-resource-policy', PRIVATE_RESPONSE_CROSS_ORIGIN_RESOURCE_POLICY);
   response.headers.set('x-content-type-options', 'nosniff');
+  response.headers.set('permissions-policy', PRIVATE_RESPONSE_PERMISSIONS_POLICY);
   appendVaryCookie(response.headers);
   return response;
 }
@@ -41,6 +45,7 @@ export function proxy(req: NextRequest) {
 
   // Protected routes
   const protectedRoutes = [
+    '/dashboard',
     '/salon',
     '/members',
     '/book',
@@ -53,6 +58,12 @@ export function proxy(req: NextRequest) {
   ];
   if (!protectedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
     return NextResponse.next();
+  }
+
+  if (req.cookies.get('soe_auth_provider')?.value === 'signed_out') {
+    const login = new URL('/login', req.url);
+    login.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
+    return applyPrivateRouteHeaders(NextResponse.redirect(login));
   }
 
   // Check Supabase session cookie: supports both chunked and non-chunked formats.
@@ -72,6 +83,7 @@ export function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/dashboard/:path*',
     '/salon/:path*',
     '/members/:path*',
     '/book/:path*',

@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import WelcomeModal from '@/components/WelcomeModal';
+import AccountSignOut from '@/components/AccountSignOut';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import { computeFrequencyProfile, deriveTags, type CoherenceInput, type FrequencyVector } from '@/lib/world/frequency';
 
 const gold = '#c9a84c';
@@ -159,6 +161,7 @@ function DashboardFeed() {
 export default function ExplorerDashboard() {
   const router = useRouter();
   const [member, setMember] = useState<Member | null>(null);
+  const [retired, setRetired] = useState(false);
   const [events, setEvents] = useState<ExpEvent[]>([]);
   const [scans, setScans] = useState<ScanWithSpace[]>([]);
   const [stampSpaces, setStampSpaces] = useState<StampSpace[]>([]);
@@ -169,6 +172,10 @@ export default function ExplorerDashboard() {
 
   useEffect(() => {
     let active = true;
+    const stop = subscribeAuthProviderChanges(() => {
+      active = false; setRetired(true); setMember(null); setEvents([]); setScans([]);
+      setStampSpaces([]); setBriefing(null); setShowWelcome(false); setLoading(false);
+    });
 
     async function loadDashboard() {
       try {
@@ -196,6 +203,7 @@ export default function ExplorerDashboard() {
         if (!briefingResponse.ok) throw new Error('Dashboard briefing failed');
 
         const data = (await briefingResponse.json()) as DashboardBriefing;
+        if (!active) return;
         if (data.error) throw new Error('Dashboard briefing failed');
 
         setBriefing(data);
@@ -221,6 +229,7 @@ export default function ExplorerDashboard() {
 
     return () => {
       active = false;
+      stop();
     };
   }, [router]);
 
@@ -243,6 +252,10 @@ export default function ExplorerDashboard() {
     );
   }
 
+  if (retired) return <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, padding: '6rem 2rem' }}>
+    <PublicNav /><div style={{ padding: '5rem 2rem 0', maxWidth: '960px', margin: 'auto' }}><AccountSignOut /></div>
+    <main><h1>Account context cleared</h1><p>The previous dashboard is closed.</p><a href="/dashboard" style={{ color: gold }}>Reload the selected account</a></main>
+  </div>;
   if (!member) return null;
 
   const tierInfo = TIER_BADGES[member.tier] || TIER_BADGES.free;
@@ -254,6 +267,7 @@ export default function ExplorerDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
+      <div style={{ padding: '5rem 2rem 0', maxWidth: '960px', margin: 'auto' }}><AccountSignOut /></div>
 
       {showWelcome && (
         <WelcomeModal

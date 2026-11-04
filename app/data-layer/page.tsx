@@ -4,7 +4,7 @@ import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
-  title: 'The Data Layer | Society of Explorers',
+  title: 'The Data Layer',
   description: 'Building the decentralized infrastructure for human sovereignty.',
 };
 

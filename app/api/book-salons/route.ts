@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { CIRCLE_BOOK_ID } from '@/lib/circles/path';
 
 type BookCohortListRow = {
   book_cohort_members?: Array<{ id: string }> | null;
@@ -42,6 +43,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from('book_cohorts')
     .select('id,book_id,title,description,max_members,start_date,thinker_id,status,created_at,book_cohort_members(id)')
+    .neq('book_id', CIRCLE_BOOK_ID) // circles are listed on /circles
     .order('created_at', { ascending: false });
 
   if (error) return privateJson({ cohorts: [], error: 'Failed to load book salons' }, { status: 500 });
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
   const bookId = safeKey(body.bookId, '');
   const title = boundedText(body.title, 160);
   if (!bookId || !title) return privateJson({ error: 'Missing fields' }, { status: 400 });
+  if (bookId === CIRCLE_BOOK_ID) return privateJson({ error: 'Start circles from /circles/start' }, { status: 400 });
 
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });

@@ -1,3 +1,5 @@
+> Canonical first-release integration: work in `codex/soe-first-release` at `/Users/christaylor/Documents/Codex/soe-release`. Start with [RELEASE_STATUS.md](RELEASE_STATUS.md) and [the verification guide](verification/web/README.md). The original checkout and historical candidates are preserved. This branch is local integration work and has no production clearance. The older release notes below describe their own dates and environments.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

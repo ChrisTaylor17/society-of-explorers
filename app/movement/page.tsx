@@ -11,7 +11,7 @@ const card = '#0d0d0d';
 const border = '1px solid rgba(201,168,76,0.15)';
 
 export const metadata: Metadata = {
-  title: 'The Explorer Movement - Society of Explorers',
+  title: 'The Explorer Movement',
   description:
     'A truth-seeking creator stack that turns daily philosophical practice into a sovereign collective signal.',
 };

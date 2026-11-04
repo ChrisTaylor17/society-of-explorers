@@ -20,6 +20,10 @@ const publicRoutes: Array<{
   { path: '/transparency', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/salons', changeFrequency: 'weekly', priority: 0.6 },
   { path: '/projects', changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/circles', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/circles/path', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/circles/host', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/circles/norms', changeFrequency: 'monthly', priority: 0.5 },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

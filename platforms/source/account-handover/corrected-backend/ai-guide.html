@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="AI Guide design interaction — a paper prototype for facilitating human salon intelligence. Design only; not deployed." />
+  <meta property="og:title" content="AI Guide — Design Interaction · Society of Explorers" />
+  <meta property="og:description" content="AI Guide design interaction — a paper prototype for facilitating human salon intelligence. Design only; not deployed." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="AI Guide — Design Interaction · Society of Explorers" />
+  <meta name="twitter:description" content="AI Guide design interaction — a paper prototype for facilitating human salon intelligence. Design only; not deployed." />
+  <title>AI Guide — Design Interaction · Society of Explorers</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="index.html"><span class="wm-full">Society of Explorers <span>· SoE</span></span><span class="wm-short">SoE</span></a>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" data-nav-toggle><span class="burger" aria-hidden="true"><i></i><i></i><i></i></span> Menu</button>
+      <nav class="primary-nav" id="site-nav">
+        <a href="explore.html">Explore</a>
+        <a href="gather.html">Gather</a>
+        <a href="build.html">Build</a>
+        <a href="about.html">About</a>
+        <a href="participate.html">Participate</a>
+        <details class="nav-more">
+          <summary>More</summary>
+          <div class="nav-overflow">
+          <a href="visual-arc.html">Visual Arc</a>
+          <a href="stack.html">Stack</a>
+          <a href="electronic-governor.html">Electronic Governor</a>
+          <a href="power-as-primitive.html">Power as Primitive</a>
+          <a href="notes/index.html">Notes</a>
+          <a href="ai-guide.html" aria-current="page">AI Guide</a>
+          <a href="research.html">Research</a>
+          <a href="research-horizon.html">Research horizon</a>
+          <a href="collective.html">Collective</a>
+          <a href="space.html">Space</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1" class="exhibit">
+    <div class="design-only">
+      <strong>Design only</strong>
+      Interaction prototype for a future optional salon companion. Nothing here is live software, a chat backend, or an invitation to join a salon. No personal data is captured.
+    </div>
+
+    <p class="eyebrow">GATHER companion · capability map · not a product</p>
+    <h1>AI Guide</h1>
+    <p class="lead">Facilitate human intelligence. Do not replace humans initially. Optional companion to SoE Salons — on paper until separately unlocked.</p>
+
+    <div class="human-msg">
+      <strong>Hypothesis · explore — not proven</strong>
+      Can AI use the internet to bring people back into meaningful human conversation rather than merely keeping them online?
+    </div>
+
+    <!-- Overview schematic: capability spine (viz-kit steel hairline + copper pulse at Consent) -->
+    <div class="viz-panel ag-overview" aria-label="AI Guide capability overview">
+      <p class="viz-label">FACILITATE · do not replace · consent pulse</p>
+      <svg viewBox="0 0 720 120" xmlns="http://www.w3.org/2000/svg" role="img" focusable="false" aria-label="Nine capability nodes with copper pulse on Consent">
+        <rect width="720" height="120" fill="#f4f2ed"/>
+        <line x1="36" y1="48" x2="684" y2="48" stroke="#6b7a86" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
+        <g font-family="ui-monospace,monospace" font-size="8" fill="#6b7a86" text-anchor="middle">
+          <g transform="translate(36,48)"><circle r="5" fill="#2a2c2e"/><text y="22" fill="#3d4a54">Match</text></g>
+          <g transform="translate(117,48)"><circle r="5" fill="#2a2c2e"/><text y="22" fill="#3d4a54">Prep</text></g>
+          <g transform="translate(198,48)"><circle r="5" fill="#6b7a86"/><text y="22" fill="#3d4a54">Retrieve</text></g>
+          <g transform="translate(279,48)"><circle r="5" fill="#6b7a86"/><text y="22" fill="#3d4a54">Surface</text></g>
+          <g transform="translate(360,48)"><circle r="5" fill="#6b7a86"/><text y="22" fill="#3d4a54">Ask</text></g>
+          <g transform="translate(441,48)"><circle r="5" fill="#6b7a86"/><text y="22" fill="#3d4a54">Attend</text></g>
+          <g transform="translate(522,48)" aria-label="Consent · default no">
+            <circle r="18" fill="#a67c5d" opacity="0.12"/>
+            <circle r="12" fill="none" stroke="#a67c5d" stroke-width="1.1" opacity="0.55"/>
+            <circle r="5.5" fill="#a67c5d"/>
+            <circle r="1.8" fill="#f4f2ed" opacity="0.85"/>
+            <text y="22" fill="#7a542f">Consent</text>
+          </g>
+          <g transform="translate(603,48)"><circle r="5" fill="#2a2c2e"/><text y="22" fill="#3d4a54">Preserve</text></g>
+          <g transform="translate(684,48)"><circle r="5" fill="#2a2c2e"/><text y="22" fill="#3d4a54">Connect</text></g>
+        </g>
+        <text x="360" y="98" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#3d4a54">copper pulse · Consent · default = no training</text>
+      </svg>
+      <p class="rights-stub">Schematic · SoE original · viz-kit: steel-hairline + copper-pulse · rights: chris-original</p>
+    </div>
+
+    <!-- Interactive states: Principles → Scenario → Is/Is-not → Consent -->
+    <section class="ag-journey" aria-label="AI Guide interaction prototype" data-ag-journey>
+      <div class="ag-journey-toolbar">
+        <p class="section-label u-m-0">Walk the design</p>
+        <div class="ag-journey-controls">
+          <button type="button" class="arc-btn" data-ag-prev aria-label="Previous state">← Prev</button>
+          <span class="arc-progress" data-ag-progress aria-live="polite">1 / 4</span>
+          <button type="button" class="arc-btn" data-ag-next aria-label="Next state">Next →</button>
+        </div>
+      </div>
+
+      <div class="ag-rail" role="tablist" aria-label="AI Guide states">
+        <button type="button" role="tab" class="arc-rail-chip is-active" data-ag-goto="0" aria-selected="true" id="tab-ag-0">01 Principles</button>
+        <button type="button" role="tab" class="arc-rail-chip" data-ag-goto="1" aria-selected="false" id="tab-ag-1">02 Scenario</button>
+        <button type="button" role="tab" class="arc-rail-chip" data-ag-goto="2" aria-selected="false" id="tab-ag-2">03 Is / Is not</button>
+        <button type="button" role="tab" class="arc-rail-chip arc-rail-chip--copper" data-ag-goto="3" aria-selected="false" id="tab-ag-3">04 Consent posture</button>
+      </div>
+
+      <div class="ag-stage" role="tabpanel" id="ag-panel" aria-labelledby="tab-ag-0" tabindex="0">
+
+        <!-- STATE 0: Principles / capability browse -->
+        <article class="ag-state is-active" data-ag-state="0">
+          <div class="ag-state-head">
+            <span class="arc-beat-num">01</span>
+            <h2>Browse principles</h2>
+            <span class="claim-tag claim-tag--graphite">design map</span>
+          </div>
+          <p class="ag-lede">One sentence role: facilitate <strong>human</strong> intelligence in attentive conversation — retrieve, surface, ask, preserve dissent. Do not replace humans, judge values, or treat salon speech as training fuel.</p>
+
+          <p class="section-label">Capabilities · tap a chip</p>
+          <div class="ag-cap-rail" role="tablist" aria-label="Capability details" data-ag-caps>
+            <button type="button" role="tab" class="ag-cap-chip is-active" data-ag-cap="0" aria-selected="true" id="cap-tab-0">Match</button>
+            <button type="button" role="tab" class="ag-cap-chip" data-ag-cap="1" aria-selected="false" id="cap-tab-1">Prep</button>
+            <button type="button" role="tab" class="ag-cap-chip" data-ag-cap="2" aria-selected="false" id="cap-tab-2">Retrieve</button>
+            <button type="button" role="tab" class="ag-cap-chip" data-ag-cap="3" aria-selected="false" id="cap-tab-3">Surface</button>
+            <button type="button" role="tab" class="ag-cap-chip" data-ag-cap="4" aria-selected="false" id="cap-tab-4">Ask</button>
+            <button type="button" role="tab" class="ag-cap-chip" data-ag-cap="5" aria-selected="false" id="cap-tab-5">Attend</button>
+            <button type="button" role="tab" class="ag-cap-chip ag-cap-chip--copper" data-ag-cap="6" aria-selected="false" id="cap-tab-6">Consent</button>
+            <button type="button" role="tab" class="ag-cap-chip" data-ag-cap="7" aria-selected="false" id="cap-tab-7">Preserve</button>
+            <button type="button" role="tab" class="ag-cap-chip" data-ag-cap="8" aria-selected="false" id="cap-tab-8">Connect</button>
+          </div>
+          <div class="ag-cap-panel" id="ag-cap-panel" aria-live="polite">
+            <div class="ag-cap-detail is-active" data-ag-cap-panel="0">
+              <h3>Match participants</h3>
+              <p><span class="ag-may">May (design)</span> Suggest seat-lens gaps against matching criteria — on paper for a host.</p>
+              <p><span class="ag-mustnot">Must not</span> Auto-DM, scrape, solicit, or rank humans for outreach.</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="1" hidden>
+              <h3>Prep context</h3>
+              <p><span class="ag-may">May (design)</span> Help a host assemble a short public / rights-cleared prep packet.</p>
+              <p><span class="ag-mustnot">Must not</span> Dump confidential employer material or invent citations.</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="2" hidden>
+              <h3>Retrieve evidence</h3>
+              <p><span class="ag-may">May (design)</span> Fetch public evidence on request during or after a salon.</p>
+              <p><span class="ag-mustnot">Must not</span> Fabricate sources or claim secret knowledge.</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="3" hidden>
+              <h3>Surface history &amp; disagreement</h3>
+              <p><span class="ag-may">May (design)</span> Offer historical perspectives; mark unresolved disagreement.</p>
+              <p><span class="ag-mustnot">Must not</span> Erase minority views to force consensus.</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="4" hidden>
+              <h3>Ask questions</h3>
+              <p><span class="ag-may">May (design)</span> Suggest follow-ups that pressure the framing of the question.</p>
+              <p><span class="ag-mustnot">Must not</span> Act as therapist, spiritual authority, or judge of “correct values.”</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="5" hidden>
+              <h3>Distribute attention</h3>
+              <p><span class="ag-may">May (design)</span> Prompt the host when quiet voices have gone unheard.</p>
+              <p><span class="ag-mustnot">Must not</span> Dominate airtime or shame speakers.</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="6" hidden>
+              <h3>Record / summarize</h3>
+              <p><span class="ag-may">May (design)</span> Only if explicit consent layers allow — never by implication.</p>
+              <p><span class="ag-mustnot">Must not</span> Record by default or train on salon speech.</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="7" hidden>
+              <h3>Preserve minority arguments</h3>
+              <p><span class="ag-may">May (design)</span> Keep dissent visible in any consented synthesis.</p>
+              <p><span class="ag-mustnot">Must not</span> Polish false consensus or assist charismatic capture.</p>
+            </div>
+            <div class="ag-cap-detail" data-ag-cap-panel="8" hidden>
+              <h3>Connect across salons</h3>
+              <p><span class="ag-may">May (design)</span> Only if cross-salon linking consent = yes.</p>
+              <p><span class="ag-mustnot">Must not</span> Build shadow profiles or CRM enrichment without consent.</p>
+            </div>
+          </div>
+
+          <div class="ag-persona-box" aria-label="Forbidden personae">
+            <p class="section-label u-m-0">Forbidden personae</p>
+            <ul class="ag-persona-list">
+              <li>Not oracle</li>
+              <li>Not authority</li>
+              <li>Not therapist</li>
+              <li>Not spiritual leader</li>
+              <li>Not judge of correct values</li>
+              <li>Not “alignment solved” announcer</li>
+            </ul>
+          </div>
+
+          <p class="ag-reciprocal muted">Reciprocal question (ask, don’t assert): Can humans make AI wiser while AI helps humans become better explorers?</p>
+          <p class="arc-keys muted">Focus the stage · ← → states · within Principles, Tab moves chips</p>
+        </article>
+
+        <!-- STATE 1: Scenario walkthrough -->
+        <article class="ag-state" data-ag-state="1" hidden>
+          <div class="ag-state-head">
+            <span class="arc-beat-num">02</span>
+            <h2>Scenario walkthrough</h2>
+            <span class="claim-tag claim-tag--steel">design fiction</span>
+            <span class="claim-tag claim-tag--dashed">not live</span>
+          </div>
+          <p class="ag-lede">A paper walk of one future salon beat. Experiment&nbsp;01 recommendation remains <strong>human host only</strong> — the Guide stays off unless separately unlocked and disclosed.</p>
+
+          <div class="ag-scenario" data-ag-scenario>
+            <div class="ag-scenario-toolbar">
+              <button type="button" class="arc-btn" data-ag-sc-prev aria-label="Previous scenario beat">←</button>
+              <span class="arc-progress" data-ag-sc-progress aria-live="polite">1 / 5</span>
+              <button type="button" class="arc-btn" data-ag-sc-next aria-label="Next scenario beat">→</button>
+            </div>
+            <div class="ag-sc-rail" role="tablist" aria-label="Scenario beats">
+              <button type="button" role="tab" class="ag-sc-dot is-active" data-ag-sc-goto="0" aria-selected="true" aria-label="Arrival" id="sc-tab-0">1</button>
+              <button type="button" role="tab" class="ag-sc-dot" data-ag-sc-goto="1" aria-selected="false" aria-label="Disagreement" id="sc-tab-1">2</button>
+              <button type="button" role="tab" class="ag-sc-dot" data-ag-sc-goto="2" aria-selected="false" aria-label="Quiet voice" id="sc-tab-2">3</button>
+              <button type="button" role="tab" class="ag-sc-dot" data-ag-sc-goto="3" aria-selected="false" aria-label="Evidence ask" id="sc-tab-3">4</button>
+              <button type="button" role="tab" class="ag-sc-dot" data-ag-sc-goto="4" aria-selected="false" aria-label="Close" id="sc-tab-4">5</button>
+            </div>
+            <div class="ag-sc-stage" id="ag-sc-panel" tabindex="0" aria-labelledby="sc-tab-0">
+              <div class="ag-sc-beat is-active" data-ag-sc-beat="0">
+                <p class="ag-sc-label">Arrival · norms</p>
+                <h3>Host restates the room</h3>
+                <p>One consequential question. Disagreement welcome. No pitching. Recording default <strong>off</strong>. AI Guide status: <strong>off</strong> for Experiment&nbsp;01.</p>
+                <div class="ag-sc-split">
+                  <div class="ag-sc-card ag-sc-card--may"><strong>If Guide were unlocked</strong> Display disclosed limits; never assume presence.</div>
+                  <div class="ag-sc-card ag-sc-card--not"><strong>Must not</strong> Greet as a product trial or invite “upload your data.”</div>
+                </div>
+              </div>
+              <div class="ag-sc-beat" data-ag-sc-beat="1" hidden>
+                <p class="ag-sc-label">Mid-salon · disagreement</p>
+                <h3>Two strong frames collide</h3>
+                <p>Participants disagree on the question’s framing. Energy rises. The host keeps listening primary.</p>
+                <div class="ag-sc-split">
+                  <div class="ag-sc-card ag-sc-card--may"><strong>Guide (design)</strong> Surface unresolved disagreement; mark minority line without flattening.</div>
+                  <div class="ag-sc-card ag-sc-card--not"><strong>Must not</strong> Declare a winner or “correct values.”</div>
+                </div>
+              </div>
+              <div class="ag-sc-beat" data-ag-sc-beat="2" hidden>
+                <p class="ag-sc-label">Attention · quiet voice</p>
+                <h3>Someone has not spoken</h3>
+                <p>Twenty minutes in; one seat has stayed silent while two voices dominate.</p>
+                <div class="ag-sc-split">
+                  <div class="ag-sc-card ag-sc-card--may"><strong>Guide (design)</strong> Quiet prompt to host: “Seat 5 unheard — offer space?”</div>
+                  <div class="ag-sc-card ag-sc-card--not"><strong>Must not</strong> Shame speakers or seize the floor.</div>
+                </div>
+              </div>
+              <div class="ag-sc-beat" data-ag-sc-beat="3" hidden>
+                <p class="ag-sc-label">Evidence · on request</p>
+                <h3>Someone asks for a source</h3>
+                <p>A claim needs a public citation. Host or participant requests a check.</p>
+                <div class="ag-sc-split">
+                  <div class="ag-sc-card ag-sc-card--may"><strong>Guide (design)</strong> Retrieve public evidence; label uncertainty; no invented cites.</div>
+                  <div class="ag-sc-card ag-sc-card--not"><strong>Must not</strong> Claim secret knowledge or dump employer material.</div>
+                </div>
+              </div>
+              <div class="ag-sc-beat" data-ag-sc-beat="4" hidden>
+                <p class="ag-sc-label">Close · synthesis path</p>
+                <h3>Thanks — and separate switches</h3>
+                <p>No forced “build.” Synthesis / names / linking / research / training remain separate consents — all default <strong>no</strong>.</p>
+                <div class="ag-sc-split">
+                  <div class="ag-sc-card ag-sc-card--may"><strong>Guide (design)</strong> If layer&nbsp;3 = yes later, preserve minority arguments in any draft.</div>
+                  <div class="ag-sc-card ag-sc-card--not"><strong>Must not</strong> Bundle “by attending you train the model.”</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="arc-keys muted">Scenario stage focused · ← → beats · Esc returns focus to main stage</p>
+        </article>
+
+        <!-- STATE 2: What this is / is not -->
+        <article class="ag-state" data-ag-state="2" hidden>
+          <div class="ag-state-head">
+            <span class="arc-beat-num">03</span>
+            <h2>What this is / is not</h2>
+            <span class="claim-tag claim-tag--graphite">boundaries</span>
+          </div>
+          <p class="ag-lede">This page is a private capability map and interaction sketch. It does not unlock outreach, software, or training rights.</p>
+
+          <div class="ag-is-grid">
+            <div class="ag-is-col ag-is-col--yes">
+              <h3>This is</h3>
+              <ul>
+                <li>A design-only capability map under GATHER</li>
+                <li>An interaction prototype (states, keyboard, mobile)</li>
+                <li>Paper guidance for a future optional companion</li>
+                <li>Tied to consent architecture: default = no training</li>
+                <li>Aligned with “facilitate, don’t replace” for Experiment&nbsp;01</li>
+              </ul>
+            </div>
+            <div class="ag-is-col ag-is-col--no">
+              <h3>This is not</h3>
+              <ul>
+                <li>Live software, Zoom app, or chat backend</li>
+                <li>An invite, waitlist, or salon solicit UI</li>
+                <li>A production “upload your data” product</li>
+                <li>Permission to train on private salon speech</li>
+                <li>Oracle / therapist / alignment-solved persona</li>
+                <li>Employer HMI or ShiftBlock visitor material</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="arc-exc" aria-label="Deploy disposition">
+            <div class="arc-exc-rail" data-state="active"></div>
+            <p class="arc-exc-status">DEPLOY · HOLD</p>
+            <h3>Human host only until separately unlocked</h3>
+            <p class="arc-exc-meta">Experiment 01 · AI Guide on paper · disclosed opt-in if ever present</p>
+            <span class="arc-exc-pill arc-exc-pill--hold">HOLD</span>
+          </div>
+        </article>
+
+        <!-- STATE 3: Consent posture default NO -->
+        <article class="ag-state" data-ag-state="3" hidden>
+          <div class="ag-state-head">
+            <span class="arc-beat-num">04</span>
+            <h2>Consent posture</h2>
+            <span class="claim-tag claim-tag--copper">default = no</span>
+          </div>
+          <p class="ag-lede"><strong>Participation ≠ training license.</strong> Private salon speech is never model-improvement data by implication, fine print, or “you showed up.” Bundled “I agree to everything” is invalid by design.</p>
+
+          <div class="ag-consent-banner" role="status">
+            <strong>Design demo only</strong>
+            Switches below illustrate posture. They do not submit, store, or send data. This is not a live consent form and must not be emailed or solicited with.
+          </div>
+
+          <p class="section-label">Layers 1–8 · each starts NO · inspect or flip locally</p>
+          <ul class="ag-consent-list" data-ag-consent>
+            <li class="ag-consent-row" data-layer="1">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">1</span>
+                <div>
+                  <strong>Recording (A/V)</strong>
+                  <p>Capture audio/video for a stated purpose only.</p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 1 Recording, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+            <li class="ag-consent-row" data-layer="2">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">2</span>
+                <div>
+                  <strong>Real-time host notes</strong>
+                  <p>Host may jot themes — not a full transcript unless said. <em>Default NO until host declares scope at start; silence = no notes.</em></p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 2 Host notes, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+            <li class="ag-consent-row" data-layer="3">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">3</span>
+                <div>
+                  <strong>Post-salon synthesis</strong>
+                  <p>≤2-page agreements / disagreements / open questions.</p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 3 Synthesis, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+            <li class="ag-consent-row" data-layer="4">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">4</span>
+                <div>
+                  <strong>Named attribution</strong>
+                  <p>Real name in synthesis / archive — else anonymous / Chatham-style.</p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 4 Named attribution, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+            <li class="ag-consent-row" data-layer="5">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">5</span>
+                <div>
+                  <strong>Cross-salon linking</strong>
+                  <p>Same person linkable across salon records — else each salon siloed.</p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 5 Cross-salon linking, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+            <li class="ag-consent-row" data-layer="6">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">6</span>
+                <div>
+                  <strong>Research analysis</strong>
+                  <p>Coded analysis beyond synthesis — else synthesis is the ceiling.</p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 6 Research, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+            <li class="ag-consent-row ag-consent-row--critical" data-layer="7">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">7</span>
+                <div>
+                  <strong>Model-improvement / training</strong>
+                  <p>Speech/text used to train or fine-tune any model. Non-negotiable default: <strong>never</strong> without explicit yes.</p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 7 Training, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+            <li class="ag-consent-row ag-consent-row--critical" data-layer="8">
+              <div class="ag-consent-meta">
+                <span class="ag-layer-num">8</span>
+                <div>
+                  <strong>AI Guide present in-room</strong>
+                  <p>Disclosed tool may listen/assist under stated limits. Exp&nbsp;01 recommends <strong>off</strong> — human host only.</p>
+                </div>
+              </div>
+              <button type="button" class="ag-toggle" data-ag-toggle aria-pressed="false" aria-label="Layer 8 AI Guide present, default no. Demo flip.">
+                <span class="ag-toggle-track" aria-hidden="true"><span class="ag-toggle-thumb"></span></span>
+                <span class="ag-toggle-label" data-ag-toggle-label>NO</span>
+              </button>
+            </li>
+          </ul>
+
+          <div class="ag-consent-actions">
+            <button type="button" class="arc-btn" data-ag-consent-reset>Reset all to NO</button>
+            <span class="muted" data-ag-consent-status aria-live="polite">All layers · default NO · local demo</span>
+          </div>
+
+          <div class="arc-exc" aria-label="Withdraw note">
+            <div class="arc-exc-rail" data-state="queued"></div>
+            <p class="arc-exc-status">WITHDRAW · DESIGN</p>
+            <h3>Forward revoke anytime</h3>
+            <p class="arc-exc-meta">Already-shared consented text · case-by-case · never silent keep-for-training</p>
+            <span class="arc-exc-pill arc-exc-pill--hold">HOLD</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <p class="muted">Sits under <a href="gather.html">GATHER</a>. Builds remain <a href="build.html">voluntary</a>. Architecture: salon AI Guide design-only · consent architecture (default no training). Companion note: <a href="notes/ai-guide-interaction.html">AI Guide interaction deepen</a>.</p>
+
+    <div class="boundaries">
+      <strong>Boundaries.</strong> No deploy · no solicit · no invite · no live chat backend · no personal data capture · consent required for any future record/summary · <strong>default = no training</strong> · employment firewall · no IBM/ADEPT logos.
+    </div>
+  </main>
+  <footer><div class="inner">Society of Explorers <span class="footer-sep" aria-hidden="true">·</span> <a class="footer-util" href="participate.html">Participate</a></div></footer>
+  <script>
+  (function(){
+    var root = document.querySelector('[data-ag-journey]');
+    if (!root) return;
+
+    var states = Array.prototype.slice.call(root.querySelectorAll('[data-ag-state]'));
+    var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-ag-goto]'));
+    var progress = root.querySelector('[data-ag-progress]');
+    var panel = root.querySelector('#ag-panel');
+    var i = 0;
+
+    function show(n) {
+      if (n < 0) n = 0;
+      if (n > states.length - 1) n = states.length - 1;
+      i = n;
+      states.forEach(function(el, idx){
+        var on = idx === i;
+        el.hidden = !on;
+        el.classList.toggle('is-active', on);
+      });
+      tabs.forEach(function(tab, idx){
+        var on = idx === i;
+        tab.classList.toggle('is-active', on);
+        tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      if (progress) progress.textContent = (i + 1) + ' / ' + states.length;
+      if (panel) {
+        panel.setAttribute('aria-labelledby', 'tab-ag-' + i);
+        var ae = document.activeElement;
+        if (ae && panel.contains(ae) && !states[i].contains(ae) && ae !== panel) {
+          panel.focus({ preventScroll: true });
+        }
+      }
+    }
+
+    root.querySelector('[data-ag-prev]').addEventListener('click', function(){ show(i - 1); });
+    root.querySelector('[data-ag-next]').addEventListener('click', function(){ show(i + 1); });
+    tabs.forEach(function(tab){
+      tab.addEventListener('click', function(){
+        show(parseInt(tab.getAttribute('data-ag-goto'), 10));
+      });
+    });
+    if (panel) {
+      panel.addEventListener('keydown', function(e){
+        if (e.target && e.target.closest && e.target.closest('[data-ag-scenario]')) return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); show(i + 1); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); show(i - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); show(0); }
+        else if (e.key === 'End') { e.preventDefault(); show(states.length - 1); }
+      });
+    }
+    show(0);
+
+    /* Capability chips inside Principles */
+    var capBtns = Array.prototype.slice.call(root.querySelectorAll('[data-ag-cap]'));
+    var capPanels = Array.prototype.slice.call(root.querySelectorAll('[data-ag-cap-panel]'));
+    function showCap(n) {
+      if (n < 0) n = 0;
+      if (n > capPanels.length - 1) n = capPanels.length - 1;
+      capPanels.forEach(function(el, idx){
+        var on = idx === n;
+        el.hidden = !on;
+        el.classList.toggle('is-active', on);
+      });
+      capBtns.forEach(function(tab, idx){
+        var on = idx === n;
+        tab.classList.toggle('is-active', on);
+        tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+    capBtns.forEach(function(tab){
+      tab.addEventListener('click', function(){
+        showCap(parseInt(tab.getAttribute('data-ag-cap'), 10));
+      });
+    });
+
+    /* Scenario sub-journey */
+    var scRoot = root.querySelector('[data-ag-scenario]');
+    if (scRoot) {
+      var scBeats = Array.prototype.slice.call(scRoot.querySelectorAll('[data-ag-sc-beat]'));
+      var scTabs = Array.prototype.slice.call(scRoot.querySelectorAll('[data-ag-sc-goto]'));
+      var scProgress = scRoot.querySelector('[data-ag-sc-progress]');
+      var scPanel = scRoot.querySelector('#ag-sc-panel');
+      var s = 0;
+      function showSc(n) {
+        if (n < 0) n = 0;
+        if (n > scBeats.length - 1) n = scBeats.length - 1;
+        s = n;
+        scBeats.forEach(function(el, idx){
+          var on = idx === s;
+          el.hidden = !on;
+          el.classList.toggle('is-active', on);
+        });
+        scTabs.forEach(function(tab, idx){
+          var on = idx === s;
+          tab.classList.toggle('is-active', on);
+          tab.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        if (scProgress) scProgress.textContent = (s + 1) + ' / ' + scBeats.length;
+        if (scPanel) scPanel.setAttribute('aria-labelledby', 'sc-tab-' + s);
+      }
+      scRoot.querySelector('[data-ag-sc-prev]').addEventListener('click', function(){ showSc(s - 1); });
+      scRoot.querySelector('[data-ag-sc-next]').addEventListener('click', function(){ showSc(s + 1); });
+      scTabs.forEach(function(tab){
+        tab.addEventListener('click', function(){
+          showSc(parseInt(tab.getAttribute('data-ag-sc-goto'), 10));
+        });
+      });
+      if (scPanel) {
+        scPanel.addEventListener('keydown', function(e){
+          if (e.key === 'ArrowRight') { e.preventDefault(); showSc(s + 1); }
+          else if (e.key === 'ArrowLeft') { e.preventDefault(); showSc(s - 1); }
+          else if (e.key === 'Home') { e.preventDefault(); showSc(0); }
+          else if (e.key === 'End') { e.preventDefault(); showSc(scBeats.length - 1); }
+          else if (e.key === 'Escape') {
+            e.preventDefault();
+            if (panel) panel.focus({ preventScroll: true });
+          }
+        });
+      }
+      showSc(0);
+    }
+
+    /* Consent toggles — local demo only; no persistence, no network */
+    var consentRoot = root.querySelector('[data-ag-consent]');
+    var consentStatus = root.querySelector('[data-ag-consent-status]');
+    function updateConsentStatus() {
+      if (!consentRoot || !consentStatus) return;
+      var ons = consentRoot.querySelectorAll('[data-ag-toggle][aria-pressed="true"]').length;
+      var total = consentRoot.querySelectorAll('[data-ag-toggle]').length;
+      consentStatus.textContent = ons === 0
+        ? 'All layers · default NO · local demo'
+        : ons + ' / ' + total + ' flipped YES locally · nothing sent';
+    }
+    if (consentRoot) {
+      consentRoot.querySelectorAll('[data-ag-toggle]').forEach(function(tog){
+        tog.addEventListener('click', function(){
+          var on = tog.getAttribute('aria-pressed') === 'true';
+          var next = !on;
+          tog.setAttribute('aria-pressed', next ? 'true' : 'false');
+          var lab = tog.querySelector('[data-ag-toggle-label]');
+          if (lab) lab.textContent = next ? 'YES' : 'NO';
+          tog.classList.toggle('is-on', next);
+          updateConsentStatus();
+        });
+      });
+    }
+    var resetBtn = root.querySelector('[data-ag-consent-reset]');
+    if (resetBtn && consentRoot) {
+      resetBtn.addEventListener('click', function(){
+        consentRoot.querySelectorAll('[data-ag-toggle]').forEach(function(tog){
+          tog.setAttribute('aria-pressed', 'false');
+          tog.classList.remove('is-on');
+          var lab = tog.querySelector('[data-ag-toggle-label]');
+          if (lab) lab.textContent = 'NO';
+        });
+        updateConsentStatus();
+      });
+    }
+    updateConsentStatus();
+  })();
+  </script>
+</body>
+</html>

@@ -14,47 +14,21 @@ interface SafeData {
 
 const TIERS = [
   {
-    name: 'FREE', subtitle: 'Open Access', icon: '○', locked: false,
+    name: 'FREE', subtitle: 'Open to everyone', icon: '○', locked: false,
     features: [
-      'Homepage Socrates taste',
-      'Great Books library (read-only)',
-      'Public Waddle feed',
-      'Labyrinth walk',
-      'Temple Quest game',
+      'Complete local source editions',
+      'Volunteer reading Circles',
+      'Human Circle discussion',
+      'Private reading progress and notes',
     ],
   },
   {
-    name: 'SEEKER', subtitle: '$19/mo', icon: '⬡', locked: true,
+    name: 'SUPPORTER', subtitle: 'Proposed optional $10 USD/month', icon: '⬡', locked: false,
     features: [
-      'Full thinker conversations',
-      'Voice mode with distinct voices',
-      'Great Books annotations + progress',
-      'Private Waddle creation',
-      'Book Salon participation',
-      'Hub task management',
-      '$EXP earning',
-    ],
-  },
-  {
-    name: 'SCHOLAR', subtitle: '$49/mo', icon: '◆', locked: true,
-    features: [
-      'Everything in SEEKER',
-      'Private ritual rooms',
-      'Founding dinner invitations',
-      'Governance voting',
-      'Priority artifact generation',
-      'Physical space at 92B South St',
-    ],
-  },
-  {
-    name: 'PHILOSOPHER', subtitle: '$99/mo', icon: '◇', locked: true,
-    features: [
-      'Everything in SCHOLAR',
-      'Advanced memory',
-      'Direct oracle consultations',
-      'Priority Council access',
-      'Founder briefing invitations',
-      'Movement strategy sessions',
+      'Contributes toward community infrastructure',
+      'The same free books and Circle access',
+      'No AI quota, token or governance benefit',
+      'Purchase availability checked at /join',
     ],
   },
 ];
@@ -110,7 +84,7 @@ export default function AccessPage() {
           LOCK & SAFE
         </h1>
         <p style={{ fontSize: '1.1rem', color: muted, fontStyle: 'italic', maxWidth: '500px', margin: '0 auto', lineHeight: 1.8 }}>
-          Your key to the inner temple. Your vault for everything you create.
+          Read and participate for free. Review optional support separately from your existing account records.
         </p>
       </div>
 
@@ -123,12 +97,11 @@ export default function AccessPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}12` }}>
           {TIERS.map(tier => {
-            const tierMap: Record<string, string> = { FREE: 'free', SEEKER: 'seeker', SCHOLAR: 'scholar', PHILOSOPHER: 'philosopher' };
-            const isCurrentTier = memberTier === tierMap[tier.name] || (tier.name === 'OPEN' && memberTier === 'free');
+            const isCurrentTier = tier.name === 'FREE' && memberTier === 'free';
             return (
             <div key={tier.name} style={{ background: isCurrentTier ? '#111' : '#0d0d0d', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', borderTop: isCurrentTier ? `2px solid ${gold}` : '2px solid transparent' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                {isCurrentTier && <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>YOUR TIER</div>}
+                {isCurrentTier && <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>FREE COMMUNITY</div>}
                 <div style={{ fontSize: '2.5rem', color: gold, opacity: tier.locked && !isCurrentTier ? 0.3 : 0.7, marginBottom: '0.75rem' }}>{tier.icon}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold }}>{tier.name}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginTop: '0.25rem' }}>{tier.subtitle}</div>
@@ -146,9 +119,10 @@ export default function AccessPage() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '12px 30px', textDecoration: 'none', display: 'inline-block' }}>
-            UPGRADE YOUR ACCESS →
+          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.08em', color: '#000', background: gold, padding: '12px 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px', boxSizing: 'border-box', maxWidth: '100%' }}>
+            FREE COMMUNITY AND OPTIONAL SUPPORT →
           </a>
+          <p style={{ fontSize: '1rem', color: parchment, lineHeight: 1.7 }}>Older membership records are not supporter status. <a href="/billing" style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>Check your existing billing</a> before considering another subscription.</p>
         </div>
       </section>
 

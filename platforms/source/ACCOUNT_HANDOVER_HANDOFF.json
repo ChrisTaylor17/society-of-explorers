@@ -1,0 +1,48 @@
+{
+  "outcome": "local_in_process_account_handover_with_quarantine",
+  "candidate": "candidate/",
+  "patch": "ACCOUNT_HANDOVER.patch",
+  "patchSHA256": "0c87a0c0a2314f13ef07aec7e5f8201d622b98906fed8dab8014b59bb9273c9a",
+  "priorCandidateVerifiedThisHost": true,
+  "supportingFiles": {
+    "tests/account-handover.test.mjs": "748f59df3e04495d0df19013e7b610c06c250035ba0868d9cb4625b28e6d3a87",
+    "tests/native-ports.test.mjs": "57b0868aae9038c737211f9c76a036ad9157d90661b5cfaf8a4d517234fa93aa",
+    "tests/native-member-binding.test.mjs": "46c9fabef85b36609956e3cda7abd6e5344f61213ac51272d7b567cdbaa28d54",
+    "tests/retired-delete-observation.mjs": "38c927641a994b02065895ffc37d406ba1bbac4e7a5ba7b5f017752da84fd1e9",
+    "docs/ACCOUNT_HANDOVER.md": "a7b8a126701a330ff98d2fc1be3417e35cd5b753cf521b3b93cf4b5cd46db553"
+  },
+  "implemented": [
+    "Retired adapters cannot delete or reset. Queued deletions that time out before starting do not run.",
+    "Explicit account reset retires same-bridge/key bindings, blocks stale operations, aborts requests, serializes behind in-flight storage work, and removes session, PKCE and user slots.",
+    "Failure or deadline leaves the lane quarantined; a fresh port on the same bridge can retry."
+  ],
+  "validation": {
+    "suite": "python3 run-remaining-checks.py",
+    "nodePassed": 236,
+    "pythonPassed": 3,
+    "suiteHandoverCases": 11,
+    "finalHandoverCases": 12,
+    "finalHandoverEvidence": "evidence/handover-final.log",
+    "mobileAndSDKTypes": "pass",
+    "accessibilityChecks": 45,
+    "patchReplay": "pass",
+    "baselineDefect": "evidence/baseline-retired-delete.log"
+  },
+  "timeoutInvestigation": {
+    "nativeDataless": 828,
+    "nativeFiles": 20312,
+    "mobileDataless": 0,
+    "webDataless": 0,
+    "method": "metadata-only; no contents restored, flags altered or packages installed",
+    "previousMetroAndNativeTypeTimeouts": "prior security handoff records bounded timeouts; no retry while native dependencies are offloaded",
+    "cause": "offloading is a plausible blocker, but no exact hanging file was established"
+  },
+  "limitations": [
+    "Explicit reset must occur before closing old binding or starting new account; it clears local storage but is not server signout or revocation.",
+    "Generation and quarantine are in-memory and scoped to the same bridge object and storage key; separate bridge proxies, processes, crashes and restarts require native durable coordination.",
+    "Concurrent active adapters without an account-handover barrier remain a caller ownership responsibility.",
+    "An already-sent network request or already-started native write may complete.",
+    "Actual native bridge, production identity, storage, authorization and device testing remain unverified."
+  ],
+  "productionClearance": false
+}

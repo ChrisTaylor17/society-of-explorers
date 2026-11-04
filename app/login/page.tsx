@@ -1,14 +1,30 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getMemberSession, setWalletCookie } from '@/lib/auth/getSession';
+import { confirmSupabaseProvider, notifyAuthProviderChanged } from '@/lib/auth/providerSelection';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import {
+  DEFAULT_NEXT_PATH,
+  MIN_PASSWORD_LENGTH,
+  friendlyAuthError,
+  getSafeNextPath,
+  isExistingAccountSignup,
+  modeFromSearch,
+  validateCredentials,
+} from '@/lib/auth/loginForm';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
 const muted = '#9a8f7a';
+
+// Visually hidden but read by screen readers.
+const srOnly: React.CSSProperties = {
+  position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
+  overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0,
+};
 
 type EthereumProvider = {
   request(args: { method: string; params?: readonly unknown[] }): Promise<unknown>;
@@ -22,22 +38,8 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-function getSafeNextPath(candidate: string | null): string {
-  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) {
-    return '/dashboard';
-  }
-
-  try {
-    const parsed = new URL(candidate, 'http://localhost');
-    if (parsed.origin !== 'http://localhost') return '/dashboard';
-    return parsed.pathname + parsed.search + parsed.hash;
-  } catch {
-    return '/dashboard';
-  }
-}
-
 function requestedNextPath(): string {
-  if (typeof window === 'undefined') return '/dashboard';
+  if (typeof window === 'undefined') return DEFAULT_NEXT_PATH;
   return getSafeNextPath(new URLSearchParams(window.location.search).get('next'));
 }
 
@@ -56,12 +58,24 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const choseProvider = useRef(false);
+  const authInFlight = useRef(false);
+  const busy = loading || walletLoading || googleLoading;
+
+  function beginSignIn() {
+    if (authInFlight.current) return false;
+    authInFlight.current = true;
+    choseProvider.current = true;
+    notifyAuthProviderChanged();
+    return true;
+  }
 
   // Links from "Start free" open the form in create-account mode.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('mode') === 'signup') setIsSignUp(true);
+    if (modeFromSearch(window.location.search) === 'signup') setIsSignUp(true);
   }, []);
 
   // If already authed, redirect to dashboard
@@ -70,7 +84,7 @@ export default function LoginPage() {
 
     getMemberSession()
       .then((session) => {
-        if (active && session?.member) router.replace(requestedNextPath());
+        if (active && !choseProvider.current && session?.member) router.replace(requestedNextPath());
       })
       .catch(() => {});
 
@@ -80,48 +94,85 @@ export default function LoginPage() {
   }, [router]);
 
   async function signInWithGoogle() {
-    const nextPath = requestedNextPath();
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: authCallbackUrl(nextPath) },
-    });
+    if (!beginSignIn()) return;
+    setError('');
+    setMessage('');
+    setGoogleLoading(true);
+    try {
+      const nextPath = requestedNextPath();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: authCallbackUrl(nextPath) },
+      });
+      if (error) {
+        setError(friendlyAuthError(error, isSignUp ? 'signup' : 'signin'));
+        setGoogleLoading(false);
+        authInFlight.current = false;
+      }
+      // On success the browser navigates to Google; keep the button disabled.
+    } catch (err: unknown) {
+      setError(friendlyAuthError(err as { message?: string }, isSignUp ? 'signup' : 'signin'));
+      setGoogleLoading(false);
+      authInFlight.current = false;
+    }
   }
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    if (loading) return;
     setError('');
     setMessage('');
-
-    if (isSignUp) {
-      const nextPath = requestedNextPath();
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: authCallbackUrl(nextPath) },
-      });
-      if (error) setError(error.message);
-      else setMessage('Check your email to confirm your account.');
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
-      else router.push(requestedNextPath());
+    const mode = isSignUp ? 'signup' : 'signin';
+    const invalid = validateCredentials(mode, email, password);
+    if (invalid) {
+      setError(invalid);
+      return;
     }
-    setLoading(false);
+
+    if (!beginSignIn()) return;
+    setLoading(true);
+    try {
+      const nextPath = requestedNextPath();
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { emailRedirectTo: authCallbackUrl(nextPath) },
+        });
+        if (error) setError(friendlyAuthError(error, mode));
+        else if (isExistingAccountSignup(data)) setError(friendlyAuthError({ code: 'user_already_exists' }, mode));
+        else if (data?.session) {
+          if (await confirmSupabaseProvider(supabase)) router.push(nextPath);
+          else setError('Unable to select this account. Please sign in again.');
+        }
+        else setMessage(`Check ${email.trim()} for a confirmation link. It opens your first question.`);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) setError(friendlyAuthError(error, mode));
+        else if (await confirmSupabaseProvider(supabase)) router.push(nextPath);
+        else setError('Unable to select this account. Please sign in again.');
+      }
+    } catch (err: unknown) {
+      setError(friendlyAuthError(err as { message?: string }, mode));
+    } finally {
+      setLoading(false);
+      authInFlight.current = false;
+    }
   }
 
   async function connectWallet() {
+    if (!beginSignIn()) return;
     setWalletLoading(true);
     setError('');
     try {
       const eth = (window as Window & { ethereum?: EthereumProvider }).ethereum;
-      if (!eth) { setError('MetaMask not found. Install it to continue.'); setWalletLoading(false); return; }
+      if (!eth) { setError('MetaMask not found. Install it to continue.'); setWalletLoading(false); authInFlight.current = false; return; }
 
       const requestedAccounts = await eth.request({ method: 'eth_requestAccounts' });
       const accounts = Array.isArray(requestedAccounts)
         ? requestedAccounts.filter((value): value is string => typeof value === 'string')
         : [];
-      if (!accounts?.length) { setError('No accounts found.'); setWalletLoading(false); return; }
+      if (!accounts?.length) { setError('No accounts found.'); setWalletLoading(false); authInFlight.current = false; return; }
 
       const { ethers } = await import('ethers');
       const address = ethers.getAddress(accounts[0]);
@@ -149,7 +200,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
 
-      if (data.verified && data.member) {
+      if (res.ok && data.verified && data.member) {
+        notifyAuthProviderChanged();
         setWalletCookie(data.member.id);
         router.push(requestedNextPath());
       } else {
@@ -160,6 +212,7 @@ export default function LoginPage() {
       else setError(errorMessage(error, 'Connection failed.'));
     }
     setWalletLoading(false);
+    authInFlight.current = false;
   }
 
   return (
@@ -183,21 +236,26 @@ export default function LoginPage() {
           <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d', padding: '2.5rem 2rem' }}>
             {/* Google OAuth */}
             <button
+              type="button"
               onClick={signInWithGoogle}
+              disabled={busy}
+              aria-busy={googleLoading}
               style={{
                 width: '100%', padding: '12px', background: 'transparent',
                 border: `1px solid ${gold}44`, color: gold,
                 fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
-                cursor: 'pointer', marginBottom: '10px',
+                cursor: googleLoading ? 'wait' : 'pointer', marginBottom: '10px', opacity: googleLoading ? 0.5 : 1,
               }}
             >
-              CONTINUE WITH GOOGLE
+              {googleLoading ? 'OPENING GOOGLE...' : 'CONTINUE WITH GOOGLE'}
             </button>
 
             {/* MetaMask */}
             <button
+              type="button"
               onClick={connectWallet}
-              disabled={walletLoading}
+              disabled={busy}
+              aria-busy={walletLoading}
               style={{
                 width: '100%', padding: '12px',
                 background: 'linear-gradient(135deg, #0a1220, #111a2e)',
@@ -217,9 +275,13 @@ export default function LoginPage() {
             </div>
 
             {/* Email form */}
-            <form onSubmit={handleEmailSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <form onSubmit={handleEmailSubmit} noValidate aria-describedby="login-status" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <label htmlFor="login-email" style={srOnly}>Email</label>
               <input
+                id="login-email" name="email"
                 type="email" placeholder="Email" value={email}
+                autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false}
+                aria-invalid={!!error && !email.trim()}
                 onChange={e => setEmail(e.target.value)} required
                 style={{
                   background: '#111', border: `1px solid ${gold}22`, padding: '11px 14px',
@@ -227,8 +289,12 @@ export default function LoginPage() {
                   outline: 'none', width: '100%', boxSizing: 'border-box' as const,
                 }}
               />
+              <label htmlFor="login-password" style={srOnly}>Password</label>
               <input
-                type="password" placeholder="Password" value={password}
+                id="login-password" name="password"
+                type="password" placeholder={isSignUp ? `Password (${MIN_PASSWORD_LENGTH}+ characters)` : 'Password'} value={password}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                minLength={isSignUp ? MIN_PASSWORD_LENGTH : undefined}
                 onChange={e => setPassword(e.target.value)} required
                 style={{
                   background: '#111', border: `1px solid ${gold}22`, padding: '11px 14px',
@@ -237,18 +303,20 @@ export default function LoginPage() {
                 }}
               />
 
-              {error && <div style={{ fontSize: '12px', color: '#c05050', textAlign: 'center' }}>{error}</div>}
-              {message && <div style={{ fontSize: '12px', color: gold, textAlign: 'center' }}>{message}</div>}
+              <div id="login-status" aria-live="polite">
+                {error && <div role="alert" style={{ fontSize: '14px', color: '#e07070', textAlign: 'center' }}>{error}</div>}
+                {message && <div role="status" style={{ fontSize: '14px', color: gold, textAlign: 'center' }}>{message}</div>}
+              </div>
 
               <button
-                type="submit" disabled={loading}
+                type="submit" disabled={busy} aria-busy={loading}
                 style={{
                   fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
                   color: '#000', background: gold, border: 'none', padding: '12px',
                   cursor: 'pointer', opacity: loading ? 0.5 : 1,
                 }}
               >
-                {loading ? 'ENTERING...' : isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
+                {loading ? (isSignUp ? 'CREATING...' : 'ENTERING...') : isSignUp ? 'CREATE FREE ACCOUNT' : 'SIGN IN'}
               </button>
             </form>
 
@@ -256,14 +324,14 @@ export default function LoginPage() {
             <div style={{ fontSize: '13px', color: muted, textAlign: 'center', marginTop: '1.5rem' }}>
               {isSignUp ? (
                 <>Have an account?{' '}
-                  <button onClick={() => { setIsSignUp(false); setError(''); setMessage(''); }}
+                  <button type="button" disabled={busy} onClick={() => { setIsSignUp(false); setError(''); setMessage(''); }}
                     style={{ color: gold, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>
                     Sign in
                   </button>
                 </>
               ) : (
                 <>New here?{' '}
-                  <button onClick={() => { setIsSignUp(true); setError(''); setMessage(''); }}
+                  <button type="button" disabled={busy} onClick={() => { setIsSignUp(true); setError(''); setMessage(''); }}
                     style={{ color: gold, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>
                     Create account
                   </button>
@@ -274,7 +342,7 @@ export default function LoginPage() {
 
           {/* Footer note */}
           <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <p style={{ fontSize: '12px', color: muted, opacity: 0.4, fontStyle: 'italic' }}>
+            <p style={{ fontSize: '13px', color: muted, fontStyle: 'italic' }}>
               Free Explorer accounts get 3 Socrates exchanges. <a href="/join" style={{ color: gold, textDecoration: 'none' }}>See all tiers →</a>
             </p>
           </div>

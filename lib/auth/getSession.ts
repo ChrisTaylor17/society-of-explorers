@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { memberSessionDto } from '@/lib/auth/memberDto'
 import {
   isAuthSessionMissingError,
   type SupabaseClient,
@@ -56,68 +57,72 @@ async function getSupabaseUser(supabase: SupabaseClient): Promise<User | null> {
   return null
 }
 
+async function selectedMemberProof() {
+  const response = await withAuthLookupTimeout(fetch('/api/auth/member', {
+    credentials: 'same-origin', cache: 'no-store',
+  }), 'Member authority check')
+  if (response.status === 401) {
+    const denied = await response.json()
+    if (denied?.session === 'signed_out') return null
+    throw new Error('Member authority unavailable')
+  }
+  if (!response.ok) throw new Error('Member authority unavailable')
+  const result = await response.json()
+  const member = memberSessionDto(result.member)
+  const auth = result.auth
+  if (!member || !auth || (auth.provider !== 'supabase' && auth.provider !== 'wallet') ||
+      typeof auth.subject !== 'string' || !auth.subject) throw new Error('Member authority unavailable')
+  return { memberId: member.id, provider: auth.provider as 'supabase' | 'wallet', subject: auth.subject as string }
+}
+
 export async function getSupabaseAccessToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null
+  const selected = await selectedMemberProof()
+  if (!selected || selected.provider === 'wallet') return null
   const supabase = createClient()
-
-  try {
-    const { data, error } = await withAuthLookupTimeout(
-      withStaleAuthConsoleSuppressed(() => supabase.auth.getSession()),
-      'Supabase session lookup',
-    )
-    if (!error) return data.session?.access_token || null
-    if (isStaleSupabaseAuthError(error)) clearSupabaseAuthStorage()
-    else console.warn('[auth] Supabase session lookup failed', authErrorMessage(error))
-  } catch (error) {
-    if (isStaleSupabaseAuthError(error)) clearSupabaseAuthStorage()
-    else console.warn('[auth] Supabase session lookup threw', authErrorMessage(error))
-  }
-
-  return null
+  const { data, error } = await withAuthLookupTimeout(
+    withStaleAuthConsoleSuppressed(() => supabase.auth.getSession()), 'Supabase session lookup',
+  )
+  const token = !error ? data.session?.access_token : null
+  if (!token) throw new Error('Selected sign-in unavailable')
+  const verified = await withAuthLookupTimeout(
+    withStaleAuthConsoleSuppressed(() => supabase.auth.getUser(token)), 'Selected identity verification',
+  )
+  if (verified.error || verified.data.user?.id !== selected.subject) throw new Error('Selected sign-in changed')
+  const current = await selectedMemberProof()
+  if (!current || current.provider !== selected.provider || current.subject !== selected.subject ||
+      current.memberId !== selected.memberId) throw new Error('Selected sign-in changed')
+  return token
 }
 
 export async function getMemberSession() {
   if (typeof window === 'undefined') return null
   const supabase = createClient()
 
-  // Try Supabase email/OAuth session
-  const user = await getSupabaseUser(supabase)
-  if (user) {
-    const { data: member } = await supabase
-      .from('members').select('*').eq('supabase_auth_id', user.id).single()
-    if (member) return { member, supabase }
-
-    // Auto-create member for OAuth users (Google, etc.)
-    try {
-      const res = await fetch('/api/auth/ensure-member', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          supabaseAuthId: user.id,
-          displayName: user.user_metadata?.full_name || user.user_metadata?.name,
-          email: user.email,
-        }),
-      })
-      const data = await res.json()
-      if (data.member) return { member: data.member, supabase }
-    } catch {}
-  }
-
-  // Try cookie first, then localStorage (MetaMask browser blocks cookies)
-  const walletId = getCookie(WALLET_STORAGE_KEY) || getWalletStorageHint()
-  if (walletId) {
-    if (!isMemberId(walletId)) {
-      deleteCookie(WALLET_STORAGE_KEY)
-      clearWalletStorageHint()
+  // Display hints and anonymous table reads cannot establish a session. The
+  // private endpoint verifies the actual cookie/token and returns a whitelist.
+  try {
+    const res = await withAuthLookupTimeout(fetch('/api/auth/member', {
+      credentials: 'same-origin', cache: 'no-store',
+    }), 'Member session lookup')
+    if (res.ok) {
+      const member = memberSessionDto((await res.json()).member)
+      if (member) return { member, supabase }
       return null
     }
-
-    const { data: member } = await supabase
-      .from('members').select('*').eq('id', walletId).single()
+    if (res.status !== 401) return null
+    const user = await getSupabaseUser(supabase)
+    if (!user) return null
+    const ensured = await withAuthLookupTimeout(fetch('/api/auth/ensure-member', {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ supabaseAuthId: user.id,
+        displayName: user.user_metadata?.full_name || user.user_metadata?.name || 'Explorer' }),
+    }), 'Member setup')
+    if (!ensured.ok) return null
+    const member = memberSessionDto((await ensured.json()).member)
     if (member) return { member, supabase }
-    deleteCookie(WALLET_STORAGE_KEY)
-    clearWalletStorageHint()
-  }
+  } catch {}
 
   return null
 }
@@ -128,6 +133,8 @@ export function setWalletCookie(memberId: string) {
   if (!isMemberId(memberId)) return
   setWalletStorageHint(memberId)
 }
+// Compatibility helpers clear display hints only. Browser sign-out must use
+// the verified server logout flow; JavaScript cannot clear an httpOnly session.
 export function clearWalletStorage() {
   try { document.cookie = `${WALLET_STORAGE_KEY}=;path=/;max-age=0` } catch {}
   clearWalletStorageHint()
@@ -151,16 +158,6 @@ export function getWalletStorageHint(): string | null {
   } catch {
     return null
   }
-}
-
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-  return match ? match[2] : null
-}
-
-function deleteCookie(name: string) {
-  document.cookie = `${name}=;path=/;max-age=0`
 }
 
 function setWalletStorageHint(memberId: string) {

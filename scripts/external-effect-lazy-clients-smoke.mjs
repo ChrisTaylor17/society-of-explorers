@@ -78,6 +78,15 @@ const routes = {
   bookSalons: read('app/api/book-salons/route.ts'),
   bookSalonDetail: read('app/api/book-salons/[cohortId]/route.ts'),
   bookSalonJoin: read('app/api/book-salons/join/route.ts'),
+  circles: read('app/api/circles/route.ts'),
+  circleDetail: read('app/api/circles/[circleId]/route.ts'),
+  circleMembership: read('app/api/circles/[circleId]/membership/route.ts'),
+  circleStart: read('app/api/circles/start/route.ts'),
+  circleMine: read('app/api/circles/mine/route.ts'),
+  circleJoin: read('app/api/circles/[circleId]/join/route.ts'),
+  circleLeave: read('app/api/circles/[circleId]/leave/route.ts'),
+  circleRsvp: read('app/api/circles/[circleId]/rsvp/route.ts'),
+  circleComplete: read('app/api/circles/[circleId]/complete/route.ts'),
   live: read('app/api/live/route.ts'),
   liveSession: read('app/api/live/[sessionId]/route.ts'),
   rooms: read('app/api/rooms/route.ts'),
@@ -172,6 +181,7 @@ const helpers = {
   publicExplorerProfile: read('lib/explorer/publicProfile.ts'),
   voiceRecorder: read('lib/voiceRecorder.ts'),
   tts: read('lib/tts.ts'),
+  circleMembership: read('lib/circles/membership-server.ts'),
 };
 
 const resendHelper = read('lib/email/resend.ts');
@@ -187,8 +197,14 @@ const docs = {
 const pages = {
   greatBooksLibrary: read('app/great-books/page.tsx'),
   greatBooksReader: read('app/great-books/[bookId]/page.tsx'),
+  greatBooksReaderClient: read('app/great-books/BookReader.tsx'),
+  greatBooksReaderTools: read('app/great-books/ReaderTools.tsx'),
+  greatBooksLibraryBrowser: read('app/great-books/LibraryBrowser.tsx'),
+  greatBooksReadingAccess: read('app/great-books/useReadingAccess.ts'),
+  greatBooksReadingCredentials: read('lib/circles/client.ts'),
   bookSalons: read('app/book-salons/page.tsx'),
   bookSalonDetail: read('app/book-salons/[cohortId]/page.tsx'),
+  bookSalonLegacy: read('app/book-salons/[cohortId]/LegacySalon.tsx'),
   live: read('app/live/page.tsx'),
   practice: read('app/practice/page.tsx'),
   match: read('app/match/page.tsx'),
@@ -213,6 +229,25 @@ const pages = {
 };
 
 const checks = [
+  {
+    name: 'Circle participation delegates keyed revision writes to request-time canonical RPCs without REST fallback',
+    ok:
+      [routes.circles, routes.circleDetail, routes.circleMembership, routes.circleStart, routes.circleMine,
+        routes.circleJoin, routes.circleLeave, routes.circleRsvp, routes.circleComplete,
+        helpers.circleMembership].every(lacksModuleScopeClients) &&
+      routes.circles.includes('return circleCreate(req)') &&
+      routes.circleDetail.includes('circleDetail(req, circleId)') &&
+      routes.circleMembership.includes('circleMembership(req, circleId)') &&
+      routes.circleStart.includes('circleStart(req)') && routes.circleMine.includes('circleMine(req)') &&
+      [routes.circleJoin, routes.circleLeave, routes.circleRsvp, routes.circleComplete].every(source => source.includes('circleMutation(req, circleId,')) &&
+      helpers.circleMembership.includes('getAuthenticatedMember(req)') && helpers.circleMembership.includes('const db = getSupabaseAdmin()') &&
+      helpers.circleMembership.includes('await db.rpc(name, args)') && helpers.circleMembership.includes('p_actor: actor.memberId') &&
+      helpers.circleMembership.includes('circleWriteOrigin(req)') && helpers.circleMembership.includes('readCircleReviewJson(req)') &&
+      helpers.circleMembership.includes('isUuid(read.value.requestId)') && helpers.circleMembership.includes('membershipInteger(body.expectedRevision)') &&
+      helpers.circleMembership.includes('privateJson') && helpers.circleMembership.includes("outcome: unknown ? 'unknown' : 'not_attempted'") &&
+      !helpers.circleMembership.includes('.from(') && !helpers.circleMembership.includes('console.') &&
+      routes.bookSalonJoin.includes("circleMutation(req, cohortId, 'join', body)"),
+  },
   {
     name: 'Resend helper initializes lazily and validates env at request time',
     ok:
@@ -648,7 +683,17 @@ const checks = [
           !source.includes('[key: string]'),
       ) &&
       routes.bookSalons.indexOf('Missing fields') < routes.bookSalons.lastIndexOf('getSupabaseAdmin()') &&
-      routes.bookSalonDetail.indexOf('Empty message') < routes.bookSalonDetail.lastIndexOf('getSupabaseAdmin()') &&
+      // The shared URL must classify Circle vs ordinary salon before deciding
+      // which body policy applies. Origin and streamed bounds precede the
+      // Circle RPC, and content validation still precedes ordinary inserts.
+      routes.bookSalonDetail.includes('UUID_RE.test(cohortId)') &&
+      routes.bookSalonDetail.includes('circleWriteOrigin(req)') &&
+      routes.bookSalonDetail.includes('readCircleReviewJson(req)') &&
+      routes.bookSalonDetail.includes("if (!content) return refused('Empty message', 400)") &&
+      routes.bookSalonDetail.indexOf('UUID_RE.test(cohortId)') < routes.bookSalonDetail.lastIndexOf('getSupabaseAdmin()') &&
+      routes.bookSalonDetail.indexOf('circleWriteOrigin(req)') < routes.bookSalonDetail.indexOf('readCircleReviewJson(req)') &&
+      routes.bookSalonDetail.indexOf('readCircleReviewJson(req)') < routes.bookSalonDetail.indexOf("rpc('soe_circle_messages_post'") &&
+      routes.bookSalonDetail.indexOf('Empty message') < routes.bookSalonDetail.indexOf("supabaseAdmin.from('seminar_messages').insert(payload)") &&
       routes.bookSalonJoin.indexOf('Missing fields') < routes.bookSalonJoin.indexOf('getSupabaseAdmin()'),
   },
   {
@@ -674,7 +719,7 @@ const checks = [
       routes.bookSalonDetail.includes('is_mine: Boolean') &&
       routes.bookSalonDetail.indexOf('Empty message') < routes.bookSalonDetail.lastIndexOf('getAuthenticatedMember(req)') &&
       routes.bookSalonDetail.indexOf('getAuthenticatedMember(req)') < routes.bookSalonDetail.lastIndexOf('getSupabaseAdmin()') &&
-      [pages.bookSalons, pages.bookSalonDetail].every(
+      [pages.bookSalons, pages.bookSalonLegacy].every(
         (source) =>
           source.includes('getSupabaseAccessToken') &&
           source.includes('Authorization: `Bearer ${accessToken}`') &&
@@ -682,13 +727,13 @@ const checks = [
       ) &&
       pages.bookSalons.includes("fetch('/api/book-salons'") &&
       pages.bookSalons.includes("fetch('/api/book-salons/join'") &&
-      pages.bookSalonDetail.includes('fetch(`/api/book-salons/${cohortId}`') &&
-      pages.bookSalonDetail.includes('is_mine: true') &&
-      pages.bookSalonDetail.includes('const isMe = Boolean(msg.is_mine)') &&
+      pages.bookSalonLegacy.includes('fetch(`/api/book-salons/${cohortId}`') &&
+      pages.bookSalonLegacy.includes('is_mine: true') &&
+      pages.bookSalonLegacy.includes('const isMe = Boolean(msg.is_mine)') &&
       !pages.bookSalons.includes('body: JSON.stringify({ cohortId, memberId })') &&
       !pages.bookSalons.includes('memberId,\\n        thinkerId') &&
-      !pages.bookSalonDetail.includes('body: JSON.stringify({ memberId') &&
-      !pages.bookSalonDetail.includes('member_id: memberId') &&
+      !pages.bookSalonLegacy.includes('body: JSON.stringify({ memberId') &&
+      !pages.bookSalonLegacy.includes('member_id: memberId') &&
       !routes.bookSalons.includes('body.memberId') &&
       !routes.bookSalonJoin.includes('body.memberId') &&
       !routes.bookSalonDetail.includes('body.memberId') &&
@@ -700,6 +745,23 @@ const checks = [
           !source.includes('error.message') &&
           !source.includes('String(err)'),
       ),
+  },
+  {
+    name: 'legacy Circle URL classifies on the server and redirects before the ordinary salon client mounts',
+    ok:
+      lacksModuleScopeClients(pages.bookSalonDetail) &&
+      pages.bookSalonDetail.includes('getSupabaseAdmin()') &&
+      pages.bookSalonDetail.includes("select('id,book_id')") &&
+      pages.bookSalonDetail.includes('.abortSignal(controller.signal)') &&
+      pages.bookSalonDetail.includes('5_000') &&
+      pages.bookSalonDetail.includes('result.data.book_id === CIRCLE_BOOK_ID') &&
+      pages.bookSalonDetail.includes('redirect(`/circles/${cohortId}`)') &&
+      pages.bookSalonDetail.indexOf('redirect(`/circles/${cohortId}`)') < pages.bookSalonDetail.indexOf('return <LegacySalon />') &&
+      !pages.bookSalonDetail.includes("'use client'") &&
+      !pages.bookSalonDetail.includes('getMemberSession') &&
+      !pages.bookSalonDetail.includes('getSupabaseAccessToken') &&
+      routes.bookSalonDetail.includes("rpc('soe_circle_messages_read'") &&
+      routes.bookSalonDetail.includes("rpc('soe_circle_messages_post'"),
   },
   {
     name: 'live session and room routes use lazy Supabase admin clients',
@@ -2264,37 +2326,39 @@ const checks = [
       !routes.ritual.includes('console.error'),
   },
   {
-    name: 'Great Books text and progress routes are lazy, self-scoped, and private',
+    // Text delivery is now verified local data, with no DB or upstream fetch.
+    // Private bookmark calls moved from page effects to explicit guarded tools.
+    name: 'Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls',
     ok:
       [routes.greatBooksText, routes.greatBooksProgress].every(lacksModuleScopeClients) &&
-      [routes.greatBooksText, routes.greatBooksProgress].every(
-        (source) => source.includes('getSupabaseAdmin()') && source.includes('privateJson'),
-      ) &&
+      routes.greatBooksText.includes('readBookEdition(bookId)') &&
+      !routes.greatBooksText.includes('getSupabaseAdmin') && !routes.greatBooksText.includes('fetch(') &&
+      routes.greatBooksProgress.includes('getSupabaseAdmin()') && routes.greatBooksProgress.includes('privateJson') &&
       routes.greatBooksProgress.includes('getAuthenticatedMember(req)') &&
-      routes.greatBooksProgress.indexOf('Missing fields') < routes.greatBooksProgress.lastIndexOf('getSupabaseAdmin()') &&
+      routes.greatBooksProgress.includes(".eq('member_id', auth.memberId)") &&
+      routes.greatBooksProgress.includes('member_id: auth.memberId') &&
+      routes.greatBooksProgress.includes('encodeBookmarkLocator') && routes.greatBooksProgress.includes('readBookEdition(body.bookId)') &&
+      routes.greatBooksProgress.includes('circleWriteOrigin(req)') && routes.greatBooksProgress.includes('readCircleReviewJson(req)') &&
       !routes.greatBooksProgress.includes('memberId?: string') &&
       !routes.greatBooksProgress.includes("searchParams.get('memberId')") &&
-      !routes.greatBooksProgress.includes('Cannot read another member progress') &&
-      !routes.greatBooksProgress.includes('Cannot update another member progress') &&
       routes.greatBooksText.includes('Book not found') &&
-      routes.greatBooksText.includes('Failed to fetch text') &&
       [routes.greatBooksText, routes.greatBooksProgress].every(
         (source) => !source.includes('NextResponse') && !source.includes('as any') && !source.includes(': any'),
       ) &&
-      [pages.greatBooksLibrary, pages.greatBooksReader].every(
-        (source) =>
-          source.includes('getSupabaseAccessToken') &&
-          source.includes('Authorization: `Bearer ${accessToken}`') &&
-          source.includes("cache: 'no-store'"),
-      ) &&
-      pages.greatBooksLibrary.includes("fetch('/api/great-books/progress'") &&
-      pages.greatBooksReader.includes('fetch(`/api/great-books/progress?bookId=${bookId}`') &&
-      !pages.greatBooksLibrary.includes('progress?memberId=') &&
-      !pages.greatBooksReader.includes('progress?memberId=') &&
-      !pages.greatBooksReader.includes('{ memberId, bookId, sectionId'),
+      pages.greatBooksLibrary.includes('readBookEdition(book.id)') &&
+      pages.greatBooksReaderClient.includes('parseBookEditionResponse') &&
+      pages.greatBooksLibraryBrowser.includes("run('/api/great-books/progress'") &&
+      pages.greatBooksReaderTools.includes('run(`/api/great-books/progress?bookId=${encodeURIComponent(bookId)}`') &&
+      pages.greatBooksReaderTools.includes('editionId: edition.editionId, blockIndex: index') &&
+      [pages.greatBooksReaderTools, pages.greatBooksLibraryBrowser].every(source => source.includes('useReadingAccess')) &&
+      pages.greatBooksReadingAccess.includes('bindCircleAccess') && pages.greatBooksReadingAccess.includes('await circleHeaders(') &&
+      pages.greatBooksReadingAccess.includes("cache: 'no-store'") && pages.greatBooksReadingAccess.includes("redirect: 'error'") &&
+      pages.greatBooksReadingAccess.includes('if (!current())') &&
+      pages.greatBooksReadingCredentials.includes('getSupabaseAccessToken') && pages.greatBooksReadingCredentials.includes('Authorization: `Bearer ${token}`') &&
+      [pages.greatBooksLibrary, pages.greatBooksReader, pages.greatBooksReaderTools, pages.greatBooksLibraryBrowser, pages.greatBooksReadingAccess].every(source => !source.includes('getMemberSession')),
   },
   {
-    name: 'EXP award route is lazy, self-scoped, private, and Great Books callers send auth',
+    name: 'EXP award route stays authenticated and self-scoped; free reading does not award unverified completion',
     ok:
       lacksModuleScopeClients(routes.expAward) &&
       routes.expAward.includes('getAuthenticatedMember(req)') &&
@@ -2307,9 +2371,7 @@ const checks = [
       routes.expAward.includes('member_id: auth.memberId') &&
       routes.expAward.indexOf('Missing fields') < routes.expAward.indexOf('getAuthenticatedMember(req)') &&
       routes.expAward.indexOf('getAuthenticatedMember(req)') < routes.expAward.indexOf('getSupabaseAdmin()') &&
-      pages.greatBooksReader.includes('/api/exp/award') &&
-      pages.greatBooksReader.includes('getSupabaseAccessToken') &&
-      pages.greatBooksReader.includes('Authorization: `Bearer ${accessToken}`') &&
+      [pages.greatBooksReader, pages.greatBooksReaderClient, pages.greatBooksReaderTools].every(source => !source.includes('/api/exp/award')) &&
       !routes.expAward.includes('NextResponse') &&
       !routes.expAward.includes('as any') &&
       !routes.expAward.includes(': any') &&

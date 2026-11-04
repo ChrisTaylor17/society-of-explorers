@@ -40,12 +40,12 @@ export async function generateMetadata({
 
   if (!personality) {
     return {
-      title: 'Personality Not Found - Society of Explorers',
+      title: 'Personality Not Found',
     };
   }
 
   return {
-    title: `${personality.name} - Society of Explorers`,
+    title: personality.name,
     description: personality.bio,
   };
 }

@@ -19,10 +19,11 @@ installMocks({
 });
 
 const route = await import('../../app/api/checkout/route.ts');
-const ENV_KEYS = ['VERCEL_ENV', 'STRIPE_SECRET_KEY', 'STRIPE_TEST_SECRET_KEY', 'STRIPE_PRICE_SEEKER', 'STRIPE_PRICE_ORACLE', 'STRIPE_TEST_PRICE_SEEKER', 'NEXT_PUBLIC_SITE_URL', 'SITE_URL'];
+const ENV_KEYS = ['SOE_LEGACY_MEMBERSHIP_SALES_ENABLED', 'VERCEL_ENV', 'STRIPE_SECRET_KEY', 'STRIPE_TEST_SECRET_KEY', 'STRIPE_PRICE_SEEKER', 'STRIPE_PRICE_ORACLE', 'STRIPE_TEST_PRICE_SEEKER', 'NEXT_PUBLIC_SITE_URL', 'SITE_URL'];
 
 beforeEach(() => {
   for (const k of ENV_KEYS) delete process.env[k];
+  process.env.SOE_LEGACY_MEMBERSHIP_SALES_ENABLED = 'true';
   created.length = 0;
   stripeKeysUsed.length = 0;
   member = { member: { id: 'm1', email: 'Ada@Example.test' } };
@@ -137,4 +138,16 @@ test('G2i a non-Stripe redirect from Stripe is refused', async () => {
   const r = await post({ tier: 'seeker' });
   expect(r.status).toBe(502);
   expect((await r.json()).code).toBe('checkout_failed');
+});
+
+test('G2k historical sales are closed by default before authentication or Stripe work', async () => {
+  delete process.env.SOE_LEGACY_MEMBERSHIP_SALES_ENABLED;
+  process.env.STRIPE_SECRET_KEY = 'sk_live_FAKE';
+  process.env.STRIPE_PRICE_SEEKER = 'price_live_seeker';
+  process.env.VERCEL_ENV = 'production';
+  const r = await post({ tier: 'seeker' }, 'https://app.example.test/api/checkout');
+  expect(r.status).toBe(410);
+  expect((await r.json()).code).toBe('legacy_sales_closed');
+  expect(created.length).toBe(0);
+  expect(stripeKeysUsed.length).toBe(0);
 });

@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server'
 import { createWalletSessionValue } from '@/lib/auth/walletSession'
 import { privateJson } from '@/lib/http/routeError'
 import { SIWE_NONCE_COOKIE, verifyNonceCookie } from '@/lib/auth/siweNonce'
+import { selectAuthProvider } from '@/lib/auth/provider'
 import { canonicalizeSignature, shortAddress } from '@/lib/auth/siweSignature'
 import { findOrCreateWalletMember, isDbUnreachable } from '@/lib/auth/walletMember'
 
@@ -95,7 +96,8 @@ export async function POST(req: NextRequest) {
 
     // Set cookie server-side — server Set-Cookie headers are honored by MetaMask's
     // WKWebView on iOS where document.cookie writes can be silently blocked
-    const res = privateJson({ verified: true, member })
+    const res = privateJson({ verified: true, member: { id: member.id } })
+    selectAuthProvider(res, 'wallet')
     res.cookies.set('soe_wallet_id', walletSession, {
       path: '/',
       maxAge: 60 * 60 * 24 * 30,

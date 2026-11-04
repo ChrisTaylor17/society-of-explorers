@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { SHARE_OG_IMAGES, SHARE_TWITTER_IMAGES } from '@/lib/site/shareCard';
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -28,14 +29,17 @@ export async function generateMetadata(): Promise<Metadata> {
     const description = `${todayCount} ${todayCount === 1 ? 'person' : 'people'} answered today\u2019s philosophical question. See what real humans are thinking — live.`;
 
     return {
-      title, description,
-      openGraph: { title, description, type: 'website' },
-      twitter: { card: 'summary_large_image', title, description },
+      title: { absolute: title }, description,
+      openGraph: { title, description, siteName: 'Society of Explorers', type: 'website', images: SHARE_OG_IMAGES },
+      twitter: { card: 'summary_large_image', title, description, images: SHARE_TWITTER_IMAGES },
     };
   } catch {
+    const title = 'Live Feed — Society of Explorers';
+    const description = 'Real-time philosophical reflection from the Society of Explorers community.';
     return {
-      title: 'Live Feed — Society of Explorers',
-      description: 'Real-time philosophical reflection from the Society of Explorers community.',
+      title: { absolute: title }, description,
+      openGraph: { title, description, siteName: 'Society of Explorers', type: 'website', images: SHARE_OG_IMAGES },
+      twitter: { card: 'summary_large_image', title, description, images: SHARE_TWITTER_IMAGES },
     };
   }
 }

@@ -1,0 +1,54 @@
+[
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "how-a-circle-works",
+    "kind": "video",
+    "title": "How a Circle works",
+    "description": "A short introduction to reading, respectful disagreement and sharing with care. Original silent SoE video with captions.",
+    "credit": "Original Society of Explorers text and canvas graphics. No third-party media, audio, music or voice.",
+    "source": {
+      "kind": "first-party",
+      "path": "circle-intro-source.html",
+      "sha256": "10ee1ac1a8b353704dfad20eaf0043aac5b0d50a3e30d2e8f750cbeeeaf01852",
+      "bytes": 3881
+    },
+    "asset": {
+      "path": "circle-intro.mp4",
+      "sha256": "1b1e4331aeb76c5401d9f5f43a709108c5c3330959f2c33b36cca6a63e132155",
+      "bytes": 157621,
+      "mime": "video/mp4",
+      "durationMs": 23955,
+      "width": 720,
+      "height": 404
+    },
+    "captions": {
+      "path": "circle-intro.vtt",
+      "sha256": "d5279f41285491f031c889a51b142b3cce48c1c82a76cf908a1a0ce3594a0e1c",
+      "bytes": 698,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "circle-intro-inspection.json",
+      "sha256": "f53eba4822b463a6194238c3b4e8c4686122f7e7fa2c27c71418e7a9e9e5e2ba",
+      "bytes": 1780
+    },
+    "review": {
+      "mode": "automated-first-party",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 0,
+      "sourceEndMs": 23955,
+      "checkedAt": "2026-11-04T13:38:04.168Z"
+    }
+  }
+]

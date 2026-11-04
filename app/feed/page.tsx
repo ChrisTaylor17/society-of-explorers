@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { fetchPulse } from '@/lib/feed/pulseClient';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -13,8 +14,8 @@ const THINKER_NAMES: Record<string, string> = {
   nietzsche: 'Nietzsche', einstein: 'Einstein', jobs: 'Steve Jobs',
 };
 const THINKER_COLORS: Record<string, string> = {
-  socrates: '#C9A94E', plato: '#7B68EE', aurelius: '#8B7355',
-  nietzsche: '#DC143C', einstein: '#4169E1', jobs: '#A0A0A0',
+  socrates: '#C9A94E', plato: '#9B8BF5', aurelius: '#A88D6E',
+  nietzsche: '#F0475F', einstein: '#6F8FF0', jobs: '#A0A0A0',
 };
 const THINKER_AVATARS: Record<string, string> = {
   socrates: 'SO', plato: 'PL', aurelius: 'MA',
@@ -88,33 +89,44 @@ export default function FeedPage() {
   const [newResponseIds, setNewResponseIds] = useState<Set<string>>(() => new Set());
   const knownIds = useRef<Set<string>>(new Set());
 
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
-      try {
-        const res = await fetch('/api/feed/pulse');
-        const data = (await res.json()) as FeedPayload;
-        (data.recentResponses || []).forEach((response) => knownIds.current.add(response.id));
-        setFeed(data);
-      } catch {}
+      const result = await fetchPulse<FeedPayload>();
+      if (cancelled) return;
+      if (result.ok) {
+        (result.data.recentResponses || []).forEach((response) => knownIds.current.add(response.id));
+        setFeed(result.data);
+        setLoadError(false);
+      } else {
+        setLoadError(true);
+      }
       setLoading(false);
     }
     load();
 
     const iv = setInterval(async () => {
-      try {
-        const res = await fetch('/api/feed/pulse');
-        const data = (await res.json()) as FeedPayload;
-        const unseenIds = new Set<string>();
-        (data.recentResponses || []).forEach((response) => {
-          if (!knownIds.current.has(response.id)) unseenIds.add(response.id);
-          knownIds.current.add(response.id);
-        });
-        setNewResponseIds(unseenIds);
-        setFeed(data);
-      } catch {}
+      const result = await fetchPulse<FeedPayload>();
+      if (cancelled || !result.ok) return;
+      const unseenIds = new Set<string>();
+      (result.data.recentResponses || []).forEach((response) => {
+        if (!knownIds.current.has(response.id)) unseenIds.add(response.id);
+        knownIds.current.add(response.id);
+      });
+      setNewResponseIds(unseenIds);
+      setFeed(result.data);
+      setLoadError(false);
+      setLoading(false);
     }, 15000);
-    return () => clearInterval(iv);
-  }, []);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+  }, [reloadKey]);
 
   useEffect(() => {
     const t = setTimeout(() => setShowCTA(true), 3000);
@@ -137,7 +149,22 @@ export default function FeedPage() {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <PublicNav />
-        <span style={{ color: muted, fontFamily: 'Cinzel, serif', fontSize: '11px' }}>LOADING...</span>
+        <span role="status" style={{ color: muted, fontFamily: 'Cinzel, serif', fontSize: '12px' }}>LOADING...</span>
+      </div>
+    );
+  }
+
+  if (loadError && !feed) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '6rem 1.5rem 2rem', textAlign: 'center' }}>
+        <PublicNav />
+        <p role="alert" style={{ color: parchment, fontSize: '16px', margin: 0 }}>We could not load the community feed right now.</p>
+        <button
+          onClick={() => { setLoading(true); setLoadError(false); setReloadKey((k) => k + 1); }}
+          style={{ background: 'transparent', border: `1px solid ${gold}`, color: gold, fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em', padding: '0.6rem 1.4rem', cursor: 'pointer' }}
+        >
+          TRY AGAIN
+        </button>
       </div>
     );
   }
@@ -181,22 +208,22 @@ export default function FeedPage() {
         {/* Thinker asked row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
           <div style={{
-            width: '22px', height: '22px', borderRadius: '50%',
+            width: '30px', height: '30px', borderRadius: '50%',
             background: `${tColor}18`, border: `1.5px solid ${tColor}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Cinzel, serif', fontSize: '8px', color: tColor, flexShrink: 0,
+            fontFamily: 'Cinzel, serif', fontSize: '12px', lineHeight: 1, color: tColor, flexShrink: 0,
           }}>{tAvatar}</div>
-          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.18em', color: tColor }}>
+          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.18em', color: tColor }}>
             {tName.toUpperCase()} ASKED
           </span>
           <span style={{ flex: 1 }} />
-          <span style={{ fontSize: '10px', color: muted }}>{timeAgo(r.created_at)}</span>
+          <span style={{ fontSize: '12px', color: muted }}>{timeAgo(r.created_at)}</span>
         </div>
 
         {/* Question excerpt */}
         {r.question_text && (
           <p style={{
-            fontSize: '12px', color: `${muted}cc`, fontStyle: 'italic', margin: 0, marginBottom: '0.6rem',
+            fontSize: '12px', color: muted, fontStyle: 'italic', margin: 0, marginBottom: '0.6rem',
             lineHeight: 1.5,
             display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           }}>
@@ -209,7 +236,7 @@ export default function FeedPage() {
           <span style={{ fontSize: '13px', color: gold }}>{r.display_name}</span>
           {r.current_streak >= 3 && (
             <span style={{
-              fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em',
+              fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em',
               color: gold, border: `1px solid ${gold}44`, padding: '1px 5px',
             }}>{r.current_streak}d STREAK</span>
           )}
@@ -229,10 +256,10 @@ export default function FeedPage() {
               margin: featured ? '0.9rem 0' : '0.75rem 0',
             }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.4rem' }}>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: tColor, opacity: 0.55, lineHeight: 1 }}>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: tColor, lineHeight: 1 }} aria-hidden="true">
                 {THINKER_SYMBOLS[r.thinker_id || ''] || '\u00B7'}
               </span>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.18em', color: `${tColor}cc` }}>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.18em', color: tColor }}>
                 {tName.toUpperCase()} REFLECTS
               </span>
             </div>
@@ -245,7 +272,7 @@ export default function FeedPage() {
             </p>
           </>
         ) : (
-          <p style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.18em', color: `${muted}88`, marginTop: '0.6rem', marginBottom: 0 }}>
+          <p style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.18em', color: muted, marginTop: '0.6rem', marginBottom: 0 }}>
             {THINKER_SYMBOLS[r.thinker_id || ''] || '\u00B7'} &nbsp; REFLECTION PENDING
           </p>
         )}
@@ -262,26 +289,26 @@ export default function FeedPage() {
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '1.25rem' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: gold, animation: 'pulse 2s infinite' }} />
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold }}>LIVE</span>
+            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.4em', color: gold }}>LIVE</span>
           </div>
 
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 5vw, 38px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.2, color: parchment, marginBottom: '0.75rem' }}>
             What explorers are thinking right now.
           </h1>
           <p style={{ fontSize: '15px', color: ivory85, lineHeight: 1.7, marginBottom: '2rem' }}>
-            Every morning, a new question. Every answer, a reflection. These are today&rsquo;s wisdom moments.
+            Every morning, a new question. Every answer, a reflection. These are the most recent wisdom moments.
           </p>
 
           {todayQuestion && (
             <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1.5rem', marginTop: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `${qThinkerColor}18`, border: `1.5px solid ${qThinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '8px', color: qThinkerColor }}>{qThinkerAvatar}</div>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: qThinkerColor }}>TODAY &middot; {qThinkerName.toUpperCase()}</span>
+                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `${qThinkerColor}18`, border: `1.5px solid ${qThinkerColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '12px', lineHeight: 1, color: qThinkerColor, flexShrink: 0 }}>{qThinkerAvatar}</div>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: qThinkerColor }}>TODAY &middot; {qThinkerName.toUpperCase()}</span>
               </div>
               <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(17px, 3vw, 22px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, margin: 0 }}>
                 &ldquo;{todayQuestion.question_text}&rdquo;
               </p>
-              <p style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: muted, marginTop: '1rem' }}>
+              <p style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: muted, marginTop: '1rem' }}>
                 {stats.todayCount} EXPLORER{stats.todayCount !== 1 ? 'S' : ''} ANSWERED TODAY
               </p>
             </div>
@@ -289,15 +316,15 @@ export default function FeedPage() {
         </div>
       </section>
 
-      {/* TODAY'S WISDOM MOMENTS */}
+      {/* RECENT WISDOM MOMENTS */}
       {wisdomMoments.length > 0 && (
         <section style={{ padding: '2rem 2rem 1rem' }}>
           <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem', textAlign: 'center' }}>
-              TODAY&rsquo;S WISDOM MOMENTS
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem', textAlign: 'center' }}>
+              RECENT WISDOM MOMENTS
             </div>
             <p style={{ fontSize: '13px', color: muted, fontStyle: 'italic', textAlign: 'center', marginBottom: '1rem' }}>
-              Answer + reflection pairs, in the last few hours.
+              The latest answer + reflection pairs.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {wisdomMoments.map(r => renderWisdomCard(r, 'feature'))}
@@ -317,7 +344,7 @@ export default function FeedPage() {
           ].map(s => (
             <div key={s.label} style={{ background: '#0d0d0d', padding: '1.1rem 0.5rem', textAlign: 'center' }}>
               <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '26px', color: gold, lineHeight: 1.1 }}>{(s.value || 0).toLocaleString()}</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: muted, marginTop: '4px' }}>{s.label}</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.12em', color: muted, marginTop: '4px' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -327,14 +354,14 @@ export default function FeedPage() {
       {leaders.length > 0 && (
         <section style={{ padding: '1rem 2rem 2rem' }}>
           <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>STREAK LEADERS</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>STREAK LEADERS</div>
             <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15` }}>
               {leaders.map((l, i) => (
                 <div key={`${l.display_name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderBottom: i < leaders.length - 1 ? `1px solid ${gold}08` : 'none' }}>
                   <span style={{ fontFamily: 'Playfair Display, serif', fontSize: i < 3 ? '18px' : '14px', color: RANK_COLORS[i] || muted, width: '22px', textAlign: 'center' }}>{i + 1}</span>
                   <span style={{ flex: 1, fontSize: '15px', color: parchment }}>{l.display_name}</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold }}>{l.current_streak}d</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: muted }}>{l.total_responses || 0} total</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', color: gold }}>{l.current_streak}d</span>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', color: muted }}>{l.total_responses || 0} total</span>
                 </div>
               ))}
             </div>
@@ -345,12 +372,12 @@ export default function FeedPage() {
       {/* RESPONSE STREAM */}
       <section style={{ padding: '1rem 2rem 2rem' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>RESPONSE STREAM</div>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.3em', color: gold, marginBottom: '0.75rem' }}>RESPONSE STREAM</div>
 
           {responses.length === 0 ? (
             <div style={{ padding: '1.5rem', textAlign: 'center', border: `1px dashed ${gold}22` }}>
-              <p style={{ fontSize: '15px', color: muted, fontStyle: 'italic', marginBottom: '0.5rem' }}>No reflections yet today.</p>
-              <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '10px 20px', display: 'inline-block', marginTop: '0.75rem' }}>BE THE FIRST</a>
+              <p style={{ fontSize: '15px', color: muted, fontStyle: 'italic', marginBottom: '0.5rem' }}>No reflections yet.</p>
+              <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '10px 20px', display: 'inline-block', marginTop: '0.75rem' }}>BE THE FIRST</a>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -368,7 +395,7 @@ export default function FeedPage() {
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 150,
           padding: '14px 20px', background: gold, color: '#0a0a0a',
-          fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em',
+          fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em',
           textDecoration: 'none', textAlign: 'center',
           transform: showCTA ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 0.5s ease',
@@ -414,14 +441,14 @@ export default function FeedPage() {
               {/* Asked row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
                 <div style={{
-                  width: '32px', height: '32px', borderRadius: '50%',
+                  width: '36px', height: '36px', borderRadius: '50%',
                   background: `${tColor}18`, border: `2px solid ${tColor}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'Cinzel, serif', fontSize: '10px', color: tColor,
+                  fontFamily: 'Cinzel, serif', fontSize: '13px', lineHeight: 1, color: tColor, flexShrink: 0,
                 }}>{tAvatar}</div>
                 <div>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: tColor }}>{tName.toUpperCase()} ASKED</div>
-                  <div style={{ fontSize: '11px', color: muted }}>{timeAgo(active.created_at)}</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: tColor }}>{tName.toUpperCase()} ASKED</div>
+                  <div style={{ fontSize: '12px', color: muted }}>{timeAgo(active.created_at)}</div>
                 </div>
               </div>
 
@@ -439,12 +466,12 @@ export default function FeedPage() {
               {/* Answer block */}
               <div style={{ background: '#111', border: `1px solid ${gold}15`, padding: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '0.5rem' }}>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold }}>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold }}>
                     {active.display_name.toUpperCase()} ANSWERED
                   </span>
                   {active.current_streak >= 3 && (
                     <span style={{
-                      fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em',
+                      fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em',
                       color: gold, border: `1px solid ${gold}44`, padding: '1px 5px',
                     }}>{active.current_streak}d STREAK</span>
                   )}
@@ -472,8 +499,8 @@ export default function FeedPage() {
                     {THINKER_SYMBOLS[active.thinker_id || ''] || '\u00B7'}
                   </div>
                   <div style={{
-                    fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em',
-                    color: `${tColor}cc`, textAlign: 'center', marginBottom: '0.9rem',
+                    fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em',
+                    color: tColor, textAlign: 'center', marginBottom: '0.9rem',
                   }}>
                     {tName.toUpperCase()} REFLECTS
                   </div>
@@ -494,7 +521,7 @@ export default function FeedPage() {
               {/* Footer CTA */}
               <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                 <a href="/practice" style={{
-                  fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold,
+                  fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold,
                   border: `1px solid ${gold}44`, padding: '10px 22px',
                   textDecoration: 'none', display: 'inline-block',
                 }}>ANSWER TODAY&rsquo;S QUESTION &rarr;</a>

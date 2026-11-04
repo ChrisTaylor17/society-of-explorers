@@ -1,121 +1,56 @@
 import { NextRequest } from 'next/server';
-import { internalRouteError, privateJson } from '@/lib/http/routeError';
+import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
+import { MEMBER_SESSION_SELECT, memberSessionDto } from '@/lib/auth/memberDto';
+import { authWriteOriginAllowed, readAuthJson } from '@/lib/auth/request';
+import { AUTH_PROVIDER_COOKIE } from '@/lib/auth/provider';
 
-async function ensureDailySubscription(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, memberId: string) {
-  try {
-    const { data: existing } = await supabaseAdmin
-      .from('daily_email_subscriptions')
-      .select('id, unsubscribed_at')
-      .eq('member_id', memberId)
-      .maybeSingle();
-    if (existing) {
-      if (existing.unsubscribed_at) {
-        await supabaseAdmin
-          .from('daily_email_subscriptions')
-          .update({ unsubscribed_at: null, subscribed_at: new Date().toISOString() })
-          .eq('id', existing.id);
-      }
-      return;
-    }
-    await supabaseAdmin.from('daily_email_subscriptions').insert({ member_id: memberId });
-  } catch (e) {
-    console.error('[ensure-member] daily subscription failed (non-fatal):', e);
-  }
-}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const failure = () => privateJson({ error: 'Member setup is temporarily unavailable.' }, { status: 503 });
 
 export async function POST(req: NextRequest) {
+  if (!authWriteOriginAllowed(req)) return privateJson({ error: 'Request refused.' }, { status: 403 });
   try {
-    const body = await req.json();
-    const supabase = await createSupabaseServerClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const selected = req.cookies?.get(AUTH_PROVIDER_COOKIE)?.value;
+    if (selected !== undefined && selected !== 'supabase') {
+      return privateJson({ error: 'Choose email or Google sign-in before member setup.' }, { status: 409 });
     }
-
-    const requestedSupabaseAuthId =
-      typeof body?.supabaseAuthId === 'string' ? body.supabaseAuthId : null;
-
-    if (requestedSupabaseAuthId && requestedSupabaseAuthId !== user.id) {
+    const supabase = await createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user || !UUID.test(user.id)) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const body = await readAuthJson(req);
+    if (!body || Object.keys(body).some(key => !['supabaseAuthId', 'displayName', 'email'].includes(key)) ||
+        (body.displayName !== undefined && (typeof body.displayName !== 'string' || body.displayName.length > 200)) ||
+        (body.supabaseAuthId !== undefined && typeof body.supabaseAuthId !== 'string')) {
+      return privateJson({ error: 'Invalid member setup request.' }, { status: 400 });
+    }
+    if (body.supabaseAuthId !== undefined && body.supabaseAuthId !== user.id) {
       return privateJson({ error: 'Auth mismatch' }, { status: 403 });
     }
-
-    const supabaseAuthId = user.id;
-    const displayName =
-      typeof body?.displayName === 'string' && body.displayName.trim().length > 0
-        ? body.displayName.trim()
-        : null;
-    const email = user.email?.trim().toLowerCase() || null;
-
-    const supabaseAdmin = getSupabaseAdmin();
-
-    // Check if member exists
-    const { data: existing } = await supabaseAdmin
-      .from('members')
-      .select('*')
-      .eq('supabase_auth_id', supabaseAuthId)
-      .maybeSingle();
-
-    if (existing) {
-      await ensureDailySubscription(supabaseAdmin, existing.id);
-      return privateJson({ member: existing, created: false });
+    // Email/display text is not proof of account ownership. Never reassign
+    // members, enumerate accounts, subscribe or reactivate email preferences.
+    const admin = getSupabaseAdmin();
+    const existing = await admin.from('members').select(MEMBER_SESSION_SELECT)
+      .eq('supabase_auth_id', user.id).maybeSingle();
+    if (existing.error) return failure();
+    if (existing.data) {
+      const member = memberSessionDto(existing.data);
+      return member ? privateJson({ member, created: false }) : failure();
     }
-
-    // Fallback: look up by email (handles members created before OAuth)
-    if (email) {
-      // Check auth.users for matching email to find their member record
-      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-      const matchingAuth = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase() && u.id !== supabaseAuthId);
-      if (matchingAuth) {
-        const { data: emailMember } = await supabaseAdmin
-          .from('members')
-          .select('*')
-          .eq('supabase_auth_id', matchingAuth.id)
-          .maybeSingle();
-        if (emailMember) {
-          // Link existing member to new OAuth identity
-          await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', emailMember.id);
-          await ensureDailySubscription(supabaseAdmin, emailMember.id);
-          return privateJson({ member: { ...emailMember, supabase_auth_id: supabaseAuthId }, created: false });
-        }
-      }
-
-      // Also check if a member exists with this email as display_name (wallet users who set email)
-      const { data: byEmail } = await supabaseAdmin
-        .from('members')
-        .select('*')
-        .ilike('display_name', email)
-        .maybeSingle();
-      if (byEmail && !byEmail.supabase_auth_id) {
-        await supabaseAdmin.from('members').update({ supabase_auth_id: supabaseAuthId }).eq('id', byEmail.id);
-        await ensureDailySubscription(supabaseAdmin, byEmail.id);
-        return privateJson({ member: { ...byEmail, supabase_auth_id: supabaseAuthId }, created: false });
-      }
+    const displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
+    const inserted = await admin.from('members').insert({
+      supabase_auth_id: user.id, display_name: displayName || 'Explorer', exp_tokens: 0, tier: 'free',
+    }).select(MEMBER_SESSION_SELECT).single();
+    if (inserted.error) {
+      // Recover simultaneous creation only through the same verified subject.
+      if (inserted.error.code !== '23505') return failure();
+      const raced = await admin.from('members').select(MEMBER_SESSION_SELECT)
+        .eq('supabase_auth_id', user.id).single();
+      const member = !raced.error ? memberSessionDto(raced.data) : null;
+      return member ? privateJson({ member, created: false }) : failure();
     }
-
-    // Create new member from Google/OAuth data
-    const { data: member, error } = await supabaseAdmin
-      .from('members')
-      .insert({
-        supabase_auth_id: supabaseAuthId,
-        display_name: displayName || email?.split('@')[0] || 'Explorer',
-        exp_tokens: 0,
-        tier: 'free',
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Member creation failed:', error);
-      return internalRouteError('Member creation failed');
-    }
-
-    await ensureDailySubscription(supabaseAdmin, member.id);
-    return privateJson({ member, created: true });
-  } catch (err) {
-    console.error('[ensure-member] unexpected failure:', err);
-    return internalRouteError('Ensure member failed');
-  }
+    const member = memberSessionDto(inserted.data);
+    return member ? privateJson({ member, created: true }) : failure();
+  } catch { return failure(); }
 }

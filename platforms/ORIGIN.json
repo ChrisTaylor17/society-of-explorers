@@ -1,0 +1,12 @@
+{
+  "importedAtUTC": "2026-11-04T13:00:09.337339+00:00",
+  "source": "/Users/christaylor/Documents/Codex/2026-11-01/task-4/soe-account-handover/candidate",
+  "sourceManifestSHA256": "4f79caee19e8ac4f29a21454f011f359e107ec2b18c352fadc46bf7d692a5b13",
+  "sourceHandoffSHA256": "82e41385c7f9c94a1989f631f8c2cda14e2e6755833e4f7782b4439cdee4a692",
+  "sourceFiles": 300,
+  "sourceExactArchive": "source/account-handover",
+  "modelNotImportedAsApplication": "soe-account-authority-contract",
+  "activeNative": "native",
+  "activeQuest": "quest",
+  "productionClearance": false
+}

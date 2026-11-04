@@ -1,13 +1,19 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { getSafeAuthRedirectPath } from '@/lib/auth/redirectPath'
+import { selectAuthProvider } from '@/lib/auth/provider'
 
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
-  const next = getSafeRedirectPath(searchParams.get('next'))
+  const next = getSafeAuthRedirectPath(searchParams.get('next'))
 
   if (code) {
-    const response = NextResponse.redirect(new URL(next, origin))
+    const completion = new URL('/auth/complete', origin)
+    completion.searchParams.set('next', next)
+    const response = NextResponse.redirect(completion)
+    response.headers.set('cache-control', 'private, no-store')
+    response.headers.set('referrer-policy', 'no-referrer')
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,23 +42,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/?auth_error=true', origin))
     }
 
+    selectAuthProvider(response, 'supabase')
     return response
   }
 
   return NextResponse.redirect(new URL(next, origin))
-}
-
-function getSafeRedirectPath(candidate: string | null): string {
-  if (!candidate) return '/dashboard'
-  if (!candidate.startsWith('/')) return '/dashboard'
-  if (candidate.startsWith('//')) return '/dashboard'
-  if (candidate.includes('\\')) return '/dashboard'
-
-  try {
-    const parsed = new URL(candidate, 'http://localhost')
-    if (parsed.origin !== 'http://localhost') return '/dashboard'
-    return parsed.pathname + parsed.search + parsed.hash
-  } catch {
-    return '/dashboard'
-  }
 }

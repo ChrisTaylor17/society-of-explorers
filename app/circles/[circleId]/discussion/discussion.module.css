@@ -1,0 +1,16 @@
+.scope { min-width: 0; overflow-wrap: anywhere; }
+.scope *, .scope *::before, .scope *::after { box-sizing: border-box; }
+.scope a { color: #c9a84c; display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; max-width: 100%; }
+.scope button, .scope input, .scope textarea { max-width: 100%; }
+.scope button { min-height: 44px; white-space: normal; line-height: 1.5; }
+.scope button:disabled { opacity: .55; cursor: default; }
+.scope :focus-visible { outline: 2px solid #f5f0e8; outline-offset: 4px; }
+.stack { display: grid; gap: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+.list { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; }
+.relations { padding: 8px 12px; border-left: 2px solid #695b36; }
+.message { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font-size: 18px; line-height: 1.6; }
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 17px; line-height: 1.5; }
+.check input { width: 20px; height: 20px; flex-shrink: 0; }
+.check span { min-width: 0; }
+@media (max-width: 380px) { .row > button { width: 100%; } }

@@ -3,7 +3,7 @@ import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 
 export const metadata: Metadata = {
-  title: 'The Three Pillars | Society of Explorers',
+  title: 'The Three Pillars',
   description: 'Consilience Systems LLC, Society of Explorers, and the SOE Nonprofit — the organizational architecture.',
 };
 
@@ -109,7 +109,7 @@ export default function ThreePillars() {
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.25rem' }}>SOCIETY OF EXPLORERS LLC</div>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>SUBSIDIARY DAO — COMMUNITY + MEMBERSHIP</div>
               <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
-                The living temple. The front-end community where members gather, thinkers speak, artifacts are forged, and salons convene. Functions as a DAO with tiered memberships — $9.99/mo Digital, $99/mo Salon, $499 one-time Founding. Managed under the Consilience umbrella. Revenue from membership dues, product sales, and the $EXP token economy funds operations. Surplus flows to the nonprofit.
+                A Great Books community where people read complete source editions, form volunteer Circles and discuss ideas together. These activities remain free and open to everyone. Optional $10 USD monthly support is proposed for community infrastructure; current purchase availability is checked separately at /join. Older membership plans are closed to new purchases by default, and existing subscribers can check their own billing at /billing. Planned token, governance and physical-space ideas are not supporter benefits or verified sources of revenue.
               </p>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
               {['Membership platform and DAO governance', 'AI thinker salon', 'Great Books reading program', 'Merch and artifact marketplace', '$EXP token economy', 'Events and salon evenings', 'Book salons and cohorts'].map((f, i) => (

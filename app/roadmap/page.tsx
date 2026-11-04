@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { TIERS as JOIN_TIERS } from '@/lib/join/content';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -8,16 +9,19 @@ const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
 export const metadata: Metadata = {
-  title: 'Roadmap — Society of Explorers',
+  title: 'Roadmap',
   description: 'What works today, what we are shipping next, and how you can participate. Honest status for every module.',
 };
+
+// Shown at the top of the page. Change it whenever the statuses below change.
+const ROADMAP_LAST_UPDATED = 'October 25, 2026';
 
 type Status = 'live' | 'progress' | 'next' | 'vision';
 
 const BADGE: Record<Status, { label: string; color: string }> = {
   live:     { label: '🟢 LIVE',        color: '#4CAF50' },
   progress: { label: '🟡 IN PROGRESS', color: '#F0C050' },
-  next:     { label: '🔵 NEXT',        color: '#4169E1' },
+  next:     { label: '🔵 NEXT',        color: '#6F8FF0' },
   vision:   { label: '⚪ VISION',      color: muted    },
 };
 
@@ -26,7 +30,7 @@ function Badge({ status }: { status: Status }) {
   return (
     <span style={{
       fontFamily: 'Cinzel, serif',
-      fontSize: '8px',
+      fontSize: '12px',
       letterSpacing: '0.18em',
       border: `1px solid ${b.color}66`,
       padding: '3px 8px',
@@ -99,41 +103,54 @@ const moduleBodyStyle: React.CSSProperties = {
 
 const moduleLinkStyle: React.CSSProperties = {
   fontFamily: 'Cinzel, serif',
-  fontSize: '9px',
+  fontSize: '12px',
   letterSpacing: '0.2em',
   color: gold,
   textDecoration: 'none',
-  opacity: 0.8,
 };
 
 const MODULES: Array<{ name: string; status: Status; body: string; href?: string; linkLabel?: string }> = [
   {
+    name: 'DAILY PRACTICE',
+    status: 'live',
+    body: 'One question per day, a 280-character answer, your streak, and a reflection from the asking thinker. Signed-out visitors can write an answer and keep the draft through free sign-up. On October 25, 2026 we fixed a fault that had stopped new daily questions from appearing since late June; if question generation fails again, a hand-written question is shown instead of an error.',
+    href: '/practice',
+    linkLabel: 'VISIT /PRACTICE →',
+  },
+  {
+    name: 'COMMUNITY FEED',
+    status: 'live',
+    body: 'The most recent answers and thinker reflections from members, refreshed every 15 seconds. It is small today. If it cannot load, the page now says so and offers a retry instead of spinning forever.',
+    href: '/feed',
+    linkLabel: 'VISIT /FEED →',
+  },
+  {
     name: 'THE COUNCIL',
     status: 'progress',
-    body: 'Six AI thinkers wired for streaming Council mode with 4-layer memory and verdict cards. Known gaps: no error boundaries, no rate-limiting for anonymous users. Working for signed-in members — expect rough edges.',
+    body: 'Six AI thinkers with streaming Council mode, memory and verdict cards. Visitors get three free exchanges with Socrates on the homepage. Branded error pages with recovery links were added on October 23, 2026. Working for signed-in members, but expect rough edges.',
     href: '/council',
     linkLabel: 'VISIT /COUNCIL →',
   },
   {
+    name: 'MEMBERSHIP & SIGN-IN',
+    status: 'progress',
+    body: 'Free sign-up and sign-in work, with a clearer login form since October 23, 2026. Paid tiers on /join check out through Stripe; payment-safety fixes shipped on October 23, 2026, and one more safeguard (duplicate-payment-event protection) is waiting on a database update. If a tier cannot be bought, the page says so and nothing is charged. Project pledges are switched off.',
+    href: '/join',
+    linkLabel: 'VISIT /JOIN →',
+  },
+  {
     name: 'THE SALON (DIGITAL)',
     status: 'progress',
-    body: 'Seven-week digital cohort UI is built — recruiting grid, in-salon graduation tracking, Daily.co video. Awaiting the first real cohort. No active salon running today.',
+    body: 'The seven-week digital cohort UI is built: recruiting grid, graduation tracking and video. It is waiting for its first real cohort.',
     href: '/salons',
     linkLabel: 'VISIT /SALONS →',
   },
   {
     name: 'THE GUILD',
     status: 'progress',
-    body: 'The Guild dashboard renders your level and contribution stats. Level-progression math and rewards are not fully wired yet, so the numbers are directional, not definitive.',
+    body: 'The Guild dashboard shows your level and contribution stats. Level-progression math and rewards are not fully wired yet, so the numbers are directional, not definitive.',
     href: '/hall',
     linkLabel: 'VISIT /HALL →',
-  },
-  {
-    name: 'DAILY PRACTICE',
-    status: 'live',
-    body: 'One question per day, your streak, and a reflection card from the asking thinker. Stabilizing pending a database migration — expect occasional hiccups until it lands.',
-    href: '/practice',
-    linkLabel: 'VISIT /PRACTICE →',
   },
   {
     name: 'THE PHYSICAL SPACE — 92B SOUTH ST, BOSTON',
@@ -144,9 +161,8 @@ const MODULES: Array<{ name: string; status: Status; body: string; href?: string
 
 const NEXT_ITEMS: Array<{ title: string; body: string }> = [
   { title: 'Matched Conversations.', body: 'AI-paired 1:1 exchanges once you hit a 7-response streak. Built but not yet serving real matches in production.' },
-  { title: 'Live Weekly Council Sessions (Wed 8pm ET).', body: 'Real-time video where thinkers comment on the week\u2019s question.' },
+  { title: 'Live Weekly Council Sessions.', body: 'Real-time video where thinkers comment on the week\u2019s question.' },
   { title: '@AskTheCouncil on X.', body: 'Auto-post verdict cards to a public account so threads become discoverable.' },
-  { title: 'Pricing restructure.', body: 'Explorer (free) / Seeker ($19) / Philosopher ($49) / Oracle ($499 lifetime). Updating copy across the site to match real infrastructure cost.' },
   { title: 'Decision-Making Archetype.', body: 'Computed after 5+ Council sessions — gives you a lens on how you actually decide.' },
   { title: 'Council Wrapped.', body: 'Monthly email summary of your conversations, insights, streak, and verdicts.' },
 ];
@@ -159,12 +175,15 @@ const VISION_ITEMS: Array<{ title: string; body: string }> = [
   { title: 'SoE World mobile app.', body: 'LiDAR-scanned physical spaces, React Native, field contributions.' },
 ];
 
-const TIERS: Array<{ id: string; name: string; price: string; period: string; featured: boolean; line: string }> = [
-  { id: 'explorer',     name: 'Explorer',     price: 'Free',  period: '',           featured: false, line: 'Daily Practice + browse the Council. No commitment.' },
-  { id: 'seeker',       name: 'Seeker',       price: '$19',   period: '/mo',        featured: true,  line: 'Unlimited Council + 7-week digital salon + matched conversations. Covers infrastructure.' },
-  { id: 'philosopher',  name: 'Philosopher',  price: '$49',   period: '/mo',        featured: false, line: 'Seeker + Guide candidacy + priority salon placement + advanced memory.' },
-  { id: 'oracle',       name: 'Oracle',       price: '$499',  period: ' lifetime',  featured: false, line: 'Founding member. All of the above, forever. Name on the 92B wall when it opens.' },
-];
+// Same tiers and prices as /join, so the two pages cannot disagree.
+const TIERS: Array<{ id: string; name: string; price: string; period: string; featured: boolean; line: string }> = JOIN_TIERS.map(t => ({
+  id: t.id,
+  name: t.name,
+  price: t.price,
+  period: t.period,
+  featured: t.featured,
+  line: `${t.tagline}. ${t.features.slice(0, 2).join(' · ')}.`,
+}));
 
 const PARTICIPATION: Array<{ label: string; body: string; cta: string; href: string }> = [
   { label: 'ANSWER THE DAILY QUESTION', body: 'The fastest way to shape the Council. One question a day, 280 characters.', cta: 'GO TO PRACTICE', href: '/practice' },
@@ -184,7 +203,7 @@ export default function RoadmapPage() {
         <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <div style={{
             fontFamily: 'Cinzel, serif',
-            fontSize: '11px',
+            fontSize: '12px',
             letterSpacing: '0.4em',
             color: gold,
             marginBottom: '1.5rem',
@@ -214,11 +233,11 @@ export default function RoadmapPage() {
           </p>
           <div style={{
             fontFamily: 'Cinzel, serif',
-            fontSize: '9px',
+            fontSize: '12px',
             letterSpacing: '0.3em',
             color: muted,
           }}>
-            Last updated: April 19, 2026
+            Last updated: {ROADMAP_LAST_UPDATED}
           </div>
         </header>
 
@@ -238,7 +257,7 @@ export default function RoadmapPage() {
             maxWidth: '520px',
             margin: '0 auto 2.5rem',
           }}>
-            Almost nothing is fully &ldquo;live&rdquo; yet. Here is exactly where every pillar stands.
+            Two pieces are fully live today: the Daily Practice and the community feed. Everything else is in progress or still a vision. Here is exactly where each one stands.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -261,8 +280,8 @@ export default function RoadmapPage() {
 
         {/* Section 2 — Shipping Next */}
         <section>
-          <h2 style={sectionHeadingStyle}>2. SHIPPING NEXT — 30–60 DAYS 🔵</h2>
-          <p style={subheadStyle}>Built or in active development. Not live yet.</p>
+          <h2 style={sectionHeadingStyle}>2. SHIPPING NEXT 🔵</h2>
+          <p style={subheadStyle}>Built or in active development. Not live yet, and no dates promised.</p>
 
           <ol style={{
             listStyle: 'none',
@@ -286,11 +305,10 @@ export default function RoadmapPage() {
                   fontSize: '22px',
                   color: gold,
                   lineHeight: 1,
-                  opacity: 0.7,
                 }}>{(i + 1).toString().padStart(2, '0')}</span>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.14em', color: parchment }}>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.14em', color: parchment }}>
                       {item.title.toUpperCase()}
                     </span>
                     <Badge status="next" />
@@ -313,7 +331,7 @@ export default function RoadmapPage() {
             {VISION_ITEMS.map(v => (
               <div key={v.title} style={cardStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.14em', color: parchment }}>
+                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.14em', color: parchment }}>
                     {v.title.toUpperCase()}
                   </span>
                   <Badge status="vision" />
@@ -328,7 +346,7 @@ export default function RoadmapPage() {
 
         {/* Section 4 — Four Ways In */}
         <section>
-          <h2 style={sectionHeadingStyle}>4. FOUR WAYS IN</h2>
+          <h2 style={sectionHeadingStyle}>4. WAYS IN</h2>
           <p style={subheadStyle}>Honest pricing. No tricks.</p>
 
           <div style={{
@@ -347,11 +365,11 @@ export default function RoadmapPage() {
                 flexDirection: 'column',
               }}>
                 {t.featured && (
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, textAlign: 'center', marginBottom: '0.75rem' }}>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em', color: gold, textAlign: 'center', marginBottom: '0.75rem' }}>
                     RECOMMENDED
                   </div>
                 )}
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.12em', color: gold, marginBottom: '0.5rem' }}>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.12em', color: gold, marginBottom: '0.5rem' }}>
                   {t.name.toUpperCase()}
                 </div>
                 <div style={{ marginBottom: '1rem' }}>
@@ -368,7 +386,7 @@ export default function RoadmapPage() {
                 }}>{t.line}</p>
                 <a href={`/join#${t.id}`} style={{
                   fontFamily: 'Cinzel, serif',
-                  fontSize: '10px',
+                  fontSize: '12px',
                   letterSpacing: '0.15em',
                   color: '#0a0a0a',
                   background: gold,
@@ -404,7 +422,7 @@ export default function RoadmapPage() {
                 flexDirection: 'column',
                 gap: '0.75rem',
               }}>
-                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold }}>
+                <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.18em', color: gold }}>
                   {p.label}
                 </span>
                 <p style={{ ...moduleBodyStyle, fontSize: '15px', flex: 1 }}>{p.body}</p>
@@ -414,7 +432,7 @@ export default function RoadmapPage() {
                   rel={p.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                   style={{
                     fontFamily: 'Cinzel, serif',
-                    fontSize: '10px',
+                    fontSize: '12px',
                     letterSpacing: '0.15em',
                     color: gold,
                     border: `1px solid ${gold}44`,

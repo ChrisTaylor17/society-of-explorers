@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Tribekey | Society of Explorers',
+  title: 'Tribekey',
   description: 'The physical artifact that activates your Explorer OS. A key to a new kind of membership.',
 };
 

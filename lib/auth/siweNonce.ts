@@ -1,3 +1,5 @@
+import 'server-only';
+
 // Security fix S3: the SIWE nonce cookie is HMAC-signed and time-limited.
 //
 // Before, the nonce route set a plain soe_siwe_nonce cookie and the SIWE route trusted whatever value it found,
