@@ -4,6 +4,7 @@ import type { MemberSessionModel } from './src/circles/verified-member-session';
 import { createCircleHost, type CircleHostConfig } from './src/circles/host';
 import type { ThreadMessage } from '../../lib/circles/thread';
 import { observeNativeConnectivity, type NativeConnectivityPort, type NativeConnectivityState } from './src/circles/native-connectivity';
+import { MESSAGE_REPORT_OPTIONS, MESSAGE_WITHDRAWAL_PRIVACY } from '../shared/message-safety';
 
 export function CircleScreen({ config, connectivity, onClose, memberSession }: { config?: CircleHostConfig; connectivity?: NativeConnectivityPort; onClose(): void; memberSession?: { model: MemberSessionModel; onCheck(): void } }) {
   const connection = useMemo(() => { try { return config ? { host: createCircleHost({ ...config, initialOnline: false }), connectivity } : null; } catch { return null; } }, [config, connectivity]);
@@ -28,12 +29,12 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
     void host.refresh();
     return () => { mounted = false; host.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
-  const p = m?.participation, read = p?.read, write = m?.threadWrite, archive = m?.archive;
+  const p = m?.participation, read = p?.read, write = m?.threadWrite, archive = m?.archive, safety = m?.messageSafety;
   const archivePage = archive?.page;
   const rootMessage = archivePage?.kind === 'thread' ? archivePage.root : null;
   const savedMessage = write?.receipt?.message;
   const focusedMessage = archivePage?.kind === 'thread' && archivePage.focus.id !== archivePage.root.id && !archivePage.items.some(item => item.id === archivePage.focus.id) ? archivePage.focus : null;
-  const navigate = Boolean(write?.canNavigate);
+  const navigate = Boolean(write?.canNavigate && safety?.canNavigate);
   const refresh = Boolean(m?.connected && m.active && m.online && navigate && !read?.busy && !write?.busy && !archive?.busy);
   const leave = () => { host?.disconnect(); onClose(); };
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -49,12 +50,12 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
     <Action label="Close circle" onPress={leave}/>
     <View accessibilityLiveRegion="polite" accessibilityRole="summary" style={styles.status}>
       <Text style={styles.copy}>{m?.status ?? 'Member sign-in and the secure Circle connection are not connected in this build.'}</Text>
-      {read && !archive?.open ? <Text style={styles.copy}>{read.message}</Text> : null}
+      {read && !archive?.open && !safety?.open ? <Text style={styles.copy}>{read.message}</Text> : null}
     </View>
     {read?.busy ? <ActivityIndicator accessibilityLabel="Checking current circle access" color="#e8cb8d"/> : null}
     <Action label="Refresh circle access" disabled={!refresh} onPress={() => void host?.refresh()}/>
     <Action label="Open complete discussion archive" disabled={!refresh} onPress={() => void host?.openArchive()}/>
-    {archive?.open ? <View>
+    {archive?.open && !safety?.open ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Discussion archive</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{archive.message}</Text>
       {archive.busy ? <ActivityIndicator accessibilityLabel="Loading discussion page" color="#e8cb8d"/> : null}
@@ -62,18 +63,18 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
         {archive.page.kind === 'thread' ? <>
           <Text accessibilityRole="header" style={styles.heading}>Thread</Text>
           {rootMessage ? <ArchiveMessage message={rootMessage} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
-            onOpen={() => void host?.archiveThread(rootMessage.id)} onReply={() => host?.threadStart(rootMessage.id)}/> : null}
+            onOpen={() => void host?.archiveThread(rootMessage.id)} onReply={() => host?.threadStart(rootMessage.id)} onActions={() => void host?.messageOpen(rootMessage.id)}/> : null}
           {focusedMessage ? <ArchiveMessage message={focusedMessage} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
-            onOpen={() => void host?.archiveThread(focusedMessage.id)} onReply={() => host?.threadStart(focusedMessage.id)}/> : null}
+            onOpen={() => void host?.archiveThread(focusedMessage.id)} onReply={() => host?.threadStart(focusedMessage.id)} onActions={() => void host?.messageOpen(focusedMessage.id)}/> : null}
         </> : null}
         {archive.page.items.map(message => <ArchiveMessage key={message.id} message={message} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
-          onOpen={() => void host?.archiveThread(message.id)} onReply={() => host?.threadStart(message.id)}/>)}
+          onOpen={() => void host?.archiveThread(message.id)} onReply={() => host?.threadStart(message.id)} onActions={() => void host?.messageOpen(message.id)}/>)}
         {archive.page.items.length === 0 ? <Text style={styles.copy}>{archive.page.kind === 'thread' ? 'No replies in this page.' : 'No messages in this page.'}</Text> : null}
         {archive.page.nextCursor ? <Action label={archive.page.kind === 'thread' ? 'Next replies' : 'Older messages'} disabled={archive.busy || !navigate} onPress={() => void host?.archiveNext()}/> : null}
       </> : null}
-      <Text style={styles.note}>Reply only to a visible message after reviewing its current server preview. Reporting or withdrawing a contribution still uses the member web app.</Text>
+      <Text style={styles.note}>Reply only to a visible message after reviewing its current server preview. Message actions require a separate current-state check. Reporting does not grant AI consent.</Text>
     </View> : null}
-    {!archive?.open && read?.conversation ? <View>
+    {!archive?.open && !safety?.open && read?.conversation ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Circle conversation</Text>
       <Text style={styles.note}>Latest 100 messages. A later read cannot prove that an earlier post was never sent.</Text>
       {read.conversation.messages.length === 0 ? <Text style={styles.copy}>No messages in this view yet.</Text> : null}
@@ -82,7 +83,7 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
         <Text style={styles.note}>{message.created_at}</Text><Text selectable style={styles.copy}>{message.content}</Text>
       </View>)}
     </View> : null}
-    {write ? <View>
+    {write && !safety?.open ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Your discussion message</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{write.message}</Text>
       <Action label="Start a new discussion message" disabled={!write.canStart || Boolean(archive?.busy)} onPress={() => host?.threadStart(null)}/>
@@ -124,17 +125,73 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
       </> : null}
       {write.canCancel ? <Action label="Cancel discussion draft" onPress={() => host?.threadCancel()}/> : null}
     </View> : null}
+    {safety?.open && safety.active ? <View>
+      <Text accessibilityRole="header" style={styles.heading}>Current message actions</Text>
+      <Text accessibilityLiveRegion="polite" style={styles.copy}>{safety.message}</Text>
+      {safety.busy ? <ActivityIndicator accessibilityLabel="Checking or sending message action" color="#e8cb8d"/> : null}
+      {safety.state ? <>
+        <View style={styles.message}>
+          <Text style={styles.author}>{safety.state.message.member_name}{safety.state.message.is_mine ? ' · You' : ''}</Text>
+          <Text style={styles.note}>{safety.state.message.created_at}</Text>
+          <Text selectable style={styles.copy}>{safety.state.message.content ?? (safety.state.message.visibility === 'withdrawn' ? 'Message withdrawn by its author.' : 'Message hidden from member views.')}</Text>
+        </View>
+        <Text style={styles.note}>{safety.state.message.visibility === 'visible' ? 'Visible to eligible Circle members.' : safety.state.message.visibility === 'withdrawn' ? 'Withdrawn by the author. A reviewer cannot undo this withdrawal.' : 'Hidden from member views after human review.'}</Text>
+        {safety.state.explanations.map(explanation => <View key={explanation.id} style={styles.message}>
+          <Text style={styles.author}>{explanation.action === 'hide' ? 'Hidden' : 'Moderator restriction lifted'} · {explanationLabel(explanation.reason)}</Text>
+          <Text selectable style={styles.copy}>{explanation.summary}</Text><Text style={styles.note}>{explanation.created_at}</Text>
+        </View>)}
+        {safety.state.canReport ? <>
+          <Text style={styles.note}>Reports are private to eligible assigned reviewers. Describe conduct, rather than political or religious disagreement, and avoid unnecessary personal details. A report is an allegation, not a finding. Reporting does not enable AI processing or change consent.</Text>
+          <Text accessibilityRole="header" style={styles.heading}>Report reason</Text>
+          <View accessibilityRole="radiogroup" accessibilityLabel="Report reason">
+            {MESSAGE_REPORT_OPTIONS.map(option => <Pressable key={option.value} accessibilityRole="radio" accessibilityLabel={option.label}
+              accessibilityState={{ checked: safety.reason === option.value, disabled: !safety.canEditReport }} disabled={!safety.canEditReport}
+              onPress={() => host?.messageReason(option.value)} style={[styles.button, !safety.canEditReport && styles.disabled]}>
+              <Text style={styles.buttonText}>{safety.reason === option.value ? '● ' : '○ '}{option.label}</Text>
+            </Pressable>)}
+          </View>
+          <Text nativeID="circle-report-note-label" style={styles.copy}>Private report details (optional)</Text>
+          <TextInput accessibilityLabel="Private report details (optional)" accessibilityLabelledBy="circle-report-note-label"
+            accessibilityHint="Up to 1,000 characters. Do not include unnecessary personal details."
+            value={safety.note} onChangeText={value => host?.messageNote(value)} editable={safety.canEditReport}
+            multiline maxLength={1000} autoCorrect={false} autoComplete="off" textContentType="none"
+            style={[styles.input, !safety.canEditReport && styles.disabled]}/>
+        </> : null}
+        {safety.state.canWithdraw ? <Text style={styles.note}>{MESSAGE_WITHDRAWAL_PRIVACY}</Text> : null}
+        {safety.state.canReport || safety.state.canWithdraw ? <Pressable accessibilityRole="checkbox"
+          accessibilityLabel={safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here' : 'I checked this message and want to send this report for private human review'}
+          accessibilityState={{ checked: safety.confirmed, disabled: !safety.canConfirm }} disabled={!safety.canConfirm}
+          onPress={() => host?.messageConfirm(!safety.confirmed)} style={[styles.button, !safety.canConfirm && styles.disabled]}>
+          <Text style={styles.buttonText}>{safety.confirmed ? '✓ ' : '□ '}{safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here.' : 'I checked this message and want to send this report for private human review.'}</Text>
+        </Pressable> : <Text style={styles.note}>No report or withdrawal action is available for this message.</Text>}
+        {safety.state.canReport ? <Action label="Send private report" disabled={!safety.canReport} onPress={() => void host?.messageSubmit('report')}/> : null}
+        {safety.state.canWithdraw ? <Action label="Withdraw my message" disabled={!safety.canWithdraw} onPress={() => void host?.messageSubmit('withdraw')}/> : null}
+      </> : null}
+      <Action label="Check current message state" disabled={!safety.canCheck} onPress={() => void host?.messageRefresh()}/>
+      {safety.pendingRequestId ? <>
+        <Text style={styles.note}>The result is unconfirmed. Checking current state does not confirm that this request was received. Retry only the same request manually. Leaving clears its local retry details; a request already sent may still complete.</Text>
+        <Action label={safety.pendingAction === 'withdraw' ? 'Retry exact withdrawal' : 'Retry exact report'} disabled={!safety.canRetry} onPress={() => void host?.messageRetry()}/>
+      </> : null}
+      <Action label="Close message actions" disabled={!safety.canClose} onPress={() => host?.messageClose()}/>
+    </View> : null}
     <Text style={styles.note}>Drafts stay in memory and clear when the view, account or activity ends. Closing does not erase stored messages or cancel a post already sent.</Text>
   </ScrollView></SafeAreaView>;
 }
-function ArchiveMessage({ message, onOpen, onReply, disabled, replyDisabled }: { message: ThreadMessage; onOpen(): void; onReply(): void; disabled: boolean; replyDisabled: boolean }) {
+function ArchiveMessage({ message, onOpen, onReply, onActions, disabled, replyDisabled }: { message: ThreadMessage; onOpen(): void; onReply(): void; onActions(): void; disabled: boolean; replyDisabled: boolean }) {
   return <View style={styles.message}>
     <Text style={styles.author}>{message.member_name}{message.is_mine ? ' · You' : ''}</Text>
     {message.created_at ? <Text style={styles.note}>{message.created_at}</Text> : null}
     <Text selectable style={styles.copy}>{message.content ?? (message.visibility === 'withdrawn' ? 'This contribution was withdrawn.' : message.visibility === 'hidden' ? 'This contribution is restricted by moderation.' : 'This contribution is unavailable.')}</Text>
     <Action label="Open thread" disabled={disabled} onPress={onOpen}/>
     {message.visibility === 'visible' && message.content !== null ? <Action label="Reply to this message" disabled={disabled || replyDisabled} onPress={onReply}/> : null}
+    <Action label="Check message actions" disabled={disabled} onPress={onActions}/>
   </View>;
+}
+function explanationLabel(reason: string) {
+  if (reason === 'no_violation') return 'No violation found';
+  if (reason === 'insufficient_evidence') return 'Insufficient evidence';
+  if (reason === 'resolved') return 'Concern resolved';
+  return MESSAGE_REPORT_OPTIONS.find(option => option.value === reason)?.label ?? reason;
 }
 function Action({ label, disabled = false, onPress }: { label: string; disabled?: boolean; onPress(): void }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}

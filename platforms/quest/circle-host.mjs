@@ -967,6 +967,321 @@ function createThreadWriter(request, circleId, newRequestId) {
   };
 }
 
+// lib/circles/report.ts
+var REPORT_REASONS = ["safety", "harassment", "spam", "misleading", "inappropriate", "other"];
+var REPORT_LABELS = {
+  safety: "Someone may be unsafe",
+  harassment: "Harassment or hateful conduct",
+  spam: "Spam or selling",
+  misleading: "Fake or misleading circle",
+  inappropriate: "Inappropriate content",
+  other: "Something else"
+};
+
+// lib/circles/message-moderation.ts
+var record3 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var integer = (value) => Number.isSafeInteger(value) && value >= 0;
+var plain2 = (value, min, max) => typeof value === "string" && value.length <= max && value.trim().length >= min && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value);
+var timestamp2 = (value) => typeof value === "string" && value.length <= 64 && /^\d{4}-\d\d-\d\dT/.test(value) && Number.isFinite(Date.parse(value));
+var hash2 = (value) => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+var visibility = (value) => value === "visible" || value === "hidden" || value === "withdrawn";
+var reason = (value) => typeof value === "string" && REPORT_REASONS.includes(value);
+var reasonFor = (action, value) => typeof value === "string" && (action === "hide" ? ["safety", "harassment", "spam", "misleading", "inappropriate"].includes(value) : action === "restore" && ["no_violation", "insufficient_evidence", "resolved"].includes(value));
+var unique = (ids) => new Set(ids.map((id) => id.toLowerCase())).size === ids.length;
+function explanation(value) {
+  if (!record3(value) || !isUuid(value.id) || value.action !== "hide" && value.action !== "restore" || !reasonFor(value.action, value.reason) || !plain2(value.summary, 20, 1000) || !timestamp2(value.created_at))
+    return null;
+  return { id: value.id, action: value.action, reason: value.reason, summary: value.summary, created_at: value.created_at };
+}
+function parseMessageSafetyState(value) {
+  if (!record3(value) || !isUuid(value.circleId) || !record3(value.message) || !integer(value.revision) || typeof value.canReport !== "boolean" || typeof value.canWithdraw !== "boolean" || !Array.isArray(value.explanations) || value.explanations.length > 100)
+    return null;
+  const m = value.message;
+  if (!isUuid(m.id) || !plain2(m.member_name, 0, 200) || !timestamp2(m.created_at) || typeof m.is_mine !== "boolean" || !visibility(m.visibility) || (m.visibility === "visible" ? !plain2(m.content, 1, 2000) : m.content !== null) || (m.is_mine || m.visibility === "visible" ? !hash2(value.contentHash) : value.contentHash !== null) || value.canReport && (m.is_mine || m.visibility !== "visible") || value.canWithdraw && (!m.is_mine || m.visibility === "withdrawn"))
+    return null;
+  const explanations = value.explanations.map(explanation);
+  if (explanations.some((item) => item === null) || !m.is_mine && explanations.length > 0)
+    return null;
+  const valid = explanations;
+  if (!unique(valid.map((item) => item.id)))
+    return null;
+  return {
+    circleId: value.circleId,
+    message: { id: m.id, member_name: m.member_name, content: m.content, created_at: m.created_at, is_mine: m.is_mine, visibility: m.visibility },
+    revision: value.revision,
+    contentHash: value.contentHash,
+    canReport: value.canReport,
+    canWithdraw: value.canWithdraw,
+    explanations: valid
+  };
+}
+function parseMessageActionReceipt(value) {
+  if (!record3(value) || !isUuid(value.requestId) || !isUuid(value.circleId) || !isUuid(value.messageId) || typeof value.replayed !== "boolean" || !(value.received === true && value.withdrawn === undefined || value.withdrawn === true && value.received === undefined))
+    return null;
+  const state = parseMessageSafetyState(value.state);
+  if (!state || state.circleId !== value.circleId || state.message.id !== value.messageId || value.withdrawn === true && state.message.visibility !== "withdrawn")
+    return null;
+  return {
+    requestId: value.requestId,
+    circleId: value.circleId,
+    messageId: value.messageId,
+    state,
+    replayed: value.replayed,
+    ...value.received === true ? { received: true } : { withdrawn: true }
+  };
+}
+function validateMessageActionInput(value) {
+  const invalid = { ok: false, error: "Use a valid post action and refresh its current state." };
+  if (!record3(value) || Object.keys(value).some((key) => !["action", "expectedRevision", "contentHash", "requestId", "reason", "note"].includes(key)) || !integer(value.expectedRevision) || !hash2(value.contentHash) || !isUuid(value.requestId))
+    return invalid;
+  const base = { expectedRevision: value.expectedRevision, contentHash: value.contentHash, requestId: value.requestId };
+  if (value.action === "withdraw" && value.reason === undefined && value.note === undefined)
+    return { ok: true, value: { ...base, action: "withdraw" } };
+  if (value.action !== "report" || !reason(value.reason) || !(value.note === null || value.note === undefined || plain2(value.note, 0, 1000)))
+    return invalid;
+  return { ok: true, value: { ...base, action: "report", reason: value.reason, note: typeof value.note === "string" && value.note.trim() ? value.note.trim() : null } };
+}
+
+// platforms/shared/message-safety.ts
+var MESSAGE_REPORT_OPTIONS = REPORT_REASONS.map((value) => ({ value, label: value === "misleading" ? "Misleading content" : REPORT_LABELS[value] }));
+var MESSAGE_WITHDRAWAL_PRIVACY = "Withdrawal removes the message from member views. It is not physical erasure: restricted evidence may remain for safety review. The retention policy is not yet finalized.";
+var copy3 = (value) => JSON.parse(JSON.stringify(value));
+var same2 = (a, b) => a.toLowerCase() === b.toLowerCase();
+function createMessageSafety(request, circleId, newRequestId) {
+  if (!isUuid(circleId))
+    throw Error("Valid Circle required");
+  const circle = circleId.toLowerCase(), available = typeof newRequestId === "function";
+  let active = true, open = false, busy = false, generation = 0, messageId = null;
+  let phase = "closed", state = null;
+  let reason = "", note = "", confirmed = false, pending = null, receipt = null;
+  let message = "Choose a contribution and explicitly check its current message actions.";
+  const listeners = new Set;
+  const current = (g) => active && open && generation === g;
+  const endpoint = () => `/api/circles/${circle}/messages/${messageId}`;
+  const model = () => {
+    const ready = active && available && open && !busy && !pending && state !== null && ["ready", "confirmed"].includes(phase);
+    return copy3({
+      active,
+      available,
+      open,
+      busy,
+      phase,
+      messageId,
+      state,
+      reason,
+      note,
+      confirmed,
+      pendingRequestId: pending?.input.requestId ?? null,
+      pendingAction: pending?.input.action ?? null,
+      receipt,
+      message,
+      canEditReport: ready && Boolean(state?.canReport),
+      canConfirm: ready && Boolean(state?.canReport || state?.canWithdraw),
+      canReport: ready && Boolean(state?.canReport && state.contentHash) && reason !== "" && confirmed,
+      canWithdraw: ready && Boolean(state?.canWithdraw && state.contentHash) && confirmed,
+      canCheck: active && open && !busy && messageId !== null,
+      canRetry: active && open && !busy && pending !== null,
+      canClose: open && !busy && pending === null,
+      canNavigate: !busy && pending === null
+    });
+  };
+  const emit = () => {
+    for (const listener of listeners)
+      listener(model());
+  };
+  function clear(notice) {
+    generation++;
+    open = false;
+    busy = false;
+    phase = "closed";
+    messageId = null;
+    state = null;
+    reason = "";
+    note = "";
+    confirmed = false;
+    pending = null;
+    receipt = null;
+    message = notice;
+    emit();
+  }
+  async function check() {
+    if (!model().canCheck || !messageId)
+      return;
+    const id = messageId, g = ++generation;
+    busy = true;
+    state = null;
+    reason = "";
+    note = "";
+    confirmed = false;
+    receipt = null;
+    phase = "loading";
+    message = "Checking this message and your current action permissions. This read does not confirm an earlier report…";
+    emit();
+    try {
+      const result = await request(endpoint(), { method: "GET", cache: "no-store", redirect: "error" }, () => current(g));
+      if (!current(g))
+        return;
+      const parsed = result.http === 200 ? parseMessageSafetyState(result.body) : null;
+      if (parsed && same2(parsed.circleId, circle) && same2(parsed.message.id, id)) {
+        state = parsed;
+        busy = false;
+        phase = pending ? "unknown" : "ready";
+        message = pending ? "Current message state loaded. This does not confirm the earlier action. Its exact request is retained for a manual retry." : available ? "Current message loaded. Review this checked version and explicitly confirm any action." : "Current message loaded. Safety actions are not connected on this device; use the member web discussion.";
+        emit();
+        return;
+      }
+    } catch {
+      if (!current(g))
+        return;
+    }
+    busy = false;
+    phase = pending ? "unknown" : "unavailable";
+    message = pending ? "Current state could not be checked. The earlier action remains unconfirmed; its exact request is retained." : "Current message information could not be verified. No action has been assumed.";
+    emit();
+  }
+  function accept(value, exact) {
+    const parsed = parseMessageActionReceipt(value), id = messageId;
+    if (!parsed || !id || !same2(parsed.requestId, exact.input.requestId) || !same2(parsed.circleId, circle) || !same2(parsed.messageId, id) || !same2(parsed.state.circleId, circle) || !same2(parsed.state.message.id, id) || parsed.state.revision < exact.input.expectedRevision || parsed.state.contentHash !== null && parsed.state.contentHash !== exact.input.contentHash || parsed.state.message.is_mine !== exact.isMine || parsed.state.message.visibility === "visible" && exact.content !== null && parsed.state.message.content !== exact.content || (exact.input.action === "withdraw" ? parsed.withdrawn !== true || parsed.state.message.visibility !== "withdrawn" : parsed.received !== true))
+      return false;
+    state = parsed.state;
+    receipt = parsed;
+    pending = null;
+    busy = false;
+    phase = "confirmed";
+    message = exact.input.action === "withdraw" ? "Withdrawal confirmed. The message is removed from member views; restricted safety evidence may remain." : "Report received for private human review. A report is an allegation, not a finding.";
+    return true;
+  }
+  async function send(exact) {
+    if (!active || !open || busy || !messageId)
+      return;
+    const g = ++generation;
+    pending = exact;
+    state = null;
+    receipt = null;
+    reason = "";
+    note = "";
+    confirmed = false;
+    busy = true;
+    phase = "sending";
+    message = exact.input.action === "withdraw" ? "Sending the exact reviewed withdrawal…" : "Sending the exact private report for human review…";
+    emit();
+    try {
+      const result = await request(endpoint(), { method: "POST", cache: "no-store", redirect: "error", body: exact.body }, () => current(g));
+      if (!current(g))
+        return;
+      if (result.http === 200 && accept(result.body, exact)) {
+        emit();
+        return;
+      }
+    } catch {
+      if (!current(g))
+        return;
+    }
+    busy = false;
+    phase = "unknown";
+    message = "The action is unconfirmed and may have been saved. Only a manual retry of this exact request can confirm its receipt. Checking current state does not prove its outcome.";
+    emit();
+  }
+  return {
+    model,
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(model());
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    async open(id) {
+      if (!active || busy || pending || !isUuid(id))
+        return;
+      clear("Checking the selected contribution.");
+      open = true;
+      messageId = id.toLowerCase();
+      await check();
+    },
+    refresh: check,
+    reason(value) {
+      if (!model().canEditReport || value !== "" && !REPORT_REASONS.includes(value))
+        return false;
+      reason = value;
+      confirmed = false;
+      emit();
+      return true;
+    },
+    note(value) {
+      if (!model().canEditReport || typeof value !== "string" || value.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value) || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value))
+        return false;
+      note = value;
+      confirmed = false;
+      emit();
+      return true;
+    },
+    confirm(value) {
+      if (model().canConfirm) {
+        confirmed = value === true;
+        emit();
+      }
+    },
+    async submit(action) {
+      if (!state || !newRequestId || (action === "report" ? !model().canReport : action === "withdraw" ? !model().canWithdraw : true))
+        return;
+      const checked = state, chosenReason = reason, chosenNote = note, g = ++generation;
+      busy = true;
+      phase = "sending";
+      state = null;
+      receipt = null;
+      reason = "";
+      note = "";
+      confirmed = false;
+      message = "Preparing this exact confirmed action. No request has been sent yet…";
+      emit();
+      try {
+        const key = await newRequestId();
+        if (!current(g))
+          return;
+        if (!isUuid(key))
+          throw Error("Request key unavailable");
+        const parsed = validateMessageActionInput({
+          action,
+          expectedRevision: checked.revision,
+          contentHash: checked.contentHash,
+          requestId: key.toLowerCase(),
+          ...action === "report" ? { reason: chosenReason, note: chosenNote.trim() || null } : {}
+        });
+        if (!parsed.ok)
+          throw Error("Action unavailable");
+        const input = parsed.value;
+        busy = false;
+        await send({ input, body: JSON.stringify(input), content: checked.message.content, isMine: checked.message.is_mine });
+      } catch {
+        if (current(g)) {
+          busy = false;
+          phase = "unavailable";
+          message = "The action could not be prepared. Nothing was sent. Check the current message and decide again.";
+          emit();
+        }
+      }
+    },
+    retry() {
+      return model().canRetry && pending ? send(pending) : Promise.resolve();
+    },
+    close() {
+      if (model().canClose)
+        clear("Message actions closed and private details cleared.");
+    },
+    retire() {
+      clear("Private message details, notes and request key cleared. An action already sent may still have been saved. Nothing will retry automatically.");
+    },
+    activity(value) {
+      active = value;
+      if (!value)
+        clear("Private message details, notes and request key cleared while inactive. An action already sent may still have been saved.");
+      else
+        emit();
+    }
+  };
+}
+
 // platforms/native/src/circles/host.ts
 function approvedOrigin(value) {
   const url = new URL(value);
@@ -999,7 +1314,9 @@ function createCircleHost(config) {
     const discussionPath = `/api/circles/${circleId}/discussion`;
     const discussion = url.pathname === discussionPath && (options.method === "GET" ? query !== null : options.method === "POST" && !url.search);
     const preview = url.pathname === `${discussionPath}/preview` && options.method === "POST" && !url.search;
-    if (path !== url.pathname + url.search || url.hash || url.origin !== origin || !(discussion || preview || path === `/api/book-salons/${circleId}`) || !["GET", "POST"].includes(options.method))
+    const messagePath = /^\/api\/circles\/([^/]+)\/messages\/([^/]+)$/.exec(url.pathname);
+    const safety = messagePath && messagePath[1] === circleId && isUuid(messagePath[2]) && !url.search;
+    if (path !== url.pathname + url.search || url.hash || url.origin !== origin || !(discussion || preview || safety || path === `/api/book-salons/${circleId}`) || !["GET", "POST"].includes(options.method))
       throw Error("Unexpected Circle operation");
     const expected = scope;
     if (!expected || !current(expected) || !mayTransmit())
@@ -1032,6 +1349,7 @@ function createCircleHost(config) {
           participation.retire();
           archive.retire();
           threadWrite.retire();
+          messageSafety.retire();
         }
         const body = await response.json();
         if (abort.signal.aborted || !current(expected) || !mayTransmit())
@@ -1066,6 +1384,7 @@ function createCircleHost(config) {
     }
   } : undefined;
   const threadWrite = createThreadWriter(request, circleId, newRequestId);
+  const messageSafety = createMessageSafety(request, circleId, newRequestId);
   const model = () => ({
     configured: true,
     connected: attached && scope !== null,
@@ -1074,7 +1393,8 @@ function createCircleHost(config) {
     status: !attached || !scope ? "Connect the existing member session to read this circle." : !active ? "Private circle views cleared while inactive." : !online ? "Offline. Private views and draft cleared. Requests already sent may still complete." : "Refresh to check current circle membership.",
     participation: participation.model(),
     archive: archive.model(),
-    threadWrite: threadWrite.model()
+    threadWrite: threadWrite.model(),
+    messageSafety: messageSafety.model()
   });
   const emit = () => {
     for (const listener of listeners)
@@ -1086,11 +1406,13 @@ function createCircleHost(config) {
     emit();
   });
   threadWrite.subscribe(emit);
+  messageSafety.subscribe(emit);
   const setActivity = () => {
     const enabled = attached && active && online && scope !== null;
     participation.activity(enabled);
     archive.activity(enabled);
     threadWrite.activity(enabled);
+    messageSafety.activity(enabled);
   };
   const sync = () => {
     abortPending();
@@ -1098,10 +1420,11 @@ function createCircleHost(config) {
     participation.retire();
     archive.retire();
     threadWrite.retire();
+    messageSafety.retire();
     setActivity();
     emit();
   };
-  const canNavigate = () => threadWrite.model().canNavigate && !participation.model().write.busy;
+  const canNavigate = () => threadWrite.model().canNavigate && messageSafety.model().canNavigate && !participation.model().write.busy;
   const afterWrite = async (operation) => {
     await operation();
     if (threadWrite.model().phase === "confirmed")
@@ -1132,6 +1455,7 @@ function createCircleHost(config) {
       participation.close();
       archive.close();
       threadWrite.close();
+      messageSafety.retire();
       setActivity();
       emit();
     },
@@ -1151,21 +1475,29 @@ function createCircleHost(config) {
     },
     async refresh() {
       if (scope && current(scope) && canNavigate()) {
+        messageSafety.retire();
         archive.close();
         await participation.open();
       }
     },
     async openArchive() {
       if (scope && current(scope) && canNavigate()) {
+        messageSafety.retire();
         participation.retire();
         await archive.open();
       }
     },
     archiveNext() {
-      return canNavigate() ? archive.next() : Promise.resolve();
+      if (!canNavigate())
+        return Promise.resolve();
+      messageSafety.retire();
+      return archive.next();
     },
     archiveThread(id) {
-      return canNavigate() ? archive.thread(id) : Promise.resolve();
+      if (!canNavigate())
+        return Promise.resolve();
+      messageSafety.retire();
+      return archive.thread(id);
     },
     edit(value) {
       return canNavigate() && participation.edit(value);
@@ -1182,26 +1514,48 @@ function createCircleHost(config) {
         participation.startNewAfterReview();
     },
     threadStart(parentId) {
-      if (participation.model().write.busy)
+      if (!canNavigate())
         return false;
       const started = threadWrite.start(parentId);
-      if (started)
+      if (started) {
+        messageSafety.retire();
         participation.retire();
+      }
       return started;
     },
     threadEdit: threadWrite.edit,
     threadReview: threadWrite.review,
     threadConfirm: threadWrite.confirm,
-    threadPost: () => afterWrite(threadWrite.post),
-    threadLookup: () => afterWrite(threadWrite.lookup),
-    threadRetry: () => afterWrite(threadWrite.retry),
+    threadPost: () => messageSafety.model().canNavigate ? afterWrite(threadWrite.post) : Promise.resolve(),
+    threadLookup: () => messageSafety.model().canNavigate ? afterWrite(threadWrite.lookup) : Promise.resolve(),
+    threadRetry: () => messageSafety.model().canNavigate ? afterWrite(threadWrite.retry) : Promise.resolve(),
     threadCancel: threadWrite.cancel,
     threadEditReview: threadWrite.editReview,
+    async messageOpen(id) {
+      if (!scope || !current(scope) || !canNavigate() || !isUuid(id))
+        return;
+      const page = archive.model().page;
+      const items = page?.kind === "thread" ? [page.root, page.focus, ...page.items] : page?.items ?? [];
+      if (!items.some((item) => item.id.toLowerCase() === id.toLowerCase()))
+        return;
+      participation.retire();
+      archive.retire();
+      threadWrite.retire();
+      await messageSafety.open(id);
+    },
+    messageRefresh: messageSafety.refresh,
+    messageReason: messageSafety.reason,
+    messageNote: messageSafety.note,
+    messageConfirm: messageSafety.confirm,
+    messageSubmit: messageSafety.submit,
+    messageRetry: messageSafety.retry,
+    messageClose: messageSafety.close,
     close() {
       abortPending();
       participation.close();
       archive.close();
       threadWrite.close();
+      messageSafety.retire();
     }
   };
 }
@@ -1458,6 +1812,8 @@ function memberCircleConfig(input) {
   }
 }
 export {
+  MESSAGE_REPORT_OPTIONS,
+  MESSAGE_WITHDRAWAL_PRIVACY,
   approvedOrigin,
   createCircleHost,
   createVerifiedSupabaseCircleOwner,

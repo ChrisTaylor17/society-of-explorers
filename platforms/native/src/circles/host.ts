@@ -1,6 +1,7 @@
 import { createCircleParticipationSession, type CircleParticipationModel, type CircleSessionRequest } from './participation-session';
 import { createDiscussionArchive, type ArchiveModel } from '../../../shared/archive';
 import { createThreadWriter, type ThreadWriteModel } from '../../../shared/thread-writer';
+import { createMessageSafety, type MessageSafetyModel } from '../../../shared/message-safety';
 import { parseDiscussionQuery } from '../../../../lib/circles/thread';
 import { isUuid } from '../../../../lib/ids/uuid';
 
@@ -17,7 +18,7 @@ export type CircleTransport = (url: string, init: {
 /** A native transport must reject redirects BEFORE forwarding credentials.
  * React Native's default fetch is deliberately not selected here. */
 export type CircleHostConfig = { circleId: string; origin: string; owner: CircleOwner; transport: CircleTransport; timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
-export type CircleHostModel = { configured: boolean; connected: boolean; active: boolean; online: boolean; status: string; participation: CircleParticipationModel; archive: ArchiveModel; threadWrite: ThreadWriteModel };
+export type CircleHostModel = { configured: boolean; connected: boolean; active: boolean; online: boolean; status: string; participation: CircleParticipationModel; archive: ArchiveModel; threadWrite: ThreadWriteModel; messageSafety: MessageSafetyModel };
 export function approvedOrigin(value: string) {
   const url = new URL(value);
   if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw Error('Explicit HTTPS application origin required');
@@ -43,8 +44,10 @@ export function createCircleHost(config: CircleHostConfig) {
     const discussionPath = `/api/circles/${circleId}/discussion`;
     const discussion = url.pathname === discussionPath && (options.method === 'GET' ? query !== null : options.method === 'POST' && !url.search);
     const preview = url.pathname === `${discussionPath}/preview` && options.method === 'POST' && !url.search;
+    const messagePath = /^\/api\/circles\/([^/]+)\/messages\/([^/]+)$/.exec(url.pathname);
+    const safety = messagePath && messagePath[1] === circleId && isUuid(messagePath[2]) && !url.search;
     if (path !== url.pathname + url.search || url.hash || url.origin !== origin
-      || !(discussion || preview || path === `/api/book-salons/${circleId}`) || !['GET','POST'].includes(options.method)) throw Error('Unexpected Circle operation');
+      || !(discussion || preview || safety || path === `/api/book-salons/${circleId}`) || !['GET','POST'].includes(options.method)) throw Error('Unexpected Circle operation');
     const expected = scope;
     if (!expected || !current(expected) || !mayTransmit()) throw Error('Circle session unavailable');
     const abort = new AbortController(); pendingRequests.add(abort);
@@ -60,7 +63,7 @@ export function createCircleHost(config: CircleHostConfig) {
         // native transport's pre-forwarding redirect policy.
         if (response.redirected || response.url !== origin + path) throw Error('Unexpected Circle response origin');
         if (abort.signal.aborted || !current(expected) || !mayTransmit()) throw Error('Circle lifetime ended');
-        if ([401, 403, 404].includes(response.status)) { participation.retire(); archive.retire(); threadWrite.retire(); }
+        if ([401, 403, 404].includes(response.status)) { participation.retire(); archive.retire(); threadWrite.retire(); messageSafety.retire(); }
         const body = await response.json();
         if (abort.signal.aborted || !current(expected) || !mayTransmit()) throw Error('Circle lifetime ended');
         return { http: response.status, body };
@@ -83,37 +86,53 @@ export function createCircleHost(config: CircleHostConfig) {
     } finally { clearTimeout(timer); }
   } : undefined;
   const threadWrite = createThreadWriter(request, circleId, newRequestId);
+  const messageSafety = createMessageSafety(request, circleId, newRequestId);
   const model = (): CircleHostModel => ({ configured: true, connected: attached && scope !== null, active, online,
     status: !attached || !scope ? 'Connect the existing member session to read this circle.' : !active ? 'Private circle views cleared while inactive.' : !online ? 'Offline. Private views and draft cleared. Requests already sent may still complete.' : 'Refresh to check current circle membership.',
-    participation: participation.model(), archive: archive.model(), threadWrite: threadWrite.model() });
+    participation: participation.model(), archive: archive.model(), threadWrite: threadWrite.model(), messageSafety: messageSafety.model() });
   const emit = () => { for (const listener of listeners) listener(model()); };
   participation.subscribe(emit);
   archive.subscribe(value => { threadWrite.access(value.page, value.revision); emit(); });
   threadWrite.subscribe(emit);
-  const setActivity = () => { const enabled = attached && active && online && scope !== null; participation.activity(enabled); archive.activity(enabled); threadWrite.activity(enabled); };
-  const sync = () => { abortPending(); scope = config.owner.scope(); participation.retire(); archive.retire(); threadWrite.retire(); setActivity(); emit(); };
-  const canNavigate = () => threadWrite.model().canNavigate && !participation.model().write.busy;
+  messageSafety.subscribe(emit);
+  const setActivity = () => { const enabled = attached && active && online && scope !== null; participation.activity(enabled); archive.activity(enabled); threadWrite.activity(enabled); messageSafety.activity(enabled); };
+  const sync = () => { abortPending(); scope = config.owner.scope(); participation.retire(); archive.retire(); threadWrite.retire(); messageSafety.retire(); setActivity(); emit(); };
+  const canNavigate = () => threadWrite.model().canNavigate && messageSafety.model().canNavigate && !participation.model().write.busy;
   const afterWrite = async (operation: () => Promise<void>) => { await operation(); if (threadWrite.model().phase === 'confirmed') archive.retire('Posting confirmed. Open the saved message for a fresh thread read.'); };
   return {
     model,
     subscribe(listener: (m: CircleHostModel) => void) { listeners.add(listener); listener(model()); return () => { listeners.delete(listener); }; },
     connect() { if (attached) return; attached = true; unsubscribe = config.owner.subscribe(sync); sync(); },
-    disconnect() { abortPending(); attached = false; scope = null; unsubscribe(); unsubscribe = () => {}; participation.close(); archive.close(); threadWrite.close(); setActivity(); emit(); },
+    disconnect() { abortPending(); attached = false; scope = null; unsubscribe(); unsubscribe = () => {}; participation.close(); archive.close(); threadWrite.close(); messageSafety.retire(); setActivity(); emit(); },
     activity(value: boolean) { if (!value) abortPending(); active = value; setActivity(); emit(); },
     connectivity(value: boolean) { if (!value) abortPending(); online = value; setActivity(); emit(); },
-    async refresh() { if (scope && current(scope) && canNavigate()) { archive.close(); await participation.open(); } },
-    async openArchive() { if (scope && current(scope) && canNavigate()) { participation.retire(); await archive.open(); } },
-    archiveNext() { return canNavigate() ? archive.next() : Promise.resolve(); },
-    archiveThread(id: string) { return canNavigate() ? archive.thread(id) : Promise.resolve(); },
+    async refresh() { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); archive.close(); await participation.open(); } },
+    async openArchive() { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); participation.retire(); await archive.open(); } },
+    archiveNext() { if (!canNavigate()) return Promise.resolve(); messageSafety.retire(); return archive.next(); },
+    archiveThread(id: string) { if (!canNavigate()) return Promise.resolve(); messageSafety.retire(); return archive.thread(id); },
     edit(value: string) { return canNavigate() && participation.edit(value); },
     clearDraft() { if (canNavigate()) participation.clearDraft(); },
     post() { return canNavigate() ? participation.post() : Promise.resolve(); },
     startNewAfterReview() { if (canNavigate()) participation.startNewAfterReview(); },
-    threadStart(parentId: string | null) { if (participation.model().write.busy) return false; const started = threadWrite.start(parentId); if (started) participation.retire(); return started; },
+    threadStart(parentId: string | null) { if (!canNavigate()) return false; const started = threadWrite.start(parentId); if (started) { messageSafety.retire(); participation.retire(); } return started; },
     threadEdit: threadWrite.edit, threadReview: threadWrite.review, threadConfirm: threadWrite.confirm,
-    threadPost: () => afterWrite(threadWrite.post), threadLookup: () => afterWrite(threadWrite.lookup), threadRetry: () => afterWrite(threadWrite.retry),
+    threadPost: () => messageSafety.model().canNavigate ? afterWrite(threadWrite.post) : Promise.resolve(),
+    threadLookup: () => messageSafety.model().canNavigate ? afterWrite(threadWrite.lookup) : Promise.resolve(),
+    threadRetry: () => messageSafety.model().canNavigate ? afterWrite(threadWrite.retry) : Promise.resolve(),
     threadCancel: threadWrite.cancel, threadEditReview: threadWrite.editReview,
-    close() { abortPending(); participation.close(); archive.close(); threadWrite.close(); },
+    async messageOpen(id: string) {
+      if (!scope || !current(scope) || !canNavigate() || !isUuid(id)) return;
+      const page = archive.model().page;
+      const items = page?.kind === 'thread' ? [page.root, page.focus, ...page.items] : page?.items ?? [];
+      if (!items.some(item => item.id.toLowerCase() === id.toLowerCase())) return;
+      // Only a fresh safety DTO may decide authority. Authors can still withdraw
+      // their own contribution after leaving; do not impose a membership gate.
+      participation.retire(); archive.retire(); threadWrite.retire();
+      await messageSafety.open(id);
+    },
+    messageRefresh: messageSafety.refresh, messageReason: messageSafety.reason, messageNote: messageSafety.note,
+    messageConfirm: messageSafety.confirm, messageSubmit: messageSafety.submit, messageRetry: messageSafety.retry, messageClose: messageSafety.close,
+    close() { abortPending(); participation.close(); archive.close(); threadWrite.close(); messageSafety.retire(); },
   };
 }
 export type CircleHost = ReturnType<typeof createCircleHost>;

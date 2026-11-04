@@ -111,8 +111,22 @@ export default function QuestCircle({ circleId }: { circleId: string }) {
           </section>
           <button id="circle-thread-check" type="button" hidden>Check saved contribution</button><button id="circle-thread-retry" type="button" hidden>Retry exact contribution</button>
           <button id="circle-thread-cancel" type="button" disabled>Clear contribution</button><button id="circle-thread-saved" type="button" hidden>Open saved thread</button>
-          <p>Replies link to the selected contribution. Report or withdraw through its regular-view link. A missing receipt does not prove that an earlier request failed; only check or retry the same contribution.</p>
+          <p>Replies link to the selected contribution. Check message actions to report or withdraw, or use its regular-view link. A missing receipt does not prove that an earlier request failed; only check or retry the same contribution.</p>
         </section>
+      </section>
+      <section id="circle-safety" aria-labelledby="circle-safety-heading" hidden>
+        <h2 id="circle-safety-heading" tabIndex={-1}>Current message actions</h2>
+        <p id="circle-safety-status" role="status" /><div id="circle-safety-message" /><div id="circle-safety-explanations" />
+        <fieldset id="circle-safety-report-fields" hidden style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+          <legend>Private report</legend><p>Reports are private to eligible assigned reviewers. Describe conduct, rather than political or religious disagreement. Do not include unnecessary personal details. A report is an allegation, not a finding.</p>
+          <label htmlFor="circle-safety-reason">Report reason</label><select id="circle-safety-reason" disabled style={{ maxWidth: '100%', minHeight: 44, font: 'inherit' }}><option value="">Choose a reason</option></select>
+          <label htmlFor="circle-safety-note">Private report details (optional)</label><textarea id="circle-safety-note" maxLength={1000} autoComplete="off" spellCheck={false} aria-describedby="circle-safety-remaining" disabled /><p id="circle-safety-remaining">1000 characters remaining</p>
+        </fieldset>
+        <p id="circle-safety-privacy" hidden />
+        <label style={{ minHeight: 44, padding: '8px 0' }} hidden><input id="circle-safety-confirm" type="checkbox" disabled /> <span id="circle-safety-confirm-label" /></label>
+        <button id="circle-safety-report" type="button" disabled hidden>Send private report</button><button id="circle-safety-withdraw" type="button" disabled hidden aria-describedby="circle-safety-privacy">Withdraw my message</button>
+        <button id="circle-safety-refresh" type="button" disabled>Check current message</button><button id="circle-safety-retry" type="button" hidden>Retry exact action</button><button id="circle-safety-close" type="button" disabled>Close message actions</button>
+        <p>Checking the current message does not confirm a previous request. A sent request may still complete. Nothing retries automatically. Message AI consent is separate and is not changed by these actions.</p>
       </section>
       <section id="circle-composer"><h2>Your message</h2><label htmlFor="circle-draft">Message to this Circle</label><textarea id="circle-draft" maxLength={2000} autoComplete="off" spellCheck={false} aria-describedby="circle-remaining circle-write-status" disabled /><p id="circle-remaining">2000 characters remaining</p><p id="circle-write-status" role="status" /><button id="circle-post" type="button" disabled>Post to Circle</button><button id="circle-clear" type="button" disabled>Clear draft</button><button id="circle-new" type="button" hidden>I reviewed the conversation; start a new blank message</button></section>
     </div>

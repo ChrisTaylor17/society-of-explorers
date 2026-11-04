@@ -131,9 +131,11 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val legacy = Regex("/api/book-salons/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
     val discussion = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion").matchEntire(url.encodedPath)
     val preview = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion/preview").matchEntire(url.encodedPath)
+    val messageAction = Regex("/api/circles/([0-9a-fA-F-]{36})/messages/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
     if (legacy != null) { require(uuid(legacy.groupValues[1]) && url.encodedQuery == null) }
     else if (preview != null) { require(uuid(preview.groupValues[1]) && input.method == "POST" && url.encodedQuery == null) }
     else if (discussion != null && input.method == "POST") { require(uuid(discussion.groupValues[1]) && url.encodedQuery == null) }
+    else if (messageAction != null) { require(uuid(messageAction.groupValues[1]) && uuid(messageAction.groupValues[2]) && url.encodedQuery == null) }
     else {
       require(discussion != null && uuid(discussion.groupValues[1]) && input.method == "GET")
       val query = mutableMapOf<String, String>()
