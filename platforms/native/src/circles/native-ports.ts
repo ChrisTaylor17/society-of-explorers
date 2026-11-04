@@ -80,7 +80,12 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
       const hasQuery = u.href.includes('?');
       const account = !hasQuery && (u.pathname === '/api/auth/member' && init.method === 'GET'
         || u.pathname === '/api/auth/ensure-member' && init.method === 'POST');
-      const approvedPath = account || (legacy ? isUuid(legacy[1]) && !hasQuery
+      const contributionQuery = Array.from(u.searchParams.entries());
+      const contributions = u.pathname === '/api/circles/contributions' && init.method === 'GET'
+        && (!hasQuery || Boolean(u.search)) && u.searchParams.toString() === u.search.slice(1)
+        && contributionQuery.every(([name, value]) => u.searchParams.getAll(name).length === 1
+          && name === 'after' && isUuid(value));
+      const approvedPath = account || contributions || (legacy ? isUuid(legacy[1]) && !hasQuery
         : discussion ? isUuid(discussion[1]) && (init.method === 'GET' ? query !== null && (!hasQuery || Boolean(u.search)) : init.method === 'POST' && !hasQuery)
         : preview ? isUuid(preview[1]) && init.method === 'POST' && !hasQuery
         : message && isUuid(message[1]) && isUuid(message[2]) && !hasQuery);

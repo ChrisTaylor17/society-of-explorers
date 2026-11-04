@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CircleScreen } from './CircleScreen';
+import { ContributionsScreen } from './ContributionsScreen';
 import { createVerifiedSupabaseCircleOwner, type ExistingMemberCircleConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { createMemberAccountSession } from '../shared/account-session';
@@ -19,7 +20,7 @@ export function MemberCircleScreen({ config, connectivity, onClose }: { config: 
   }, [config, connectivity]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<typeof connection>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' } | null>(null);
   const model = snapshot.connection === connection ? snapshot.model : connection?.binding.model();
   const account = accountSnapshot.connection === connection ? accountSnapshot.model : connection?.account.model();
   useLayoutEffect(() => {
@@ -48,13 +49,15 @@ export function MemberCircleScreen({ config, connectivity, onClose }: { config: 
     return () => { mounted = false; connection.account.disconnect(); binding.stop(); offConnectivity(); offAccount(); off(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
   const close = () => { connection?.account.close(); connection?.binding.stop(); setEntered(null); onClose(); };
-  if (connection && entered === connection && account?.canOpenCircle && model?.phase === 'ready') {
+  if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
+    if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
+      onBack={() => setEntered(null)} onClose={close}/>;
     return <CircleScreen config={connection.host} connectivity={connection.connectivity} onClose={close}/>;
   }
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Your member account</Text>
-    <Text style={styles.copy}>Use the account already signed in to this app. Check your member account before opening a Circle.</Text>
+    <Text style={styles.copy}>Use the account already signed in to this app. Check your member account before opening a Circle or reviewing your contributions.</Text>
     <View accessibilityLiveRegion="polite">
       <Text style={styles.copy}>{model?.phase === 'ready' ? 'Existing sign-in verified. Check your member account to continue.'
         : model?.message ?? 'The existing account connection is unavailable. Return through the signed-in app.'}</Text>
@@ -77,7 +80,9 @@ export function MemberCircleScreen({ config, connectivity, onClose }: { config: 
         onPress={() => { setEntered(null); void connection?.account.prepare(); }}/>
     </View> : null}
     <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered(connection); }}/>
+      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); }}/>
+    <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
+      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'contributions' }); }}/>
     <Action label="Close member view" onPress={close}/>
   </ScrollView></SafeAreaView>;
 }

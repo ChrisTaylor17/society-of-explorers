@@ -979,6 +979,7 @@ var REPORT_LABELS = {
 };
 
 // lib/circles/message-moderation.ts
+var MESSAGE_SAFETY_LIMIT = 25;
 var record3 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 var integer = (value) => Number.isSafeInteger(value) && value >= 0;
 var plain2 = (value, min, max) => typeof value === "string" && value.length <= max && value.trim().length >= min && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value);
@@ -988,6 +989,7 @@ var visibility = (value) => value === "visible" || value === "hidden" || value =
 var reason = (value) => typeof value === "string" && REPORT_REASONS.includes(value);
 var reasonFor = (action, value) => typeof value === "string" && (action === "hide" ? ["safety", "harassment", "spam", "misleading", "inappropriate"].includes(value) : action === "restore" && ["no_violation", "insufficient_evidence", "resolved"].includes(value));
 var unique = (ids) => new Set(ids.map((id) => id.toLowerCase())).size === ids.length;
+var cursor = (value) => value === null || isUuid(value);
 function explanation(value) {
   if (!record3(value) || !isUuid(value.id) || value.action !== "hide" && value.action !== "restore" || !reasonFor(value.action, value.reason) || !plain2(value.summary, 20, 1000) || !timestamp2(value.created_at))
     return null;
@@ -1014,6 +1016,17 @@ function parseMessageSafetyState(value) {
     canWithdraw: value.canWithdraw,
     explanations: valid
   };
+}
+function parseMessageContributions(value) {
+  if (!record3(value) || !Array.isArray(value.items) || value.items.length > MESSAGE_SAFETY_LIMIT || !cursor(value.nextCursor))
+    return null;
+  const items = value.items.map(parseMessageSafetyState);
+  if (items.some((item) => !item || !item.message.is_mine))
+    return null;
+  const valid = items;
+  if (!unique(valid.map((item) => item.message.id)) || value.nextCursor !== null && value.nextCursor !== valid.at(-1)?.message.id)
+    return null;
+  return { items: valid, nextCursor: value.nextCursor };
 }
 function parseMessageActionReceipt(value) {
   if (!record3(value) || !isUuid(value.requestId) || !isUuid(value.circleId) || !isUuid(value.messageId) || typeof value.replayed !== "boolean" || !(value.received === true && value.withdrawn === undefined || value.withdrawn === true && value.received === undefined))
@@ -1814,11 +1827,279 @@ function memberCircleConfig(input) {
     return null;
   }
 }
+// platforms/shared/member-contributions.ts
+var same3 = (a, b) => a.toLowerCase() === b.toLowerCase();
+var copy4 = (value) => JSON.parse(JSON.stringify(value));
+var listPath = "/api/circles/contributions";
+function createMemberContributions(config) {
+  const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15000;
+  if (!config.owner || !["scope", "bearer", "subscribe"].every((key) => typeof config.owner[key] === "function") || typeof config.transport !== "function" || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000 || config.initialOnline !== undefined && typeof config.initialOnline !== "boolean" || config.newRequestId !== undefined && typeof config.newRequestId !== "function")
+    throw Error("Verified member connection required");
+  let attached = false, active = true, online = config.initialOnline ?? false, scope = null, generation = 0;
+  let phase = "closed", loading = false, items = [], nextCursor = null;
+  let selected = null, safety = null, offSafety = () => {}, offOwner = () => {};
+  let message = "Load your own posted messages when ready. Current Circle membership is not required.";
+  const listeners = new Set, requests = new Set;
+  const enabled = () => attached && active && online && scope !== null && config.owner.scope() === scope;
+  const model = () => {
+    const action = safety?.model() ?? null, canNavigate = !loading && (action?.canNavigate ?? true), usable = enabled() && canNavigate;
+    return {
+      connected: attached && scope !== null,
+      active,
+      online,
+      busy: loading || Boolean(action?.busy),
+      phase,
+      items: copy4(items),
+      nextCursor,
+      selected: selected ? { ...selected } : null,
+      safety: action,
+      message,
+      canRefresh: usable,
+      canNext: usable && selected === null && phase === "ready" && nextCursor !== null,
+      canSelect: usable && selected === null && phase === "ready" && items.length > 0,
+      canBack: usable && selected !== null,
+      canNavigate
+    };
+  };
+  const emit = () => {
+    for (const listener of listeners) {
+      try {
+        listener(model());
+      } catch {}
+    }
+  };
+  function clearSelection() {
+    offSafety();
+    offSafety = () => {};
+    const previous = safety;
+    safety = null;
+    selected = null;
+    previous?.retire();
+  }
+  function retire(notice) {
+    generation++;
+    for (const controller of requests)
+      controller.abort();
+    loading = false;
+    items = [];
+    nextCursor = null;
+    clearSelection();
+    phase = attached ? "idle" : "closed";
+    message = notice;
+    emit();
+  }
+  const request = async (path, options, mayTransmit) => {
+    const after = path.startsWith(listPath + "?after=") ? path.slice((listPath + "?after=").length) : null;
+    const listing = options.method === "GET" && (path === listPath || after !== null && isUuid(after) && after === after.toLowerCase());
+    const selection = selected ? { ...selected } : null;
+    const messagePath = selection ? `/api/circles/${selection.circleId}/messages/${selection.messageId}` : null;
+    if (!listing && !(selection && path === messagePath && ["GET", "POST"].includes(options.method)))
+      throw Error("Unexpected contribution operation");
+    const expected = scope, g = generation, abort = new AbortController;
+    const current = () => enabled() && scope === expected && generation === g && !abort.signal.aborted && mayTransmit();
+    if (!expected || !current())
+      throw Error("Contribution session unavailable");
+    requests.add(abort);
+    let timer;
+    try {
+      return await Promise.race([(async () => {
+        const bearer = await config.owner.bearer(expected);
+        if (!current() || !bearer || bearer.length > 16384 || /[\s\u0000-\u001f\u007f]/.test(bearer))
+          throw Error("Contribution session changed");
+        const response = await config.transport(origin + path, {
+          ...options,
+          credentials: "omit",
+          signal: abort.signal,
+          headers: { Authorization: `Bearer ${bearer}`, ...options.method === "POST" ? { "Content-Type": "application/json" } : {} }
+        });
+        if (!current() || response.redirected || response.url !== origin + path)
+          throw Error("Contribution response refused");
+        if ([401, 403, 404].includes(response.status)) {
+          retire("Contribution access changed. Private history and action details cleared. A previously sent action may still have completed.");
+          throw Error("Contribution access retired");
+        }
+        const body = await response.json();
+        if (!current())
+          throw Error("Contribution session retired");
+        if (!listing && response.status === 200) {
+          const state = options.method === "GET" ? parseMessageSafetyState(body) : parseMessageActionReceipt(body)?.state;
+          if (!state || !state.message.is_mine || !same3(state.circleId, selection.circleId) || !same3(state.message.id, selection.messageId)) {
+            throw Error("Author contribution not verified");
+          }
+        }
+        return { http: response.status, body };
+      })(), new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          abort.abort();
+          reject(Error("Contribution deadline"));
+        }, timeout);
+      })]);
+    } finally {
+      clearTimeout(timer);
+      requests.delete(abort);
+    }
+  };
+  const newRequestId = config.newRequestId ? async () => {
+    const expected = scope, g = generation;
+    const current = () => enabled() && scope === expected && generation === g;
+    if (!expected || !current())
+      throw Error("Contribution session unavailable");
+    let timer;
+    try {
+      const id = await Promise.race([Promise.resolve().then(() => {
+        if (!current())
+          throw Error("Contribution session retired");
+        return config.newRequestId();
+      }), new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Error("Request key deadline")), timeout);
+      })]);
+      if (!current() || !isUuid(id))
+        throw Error("Request key unavailable");
+      return id.toLowerCase();
+    } finally {
+      clearTimeout(timer);
+    }
+  } : undefined;
+  async function load(after) {
+    if (!model().canRefresh)
+      return;
+    const g = ++generation;
+    clearSelection();
+    items = [];
+    nextCursor = null;
+    loading = true;
+    phase = "loading";
+    message = "Loading your own posted messages…";
+    emit();
+    const current = () => enabled() && generation === g;
+    try {
+      const result = await request(listPath + (after ? "?after=" + after : ""), { method: "GET", cache: "no-store", redirect: "error" }, current);
+      if (!current())
+        return;
+      const parsed = result.http === 200 ? parseMessageContributions(result.body) : null;
+      let previous = after;
+      if (!parsed || parsed.items.some((item) => {
+        const id = item.message.id.toLowerCase(), invalid = previous !== null && id <= previous;
+        previous = id;
+        return invalid;
+      }))
+        throw Error("Contribution page not verified");
+      items = parsed.items;
+      nextCursor = parsed.nextCursor?.toLowerCase() ?? null;
+      loading = false;
+      phase = "ready";
+      message = items.length ? "Your posted messages are shown below. Select one to check its current author controls." : "No posted messages were returned on this page. Refresh to check your history again.";
+      emit();
+    } catch {
+      if (!current())
+        return;
+      loading = false;
+      phase = "unavailable";
+      message = "Your posted messages could not be verified. Refresh manually when ready.";
+      emit();
+    }
+  }
+  return {
+    model,
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(model());
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    connect() {
+      if (attached)
+        return;
+      attached = true;
+      offOwner = config.owner.subscribe(() => {
+        scope = config.owner.scope();
+        retire("Account changed. Load your posted messages again when ready.");
+      });
+      scope = config.owner.scope();
+      retire("Load your own posted messages when ready. Current Circle membership is not required.");
+    },
+    disconnect() {
+      attached = false;
+      scope = null;
+      offOwner();
+      offOwner = () => {};
+      retire("Private contribution view closed. A previously sent action may still have completed.");
+    },
+    activity(value) {
+      active = value;
+      if (!value)
+        retire("Private posted messages cleared while inactive. A previously sent action may still have completed.");
+      else
+        emit();
+    },
+    connectivity(value) {
+      online = value;
+      if (!value)
+        retire("Private posted messages cleared while offline. Reconnect, then load them manually.");
+      else
+        emit();
+    },
+    refresh: () => load(null),
+    next() {
+      const cursor = model().canNext ? nextCursor : null;
+      return cursor ? load(cursor) : Promise.resolve();
+    },
+    async select(circleId, messageId) {
+      if (!model().canSelect || !isUuid(circleId) || !isUuid(messageId) || !items.some((item) => same3(item.circleId, circleId) && same3(item.message.id, messageId)))
+        return;
+      const g = ++generation;
+      items = [];
+      nextCursor = null;
+      clearSelection();
+      selected = { circleId: circleId.toLowerCase(), messageId: messageId.toLowerCase() };
+      const action = createMessageSafety(request, selected.circleId, newRequestId);
+      safety = action;
+      action.activity(enabled());
+      const stop = action.subscribe(emit);
+      if (!enabled() || generation !== g || safety !== action) {
+        stop();
+        return;
+      }
+      offSafety = stop;
+      phase = "idle";
+      message = "Checking current author controls for the selected contribution.";
+      emit();
+      if (enabled() && generation === g && safety === action)
+        await action.open(messageId.toLowerCase());
+    },
+    back() {
+      if (model().canBack) {
+        generation++;
+        clearSelection();
+        phase = "idle";
+        message = "Message details cleared. Load your posted messages again when ready.";
+        emit();
+      }
+    },
+    check() {
+      return safety?.refresh() ?? Promise.resolve();
+    },
+    confirm(value) {
+      safety?.confirm(value);
+    },
+    withdraw() {
+      return safety?.submit("withdraw") ?? Promise.resolve();
+    },
+    retry() {
+      return safety?.retry() ?? Promise.resolve();
+    },
+    close() {
+      retire("Private contribution view closed. A previously sent action may still have completed. Nothing retries automatically.");
+    }
+  };
+}
 export {
   MESSAGE_REPORT_OPTIONS,
   MESSAGE_WITHDRAWAL_PRIVACY,
   approvedOrigin,
   createCircleHost,
+  createMemberContributions,
   createVerifiedSupabaseCircleOwner,
   memberCircleConfig
 };

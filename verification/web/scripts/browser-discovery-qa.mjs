@@ -75,6 +75,7 @@ try {
   evidence.buildId = materializedRead('../../.next/BUILD_ID', 'utf8').trim(); evidence.runnerSha256 = hash(materializedRead('scripts/browser-discovery-qa.mjs'));
   evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs', '../../app/account/profile/page.tsx', '../../app/account/profile/ProfileEditor.tsx', '../../app/account/profile/profile.module.css', '../../app/api/auth/member/route.ts', '../../app/api/members/profile/route.ts', '../../lib/members/profile.ts', '../../app/hall/page.tsx', '../../app/api/hall/route.ts', '../../lib/hall/public.ts', '../../app/leaderboard/page.tsx', '../../app/api/leaderboard/route.ts'].map(file => [file, hash(materializedRead(file))]));
   for (const file of ['../../app/circles/message-ai-policy/page.tsx', '../../app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts', '../../lib/circles/message-ai-provider.ts', '../../lib/circles/message-ai.ts']) evidence.sourceSha256[file] = hash(materializedRead(file));
+  for (const file of ['../../app/quest/page.tsx', '../../app/quest/contributions/page.tsx', '../../platforms/quest/member-circle-page.mjs', '../../platforms/quest/member-contributions-view.mjs', '../../platforms/shared/member-contributions.ts']) evidence.sourceSha256[file] = hash(materializedRead(file));
   system = await (await import('../tests/support/discovery-app.mjs')).discoveryApp(); await system.excludeOriginalCircles();
   const ended = await system.seedCircles(205, { ended: true, title: 'Discovery ended archive' });
   const matching = await system.seedCircles(31, { title: 'Álpha Discovery', sameTitle: true, description: 'Literal 100% [wisdom] and welcoming readers.', format: 'hybrid' });
@@ -215,6 +216,26 @@ try {
   assert.equal(new URL(await page.getByRole('link', { name: 'Sign in to your account', exact: true }).getAttribute('href'), origin).searchParams.get('next'), `/quest/${matching[0]}`);
   await layout(page, 'canonical-quest-entry-320.png');
   check('Canonical Quest Browser routes expose the actual member view, accessible 320px controls and same-Circle fallback links; HTTP fails closed, no private API/provider call occurs, and no synthetic member or immersive claim is introduced. Configured HTTPS/provider acceptance remains a separate gate');
+
+  evidence.stage = 'standalone Quest author history entry';
+  const historyReads = [], observeHistory = request => { if (new URL(request.url()).pathname.startsWith('/api/')) historyReads.push(request.url()); };
+  page.on('request', observeHistory);
+  await page.goto(`${origin}/quest`);
+  assert.equal(await page.getByRole('link', { name: 'My posted messages across Circles', exact: true }).getAttribute('href'), '/quest/contributions');
+  const historyResponse = await page.goto(`${origin}/quest/contributions`);
+  assert.equal(historyResponse.status(), 200);
+  await page.getByRole('heading', { name: 'My Quest Browser contributions', exact: true }).waitFor();
+  assert.equal(await page.locator('#circle-refresh').count(), 0, 'Account history has no Circle access prerequisite');
+  assert.equal(await page.locator('#member-contributions-refresh').isDisabled(), true);
+  assert.equal(await page.getByRole('link', { name: 'Regular posted messages and AI review settings', exact: true }).getAttribute('href'), '/circles/contributions');
+  assert.equal(new URL(await page.getByRole('link', { name: 'Sign in to your account', exact: true }).getAttribute('href'), origin).searchParams.get('next'), '/quest/contributions');
+  await keyboard(page, page.getByRole('button', { name: 'Connect signed-in account', exact: true }));
+  await page.getByText('This view needs a secure connection.', { exact: false }).waitFor();
+  assert.equal(await page.locator('#member-contributions-items article').count(), 0);
+  await layout(page, 'quest-contributions-entry-320.png');
+  page.off('request', observeHistory); assert.deepEqual(historyReads, []);
+  evidence.standaloneQuestHistory = { pathname: '/quest/contributions', status: historyResponse.status(), apiRequests: historyReads.length, circleIdRequired: false };
+  check('Built standalone Quest author-history route is reachable without a Circle ID or membership lookup, preserves account-specific sign-in and web fallback links, and exposes no private data or API/provider request before secure connection;320px controls pass. Configured account history is covered separately by the composed API/SQL fixture');
 
   evidence.stage = 'canonical reviewed clips';
   const clipReads = [], observeClip = request => { const url = new URL(request.url()); if (url.pathname.startsWith('/clips/media/') || url.pathname.startsWith('/clips/captions/')) clipReads.push({ path: url.pathname, cookie: request.headers().cookie ?? null, referer: request.headers().referer ?? null }); };

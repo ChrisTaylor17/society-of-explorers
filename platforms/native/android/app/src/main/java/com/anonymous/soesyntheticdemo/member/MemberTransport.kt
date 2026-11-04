@@ -134,6 +134,15 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val messageAction = Regex("/api/circles/([0-9a-fA-F-]{36})/messages/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
     if (url.encodedPath == "/api/auth/member") { require(input.method == "GET" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/auth/ensure-member") { require(input.method == "POST" && url.encodedQuery == null) }
+    else if (url.encodedPath == "/api/circles/contributions") {
+      require(input.method == "GET")
+      val query = mutableMapOf<String, String>()
+      if (url.encodedQuery != null) for (part in url.encodedQuery!!.split('&')) {
+        val pieces = part.split('='); require(pieces.size == 2 && pieces[0] !in query); query[pieces[0]] = pieces[1]
+      }
+      require(query.keys.all { it == "after" })
+      query["after"]?.let { require(uuid(it)) }
+    }
     else if (legacy != null) { require(uuid(legacy.groupValues[1]) && url.encodedQuery == null) }
     else if (preview != null) { require(uuid(preview.groupValues[1]) && input.method == "POST" && url.encodedQuery == null) }
     else if (discussion != null && input.method == "POST") { require(uuid(discussion.groupValues[1]) && url.encodedQuery == null) }

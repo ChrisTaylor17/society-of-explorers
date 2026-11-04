@@ -13,5 +13,6 @@ export default function QuestPage() {
     <p style={body}>The discussion archive, source readings and safety controls remain available in the regular Circle view. Immersive viewing is still being verified.</p>
     <p><Link href="/circles" style={button}>Find a Circle</Link></p>
     <p><Link href="/circles/mine" style={button}>My Circles</Link></p>
+    <p><Link href="/quest/contributions" style={button}>My posted messages across Circles</Link></p>
   </main></div>;
 }
