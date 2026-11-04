@@ -12,7 +12,8 @@ export function sourceLoader(mocks={}){
   if(cache.has(full))return cache.get(full).exports;
   const info=fs.lstatSync(full);
   if(info.isSymbolicLink()||!info.isFile()||(info.size&&!info.blocks))throw Error('Refuse nonmaterialized or linked canonical source');
-  const module={exports:{}};cache.set(full,module);
+  const compiledModule={exports:{}};cache.set(full,compiledModule);
+  if(full.endsWith('.json')){compiledModule.exports=JSON.parse(fs.readFileSync(full,'utf8'));return compiledModule.exports;}
   const output=ts.transpileModule(fs.readFileSync(full,'utf8'),{fileName:full,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   function localRequire(name){
    if(Object.hasOwn(mocks,name))return mocks[name];
@@ -23,7 +24,7 @@ export function sourceLoader(mocks={}){
    }
    return require(name);
   }
-  new vm.Script('(function(require,module,exports){'+output+'\n})',{filename:full}).runInContext(context)(localRequire,module,module.exports);return module.exports;
+  new vm.Script('(function(require,module,exports){'+output+'\n})',{filename:full}).runInContext(context)(localRequire,compiledModule,compiledModule.exports);return compiledModule.exports;
  }
  return load;
 }

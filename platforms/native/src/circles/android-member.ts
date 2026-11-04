@@ -22,6 +22,7 @@ export function createAndroidMemberAdapter(module: Spec | null): AndroidMemberAd
     begin: generation => module.begin(generation),
     send: (id, request) => module.send(id, request),
     ...(typeof module.sendAuth === 'function' ? { sendAuth: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendAuth']>>[1]) => module.sendAuth(id, request) } : {}),
+    ...(typeof module.sendPublic === 'function' ? { sendPublic: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendPublic']>>[1]) => module.sendPublic(id, request) } : {}),
     cancel: id => module.cancel(id),
     read: (slot, generation) => module.read(slot, generation),
     write: (slot, value, generation) => module.write(slot, value, generation),

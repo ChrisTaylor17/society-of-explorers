@@ -6,7 +6,7 @@ import type { ThreadMessage } from '../../lib/circles/thread';
 import { observeNativeConnectivity, type NativeConnectivityPort, type NativeConnectivityState } from './src/circles/native-connectivity';
 import { MESSAGE_REPORT_OPTIONS, MESSAGE_WITHDRAWAL_PRIVACY } from '../shared/message-safety';
 
-export function CircleScreen({ config, connectivity, onClose, memberSession }: { config?: CircleHostConfig; connectivity?: NativeConnectivityPort; onClose(): void; memberSession?: { model: MemberSessionModel; onCheck(): void } }) {
+export function CircleScreen({ config, connectivity, onClose, onBack, memberSession }: { config?: CircleHostConfig; connectivity?: NativeConnectivityPort; onClose(): void; onBack?(): void; memberSession?: { model: MemberSessionModel; onCheck(): void } }) {
   const connection = useMemo(() => { try { return config ? { host: createCircleHost({ ...config, initialOnline: false }), connectivity } : null; } catch { return null; } }, [config, connectivity]);
   const host = connection?.host;
   const [network, setNetwork] = useState<NativeConnectivityState>('unknown');
@@ -48,6 +48,11 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
       <Action label={memberSession.model.busy ? 'Checking member session…' : 'Check member session'} disabled={!memberSession.model.canCheck} onPress={memberSession.onCheck}/>
     </View> : null}
     <Action label="Close circle" onPress={leave}/>
+    {onBack ? <Action label="Back to Circle" disabled={!navigate || Boolean(read?.busy || p?.write.busy || write?.busy || archive?.busy || safety?.busy)}
+      onPress={() => {
+        const current = host?.model();
+        if (current?.threadWrite.canNavigate && current.messageSafety.canNavigate && !current.participation.read.busy && !current.participation.write.busy && !current.threadWrite.busy && !current.archive.busy && !current.messageSafety.busy) { host?.disconnect(); onBack(); }
+      }}/> : null}
     <View accessibilityLiveRegion="polite" accessibilityRole="summary" style={styles.status}>
       <Text style={styles.copy}>{m?.status ?? 'Member sign-in and the secure Circle connection are not connected in this build.'}</Text>
       {read && !archive?.open && !safety?.open ? <Text style={styles.copy}>{read.message}</Text> : null}

@@ -32,6 +32,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   // allocation, send, storage and delivery; no stale receipt can restore an epoch.
   const ports = await createNativeMemberPorts({
     capabilities: async () => ({ ...caps }), begin: generation => bridge.begin(generation), send: (id, request) => bridge.send(id, request), cancel: id => bridge.cancel(id),
+    ...(bridge.sendPublic ? { sendPublic: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendPublic']>>[1]) => bridge.sendPublic!(id, request) } : {}),
     read: (slot, generation) => bridge.read(slot, generation), write: (slot, value, generation) => bridge.write(slot, value, generation), remove: (slot, generation) => bridge.remove(slot, generation),
     resetAccountStorage: generation => bridge.resetAccountStorage(generation), ...(bridge.newRequestId ? { newRequestId: (generation: string) => bridge.newRequestId!(generation) } : {}),
   }, { origin, storageKey: storageKey, timeoutMs: timeout });
@@ -117,21 +118,23 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
     } catch { cancel(); throw unavailable(); }
     finally { finished = true; clearTimeout(timeoutId); signal.removeEventListener('abort', cancel); signal.removeEventListener('abort', rejectAbort); init.signal!.removeEventListener('abort', abort); requests.delete(controller); }
   };
-  const transport: CircleTransport = async (url, init) => {
+  const wrapTransport = (send: CircleTransport): CircleTransport => async (url, init) => {
     assertOpen(); const controller = new AbortController(), abort = () => controller.abort();
     if (init.signal.aborted) throw unavailable(); init.signal.addEventListener('abort', abort, { once: true }); requests.add(controller);
     try {
-      const response = await ports.transport(url, { ...init, signal: controller.signal }); assertOpen();
+      const response = await send(url, { ...init, signal: controller.signal }); assertOpen();
       return { ...response, json: async () => { assertOpen(); const value = await response.json(); assertOpen(); return value; } };
     } finally { requests.delete(controller); init.signal.removeEventListener('abort', abort); }
   };
+  const transport = wrapTransport(ports.transport);
+  const publicTransport = ports.publicTransport ? wrapTransport(ports.publicTransport) : undefined;
   return { providerOrigin, storageKey: storageKey, storage, fetch, retire,
     onRetired(listener: () => void) { if (retired) { listener(); return () => {}; } listeners.add(listener); return () => { listeners.delete(listener); }; },
     async resetAccountStorage() {
       if (resetStarted) throw unavailable(); resetStarted = true; retire();
       try { await ports.resetAccountStorage(); } finally { offRetirement(); ports.retireStorage(); }
     },
-    member: { origin, transport, ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
+    member: { origin, transport, ...(publicTransport ? { publicTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
   };
 }
 export type NativeAuthPorts = Awaited<ReturnType<typeof createNativeAuthPorts>>;

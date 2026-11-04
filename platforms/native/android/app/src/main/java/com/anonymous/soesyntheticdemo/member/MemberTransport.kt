@@ -16,6 +16,8 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.util.UUID
 import org.json.JSONObject
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -27,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class MemberTransport(private val config: MemberConfig, private val store: MemberSecureStore) {
   data class Input(val url: String, val method: String, val bearer: String, val body: String?)
   data class AuthInput(val url: String, val method: String, val bearer: String?, val body: String?)
+  data class PublicInput(val url: String, val method: String)
   data class Result(val status: Int, val url: String, val body: String)
   private class Handle(val generation: String, val deadline: Long) {
     var consumed = false
@@ -74,6 +77,10 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
       transmit(id, input.url, input.method, input.body, mapOf("apikey" to config.publishableKey,
         "Authorization" to "Bearer " + (input.bearer ?: config.publishableKey), "X-Supabase-Api-Version" to "2024-01-01"), success, failure)
     } catch (_: Exception) { cancel(id); failure() }
+  }
+  fun sendPublic(id: String, input: PublicInput, success: (Result) -> Unit, failure: () -> Unit) {
+    try { validatePublic(input); transmit(id, input.url, "GET", null, emptyMap(), success, failure) }
+    catch (_: Exception) { cancel(id); failure() }
   }
   private fun transmit(id: String, url: String, method: String, body: String?, headers: Map<String, String>, success: (Result) -> Unit, failure: () -> Unit) {
     try {
@@ -134,7 +141,7 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     cancelAll(); offReset(); timer.shutdownNow()
     client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll()
   }
-  /** Independent provider allowlist; member paths below remain unchanged. */
+  /** Independent provider allowlist; no public/member path reaches this channel. */
   private fun validateAuth(input: AuthInput) {
     require(config.providerOrigin.isNotEmpty() && Regex("sb_publishable_[A-Za-z0-9_-]{20,200}").matches(config.publishableKey))
     val url = input.url.toHttpUrl()
@@ -172,6 +179,43 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     MemberConfig.value(value)
     return value.isNotEmpty() && value.toByteArray(Charsets.UTF_8).size <= maximum && value.none { it.code < 32 || it.code == 127 }
   }
+  /** Public wire policy. The JS/server parsers additionally verify the pinned
+   * book/edition registry and actual range; a public cursor grants no access. */
+  private fun validatePublic(input: PublicInput) {
+    require(input.method == "GET")
+    val url = input.url.toHttpUrl()
+    val origin = "https://" + url.host + if (url.port == 443) "" else ":" + url.port
+    require(url.scheme == "https" && origin == config.origin && url.username.isEmpty() && url.password.isEmpty()
+      && url.fragment == null && url.toString() == input.url && url.encodedPath == "/api/circles")
+    val order = listOf("book", "edition", "from", "to", "q", "city", "format", "open", "sort", "limit", "cursor")
+    val query = linkedMapOf<String, String>()
+    if (url.encodedQuery != null) for (part in url.encodedQuery!!.split('&')) {
+      val pair = part.split('='); require(pair.size == 2 && pair[0] in order && pair[0] !in query)
+      val value = URLDecoder.decode(pair[1], "UTF-8")
+      MemberConfig.value(value)
+      require(URLEncoder.encode(value, "UTF-8") == pair[1])
+      query[pair[0]] = value
+    }
+    require(query.keys.toList() == order.filter { it in query })
+    for (key in listOf("q", "city")) query[key]?.let {
+      require(it.isNotEmpty() && it.length <= if (key == "q") 160 else 80)
+      require(it.none { c -> c.code < 32 || c.code == 127 })
+      require(it == it.replace(Regex("[\\u0020\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+"), " ").trim())
+    }
+    query["format"]?.let { require(it in setOf("in_person", "online")) }
+    query["open"]?.let { require(it == "1") }
+    query["sort"]?.let { require(it == "title") }
+    query["limit"]?.let { require(Regex("[1-9][0-9]*").matches(it) && (it.toIntOrNull() ?: 0) in 1..24) }
+    query["cursor"]?.let { require(Regex("[A-Za-z0-9_-]{1,4096}").matches(it)) }
+    if (listOf("book", "edition", "from", "to").any { it in query }) {
+      require(query["book"]?.let { Regex("[a-z0-9][a-z0-9-]{0,159}").matches(it) } == true)
+      require(query["edition"]?.let { Regex("pg-[1-9][0-9]{0,9}-[a-f0-9]{64}").matches(it) } == true)
+      if ("from" in query || "to" in query) {
+        for (key in listOf("from", "to")) require(query[key]?.let { Regex("0|[1-9][0-9]{0,5}").matches(it) } == true)
+        require(query["from"]!!.toInt() <= query["to"]!!.toInt())
+      }
+    }
+  }
   private fun validate(input: Input) {
     require(Regex("[A-Za-z0-9._~+/-]+=*").matches(input.bearer) && input.bearer.length <= 16384)
     require(input.method in setOf("GET", "POST"))
@@ -182,6 +226,8 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val discussion = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion").matchEntire(url.encodedPath)
     val preview = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion/preview").matchEntire(url.encodedPath)
     val messageAction = Regex("/api/circles/([0-9a-fA-F-]{36})/messages/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
+    val detail = Regex("/api/circles/([0-9a-fA-F-]{36})(?:/membership)?").matchEntire(url.encodedPath)
+    val participation = Regex("/api/circles/([0-9a-fA-F-]{36})/(join|leave)").matchEntire(url.encodedPath)
     if (url.encodedPath == "/api/auth/member") { require(input.method == "GET" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/auth/ensure-member") { require(input.method == "POST" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/circles/contributions") {
@@ -192,6 +238,24 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
       }
       require(query.keys.all { it == "after" })
       query["after"]?.let { require(uuid(it)) }
+    }
+    else if (url.encodedPath == "/api/circles/mine") {
+      require(input.method == "GET")
+      val query = url.encodedQuery
+      if (query != null) require(query.startsWith("after=") && uuid(query.removePrefix("after=")))
+    }
+    else if (detail != null) { require(uuid(detail.groupValues[1]) && input.method == "GET" && url.encodedQuery == null) }
+    else if (participation != null) {
+      require(uuid(participation.groupValues[1]) && input.method == "POST" && url.encodedQuery == null)
+      val body = input.body ?: throw IllegalArgumentException()
+      require(body.toByteArray(Charsets.UTF_8).size <= 256)
+      val parsed = JSONObject(body)
+      require(parsed.length() == 2 && parsed.has("requestId") && parsed.has("expectedRevision"))
+      val requestId = parsed.get("requestId"); val revision = parsed.get("expectedRevision")
+      require(requestId is String && uuid(requestId) && (revision is Int || revision is Long))
+      val version = (revision as Number).toLong(); require(version in 0..9007199254740991L)
+      require(body == "{\"requestId\":\"$requestId\",\"expectedRevision\":$version}"
+        || body == "{\"expectedRevision\":$version,\"requestId\":\"$requestId\"}")
     }
     else if (legacy != null) { require(uuid(legacy.groupValues[1]) && url.encodedQuery == null) }
     else if (preview != null) { require(uuid(preview.groupValues[1]) && input.method == "POST" && url.encodedQuery == null) }
@@ -215,6 +279,13 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
   companion object {
     private const val MAX_RESPONSE = 1048576
     private fun uuid(value: String) = MemberConfig.UUID_PATTERN.matches(value.lowercase())
+    fun publicInput(value: ReadableMap): PublicInput {
+      val keys = value.keySetIterator(); val names = mutableSetOf<String>()
+      while (keys.hasNextKey()) names.add(keys.nextKey())
+      require(names == setOf("url", "method"))
+      for (key in names) require(value.getType(key) == ReadableType.String)
+      return PublicInput(value.getString("url")!!, value.getString("method")!!)
+    }
     fun authInput(value: ReadableMap): AuthInput {
       val keys = value.keySetIterator(); val names = mutableSetOf<String>()
       while (keys.hasNextKey()) names.add(keys.nextKey())
