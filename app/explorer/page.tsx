@@ -107,15 +107,15 @@ export default function ExplorerIndexPage() {
         <section aria-labelledby="members-heading" style={{ marginTop: '3rem' }}>
           <h2 id="members-heading" style={{ ...label, fontSize: '13px', margin: '0 0 0.75rem' }}>Explorer profiles</h2>
           <p style={{ fontSize: '18px', lineHeight: 1.6, color: ivory85, margin: '0 0 1rem' }}>
-            Each member has a profile page with their practice streak and recent reflections. We don&rsquo;t publish a
-            directory of members: a profile is only reached through its own link, which the explorer chooses to share.
+            Profile pages start private. Explorers can choose to publish their own profile fields and appear in their
+            community&rsquo;s member directory. Practice history and reflections are not part of a published profile.
           </p>
           <p style={{ fontSize: '18px', lineHeight: 1.6, color: ivory85, margin: '0 0 2rem' }}>
-            To see what explorers are thinking right now, read the Live Feed. To get a profile of your own, answer
-            today&rsquo;s question.
+            Manage your profile and review its public preview in profile settings. To see contributions explorers
+            have shared, read the Live Feed.
           </p>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link href="/practice" style={{ ...button, background: gold, color: '#0a0a0a' }}>Answer today&rsquo;s question</Link>
+            <Link href="/account/profile" style={{ ...button, background: gold, color: '#0a0a0a' }}>Profile settings</Link>
             <Link href="/feed" style={button}>Read the Live Feed</Link>
           </div>
         </section>

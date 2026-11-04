@@ -2,7 +2,8 @@
 // query string or an x-member-id header must take identity from the signed
 // session instead. Without a session, a request naming another member (JULES)
 // must be refused (401) and must not write anything; with a valid session (ADA)
-// a body memberId naming someone else is ignored.
+// a body memberId naming someone else is ignored or rejected. Profile edits
+// additionally bind the reviewed draft owner/revision before any RPC mutation.
 import { test, expect, beforeEach, describe } from 'bun:test';
 import { installMocks, resetDb, makeReq, drain, settle, anthropicCalls, ADA, JULES, walletCookie } from './fakes';
 
@@ -162,6 +163,36 @@ describe('optional-identity routes: no session -> never acts as JULES', () => {
 
 describe('signed session ADA + body memberId=JULES -> acts as ADA only', () => {
   const ada = async () => ({ cookies: { soe_wallet_id: await walletCookie(ADA) } });
+  const profileReq = async (body: unknown) => {
+    const sample = makeReq(body, { ...await ada(), headers: { 'content-type': 'application/json', origin: 'http://localhost' } });
+    return Object.assign(new Request(sample.url, { method: 'POST', headers: sample.headers, body: JSON.stringify(body) }), { cookies: sample.cookies, nextUrl: sample.nextUrl });
+  };
+  test('profile draft for JULES is rejected before any RPC even when revisions match', async () => {
+    const { db } = await import('./fakes'); const m = await load('members/profile');
+    const calls: unknown[] = []; const original = db.rpc;
+    Object.assign(db, { rpc: async (...args: unknown[]) => { calls.push(args); return { data: null, error: null }; } });
+    try {
+      expect((await m.POST(await profileReq({ expectedMemberId: JULES, expectedRevision: 0, patch: { bio: 'forged draft' } }))).status).toBe(409);
+      expect(calls).toEqual([]); expect(writes(db)).toEqual([]); expect(db.rows('members').find(member => member.id === JULES)!.display_name).toBe('Jules Example');
+    } finally { db.rpc = original; }
+  });
+  test('profile strict patch rejects legacy body memberId and protected fields without mutation', async () => {
+    const { db } = await import('./fakes'); const m = await load('members/profile');
+    for (const body of [{ memberId: JULES, bio: 'legacy forgery' }, { expectedMemberId: ADA, expectedRevision: 0, patch: { memberId: JULES, tier: 'paid' } }]) {
+      expect((await m.POST(await profileReq(body))).status).toBe(400);
+    }
+    expect(writes(db)).toEqual([]);
+  });
+  test('profile sends only verified ADA actor to the optimistic RPC and whitelists the owner DTO', async () => {
+    const { db } = await import('./fakes'); const m = await load('members/profile');
+    const calls: unknown[][] = []; const original = db.rpc;
+    Object.assign(db, { rpc: async (...args: unknown[]) => { calls.push(args); return { data: { id: ADA, profile_revision: 1, profile_visibility: 'private', display_name: 'Ada Example', bio: 'owner edit', discipline: null, skills: [], project_description: null, seeking: null, philosophy: null, email: 'SYNTHETIC_PRIVATE_EMAIL', tier: 'protected' }, error: null }; } });
+    try {
+      const response = await m.POST(await profileReq({ expectedMemberId: ADA, expectedRevision: 0, patch: { bio: 'owner edit' } }));
+      expect(response.status).toBe(200); expect(calls).toEqual([['soe_member_profile_update', { p_actor: ADA, p_expected_revision: 0, p_patch: { bio: 'owner edit' } }]]);
+      const body = await response.json(); expect(body.memberId).toBe(ADA); expect(body.profile.bio).toBe('owner edit'); expect(JSON.stringify(body)).not.toContain('SYNTHETIC_PRIVATE_EMAIL'); expect(body.tier).toBeUndefined(); expect(db.rows('members').find(member => member.id === JULES)!.display_name).toBe('Jules Example');
+    } finally { db.rpc = original; }
+  });
   test('exp/award credits the session member, not the body member', async () => {
     const { db } = await import('./fakes');
     const { res } = await call(['exp/award', 'exp/award', 'POST'], await ada());

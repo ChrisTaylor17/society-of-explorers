@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession'
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 interface Member {
@@ -13,39 +15,14 @@ interface Member {
   project_description?: string
   seeking?: string
   bio?: string
-  exp_tokens: number
-  wallet_address?: string
-  tier?: string
   philosophy?: string
-  email?: string
 }
 
 type MemberSkillValue = string[] | string | null | undefined
 
-type MemberRecord = Omit<Member, 'skills' | 'exp_tokens'> & {
+type MemberRecord = Omit<Member, 'skills'> & {
   skills?: MemberSkillValue
-  exp_tokens?: number | null
 }
-
-type ProfileDraft = {
-  bio: string
-  discipline: string
-  skills: string
-  project_description: string
-  seeking: string
-  philosophy: string
-}
-
-type ProfileDraftKey = keyof ProfileDraft
-
-const PROFILE_FIELDS: { key: ProfileDraftKey; label: string; placeholder: string }[] = [
-  { key: 'discipline', label: 'YOUR FIELD', placeholder: 'e.g. Blockchain architect, philosopher, builder, artist...' },
-  { key: 'bio', label: 'WHO YOU ARE', placeholder: 'A few sentences about yourself — what drives you, what you believe, where you came from...' },
-  { key: 'project_description', label: 'WHAT YOU ARE BUILDING', placeholder: 'Describe your current project or mission...' },
-  { key: 'seeking', label: 'WHAT YOU SEEK', placeholder: 'What kind of collaborator, conversation, or connection are you looking for?' },
-  { key: 'philosophy', label: 'YOUR PHILOSOPHY', placeholder: 'What do you believe about existence, technology, beauty, truth? What books changed you? What questions haunt you?' },
-  { key: 'skills', label: 'YOUR SKILLS', placeholder: 'Comma-separated: e.g. Solidity, product design, Heidegger, go-to-market, writing...' },
-]
 
 function normalizeSkills(skills: MemberSkillValue): string[] {
   if (Array.isArray(skills)) return skills
@@ -58,30 +35,23 @@ function normalizeSkills(skills: MemberSkillValue): string[] {
   return []
 }
 
-function skillsDraft(skills: MemberSkillValue): string {
-  if (Array.isArray(skills)) return skills.join(', ')
-  return skills || ''
-}
-
 function normalizeMember(member: MemberRecord): Member {
   return {
-    ...member,
+    id: member.id,
+    display_name: member.display_name,
+    bio: member.bio,
+    discipline: member.discipline,
+    project_description: member.project_description,
+    seeking: member.seeking,
+    philosophy: member.philosophy,
     skills: normalizeSkills(member.skills),
-    exp_tokens: member.exp_tokens ?? 0,
   }
 }
 
 function displayName(m: Member): string {
   if (m.display_name && !m.display_name.startsWith('0x')) return m.display_name
-  if (m.email) return m.email.split('@')[0]
-  if (m.wallet_address) return `${m.wallet_address.slice(0, 6)}...${m.wallet_address.slice(-4)}`
   if (m.display_name?.startsWith('0x')) return `${m.display_name.slice(0, 6)}...${m.display_name.slice(-4)}`
   return 'Explorer'
-}
-
-function tierLabel(tier?: string): string {
-  const labels: Record<string, string> = { free: 'Explorer', member: 'Member', patron: 'Patron', founding: 'Founding Member' }
-  return labels[tier || 'free'] || 'Explorer'
 }
 
 function avatarLetter(m: Member): string {
@@ -146,9 +116,8 @@ export default function MembersPage() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile'>('directory')
-  const [profileDraft, setProfileDraft] = useState<ProfileDraft>({ bio: '', discipline: '', skills: '', project_description: '', seeking: '', philosophy: '' })
-  const [profileSaving, setProfileSaving] = useState(false)
-  const [profileSaved, setProfileSaved] = useState(false)
+  const [directoryStatus, setDirectoryStatus] = useState<'loading' | 'ready' | 'forbidden' | 'unavailable'>('loading')
+  const [retired, setRetired] = useState(false)
   const [matchQuery, setMatchQuery] = useState('')
   const [matchResult, setMatchResult] = useState('')
   const [matchLoading, setMatchLoading] = useState(false)
@@ -158,44 +127,54 @@ export default function MembersPage() {
   const [recording, setRecording] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const authorityEpoch = useRef(0)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const currentMemberId = currentMember?.id ?? null
   const selectedMemberId = selectedMember?.id ?? null
 
   useEffect(() => {
+    const invalidate = () => { authorityEpoch.current++ }
+    const stop = subscribeAuthProviderChanges(() => {
+      invalidate()
+      setRetired(true); setCurrentMember(null); setSelectedMember(null); setMembers([]); setMessages([])
+      setInput(''); setMatchQuery(''); setMatchResult(''); setUnreadCount(0)
+    })
+    return () => { invalidate(); stop() }
+  }, [])
+
+  useEffect(() => {
+    if (retired) return
     let cancelled = false
+    const generation = authorityEpoch.current
 
     getMemberSession().then(session => {
-      if (cancelled) return
+      if (cancelled || generation !== authorityEpoch.current) return
       if (!session) { router.push('/'); return }
       const sessionMember = session.member as MemberRecord
       setCurrentMember(normalizeMember(sessionMember))
-      setProfileDraft({
-        bio: sessionMember.bio || '',
-        discipline: sessionMember.discipline || '',
-        skills: skillsDraft(sessionMember.skills),
-        project_description: sessionMember.project_description || '',
-        seeking: sessionMember.seeking || '',
-        philosophy: sessionMember.philosophy || '',
-      })
     })
 
     getAuthHeaders()
-      .then(headers => fetch('/api/members/discover', { headers, cache: 'no-store' }))
+      .then(headers => {
+        if (cancelled || generation !== authorityEpoch.current) throw new Error('retired')
+        return fetch('/api/members/discover', { headers, cache: 'no-store' })
+      })
       .then(async res => {
-        if (!res.ok) throw new Error(await res.text())
+        if (!res.ok) throw new Error(res.status === 403 ? 'membership' : 'unavailable')
         return res.json() as Promise<{ members?: MemberRecord[] }>
       })
       .then(({ members: discoveredMembers }) => {
-        if (!cancelled) setMembers((discoveredMembers ?? []).map(normalizeMember))
+        if (cancelled || generation !== authorityEpoch.current) return
+        if (!Array.isArray(discoveredMembers) || discoveredMembers.some(member => !member || typeof member.id !== 'string' || typeof member.display_name !== 'string')) throw new Error('unavailable')
+        setMembers(discoveredMembers.map(normalizeMember)); setDirectoryStatus('ready')
       })
       .catch(error => {
-        if (!cancelled) console.error('member discovery failed:', error)
+        if (!cancelled && generation === authorityEpoch.current) setDirectoryStatus(error instanceof Error && error.message === 'membership' ? 'forbidden' : 'unavailable')
       })
 
     return () => { cancelled = true }
-  }, [router])
+  }, [router, retired])
 
   // Load unread count
   useEffect(() => {
@@ -220,7 +199,9 @@ export default function MembersPage() {
 
   const loadMessages = useCallback(async () => {
     if (!selectedMemberId || !currentMemberId) return
+    const generation = authorityEpoch.current
     const headers = await getAuthHeaders()
+    if (generation !== authorityEpoch.current) return
     const res = await fetch(`/api/message?peerId=${encodeURIComponent(selectedMemberId)}`, {
       headers,
       cache: 'no-store',
@@ -230,6 +211,7 @@ export default function MembersPage() {
       return
     }
     const data = await res.json() as { messages?: DirectMessageRecord[] }
+    if (generation !== authorityEpoch.current) return
     setMessages((data.messages ?? []).map(normalizeDirectMessage))
   }, [currentMemberId, selectedMemberId])
 
@@ -252,12 +234,16 @@ export default function MembersPage() {
   async function sendMessage(text?: string) {
     const msg = (text ?? input).trim()
     if (!msg || !selectedMember || !currentMember || sending) return
+    const generation = authorityEpoch.current
     setInput(''); setSending(true)
+    const headers = await getAuthHeaders(true)
+    if (generation !== authorityEpoch.current) return
     const res = await fetch('/api/message', {
       method: 'POST',
-      headers: await getAuthHeaders(true),
+      headers,
       body: JSON.stringify({ recipientId: selectedMember.id, content: msg })
     })
+    if (generation !== authorityEpoch.current) return
     if (!res.ok) console.error('sendMessage failed:', await res.text())
     setSending(false)
     await loadMessages()
@@ -265,6 +251,7 @@ export default function MembersPage() {
   }
 
   async function inviteThinker(thinkerId: string) {
+    const generation = authorityEpoch.current
     setShowThinkerPicker(false)
     setThinkerLoading(true)
     const thinker = THINKERS.find(t => t.id === thinkerId)
@@ -275,9 +262,11 @@ export default function MembersPage() {
       return `${name}: ${m.content}`
     }).join('\n')
 
+    const headers = await getAuthHeaders(true)
+    if (generation !== authorityEpoch.current) return
     const res = await fetch('/api/thinker', {
       method: 'POST',
-      headers: await getAuthHeaders(true),
+      headers,
       body: JSON.stringify({
         thinkerId,
         message: `You have been invited into a private conversation between ${currentMember.display_name} and ${selectedMember.display_name}. Here are the recent messages:\n\n${recentMessages}\n\nRespond as ${thinker.name} — in character, direct, under 100 words. Address both people.`,
@@ -291,6 +280,7 @@ export default function MembersPage() {
     let buf = ''
     while (true) {
       const { done, value } = await reader.read()
+      if (generation !== authorityEpoch.current) { await reader.cancel(); return }
       if (done) break
       buf += dec.decode(value, { stream: true })
       const lines = buf.split('\n')
@@ -308,14 +298,17 @@ export default function MembersPage() {
     }
 
     if (fullResponse) {
+      const headers = await getAuthHeaders(true)
+      if (generation !== authorityEpoch.current) return
       await fetch('/api/message', {
         method: 'POST',
-        headers: await getAuthHeaders(true),
+        headers,
         body: JSON.stringify({
           recipientId: selectedMember.id,
           content: `${thinker.symbol} ${thinker.name.toUpperCase()} SPEAKS: ${fullResponse.replace(/^\[?\w[\w-]*\]?:\s*/i, '')}`
         })
       })
+      if (generation !== authorityEpoch.current) return
       await loadMessages()
     }
     setThinkerLoading(false)
@@ -323,46 +316,22 @@ export default function MembersPage() {
 
   async function findMatch() {
     if (!matchQuery.trim()) return
+    const generation = authorityEpoch.current
     setMatchLoading(true); setMatchResult('')
     const memberProfiles = members.filter(m => m.id !== currentMember?.id)
       .map(m => `${m.display_name} | ${m.discipline || 'Explorer'} | Skills: ${(m.skills || []).join(', ')} | Project: ${m.project_description || 'n/a'} | Seeking: ${m.seeking || 'n/a'}`)
       .join('\n')
+    const headers = await getAuthHeaders(true)
+    if (generation !== authorityEpoch.current) return
     const res = await fetch('/api/match', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ query: matchQuery, memberProfiles, seekerName: currentMember?.display_name, walletMemberId: currentMember?.id, seekerProfile: currentMember })
     })
     const data = await res.json()
+    if (generation !== authorityEpoch.current) return
     setMatchResult(data.result || 'No matches found.')
     setMatchLoading(false)
-  }
-
-  async function saveProfile() {
-    if (!currentMember) return
-    setProfileSaving(true)
-    const res = await fetch('/api/members/profile', {
-      method: 'POST',
-      headers: await getAuthHeaders(true),
-      body: JSON.stringify({
-        bio: profileDraft.bio || null,
-        discipline: profileDraft.discipline || null,
-        skills: profileDraft.skills,
-        project_description: profileDraft.project_description || null,
-        seeking: profileDraft.seeking || null,
-        philosophy: profileDraft.philosophy || null,
-      }),
-    })
-    if (res.ok) {
-      const data = await res.json() as { member?: MemberRecord }
-      const updatedMember = data.member ? normalizeMember(data.member) : currentMember
-      setProfileSaved(true)
-      setTimeout(() => setProfileSaved(false), 2000)
-      setCurrentMember(updatedMember)
-      setMembers(previousMembers =>
-        previousMembers.map(member => member.id === updatedMember.id ? { ...member, ...updatedMember } : member)
-      )
-    }
-    setProfileSaving(false)
   }
 
   function openChat(member: Member) {
@@ -375,6 +344,8 @@ export default function MembersPage() {
     const d = new Date(ts)
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
+
+  if (retired) return <main style={{ padding: '32px', color: ivory, background: bg }}><h1>Sign-in changed</h1><p>The previous member view is closed.</p><Link href="/members" style={{ display: 'inline-flex', minHeight: '44px', alignItems: 'center', color: gold }}>Reload the selected account</Link></main>
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: bg, fontFamily: 'Cormorant Garamond, serif', color: ivory, overflow: 'hidden' }}>
@@ -403,9 +374,11 @@ export default function MembersPage() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '2rem' }}>
-                {members.length} MEMBERS
+                {directoryStatus === 'ready' ? `${members.length} PUBLISHED PROFILES` : 'MEMBER DIRECTORY'}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: goldBorder }}>
+              {directoryStatus !== 'ready' && <p role="status">{directoryStatus === 'loading' ? 'Loading published profiles…' : directoryStatus === 'forbidden' ? 'Join this community to view its member directory.' : 'The member directory is unavailable. Reload to try again.'}</p>}
+              {directoryStatus === 'ready' && members.length === 0 && <p>No published profiles are available in this directory yet.</p>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1px', background: goldBorder }}>
                 {members.map(m => (
                   <div key={m.id} style={{ background: bgCard, padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
@@ -415,10 +388,9 @@ export default function MembersPage() {
                         </div>
                         <div>
                           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.1em', color: gold, marginBottom: '2px' }}>{displayName(m)}</div>
-                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted }}>{tierLabel(m.tier)} {m.discipline ? `· ${m.discipline}` : ''}</div>
+                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted }}>{m.discipline || 'Published profile'}</div>
                         </div>
                       </div>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: goldDim }}>{m.exp_tokens} ⬡</div>
                     </div>
                     {m.bio && <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6, marginBottom: '0.75rem', fontStyle: 'italic' }}>{m.bio}</p>}
                     {m.project_description && <p style={{ fontSize: '13px', color: ivory, lineHeight: 1.5, marginBottom: '0.75rem' }}>{m.project_description}</p>}
@@ -457,7 +429,7 @@ export default function MembersPage() {
                     style={{ padding: '14px 16px', cursor: 'pointer', borderLeft: `2px solid ${selectedMember?.id === m.id ? gold : 'transparent'}`, background: selectedMember?.id === m.id ? 'rgba(201,168,76,0.06)' : 'transparent', borderBottom: `1px solid ${goldBorder}` }}
                   >
                     <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: selectedMember?.id === m.id ? gold : ivory }}>{displayName(m)}</div>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{tierLabel(m.tier)}</div>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>Published profile</div>
                   </div>
                 ))}
               </div>
@@ -476,7 +448,7 @@ export default function MembersPage() {
                   <div style={{ padding: '14px 20px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: bgCard, flexShrink: 0 }}>
                     <div>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold }}>{displayName(selectedMember)}</div>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{tierLabel(selectedMember.tier)}{selectedMember.discipline ? ` · ${selectedMember.discipline}` : ''}</div>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{selectedMember.discipline || 'Published profile'}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <div style={{ position: 'relative' }}>
@@ -581,7 +553,7 @@ export default function MembersPage() {
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '1rem' }}>AI MATCHMAKER</div>
               <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', color: gold, marginBottom: '2rem' }}>FIND YOUR COLLABORATOR</h2>
               <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: muted, lineHeight: 1.8, marginBottom: '2rem', fontStyle: 'italic' }}>
-                Describe what you&apos;re building or what you&apos;re looking for. The AI will scan all member profiles and find your most aligned collaborator.
+                Describe what you&apos;re building or looking for. The AI uses the published profiles available in this directory to suggest a collaborator.
               </p>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '2rem' }}>
                 <input
@@ -614,30 +586,8 @@ export default function MembersPage() {
             <div style={{ maxWidth: '700px', margin: '0 auto' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '1rem' }}>YOUR IDENTITY</div>
               <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', color: gold, marginBottom: '0.5rem' }}>EDIT YOUR PROFILE</h2>
-              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem', color: muted, fontStyle: 'italic', lineHeight: 1.7, marginBottom: '2.5rem' }}>
-                Your profile is only visible to the Oracle and to other members. The more you reveal, the more profound the connections the Oracle can find.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {PROFILE_FIELDS.map(field => (
-                  <div key={field.key}>
-                    <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>{field.label}</label>
-                    <textarea
-                      value={profileDraft[field.key]}
-                      onChange={e => setProfileDraft(d => ({ ...d, [field.key]: e.target.value }))}
-                      rows={field.key === 'philosophy' ? 4 : 2}
-                      placeholder={field.placeholder}
-                      style={{ width: '100%', background: bgCard, border: '1px solid ' + goldBorder, padding: '0.9rem 1rem', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box' }}
-                    />
-                  </div>
-                ))}
-                <button
-                  onClick={saveProfile}
-                  disabled={profileSaving}
-                  style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em', color: '#000', background: profileSaved ? '#4a7a4a' : (profileSaving ? gold + '88' : gold), border: 'none', padding: '1rem 2rem', cursor: profileSaving ? 'not-allowed' : 'pointer', alignSelf: 'flex-start' }}
-                >
-                  {profileSaved ? '✓ SAVED' : profileSaving ? 'SAVING...' : 'SAVE PROFILE'}
-                </button>
-              </div>
+              <p style={{ color: ivory, lineHeight: 1.7 }}>Choose which profile fields you publish. Your profile starts private.</p>
+              <Link href="/account/profile" style={{ display: 'inline-flex', minHeight: '44px', alignItems: 'center', color: gold, padding: '8px 14px', border: `1px solid ${goldBorder}` }}>Open profile settings</Link>
             </div>
           </div>
         )}

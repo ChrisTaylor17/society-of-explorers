@@ -14,8 +14,8 @@ const ratio = (a: string, b: string) => {
   return (x + 0.05) / (y + 0.05);
 };
 
-test('G14 Plato PL avatar uses #9B8BF5 on /feed and /explorer and clears 6.5:1 (v. 4.7:1 before) on the dark background', () => {
-  for (const f of ['app/feed/page.tsx', 'app/explorer/[id]/page.tsx']) {
+test('G14 Plato PL avatar uses #9B8BF5 on the reflection feed and clears 6.5:1 on the dark background', () => {
+  for (const f of ['app/feed/page.tsx']) {
     const src = read(f);
     expect(src).toContain("plato: '#9B8BF5'");
     expect(src).not.toContain("plato: '#7B68EE'");
@@ -24,13 +24,15 @@ test('G14 Plato PL avatar uses #9B8BF5 on /feed and /explorer and clears 6.5:1 (
   expect(ratio('#9B8BF5', '#0d0d0d')).toBeGreaterThanOrEqual(6.5);
 });
 
-test('G14 /feed and /explorer link previews carry the share card image', () => {
+test('G14 feed and generic noindex explorer previews carry the share card image', () => {
   const feed = read('app/feed/layout.tsx');
   const explorer = read('app/explorer/[id]/page.tsx');
-  for (const src of [feed, explorer]) {
-    expect((src.match(/images: SHARE_OG_IMAGES/g) || []).length).toBe(2);
-    expect((src.match(/images: SHARE_TWITTER_IMAGES/g) || []).length).toBe(2);
+  for (const [src, count] of [[feed, 2], [explorer, 1]] as const) {
+    expect((src.match(/images: SHARE_OG_IMAGES/g) || []).length).toBe(count);
+    expect((src.match(/images: SHARE_TWITTER_IMAGES/g) || []).length).toBe(count);
   }
+  expect(explorer).toContain('robots: { index: false, follow: false }');
+  expect(explorer).not.toContain('recentResponses');
 });
 
 test('G14 share image URL points at this project\'s production host on Vercel, relative elsewhere', () => {

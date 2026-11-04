@@ -290,16 +290,10 @@ export default function ExplorerDashboard() {
         </h1>
         <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic', marginBottom: '0.75rem' }}>Your explorer home base.</p>
         <a
-          href={`/explorer/${member.id}`}
-          onClick={() => {
-            try {
-              navigator.clipboard.writeText(`${window.location.origin}/explorer/${member.id}`).catch(() => {});
-            } catch {}
-            // do not preventDefault — still navigate to the profile
-          }}
-          style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.18em', color: gold, textDecoration: 'none', opacity: 0.85 }}
+          href="/account/profile"
+          style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.18em', color: gold, textDecoration: 'none', opacity: 0.85, display: 'inline-flex', minHeight: '44px', padding: '8px', alignItems: 'center' }}
         >
-          SHARE YOUR PROFILE &rarr;
+          PROFILE AND SHARING SETTINGS &rarr;
         </a>
       </section>
 

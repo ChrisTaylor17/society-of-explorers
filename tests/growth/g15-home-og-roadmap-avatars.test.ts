@@ -31,8 +31,8 @@ test('G15 roadmap title relies on the layout template instead of repeating the s
   expect(src).not.toContain("title: 'Roadmap — Society of Explorers'");
 });
 
-test('G15 thinker avatar initials on /feed and /explorer are at least 12px and colours clear 4.5:1', () => {
-  for (const f of ['app/feed/page.tsx', 'app/explorer/[id]/page.tsx']) {
+test('G15 thinker avatar initials on the reflection feed are at least 12px and colours clear 4.5:1', () => {
+  for (const f of ['app/feed/page.tsx']) {
     const src = read(f);
     const avatars = [...src.matchAll(/fontSize: '(\d+)px'[^}]*\}\}>\{(?:tAvatar|qThinkerAvatar)\}/g)];
     expect(avatars.length).toBeGreaterThan(0);

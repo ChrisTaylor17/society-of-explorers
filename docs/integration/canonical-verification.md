@@ -1,6 +1,8 @@
-# Canonical local verification — 2026-11-04
+# Canonical integration checkpoint e4961d5 — 2026-11-04
 
 **Local milestone passes. First release and production access remain HOLD.** This record describes the canonical `codex/soe-first-release` checkout at `/Users/christaylor/Documents/Codex/soe-release`. It does not approve a migration, deployment, real account flow or native release.
+
+This is the earlier integration checkpoint. The [profile privacy milestone](member-profile-verification.md) supersedes it for current application acceptance. Its build/browser evidence is preserved under `verification/web/evidence/checkpoint-e4961d5/`; the machine-readable receipt records relocated paths with the original hashes.
 
 [Machine-readable receipt](canonical-verification.json) records the selected suites, excluded files and SHA256 digests of local evidence. Generated logs/screenshots remain in ignored `verification/web/evidence/` and `platforms/evidence/`; verification drivers are versioned. Existing parent evidence is retained separately and is labeled historical.
 

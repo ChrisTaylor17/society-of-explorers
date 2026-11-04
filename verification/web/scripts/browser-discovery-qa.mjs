@@ -2,15 +2,38 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import net from 'node:net';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 
 const root = path.resolve('.'), port = 3199, origin = `http://127.0.0.1:${port}`, require = createRequire(import.meta.url);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex'), pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const evidence = { status: 'RUNNING', stage: 'setup', startedAt: new Date().toISOString(), boundary: 'Built Next UI with actual TypeScript public GET handler and disposable SQL. Only PostgREST transport is synthetic; no authentication, real Circle, provider or production system is used. Intercepted API calls are not claimed to execute inside the built Next server.', command: 'node --require ./scripts/deny-build-network.cjs scripts/browser-discovery-qa.mjs with existing explicit Playwright/Chromium paths in a clean environment', checks: [], requests: [], pages: [], externalRequestsBlocked: [], pageErrors: [], routeErrors: [], consoleErrors: [], cleanupErrors: [], retiredResponses: [] };
-let server, serverError, browser, system, failed, holdNextPage = false, heldPage = null;
-const check = text => evidence.checks.push(text);
+const evidence = { status: 'RUNNING', stage: 'setup', startedAt: new Date().toISOString(), boundary: 'Built Next UI with actual TypeScript public GET handler and disposable SQL; discovery PostgREST transport is synthetic and intercepted discovery calls do not execute inside the built Next server. The signed-out profile story separately uses the actual built Next cookie/token-free auth/member and owner-profile GET handlers. No authenticated account, real Circle, provider transport or production system is used.', command: 'node --require ./scripts/deny-build-network.cjs scripts/browser-discovery-qa.mjs with existing explicit Playwright/Chromium paths in a clean environment', checks: [], requests: [], pages: [], profileRequests: [], profileExpectedConsoleErrors: [], externalRequestsBlocked: [], pageErrors: [], routeErrors: [], consoleErrors: [], cleanupErrors: [], retiredResponses: [] };
+let server, serverError, browser, system, failed, holdNextPage = false, heldPage = null, allowSignedOutProfileGets = false, ownedBrowserPid;
+function progress() {
+  evidence.progressAt = new Date().toISOString();
+  fs.mkdirSync('evidence', { recursive: true });
+  fs.writeFileSync('evidence/browser-discovery-progress.tmp', JSON.stringify(evidence, null, 2) + '\n');
+  fs.renameSync('evidence/browser-discovery-progress.tmp', 'evidence/browser-discovery-progress.json');
+}
+const check = text => { evidence.checks.push(text); progress(); };
+async function bounded(label, work, milliseconds = 5000) {
+  let timer;
+  try { return await Promise.race([Promise.resolve().then(work), new Promise((_, reject) => { timer = setTimeout(() => reject(Error(label + ' exceeded bounded deadline')), milliseconds); })]); }
+  finally { clearTimeout(timer); }
+}
+function ownedChrome() {
+  const prefix = process.env.SOE_BROWSER_EXECUTABLE + ' ';
+  return execFileSync('/bin/ps', ['-axo', 'pid=,ppid=,command='], { encoding: 'utf8' }).split('\n').map(line => line.match(/^\s*(\d+)\s+(\d+)\s+(.*)$/)).filter(match => match && Number(match[2]) === process.pid && match[3].startsWith(prefix)).map(match => Number(match[1]));
+}
+function signalOwnedChrome(signal) {
+  if (!ownedBrowserPid || !ownedChrome().includes(ownedBrowserPid)) return;
+  const group = Number(execFileSync('/bin/ps', ['-p', String(ownedBrowserPid), '-o', 'pgid='], { encoding: 'utf8' }).trim());
+  // Only a verified direct child with this exact cached executable may be
+  // signalled; use its own process group only when it is the group leader.
+  process.kill(group === ownedBrowserPid ? -ownedBrowserPid : ownedBrowserPid, signal);
+  (evidence.ownedBrowserSignals ??= []).push({ pid: ownedBrowserPid, signal });
+}
 async function portOpen() { return new Promise(resolve => { const socket = net.createConnection({ host: '127.0.0.1', port }); socket.once('connect', () => { socket.destroy(); resolve(true); }); socket.once('error', () => resolve(false)); }); }
 async function keyboard(page, control) { await control.focus(); assert.equal(await control.evaluate(element => element === document.activeElement), true); await page.keyboard.press('Enter'); }
 async function rendered(page, data) {
@@ -41,7 +64,7 @@ try {
   assert.ok([...process.execArgv, process.env.NODE_OPTIONS || ''].join(' ').includes('deny-build-network.cjs'));
   assert.equal(await portOpen(), false, 'Owned QA port is not free'); fs.mkdirSync('evidence', { recursive: true });
   evidence.buildId = fs.readFileSync('../../.next/BUILD_ID', 'utf8').trim(); evidence.runnerSha256 = hash(fs.readFileSync('scripts/browser-discovery-qa.mjs'));
-  evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs'].map(file => [file, hash(fs.readFileSync(file))]));
+  evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs', '../../app/account/profile/page.tsx', '../../app/account/profile/ProfileEditor.tsx', '../../app/account/profile/profile.module.css', '../../app/api/auth/member/route.ts', '../../app/api/members/profile/route.ts', '../../lib/members/profile.ts'].map(file => [file, hash(fs.readFileSync(file))]));
   system = await (await import('../tests/support/discovery-app.mjs')).discoveryApp(); await system.excludeOriginalCircles();
   const ended = await system.seedCircles(205, { ended: true, title: 'Discovery ended archive' });
   const matching = await system.seedCircles(31, { title: 'Álpha Discovery', sameTitle: true, description: 'Literal 100% [wisdom] and welcoming readers.', format: 'hybrid' });
@@ -57,14 +80,26 @@ try {
   const log = fs.openSync('evidence/browser-discovery-server.log', 'w'); server = spawn('node', ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', String(port)], { cwd: path.resolve(root, '../..'), env, detached: true, stdio: ['ignore', log, log] }); fs.closeSync(log); server.once('error', error => { serverError = error; });
   for (let index = 0; index < 100; index++) { if (await portOpen()) break; if (serverError || server.exitCode !== null || index === 99) throw serverError || Error('Owned Next server did not start'); await pause(100); }
   const { chromium } = require(process.env.SOE_PLAYWRIGHT_PACKAGE); browser = await chromium.launch({ headless: true, executablePath: process.env.SOE_BROWSER_EXECUTABLE }); evidence.chromiumVersion = browser.version();
+  const chromePids = ownedChrome(); assert.equal(chromePids.length, 1, 'Expected exactly one owned Chromium child'); ownedBrowserPid = chromePids[0]; evidence.ownedBrowserPid = ownedBrowserPid;
   const context = await browser.newContext({ viewport: { width: 320, height: 900 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' }), page = await context.newPage(); page.setDefaultTimeout(20_000);
-  page.on('pageerror', error => evidence.pageErrors.push(String(error))); page.on('console', message => { if (message.type() === 'error') evidence.consoleErrors.push(message.text()); });
+  page.on('pageerror', error => evidence.pageErrors.push(String(error))); page.on('console', message => {
+    if (message.type() !== 'error') return;
+    const text = message.text(), location = message.location().url;
+    if ([`${origin}/api/auth/member`, `${origin}/api/members/profile`].includes(location) && text.includes('status of 401 (')) evidence.profileExpectedConsoleErrors.push({ location, text });
+    else evidence.consoleErrors.push(text);
+  });
   await context.route('**/*', async route => {
     let retired = false;
     try {
       const request = route.request(), url = new URL(request.url());
       if (url.origin !== origin) { evidence.externalRequestsBlocked.push(url.origin + url.pathname); return route.abort(); }
       if (!url.pathname.startsWith('/api/')) return route.continue();
+      if (url.pathname === '/api/auth/member' || url.pathname === '/api/members/profile') {
+        assert.equal(allowSignedOutProfileGets, true, 'Profile API must wait for explicit Load');
+        assert.equal(request.method(), 'GET'); assert.equal(request.headers().authorization, undefined); assert.equal(request.headers().cookie, undefined);
+        evidence.profileRequests.push({ path: url.pathname, method: request.method(), credentialFree: true, boundary: 'actual built Next signed-out GET; startup-denied provider transport' });
+        return route.continue();
+      }
       assert.equal(url.pathname, '/api/circles'); assert.equal(request.method(), 'GET'); assert.equal(request.headers().authorization, undefined); assert.equal(request.headers().cookie, undefined);
       evidence.requests.push({ method: request.method(), query: url.search });
       const response = await system.dispatch(url.pathname + url.search), body = await response.text();
@@ -176,15 +211,53 @@ try {
   await page.getByText('No media has been loaded.', { exact: false }).waitFor(); page.off('request', observeClip);
   check('Actual built Next clip catalog and media/caption gateways expose three source-linked passages plus the original SoE MP4; explicit Load sends no account cookie/referrer, hashes verify, H264 decodes at720x404 with six caption cues and no autoplay, and Unload removes the player at320px');
 
+  evidence.stage = 'canonical profile initial page and explicit signed-out load';
+  await context.clearCookies();
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.goto(`${origin}/account/profile`);
+  await page.getByRole('heading', { name: 'Your profile', exact: true }).waitFor();
+  await page.getByRole('status').filter({ hasText: 'Load your profile to edit it.' }).waitFor();
+  await page.waitForLoadState('networkidle');
+  assert.equal(evidence.profileRequests.length, 0, 'Initial profile page must not read auth/private APIs');
+  assert.equal(await page.getByLabel('Display name', { exact: true }).count(), 0);
+  assert.equal(await page.getByRole('region', { name: 'Public profile preview' }).count(), 0);
+  const profileLoad = page.getByRole('button', { name: 'Load your profile', exact: true });
+  await profileLoad.focus(); assert.equal(await profileLoad.evaluate(element => element === document.activeElement), true);
+  await layout(page, 'profile-initial-320.png');
+  evidence.profileInitial = { initialAuthOrPrivateRequests: 0, viewportWidth: 320, screenshot: 'evidence/profile-initial-320.png', screenshotSHA256: hash(fs.readFileSync('evidence/profile-initial-320.png')) }; progress();
+  allowSignedOutProfileGets = true;
+  const authorityResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/auth/member', { timeout: 5000 });
+  const ownerResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/members/profile', { timeout: 5000 });
+  await keyboard(page, profileLoad);
+  const [authority, owner] = await Promise.all([authorityResponse, ownerResponse]);
+  assert.equal(authority.status(), 401); assert.equal(owner.status(), 401);
+  evidence.profileResponse = { authorityStatus: authority.status(), ownerStatus: owner.status(), ownerErrorBodyRead: false, reason: 'Product UI checks non-OK owner status and deliberately does not consume its error JSON body.' }; progress();
+  assert.equal((await bounded('Auth authority JSON body', () => authority.json())).session, 'signed_out');
+  assert.match(owner.headers()['cache-control'], /no-store/);
+  await page.getByRole('status').filter({ hasText: 'Sign in to load your profile.' }).waitFor();
+  allowSignedOutProfileGets = false;
+  assert.deepEqual(evidence.profileRequests.map(request => request.path), ['/api/auth/member', '/api/members/profile']);
+  assert.equal(await page.getByLabel('Display name', { exact: true }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: /^Save / }).count(), 0);
+  await layout(page, 'profile-signed-out-320.png');
+  check('Actual built Next profile page uses canonical 320px CSS and 44px keyboard controls, with no auth/private/provider transport on initial render; explicit Load alone reaches actual cookie/token-free auth/member and owner-profile GET401 routes, shows generic sign-in state, and exposes no editable fields or false saved state');
+
   assert.deepEqual(evidence.externalRequestsBlocked, []); assert.deepEqual(evidence.pageErrors, []); assert.deepEqual(evidence.routeErrors, []); assert.deepEqual(evidence.consoleErrors.filter(text => !text.includes('net::ERR_FAILED') && ![409, 503].some(status => text.includes(`status of ${status} (`))), []);
   evidence.status = 'PASS'; evidence.stage = 'complete';
-} catch (error) { failed = error; evidence.status = 'FAIL'; evidence.error = String(error.stack || error); }
+} catch (error) { failed = error; evidence.status = 'FAIL'; evidence.error = String(error.stack || error); progress(); }
 finally {
   heldPage?.release();
-  if (browser) try { await browser.close(); } catch (error) { evidence.cleanupErrors.push(String(error)); }
-  if (system) try { await system.close(); } catch (error) { evidence.cleanupErrors.push(String(error)); }
+  evidence.cleanupStage = 'browser'; progress();
+  if (browser) try { await bounded('Owned browser close', () => browser.close()); } catch (error) {
+    evidence.cleanupErrors.push(String(error));
+    try { signalOwnedChrome('SIGTERM'); for (let count = 0; count < 20 && ownedChrome().includes(ownedBrowserPid); count++) await pause(50); if (ownedChrome().includes(ownedBrowserPid)) signalOwnedChrome('SIGKILL'); } catch (cleanupError) { evidence.cleanupErrors.push(String(cleanupError)); }
+  }
+  evidence.cleanupStage = 'database'; progress();
+  if (system) try { await bounded('Owned disposable database close', () => system.close()); } catch (error) { evidence.cleanupErrors.push(String(error)); }
+  evidence.cleanupStage = 'server'; progress();
   if (server?.pid) { try { process.kill(-server.pid, 'SIGTERM'); } catch {} for (let count = 0; count < 50 && await portOpen(); count++) await pause(100); evidence.ownedServerStopped = !(await portOpen()); if (!evidence.ownedServerStopped) evidence.cleanupErrors.push('Owned server did not stop'); }
   if (evidence.cleanupErrors.length) { failed ??= Error(evidence.cleanupErrors.join('; ')); evidence.status = 'FAIL'; }
+  evidence.cleanupStage = 'complete';
   evidence.finishedAt = new Date().toISOString(); fs.mkdirSync('evidence', { recursive: true }); fs.writeFileSync('evidence/browser-discovery-qa.json', JSON.stringify(evidence, null, 2) + '\n');
   if (failed) { process.stderr.write(String(failed.stack || failed) + '\n'); process.exitCode = 1; } else process.stdout.write(JSON.stringify({ status: evidence.status, checks: evidence.checks.length, ownedServerStopped: evidence.ownedServerStopped }) + '\n');
 }

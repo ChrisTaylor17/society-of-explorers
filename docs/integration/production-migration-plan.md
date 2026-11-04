@@ -33,7 +33,11 @@ After caller/restore review, retain the separate `member-identity-preflight.sql`
 
 The draft aborts on duplicates without IDs, account merges/deletes or ownership guessing. It validates equivalent existing indexes semantically, preserves multiple NULL wallet-only members, uses a five-second lock deadline/sixty-second statement deadline and is not a concurrent-index/no-downtime promise. `member-identity-rollback.sql` removes only the unchanged draft-marked index and refuses constraint-backed/pre-existing indexes. Twelve disposable PostgreSQL tests pass. Actual load/lock scheduling and deployed uniqueness remain unverified.
 
-## Stage 3: review a strict Circle baseline before the full stack
+## Stage 3: explicit profile consent and owner editing
+
+After raw-member containment, review `member-profile-preflight.sql` → `member-profile-apply.sql` and the source/fixtures in `member-profile-owner-milestone.md`. Legacy members default private/revision zero; no publication consent is invented. Public server projections must deploy with explicit visibility predicates/whitelists and owner clients must use the verified endpoint. The unused-only reverse script refuses any edit/publication or later dependency. These files remain unapplied; local acceptance does not authorize changing live grants or deploying the app.
+
+## Stage 4: review a strict Circle baseline before the full stack
 
 **The current stack cannot be applied unchanged.** `circle-message-moderation.sql` requires RLS enabled and exactly four known legacy policies across `book_cohorts`, `book_cohort_members`, `seminar_messages`; later participation requires that baseline plus five restrictive policies. Live core tables have RLS disabled and lack the expected policies. The base Circle migration deliberately does not change existing-table policies.
 

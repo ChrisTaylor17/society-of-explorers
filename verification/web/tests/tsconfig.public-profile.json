@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": { "incremental": false, "plugins": [] },
+  "include": [
+    "../../../lib/explorer/publicProfile.ts",
+    "../../../app/explorer/[id]/page.tsx",
+    "../../../app/api/explorer/[id]/route.ts",
+    "../../../app/api/members/discover/route.ts",
+    "../../../app/api/communities/[slug]/route.ts",
+    "../../../app/c/[slug]/page.tsx",
+    "../../../node_modules/next/types/global.d.ts"
+  ],
+  "exclude": []
+}

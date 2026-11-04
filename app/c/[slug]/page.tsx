@@ -3,6 +3,7 @@ import { useState, useEffect, use } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import type { PublicMemberProfile } from '@/lib/members/profile';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -44,17 +45,10 @@ interface Product {
   created_at: string;
 }
 
-interface CommunityMember {
-  member_id: string;
-  display_name: string | null;
-  role: string | null;
-}
-
 interface CommunityRecord {
   name: string;
   description: string | null;
   mission: string | null;
-  owner_member_id: string | null;
 }
 
 interface GovernanceParams {
@@ -79,8 +73,8 @@ interface CommunityDashboardData {
     governance?: { parameters?: GovernanceParams | null } | null;
     infrastructure?: { parameters?: InfrastructureParams | null } | null;
   } | null;
-  memberCount?: number;
-  members?: CommunityMember[];
+  members?: PublicMemberProfile[];
+  viewer?: { canManage: false };
   products?: Product[];
 }
 
@@ -94,6 +88,10 @@ function errorMessage(error: unknown, fallback: string) {
 
 export default function CommunityDashboard({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  return <CommunityDashboardView key={slug} slug={slug} />;
+}
+
+function CommunityDashboardView({ slug }: { slug: string }) {
   const [data, setData] = useState<CommunityDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -118,21 +116,24 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    getMemberSession().then(s => { if (s?.member) setMemberId(s.member.id); }).catch(() => {});
+    let cancelled = false;
+    const controller = new AbortController();
+    getMemberSession().then(s => { if (!cancelled && s?.member) setMemberId(s.member.id); }).catch(() => {});
 
-    fetch(`/api/communities/${slug}`)
+    fetch(`/api/communities/${encodeURIComponent(slug)}`, { cache: 'no-store', signal: controller.signal })
       .then(r => {
-        if (r.status === 404) { setNotFound(true); return null; }
+        if (!r.ok) throw new Error('Community unavailable');
         return r.json();
       })
       .then(d => {
-        if (d) {
+        if (!cancelled && d) {
           setData(d);
           if (Array.isArray(d.products)) setProducts(d.products);
         }
       })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
+      .catch(() => { if (!cancelled) setNotFound(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; controller.abort(); };
   }, [slug]);
 
   // Fetch REP balance when member is known
@@ -235,8 +236,8 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
         <PublicNav />
         <div style={{ padding: '10rem 2rem', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>DAO NOT FOUND</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '1rem' }}>This DAO does not exist.</h1>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COMMUNITY UNAVAILABLE</div>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '1rem' }}>This community is unavailable.</h1>
           <a href="/explore" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, border: `1px solid ${gold}`, padding: '12px 28px', textDecoration: 'none' }}>EXPLORE DAOs</a>
         </div>
         <PublicFooter />
@@ -247,10 +248,10 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
   const community = data.community;
   const gov = data.contracts?.governance?.parameters || {};
   const infra = data.contracts?.infrastructure?.parameters || {};
-  const memberCount = data.memberCount || 0;
   const members = data.members || [];
-  const isOwner = !!(memberId && members.some((m) => m.member_id === memberId && m.role === 'owner'))
-    || (memberId && community.owner_member_id === memberId);
+  // Published profile fields are not management authority. These optional
+  // controls stay hidden until a separate verified viewer capability exists.
+  const isOwner = false;
 
   const templateKey = gov.template || '';
   const templateLabel = TEMPLATE_LABELS[templateKey] || templateKey || 'DAO';
@@ -288,7 +289,7 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
             </span>
             <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: '#4CAF50' }}>{'\u25cf'} LIVE</span>
             <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>
-              {memberCount} MEMBER{memberCount !== 1 ? 'S' : ''}
+              {members.length} PUBLIC PROFILE{members.length !== 1 ? 'S' : ''} SHOWN
             </span>
           </div>
 
@@ -629,25 +630,19 @@ export default function CommunityDashboard({ params }: { params: Promise<{ slug:
       <section style={{ padding: '1rem 2rem 1rem' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto' }}>
           <div style={cardStyle}>
-            <div style={cardLabelStyle}>MEMBERS</div>
+            <div style={cardLabelStyle}>PUBLISHED PROFILES</div>
             {members.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                <p style={{ fontSize: '15px', color: parchment, fontStyle: 'italic', margin: 0 }}>You&apos;re the first member.</p>
-                <div style={{ marginTop: '0.75rem' }}>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}`, padding: '3px 10px' }}>FOUNDER</span>
-                </div>
+                <p style={{ fontSize: '15px', color: parchment, fontStyle: 'italic', margin: 0 }}>No published profiles are shown.</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {members.map((m) => (
-                  <div key={m.member_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: `1px solid ${gold}08` }}>
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: `1px solid ${gold}08` }}>
                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${gold}18`, border: `1px solid ${gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold }}>
                       {(m.display_name || '?')[0].toUpperCase()}
                     </div>
-                    <span style={{ flex: 1, fontSize: '15px', color: parchment }}>{m.display_name}</span>
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: m.role === 'owner' ? gold : muted }}>
-                      {(m.role || 'member').toUpperCase()}
-                    </span>
+                    <a href={`/explorer/${m.id}`} style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere', fontSize: '15px', color: parchment, minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}>{m.display_name || 'Explorer'}</a>
                   </div>
                 ))}
               </div>

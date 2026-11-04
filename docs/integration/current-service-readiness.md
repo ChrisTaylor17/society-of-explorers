@@ -20,7 +20,7 @@ The account audit independently inspected bounded `pg_catalog` metadata around 1
 
 The table grants above are effective database privileges, checked with catalog privilege functions. HTTP row access was deliberately not exercised. This bounded audit does not cover every public table, view, storage object, edge function, Auth setting, function body, role inheritance path or production caller.
 
-Root's parallel source inventory also identified service-role-backed public profile/recent-response projections without explicit opt-in. Revoking raw member grants does not close those application endpoints. The next local milestone must address verified member/profile clients and explicit public-profile consent (default private); no consent is inferred or backfilled by this draft.
+Root's parallel source inventory also identified service-role-backed public profile/recent-response projections without explicit opt-in. Revoking raw member grants does not close those application endpoints. The subsequent local profile milestone adds verified owner editing and explicitly opted-in public projections, with private legacy defaults; see `member-profile-owner-milestone.md` and `public-profile-integration.md`. These local changes and their SQL are not deployed, and no consent is inferred or backfilled by either draft.
 
 ## Advisory evidence
 

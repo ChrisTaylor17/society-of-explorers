@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": []
+  },
+  "include": [
+    "profile-editor-entry.tsx",
+    "../../../node_modules/next/types/global.d.ts"
+  ],
+  "exclude": []
+}
