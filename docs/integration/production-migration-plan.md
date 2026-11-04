@@ -81,6 +81,20 @@ Re-application and reversal require the exact recorded post-state. Reversal rest
 
 **Do not include `current_prompt_member_id()` in that revoke.** Its exact local 84-character body maps `auth.uid()` to `members.supabase_auth_id`; live metadata confirms eight policy dependencies. The complete unchanged Prompt Atlas migration reproduces their expression hashes and the invoker-view hash locally. Core raw-member containment and identity uniqueness preserve this lookup and its RLS paths in the synthetic compatibility proof. It is Supabase-subject mapping, not wallet-cookie authority, and no global role/default ACL changes are proposed.
 
+## Stage 7: additive moderation workflows — locally verified, unapplied
+
+After the existing Circle chain, separately review these current candidates with their matching server/client changes:
+
+| Order | Local file | Purpose / stop condition |
+| --- | --- | --- |
+| 10 | `docs/sql/circle-message-ai-consent.sql` | Explicit per-message author consent; legacy messages default excluded. Provider disclosure and current consent are required before message-only advice. |
+| 11 | `docs/sql/circle-message-ai-allowance.sql` | Private shared request reservations with disabled/zero defaults, a finite owner-approved window and lifetime ceilings. It does not establish a provider dollar spending cap or authorize activation. |
+| 12 | `docs/sql/circle-review-coverage.sql` | Service-only 50-report pages, explicit sequential acknowledgements, current-case invalidation and complete human decisions for large cases. Widens only recognized audit count checks; old detail/decision guards remain unchanged. |
+
+The local coverage fixture executes this chain against the tracked sanitized Circle baseline with synthetic identity/default exceptions. It is separate from the historical twenty-file cross-stage proof. See `circle-review-coverage-sql.md` and `circle-review-coverage-verification.json` for exact scope and evidence. AI retains its separate100-report completeness gate.
+
+Before any approved rollout, review current object/index/trigger collisions, existing report counts and source-data validity, hosted authorization/schema-cache behavior, independent-session contention, and progress retention. The new indexes and DDL can block writers; local success is not a zero-downtime claim. There is no complete reverse migration for used coverage: decisions above100 cannot satisfy the old audit check, and session/page metadata must not be discarded to force a downgrade. Use a separately reviewed data-preserving restore or roll-forward plan. No reviewer, allowance configuration, real provider call or live schema change was performed.
+
 ## Rollback and acceptance boundaries
 
 Stage 1 and identity have bounded locally testable reverse scripts. The full Circle chain does **not** have a complete reviewed data-preserving reverse migration. A base-schema rollback is not safe after later moderation/participation/discussion use; dropping tables, messages, receipts or audit history is not authorized. Use an approved restore/roll-forward plan, keep new web writes unavailable during rollout, and never delete history to make an old version boot.

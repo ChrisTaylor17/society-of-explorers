@@ -3,6 +3,7 @@
 import { isUuid } from '@/lib/ids/uuid';
 import { isRecord } from './http';
 import { REPORT_REASONS, type ReportReason } from './report';
+import { REVIEW_REPORT_COUNT_MAX } from './review-coverage';
 
 export const CIRCLE_HIDE_REASONS = ['safety', 'harassment', 'spam', 'misleading'] as const;
 export const CIRCLE_RESTORE_REASONS = ['no_violation', 'insufficient_evidence', 'resolved'] as const;
@@ -74,7 +75,7 @@ function hostDecision(value: unknown): CircleHostDecision | null {
 }
 function decision(value: unknown): CircleReviewDecision | null {
   const parsed = hostDecision(value);
-  if (!parsed || !isRecord(value) || !integer(value.report_count) || value.report_count > CIRCLE_REVIEW_DETAIL_LIMIT) return null;
+  if (!parsed || !isRecord(value) || !integer(value.report_count) || value.report_count > REVIEW_REPORT_COUNT_MAX) return null;
   return { ...parsed, report_count: value.report_count };
 }
 function report(value: unknown): CircleReviewReport | null {

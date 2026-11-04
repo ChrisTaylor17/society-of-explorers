@@ -281,7 +281,8 @@ test('reports retain the five-per-hour identity budget and include Retry-After',
 test('shared public-safe parsers strip private fields and reject invalid events', () => {
   const a = fixture(); const shared = a.app.load('lib/circles/moderation.ts');
   assert.equal(shared.parseCircleReviewDetail(detail({ decisions: [{ ...event(), created_at: 'not-a-date' }] })), null);
-  assert.equal(shared.parseCircleReviewDetail(detail({ decisions: [{ ...event(), report_count: 101 }] })), null);
+  assert.equal(shared.parseCircleReviewDetail(detail({ decisions: [{ ...event(), report_count: 101 }] })).decisions[0].report_count, 101);
+  assert.equal(shared.parseCircleReviewDetail(detail({ decisions: [{ ...event(), report_count: 2147483648 }] })), null);
   assert.equal(shared.parseCircleHostReview(host({ decisions: [event(), event()] })), null);
   assert.equal(shared.parseCircleHostReviews({ items: [host(), host()], nextCursor: null }), null);
   const result = plain(shared.parseCircleHostReview(host()));

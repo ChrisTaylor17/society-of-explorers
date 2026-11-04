@@ -1,7 +1,7 @@
 {
   "version": 1,
   "recordedAtUTC": "2026-11-04T18:05:27.739543+00:00",
-  "status": "LOCAL_SHARED_AI_ALLOWANCE_PASS_PRODUCTION_HOLD",
+  "status": "HISTORICAL_LOCAL_SHARED_AI_ALLOWANCE_PASS_PRODUCTION_HOLD",
   "priorCheckpoint": "37a020407556c6f62aef1021362a857d4ee684d2",
   "behavior": {
     "defaultEnabled": false,
@@ -33,7 +33,7 @@
     "sourceFiles": 975,
     "sourceSha256": "bc90e7d18385459f6a97868e2e3a8a07c787b06079e777682963d8008efb1192",
     "sourceUnchangedDuringBuild": true,
-    "log": "evidence/next-build.log",
+    "log": "verification/web/evidence/checkpoint-a21b399/next-build.log",
     "buildId": "Pqr4Z3vBsZBCJv8EV3fhe"
   },
   "tests": {
@@ -41,19 +41,19 @@
       "passed": 30,
       "failed": 0,
       "skipped": 0,
-      "log": "verification/web/evidence/message-ai-allowance-focused.log"
+      "log": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-focused.log"
     },
     "database": {
       "passed": 16,
       "failed": 0,
       "skipped": 0,
-      "log": "verification/web/evidence/message-ai-allowance-db.log"
+      "log": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-db.log"
     },
     "composition": {
       "passed": 7,
       "failed": 0,
       "skipped": 0,
-      "log": "verification/web/evidence/message-ai-allowance-integration.log"
+      "log": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-integration.log"
     }
   },
   "focusedBreakdown": {
@@ -155,18 +155,18 @@
     "verification/web/tests/support/message-ai-app.mjs": "8e02dd055e1d71fad4413fde26bad79b7dbb1989bc90d7d0637596243064c8d5"
   },
   "evidenceSha256": {
-    "verification/web/evidence/next-build.json": "e88d9770ea593db73a8b8bb73ce2fa0cc17021338d2c80607ef57300c6a41ab7",
-    "verification/web/evidence/next-build.log": "87c432eed0fa55819fb2a681e87c9193d58de72f4c7043a3eb2c0ba73f818cc1",
-    "verification/web/evidence/build-source-sha256.json": "a73dfbeeef25f20f88749923093b596f4974f146f3f9c6cda64113626b34191a",
-    "verification/web/evidence/message-ai-allowance-focused.log": "670a112cd190f73e3ef5d435f87d4d8f49bd09af614388f4a4010063494edb68",
-    "verification/web/evidence/message-ai-allowance-db.log": "e09c536485fd42a6d1e1b483e65a401d50a7468b9b7b01d1bb998da4c09ff475",
-    "verification/web/evidence/message-ai-allowance-integration.log": "de8758812f19ca46a4a05fb28007e7b4a035d69db987a1f812a0e43c76fd7551",
-    "verification/web/evidence/message-ai-allowance-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/message-ai-browser.json": "5c9855df36348b6d913357c0fd79a3eac974d923af7e372a947766fce4ebb7dc",
-    "verification/web/evidence/message-ai-allowance-browser.log": "7be664a6afe3ae49b829c4464861e96146de444ede427ffe2952c0c97c0ca468",
-    "verification/web/evidence/browser-discovery-qa.json": "2422c07abc0fb036d7a9698ff9137bb86715d15ffec4cbec9806e0f90047b6e9",
-    "verification/web/evidence/browser-discovery-allowance-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
-    "verification/web/evidence/original-status-allowance-check.json": "fee758176cdb38c71c34cf129833bc5e32ea95b765f37c2399832300b2eec352"
+    "verification/web/evidence/checkpoint-a21b399/next-build.json": "e88d9770ea593db73a8b8bb73ce2fa0cc17021338d2c80607ef57300c6a41ab7",
+    "verification/web/evidence/checkpoint-a21b399/next-build.log": "87c432eed0fa55819fb2a681e87c9193d58de72f4c7043a3eb2c0ba73f818cc1",
+    "verification/web/evidence/checkpoint-a21b399/build-source-sha256.json": "a73dfbeeef25f20f88749923093b596f4974f146f3f9c6cda64113626b34191a",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-focused.log": "670a112cd190f73e3ef5d435f87d4d8f49bd09af614388f4a4010063494edb68",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-db.log": "e09c536485fd42a6d1e1b483e65a401d50a7468b9b7b01d1bb998da4c09ff475",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-integration.log": "de8758812f19ca46a4a05fb28007e7b4a035d69db987a1f812a0e43c76fd7551",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-browser.json": "5c9855df36348b6d913357c0fd79a3eac974d923af7e372a947766fce4ebb7dc",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-browser.log": "7be664a6afe3ae49b829c4464861e96146de444ede427ffe2952c0c97c0ca468",
+    "verification/web/evidence/checkpoint-a21b399/browser-discovery-qa.json": "2422c07abc0fb036d7a9698ff9137bb86715d15ffec4cbec9806e0f90047b6e9",
+    "verification/web/evidence/checkpoint-a21b399/browser-discovery-allowance-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
+    "verification/web/evidence/checkpoint-a21b399/original-status-allowance-check.json": "fee758176cdb38c71c34cf129833bc5e32ea95b765f37c2399832300b2eec352"
   },
   "historicalEvidence": {
     "checkpoint": "37a0204",
@@ -175,5 +175,12 @@
     "originalReceipt": "verification/web/evidence/checkpoint-37a0204/message-ai-release-verification.original.json",
     "receipt": "docs/integration/message-ai-release-verification.json",
     "scope": "Prior broad749/nonDOM and native15 evidence is historical; not rerun for this server-only change."
+  },
+  "checkpoint": "a21b399e5234fc9abe3230a56a75c197c3bbb588",
+  "evidenceArchive": {
+    "directory": "verification/web/evidence/checkpoint-a21b399",
+    "originalReceipt": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-verification.original.json",
+    "pinnedFiles": 12,
+    "scope": "Historical source/build/test snapshot before full report coverage; preserved bytes, not current source acceptance."
   }
 }

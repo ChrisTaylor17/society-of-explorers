@@ -10,10 +10,12 @@ import { parseMessageAdviceReceipt, type MessageAdvice } from '@/lib/circles/mes
 import { body, button, card, fieldLabel, h2, input, lead, primary, small } from '@/lib/circles/ui';
 import { messageReasonLabel } from '@/app/circles/messages/MessageActions';
 import styles from '@/app/circles/messages/safety.module.css';
+import ReviewCoverage, { type ReviewCoverageBinding } from '@/app/moderation/ReviewCoverage';
+import type { ReviewCoverageEvidence } from '@/lib/circles/review-coverage';
 
 const hideReasons = ['safety', 'harassment', 'spam', 'misleading', 'inappropriate'];
 const restoreReasons = ['no_violation', 'insufficient_evidence', 'resolved'];
-type Pending = { circleId: string; messageId: string; payload: { action: 'hide' | 'restore'; expectedRevision: number; contentHash: string; requestId: string; reason: string; summary: string; evidenceReportId: string | null; evidenceExcerpt: string | null } };
+type Pending = { circleId: string; messageId: string; endpoint: string; payload: { action: 'hide' | 'restore'; expectedRevision: number; contentHash: string; requestId: string; reason: string; summary: string; evidenceReportId: string | null; evidenceExcerpt: string | null; sessionId?: string } };
 
 export default function MessageReviews() {
   const id = useId();
@@ -28,9 +30,12 @@ export default function MessageReviews() {
   const [excerpt, setExcerpt] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
+  const [coverage, setCoverage] = useState<ReviewCoverageBinding | null>(null);
+  const [chosenEvidence, setChosenEvidence] = useState<ReviewCoverageEvidence | null>(null);
   const sending = useRef(false);
   const focusCase = useCallback((element: HTMLHeadingElement | null) => { element?.focus({ preventScroll: true }); }, []);
-  const clearDraft = useCallback(() => { setAction(''); setReason(''); setSummary(''); setSource('message'); setExcerpt(''); setConfirmed(false); setAdvice(null); }, []);
+  const clearDraft = useCallback(() => { setAction(''); setReason(''); setSummary(''); setSource('message'); setExcerpt(''); setConfirmed(false); setAdvice(null); setCoverage(null); setChosenEvidence(null); }, []);
+  const coverageAction = useCallback(() => setConfirmed(false), []);
   const retire = useCallback(() => {
     setQueue(null); setDetail(null); setPending(null); clearDraft(); sending.current = false;
     setNotice('Private reports, evidence and drafts cleared. Load assigned message reviews to check access again. A decision already sent may still have been saved.');
@@ -38,6 +43,9 @@ export default function MessageReviews() {
   const { active, busy, perform } = useReviewAccess(retire);
   const disabled = !active || busy;
   const endpoint = (circleId: string, messageId: string) => `/api/admin/circles/${encodeURIComponent(circleId)}/messages/${encodeURIComponent(messageId)}`;
+  const covered = Boolean(detail && coverage?.complete && coverage.circleId === detail.circle.id && coverage.messageId === detail.message.id
+    && coverage.revision === detail.revision && coverage.contentHash === detail.contentHash);
+  const decisionReady = Boolean(detail && (detail.complete || covered));
   function unavailable(status?: number) {
     setQueue(null); setDetail(null); setPending(null); clearDraft();
     setNotice(status === 401 ? 'Sign in to load assigned message reviews.' : status === 403 ? 'No eligible assignment is available. Review access excludes conflicts with the author, Circle host, participants and reporters.' : status === 404 ? 'This message review is no longer available.' : status === 409 ? 'This message or its reports changed. Load a fresh case before deciding.' : 'Review information could not be loaded. An empty queue or saved decision is not being assumed.');
@@ -57,16 +65,17 @@ export default function MessageReviews() {
     void perform(endpoint(circleId, messageId), { method: 'GET' }, ({ status, body }) => {
       const value = status === 200 ? parseMessageReviewDetail(body) : null;
       if (!value || value.circle.id !== circleId || value.message.id !== messageId) return unavailable(status);
-      setDetail(value); setNotice(saved ? 'Decision confirmed. Current case loaded; another decision requires a new review.' : 'Current case loaded. A report is an allegation, not a finding.');
+      setDetail(value.complete ? value : { ...value, reports: [] }); setNotice(saved ? 'Decision confirmed. Current case loaded; another decision requires a new review.' : 'Current case loaded. A report is an allegation, not a finding.');
     }, () => unavailable());
   }
   function send(request: Pending) {
     if (disabled || sending.current) return;
     sending.current = true; setPending(null); setQueue(null); setDetail(null); clearDraft(); setNotice('Saving reviewed decision…');
-    void perform(endpoint(request.circleId, request.messageId), { method: 'POST', body: JSON.stringify(request.payload) }, ({ status, body }) => {
+    void perform(request.endpoint, { method: 'POST', body: JSON.stringify(request.payload) }, ({ status, body }) => {
       sending.current = false;
       const receipt = status === 200 ? parseMessageDecisionReceipt(body) : null;
-      const valid = receipt && receipt.requestId === request.payload.requestId && receipt.circleId === request.circleId && receipt.messageId === request.messageId
+      const sessionMatches = !request.payload.sessionId || (body !== null && typeof body === 'object' && 'sessionId' in body && body.sessionId === request.payload.sessionId);
+      const valid = receipt && sessionMatches && receipt.requestId === request.payload.requestId && receipt.circleId === request.circleId && receipt.messageId === request.messageId
         && receipt.decision.action === request.payload.action && receipt.decision.reason === request.payload.reason
         && receipt.decision.summary === request.payload.summary && receipt.safety.revision > request.payload.expectedRevision
         && (receipt.replayed || request.payload.action !== 'hide' || receipt.safety.visibility === 'hidden' || receipt.safety.visibility === 'withdrawn');
@@ -77,7 +86,7 @@ export default function MessageReviews() {
         void perform(endpoint(request.circleId, request.messageId), { method: 'GET' }, ({ status: readStatus, body: readBody }) => {
           const current = readStatus === 200 ? parseMessageReviewDetail(readBody) : null;
           if (!current || current.circle.id !== request.circleId || current.message.id !== request.messageId || current.revision < receipt.safety.revision) return unavailable(readStatus);
-          setDetail(current); setNotice('Decision confirmed. Current case loaded; another decision requires a new review.');
+          setDetail(current.complete ? current : { ...current, reports: [] }); setNotice('Decision confirmed. Current case loaded; another decision requires a new review.');
         }, () => { unavailable(); setNotice('Decision was confirmed, but the current case could not be loaded. Load assigned reviews to continue.'); });
       } else if ([400, 401, 403, 404, 409, 413, 429].includes(status)) unavailable(status);
       else { setPending(request); setNotice('The decision reply could not be confirmed. It may have been saved. Retry the exact same decision manually, or load a fresh queue and inspect its history.'); }
@@ -104,15 +113,16 @@ export default function MessageReviews() {
   }
   function decide(event: React.FormEvent) {
     event.preventDefault();
-    if (!detail || disabled || sending.current || !detail.complete || !confirmed || !action || !reason) return;
+    if (!detail || disabled || sending.current || !decisionReady || !confirmed || !action || !reason) return;
     const cleanSummary = summary.trim();
     const cleanExcerpt = excerpt.trim();
-    const evidence = source === 'message' ? detail.message.content : detail.reports.find(report => report.id === source)?.note;
+    const evidence = source === 'message' ? detail.message.content : chosenEvidence?.id === source ? chosenEvidence.note : detail.reports.find(report => report.id === source)?.note;
     if (!(action === 'hide' ? hideReasons : restoreReasons).includes(reason) || cleanSummary.length < 20 || cleanSummary.length > 1000) { setNotice('Choose a conduct reason and write an author-facing explanation of 20 to 1,000 characters.'); return; }
     if (action === 'hide' && (cleanExcerpt.length < 5 || cleanExcerpt.length > 500 || !evidence?.includes(cleanExcerpt))) { setNotice('Copy an exact excerpt of 5 to 500 characters from the selected evidence source.'); return; }
-    send({ circleId: detail.circle.id, messageId: detail.message.id, payload: {
+    send({ circleId: detail.circle.id, messageId: detail.message.id, endpoint: endpoint(detail.circle.id, detail.message.id) + (covered ? '/coverage/decision' : ''), payload: {
       action, expectedRevision: detail.revision, contentHash: detail.contentHash, requestId: crypto.randomUUID(), reason, summary: cleanSummary,
       evidenceReportId: action === 'hide' && source !== 'message' ? source : null, evidenceExcerpt: action === 'hide' ? cleanExcerpt : null,
+      ...(covered && coverage ? { sessionId: coverage.sessionId } : {}),
     } });
   }
   return <div className={styles.scope}>
@@ -132,11 +142,15 @@ export default function MessageReviews() {
       <p style={body}>{detail.message.visibility === 'withdrawn' ? 'The author withdrew this message. Lifting a moderator restriction cannot return it to member views.' : detail.message.visibility === 'hidden' ? 'This message is hidden from member views.' : 'This message is visible to eligible members.'}</p>
       <div style={card}><h3 style={fieldLabel}>Restricted message evidence</h3><p style={small}>{detail.message.member_name} · <time dateTime={detail.message.created_at}>{new Date(detail.message.created_at).toUTCString()}</time></p><p style={{ ...body, whiteSpace: 'pre-wrap' }}>{detail.message.content}</p></div>
       <h3 style={h2}>Open reports</h3>
-      {!detail.complete && <p role="alert" style={body}>The full case is not available in this view. Decisions are disabled until all evidence can be reviewed.</p>}
+      {!detail.complete ? <ReviewCoverage key={`${detail.circle.id}:${detail.message.id}:${detail.revision}:${detail.contentHash}`}
+        endpoint={`${endpoint(detail.circle.id, detail.message.id)}/coverage`} circleId={detail.circle.id} messageId={detail.message.id}
+        revision={detail.revision} contentHash={detail.contentHash} active={active} busy={busy} perform={perform}
+        onProof={setCoverage} onAction={coverageAction} onClearDraft={clearDraft} onUnavailable={unavailable}
+        onEvidence={evidence => { setChosenEvidence(evidence); setSource(evidence.id); setExcerpt(''); setConfirmed(false); }} /> : <>
       {!detail.reports.length && <p style={small}>No open reports. Check the message and previous decisions before changing moderator restrictions.</p>}
       <ol className={styles.list}>{detail.reports.map((report, index) => <li key={report.id} style={card}>
         <h4 style={fieldLabel}>Report {index + 1}: {messageReasonLabel(report.reason)}</h4><p style={{ ...body, whiteSpace: 'pre-wrap' }}>{report.note || 'No additional details.'}</p><time style={small} dateTime={report.created_at}>{new Date(report.created_at).toUTCString()}</time>
-      </li>)}</ol>
+      </li>)}</ol></>}
       <section aria-label="AI assistance" className={styles.stack}>
         <h3 style={h2}>Optional AI assistance</h3>
         <p style={small}>Available only when the author opted in for this message and AI assistance is enabled. Anthropic receives the message text, which may itself contain names or personal details. Reporter notes, account details and the rest of the conversation are excluded.</p>
@@ -155,14 +169,15 @@ export default function MessageReviews() {
         </div>}
       </section>
       <form onSubmit={decide}>
-        <fieldset disabled={disabled || !detail.complete} className={styles.stack} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+        <fieldset disabled={disabled || !decisionReady} className={styles.stack} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
           <legend style={h2}>Human decision</legend>
           <label htmlFor={`${id}-action`} style={fieldLabel}>Moderator restriction</label>
           <select id={`${id}-action`} style={input} required value={action} onChange={event => { setAction(event.target.value as 'hide' | 'restore'); setReason(''); setExcerpt(''); setConfirmed(false); }}><option value="">Choose a decision</option><option value="hide">Hide or keep hidden</option><option value="restore">Lift moderator restriction</option></select>
           <label htmlFor={`${id}-reason`} style={fieldLabel}>Reason based on conduct</label>
           <select id={`${id}-reason`} style={input} required value={reason} onChange={event => { setReason(event.target.value); setConfirmed(false); }}><option value="">Choose a reason</option>{(action === 'hide' ? hideReasons : restoreReasons).map(value => <option key={value} value={value}>{messageReasonLabel(value)}</option>)}</select>
           {action === 'hide' && <>
-            <label htmlFor={`${id}-source`} style={fieldLabel}>Evidence source</label><select id={`${id}-source`} style={input} value={source} onChange={event => { setSource(event.target.value); setExcerpt(''); setConfirmed(false); }}><option value="message">Message text</option>{detail.reports.map((report, index) => <option key={report.id} value={report.id}>Report {index + 1}</option>)}</select>
+            <label htmlFor={`${id}-source`} style={fieldLabel}>Evidence source</label><select id={`${id}-source`} style={input} value={source} onChange={event => { setSource(event.target.value); setExcerpt(''); setConfirmed(false); }}><option value="message">Message text</option>{detail.complete ? detail.reports.map((report, index) => <option key={report.id} value={report.id}>Report {index + 1}</option>) : chosenEvidence && <option value={chosenEvidence.id}>{chosenEvidence.label} (chosen evidence)</option>}</select>
+            {chosenEvidence && source === chosenEvidence.id && <p style={{ ...small, whiteSpace: 'pre-wrap' }}>Chosen evidence from {chosenEvidence.label}: {chosenEvidence.note}</p>}
             <label htmlFor={`${id}-excerpt`} style={fieldLabel}>Exact evidence excerpt</label><textarea id={`${id}-excerpt`} style={input} rows={3} minLength={5} maxLength={500} required value={excerpt} onChange={event => { setExcerpt(event.target.value); setConfirmed(false); }} aria-describedby={`${id}-evidence-help`} />
             <p id={`${id}-evidence-help`} style={small}>Quote the selected source exactly. Evidence stays private; an allegation alone is not proof of a violation.</p>
           </>}

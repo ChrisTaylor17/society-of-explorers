@@ -1,5 +1,6 @@
 import { isUuid } from '@/lib/ids/uuid';
 import { REPORT_REASONS, type ReportReason } from './report';
+import { REVIEW_REPORT_COUNT_MAX } from './review-coverage';
 
 export const MESSAGE_SAFETY_LIMIT = 25;
 export type MessageVisibility = 'visible' | 'hidden' | 'withdrawn';
@@ -48,7 +49,7 @@ function explanation(value: unknown): MessageExplanation | null {
 }
 function decision(value: unknown): MessageReviewDecision | null {
   const item = explanation(value);
-  return item && record(value) && integer(value.report_count) && value.report_count <= 100 ? { ...item, report_count: value.report_count } : null;
+  return item && record(value) && integer(value.report_count) && value.report_count <= REVIEW_REPORT_COUNT_MAX ? { ...item, report_count: value.report_count } : null;
 }
 
 /** Always project a whitelist. Private report/evidence fields never pass through. */
