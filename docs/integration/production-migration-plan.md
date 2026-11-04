@@ -2,7 +2,7 @@
 
 **No migration in this plan has been applied to the connected project.** Approval must name exact reviewed files, target, expected client breakage, restore evidence and acceptance checks. This document is a reviewable local plan, not a deployment instruction or implicit permission to change production.
 
-Current facts are in [current-service-readiness.md](current-service-readiness.md); metadata queries/results are archived under `verification/web/evidence/live-service-metadata-2026-11-04.json`. Application source is frozen for the canonical checkpoint. No legacy/public client adaptation is included in this SQL work.
+Current facts are in [current-service-readiness.md](current-service-readiness.md); metadata queries/results are archived under `verification/web/evidence/live-service-metadata-2026-11-04.json`. Local profile and ordinary-salon adapters are verified, but the production caller/restore inventory remains incomplete. Hall is the next bounded local adaptation.
 
 ## Stage 1: bounded private-data containment
 
@@ -37,19 +37,19 @@ The draft aborts on duplicates without IDs, account merges/deletes or ownership 
 
 After raw-member containment, review `member-profile-preflight.sql` → `member-profile-apply.sql` and the source/fixtures in `member-profile-owner-milestone.md`. Legacy members default private/revision zero; no publication consent is invented. Public server projections must deploy with explicit visibility predicates/whitelists and owner clients must use the verified endpoint. The unused-only reverse script refuses any edit/publication or later dependency. These files remain unapplied; local acceptance does not authorize changing live grants or deploying the app.
 
-## Stage 4: review a strict Circle baseline before the full stack
+## Stage 4: strict Circle baseline and full-stack rehearsal
 
-**The current stack cannot be applied unchanged.** `circle-message-moderation.sql` requires RLS enabled and exactly four known legacy policies across `book_cohorts`, `book_cohort_members`, `seminar_messages`; later participation requires that baseline plus five restrictive policies. Live core tables have RLS disabled and lack the expected policies. The base Circle migration deliberately does not change existing-table policies.
+The live three-table baseline has RLS disabled, broad grants, no policies and sender fields without `member_name`. The new `circle-legacy-baseline-preflight.sql` → `circle-legacy-baseline-apply.sql` candidate closes browser table/column privileges, enables RLS and adds only nullable `member_name`, with no default, backfill or foreign-key repair. Existing sender meaning and data remain intact. See `circle-legacy-baseline.md` for exact effects and the unused-only reverse boundary.
 
-Do not create broad PUBLIC policies merely to satisfy an old fixture. The next local milestone must design a strict service-only baseline for private Circle/member/message writes and revise preflight acceptance to recognize that stricter configuration, while separately reviewing ordinary book-salon behavior. It must begin from a sanitized fixture reproducing actual live catalog structure, grants and absent policies, then execute the **entire** migration chain and meaningful service/browser negative cases. Existing hand-seeded legacy-policy fixtures are not sufficient evidence of production compatibility. This stricter baseline and revised full-chain rehearsal are not completed by Stage 1.
+No broad PUBLIC policies were created to satisfy historical fixtures. Revised preflights accept the reviewed strict zero→five restrictive-policy path; historical four→nine remains a separately tested compatibility path. Eight source-bound cases now execute the entire nine-file chain from a tracked sanitized catalog fixture, with explicit default/stub/runtime exceptions. Sixteen baseline cases and 39 historical cases also pass. This is meaningful local SQL proof, not a complete production restore or permission to apply the stack.
 
-Historical files and intended dependency order, only after that baseline is reviewed:
+Existing files and intended dependency order, after the separate strict baseline:
 
 | Order | Local file | Purpose / stop condition |
 | --- | --- | --- |
 | 1 | `supabase/migrations/20261027_soe_circles.sql` | Base circle columns/private/rsvp/report tables; reconcile IF NOT EXISTS object semantics and explicit new-object grants. The old base preflight includes a row count and is outside the catalog-only audit performed here. |
 | 2 | `docs/sql/circle-moderation.sql` | Reviewer grants, review decisions/report receipts, service-only review RPCs. No reviewer automatically provisioned. |
-| 3 | `docs/sql/circle-message-moderation.sql` | Message state/reports/decisions/receipts, parent retention, scoped restrictions; **currently incompatible legacy baseline preflight**. |
+| 3 | `docs/sql/circle-message-moderation.sql` | Message state/reports/decisions/receipts, parent retention, scoped restrictions; explicit strict-baseline/historical preflight branches. |
 | 4 | `docs/sql/circle-participation.sql` | Atomic join/leave/create/RSVP/complete, receipts/revision; requires the reviewed prior protections. |
 | 5 | `docs/sql/circle-reading-programs.sql` | Pinned edition/program metadata and participation integration. |
 | 6 | `docs/sql/circle-passage-posts.sql` | Rights/edition/program-bound passage posting and receipts. |
@@ -58,6 +58,12 @@ Historical files and intended dependency order, only after that baseline is revi
 | 9 | `docs/sql/circle-discovery-search.sql` | Service-only live discovery using participation/program/Unicode prerequisites. |
 
 `docs/sql/great-books-private-data.sql` is a separately reviewed two-table privacy candidate for `reading_progress`/`book_highlights`, not `great_books_progress`/`great_books_highlights`. Stage 1 already contains both pairs. Reconcile redundant operations and its policy expectations rather than automatically apply both as independent repairs.
+
+After private profile consent and the Circle chain, `book-salon-conversation.sql` supplies service-only ordinary-salon read/write RPCs with explicit published-profile joins, bounded messages and actor-bound posting. Its function-only reverse file preserves posts and containment. See `book-salon-conversation.md`; 23 final affected cases and five composed browser stories pass locally. Missing functions fail closed rather than falling back to raw tables. This does not resolve all old direct-Supabase callers.
+
+## Separate artifact/Hall gate — local work pending
+
+The bounded read-only `hall-catalog-2026-11-04.json` observation confirms `artifacts` has RLS, a public SELECT policy on `is_public=true`, an INSERT policy with `WITH CHECK(true)` and broad anon/authenticated table grants including TRUNCATE. Public row visibility also permits raw prompt/context/media columns; RLS does not enforce column-level projection or govern TRUNCATE. No HTTP exploit or user row was inspected. Artifacts is outside both containment candidates. Replace Hall's raw browser embedding and prepare a separate exact-scope access/restore candidate before including it in any approval. Do not silently expand the seven-table script.
 
 Before each full-stack stage: compare expected object definitions, policies, role memberships, table/column/function ACLs, current grants/defaults, fixed search paths and migration-history provenance; stop on unknown collisions instead of bypassing preflight. Verify explicit RPC EXECUTE denial for PUBLIC/anon/authenticated and required service-only access, no SECURITY DEFINER escalation, current membership/visibility/revision/idempotency behavior, and old salon paths under their reviewed scope. No production RPC is to be invoked during metadata audit.
 

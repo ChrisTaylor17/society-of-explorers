@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SHARE_OG_IMAGES, SHARE_TWITTER_IMAGES } from '@/lib/site/shareCard';
 
 export const metadata: Metadata = {
   title: 'Boston Physical Node Proposal',
@@ -14,19 +15,14 @@ export const metadata: Metadata = {
     url: '/92b',
     siteName: 'Society of Explorers',
     type: 'website',
-    images: [
-      {
-        url: '/images/hero-guild.jpeg',
-        alt: 'A proposed Society of Explorers physical salon',
-      },
-    ],
+    images: SHARE_OG_IMAGES,
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Boston Physical Node Proposal | Society of Explorers',
     description:
       'Explore the conditional path toward a first privacy-first Society of Explorers salon in Boston.',
-    images: ['/images/hero-guild.jpeg'],
+    images: SHARE_TWITTER_IMAGES,
   },
 };
 

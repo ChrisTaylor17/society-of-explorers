@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SHARE_OG_IMAGES, SHARE_TWITTER_IMAGES } from '@/lib/site/shareCard';
 
 export const metadata: Metadata = {
   title: 'Fund the First Physical Node',
@@ -14,19 +15,14 @@ export const metadata: Metadata = {
     url: '/92b/fund',
     siteName: 'Society of Explorers',
     type: 'website',
-    images: [
-      {
-        url: '/images/hero-renaissance.jpeg',
-        alt: 'A possible first Society of Explorers physical node',
-      },
-    ],
+    images: SHARE_OG_IMAGES,
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Fund the First Physical Node | Society of Explorers',
     description:
       'Patronage for a possible privacy-first physical salon in Boston, with conditional claims and no promise of financial return.',
-    images: ['/images/hero-renaissance.jpeg'],
+    images: SHARE_TWITTER_IMAGES,
   },
 };
 

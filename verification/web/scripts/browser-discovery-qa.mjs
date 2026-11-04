@@ -86,6 +86,7 @@ try {
     if (message.type() !== 'error') return;
     const text = message.text(), location = message.location().url;
     if ([`${origin}/api/auth/member`, `${origin}/api/members/profile`].includes(location) && text.includes('status of 401 (')) evidence.profileExpectedConsoleErrors.push({ location, text });
+    else if (evidence.artworkExpectedPaths?.some(pathname => location === origin + pathname) && text.includes('status of 404 (')) (evidence.artworkExpectedConsoleErrors ??= []).push({ location, text });
     else evidence.consoleErrors.push(text);
   });
   await context.route('**/*', async route => {
@@ -241,6 +242,33 @@ try {
   assert.equal(await page.getByRole('button', { name: /^Save / }).count(), 0);
   await layout(page, 'profile-signed-out-320.png');
   check('Actual built Next profile page uses canonical 320px CSS and 44px keyboard controls, with no auth/private/provider transport on initial render; explicit Load alone reaches actual cookie/token-free auth/member and owner-profile GET401 routes, shows generic sign-in state, and exposes no editable fields or false saved state');
+
+  evidence.stage = 'nonpublic artwork and first-party share card'; progress();
+  const artwork = JSON.parse(fs.readFileSync('../../archive/unverified-hero-images/manifest.json'));
+  evidence.artworkRequests = [];
+  evidence.artworkExpectedPaths = artwork.assets.flatMap(asset => ['/' + asset.originalPublicPath.replace(/^public\//, ''), '/' + asset.archivePath]);
+  for (const asset of artwork.assets) {
+    assert.equal(asset.publishable, false);
+    for (const pathname of ['/' + asset.originalPublicPath.replace(/^public\//, ''), '/' + asset.archivePath]) {
+      const status = await bounded('Nonpublic artwork request', () => page.evaluate(async pathname => {
+        const response = await fetch(pathname, { credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error' });
+        await response.body?.cancel(); return response.status;
+      }, pathname));
+      assert.equal(status, 404, pathname);
+      evidence.artworkRequests.push({ pathname, status, credentials: 'none' });
+    }
+  }
+  const share = await bounded('First-party share card response', () => page.evaluate(async () => {
+    const response = await fetch('/opengraph-image', { credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error' });
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return { status: response.status, type: response.headers.get('content-type'), bytes: bytes.length,
+      signature: [...bytes.slice(0, 8)].map(x => x.toString(16).padStart(2, '0')).join(''),
+      sha256: [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(x => x.toString(16).padStart(2, '0')).join('') };
+  }));
+  assert.equal(share.status, 200); assert.match(share.type, /^image\/png/);
+  assert.ok(share.bytes < 2_000_000); assert.equal(share.signature, '89504e470d0a1a0a');
+  evidence.firstPartyShareCard = { pathname: '/opengraph-image', ...share };
+  check('All12 retained hero images are404 at both former public and archive URLs on the actual built server; the existing first-party text/gradient share card returns a valid bounded PNG without provider transport');
 
   assert.deepEqual(evidence.externalRequestsBlocked, []); assert.deepEqual(evidence.pageErrors, []); assert.deepEqual(evidence.routeErrors, []); assert.deepEqual(evidence.consoleErrors.filter(text => !text.includes('net::ERR_FAILED') && ![409, 503].some(status => text.includes(`status of ${status} (`))), []);
   evidence.status = 'PASS'; evidence.stage = 'complete';

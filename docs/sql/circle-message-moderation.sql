@@ -1,12 +1,14 @@
 -- UNAPPLIED CANDIDATE: no live schema, grants, accounts or policies were changed.
 -- Apply only to an authorized isolated restore after reviewing the preflight.
--- Requires the existing Circle migration and circle-moderation.sql. No reviewers
+-- Requires the strict legacy baseline or historical cohort fixture, then the
+-- existing Circle migration and circle-moderation.sql. No reviewers
 -- are provisioned. Service-only INVOKER RPCs use canonical server member IDs.
 BEGIN;
+SET LOCAL search_path=pg_catalog,public;
 
 -- Unknown policies/role inheritance must be reviewed, not silently normalized.
 DO $$
-DECLARE v_policy record;
+DECLARE v_policy record; strict_baseline boolean;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role' AND (rolbypassrls OR rolsuper))
     OR NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon')
@@ -17,10 +19,52 @@ BEGIN
     OR EXISTS (SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member WHERE r.rolname IN ('anon','authenticated')) THEN
     RAISE EXCEPTION 'Unexpected browser authority: review role flags and inherited grants';
   END IF;
+  strict_baseline:=(SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename IN ('book_cohorts','book_cohort_members','seminar_messages'))=0;
+  -- Explicit strict branch: installed owner-only receipt plus no raw browser
+  -- authority. It never manufactures permissive policies to satisfy old fixtures.
+  IF NOT strict_baseline AND to_regclass('public.soe_circle_legacy_baseline_v1_state') IS NOT NULL THEN
+    RAISE EXCEPTION 'Strict legacy Circle baseline cannot fall back to historical policies';
+  END IF;
+  IF strict_baseline THEN
+    IF to_regclass('public.soe_circle_legacy_baseline_v1_state') IS NULL
+      OR NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.soe_circle_legacy_baseline_v1_state')
+        AND c.relkind='r' AND NOT c.relispartition AND NOT c.relhassubclass AND c.relrowsecurity AND NOT c.relforcerowsecurity
+        AND pg_get_userbyid(c.relowner)=current_user AND obj_description(c.oid,'pg_class')='soe-circle-legacy-baseline:v1:owned')
+      OR EXISTS(SELECT 1 FROM pg_policy WHERE polrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state'))
+      OR (SELECT count(*) FROM pg_attribute WHERE attrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state') AND attnum>0 AND NOT attisdropped)<>4
+      OR (SELECT count(*) FROM pg_attribute WHERE attrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state') AND attnum>0 AND NOT attisdropped
+        AND attnotnull AND NOT atthasdef AND attidentity='' AND attgenerated='' AND ((attname IN('target_table','integrity_digest') AND atttypid='text'::regtype)
+          OR (attname IN('prior_state','post_state') AND atttypid='jsonb'::regtype)))<>4
+      OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state') AND NOT tgisinternal)
+      OR EXISTS(SELECT 1 FROM pg_inherits WHERE inhrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state') OR inhparent=to_regclass('public.soe_circle_legacy_baseline_v1_state'))
+      OR (SELECT count(*) FROM pg_constraint WHERE conrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state'))<>1
+      OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state') AND contype='p' AND pg_get_constraintdef(oid)='PRIMARY KEY (target_table)')
+      OR (SELECT count(*) FROM pg_index WHERE indrelid=to_regclass('public.soe_circle_legacy_baseline_v1_state'))<>1
+      OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a
+        WHERE c.oid=to_regclass('public.soe_circle_legacy_baseline_v1_state') AND a.grantee<>c.relowner)
+      OR EXISTS(SELECT 1 FROM pg_attribute a CROSS JOIN LATERAL aclexplode(a.attacl) x JOIN pg_class c ON c.oid=a.attrelid
+        WHERE c.oid=to_regclass('public.soe_circle_legacy_baseline_v1_state') AND x.grantee<>c.relowner)
+      OR NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.seminar_messages'::regclass AND attname='member_name'
+        AND atttypid='text'::regtype AND NOT attnotnull AND NOT atthasdef AND attidentity='' AND attgenerated='' AND NOT attisdropped)
+      OR has_schema_privilege('anon','public','CREATE') OR has_schema_privilege('authenticated','public','CREATE')
+      OR EXISTS(SELECT 1 FROM pg_roles browser CROSS JOIN pg_class c WHERE browser.rolname IN('anon','authenticated')
+        AND c.relnamespace='public'::regnamespace AND c.relname IN('book_cohorts','book_cohort_members','seminar_messages')
+        AND (has_table_privilege(browser.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+          OR has_any_column_privilege(browser.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))) THEN
+      RAISE EXCEPTION 'Strict legacy Circle baseline protection requires review';
+    END IF;
+    IF (SELECT count(*) FROM public.soe_circle_legacy_baseline_v1_state)<>3
+      OR EXISTS(SELECT 1 FROM public.soe_circle_legacy_baseline_v1_state s
+        WHERE s.target_table NOT IN('book_cohorts','book_cohort_members','seminar_messages')
+          OR jsonb_typeof(s.prior_state)<>'object' OR jsonb_typeof(s.post_state)<>'object'
+          OR s.integrity_digest IS DISTINCT FROM md5(s.target_table||E'\n'||s.prior_state::text||E'\n'||s.post_state::text||E'\nsoe-circle-legacy-baseline:v1')) THEN
+      RAISE EXCEPTION 'Strict legacy Circle baseline receipt requires review';
+    END IF;
+  END IF;
   -- Restrictive predicates consult public cohort classification. If a browser
   -- already has legacy child-table privileges but cannot read that table, stop
   -- for review rather than silently break its ordinary-salon operations.
-  IF EXISTS (SELECT 1 FROM pg_roles browser WHERE browser.rolname IN ('anon','authenticated')
+  IF NOT strict_baseline AND EXISTS (SELECT 1 FROM pg_roles browser WHERE browser.rolname IN ('anon','authenticated')
     AND NOT has_table_privilege(browser.oid,'public.book_cohorts','SELECT')
     AND (has_table_privilege(browser.oid,'public.seminar_messages','SELECT,INSERT,UPDATE,DELETE')
       OR has_table_privilege(browser.oid,'public.book_cohort_members','SELECT,INSERT,UPDATE,DELETE'))) THEN
@@ -35,7 +79,7 @@ BEGIN
       RAISE EXCEPTION 'Unknown legacy policy configuration: %.%',v_policy.tablename,v_policy.policyname;
     END IF;
   END LOOP;
-  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename IN ('book_cohorts','book_cohort_members','seminar_messages')) <> 4
+  IF (NOT strict_baseline AND (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename IN ('book_cohorts','book_cohort_members','seminar_messages')) <> 4)
     OR EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner
       WHERE n.nspname='public' AND c.relname IN ('book_cohorts','book_cohort_members','seminar_messages')
       AND (NOT c.relrowsecurity OR r.rolname IN ('anon','authenticated'))) THEN
@@ -45,6 +89,9 @@ END $$;
 
 -- RLS does not govern TRUNCATE. Direct DML grants may exist in old deployments;
 -- restrictive Circle-only policies below constrain them without changing salons.
+-- The strict baseline has no permissive policies or browser grants; these five
+-- restrictive policies add no access. Historical four-policy fixtures retain
+-- their existing compatibility path (four policies become nine).
 REVOKE TRUNCATE ON public.book_cohorts, public.book_cohort_members, public.seminar_messages FROM PUBLIC, anon, authenticated;
 CREATE POLICY circle_messages_browser_restrict ON public.seminar_messages AS RESTRICTIVE FOR ALL TO anon,authenticated
   USING (NOT EXISTS (SELECT 1 FROM public.book_cohorts c WHERE c.id=cohort_id AND c.book_id='soe-circles-path'))

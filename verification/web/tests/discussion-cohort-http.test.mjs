@@ -153,15 +153,20 @@ test('atomic authorization refusal or known missing RPC never claims a write was
   }
 });
 
-test('ordinary salon reads and writes retain their original public and insert behavior', async () => {
+test('ordinary salon retains public reads through its explicit service projection and guarded post RPC', async () => {
   const a = fixture(); a.db.rows('book_cohorts')[0].book_id = 'hamlet'; a.app.setUser(null);
-  a.db.rows('seminar_messages').push({ id: MESSAGE, cohort_id: CIRCLE, member_id: a.JULES, member_name: 'Jules', content: 'Ordinary salon text.', created_at: DATE });
+  const ordinaryMessage = { id: MESSAGE, member_name: 'Jules', content: 'Ordinary salon text.', created_at: DATE, is_mine: false, content_available: true };
+  a.respond = name => ({ data: name === 'soe_book_salon_messages_read' ? { cohort: {...a.data.cohort, book_id: 'hamlet'}, members: [], membership_count: 1,
+    roster: {limit:50,truncated:false}, messages: [ordinaryMessage], history: {limit:100,window:'latest',truncated:false} }
+    : {outcome:'confirmed',cohortId:CIRCLE,message:{...ordinaryMessage,content:'Ordinary reply.',is_mine:true}}, error:null });
   const read = await a.route.GET(a.request(undefined), context(CIRCLE));
   assert.equal(read.status, 200); assert.equal((await read.json()).messages[0].content, 'Ordinary salon text.');
   a.app.setUser({ id: 'fixture-jules' });
-  const write = await a.route.POST(a.request({ content: 'Ordinary reply.' }, {}), context(CIRCLE));
+  const write = await a.route.POST(a.request({ content: 'Ordinary reply.', expectedMemberId:a.JULES }), context(CIRCLE));
   assert.equal(write.status, 200); assert.equal((await write.json()).message.content, 'Ordinary reply.');
-  assert.equal(a.calls.length, 0); assert.equal(a.db.rows('seminar_messages').length, 2);
+  assert.deepEqual(a.calls.map(call=>call.name), ['soe_book_salon_messages_read','soe_book_salon_messages_post']);
+  assert.equal(a.calls[0].args.p_actor,null); assert.equal(a.calls[1].args.p_actor,a.JULES);
+  assert.equal(a.db.rows('seminar_messages').length, 0);
 });
 
 function aliasFixture({ bookId = circleBook, error = null, data, hanging = false } = {}) {

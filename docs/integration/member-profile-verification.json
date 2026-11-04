@@ -28,7 +28,7 @@
     "sourceFiles": 976,
     "sourceSha256": "d19cfa867ed0bb1d98482222bfe54618c2a919d0d54e27daad0d3000286d3fc2",
     "sourceUnchangedDuringBuild": true,
-    "log": "evidence/next-build.log",
+    "log": "evidence/checkpoint-d50de94/next-build.log",
     "buildId": "dhI-c9JrdcZhfKSeWd04n",
     "sourceStillMatches": true,
     "fullNextTypeCheck": "PASS18.8seconds"
@@ -182,9 +182,9 @@
     "docs/sql/first-release-core-containment-rollback.sql": "4433d028d58d960c9f9c7c5eca8bc9fa572cde6ee64fee56a0fc3d902a05e0b1"
   },
   "evidenceSha256": {
-    "verification/web/evidence/next-build.json": "d453ed941e129bac19ebea53713852f969b08328234a0a1ce515941d5417eb01",
-    "verification/web/evidence/next-build.log": "9e65c64900cda605558578eb12ffaa99c3240f4620058e84fc4d675529b9e0a9",
-    "verification/web/evidence/build-source-sha256.json": "09d0384832af16bd3efc8c7b37c3947dd867608275f3ece83d715bb9a1795731",
+    "verification/web/evidence/checkpoint-d50de94/next-build.json": "d453ed941e129bac19ebea53713852f969b08328234a0a1ce515941d5417eb01",
+    "verification/web/evidence/checkpoint-d50de94/next-build.log": "9e65c64900cda605558578eb12ffaa99c3240f4620058e84fc4d675529b9e0a9",
+    "verification/web/evidence/checkpoint-d50de94/build-source-sha256.json": "09d0384832af16bd3efc8c7b37c3947dd867608275f3ece83d715bb9a1795731",
     "verification/web/evidence/profile-complete-tests.log": "7551e26925ce9c5ac7a9d96a4d92c607923fbbb8ee95a967b8f6a68a3dcb1f4e",
     "verification/web/evidence/profile-complete-tests-selection.json": "c77ca72add7cc288e0ee5428484e34576d6216336381a279caea73486d3e240a",
     "verification/web/evidence/profile-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
@@ -194,14 +194,14 @@
     "verification/web/evidence/profile-composed-browser.json": "b386df78527fc1c3a8335b56ab0f0d8478fb796cb35e14a93865099507ba8c6b",
     "verification/web/evidence/public-member-profile-final-tests.log": "93f210fd202d62b13965bbd3ae7e8163aa12eacd01038961219ae79d896663c6",
     "verification/web/evidence/public-community-browser.json": "39a4f30d73a08ef31bdf258639998a3ddb8488bd81952c5e565378e1e804e75c",
-    "verification/web/evidence/browser-discovery-qa.json": "7c5bb7d7cf7754ea48296018759a159ba69c74bf62492ffcc8cae4cbb65a7466",
-    "verification/web/evidence/browser-discovery-progress.json": "7bb5a875d92788bf2116c49daa4d0f14dc9cd5399cecf952bcf8a4f73a4f9584",
+    "verification/web/evidence/checkpoint-d50de94/browser-discovery-qa.json": "7c5bb7d7cf7754ea48296018759a159ba69c74bf62492ffcc8cae4cbb65a7466",
+    "verification/web/evidence/checkpoint-d50de94/browser-discovery-progress.json": "7bb5a875d92788bf2116c49daa4d0f14dc9cd5399cecf952bcf8a4f73a4f9584",
     "verification/web/evidence/core-containment-db-tests.log": "af9575d537d0370987bbd3ae85fa56b551995f41fb0dbf32f145cc72b2a2ab0f",
     "verification/web/evidence/profile-initial-320.png": "32c8d809e14bcc0116291587e2ae5a0dab2382e8844b83673450e140b4b302a4",
     "verification/web/evidence/profile-signed-out-320.png": "7a8e339f59aa2bd055ce27bc16b299cc4eca3b63cc48ef9e5816026c36a114af",
     "verification/web/evidence/profile-editor-mobile.png": "8bee62555e9748a7860f9f12a9ca6e82c21a13daedc1eab5834c17b8512d1a65",
     "verification/web/evidence/public-community-profile-320.png": "9b6b25dbe7b7eee4a53fc4f7b536c340a8c06a04a96db55bb073c7b9aed797e4",
-    "verification/web/evidence/browser-discovery-final.log": "c823870af0f41b9c9f18a05263bcf2df1a4fa976b5ee2bdb6288231fa2630bf5"
+    "verification/web/evidence/checkpoint-d50de94/browser-discovery-final.log": "c823870af0f41b9c9f18a05263bcf2df1a4fa976b5ee2bdb6288231fa2630bf5"
   },
   "preservedIntermediateEvidence": [
     "verification/web/evidence/checkpoint-e4961d5/",
@@ -228,5 +228,7 @@
     "productionClearance": false
   },
   "nextGate": "Faithful sanitized live-schema fixture and strict service-only Circle baseline/schema adapter. Live seminar sender_* schema lacks legacy member_name. Production access repair needs impact/restore review and explicit approval.",
-  "countsOverlapAndMustNotBeSummed": true
+  "countsOverlapAndMustNotBeSummed": true,
+  "evidenceRelocation": "Build and built-browser evidence moved unchanged to checkpoint-d50de94; source manifest reconstructed exactly from that Git commit and verified against the original recorded SHA256. See relocation.json.",
+  "supersededBy": "circle-salon-verification.json (next milestone; original profile results retained here)"
 }

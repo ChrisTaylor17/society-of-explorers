@@ -7,16 +7,9 @@ import { CIRCLE_BOOK_ID } from '@/lib/circles/path';
 import { loadCircle } from '@/lib/circles/server';
 import { rateLimit } from '@/lib/rateLimit';
 import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server';
+import { parseSalonConversation, parseSalonMessage, parseSalonPost } from '@/lib/book-salons/conversation';
 
 const UUID_RE = SHARED_UUID_PATTERN;
-
-type SeminarMessageRow = {
-  id: string;
-  member_id: string | null;
-  member_name: string | null;
-  content: string;
-  created_at: string;
-};
 
 function boundedText(value: unknown, maxLength: number): string | null {
   if (typeof value !== 'string') return null;
@@ -26,14 +19,6 @@ function boundedText(value: unknown, maxLength: number): string | null {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-async function safeRequestJson(req: NextRequest): Promise<unknown> {
-  try {
-    return await req.json();
-  } catch {
-    return null;
-  }
 }
 
 const plainText = (value: unknown, max: number): value is string => typeof value === 'string' && value.length <= max
@@ -94,8 +79,9 @@ function rpcStatus(error: unknown): number {
 }
 
 async function readConversation(req: NextRequest, { params }: { params: Promise<{ cohortId: string }> }) {
-  const { cohortId } = await params;
-  if (!UUID_RE.test(cohortId)) return privateJson({ error: 'Invalid cohort id' }, { status: 400 });
+  const { cohortId: suppliedId } = await params;
+  if (!UUID_RE.test(suppliedId)) return privateJson({ error: 'Invalid cohort id' }, { status: 400 });
+  const cohortId = suppliedId.toLowerCase();
 
   const auth = await getAuthenticatedMember(req);
   const supabaseAdmin = getSupabaseAdmin();
@@ -104,7 +90,7 @@ async function readConversation(req: NextRequest, { params }: { params: Promise<
       .from('book_cohorts')
       .select('id,book_id,title,description,max_members,start_date,thinker_id,status,created_at')
       .eq('id', cohortId)
-      .single();
+      .maybeSingle();
   if (cohortRes.error) return privateJson({ error: 'Circle or salon unavailable' }, { status: 503 });
   if (!cohortRes.data) return privateJson({ error: 'Not found' }, { status: 404 });
   if (!isRecord(cohortRes.data) || cohortRes.data.id !== cohortId || typeof cohortRes.data.book_id !== 'string') {
@@ -125,31 +111,13 @@ async function readConversation(req: NextRequest, { params }: { params: Promise<
     return privateJson(projected);
   }
 
-  const [membersRes, messagesRes] = await Promise.all([
-    supabaseAdmin.from('book_cohort_members').select('id, members(display_name)').eq('cohort_id', cohortId),
-    supabaseAdmin
-      .from('seminar_messages')
-      .select('id,member_id,member_name,content,created_at')
-      .eq('cohort_id', cohortId)
-      .order('created_at', { ascending: true })
-      .limit(100),
-  ]);
-
-  if (membersRes.error || messagesRes.error) return privateJson({ error: 'Discussion unavailable' }, { status: 503 });
-  const rows = (messagesRes.data || []) as SeminarMessageRow[];
-  const messages = rows.map((message) => ({
-    id: message.id,
-    member_name: message.member_name || 'Explorer',
-    content: message.content,
-    created_at: message.created_at,
-    is_mine: Boolean(auth?.memberId && message.member_id === auth.memberId),
-  }));
-
-  return privateJson({
-    cohort: cohortRes.data,
-    members: membersRes.data || [],
-    messages,
-  });
+  // An explicit join avoids relying on a members FK absent from the live
+  // schema. Publication filtering and the bounded history share one snapshot.
+  const result = await supabaseAdmin.rpc('soe_book_salon_messages_read', { p_actor: auth?.memberId ?? null, p_cohort_id: cohortId });
+  if (result.error) return privateJson({ error: 'Discussion unavailable' }, { status: rpcStatus(result.error) });
+  const projected = parseSalonConversation(result.data, cohortId);
+  if (!projected) return privateJson({ error: 'Discussion unavailable' }, { status: 503 });
+  return privateJson(projected);
 }
 
 export async function GET(req: NextRequest, context: { params: Promise<{ cohortId: string }> }) {
@@ -162,8 +130,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ coh
   let writeAttempted = false;
   const refused = (error: string, status: number, headers?: HeadersInit) => privateJson({ error, outcome: 'not_attempted' }, { status, headers });
   try {
-    const { cohortId } = await params;
-    if (!UUID_RE.test(cohortId)) return refused('Invalid cohort id', 400);
+    const { cohortId: suppliedId } = await params;
+    if (!UUID_RE.test(suppliedId)) return refused('Invalid cohort id', 400);
+    const cohortId = suppliedId.toLowerCase();
 
     const auth = await getAuthenticatedMember(req);
     if (!auth) return refused('Unauthorized', 401);
@@ -174,15 +143,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ coh
     if (!cohort.data) return refused('Not found', 404);
     if (!isRecord(cohort.data) || cohort.data.id !== cohortId || typeof cohort.data.book_id !== 'string') return refused('Discussion unavailable', 503);
     const isCircle = cohort.data.book_id === CIRCLE_BOOK_ID;
-    let parsed: unknown;
-    if (isCircle) {
-      const originError = circleWriteOrigin(req);
-      if (originError) return refused('Use this site to submit the request.', originError.status);
-      const read = await readCircleReviewJson(req);
-      if (!read.ok) return refused(read.response.status === 413 ? 'Use a smaller request.' : 'Use a valid JSON request.', read.response.status);
-      parsed = read.value;
-    } else parsed = await safeRequestJson(req);
-    const content = isRecord(parsed) ? boundedText(parsed.content, 2_000) : null;
+    const originError = circleWriteOrigin(req);
+    if (originError) return refused('Use this site to submit the request.', originError.status);
+    const read = await readCircleReviewJson(req);
+    if (!read.ok) return refused(read.response.status === 413 ? 'Use a smaller request.' : 'Use a valid JSON request.', read.response.status);
+    const parsed = read.value;
+    const ordinaryPost = isCircle ? null : parseSalonPost(parsed);
+    if (!isCircle && !ordinaryPost) return refused('Use a valid salon post up to 2,000 characters', 400);
+    if (ordinaryPost && ordinaryPost.expectedMemberId !== auth.memberId.toLowerCase()) return refused('Account selection changed. Reload before posting.', 409);
+    const content = ordinaryPost?.content ?? (isRecord(parsed) ? boundedText(parsed.content, 2_000) : null);
     if (!content) return refused('Empty message', 400);
     if (isCircle && (!isRecord(parsed) || typeof parsed.content !== 'string' || parsed.content.length > 2000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(parsed.content))) {
       return refused('Use plain text up to 2,000 characters', 400);
@@ -197,13 +166,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ coh
 
     if (membershipError) return refused('Membership unavailable', 503);
     if (!membership || typeof membership.id !== 'string') return refused('Join this book salon before posting', 403);
-    if (isCircle) {
-      const budget = rateLimit(`circle-message:${auth.memberId}`, 12, 60000);
+    {
+      const budget = rateLimit(`${isCircle ? 'circle' : 'salon'}-message:${auth.memberId}`, 12, 60000);
       if (!budget.ok) return refused('Posting is temporarily limited', 429, { 'Retry-After': String(budget.retryAfterS) });
       const [currentAuth, currentMembership, circle] = await Promise.all([
         getAuthenticatedMember(req),
         supabaseAdmin.from('book_cohort_members').select('id').eq('id', membership.id).eq('cohort_id', cohortId).eq('member_id', auth.memberId).maybeSingle(),
-        loadCircle(supabaseAdmin, cohortId),
+        isCircle ? loadCircle(supabaseAdmin, cohortId) : Promise.resolve(true),
       ]);
       if (currentMembership.error) return refused('Membership unavailable', 503);
       if (currentAuth?.memberId !== auth.memberId || !currentMembership.data || !circle) return refused('Circle access changed. Refresh before posting.', 403);
@@ -211,13 +180,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ coh
 
     const name = auth.member.display_name;
     const memberName = typeof name === 'string' && name.trim() && !name.includes('@') ? name.trim().slice(0, 200) : 'Explorer';
-    const payload = {
-      cohort_id: cohortId,
-      member_id: auth.memberId,
-      member_name: auth.member.display_name || 'Explorer',
-      content,
-    };
-    if (isCircle) payload.member_name = memberName;
     writeAttempted = true;
     if (isCircle) {
       const result = await supabaseAdmin.rpc('soe_circle_messages_post', { p_actor: auth.memberId, p_circle_id: cohortId,
@@ -235,21 +197,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ coh
       }
       return privateJson({ outcome: 'confirmed', circleId: cohortId, message });
     }
-    const { data, error } = await supabaseAdmin.from('seminar_messages').insert(payload).select().single();
-
-    if (error || !data || data.cohort_id !== cohortId || data.member_id !== auth.memberId || data.content !== content || typeof data.id !== 'string' || typeof data.created_at !== 'string') {
+    const result = await supabaseAdmin.rpc('soe_book_salon_messages_post', { p_actor: auth.memberId, p_cohort_id: cohortId,
+      p_content: content, p_member_name: memberName });
+    if (result.error) {
+      const status = rpcStatus(result.error);
+      const code = isRecord(result.error) ? result.error.code : null;
+      const refusedByDatabase = status !== 503 || ['PGRST202', '42883', '42P01'].includes(String(code));
+      return privateJson({ error: 'Message save could not be confirmed', outcome: refusedByDatabase ? 'not_attempted' : 'unknown' }, { status });
+    }
+    const receipt = result.data;
+    const message = isRecord(receipt) ? parseSalonMessage(receipt.message, true) : null;
+    if (!isRecord(receipt) || receipt.outcome !== 'confirmed' || receipt.cohortId !== cohortId || !message || message.content !== content) {
       return privateJson({ error: 'Message save could not be confirmed', outcome: 'unknown' }, { status: 503 });
     }
-    return privateJson({
-      ...(isCircle ? { outcome: 'confirmed', circleId: cohortId } : {}),
-      message: {
-        id: data.id,
-        member_name: data.member_name || 'Explorer',
-        content: data.content,
-        created_at: data.created_at,
-        is_mine: true,
-      },
-    });
+    return privateJson({ outcome: 'confirmed', cohortId, message });
   } catch {
     return privateJson({ error: 'Message save could not be confirmed', outcome: writeAttempted ? 'unknown' : 'not_attempted' }, { status: 503 });
   }

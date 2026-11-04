@@ -43,7 +43,7 @@ export default function RenaissancePage() {
         style={{
           minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '8rem 2rem 6rem', position: 'relative',
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url("/images/hero-renaissance.jpeg")',
+          backgroundImage: 'radial-gradient(ellipse at 25% 15%, rgba(201,168,76,0.18), transparent 55%), linear-gradient(135deg, #111 0%, #0a0a0a 70%)',
           backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
         }}
       >
