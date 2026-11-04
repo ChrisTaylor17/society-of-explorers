@@ -34,3 +34,39 @@ test('actual API+SQL: reviewer-grant revocation during generation suppresses the
  f.setProvider(async()=>{await f.db.query('UPDATE circle_reviewer_grants SET revoked_at=clock_timestamp() WHERE cohort_id=$1 AND member_id=$2',[f.circleId,f.reviewerId]);return{observations:[],counterevidence:[],questions:[]};});
  assert.equal((await advise(f)).status,403);assert.equal(f.providerCalls.length,1);
 });
+
+test('actual API+SQL: default-off allowance denies generation even after author consent',async t=>{
+ const f=await messageAiApp({allowance:null});t.after(()=>f.close());await consent(f,true);
+ assert.equal((await advise(f)).status,503);assert.equal(f.providerCalls.length,0);
+ assert.equal((await f.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,0);
+});
+
+test('independent actual route instances share the same durable ceiling without cold-start reset',async t=>{
+ const first=await messageAiApp({allowance:{globalLimit:2,reviewerLimit:2}});t.after(()=>first.close());await consent(first,true);
+ assert.equal((await advise(first)).status,200);
+ const second=await messageAiApp({fixture:first});assert.equal((await advise(second)).status,200);
+ const restarted=await messageAiApp({fixture:first});assert.equal((await advise(restarted)).status,429);
+ assert.equal(first.providerCalls.length,1);assert.equal(second.providerCalls.length,1);assert.equal(restarted.providerCalls.length,0);
+ assert.equal((await first.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,2);
+ assert.equal((await first.db.query('SELECT count(*)::int n FROM circle_message_decisions')).rows[0].n,0);
+});
+
+test('committed reservation with lost reply stays debited across app restart; never retried or sent',async t=>{
+ const f=await messageAiApp({allowance:{globalLimit:1,reviewerLimit:1}});t.after(()=>f.close());await consent(f,true);
+ f.setRpcReply(async(name,args,result)=>{if(name==='soe_circle_message_ai_reserve')throw Error('Synthetic lost reservation reply');return result;});
+ assert.equal((await advise(f)).status,503);assert.equal(f.providerCalls.length,0);
+ assert.equal(f.calls.filter(call=>call.name==='soe_circle_message_ai_reserve').length,1);
+ assert.equal((await f.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,1);
+ const restarted=await messageAiApp({fixture:f});assert.equal((await advise(restarted)).status,429);assert.equal(restarted.providerCalls.length,0);
+});
+
+test('provider failure and revoked in-flight consent keep their shared debits without refunds',async t=>{
+ const f=await messageAiApp({allowance:{globalLimit:2,reviewerLimit:2}});t.after(()=>f.close());await consent(f,true);
+ f.setProvider(async()=>{throw Error('Synthetic provider uncertainty');});assert.equal((await advise(f)).status,503);
+ const second=await messageAiApp({fixture:f});
+ second.setProvider(async()=>{await consent(second,false);second.setActor(second.reviewerId);return{observations:[],counterevidence:[],questions:[]};});
+ assert.equal((await advise(second)).status,403);await consent(second,true);
+ const restarted=await messageAiApp({fixture:f});assert.equal((await advise(restarted)).status,429);
+ assert.equal((await f.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,2);
+ assert.equal(f.providerCalls.length,1);assert.equal(second.providerCalls.length,1);assert.equal(restarted.providerCalls.length,0);
+});

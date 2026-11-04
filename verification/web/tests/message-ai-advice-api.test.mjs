@@ -9,20 +9,23 @@ const snapshot=()=>({circleId,messageId,content,revision:2,contentHash:hash,cons
 const advice=()=>({observations:[{rule:'context',excerpt:'“hurt them”',note:'This is a quotation; examine the stated condemnation.'}],counterevidence:[{excerpt:'to condemn the threat',note:'The author disavows the quoted conduct.'}],questions:['Is there surrounding context the human reviewer should check?']});
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return{promise,resolve};};
 const turns=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
+const waitFor=async predicate=>{for(let i=0;i<100&&!predicate();i++)await new Promise(resolve=>setImmediate(resolve));assert.ok(predicate(),'expected dependency began');};
 function fixture() {
  const app=offlineApp(),calls=[],providerCalls=[],timers=[];
  let available=true,actor=actorId,authCalls=0,auth=async()=>actor?{memberId:actor}:null;
- let rpc=async()=>({data:snapshot(),error:null}),provider=async()=>advice(),limited=false;
+ let rpc=async()=>({data:snapshot(),error:null}),provider=async()=>advice(),limited=false,snapshots=0;
+ const permit=args=>({attemptId:args.p_attempt_id,circleId,messageId,revision:2,contentHash:hash,consentRevision:1,policy:'anthropic-message-review-v1',validForMs:8000});
+ let reserve=async args=>({data:permit(args),error:null});
  app.context.setTimeout=(fn,ms)=>{if(ms===12000){const item={fn,cleared:false};timers.push(item);return item;}return setTimeout(fn,ms);};
  app.context.clearTimeout=id=>id&&typeof id==='object'&&'cleared'in id?id.cleared=true:clearTimeout(id);
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>{authCalls++;return auth();}}));
- app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({rpc:async(name,args)=>{calls.push({name,args});return rpc(calls.length);}})}));
+ app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({rpc:async(name,args)=>{calls.push({name,args});return name==='soe_circle_message_ai_reserve'?reserve(args):rpc(++snapshots);}})}));
  app.setMock('@/lib/rateLimit',()=>({rateLimit:()=>({ok:!limited,retryAfterS:60})}));
- app.setMock('@/lib/circles/message-ai-provider',()=>({providerAvailable:()=>available,requestMessageAdvice:async(text,signal)=>{providerCalls.push({text,signal});return provider();}}));
+ app.setMock('@/lib/circles/message-ai-provider',()=>({providerAvailable:()=>available,requestMessageAdvice:async(text,signal,sendBefore)=>{providerCalls.push({text,signal,sendBefore});return provider();}}));
  const route=app.load('app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts');
  const context={params:Promise.resolve({circleId,messageId})};
  const request=(body={expectedRevision:2,contentHash:hash},headers={},signal)=>new Request(`https://offline.invalid/api/admin/circles/${circleId}/messages/${messageId}/advice`,{method:'POST',headers:{origin:'https://offline.invalid',...headers},body:typeof body==='string'?body:JSON.stringify(body),signal});
- return {app,calls,providerCalls,timers,route,context,request,authCalls:()=>authCalls,setAvailable:x=>available=x,setActor:x=>actor=x,setAuth:x=>auth=x,setRpc:x=>rpc=x,setProvider:x=>provider=x,setLimited:x=>limited=x};
+ return {app,calls,providerCalls,timers,route,context,request,permit,authCalls:()=>authCalls,setAvailable:x=>available=x,setActor:x=>actor=x,setAuth:x=>auth=x,setRpc:x=>rpc=x,setReserve:x=>reserve=x,setProvider:x=>provider=x,setLimited:x=>limited=x};
 }
 
 test('advice remains disabled without explicit provider configuration; no auth/database/provider work',async()=>{
@@ -40,8 +43,11 @@ test('actual route transmits only current consented text, rechecks actor and sna
  const f=fixture();f.setRpc(async()=>({data:{...snapshot(),member_name:'PRIVATE_NAME',reports:['PRIVATE_REPORT'],email:'PRIVATE_EMAIL'},error:null}));
  const response=await f.route.POST(f.request(),f.context);assert.equal(response.status,200);
  const result=await response.json();assert.deepEqual(result.advice,advice());assert.equal(result.consentRevision,1);
- assert.doesNotMatch(JSON.stringify(result),/PRIVATE_|"content":/);assert.equal(f.authCalls(),2);assert.equal(f.calls.length,2);
- for(const call of f.calls){assert.equal(call.name,'soe_circle_message_ai_snapshot');assert.deepEqual(structuredClone(call.args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId});}
+ assert.doesNotMatch(JSON.stringify(result),/PRIVATE_|"content":|attemptId|validForMs/);assert.equal(f.authCalls(),2);assert.equal(f.calls.length,3);
+ for(const call of [f.calls[0],f.calls[2]]){assert.equal(call.name,'soe_circle_message_ai_snapshot');assert.deepEqual(structuredClone(call.args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId});}
+ assert.equal(f.calls[1].name,'soe_circle_message_ai_reserve');
+ assert.deepEqual(structuredClone(f.calls[1].args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId,p_attempt_id:f.calls[1].args.p_attempt_id,p_expected_revision:2,p_content_hash:hash,p_expected_consent_revision:1,p_policy:'anthropic-message-review-v1'});
+ assert.match(f.calls[1].args.p_attempt_id,/^[0-9a-f-]{36}$/);assert.ok(f.providerCalls[0].sendBefore<=Date.now()+8000);
  assert.equal(f.providerCalls.length,1);assert.equal(f.providerCalls[0].text,content);assert.equal(f.providerCalls[0].signal.aborted,true);
  assert.match(response.headers.get('vary'),/Cookie/);assert.match(response.headers.get('cache-control'),/no-store/);
 });
@@ -63,13 +69,13 @@ test('revoked consent, changed evidence, new reports and revoke/re-enable invali
 });
 test('changed server identity after generation cannot obtain advice or perform the second evidence read',async()=>{
  const f=fixture();f.setProvider(async()=>{f.setActor(other);return advice();});assert.equal((await f.route.POST(f.request(),f.context)).status,403);
- assert.equal(f.calls.length,1);assert.equal(f.providerCalls.length,1);
+ assert.equal(f.calls.length,2);assert.equal(f.providerCalls.length,1);
 });
 test('fabricated citations, extra decision/action fields, invalid text and oversized suggestions fail closed',async()=>{
  for(const output of [{...advice(),action:'hide'},{...advice(),observations:[{rule:'safety',excerpt:'invented quote',note:'Claim'}]},
   {...advice(),observations:[{rule:'religion',excerpt:'I disagree',note:'Claim'}]},{...advice(),questions:['x'.repeat(301)]},
   {...advice(),counterevidence:[{excerpt:'to condemn',note:'bad\u0000note'}]},{...advice(),observations:Array(5).fill(advice().observations[0])}]){
-  const f=fixture();f.setProvider(async()=>output);const r=await f.route.POST(f.request(),f.context);assert.equal(r.status,503);assert.equal(f.calls.length,1);
+  const f=fixture();f.setProvider(async()=>output);const r=await f.route.POST(f.request(),f.context);assert.equal(r.status,503);assert.equal(f.calls.length,2);
  }
 });
 test('total deadline retires stalled authentication and does not start late database/provider work',async()=>{
@@ -86,9 +92,9 @@ test('total deadline cancels a stalled request body before authentication or pro
 test('request abort and timeout discard noncooperative provider results without a follow-up read or retry',async()=>{
  for(const mode of ['abort','deadline']){
   const f=fixture(),pending=deferred(),controller=new AbortController();f.setProvider(()=>pending.promise);
-  const work=f.route.POST(f.request(undefined,{},controller.signal),f.context);await turns();assert.equal(f.providerCalls.length,1);
+  const work=f.route.POST(f.request(undefined,{},controller.signal),f.context);await waitFor(()=>f.providerCalls.length===1);
   if(mode==='abort')controller.abort();else f.timers[0].fn();assert.equal((await work).status,503);assert.equal(f.providerCalls[0].signal.aborted,true);
-  pending.resolve(advice());await turns();assert.equal(f.calls.length,1);assert.equal(f.providerCalls.length,1);
+  pending.resolve(advice());await turns();assert.equal(f.calls.length,2);assert.equal(f.providerCalls.length,1);
  }
 });
 test('per-instance budget refuses generation after access check',async()=>{
@@ -99,7 +105,35 @@ test('elapsed deadline rejects late continuations even when the timer callback h
  f.app.context.Date=class extends Date{static now(){return now;}};
  f.setProvider(async()=>{now+=12000;return advice();});
  assert.equal((await f.route.POST(f.request(),f.context)).status,503);
- assert.equal(f.providerCalls.length,1);assert.equal(f.calls.length,1);assert.equal(f.authCalls(),1);
+ assert.equal(f.providerCalls.length,1);assert.equal(f.calls.length,2);assert.equal(f.authCalls(),1);
+});
+
+test('shared allowance refusal, absent schema and ambiguous debit never send or retry',async()=>{
+ for(const [code,status]of[['PT429',429],['PT503',503],['PT403',403],['PT409',409],['PGRST202',503],['42501',503]]){
+  const f=fixture();f.setReserve(async()=>({data:null,error:{code,message:'PRIVATE_ALLOWANCE'}}));
+  const r=await f.route.POST(f.request(),f.context);assert.equal(r.status,status);assert.doesNotMatch(await r.text(),/PRIVATE_/);
+  assert.equal(f.calls.length,2);assert.equal(f.providerCalls.length,0);
+ }
+ const f=fixture();f.setReserve(async()=>{throw Error('Reply lost after possible debit');});
+ assert.equal((await f.route.POST(f.request(),f.context)).status,503);assert.equal(f.calls.length,2);assert.equal(f.providerCalls.length,0);
+});
+test('malformed, replayed, cross-case and consent-mismatched permits fail closed',async()=>{
+ for(const change of [{attemptId:other},{circleId:other},{messageId:other},{revision:3},{contentHash:'b'.repeat(64)},
+  {consentRevision:3},{policy:'wrong'},{validForMs:0},{validForMs:8001},{validForMs:1.5},{replayed:true}]){
+  const f=fixture();f.setReserve(async args=>({data:{...f.permit(args),...change},error:null}));
+  assert.equal((await f.route.POST(f.request(),f.context)).status,503);assert.equal(f.providerCalls.length,0);
+ }
+});
+test('late reservation replies consume elapsed window and cannot begin generation',async()=>{
+ for(const mode of ['elapsed','abort','deadline']){
+  const f=fixture(),hold=deferred(),controller=new AbortController();let now=100000,args;
+  f.app.context.Date=class extends Date{static now(){return now;}};
+  f.setReserve(value=>{args=value;return hold.promise;});
+  const work=f.route.POST(f.request(undefined,{},controller.signal),f.context);await turns();assert.ok(args);
+  if(mode==='elapsed')now+=101;else if(mode==='abort')controller.abort();else f.timers[0].fn();
+  hold.resolve({data:{...f.permit(args),validForMs:100},error:null});
+  assert.equal((await work).status,503);await turns();assert.equal(f.providerCalls.length,0);assert.equal(f.calls.length,2);
+ }
 });
 test('swapped-viewpoint and quoted-hostility fixtures pass exact-quote parsing without an automated decision',()=>{
  const {parseMessageAdvice}=fixture().app.load('lib/circles/message-ai.ts');

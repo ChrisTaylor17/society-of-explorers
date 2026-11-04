@@ -27,19 +27,26 @@ function response(value = envelope(), { status = 200, raw, headers = {}, url = E
   Object.defineProperties(result, { url: { value: url }, redirected: { value: redirected } });
   return result;
 }
-function fixture({ enabled = 'true', key = 'NONISSUED_LOCAL_ONLY', transport = () => response() } = {}) {
+function fixture({ enabled = 'true', key = 'NONISSUED_LOCAL_ONLY', transport = () => response(), beforeCreate } = {}) {
   const app = offlineApp(), calls = [], constructors = [], timers = [], logs = [];
   app.context.process.env = { SOE_MESSAGE_AI_ENABLED: enabled, ANTHROPIC_API_KEY: key };
   app.context.console = { log: (...values) => logs.push(values), error: (...values) => logs.push(values), warn: (...values) => logs.push(values), info: (...values) => logs.push(values), debug: (...values) => logs.push(values) };
   class ObservedAnthropic extends Anthropic {
-    constructor(options) { super(options); constructors.push(options); }
+    constructor(options) {
+      super(options); constructors.push(options);
+      if (beforeCreate) {
+        const create = this.messages.create.bind(this.messages);
+        this.messages.create = async (...args) => { await beforeCreate(); return create(...args); };
+      }
+    }
   }
   app.setMock('@anthropic-ai/sdk', () => ({ __esModule: true, default: ObservedAnthropic }));
   app.context.fetch = async (url, init) => { calls.push({ url, init }); return transport(url, init); };
-  app.context.setTimeout = (fn, ms) => { assert.equal(ms, 8000); const timer = { fn, ms, cleared: false }; timers.push(timer); return timer; };
+  app.context.setTimeout = (fn, ms) => { assert.ok(ms >= 1 && ms <= 8000); const timer = { fn, ms, cleared: false }; timers.push(timer); return timer; };
   app.context.clearTimeout = timer => { timer.cleared = true; };
   const provider = app.load('lib/circles/message-ai-provider.ts');
-  return { app, provider, calls, constructors, timers, logs, request: (content = 'selected message', signal = new AbortController().signal) => provider.requestMessageAdvice(content, signal) };
+  return { app, provider, calls, constructors, timers, logs, request: (content = 'selected message', signal = new AbortController().signal,
+    sendBefore = (app.context.Date?.now() ?? Date.now()) + 8000) => provider.requestMessageAdvice(content, signal, sendBefore) };
 }
 const flush = async () => { for (let n = 0; n < 30; n++) await Promise.resolve(); };
 const waitFor = async predicate => { for (let n = 0; n < 200 && !predicate(); n++) await new Promise(resolve => setImmediate(resolve)); assert.ok(predicate(), 'fixture work started'); };
@@ -174,4 +181,22 @@ test('a delayed completion past wall-clock deadline cannot win even before the t
   f.app.context.Date = class extends Date { static now() { return now; } };
   const pending = f.request(); await waitFor(() => release); const rejected = unavailable(pending);
   now += 8001; release(response()); await rejected; assert.equal(f.timers[0].cleared, true); assert.equal(f.calls.length, 1);
+});
+
+test('missing, expired or oversized send authority never constructs the SDK', async () => {
+  const f = fixture();
+  for (const deadline of [undefined, null, NaN, Infinity, Date.now() - 1, Date.now() + 9000]) {
+    await unavailable(f.provider.requestMessageAdvice('selected message', new AbortController().signal, deadline));
+  }
+  assert.equal(f.calls.length, 0); assert.equal(f.constructors.length, 0);
+});
+
+test('reservation expiry during actual SDK preparation prevents its first fetch even before timers fire', async () => {
+  let now = 100000, release;
+  const f = fixture({ beforeCreate: () => new Promise(resolve => { release = resolve; }) });
+  f.app.context.Date = class extends Date { static now() { return now; } };
+  const pending = f.request('selected message', new AbortController().signal, now + 100);
+  await waitFor(() => release); assert.equal(f.timers[0].ms, 100);
+  const rejected = unavailable(pending); now += 101; release(); await rejected;
+  assert.equal(f.calls.length, 0); assert.equal(f.constructors.length, 1); assert.equal(f.timers[0].cleared, true);
 });

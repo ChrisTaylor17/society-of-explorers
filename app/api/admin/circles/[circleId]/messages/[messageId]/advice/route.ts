@@ -7,6 +7,7 @@ import { rateLimit } from '@/lib/rateLimit';
 import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server';
 import { parseMessageAdvice, parseMessageAdviceInput, parseMessageAdviceSnapshot, type MessageAdviceSnapshot } from '@/lib/circles/message-ai';
 import { providerAvailable, requestMessageAdvice } from '@/lib/circles/message-ai-provider';
+import { messageAiSendDeadline } from '@/lib/circles/message-ai-allowance';
 
 type Context = { params: Promise<{ circleId: string; messageId: string }> };
 const unavailable = () => privateJson({ error: 'AI advice is unavailable. Human review remains available.' }, { status: 503 });
@@ -55,14 +56,31 @@ export async function POST(req: NextRequest, { params }: Context) {
     if (before instanceof Response) return before;
     if (!current()) return unavailable();
     if (before.revision !== input.expectedRevision || before.contentHash !== input.contentHash) return changed();
-    // Per-instance throttle only. An approved production budget still needs a
-    // shared limit; a cold start or another instance resets these counters.
+    // Cheap per-instance throttle precedes the authoritative shared allowance.
     for (const [key, maximum] of [[`message-ai:${actorId}`, 5], ['message-ai:instance', 50]] as const) {
       const limit = rateLimit(key, maximum, 60 * 60 * 1000);
       if (!limit.ok) return privateJson({ error: 'AI advice is temporarily limited. Continue human review.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterS) } });
     }
     if (!current()) return unavailable();
-    const output = await requestMessageAdvice(before.content, controller.signal);
+    const attemptId = crypto.randomUUID();
+    const reservationStarted = Date.now();
+    const { data: reservation, error: reservationError } = await admin.rpc('soe_circle_message_ai_reserve', {
+      p_actor: actorId, p_circle_id: circleId, p_message_id: messageId, p_attempt_id: attemptId,
+      p_expected_revision: before.revision, p_content_hash: before.contentHash,
+      p_expected_consent_revision: before.consentRevision, p_policy: before.policy,
+    });
+    if (!current()) return unavailable();
+    if (reservationError) {
+      if (reservationError.code === 'PT429') return privateJson({ error: 'AI advice is temporarily limited. Continue human review.' }, { status: 429 });
+      if (reservationError.code === 'PT403') return denied();
+      if (reservationError.code === 'PT409' || reservationError.code === 'PT404') return changed();
+      return unavailable();
+    }
+    const reservedUntil = messageAiSendDeadline(reservation, before, attemptId, reservationStarted, Date.now());
+    if (reservedUntil === null || !current()) return unavailable();
+    // Never retry or refund a debit, even when its reply or the provider result
+    // is lost. Reusing the same attempt cannot obtain another send authority.
+    const output = await requestMessageAdvice(before.content, controller.signal, Math.min(deadlineAt, reservedUntil));
     if (!current()) return unavailable();
     const advice = parseMessageAdvice(output, before.content);
     if (!advice) return unavailable();

@@ -39,7 +39,7 @@ try{
  bundle=read('verification/web/evidence/message-ai-fixture/page.js');css=read('verification/web/evidence/message-ai-fixture/page.css');
  const manifest=JSON.parse(read('verification/web/evidence/message-ai-fixture/source-manifest.json'));
  sourceHashes={...manifest.sourceHashes};
- for(const name of ['verification/web/tests/browser-message-ai.mjs','verification/web/tests/support/message-ai-app.mjs','verification/web/tests/support/message-ai-db.mjs',
+  for(const name of ['verification/web/tests/browser-message-ai.mjs','verification/web/tests/support/message-ai-app.mjs','verification/web/tests/support/message-ai-db.mjs','verification/web/tests/support/message-ai-allowance-db.mjs','lib/circles/message-ai-allowance.ts',
   'app/api/circles/contributions/route.ts','app/api/circles/[circleId]/messages/[messageId]/route.ts','app/api/circles/[circleId]/messages/[messageId]/ai-consent/route.ts',
   'app/api/admin/circles/messages/route.ts','app/api/admin/circles/[circleId]/messages/[messageId]/route.ts','app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts',
   'lib/circles/message-moderation-server.ts','lib/circles/moderation-server.ts','lib/http/routeError.ts'])sourceHashes[name]=sha(read(name));
@@ -132,6 +132,15 @@ try{
  await owner();const beforeDrop=api.length;dropConsentReply=true;await page.getByRole('button',{name:'Revoke future AI review',exact:true}).click();await page.getByText(/The change could not be confirmed and may have been saved/).waitFor();await settle();
  assert.deepEqual(api.slice(beforeDrop).map(entry=>[entry.method,entry.status,entry.delivered]),[['POST',200,false]]);assert.equal(await page.getByRole('button',{name:'Revoke future AI review',exact:true}).count(),0);
  await page.getByRole('button',{name:'Check AI review settings',exact:true}).click();await page.getByText('AI review permission is off for this message.',{exact:true}).waitFor();await assertNoDecisions();pass('committed consent mutation with lost reply stays unknown with no retry; explicit current-state read reveals the actual saved revocation');
+
+  await owner();await enable();await f.limitAllowance({globalLimit:4,reviewerLimit:4});await reviewer();
+  const beforeLimited=api.length;await page.getByRole('button',{name:'Request AI observations',exact:true}).click();
+  await page.getByRole('status').filter({hasText:'AI advice could not be confirmed. You can continue human review.'}).waitFor();await settle();
+  assert.deepEqual(api.slice(beforeLimited).map(entry=>[entry.method,entry.status]),[['POST',429]]);
+  assert.equal(await page.getByRole('region',{name:'Current message review',exact:true}).count(),1);
+  assert.equal(await page.getByLabel('Moderator restriction',{exact:true}).isDisabled(),false);
+  assert.equal((await f.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,4);
+  assert.equal(f.providerCalls.length,4);await assertNoDecisions();pass('shared allowance retains all four prior debits including retired advice; exhaustion429 makes no new provider call or automatic retry and human review remains available');
 
  for(const call of f.providerCalls)assert.equal(call.content,CONTENT);providerInputVerified=true;
  assert.equal(f.providerCalls.length,4);assertNoErrors();
