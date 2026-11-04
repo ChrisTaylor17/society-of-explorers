@@ -58,7 +58,10 @@ export async function prepareNativeMemberBinding(options: {
         } catch { detach(); throw unavailable(); }
       },
     };
-    return { origin, circleId, auth: guardedAuth, transport, ...(verificationTimeoutMs === undefined ? {} : { verificationTimeoutMs }) };
+    const createRequestId = ports.newRequestId;
+    return { origin, circleId, auth: guardedAuth, transport,
+      ...(typeof createRequestId === 'function' ? { newRequestId: async () => { assertOpen(); const id = await createRequestId(); assertOpen(); return id; } } : {}),
+      ...(verificationTimeoutMs === undefined ? {} : { verificationTimeoutMs }) };
   }
   function close() {
     if (closed) return;

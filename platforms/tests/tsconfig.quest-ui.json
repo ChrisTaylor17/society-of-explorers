@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": ["../../next-env.d.ts", "../../app/quest/[circleId]/QuestCircle.tsx"],
+  "exclude": ["../../node_modules", "../../platforms/source"]
+}

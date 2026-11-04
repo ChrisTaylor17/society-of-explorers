@@ -9,6 +9,7 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.UUID
 
 /** Actual app-local TurboModule; generated supertype is a later Codegen gate. */
 @ReactModule(name = NativeSoeMemberModule.NAME)
@@ -42,9 +43,13 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
     reply.resolve(Arguments.createMap().apply {
       putDouble("version", 2.0); putString("origin", config.origin); putString("storageKey", config.storageKey)
       putString("redirectPolicy", "reject-before-send"); putString("storagePolicy", "os-protected"); putString("storageGeneration", generation)
+      putString("requestIdPolicy", "os-random-uuid")
     })
   }
   override fun begin(generation: String, promise: Promise) = work(promise) { it.resolve(transport().begin(generation)) }
+  override fun newRequestId(generation: String, promise: Promise) = work(promise) { reply ->
+    store.withGeneration(generation) { reply.resolve(UUID.randomUUID().toString()) }
+  }
   override fun send(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
     transport().send(id, MemberTransport.input(request), { result ->
       reply.resolve(Arguments.createMap().apply {

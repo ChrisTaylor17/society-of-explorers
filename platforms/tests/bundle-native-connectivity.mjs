@@ -6,7 +6,7 @@ const primitive=`import React from 'react';
 function style(value){const v=Object.assign({},...(Array.isArray(value)?value:[value]));for(const pair of [['paddingVertical','paddingTop','paddingBottom'],['paddingHorizontal','paddingLeft','paddingRight'],['marginVertical','marginTop','marginBottom']])if(pair[0]in v){v[pair[1]]=v[pair[0]];v[pair[2]]=v[pair[0]];delete v[pair[0]];}return v;}
 function box(tag){return function Primitive(p){return React.createElement(tag,{'aria-label':p.accessibilityLabel,'aria-live':p.accessibilityLiveRegion,style:style(p.style)},p.children);};}
 export const SafeAreaView=box('main'),ScrollView=box('div'),View=box('div'),Text=box('span'),ActivityIndicator=box('span');
-export const Pressable=p=>React.createElement('button',{'aria-label':p.accessibilityLabel,disabled:p.disabled,onClick:p.onPress,style:style(p.style)},p.children);
+export const Pressable=p=>React.createElement('button',{'aria-label':p.accessibilityLabel,role:p.accessibilityRole==='checkbox'?'checkbox':'button','aria-checked':p.accessibilityRole==='checkbox'?p.accessibilityState?.checked:undefined,disabled:p.disabled,onClick:p.onPress,style:style(p.style)},p.children);
 export const TextInput=p=>React.createElement('textarea',{'aria-label':p.accessibilityLabel,disabled:!p.editable,value:p.value,maxLength:p.maxLength,onChange:e=>p.onChangeText(e.target.value),style:style(p.style)});
 export const StyleSheet={create:x=>x},Platform={OS:'android'};
 export const AppState={get currentState(){return window.nativeQa?.appState.currentState??'active';},addEventListener(name,fn){return window.nativeQa.appState.addEventListener(name,fn);}};`;

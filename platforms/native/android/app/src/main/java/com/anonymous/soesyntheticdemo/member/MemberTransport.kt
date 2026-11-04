@@ -130,14 +130,18 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     require(url.scheme == "https" && origin == config.origin && url.username.isEmpty() && url.password.isEmpty() && url.fragment == null && url.toString() == input.url)
     val legacy = Regex("/api/book-salons/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
     val discussion = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion").matchEntire(url.encodedPath)
+    val preview = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion/preview").matchEntire(url.encodedPath)
     if (legacy != null) { require(uuid(legacy.groupValues[1]) && url.encodedQuery == null) }
+    else if (preview != null) { require(uuid(preview.groupValues[1]) && input.method == "POST" && url.encodedQuery == null) }
+    else if (discussion != null && input.method == "POST") { require(uuid(discussion.groupValues[1]) && url.encodedQuery == null) }
     else {
       require(discussion != null && uuid(discussion.groupValues[1]) && input.method == "GET")
       val query = mutableMapOf<String, String>()
       if (url.encodedQuery != null) for (part in url.encodedQuery!!.split('&')) {
         val pieces = part.split('='); require(pieces.size == 2 && pieces[0] !in query); query[pieces[0]] = pieces[1]
       }
-      val keys = if ("message" in query) setOf("message", "after", "limit") else setOf("before", "limit")
+      val keys = if ("requestId" in query) { require(query.size == 1); setOf("requestId") }
+        else if ("message" in query) setOf("message", "after", "limit") else setOf("before", "limit")
       require(query.keys.all { it in keys })
       require(query.filterKeys { it != "limit" }.values.all { uuid(it) })
       query["limit"]?.let { require(Regex("[1-9][0-9]*").matches(it) && (it.toIntOrNull() ?: 0) in 1..25) }

@@ -5,7 +5,8 @@ import { isUuid } from '../../../../lib/ids/uuid';
 /** The native implementation owns the durable storage generation. Every storage
  * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string }>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string }>;
+  newRequestId?(generation: string): Promise<string>;
   begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   cancel(id: string): Promise<void>;
@@ -44,6 +45,15 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
   queue.nativeGeneration=caps.storageGeneration;
   const generation=queue.generation,nativeGeneration=caps.storageGeneration;let retired=false;
   const current=()=>!retired&&queue.generation===generation&&queue.nativeGeneration===nativeGeneration&&!queue.quarantined;
+  const newRequestId = caps.requestIdPolicy === 'os-random-uuid' && typeof bridge.newRequestId === 'function' ? async () => {
+    if (!current()) throw fail();
+    const value = await timed(Promise.resolve().then(() => {
+      if (!current()) throw fail();
+      return bridge.newRequestId!(nativeGeneration);
+    }), timeout);
+    if (!current() || !isUuid(value)) throw fail();
+    return value.toLowerCase();
+  } : undefined;
   const slot=(value:string): 'session'|'pkce'|'user' => { if(value===key)return 'session';if(value===key+'-code-verifier')return 'pkce';if(value===key+'-user')return 'user';throw fail(); };
   const enqueue=<T>(work:()=>Promise<T>, keepAfterTimeout=false) => { if(!current())return Promise.reject(fail());let expired=false; const pending=queue.tail.then(()=>{if(!current()||(expired && !keepAfterTimeout))throw fail();return work();});queue.tail=pending.then(()=>{},()=>{});return timed(pending,timeout).catch(()=>{expired=true;throw fail();}); };
   const storage={
@@ -64,8 +74,11 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
       const ct=headers.filter(([name])=>name.toLowerCase()==='content-type');
       const match=auth.length===1&&/^Bearer ([A-Za-z0-9._~+/-]+=*)$/.exec(auth[0][1]);
       const legacy = /^\/api\/book-salons\/([^/]+)$/.exec(u.pathname), discussion = /^\/api\/circles\/([^/]+)\/discussion$/.exec(u.pathname);
+      const preview = /^\/api\/circles\/([^/]+)\/discussion\/preview$/.exec(u.pathname);
       const query = parseDiscussionQuery(u.searchParams);
-      const approvedPath = legacy ? isUuid(legacy[1]) && !u.search : discussion && isUuid(discussion[1]) && init.method === 'GET' && query && query.kind !== 'receipt';
+      const approvedPath = legacy ? isUuid(legacy[1]) && !u.search
+        : discussion ? isUuid(discussion[1]) && (init.method === 'GET' ? query !== null : init.method === 'POST' && !u.search)
+        : preview && isUuid(preview[1]) && init.method === 'POST' && !u.search;
       if(!current()||u.origin!==origin||u.username||u.password||u.hash||!approvedPath||!allowed||!match||match[1].length>16384||init.redirect!=='error'||init.credentials!=='omit'||init.cache!=='no-store'||signal.aborted||!['GET','POST'].includes(init.method)||ct.length>1||(init.method==='GET'&&(init.body!==undefined||ct.length!==0))||(init.method==='POST'&&(ct.length!==1||ct[0][1]!=='application/json'||typeof init.body!=='string'||size(init.body)>16384))) throw fail();
       let rejectAbort: (reason: Error)=>void = () => {};
       const aborted=new Promise<never>((_,reject)=>{rejectAbort=reject;});
@@ -98,7 +111,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
     } catch { cancel();throw fail(); }
     finally {finished=true;queue.requests.delete(lifetime);init.signal.removeEventListener('abort',abortLifetime);}
   };
-  return { transport, storage, retireStorage(){retired=true;},
+  return { transport, storage, ...(newRequestId ? { newRequestId } : {}), retireStorage(){retired=true;},
     onAccountRetired(listener:()=>void) { if(!current()){listener();return ()=>{};}queue.retirements.add(listener);return ()=>{queue.retirements.delete(listener);}; },
     async resetAccountStorage() {
       if(!current())throw fail();

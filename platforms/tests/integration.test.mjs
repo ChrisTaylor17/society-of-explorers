@@ -15,7 +15,8 @@ function fixture(){
 test('member bootstrap accepts only an explicit UUID, HTTPS origin, verifying existing client and supplied transport',()=>{
  const auth={getSession(){throw Error('must not call');},getUser(){throw Error('must not call');},onAuthStateChange(){throw Error('must not call');}},base={circleId:circle,origin,auth,transport:()=>{throw Error('must not call');}};
  assert.equal(memberCircleConfig(base).circleId,circle);
- for(const extra of [{circleId:'fictional-person'},{circleId:'11111111-1111-0111-0111-111111111111'},{origin:'http://localhost'},{origin:origin+'/path'},{origin:'https://private@platform-fixture.invalid'},{auth:{getSession(){}}},{transport:undefined},{verificationTimeoutMs:Infinity}])assert.equal(memberCircleConfig({...base,...extra}),null);
+ const newRequestId=async()=>root;assert.equal(memberCircleConfig({...base,newRequestId}).newRequestId,newRequestId);
+ for(const extra of [{circleId:'fictional-person'},{circleId:'11111111-1111-0111-0111-111111111111'},{origin:'http://localhost'},{origin:origin+'/path'},{origin:'https://private@platform-fixture.invalid'},{auth:{getSession(){}}},{transport:undefined},{verificationTimeoutMs:Infinity},{newRequestId:'browser-global'}])assert.equal(memberCircleConfig({...base,...extra}),null);
 });
 test('registered native App renders the existing Circle product entry and has no synthetic fallback or implicit provider call',()=>{
  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
@@ -64,13 +65,19 @@ test('missing Quest markup is rejected before provider or host subscription work
  let calls=0;const auth={getSession(){calls++;},getUser(){calls++;},onAuthStateChange(){calls++;}};
  assert.throws(()=>mountExistingMemberCircle({window:{},document:{getElementById(){return null;}},config:{circleId:circle,origin,auth,transport(){calls++;}}}),/controls unavailable/);assert.equal(calls,0);
 });
-test('native bridge adapter permits only canonical archive GET modes in addition to its existing narrow post',async()=>{
+test('native bridge adapter permits canonical archive/receipt GET and exact preview/post paths only',async()=>{
  const {createNativeMemberPorts}=sourceLoader()('platforms/native/src/circles/native-ports.ts');const calls=[];
  const bridge={capabilities:async()=>({version:2,storageGeneration:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',origin,storageKey:'fixture-key',redirectPolicy:'reject-before-send',storagePolicy:'os-protected'}),begin:async()=>'request-1',send:async(id,r)=>{calls.push(r);return{status:200,url:r.url,body:'{}',redirected:false};},cancel:async()=>{},read:async()=>null,write:async()=>{},remove:async()=>{},resetAccountStorage:async()=>({previousGeneration:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',generation:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',cleared:true})};
  const ports=await createNativeMemberPorts(bridge,{origin,storageKey:'fixture-key'}),init={method:'GET',headers:{Authorization:'Bearer NONISSUED_FIXTURE'},cache:'no-store',redirect:'error',credentials:'omit',signal:new AbortController().signal};
  await ports.transport(origin+`/api/circles/${circle}/discussion?message=${root}&after=${child}&limit=25`,init);assert.equal(calls.length,1);
- for(const suffix of ['?limit=26','?limit=025',`?requestId=${child}`,`?before=${child}&before=${root}`,`?message=${root}&before=${child}`,'?memberId=forged','#private'])await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion${suffix}`,init));
- await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion`,{...init,method:'POST',body:'{}',headers:{...init.headers,'Content-Type':'application/json'}}));assert.equal(calls.length,1);ports.retireStorage();
+ await ports.transport(origin+`/api/circles/${circle}/discussion?requestId=${child}`,init);
+ const post={...init,method:'POST',body:'{}',headers:{...init.headers,'Content-Type':'application/json'}};
+ await ports.transport(origin+`/api/circles/${circle}/discussion`,post);
+ await ports.transport(origin+`/api/circles/${circle}/discussion/preview`,post);
+ for(const suffix of ['?limit=26','?limit=025',`?requestId=${child}&limit=25`,`?requestId=${child}&requestId=${root}`,`?before=${child}&before=${root}`,`?message=${root}&before=${child}`,'?memberId=forged','#private'])await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion${suffix}`,init));
+ for(const suffix of ['?limit=25',`?requestId=${child}`,'/preview?limit=25','/report','/withdraw'])await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion${suffix}`,post));
+ await assert.rejects(ports.transport(origin+`/api/circles/${circle}/discussion/preview`,init));
+ assert.equal(calls.length,4);ports.retireStorage();
 });
 function nativeBridgeFixture(timeoutMs=1000){
  const {createNativeMemberPorts}=sourceLoader()('platforms/native/src/circles/native-ports.ts');

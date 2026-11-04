@@ -431,8 +431,11 @@ function isUuid(value) {
 var DISCUSSION_MESSAGE_LIMIT = 2000;
 var DISCUSSION_PAGE_LIMIT = 25;
 var record2 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var exact = (value, keys) => Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 var plain = (value, max) => typeof value === "string" && value.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value) && !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value);
 var uuid = (value) => isUuid(value);
+var hash = (value) => typeof value === "string" && /^[a-f0-9]{64}$/u.test(value);
+var revision = (value) => Number.isSafeInteger(value) && Number(value) >= 0;
 var same = (a, b) => a.toLowerCase() === b.toLowerCase();
 var timestamp = (value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u.test(value) && Number.isFinite(Date.parse(value));
 function displayName(value) {
@@ -445,6 +448,31 @@ function displayName(value) {
     result += character;
   }
   return result || "Explorer";
+}
+function discussionHref(circleId, messageId) {
+  if (!uuid(circleId) || messageId !== undefined && messageId !== null && !uuid(messageId))
+    throw Error("Invalid discussion locator");
+  return `/circles/${circleId.toLowerCase()}/discussion${messageId ? `?message=${messageId.toLowerCase()}` : ""}`;
+}
+function discussionContentSuffix(circleId, parentMessageId) {
+  const href = discussionHref(circleId, parentMessageId);
+  return parentMessageId ? `In reply to message:
+${href}` : "";
+}
+function discussionCommentLimit(circleId, parentMessageId) {
+  const suffix = discussionContentSuffix(circleId, parentMessageId);
+  return DISCUSSION_MESSAGE_LIMIT - (suffix ? suffix.length + 2 : 0);
+}
+function formatDiscussionContent(circleId, comment, parentMessageId) {
+  if (!uuid(circleId) || parentMessageId !== null && !uuid(parentMessageId) || !plain(comment, DISCUSSION_MESSAGE_LIMIT))
+    return null;
+  const normalized = comment.trim();
+  if (!normalized || normalized.length > discussionCommentLimit(circleId, parentMessageId))
+    return null;
+  const suffix = discussionContentSuffix(circleId, parentMessageId);
+  return suffix ? `${normalized}
+
+${suffix}` : normalized;
 }
 function parseDiscussionQuery(params) {
   if (Array.from(params.keys()).some((key) => params.getAll(key).length !== 1))
@@ -525,6 +553,46 @@ function parseDiscussionPage(value, expected) {
     return null;
   return { kind: "thread", circleId, root, focus, items, nextCursor, limit };
 }
+function parseDiscussionTarget(value) {
+  if (!record2(value) || !uuid(value.circleId) || !Object.hasOwn(value, "target"))
+    return null;
+  if (value.target === null)
+    return { circleId: value.circleId.toLowerCase(), target: null };
+  const raw = value.target;
+  if (!record2(raw) || !revision(raw.revision) || !hash(raw.contentHash))
+    return null;
+  const message = parseThreadMessage(raw.message);
+  return message?.visibility === "visible" ? { circleId: value.circleId.toLowerCase(), target: { message, revision: raw.revision, contentHash: raw.contentHash } } : null;
+}
+function validateDiscussionPreviewInput(value) {
+  if (!record2(value) || !exact(value, ["requestId", "comment", "parentMessageId"]) || !uuid(value.requestId) || !plain(value.comment, DISCUSSION_MESSAGE_LIMIT) || !value.comment.trim() || value.parentMessageId !== null && !uuid(value.parentMessageId)) {
+    return { ok: false, error: "Use a nonempty comment and a valid discussion target." };
+  }
+  return { ok: true, value: { requestId: value.requestId.toLowerCase(), comment: value.comment.trim(), parentMessageId: value.parentMessageId === null ? null : value.parentMessageId.toLowerCase() } };
+}
+function parseDiscussionPreview(value) {
+  if (!record2(value) || !uuid(value.circleId) || !hash(value.contentHash) || !hash(value.reviewKey) || !plain(value.content, DISCUSSION_MESSAGE_LIMIT))
+    return null;
+  const base = validateDiscussionPreviewInput({ requestId: value.requestId, comment: value.comment, parentMessageId: value.parentMessageId });
+  const parent = parseDiscussionTarget({ circleId: value.circleId, target: value.parent });
+  if (!base.ok || !parent || value.comment !== base.value.comment || (parent.target?.message.id ?? null) !== base.value.parentMessageId || formatDiscussionContent(value.circleId, base.value.comment, base.value.parentMessageId) !== value.content || value.commentLimit !== discussionCommentLimit(value.circleId, base.value.parentMessageId))
+    return null;
+  return { ...base.value, circleId: value.circleId.toLowerCase(), parent: parent.target, content: value.content, contentHash: value.contentHash, reviewKey: value.reviewKey, commentLimit: Number(value.commentLimit) };
+}
+function parseDiscussionReceipt(value) {
+  if (!record2(value) || value.outcome !== "confirmed" || !uuid(value.circleId) || !uuid(value.requestId) || typeof value.replayed !== "boolean")
+    return null;
+  const message = parseThreadMessage(value.message);
+  return message?.is_mine ? { outcome: "confirmed", circleId: value.circleId.toLowerCase(), requestId: value.requestId.toLowerCase(), replayed: value.replayed, message } : null;
+}
+function parseDiscussionLookup(value) {
+  if (!record2(value) || !uuid(value.circleId) || !uuid(value.requestId) || !Object.hasOwn(value, "receipt"))
+    return null;
+  const receipt = value.receipt === null ? null : parseDiscussionReceipt(value.receipt);
+  if (value.receipt !== null && (!receipt || !same(receipt.circleId, value.circleId) || !same(receipt.requestId, value.requestId) || !receipt.replayed))
+    return null;
+  return { circleId: value.circleId.toLowerCase(), requestId: value.requestId.toLowerCase(), receipt };
+}
 
 // platforms/shared/archive.ts
 function createDiscussionArchive(request, circleId) {
@@ -532,7 +600,7 @@ function createDiscussionArchive(request, circleId) {
     throw Error("Valid Circle required");
   const circle = circleId.toLowerCase();
   let generation = 0;
-  let state = { open: false, active: true, busy: false, phase: "closed", page: null, message: "Open the complete discussion archive to check current access." };
+  let state = { open: false, active: true, busy: false, phase: "closed", page: null, revision: 0, message: "Open the complete discussion archive to check current access." };
   const listeners = new Set;
   const model = () => JSON.parse(JSON.stringify(state));
   const emit = () => {
@@ -542,7 +610,7 @@ function createDiscussionArchive(request, circleId) {
   const current = (g) => g === generation && state.open && state.active;
   function retire(message = "Private archive cleared. Check current Circle access again.") {
     generation++;
-    state = { ...state, busy: false, page: null, phase: state.open ? "paused" : "closed", message };
+    state = { ...state, revision: state.revision + 1, busy: false, page: null, phase: state.open ? "paused" : "closed", message };
     emit();
   }
   async function read(query) {
@@ -550,7 +618,7 @@ function createDiscussionArchive(request, circleId) {
       return;
     const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : "";
     const g = ++generation;
-    state = { ...state, open: true, busy: true, phase: "loading", page: null, message: "Checking current membership and loading discussion." };
+    state = { ...state, revision: state.revision + 1, open: true, busy: true, phase: "loading", page: null, message: "Checking current membership and loading discussion." };
     emit();
     try {
       const reply = await request(`/api/circles/${circle}/discussion${suffix}`, { method: "GET", cache: "no-store", redirect: "error" }, () => current(g));
@@ -612,6 +680,293 @@ function createDiscussionArchive(request, circleId) {
   };
 }
 
+// platforms/shared/thread-writer.ts
+var copy2 = (value) => JSON.parse(JSON.stringify(value));
+function createThreadWriter(request, circleId, newRequestId) {
+  if (!isUuid(circleId))
+    throw Error("Valid Circle required");
+  const circle = circleId.toLowerCase(), endpoint = `/api/circles/${circle}/discussion`;
+  const available = typeof newRequestId === "function";
+  let generation = 0, active = true, revision = -1, page = null;
+  let phase = "locked", busy = false, draft = "", target = null;
+  let preview = null, confirmed = false, pending = null, receipt = null;
+  let message = available ? "Load the current archive or thread before writing." : "Discussion writing is not connected on this device. Use the member web discussion.";
+  const listeners = new Set;
+  const current = (g) => active && generation === g;
+  const model = () => {
+    const canStart = active && available && page !== null && !busy && !pending;
+    const canEdit = canStart && phase === "editing";
+    return copy2({
+      active,
+      available,
+      phase,
+      busy,
+      draft,
+      target,
+      commentLimit: discussionCommentLimit(circle, target?.id ?? null),
+      preview,
+      confirmed,
+      pendingRequestId: pending?.input.requestId ?? null,
+      receipt,
+      message: available ? message : "Discussion writing is not connected on this device. Use the member web discussion.",
+      canStart,
+      canEdit,
+      canReview: canEdit && formatDiscussionContent(circle, draft, target?.id ?? null) !== null,
+      canPost: canStart && phase === "review" && preview !== null && confirmed,
+      canCheck: active && !busy && pending !== null,
+      canRetry: active && !busy && pending !== null,
+      canCancel: active && pending === null && ["editing", "previewing", "review"].includes(phase),
+      canNavigate: !busy && pending === null
+    });
+  };
+  const emit = () => {
+    for (const listener of listeners)
+      listener(model());
+  };
+  function clear(notice, keepPage = false) {
+    generation++;
+    busy = false;
+    draft = "";
+    target = null;
+    preview = null;
+    confirmed = false;
+    pending = null;
+    receipt = null;
+    phase = "locked";
+    if (!keepPage) {
+      page = null;
+      revision = -1;
+    }
+    message = notice;
+    emit();
+  }
+  function accept(value, expected) {
+    const parsed = parseDiscussionReceipt(value);
+    if (!parsed || parsed.circleId !== circle || parsed.requestId !== expected.input.requestId || parsed.message.parentMessageId !== expected.input.parentMessageId || expected.root !== null && parsed.message.rootMessageId !== expected.root || parsed.message.visibility === "visible" && parsed.message.content !== expected.content)
+      return false;
+    receipt = parsed;
+    pending = null;
+    preview = null;
+    confirmed = false;
+    draft = "";
+    target = null;
+    busy = false;
+    phase = "confirmed";
+    message = parsed.message.visibility === "visible" ? "Posting confirmed. Open the saved message to check its current thread." : `Posting confirmed. The saved message is currently ${parsed.message.visibility}; its earlier body is not displayed.`;
+    return true;
+  }
+  async function send(exact) {
+    if (!active || busy)
+      return;
+    const g = ++generation;
+    pending = exact;
+    preview = null;
+    confirmed = false;
+    draft = "";
+    target = null;
+    receipt = null;
+    busy = true;
+    phase = "sending";
+    message = "Sending the exact reviewed discussion message…";
+    emit();
+    try {
+      const result = await request(endpoint, { method: "POST", cache: "no-store", redirect: "error", body: exact.body }, () => current(g));
+      if (!current(g))
+        return;
+      if (result.http === 200 && accept(result.body, exact)) {
+        emit();
+        return;
+      }
+    } catch {
+      if (!current(g))
+        return;
+    }
+    busy = false;
+    phase = "unknown";
+    message = "Posting is unconfirmed. It may have been saved. Check its receipt or retry this exact reviewed request manually; do not create a duplicate.";
+    emit();
+  }
+  return {
+    model,
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(model());
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    access(next, nextRevision) {
+      if (!Number.isSafeInteger(nextRevision) || nextRevision < 0 || next && next.circleId !== circle) {
+        clear("Current discussion access could not be verified.");
+        return;
+      }
+      if (revision === nextRevision && Boolean(page) === Boolean(next))
+        return;
+      if (nextRevision < revision)
+        return;
+      page = next ? copy2(next) : null;
+      revision = nextRevision;
+      if (pending || phase === "confirmed" && !next) {
+        emit();
+        return;
+      }
+      clear(next ? "Current discussion loaded. Choose a new message or a visible reply target." : "Load current discussion access before writing.", true);
+    },
+    activity(value) {
+      active = value;
+      if (!value)
+        clear("Private discussion draft, preview and request key cleared while inactive. A sent request may still have been saved.");
+      else
+        emit();
+    },
+    retire() {
+      clear("Private discussion draft, preview and request key cleared. A sent request may still have been saved. Nothing will reload or retry automatically.");
+    },
+    close() {
+      clear("Discussion writing closed. A request already sent may still have been saved.");
+    },
+    start(parentId) {
+      if (!model().canStart || !page || parentId !== null && !isUuid(parentId))
+        return false;
+      const candidates = page.kind === "thread" ? [page.root, page.focus, ...page.items] : page.items;
+      const selected = parentId === null ? null : candidates.find((item) => item.id === parentId.toLowerCase() && item.visibility === "visible");
+      if (parentId !== null && !selected)
+        return false;
+      clear("Write your own comment, then prepare its exact server preview. Nothing posts until you review and confirm.", true);
+      target = selected ? copy2(selected) : null;
+      phase = "editing";
+      emit();
+      return true;
+    },
+    edit(value) {
+      if (!model().canEdit || typeof value !== "string" || value.length > discussionCommentLimit(circle, target?.id ?? null) || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value) || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value))
+        return false;
+      draft = value;
+      preview = null;
+      confirmed = false;
+      emit();
+      return true;
+    },
+    async review() {
+      if (!model().canReview || !newRequestId)
+        return;
+      const g = ++generation, comment = draft.trim(), parentId = target?.id ?? null, root = target?.rootMessageId ?? null;
+      preview = null;
+      confirmed = false;
+      receipt = null;
+      busy = true;
+      phase = "previewing";
+      message = "Preparing the exact message and checking its current target. This does not post…";
+      emit();
+      try {
+        const rawId = await newRequestId();
+        if (!current(g))
+          return;
+        if (!isUuid(rawId))
+          throw Error("Request key unavailable");
+        const requestId = rawId.toLowerCase();
+        const result = await request(`${endpoint}/preview`, {
+          method: "POST",
+          cache: "no-store",
+          redirect: "error",
+          body: JSON.stringify({ requestId, comment, parentMessageId: parentId })
+        }, () => current(g));
+        if (!current(g))
+          return;
+        const parsed = result.http === 200 ? parseDiscussionPreview(result.body) : null;
+        if (!parsed || parsed.circleId !== circle || parsed.requestId !== requestId || parsed.comment !== comment || parsed.parentMessageId !== parentId || root !== null && parsed.parent?.message.rootMessageId !== root) {
+          clear("The exact preview or current parent could not be verified. Load the discussion and choose a target again. Nothing was posted.");
+          return;
+        }
+        preview = parsed;
+        target = parsed.parent?.message ?? null;
+        busy = false;
+        phase = "review";
+        message = "Review the complete message and its target. It has not been posted.";
+        emit();
+      } catch {
+        if (current(g)) {
+          busy = false;
+          phase = "editing";
+          message = "Preview unavailable. Nothing was posted. Prepare a new preview manually when ready.";
+          emit();
+        }
+      }
+    },
+    confirm(value) {
+      if (active && !busy && !pending && phase === "review" && preview) {
+        confirmed = value === true;
+        emit();
+      }
+    },
+    post() {
+      if (!model().canPost || !preview)
+        return Promise.resolve();
+      const input = {
+        requestId: preview.requestId,
+        comment: preview.comment,
+        parentMessageId: preview.parentMessageId,
+        expectedParentRevision: preview.parent?.revision ?? null,
+        expectedParentHash: preview.parent?.contentHash ?? null,
+        contentHash: preview.contentHash,
+        reviewKey: preview.reviewKey
+      };
+      return send({ input, body: JSON.stringify(input), content: preview.content, root: preview.parent?.message.rootMessageId ?? null });
+    },
+    retry() {
+      return model().canRetry && pending ? send(pending) : Promise.resolve();
+    },
+    async lookup() {
+      if (!model().canCheck || !pending)
+        return;
+      const exact = pending, g = ++generation;
+      busy = true;
+      message = "Checking this request’s receipt without posting…";
+      emit();
+      try {
+        const result = await request(`${endpoint}?requestId=${exact.input.requestId}`, { method: "GET", cache: "no-store", redirect: "error" }, () => current(g));
+        if (!current(g))
+          return;
+        const parsed = result.http === 200 ? parseDiscussionLookup(result.body) : null;
+        if (parsed?.circleId === circle && parsed.requestId === exact.input.requestId) {
+          if (parsed.receipt && accept(parsed.receipt, exact)) {
+            emit();
+            return;
+          }
+          if (parsed.receipt === null) {
+            busy = false;
+            phase = "unknown";
+            message = "No receipt was found at this check. An earlier attempt could still complete. Keep the same key and use only the exact manual retry.";
+            emit();
+            return;
+          }
+        }
+      } catch {
+        if (!current(g))
+          return;
+      }
+      busy = false;
+      phase = "unknown";
+      message = "The receipt could not be confirmed. No post was sent by this read; the exact pending request is retained.";
+      emit();
+    },
+    cancel() {
+      if (model().canCancel)
+        clear("Draft and preview cleared. Nothing was posted by this action.", true);
+    },
+    editReview() {
+      if (active && !busy && !pending && phase === "review") {
+        generation++;
+        preview = null;
+        confirmed = false;
+        phase = "editing";
+        message = "Edit this draft, then prepare a new exact preview.";
+        emit();
+      }
+    }
+  };
+}
+
 // platforms/native/src/circles/host.ts
 function approvedOrigin(value) {
   const url = new URL(value);
@@ -627,7 +982,11 @@ function createCircleHost(config) {
   const timeout = config.timeoutMs ?? 15000;
   if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000)
     throw Error("Invalid deadline");
-  let attached = false, active = true, online = true, scope = null, unsubscribe = () => {};
+  if (config.initialOnline !== undefined && typeof config.initialOnline !== "boolean")
+    throw Error("Invalid connectivity state");
+  if (config.newRequestId !== undefined && typeof config.newRequestId !== "function")
+    throw Error("Invalid request key factory");
+  let attached = false, active = true, online = config.initialOnline ?? true, scope = null, unsubscribe = () => {};
   const listeners = new Set;
   const pendingRequests = new Set;
   const abortPending = () => {
@@ -637,8 +996,10 @@ function createCircleHost(config) {
   const current = (expected) => attached && active && online && scope === expected && config.owner.scope() === expected;
   const request = async (path, options, mayTransmit) => {
     const url = new URL(path, origin), query = parseDiscussionQuery(url.searchParams);
-    const archiveRead = options.method === "GET" && url.pathname === `/api/circles/${circleId}/discussion` && query && query.kind !== "receipt" && !url.hash && url.origin === origin;
-    if (!(archiveRead || path === `/api/book-salons/${circleId}`) || !["GET", "POST"].includes(options.method))
+    const discussionPath = `/api/circles/${circleId}/discussion`;
+    const discussion = url.pathname === discussionPath && (options.method === "GET" ? query !== null : options.method === "POST" && !url.search);
+    const preview = url.pathname === `${discussionPath}/preview` && options.method === "POST" && !url.search;
+    if (path !== url.pathname + url.search || url.hash || url.origin !== origin || !(discussion || preview || path === `/api/book-salons/${circleId}`) || !["GET", "POST"].includes(options.method))
       throw Error("Unexpected Circle operation");
     const expected = scope;
     if (!expected || !current(expected) || !mayTransmit())
@@ -667,8 +1028,11 @@ function createCircleHost(config) {
           throw Error("Unexpected Circle response origin");
         if (abort.signal.aborted || !current(expected) || !mayTransmit())
           throw Error("Circle lifetime ended");
-        if ([401, 403, 404].includes(response.status))
+        if ([401, 403, 404].includes(response.status)) {
           participation.retire();
+          archive.retire();
+          threadWrite.retire();
+        }
         const body = await response.json();
         if (abort.signal.aborted || !current(expected) || !mayTransmit())
           throw Error("Circle lifetime ended");
@@ -681,6 +1045,27 @@ function createCircleHost(config) {
   };
   const participation = createCircleParticipationSession(request, circleId);
   const archive = createDiscussionArchive(request, circleId);
+  const newRequestId = config.newRequestId ? async () => {
+    const expected = scope;
+    if (!expected || !current(expected))
+      throw Error("Circle session unavailable");
+    let timer;
+    try {
+      const value = await Promise.race([Promise.resolve().then(() => {
+        if (!current(expected))
+          throw Error("Circle session changed");
+        return config.newRequestId();
+      }), new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Error("Request key deadline exceeded")), timeout);
+      })]);
+      if (!current(expected) || !isUuid(value))
+        throw Error("Request key unavailable");
+      return value.toLowerCase();
+    } finally {
+      clearTimeout(timer);
+    }
+  } : undefined;
+  const threadWrite = createThreadWriter(request, circleId, newRequestId);
   const model = () => ({
     configured: true,
     connected: attached && scope !== null,
@@ -688,26 +1073,39 @@ function createCircleHost(config) {
     online,
     status: !attached || !scope ? "Connect the existing member session to read this circle." : !active ? "Private circle views cleared while inactive." : !online ? "Offline. Private views and draft cleared. Requests already sent may still complete." : "Refresh to check current circle membership.",
     participation: participation.model(),
-    archive: archive.model()
+    archive: archive.model(),
+    threadWrite: threadWrite.model()
   });
   const emit = () => {
     for (const listener of listeners)
       listener(model());
   };
   participation.subscribe(emit);
-  archive.subscribe(emit);
+  archive.subscribe((value) => {
+    threadWrite.access(value.page, value.revision);
+    emit();
+  });
+  threadWrite.subscribe(emit);
   const setActivity = () => {
     const enabled = attached && active && online && scope !== null;
     participation.activity(enabled);
     archive.activity(enabled);
+    threadWrite.activity(enabled);
   };
   const sync = () => {
     abortPending();
     scope = config.owner.scope();
     participation.retire();
     archive.retire();
+    threadWrite.retire();
     setActivity();
     emit();
+  };
+  const canNavigate = () => threadWrite.model().canNavigate && !participation.model().write.busy;
+  const afterWrite = async (operation) => {
+    await operation();
+    if (threadWrite.model().phase === "confirmed")
+      archive.retire("Posting confirmed. Open the saved message for a fresh thread read.");
   };
   return {
     model,
@@ -733,6 +1131,7 @@ function createCircleHost(config) {
       unsubscribe = () => {};
       participation.close();
       archive.close();
+      threadWrite.close();
       setActivity();
       emit();
     },
@@ -751,29 +1150,58 @@ function createCircleHost(config) {
       emit();
     },
     async refresh() {
-      if (scope && current(scope)) {
+      if (scope && current(scope) && canNavigate()) {
         archive.close();
         await participation.open();
       }
     },
     async openArchive() {
-      if (scope && current(scope)) {
-        if (participation.model().write.busy)
-          return;
+      if (scope && current(scope) && canNavigate()) {
         participation.retire();
         await archive.open();
       }
     },
-    archiveNext: archive.next,
-    archiveThread: archive.thread,
-    edit: participation.edit,
-    clearDraft: participation.clearDraft,
-    post: participation.post,
-    startNewAfterReview: participation.startNewAfterReview,
+    archiveNext() {
+      return canNavigate() ? archive.next() : Promise.resolve();
+    },
+    archiveThread(id) {
+      return canNavigate() ? archive.thread(id) : Promise.resolve();
+    },
+    edit(value) {
+      return canNavigate() && participation.edit(value);
+    },
+    clearDraft() {
+      if (canNavigate())
+        participation.clearDraft();
+    },
+    post() {
+      return canNavigate() ? participation.post() : Promise.resolve();
+    },
+    startNewAfterReview() {
+      if (canNavigate())
+        participation.startNewAfterReview();
+    },
+    threadStart(parentId) {
+      if (participation.model().write.busy)
+        return false;
+      const started = threadWrite.start(parentId);
+      if (started)
+        participation.retire();
+      return started;
+    },
+    threadEdit: threadWrite.edit,
+    threadReview: threadWrite.review,
+    threadConfirm: threadWrite.confirm,
+    threadPost: () => afterWrite(threadWrite.post),
+    threadLookup: () => afterWrite(threadWrite.lookup),
+    threadRetry: () => afterWrite(threadWrite.retry),
+    threadCancel: threadWrite.cancel,
+    threadEditReview: threadWrite.editReview,
     close() {
       abortPending();
       participation.close();
       archive.close();
+      threadWrite.close();
     }
   };
 }
@@ -1015,14 +1443,15 @@ function memberCircleConfig(input) {
     if (!input || typeof input !== "object" || Array.isArray(input))
       return null;
     const v = input;
-    if (!isUuid(v.circleId) || typeof v.origin !== "string" || typeof v.transport !== "function" || typeof v.auth?.getSession !== "function" || typeof v.auth.getUser !== "function" || typeof v.auth.onAuthStateChange !== "function" || v.verificationTimeoutMs !== undefined && (!Number.isSafeInteger(v.verificationTimeoutMs) || Number(v.verificationTimeoutMs) < 1 || Number(v.verificationTimeoutMs) > 60000))
+    if (!isUuid(v.circleId) || typeof v.origin !== "string" || typeof v.transport !== "function" || typeof v.auth?.getSession !== "function" || typeof v.auth.getUser !== "function" || typeof v.auth.onAuthStateChange !== "function" || v.verificationTimeoutMs !== undefined && (!Number.isSafeInteger(v.verificationTimeoutMs) || Number(v.verificationTimeoutMs) < 1 || Number(v.verificationTimeoutMs) > 60000) || v.newRequestId !== undefined && typeof v.newRequestId !== "function")
       return null;
     return {
       circleId: v.circleId.toLowerCase(),
       origin: approvedOrigin(v.origin),
       auth: v.auth,
       transport: v.transport,
-      ...v.verificationTimeoutMs === undefined ? {} : { verificationTimeoutMs: Number(v.verificationTimeoutMs) }
+      ...v.verificationTimeoutMs === undefined ? {} : { verificationTimeoutMs: Number(v.verificationTimeoutMs) },
+      ...typeof v.newRequestId === "function" ? { newRequestId: v.newRequestId } : {}
     };
   } catch {
     return null;

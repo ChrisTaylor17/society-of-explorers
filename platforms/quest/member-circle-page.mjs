@@ -6,7 +6,8 @@ export function mountExistingMemberCircle({window:win,document:doc,config}) {
   assertCircleMarkup(doc);
   const button=doc.getElementById('member-session-check'),status=doc.getElementById('member-session-status');
   if(!button||!status)throw Error('Member session controls unavailable');
-  const approved=memberCircleConfig({...config,transport:config?.transport??browserCircleTransport(win)});
+  const newRequestId=typeof win.crypto?.randomUUID==='function'?async()=>win.crypto.randomUUID():undefined;
+  const approved=memberCircleConfig({...config,newRequestId,transport:config?.transport??browserCircleTransport(win)});
   if(!approved)throw Error('Member Circle configuration unavailable');
   const {auth,verificationTimeoutMs,...hostConfig}=approved;
   const binding=createVerifiedSupabaseCircleOwner(auth,{timeoutMs:verificationTimeoutMs});

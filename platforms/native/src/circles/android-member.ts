@@ -25,6 +25,7 @@ export function createAndroidMemberAdapter(module: Spec | null): AndroidMemberAd
     write: (slot, value, generation) => module.write(slot, value, generation),
     remove: (slot, generation) => module.remove(slot, generation),
     resetAccountStorage: generation => module.resetAccountStorage(generation),
+    ...(typeof module.newRequestId === 'function' ? { newRequestId: (generation: string) => module.newRequestId(generation) } : {}),
   };
   const snapshot = (): NativeConnectivityState => {
     try {

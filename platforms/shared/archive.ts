@@ -5,7 +5,7 @@ export type ArchiveQuery = Exclude<DiscussionQuery, { kind: 'receipt' }>;
 export type ArchiveRequest = (path: string, options: { method: 'GET'; cache: 'no-store'; redirect: 'error' }, mayTransmit: () => boolean) => Promise<{ http: number; body: unknown }>;
 export type ArchiveModel = {
   open: boolean; active: boolean; busy: boolean; phase: 'closed' | 'loading' | 'ready' | 'denied' | 'unavailable' | 'paused';
-  page: DiscussionPage | null; message: string;
+  page: DiscussionPage | null; message: string; revision: number;
 };
 
 /** Uses the canonical web DTO/cursor parser; no separate platform data contract.
@@ -14,19 +14,19 @@ export function createDiscussionArchive(request: ArchiveRequest, circleId: strin
   if (!isUuid(circleId)) throw Error('Valid Circle required');
   const circle = circleId.toLowerCase();
   let generation = 0;
-  let state: ArchiveModel = { open: false, active: true, busy: false, phase: 'closed', page: null, message: 'Open the complete discussion archive to check current access.' };
+  let state: ArchiveModel = { open: false, active: true, busy: false, phase: 'closed', page: null, revision: 0, message: 'Open the complete discussion archive to check current access.' };
   const listeners = new Set<(model: ArchiveModel) => void>();
   const model = (): ArchiveModel => JSON.parse(JSON.stringify(state)) as ArchiveModel;
   const emit = () => { for (const listener of listeners) listener(model()); };
   const current = (g: number) => g === generation && state.open && state.active;
   function retire(message = 'Private archive cleared. Check current Circle access again.') {
-    generation++; state = { ...state, busy: false, page: null, phase: state.open ? 'paused' : 'closed', message }; emit();
+    generation++; state = { ...state, revision: state.revision + 1, busy: false, page: null, phase: state.open ? 'paused' : 'closed', message }; emit();
   }
   async function read(query: ArchiveQuery) {
     if (!state.active || state.busy) return;
     const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : '';
     const g = ++generation;
-    state = { ...state, open: true, busy: true, phase: 'loading', page: null, message: 'Checking current membership and loading discussion.' }; emit();
+    state = { ...state, revision: state.revision + 1, open: true, busy: true, phase: 'loading', page: null, message: 'Checking current membership and loading discussion.' }; emit();
     try {
       const reply = await request(`/api/circles/${circle}/discussion${suffix}`, { method: 'GET', cache: 'no-store', redirect: 'error' }, () => current(g));
       if (!current(g)) return;

@@ -96,7 +96,24 @@ export default function QuestCircle({ circleId }: { circleId: string }) {
       <section aria-label="Member session"><p id="member-session-status" role="status">Member session is not connected.</p><button id="member-session-check" type="button" disabled>Check member session</button></section>
       <section aria-label="Circle access"><p id="circle-host-status" role="status">Circle access is not connected.</p><p id="circle-read-status" role="status" /><button id="circle-refresh" type="button" disabled>Refresh circle access</button><button id="circle-archive-open" type="button" disabled>Open discussion archive</button><button id="circle-close" type="button" disabled>Close and clear Circle</button></section>
       <section id="circle-conversation" aria-labelledby="circle-conversation-heading" hidden><h2 id="circle-conversation-heading">Circle conversation</h2><p>Latest 100 messages. Open the full discussion archive for older conversations.</p><div id="circle-messages" /></section>
-      <section id="circle-archive" aria-labelledby="circle-archive-heading" hidden><h2 id="circle-archive-heading">Discussion archive</h2><p id="circle-archive-status" role="status" /><div id="circle-archive-messages" /><button id="circle-archive-next" type="button" hidden>Older discussions</button></section>
+      <section id="circle-archive" aria-labelledby="circle-archive-heading" hidden><h2 id="circle-archive-heading">Discussion archive</h2><p id="circle-archive-status" role="status" /><div id="circle-archive-messages" /><button id="circle-archive-next" type="button" hidden>Older discussions</button>
+        <section id="circle-thread-write" aria-labelledby="circle-thread-write-heading" hidden>
+          <h3 id="circle-thread-write-heading">Write in this discussion</h3>
+          <button id="circle-thread-new" type="button" disabled>Start a new discussion</button>
+          <p id="circle-thread-target" /><label htmlFor="circle-thread-draft">Your contribution</label>
+          <textarea id="circle-thread-draft" maxLength={2000} autoComplete="off" spellCheck={false} aria-describedby="circle-thread-remaining circle-thread-status" disabled />
+          <p id="circle-thread-remaining">2000 characters remaining</p><p id="circle-thread-status" role="status" />
+          <button id="circle-thread-review" type="button" disabled>Review contribution</button>
+          <section id="circle-thread-preview" aria-label="Contribution preview" hidden>
+            <h4>Review the selected parent and full contribution</h4><p id="circle-thread-preview-parent" style={{ whiteSpace: 'pre-wrap' }} /><p id="circle-thread-preview-content" style={{ whiteSpace: 'pre-wrap' }} />
+            <label style={{ minHeight: 44, padding: '8px 0' }}><input id="circle-thread-confirm" type="checkbox" disabled /> I reviewed this exact contribution and its reply context.</label>
+            <button id="circle-thread-post" type="button" disabled>Post reviewed contribution</button><button id="circle-thread-edit" type="button" disabled>Edit contribution</button>
+          </section>
+          <button id="circle-thread-check" type="button" hidden>Check saved contribution</button><button id="circle-thread-retry" type="button" hidden>Retry exact contribution</button>
+          <button id="circle-thread-cancel" type="button" disabled>Clear contribution</button><button id="circle-thread-saved" type="button" hidden>Open saved thread</button>
+          <p>Replies link to the selected contribution. Report or withdraw through its regular-view link. A missing receipt does not prove that an earlier request failed; only check or retry the same contribution.</p>
+        </section>
+      </section>
       <section id="circle-composer"><h2>Your message</h2><label htmlFor="circle-draft">Message to this Circle</label><textarea id="circle-draft" maxLength={2000} autoComplete="off" spellCheck={false} aria-describedby="circle-remaining circle-write-status" disabled /><p id="circle-remaining">2000 characters remaining</p><p id="circle-write-status" role="status" /><button id="circle-post" type="button" disabled>Post to Circle</button><button id="circle-clear" type="button" disabled>Clear draft</button><button id="circle-new" type="button" hidden>I reviewed the conversation; start a new blank message</button></section>
     </div>
     <p>Drafts stay in this view and clear when the view, account, focus or connectivity ends. A sent request may still complete. Nothing is resent automatically.</p>

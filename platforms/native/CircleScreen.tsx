@@ -28,10 +28,13 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
     void host.refresh();
     return () => { mounted = false; host.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
-  const p = m?.participation, read = p?.read, write = p?.write, archive = m?.archive;
+  const p = m?.participation, read = p?.read, write = m?.threadWrite, archive = m?.archive;
   const archivePage = archive?.page;
+  const rootMessage = archivePage?.kind === 'thread' ? archivePage.root : null;
+  const savedMessage = write?.receipt?.message;
   const focusedMessage = archivePage?.kind === 'thread' && archivePage.focus.id !== archivePage.root.id && !archivePage.items.some(item => item.id === archivePage.focus.id) ? archivePage.focus : null;
-  const refresh = Boolean(m?.connected && m.active && m.online && !read?.busy && !write?.busy && !archive?.busy);
+  const navigate = Boolean(write?.canNavigate);
+  const refresh = Boolean(m?.connected && m.active && m.online && navigate && !read?.busy && !write?.busy && !archive?.busy);
   const leave = () => { host?.disconnect(); onClose(); };
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS · CIRCLES</Text>
@@ -58,14 +61,17 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
       {archive.page ? <>
         {archive.page.kind === 'thread' ? <>
           <Text accessibilityRole="header" style={styles.heading}>Thread</Text>
-          <ArchiveMessage message={archive.page.root} onOpen={() => { if (archivePage?.kind === 'thread') void host?.archiveThread(archivePage.root.id); }}/>
-          {focusedMessage ? <ArchiveMessage message={focusedMessage} onOpen={() => void host?.archiveThread(focusedMessage.id)}/> : null}
+          {rootMessage ? <ArchiveMessage message={rootMessage} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
+            onOpen={() => void host?.archiveThread(rootMessage.id)} onReply={() => host?.threadStart(rootMessage.id)}/> : null}
+          {focusedMessage ? <ArchiveMessage message={focusedMessage} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
+            onOpen={() => void host?.archiveThread(focusedMessage.id)} onReply={() => host?.threadStart(focusedMessage.id)}/> : null}
         </> : null}
-        {archive.page.items.map(message => <ArchiveMessage key={message.id} message={message} onOpen={() => void host?.archiveThread(message.id)}/>)}
+        {archive.page.items.map(message => <ArchiveMessage key={message.id} message={message} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
+          onOpen={() => void host?.archiveThread(message.id)} onReply={() => host?.threadStart(message.id)}/>)}
         {archive.page.items.length === 0 ? <Text style={styles.copy}>{archive.page.kind === 'thread' ? 'No replies in this page.' : 'No messages in this page.'}</Text> : null}
-        {archive.page.nextCursor ? <Action label={archive.page.kind === 'thread' ? 'Next replies' : 'Older messages'} disabled={archive.busy} onPress={() => void host?.archiveNext()}/> : null}
+        {archive.page.nextCursor ? <Action label={archive.page.kind === 'thread' ? 'Next replies' : 'Older messages'} disabled={archive.busy || !navigate} onPress={() => void host?.archiveNext()}/> : null}
       </> : null}
-      <Text style={styles.note}>Explore every archive page and thread here. To reply in a thread, report, or withdraw a contribution, open the Circle in the member web app.</Text>
+      <Text style={styles.note}>Reply only to a visible message after reviewing its current server preview. Reporting or withdrawing a contribution still uses the member web app.</Text>
     </View> : null}
     {!archive?.open && read?.conversation ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Circle conversation</Text>
@@ -76,30 +82,58 @@ export function CircleScreen({ config, connectivity, onClose, memberSession }: {
         <Text style={styles.note}>{message.created_at}</Text><Text selectable style={styles.copy}>{message.content}</Text>
       </View>)}
     </View> : null}
-    {!archive?.open && write ? <View>
-      <Text accessibilityRole="header" style={styles.heading}>Your message</Text>
-      <Text nativeID="circle-message-label" style={styles.copy}>Message to this circle</Text>
-      <TextInput accessibilityLabel="Message to this circle" accessibilityLabelledBy="circle-message-label"
-        accessibilityHint="Plain text, up to 2000 characters. Posting requires a separate button press."
-        value={write.draft} onChangeText={value => host?.edit(value)} editable={write.canEdit}
-        multiline maxLength={2000} autoCorrect={false} autoComplete="off" textContentType="none"
-        style={[styles.input, !write.canEdit && styles.disabled]}/>
-      <Text style={styles.note}>{write.remaining} characters remaining</Text>
+    {write ? <View>
+      <Text accessibilityRole="header" style={styles.heading}>Your discussion message</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{write.message}</Text>
-      <Action label={write.busy ? 'Posting to circle…' : 'Post to circle'} disabled={!write.canSend} onPress={() => void host?.post()}/>
-      <Action label="Clear draft" disabled={!write.canEdit || !write.draft} onPress={() => host?.clearDraft()}/>
-      {write.phase === 'unknown' ? <Text style={styles.note}>Nothing is resent automatically. Refresh and review the conversation; a request already sent may still complete.</Text> : null}
-      {write.canStartNew ? <Action label="I reviewed the conversation; start a new blank message" onPress={() => host?.startNewAfterReview()}/> : null}
+      <Action label="Start a new discussion message" disabled={!write.canStart || Boolean(archive?.busy)} onPress={() => host?.threadStart(null)}/>
+      {write.phase === 'editing' || write.phase === 'previewing' ? <>
+        <Text style={styles.note}>{write.target ? 'Replying to the selected message. Your reply includes a stable link; its author and words are not copied into your message.' : 'Share your own thoughts with this Circle. Nothing posts until you review and confirm.'}</Text>
+        <Text nativeID="circle-message-label" style={styles.copy}>Your discussion comment</Text>
+        <TextInput accessibilityLabel="Your discussion comment" accessibilityLabelledBy="circle-message-label"
+          accessibilityHint="Plain text. Prepare and review the complete message before choosing Post."
+          value={write.draft} onChangeText={value => host?.threadEdit(value)} editable={write.canEdit}
+          multiline maxLength={write.commentLimit} autoCorrect={false} autoComplete="off" textContentType="none"
+          style={[styles.input, !write.canEdit && styles.disabled]}/>
+        <Text style={styles.note}>{write.draft.length} of {write.commentLimit} comment characters. Full message limit: 2,000.</Text>
+        <Action label={write.phase === 'previewing' ? 'Preparing discussion preview…' : 'Prepare discussion preview'} disabled={!write.canReview} onPress={() => void host?.threadReview()}/>
+      </> : null}
+      {write.phase === 'review' && write.preview ? <>
+        <Text accessibilityRole="header" style={styles.heading}>Review discussion message</Text>
+        {write.preview.parent ? <View style={styles.message}>
+          <Text style={styles.note}>Current reply parent, checked for this preview:</Text>
+          <Text selectable style={styles.copy}>{write.preview.parent.message.content}</Text>
+        </View> : null}
+        <Text style={styles.note}>This is the complete message that will be posted:</Text>
+        <Text selectable style={styles.copy}>{write.preview.content}</Text>
+        <Pressable accessibilityRole="checkbox" accessibilityLabel="I reviewed this exact message and target, and want to post it to this Circle"
+          accessibilityState={{ checked: write.confirmed, disabled: !write.active || write.busy }} disabled={!write.active || write.busy}
+          onPress={() => host?.threadConfirm(!write.confirmed)} style={[styles.button, (!write.active || write.busy) && styles.disabled]}>
+          <Text style={styles.buttonText}>{write.confirmed ? '✓ ' : '□ '}I reviewed this exact message and target, and want to post it to this Circle.</Text>
+        </Pressable>
+        <Action label="Post reviewed discussion message" disabled={!write.canPost} onPress={() => void host?.threadPost()}/>
+        <Action label="Edit discussion comment" disabled={write.busy} onPress={() => host?.threadEditReview()}/>
+      </> : null}
+      {write.phase === 'unknown' ? <>
+        <Text style={styles.note}>The message may already have been saved. Keep this screen open to preserve the exact request. Checking a missing receipt does not prove that an earlier attempt will not complete. Nothing is retried automatically.</Text>
+        <Action label="Check discussion posting receipt" disabled={!write.canCheck} onPress={() => void host?.threadLookup()}/>
+        <Action label="Retry exact reviewed discussion post" disabled={!write.canRetry} onPress={() => void host?.threadRetry()}/>
+      </> : null}
+      {write.phase === 'confirmed' && savedMessage ? <>
+        <Text style={styles.copy}>{savedMessage.visibility === 'visible' ? 'The message was saved. Open its current thread to read it and any replies.' : `The saved message is currently ${savedMessage.visibility}. Its earlier body is not displayed.`}</Text>
+        <Action label="Open saved discussion message" disabled={!navigate || Boolean(archive?.busy)} onPress={() => void host?.archiveThread(savedMessage.id)}/>
+      </> : null}
+      {write.canCancel ? <Action label="Cancel discussion draft" onPress={() => host?.threadCancel()}/> : null}
     </View> : null}
     <Text style={styles.note}>Drafts stay in memory and clear when the view, account or activity ends. Closing does not erase stored messages or cancel a post already sent.</Text>
   </ScrollView></SafeAreaView>;
 }
-function ArchiveMessage({ message, onOpen }: { message: ThreadMessage; onOpen(): void }) {
+function ArchiveMessage({ message, onOpen, onReply, disabled, replyDisabled }: { message: ThreadMessage; onOpen(): void; onReply(): void; disabled: boolean; replyDisabled: boolean }) {
   return <View style={styles.message}>
     <Text style={styles.author}>{message.member_name}{message.is_mine ? ' · You' : ''}</Text>
     {message.created_at ? <Text style={styles.note}>{message.created_at}</Text> : null}
     <Text selectable style={styles.copy}>{message.content ?? (message.visibility === 'withdrawn' ? 'This contribution was withdrawn.' : message.visibility === 'hidden' ? 'This contribution is restricted by moderation.' : 'This contribution is unavailable.')}</Text>
-    <Action label="Open thread" onPress={onOpen}/>
+    <Action label="Open thread" disabled={disabled} onPress={onOpen}/>
+    {message.visibility === 'visible' && message.content !== null ? <Action label="Reply to this message" disabled={disabled || replyDisabled} onPress={onReply}/> : null}
   </View>;
 }
 function Action({ label, disabled = false, onPress }: { label: string; disabled?: boolean; onPress(): void }) {
