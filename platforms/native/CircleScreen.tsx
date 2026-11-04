@@ -3,21 +3,31 @@ import { ActivityIndicator, AppState, Platform, Pressable, SafeAreaView, ScrollV
 import type { MemberSessionModel } from './src/circles/verified-member-session';
 import { createCircleHost, type CircleHostConfig } from './src/circles/host';
 import type { ThreadMessage } from '../../lib/circles/thread';
+import { observeNativeConnectivity, type NativeConnectivityPort, type NativeConnectivityState } from './src/circles/native-connectivity';
 
-export function CircleScreen({ config, onClose, memberSession }: { config?: CircleHostConfig; onClose(): void; memberSession?: { model: MemberSessionModel; onCheck(): void } }) {
-  const host = useMemo(() => { try { return config ? createCircleHost(config) : null; } catch { return null; } }, [config]);
+export function CircleScreen({ config, connectivity, onClose, memberSession }: { config?: CircleHostConfig; connectivity?: NativeConnectivityPort; onClose(): void; memberSession?: { model: MemberSessionModel; onCheck(): void } }) {
+  const connection = useMemo(() => { try { return config ? { host: createCircleHost({ ...config, initialOnline: false }), connectivity } : null; } catch { return null; } }, [config, connectivity]);
+  const host = connection?.host;
+  const [network, setNetwork] = useState<NativeConnectivityState>('unknown');
   const [snapshot, setSnapshot] = useState(() => ({ host, model: host?.model() }));
   const m = snapshot.host === host ? snapshot.model : host?.model();
   useLayoutEffect(() => {
-    if (!host) return;
+    if (!connection) return;
+    const { host, connectivity } = connection;
     const off = host.subscribe(model => setSnapshot({ host, model }));
-    host.connect(); host.activity(AppState.currentState === 'active');
+    let mounted = true, appActive = false, blurred = false;
+    const syncActivity = () => { if (mounted) host.activity(appActive && !blurred); };
+    host.activity(false); host.connectivity(false);
+    const change = AppState.addEventListener('change', value => { appActive = value === 'active'; syncActivity(); });
+    const blur = Platform.OS === 'android' ? AppState.addEventListener('blur', () => { blurred = true; syncActivity(); }) : null;
+    const focus = Platform.OS === 'android' ? AppState.addEventListener('focus', () => { blurred = false; appActive = AppState.currentState === 'active'; syncActivity(); }) : null;
+    appActive = AppState.currentState === 'active'; syncActivity();
+    const offConnectivity = observeNativeConnectivity(connectivity, state => { if (mounted) { host.connectivity(state === 'online'); setNetwork(state); } });
+    appActive = AppState.currentState === 'active'; syncActivity();
+    host.connect();
     void host.refresh();
-    const change = AppState.addEventListener('change', value => host.activity(value === 'active'));
-    const blur = Platform.OS === 'android' ? AppState.addEventListener('blur', () => host.activity(false)) : null;
-    const focus = Platform.OS === 'android' ? AppState.addEventListener('focus', () => host.activity(AppState.currentState === 'active')) : null;
-    return () => { host.disconnect(); off(); change.remove(); blur?.remove(); focus?.remove(); };
-  }, [host]);
+    return () => { mounted = false; host.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
+  }, [connection]);
   const p = m?.participation, read = p?.read, write = p?.write, archive = m?.archive;
   const archivePage = archive?.page;
   const focusedMessage = archivePage?.kind === 'thread' && archivePage.focus.id !== archivePage.root.id && !archivePage.items.some(item => item.id === archivePage.focus.id) ? archivePage.focus : null;
@@ -27,6 +37,7 @@ export function CircleScreen({ config, onClose, memberSession }: { config?: Circ
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS · CIRCLES</Text>
     <Text accessibilityRole="header" style={styles.title}>{read?.conversation?.title ?? 'A conversation worth having.'}</Text>
     <Text style={styles.copy}>Read, reflect and share with your circle. Only a current member session can open the conversation.</Text>
+    <Text accessibilityLiveRegion="polite" style={styles.note}>{network === 'online' ? 'Network available. Check the member session and refresh Circle access.' : network === 'offline' ? 'Offline. Private Circle views and drafts are cleared.' : 'Network availability is unknown. Private Circle access stays closed.'}</Text>
     {memberSession ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Member session</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{memberSession.model.message}</Text>
@@ -35,7 +46,7 @@ export function CircleScreen({ config, onClose, memberSession }: { config?: Circ
     <Action label="Close circle" onPress={leave}/>
     <View accessibilityLiveRegion="polite" accessibilityRole="summary" style={styles.status}>
       <Text style={styles.copy}>{m?.status ?? 'Member sign-in and the secure Circle connection are not connected in this build.'}</Text>
-      {read ? <Text style={styles.copy}>{read.message}</Text> : null}
+      {read && !archive?.open ? <Text style={styles.copy}>{read.message}</Text> : null}
     </View>
     {read?.busy ? <ActivityIndicator accessibilityLabel="Checking current circle access" color="#e8cb8d"/> : null}
     <Action label="Refresh circle access" disabled={!refresh} onPress={() => void host?.refresh()}/>

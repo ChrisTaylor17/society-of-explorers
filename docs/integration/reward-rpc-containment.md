@@ -1,5 +1,7 @@
 # Reward RPC containment: local candidate
 
+Current continuation: the original representative suite and frozen SQL below remain unchanged. A later read-only catalog inspection retrieved the three exact reward definitions, with matching prior digests. See [reward-live-body-review.md](reward-live-body-review.md) for the additive exact-body rehearsal and [deployed-caller-impact-2026-11-04.md](deployed-caller-impact-2026-11-04.md) for the still-incomplete deployed-source correspondence. Historical statements about unknown bodies below describe the original checkpoint. No production function was invoked or changed.
+
 Prepared 2026-11-04 against canonical checkpoint `6d5bccfce8d7ef183261540eeb42cea179a79540`. These scripts have only run in an offline synthetic database. No hosted SQL, production function invocation, row read, provider authentication, deployment, or approval occurred.
 
 ## Exact change and expected impact

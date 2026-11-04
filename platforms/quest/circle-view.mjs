@@ -14,7 +14,7 @@ export function mountCirclePage({window:win,document:doc,config}) {
   const render=m=>{
     const read=m?.participation.read,write=m?.participation.write,archive=m?.archive;
     $('circle-host-status').textContent=m?.status??'Circle access is not connected. An existing member session and approved HTTPS transport are required.';
-    $('circle-read-status').textContent=read?.message??'';
+    $('circle-read-status').textContent=archive?.open?'':read?.message??'';
     $('circle-title').textContent=read?.conversation?.title??'A conversation worth having.';
     const canRead=Boolean(m?.connected&&m.active&&m.online&&!read?.busy&&!write?.busy&&!archive?.busy);
     $('circle-refresh').disabled=!canRead;

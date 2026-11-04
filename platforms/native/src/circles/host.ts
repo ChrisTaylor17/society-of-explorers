@@ -15,7 +15,7 @@ export type CircleTransport = (url: string, init: {
 }) => Promise<{ status: number; url: string; redirected: boolean; json(): Promise<unknown> }>;
 /** A native transport must reject redirects BEFORE forwarding credentials.
  * React Native's default fetch is deliberately not selected here. */
-export type CircleHostConfig = { circleId: string; origin: string; owner: CircleOwner; transport: CircleTransport; timeoutMs?: number };
+export type CircleHostConfig = { circleId: string; origin: string; owner: CircleOwner; transport: CircleTransport; timeoutMs?: number; initialOnline?: boolean };
 export type CircleHostModel = { configured: boolean; connected: boolean; active: boolean; online: boolean; status: string; participation: CircleParticipationModel; archive: ArchiveModel };
 export function approvedOrigin(value: string) {
   const url = new URL(value);
@@ -28,7 +28,10 @@ export function createCircleHost(config: CircleHostConfig) {
   const origin = approvedOrigin(config.origin);
   const timeout = config.timeoutMs ?? 15000;
   if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000) throw Error('Invalid deadline');
-  let attached = false, active = true, online = true, scope: string | null = null, unsubscribe = () => {};
+  if (config.initialOnline !== undefined && typeof config.initialOnline !== 'boolean') throw Error('Invalid connectivity state');
+  // Existing/Quest callers retain their previous default. Native screens always
+  // opt into false until a trusted connectivity observer confirms online.
+  let attached = false, active = true, online = config.initialOnline ?? true, scope: string | null = null, unsubscribe = () => {};
   const listeners = new Set<(model: CircleHostModel) => void>();
   const pendingRequests = new Set<AbortController>();
   const abortPending = () => { for (const pending of pendingRequests) pending.abort(); };

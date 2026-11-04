@@ -3,13 +3,14 @@ import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'rea
 import { MemberCircleScreen } from './MemberCircleScreen';
 import { memberCircleConfig } from '../shared/bootstrap';
 import type { ExistingMemberCircleConfig } from './src/circles/verified-member-session';
+import type { NativeConnectivityPort } from './src/circles/native-connectivity';
 
 /** The authenticated native composition calls this component with its existing
  * client/approved transport. The registered default has no fictional login. */
-export default function App({ memberCircle }: { memberCircle?: ExistingMemberCircleConfig } = {}) {
+export default function App({ memberCircle, connectivity }: { memberCircle?: ExistingMemberCircleConfig; connectivity?: NativeConnectivityPort } = {}) {
   const config = useMemo(() => memberCircleConfig(memberCircle), [memberCircle]);
   const [closed, setClosed] = useState<ExistingMemberCircleConfig | null>(null);
-  if (config && closed !== config) return <MemberCircleScreen config={config} onClose={() => setClosed(config)}/>;
+  if (config && closed !== config) return <MemberCircleScreen config={config} connectivity={connectivity} onClose={() => setClosed(config)}/>;
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Read deeply. Share thoughtfully.</Text>

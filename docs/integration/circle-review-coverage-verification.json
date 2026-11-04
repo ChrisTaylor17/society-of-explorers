@@ -1,7 +1,7 @@
 {
   "version": 1,
   "recordedAtUTC": "2026-11-04T18:32:45.939434+00:00",
-  "status": "LOCAL_FULL_REPORT_COVERAGE_PASS_PRODUCTION_HOLD",
+  "status": "HISTORICAL_LOCAL_FULL_REPORT_COVERAGE_PASS_PRODUCTION_HOLD",
   "priorCheckpoint": "a21b399e5234fc9abe3230a56a75c197c3bbb588",
   "behavior": {
     "surfaces": [
@@ -41,7 +41,7 @@
     "sourceFiles": 982,
     "sourceSha256": "07c6ea7c8ada88a24af1cf13f48511c773bb927c7b61cde55ebdba64d73a3fc2",
     "sourceUnchangedDuringBuild": true,
-    "log": "evidence/next-build.log",
+    "log": "verification/web/evidence/checkpoint-0435dcc/next-build.log",
     "buildId": "Yd-b6IFTcAfz9Mk05D93C",
     "allCurrentInputHashesVerified": true
   },
@@ -50,19 +50,19 @@
       "passed": 40,
       "failed": 0,
       "skipped": 0,
-      "log": "verification/web/evidence/review-coverage-api.log"
+      "log": "verification/web/evidence/checkpoint-0435dcc/review-coverage-api.log"
     },
     "database": {
       "passed": 22,
       "failed": 0,
       "skipped": 0,
-      "log": "verification/web/evidence/review-coverage-db.log"
+      "log": "verification/web/evidence/checkpoint-0435dcc/review-coverage-db.log"
     },
     "actualRouteSql": {
       "passed": 5,
       "failed": 0,
       "skipped": 0,
-      "log": "verification/web/evidence/review-coverage-integration.log"
+      "log": "verification/web/evidence/checkpoint-0435dcc/review-coverage-integration.log"
     }
   },
   "testBreakdown": {
@@ -259,23 +259,23 @@
     "verification/web/tests/support/review-coverage-db.mjs": "f97d6adffb75b2dcf3d381d7d9de44bf148b1226a54d573da851cb28df0b4ce7"
   },
   "evidenceSha256": {
-    "verification/web/evidence/next-build.json": "aee2f4ae6c8ea5f2b0561bcae3a5ff27d30f0d2abd57594b5f58e6586f9ec38a",
-    "verification/web/evidence/next-build.log": "edc2ec6b5c5c581ce0d2c2e0ccf6a5b5b7c0a6734cc3b3391fe17e889620d706",
-    "verification/web/evidence/build-source-sha256.json": "8dfea7ac34053cd20131b798826a2d027fbfe0510596f6cbc2276d51c23081d9",
-    "verification/web/evidence/review-coverage-api.log": "f4eae722943b67459e940267f57995b24e36cc778bed2085c1dcc8ae6d5933ab",
-    "verification/web/evidence/review-coverage-db.log": "0f79bc7d4da60b23a588f233f201aaf721eb207776e00be096b8938de938039a",
-    "verification/web/evidence/review-coverage-integration.log": "5fb45620bf114c5c1ef4fa62146cb55dfc8115fcb401e56ef743e0b279775eb5",
-    "verification/web/evidence/review-coverage-root-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/review-coverage-browser.json": "9a8aeb9702819962c528e24e299b3ee107265da91990ba65c3bd4c84f026bc97",
-    "verification/web/evidence/review-coverage-browser.log": "caa7f4b577c7e4565390ea71d3594483c91443348df9466f6aa4b772acb6a239",
-    "verification/web/evidence/review-coverage-composed.json": "d10515e189c7dec75ae3c00223f37feaf4310ce536b293f006528230cc6c347d",
-    "verification/web/evidence/review-coverage-composed.log": "6733f67688bc08267840435a610ff05dca7d7af446971c6433bec372f0a308e1",
-    "verification/web/evidence/message-ai-browser.json": "e9adccc0394849fc75c9f6abad3338ce12b9c122748cdae882e13b196e1feb92",
-    "verification/web/evidence/message-ai-browser.log": "7be664a6afe3ae49b829c4464861e96146de444ede427ffe2952c0c97c0ca468",
-    "verification/web/evidence/browser-discovery-qa.json": "cb334e14d4c6f8f926c484a09098229284d0dc5510bf0cd7ad8c8053a2930f23",
-    "verification/web/evidence/browser-discovery-review-coverage-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
-    "verification/web/evidence/original-status-coverage-check.json": "fee758176cdb38c71c34cf129833bc5e32ea95b765f37c2399832300b2eec352",
-    "verification/web/evidence/review-coverage-existing-ui.log": "2b5ab107db231ba2aae05ca42925db6d4c81a32bc864affb886aaad22957c6e4"
+    "verification/web/evidence/checkpoint-0435dcc/next-build.json": "aee2f4ae6c8ea5f2b0561bcae3a5ff27d30f0d2abd57594b5f58e6586f9ec38a",
+    "verification/web/evidence/checkpoint-0435dcc/next-build.log": "edc2ec6b5c5c581ce0d2c2e0ccf6a5b5b7c0a6734cc3b3391fe17e889620d706",
+    "verification/web/evidence/checkpoint-0435dcc/build-source-sha256.json": "8dfea7ac34053cd20131b798826a2d027fbfe0510596f6cbc2276d51c23081d9",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-api.log": "f4eae722943b67459e940267f57995b24e36cc778bed2085c1dcc8ae6d5933ab",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-db.log": "0f79bc7d4da60b23a588f233f201aaf721eb207776e00be096b8938de938039a",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-integration.log": "5fb45620bf114c5c1ef4fa62146cb55dfc8115fcb401e56ef743e0b279775eb5",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-root-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-browser.json": "9a8aeb9702819962c528e24e299b3ee107265da91990ba65c3bd4c84f026bc97",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-browser.log": "caa7f4b577c7e4565390ea71d3594483c91443348df9466f6aa4b772acb6a239",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-composed.json": "d10515e189c7dec75ae3c00223f37feaf4310ce536b293f006528230cc6c347d",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-composed.log": "6733f67688bc08267840435a610ff05dca7d7af446971c6433bec372f0a308e1",
+    "verification/web/evidence/checkpoint-0435dcc/message-ai-browser.json": "e9adccc0394849fc75c9f6abad3338ce12b9c122748cdae882e13b196e1feb92",
+    "verification/web/evidence/checkpoint-0435dcc/message-ai-browser.log": "7be664a6afe3ae49b829c4464861e96146de444ede427ffe2952c0c97c0ca468",
+    "verification/web/evidence/checkpoint-0435dcc/browser-discovery-qa.json": "cb334e14d4c6f8f926c484a09098229284d0dc5510bf0cd7ad8c8053a2930f23",
+    "verification/web/evidence/checkpoint-0435dcc/browser-discovery-review-coverage-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
+    "verification/web/evidence/checkpoint-0435dcc/original-status-coverage-check.json": "fee758176cdb38c71c34cf129833bc5e32ea95b765f37c2399832300b2eec352",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-existing-ui.log": "2b5ab107db231ba2aae05ca42925db6d4c81a32bc864affb886aaad22957c6e4"
   },
   "historicalEvidence": {
     "checkpoint": "a21b399",
@@ -283,5 +283,12 @@
     "directory": "verification/web/evidence/checkpoint-a21b399",
     "originalReceipt": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-verification.original.json",
     "receipt": "docs/integration/message-ai-allowance-verification.json"
+  },
+  "checkpoint": "0435dcc8dc140aad08f14463e9307573a95d7b81",
+  "evidenceArchive": {
+    "directory": "verification/web/evidence/checkpoint-0435dcc",
+    "originalReceipt": "verification/web/evidence/checkpoint-0435dcc/circle-review-coverage-verification.original.json",
+    "pinnedFiles": 17,
+    "scope": "Preserved checkpoint before native connectivity and composed Quest proof; historical source/build/test snapshot."
   }
 }

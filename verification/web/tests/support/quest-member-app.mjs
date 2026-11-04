@@ -1,0 +1,80 @@
+// Actual member/discussion handlers over the current strict disposable SQL chain.
+// Only credential verification and the narrow SDK/PostgREST transport are doubled.
+import assert from 'node:assert/strict';
+import { offlineApp } from './offline-app.mjs';
+import { createReviewCoverageDb, rpc, requestId, COVERAGE_SOURCE_HASHES, COVERAGE_FIXTURE_LIMITS } from './review-coverage-db.mjs';
+
+export const QUEST_ORIGIN = 'https://quest-member-composed.test';
+export const SUBJECTS = Object.freeze({ author: '72111111-1111-4111-8111-111111111111', outsider: '72222222-2222-4222-8222-222222222222' });
+export const TOKENS = Object.freeze({ author: 'NONISSUED_QUEST_COMPOSED_AUTHOR', outsider: 'NONISSUED_QUEST_COMPOSED_OUTSIDER' });
+export { COVERAGE_SOURCE_HASHES, COVERAGE_FIXTURE_LIMITS };
+
+export async function questMemberApp() {
+  const f = await createReviewCoverageDb({ reportCount: 0 }), app = offlineApp(), calls = [], argumentNames = new Map();
+  let selected = { actor: 'author', provider: 'supabase' }, closed = false;
+  const memberId = actor => actor === 'author' ? f.authorId : f.reviewerId;
+  // Explicit synthetic identity authority. SQL independently authorizes the mapped
+  // member; a real reviewer grant does not confer ordinary Circle membership.
+  app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async req => {
+    const bearer = req.headers.get('authorization');
+    const actor = bearer ? Object.keys(TOKENS).find(key => bearer === 'Bearer ' + TOKENS[key]) : selected?.actor;
+    if (!actor) return null;
+    const provider = bearer ? 'supabase' : selected.provider;
+    const subject = provider === 'supabase' ? SUBJECTS[actor] : memberId(actor);
+    return { memberId: memberId(actor), member: { id: memberId(actor), supabase_auth_id: SUBJECTS[actor], display_name: 'Synthetic own-session name' }, auth: { provider, subject } };
+  } }));
+  app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => ({ rpc: async (name, args) => {
+    const call = { name, keys: Object.keys(args).sort(), status: 'pending' }; calls.push(call);
+    try {
+      assert.ok(['soe_circle_discussion_read', 'soe_circle_discussion_thread'].includes(name));
+      if (!argumentNames.has(name)) {
+        const result = await f.db.query("SELECT proargnames FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace", [name]);
+        assert.equal(result.rows.length, 1); argumentNames.set(name, result.rows[0].proargnames);
+      }
+      const names = argumentNames.get(name);
+      assert.deepEqual(Object.keys(args).sort(), [...names].sort());
+      const data = await rpc(f.db, name, names.map(key => args[key])); call.status = 'ok';
+      return { data, error: null };
+    } catch (error) { call.status = error.code ?? 'FIXTURE_ERROR'; return { data: null, error: { code: call.status } }; }
+  } }) }));
+  try {
+    const member = app.load('app/api/auth/member/route.ts'), discussion = app.load('app/api/circles/[circleId]/discussion/route.ts');
+    const format = app.load('lib/circles/thread.ts').formatDiscussionContent;
+    // 105 tied historical roots test exact keyset paging beyond the old 100.
+    // Direct owner setup is synthetic, separate from all browser operations.
+    await f.db.query(`INSERT INTO seminar_messages(id,cohort_id,member_id,member_name,content,created_at)
+      SELECT ('f1000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,$1,$2,'Synthetic archive author',
+        'Synthetic archived contribution '||n,'2020-01-01T00:00:00Z'::timestamptz FROM generate_series(1,105)n`, [f.circleId, f.authorId]);
+    const replies = [];
+    for (const text of ['Independent visible reply remains readable.', 'WITHDRAWN_REPLY_TEXT_MUST_NOT_LEAVE_SQL']) {
+      const parent = await rpc(f.db, 'soe_circle_discussion_target', [f.authorId, f.circleId, f.messageId]);
+      const saved = await rpc(f.db, 'soe_circle_discussion_post', [f.authorId, f.circleId, requestId(),
+        format(f.circleId, text, f.messageId), f.messageId, parent.target.revision, parent.target.contentHash, 'Synthetic reply author']);
+      replies.push(saved.message.id);
+    }
+    // Actual author withdrawal and actual human decision RPCs produce tombstones;
+    // the HTTP transport never fabricates a visibility or authorization result.
+    const state = await rpc(f.db, 'soe_circle_message_state', [f.authorId, f.circleId, replies[1]]);
+    await rpc(f.db, 'soe_circle_message_action', [f.authorId, f.circleId, replies[1], state.revision, state.contentHash, requestId(), 'withdraw', null, null]);
+    const detail = await rpc(f.db, 'soe_circle_message_review_detail', [f.reviewerId, f.circleId, f.messageId]);
+    await rpc(f.db, 'soe_circle_message_review_decide', [f.reviewerId, f.circleId, f.messageId, detail.revision, detail.contentHash,
+      requestId(), 'hide', 'safety', 'Synthetic human decision for testing the restricted projection.', null, 'Synthetic disagreement']);
+    const expectedArchiveIds = (await f.db.query("SELECT id FROM seminar_messages WHERE cohort_id=$1 ORDER BY coalesce(created_at,'-infinity'::timestamptz) DESC,id DESC", [f.circleId])).rows.map(row => row.id);
+    assert.equal(expectedArchiveIds.length, 108);
+    return { ...f, calls, replies, expectedArchiveIds, root: f.messageId,
+      select(actor = 'author', provider = 'supabase') { assert.ok(['author', 'outsider'].includes(actor)); assert.ok(['supabase', 'wallet'].includes(provider)); selected = { actor, provider }; },
+      async dispatch(path, headers = {}, signal) {
+        assert.equal(closed, false);
+        const url = new URL(path, QUEST_ORIGIN); assert.equal(url.origin, QUEST_ORIGIN);
+        const request = new Request(url, { method: 'GET', headers, signal });
+        // Cookie accessor is a NextRequest transport port, never an issued cookie.
+        Object.defineProperty(request, 'cookies', { value: { get: () => undefined } });
+        if (url.pathname === '/api/auth/member') { assert.equal(url.search, ''); assert.equal(request.headers.get('authorization'), null); return member.GET(request); }
+        const match = /^\/api\/circles\/([^/]+)\/discussion$/.exec(url.pathname);
+        assert.ok(match, 'Unexpected Quest composed route');
+        return discussion.GET(request, { params: Promise.resolve({ circleId: match[1] }) });
+      },
+      async close() { if (closed) return; closed = true; await f.db.close(); },
+    };
+  } catch (error) { await f.db.close(); throw error; }
+}

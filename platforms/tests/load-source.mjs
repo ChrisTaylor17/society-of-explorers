@@ -10,6 +10,8 @@ export function sourceLoader(mocks={}){
  function load(relative){
   const full=path.resolve(root,relative);if(!full.startsWith(root))throw Error('Outside canonical source');
   if(cache.has(full))return cache.get(full).exports;
+  const info=fs.lstatSync(full);
+  if(info.isSymbolicLink()||!info.isFile()||(info.size&&!info.blocks))throw Error('Refuse nonmaterialized or linked canonical source');
   const module={exports:{}};cache.set(full,module);
   const output=ts.transpileModule(fs.readFileSync(full,'utf8'),{fileName:full,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   function localRequire(name){
