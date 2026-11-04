@@ -1,0 +1,7 @@
+# Local native tooling observation — 2026-11-04
+
+This is a read-only inventory of named paths, not native build or device acceptance. `xcode-select -p` selects `/Library/Developer/CommandLineTools`. The usual `/Applications/Xcode.app` and CoreSimulator devices path are absent. The usual Android SDK and Gradle cache paths are absent. The environment's Android SDK variables and path checks are recorded separately in `verification/web/evidence/local-device-tooling-2026-11-04.json`; this is not a broad search for every alternate installation.
+
+No SDK manager, dependency hydration, Xcode installation, Gradle build, simulator, signing operation, provider or device was started. Existing cached JavaScript/Chromium/PGlite verification remains distinct from an iOS/Android binary or Quest headset result.
+
+The current native composition accepts an injected verified auth/transport binding. Its serial secure-storage/no-redirect bridge contract is tested with synthetic ports; it is not a registered, device-proven native implementation. Read `platforms/native/README.md`, the native ports/binding contracts and prior preservation evidence before making platform changes. A complete release still needs the real secure bridge, durable reset authority, available approved toolchains, binary/signing checks and physical-device acceptance. Do not download tooling or infer native readiness from the web build.

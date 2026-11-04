@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto';
 const root = path.resolve('.'), port = 3199, origin = `http://127.0.0.1:${port}`, require = createRequire(import.meta.url);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex'), pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const evidence = { status: 'RUNNING', stage: 'setup', startedAt: new Date().toISOString(), boundary: 'Built Next UI with actual TypeScript public GET handler and disposable SQL; discovery PostgREST transport is synthetic and intercepted discovery calls do not execute inside the built Next server. The signed-out profile story separately uses the actual built Next cookie/token-free auth/member and owner-profile GET handlers. No authenticated account, real Circle, provider transport or production system is used.', command: 'node --require ./scripts/deny-build-network.cjs scripts/browser-discovery-qa.mjs with existing explicit Playwright/Chromium paths in a clean environment', checks: [], requests: [], pages: [], profileRequests: [], profileExpectedConsoleErrors: [], externalRequestsBlocked: [], pageErrors: [], routeErrors: [], consoleErrors: [], cleanupErrors: [], retiredResponses: [] };
-let server, serverError, browser, system, failed, holdNextPage = false, heldPage = null, allowSignedOutProfileGets = false, ownedBrowserPid;
+let server, serverError, browser, system, failed, holdNextPage = false, heldPage = null, allowSignedOutProfileGets = false, allowUnconfiguredHallGets = false, ownedBrowserPid;
 function progress() {
   evidence.progressAt = new Date().toISOString();
   fs.mkdirSync('evidence', { recursive: true });
@@ -64,7 +64,7 @@ try {
   assert.ok([...process.execArgv, process.env.NODE_OPTIONS || ''].join(' ').includes('deny-build-network.cjs'));
   assert.equal(await portOpen(), false, 'Owned QA port is not free'); fs.mkdirSync('evidence', { recursive: true });
   evidence.buildId = fs.readFileSync('../../.next/BUILD_ID', 'utf8').trim(); evidence.runnerSha256 = hash(fs.readFileSync('scripts/browser-discovery-qa.mjs'));
-  evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs', '../../app/account/profile/page.tsx', '../../app/account/profile/ProfileEditor.tsx', '../../app/account/profile/profile.module.css', '../../app/api/auth/member/route.ts', '../../app/api/members/profile/route.ts', '../../lib/members/profile.ts'].map(file => [file, hash(fs.readFileSync(file))]));
+  evidence.sourceSha256 = Object.fromEntries(['../../app/circles/CirclesBrowser.tsx', '../../app/circles/page.tsx', '../../lib/circles/discovery-page.ts', '../../app/quest/[circleId]/QuestCircle.tsx', '../../platforms/quest/circle-host.mjs', '../../app/account/profile/page.tsx', '../../app/account/profile/ProfileEditor.tsx', '../../app/account/profile/profile.module.css', '../../app/api/auth/member/route.ts', '../../app/api/members/profile/route.ts', '../../lib/members/profile.ts', '../../app/hall/page.tsx', '../../app/api/hall/route.ts', '../../lib/hall/public.ts'].map(file => [file, hash(fs.readFileSync(file))]));
   system = await (await import('../tests/support/discovery-app.mjs')).discoveryApp(); await system.excludeOriginalCircles();
   const ended = await system.seedCircles(205, { ended: true, title: 'Discovery ended archive' });
   const matching = await system.seedCircles(31, { title: 'Álpha Discovery', sameTitle: true, description: 'Literal 100% [wisdom] and welcoming readers.', format: 'hybrid' });
@@ -95,6 +95,13 @@ try {
       const request = route.request(), url = new URL(request.url());
       if (url.origin !== origin) { evidence.externalRequestsBlocked.push(url.origin + url.pathname); return route.abort(); }
       if (!url.pathname.startsWith('/api/')) return route.continue();
+      if (url.pathname === '/api/hall') {
+        assert.equal(allowUnconfiguredHallGets, true, 'Unexpected Hall request');
+        assert.equal(request.method(), 'GET');
+        assert.equal(request.headers().authorization, undefined); assert.equal(request.headers().cookie, undefined); assert.equal(request.headers().referer, undefined);
+        (evidence.hallRequests ??= []).push({ method: request.method(), query: url.search, credentials: 'omitted', boundary: 'actual built Next GET with service configuration absent; no database/provider transport' });
+        return route.continue();
+      }
       if (url.pathname === '/api/auth/member' || url.pathname === '/api/members/profile') {
         assert.equal(allowSignedOutProfileGets, true, 'Profile API must wait for explicit Load');
         assert.equal(request.method(), 'GET'); assert.equal(request.headers().authorization, undefined); assert.equal(request.headers().cookie, undefined);
@@ -242,6 +249,24 @@ try {
   assert.equal(await page.getByRole('button', { name: /^Save / }).count(), 0);
   await layout(page, 'profile-signed-out-320.png');
   check('Actual built Next profile page uses canonical 320px CSS and 44px keyboard controls, with no auth/private/provider transport on initial render; explicit Load alone reaches actual cookie/token-free auth/member and owner-profile GET401 routes, shows generic sign-in state, and exposes no editable fields or false saved state');
+
+  evidence.stage = 'actual built unconfigured public Hall'; progress();
+  allowUnconfiguredHallGets = true;
+  let hallResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/hall', { timeout: 5000 });
+  await page.goto(`${origin}/hall`);
+  assert.equal((await hallResponse).status(), 503);
+  await page.getByRole('status').filter({ hasText: 'Public creations are unavailable.' }).waitFor();
+  assert.equal(await page.locator('main article,main img,main video,main audio').count(), 0);
+  assert.equal(await page.getByText('No public text creations are available for this selection.', { exact: true }).count(), 0);
+  assert.equal(evidence.profileRequests.length, 2, 'Hall must not request auth/private profiles');
+  hallResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/hall', { timeout: 5000 });
+  await keyboard(page, page.getByRole('button', { name: 'Retry loading creations', exact: true }));
+  assert.equal((await hallResponse).status(), 503);
+  await page.getByRole('status').filter({ hasText: 'Public creations are unavailable.' }).waitFor();
+  assert.equal(evidence.hallRequests.length, 2);
+  await layout(page, 'hall-unconfigured-320.png');
+  allowUnconfiguredHallGets = false;
+  check('Actual built Hall uses the canonical text-only UI and public GET503 when service configuration is absent; explicit keyboard retry preserves unavailable rather than fabricated empty/success, with320px/44px controls and no credential/referrer/auth/private/media requests');
 
   evidence.stage = 'nonpublic artwork and first-party share card'; progress();
   const artwork = JSON.parse(fs.readFileSync('../../archive/unverified-hero-images/manifest.json'));

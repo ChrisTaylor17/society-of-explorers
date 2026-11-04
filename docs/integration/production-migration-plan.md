@@ -2,7 +2,7 @@
 
 **No migration in this plan has been applied to the connected project.** Approval must name exact reviewed files, target, expected client breakage, restore evidence and acceptance checks. This document is a reviewable local plan, not a deployment instruction or implicit permission to change production.
 
-Current facts are in [current-service-readiness.md](current-service-readiness.md); metadata queries/results are archived under `verification/web/evidence/live-service-metadata-2026-11-04.json`. Local profile and ordinary-salon adapters are verified, but the production caller/restore inventory remains incomplete. Hall is the next bounded local adaptation.
+Current facts are in [current-service-readiness.md](current-service-readiness.md); metadata queries/results are archived under `verification/web/evidence/live-service-metadata-2026-11-04.json`. Local profile, ordinary-salon and Hall adapters are verified, but the production caller/restore inventory remains incomplete.
 
 ## Stage 1: bounded private-data containment
 
@@ -61,9 +61,15 @@ Existing files and intended dependency order, after the separate strict baseline
 
 After private profile consent and the Circle chain, `book-salon-conversation.sql` supplies service-only ordinary-salon read/write RPCs with explicit published-profile joins, bounded messages and actor-bound posting. Its function-only reverse file preserves posts and containment. See `book-salon-conversation.md`; 23 final affected cases and five composed browser stories pass locally. Missing functions fail closed rather than falling back to raw tables. This does not resolve all old direct-Supabase callers.
 
-## Separate artifact/Hall gate — local work pending
+## Stage 5: separate artifact/Hall gate — locally verified, unapplied
 
-The bounded read-only `hall-catalog-2026-11-04.json` observation confirms `artifacts` has RLS, a public SELECT policy on `is_public=true`, an INSERT policy with `WITH CHECK(true)` and broad anon/authenticated table grants including TRUNCATE. Public row visibility also permits raw prompt/context/media columns; RLS does not enforce column-level projection or govern TRUNCATE. No HTTP exploit or user row was inspected. Artifacts is outside both containment candidates. Replace Hall's raw browser embedding and prepare a separate exact-scope access/restore candidate before including it in any approval. Do not silently expand the seven-table script.
+The bounded read-only `hall-catalog-2026-11-04.json` observation confirms `artifacts` has RLS, a public SELECT policy on `is_public=true`, an INSERT policy with `WITH CHECK(true)` and broad anon/authenticated table grants including TRUNCATE. Public row visibility also permits raw prompt/context/media columns; RLS does not enforce column-level projection or govern TRUNCATE. No HTTP exploit or user row was inspected. Artifacts is outside the seven-/three-table candidates.
+
+The new `artifact-containment-preflight.sql` → `artifact-containment-apply.sql` candidate is separately scoped to this one table and a private owner receipt. It revokes all browser/PUBLIC table and column privileges, retains effective service CRUD and preserves rows/defaults/policies/FKs. Its reverse script restores prior ACL/RLS only, preserves later rows and can re-expose their public prompt/context under old grants; it cannot prove unused state and requires separate approval. Sixteen actual local database cases and independent review pass. See `artifact-containment.md` and `hall-caller-impact.md` for exact files, hashes, default/child exceptions and legacy-client impact. Do not expand the seven-table script or reverse used Circle history.
+
+Hall's current local UI/API uses a five-field text-only public DTO, database filters before limits, anonymous attribution, no media loads and honest errors. Fifteen server cases, ten component stories and four composed actual API/SDK/SQL stories pass on final hashes. This does not repair the live Data API boundary or establish media/storage rights.
+
+The additional source-bound `verify-release-boundaries.mjs` executes twenty actual files in the documented core→identity→profile→Circle→salon→artifact order in one synthetic database. Both cases pass with original row comparisons and eleven raw-table/column denials plus actual profile/salon/Circle/Hall behavior. Expanded member/reading and external child stubs and unknown JSON defaults are explicit exceptions. It is not a full 95-table production restore, deployed caller/load/concurrency test or approval to apply any script.
 
 Before each full-stack stage: compare expected object definitions, policies, role memberships, table/column/function ACLs, current grants/defaults, fixed search paths and migration-history provenance; stop on unknown collisions instead of bypassing preflight. Verify explicit RPC EXECUTE denial for PUBLIC/anon/authenticated and required service-only access, no SECURITY DEFINER escalation, current membership/visibility/revision/idempotency behavior, and old salon paths under their reviewed scope. No production RPC is to be invoked during metadata audit.
 

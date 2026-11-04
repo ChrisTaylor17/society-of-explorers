@@ -29,7 +29,7 @@
     "sourceFiles": 965,
     "sourceSha256": "4eb793eefe2d78738d6434fab1ceb00cdb83fa0c8e3c42c9b21b35475dbb5ab2",
     "sourceUnchangedDuringBuild": true,
-    "log": "evidence/next-build.log",
+    "log": "evidence/checkpoint-fa82507/next-build.log",
     "buildId": "hqYfMfFropgvMS8lF6pKf",
     "fullNextTypeCheck": "PASS18.4seconds",
     "sourceStillMatches": true
@@ -191,9 +191,9 @@
     "docs/sql/book-salon-conversation-rollback.sql": "aba9054b162a41b7ef2ca6a3d242a04572a60afce6c061fa7fae995524e0374a"
   },
   "evidenceSha256": {
-    "verification/web/evidence/next-build.json": "1d55781eb39651a89981054ca5a45ef8d3438257d7e6ea88d2c4737c3bc7e448",
-    "verification/web/evidence/next-build.log": "cff554c5f6e29054cabd7a15f055beb591b0e2766db5fe3112f8ce3fca918e12",
-    "verification/web/evidence/build-source-sha256.json": "a2b974489459ba640ffcde0352b4aaa6ab448ba17953cef55cbbe35ff65239be",
+    "verification/web/evidence/checkpoint-fa82507/next-build.json": "1d55781eb39651a89981054ca5a45ef8d3438257d7e6ea88d2c4737c3bc7e448",
+    "verification/web/evidence/checkpoint-fa82507/next-build.log": "cff554c5f6e29054cabd7a15f055beb591b0e2766db5fe3112f8ce3fca918e12",
+    "verification/web/evidence/checkpoint-fa82507/build-source-sha256.json": "a2b974489459ba640ffcde0352b4aaa6ab448ba17953cef55cbbe35ff65239be",
     "verification/web/evidence/circle-salon-complete-tests.log": "1e12674d5004d3b37b7bcfb3a2294413337f2bf68aabec103d9b0c2f2d7b0e68",
     "verification/web/evidence/circle-salon-complete-tests-selection.json": "d056c67448f67a5c6e13028407847e194441b9bea13b99e9e32c9a0cc3bd215f",
     "verification/web/evidence/circle-salon-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
@@ -202,9 +202,9 @@
     "verification/web/evidence/circle-live-chain.json": "f257f47aa17a44f34d8bff1bed50ae035c6fe6c1cccde11599cdc8af29ea0a48",
     "verification/web/evidence/circle-legacy-baseline-tests.log": "d9cf6c4bca49e5138fb6113c3b09606e815e319ac9a365fb296e4b7367ae3340",
     "verification/web/evidence/circle-legacy-baseline-final-tests.log": "d68504eea7bf6eb8ca25ff04088219662b3a97c2e2d6737daab6dab800ea2195",
-    "verification/web/evidence/browser-discovery-qa.json": "ce197bb6cd3c8a4ce4983683b01578cab3916e1b911d76fe71e5e863a2dc48fd",
+    "verification/web/evidence/checkpoint-fa82507/browser-discovery-qa.json": "ce197bb6cd3c8a4ce4983683b01578cab3916e1b911d76fe71e5e863a2dc48fd",
     "verification/web/evidence/browser-discovery-circle-salon-complete.log": "d4fe5d7be8f478a98c742803b6c8d239f86475410cf51738b2f0a6b59b946f78",
-    "verification/web/evidence/browser-discovery-progress.json": "edf7c5312926697779fedcd283f4f791a397ad4b2d937916cdb74781ed20de9f",
+    "verification/web/evidence/checkpoint-fa82507/browser-discovery-progress.json": "edf7c5312926697779fedcd283f4f791a397ad4b2d937916cdb74781ed20de9f",
     "verification/web/evidence/legacy-salon-browser.json": "5d4cdf5cb2626692f3bf7be7b2932c891448cd8fbb3fa8da83e84a3dafb3a63f",
     "verification/web/evidence/legacy-salon-test-freeze.json": "9d06909ca55e7ea860bad1b40254dca6b2385d020cd118d3bd70872b445db5ad",
     "verification/web/evidence/legacy-salon-mobile.png": "f087f5a998c51561648ca6bae763174d34b7245f5ab4df58ca5fb21afa1399c0",
@@ -236,5 +236,6 @@
     "productionClearance": false
   },
   "nextLocalMilestone": "Replace Hall raw browser artifact/member embedding with bounded public server projection and honest UI; separately prepare artifact containment from reviewed catalog. Public artifact rows currently expose prompt/context and broad browser grants.",
-  "countsOverlapAndMustNotBeSummed": true
+  "countsOverlapAndMustNotBeSummed": true,
+  "evidenceRelocation": "Build/built-browser files preserved byte-for-byte under checkpoint-fa82507 before the Hall milestone."
 }

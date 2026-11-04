@@ -1,134 +1,122 @@
 'use client';
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { HALL_THINKERS, parsePublicHallPage, type PublicHallPage } from '@/lib/hall/public';
 
-const THINKER_NAMES: Record<string, string> = { socrates: 'SOCRATES', plato: 'PLATO', nietzsche: 'NIETZSCHE', aurelius: 'AURELIUS', einstein: 'EINSTEIN', jobs: 'JOBS' };
-const THINKER_COLORS: Record<string, string> = { socrates: '#C9A84C', plato: '#7C9EBF', nietzsche: '#BF4040', aurelius: '#8B7355', einstein: '#6B9E6B', jobs: '#C0C0C0' };
 const gold = '#c9a84c';
+const THINKER_NAMES: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche', aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs' };
+const THINKER_COLORS: Record<string, string> = { socrates: '#C9A84C', plato: '#7C9EBF', nietzsche: '#BF4040', aurelius: '#8B7355', einstein: '#6B9E6B', jobs: '#C0C0C0' };
+type Filter = 'all' | typeof HALL_THINKERS[number];
+const thinkerName = (id: string) => Object.hasOwn(THINKER_NAMES, id) ? THINKER_NAMES[id] : id;
+const thinkerColor = (id: string) => Object.hasOwn(THINKER_COLORS, id) ? THINKER_COLORS[id] : gold;
 
-type Artifact = {
-  id: string;
-  title: string;
-  description: string | null;
-  philosophical_note: string | null;
-  image_url: string | null;
-  thinker_id: string;
-  members: { display_name: string | null } | null;
-};
+async function readPublicHall(filter: Filter, controller: AbortController): Promise<PublicHallPage> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const current = () => { if (controller.signal.aborted) throw new Error('retired'); };
+  try {
+    return await Promise.race([
+      (async () => {
+        current();
+        const query = filter === 'all' ? '' : `?thinker=${encodeURIComponent(filter)}`;
+        const response = await fetch(`/api/hall${query}`, {
+          credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: controller.signal,
+        });
+        current();
+        if (!response.ok) throw new Error('unavailable');
+        const data: unknown = await response.json();
+        current();
+        const page = parsePublicHallPage(data);
+        if (!page) throw new Error('unavailable');
+        return page;
+      })(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => { controller.abort(); reject(new Error('deadline')); }, 15_000);
+      }),
+    ]);
+  } finally { if (timer) clearTimeout(timer); }
+}
 
 export default function HallOfCreations() {
-  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
+  const [page, setPage] = useState<PublicHallPage | null>(null);
+  const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [filter, setFilter] = useState<Filter>('all');
+  const epoch = useRef(0);
+  const active = useRef<AbortController | null>(null);
+
+  const load = useCallback(async (selected: Filter) => {
+    const generation = ++epoch.current;
+    active.current?.abort();
+    const controller = new AbortController(); active.current = controller;
+    setFilter(selected); setPage(null); setPhase('loading');
+    try {
+      const result = await readPublicHall(selected, controller);
+      if (generation !== epoch.current || controller.signal.aborted) return;
+      setPage(result); setPhase('ready');
+    } catch {
+      if (generation !== epoch.current) return;
+      setPage(null); setPhase('error');
+    } finally { if (generation === epoch.current) active.current = null; }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
+    const invalidate = () => { epoch.current++; active.current?.abort(); };
+    void Promise.resolve().then(() => { if (!cancelled) void load('all'); });
+    return () => { cancelled = true; invalidate(); };
+  }, [load]);
 
-    async function loadArtifacts() {
-      setLoading(true);
-      let query = supabase.from('artifacts').select('*, members(display_name)').eq('is_public', true).order('created_at', { ascending: false }).limit(48);
-      if (filter !== 'all') query = query.eq('thinker_id', filter);
-      const { data } = await query;
-      if (cancelled) return;
-      setArtifacts((data || []) as Artifact[]);
-      setLoading(false);
-    }
-
-    void loadArtifacts();
-    return () => {
-      cancelled = true;
-    };
-  }, [filter]);
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#0A0A0A', color: '#E8D5A3', fontFamily: 'Cormorant Garamond, serif' }}>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← RETURN TO THE SALON</a>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5 }}>SOCIETY OF EXPLORERS</div>
-      </nav>
-
-      <div style={{ textAlign: 'center', padding: '80px 20px 40px', borderBottom: '1px solid rgba(201,168,76,0.2)', position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ fontSize: '32px', marginBottom: '12px' }}>⬡</div>
-        <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(28px, 5vw, 52px)', fontWeight: 400, letterSpacing: '8px', margin: '0 0 16px', color: gold }}>HALL OF CREATIONS</h1>
-        <p style={{ fontSize: '18px', color: 'rgba(232,213,163,0.6)', fontStyle: 'italic', maxWidth: '600px', margin: '0 auto 40px' }}>Sacred co-creations between explorers and the ancient minds</p>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {['all', 'socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs'].map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{ padding: '8px 20px', background: filter === f ? 'rgba(201,168,76,0.2)' : 'transparent', border: `1px solid ${filter === f ? gold : 'rgba(201,168,76,0.3)'}`, color: filter === f ? gold : 'rgba(232,213,163,0.6)', fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '2px', cursor: 'pointer', textTransform: 'uppercase' as const }}>
-              {f === 'all' ? 'ALL MINDS' : THINKER_NAMES[f]}
-            </button>
-          ))}
-        </div>
+  const selection = filter === 'all' ? 'all thinkers' : thinkerName(filter);
+  const status = phase === 'loading' ? `Loading public creations for ${selection}…`
+    : phase === 'error' ? 'Public creations are unavailable. You can retry loading.'
+      : `Public text view loaded for ${selection}.`;
+  return <main className="public-hall">
+    <style>{`
+      .public-hall { min-height:100vh; background:#0a0a0a; color:#e8d5a3; font-family:'Cormorant Garamond',serif; overflow-wrap:anywhere; }
+      .public-hall * { box-sizing:border-box; }
+      .public-hall a,.public-hall button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; padding:10px 16px; border:1px solid ${gold}77; border-radius:4px; color:${gold}; background:#111; font:inherit; font-size:16px; cursor:pointer; text-decoration:none; }
+      .public-hall :is(a,button):focus-visible { outline:3px solid ${gold}; outline-offset:3px; }
+      .public-hall button[aria-pressed=true] { color:#f5f0e8; border-color:${gold}; background:#302a1b; }
+      .public-hall nav { max-width:76rem; margin:auto; padding:1rem; display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; justify-content:space-between; }
+      .public-hall header { text-align:center; padding:2.5rem 1rem 1.5rem; border-bottom:1px solid ${gold}44; background:radial-gradient(ellipse at 50% 0%,rgba(201,168,76,.12),transparent 70%); }
+      .public-hall h1 { color:${gold}; font-family:Cinzel,serif; font-size:clamp(1.8rem,5vw,3.25rem); font-weight:400; letter-spacing:.08em; margin:0 0 1rem; }
+      .public-hall .intro { max-width:42rem; margin:0 auto 1.5rem; line-height:1.6; font-size:18px; }
+      .public-hall .filters { display:flex; flex-wrap:wrap; justify-content:center; gap:.75rem; }
+      .public-hall .results { max-width:76rem; margin:auto; padding:1.5rem 1rem 3rem; }
+      .public-hall .results>p { line-height:1.6; }
+      .public-hall .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr)); gap:1.5rem; margin-top:1.5rem; }
+      .public-hall article { min-width:0; padding:1.5rem; background:#111; border:1px solid ${gold}55; border-radius:4px; }
+      .public-hall article h2 { font-family:Cinzel,serif; font-size:1.2rem; font-weight:400; line-height:1.5; }
+      .public-hall article p,.public-hall article blockquote { white-space:pre-wrap; line-height:1.7; }
+      .public-hall article blockquote { border-left:2px solid ${gold}88; padding-left:1rem; margin:1rem 0 0; }
+      .public-hall .credit { color:#c8bca6; font-style:italic; }
+      .public-hall footer { text-align:center; padding:2rem 1rem; border-top:1px solid ${gold}44; }
+      @media(max-width:480px) { .public-hall .cards { grid-template-columns:minmax(0,1fr); } }
+    `}</style>
+    <nav aria-label="Hall navigation"><Link href="/salon" prefetch={false}>Return to the Salon</Link><Link href="/circles" prefetch={false}>Find a Circle</Link></nav>
+    <header>
+      <h1>Hall of Creations</h1>
+      <p className="intro">Public text creations inspired by Great Thinkers. Creator attribution is anonymous; publishing an artifact does not publish its creator’s profile.</p>
+      <div className="filters" role="group" aria-label="Filter public creations by thinker">
+        <button type="button" aria-pressed={filter === 'all'} onClick={() => load('all')}>All minds</button>
+        {HALL_THINKERS.map(choice => <button key={choice} type="button" aria-pressed={filter === choice} onClick={() => load(choice)}>{thinkerName(choice)}</button>)}
       </div>
-
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '60px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-        {loading ? Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} style={{ aspectRatio: '1', background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.1)' }} />
-        )) : artifacts.length === 0 ? (
-          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '80px', fontStyle: 'italic', color: 'rgba(232,213,163,0.4)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '1rem' }}>⬡</div>
-            The Hall awaits its first creations. Enter the Salon and ask a thinker to create an artifact.
-          </div>
-        ) : artifacts.map((a) => (
-          <div key={a.id} onClick={() => setSelectedArtifact(a)} style={{ cursor: 'pointer', position: 'relative', aspectRatio: '1', overflow: 'hidden', border: '1px solid rgba(201,168,76,0.15)', transition: 'border-color 0.3s' }}>
-            {a.image_url ? (
-              <Image
-                src={a.image_url}
-                alt={a.title}
-                fill
-                sizes="(max-width: 680px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                unoptimized
-                style={{ objectFit: 'cover' }}
-              />
-            ) : (
-              <div style={{ width: '100%', height: '100%', background: `radial-gradient(ellipse, ${THINKER_COLORS[a.thinker_id] || gold}22 0%, #0A0A0A 70%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>⬡</div>
-            )}
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 60%)' }}>
-              <div style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 10px', background: 'rgba(0,0,0,0.8)', border: `1px solid ${THINKER_COLORS[a.thinker_id] || gold}`, color: THINKER_COLORS[a.thinker_id] || gold, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '2px' }}>{a.thinker_id?.toUpperCase()}</div>
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', fontWeight: 600, letterSpacing: '1px', color: '#E8D5A3', marginBottom: '4px' }}>{a.title}</div>
-                <div style={{ fontSize: '12px', color: 'rgba(232,213,163,0.5)', fontStyle: 'italic' }}>{a.members?.display_name || 'Anonymous Explorer'}</div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {selectedArtifact && (
-        <div onClick={() => setSelectedArtifact(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '100%', background: '#111', border: `1px solid ${THINKER_COLORS[selectedArtifact.thinker_id] || gold}40`, padding: '40px' }}>
-            {selectedArtifact.image_url && (
-              <Image
-                src={selectedArtifact.image_url}
-                alt={selectedArtifact.title}
-                width={800}
-                height={800}
-                sizes="(max-width: 840px) calc(100vw - 40px), 800px"
-                unoptimized
-                style={{ width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'cover', marginBottom: '24px' }}
-              />
-            )}
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '3px', color: THINKER_COLORS[selectedArtifact.thinker_id] || gold, marginBottom: '8px' }}>{selectedArtifact.thinker_id?.toUpperCase()} × {selectedArtifact.members?.display_name}</div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: '22px', fontWeight: 400, color: '#E8D5A3', margin: '0 0 16px' }}>{selectedArtifact.title}</h2>
-            <p style={{ fontSize: '15px', color: 'rgba(232,213,163,0.75)', lineHeight: 1.7, fontStyle: 'italic', marginBottom: '16px' }}>{selectedArtifact.description}</p>
-            {selectedArtifact.philosophical_note && (
-              <div style={{ padding: '16px', background: 'rgba(201,168,76,0.05)', border: `1px solid ${gold}30`, marginBottom: '16px' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '2px', color: gold, marginBottom: '8px' }}>PHILOSOPHICAL NOTE</div>
-                <p style={{ fontSize: '14px', color: 'rgba(232,213,163,0.8)', fontStyle: 'italic', lineHeight: 1.6 }}>&ldquo;{selectedArtifact.philosophical_note}&rdquo;</p>
-              </div>
-            )}
-            <button onClick={() => setSelectedArtifact(null)} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, background: 'none', border: `1px solid ${gold}44`, padding: '10px 24px', cursor: 'pointer' }}>CLOSE</button>
-          </div>
-        </div>
-      )}
-
-      <footer style={{ padding: '3rem 2rem', borderTop: `1px solid ${gold}22`, textAlign: 'center' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.4 }}>SOCIETY OF EXPLORERS · 92B SOUTH ST · SOCIETYOFEXPLORERS.COM</div>
-      </footer>
-    </div>
-  );
+    </header>
+    <section className="results" aria-label="Public text creations" aria-busy={phase === 'loading'}>
+      <p role="status" aria-live="polite">{status}</p>
+      <button type="button" onClick={() => load(filter)}>{phase === 'error' ? 'Retry loading creations' : 'Refresh creations'}</button>
+      {phase === 'ready' && page && <>
+        <p>Latest public text view for {selection}: showing {page.items.length} creations, up to 48.{page.page.hasMore ? ' More creations exist; earlier entries are not shown.' : ''}</p>
+        {page.items.length === 0 ? <p>No public text creations are available for this selection.</p>
+          : <div className="cards">{page.items.map(artifact => <article key={artifact.id}>
+            <p style={{ color: thinkerColor(artifact.thinker_id) }}>{thinkerName(artifact.thinker_id)}</p>
+            <h2>{artifact.title}</h2>
+            <p className="credit">Anonymous Explorer</p>
+            {artifact.description && <p>{artifact.description}</p>}
+            {artifact.philosophical_note && <blockquote>{artifact.philosophical_note}</blockquote>}
+          </article>)}</div>}
+      </>}
+    </section>
+    <footer>Society of Explorers · Public text creations</footer>
+  </main>;
 }
