@@ -132,7 +132,9 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val discussion = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion").matchEntire(url.encodedPath)
     val preview = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion/preview").matchEntire(url.encodedPath)
     val messageAction = Regex("/api/circles/([0-9a-fA-F-]{36})/messages/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
-    if (legacy != null) { require(uuid(legacy.groupValues[1]) && url.encodedQuery == null) }
+    if (url.encodedPath == "/api/auth/member") { require(input.method == "GET" && url.encodedQuery == null) }
+    else if (url.encodedPath == "/api/auth/ensure-member") { require(input.method == "POST" && url.encodedQuery == null) }
+    else if (legacy != null) { require(uuid(legacy.groupValues[1]) && url.encodedQuery == null) }
     else if (preview != null) { require(uuid(preview.groupValues[1]) && input.method == "POST" && url.encodedQuery == null) }
     else if (discussion != null && input.method == "POST") { require(uuid(discussion.groupValues[1]) && url.encodedQuery == null) }
     else if (messageAction != null) { require(uuid(messageAction.groupValues[1]) && uuid(messageAction.groupValues[2]) && url.encodedQuery == null) }

@@ -1722,6 +1722,9 @@ function createVerifiedSupabaseCircleOwner(auth, { timeoutMs = 5000 } = {}) {
       };
     },
     async bearer(expected) {
+      return (await owner.credentials(expected))?.bearer ?? null;
+    },
+    async credentials(expected) {
       const g = generation, expectedSubject = subject;
       if (!current(g) || !scope || expected !== scope || !expectedSubject || phase !== "ready")
         return null;
@@ -1739,7 +1742,7 @@ function createVerifiedSupabaseCircleOwner(auth, { timeoutMs = 5000 } = {}) {
             return null;
           if (s.access_token !== checkedToken || s.user?.id !== expectedSubject || reply.error || reply.data.user?.id !== expectedSubject)
             throw Error("Identity not confirmed");
-          return checkedToken;
+          return { bearer: checkedToken, subject: expectedSubject };
         });
       } catch {
         if (current(g) && scope === expected)

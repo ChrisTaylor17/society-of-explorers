@@ -78,10 +78,12 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
       const message = /^\/api\/circles\/([^/]+)\/messages\/([^/]+)$/.exec(u.pathname);
       const query = parseDiscussionQuery(u.searchParams);
       const hasQuery = u.href.includes('?');
-      const approvedPath = legacy ? isUuid(legacy[1]) && !hasQuery
+      const account = !hasQuery && (u.pathname === '/api/auth/member' && init.method === 'GET'
+        || u.pathname === '/api/auth/ensure-member' && init.method === 'POST');
+      const approvedPath = account || (legacy ? isUuid(legacy[1]) && !hasQuery
         : discussion ? isUuid(discussion[1]) && (init.method === 'GET' ? query !== null && (!hasQuery || Boolean(u.search)) : init.method === 'POST' && !hasQuery)
         : preview ? isUuid(preview[1]) && init.method === 'POST' && !hasQuery
-        : message && isUuid(message[1]) && isUuid(message[2]) && !hasQuery;
+        : message && isUuid(message[1]) && isUuid(message[2]) && !hasQuery);
       if(!current()||u.href!==url||u.origin!==origin||u.username||u.password||u.href.includes('#')||!approvedPath||!allowed||!match||match[1].length>16384||init.redirect!=='error'||init.credentials!=='omit'||init.cache!=='no-store'||signal.aborted||!['GET','POST'].includes(init.method)||ct.length>1||(init.method==='GET'&&(init.body!==undefined||ct.length!==0))||(init.method==='POST'&&(ct.length!==1||ct[0][1]!=='application/json'||typeof init.body!=='string'||size(init.body)>16384))) throw fail();
       let rejectAbort: (reason: Error)=>void = () => {};
       const aborted=new Promise<never>((_,reject)=>{rejectAbort=reject;});

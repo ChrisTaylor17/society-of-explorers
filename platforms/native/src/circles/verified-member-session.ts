@@ -10,6 +10,9 @@ export type MemberSessionModel = {
   active: boolean; busy: boolean; canCheck: boolean; message: string;
 };
 export type ExistingMemberCircleConfig = Omit<CircleHostConfig, 'owner'> & { auth: ExistingVerifiedAuth; verificationTimeoutMs?: number };
+export type VerifiedAccountOwner = CircleOwner & {
+  credentials(expectedScope: string): Promise<{ bearer: string; subject: string } | null>;
+};
 const identity = (x: unknown): x is string => typeof x === 'string' && /^[A-Za-z0-9._:-]{1,200}$/.test(x);
 const token = (x: unknown): x is string => typeof x === 'string' && x.length > 0 && x.length <= 16384 && !/[\s\u0000-\u001f\u007f]/.test(x);
 const sessionValid = (s: ExistingSession | null): s is ExistingSession => !!s && token(s.access_token) && identity(s.user?.id);
@@ -99,10 +102,11 @@ export function createVerifiedSupabaseCircleOwner(auth: ExistingVerifiedAuth, { 
       if (current(g)) clear('unavailable', 'Could not confirm the existing member session. Check again when available.');
     }
   }
-  const owner: CircleOwner = {
+  const owner: VerifiedAccountOwner = {
     scope: () => scope,
     subscribe(listener) { ownerListeners.add(listener); return () => { ownerListeners.delete(listener); }; },
-    async bearer(expected) {
+    async bearer(expected) { return (await owner.credentials(expected))?.bearer ?? null; },
+    async credentials(expected) {
       const g = generation, expectedSubject = subject;
       if (!current(g) || !scope || expected !== scope || !expectedSubject || phase !== 'ready') return null;
       try {
@@ -115,7 +119,7 @@ export function createVerifiedSupabaseCircleOwner(auth: ExistingVerifiedAuth, { 
           const reply = await auth.getUser(checkedToken);
           if (!current(g) || scope !== expected) return null;
           if (s.access_token !== checkedToken || s.user?.id !== expectedSubject || reply.error || reply.data.user?.id !== expectedSubject) throw Error('Identity not confirmed');
-          return checkedToken;
+          return { bearer: checkedToken, subject: expectedSubject };
         });
       } catch {
         if (current(g) && scope === expected) clear('unavailable', 'Session access could not be confirmed. Check the existing session before continuing.');
