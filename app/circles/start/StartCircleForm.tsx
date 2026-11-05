@@ -10,15 +10,16 @@ import ReadingProgramSummary from '../ReadingProgramSummary';
 import styles from '../participation.module.css';
 
 const PUBLIC_VENUES = VENUE_TYPES.filter(value => value !== 'online');
-const emptyDraft = () => ({ title: '', description: '', format: 'in_person' as CircleFormat, city: '', region: '', venueName: '', venueType: 'library', weekday: '2', time: '19:00', timezone: 'America/New_York', startDate: '', maxMembers: '8', onlineUrl: '' });
-export default function StartCircleForm({ initialContext = null, invalidContext = false }: { initialContext?: ReadingContext | null; invalidContext?: boolean } = {}) {
-  const [draft, setDraft] = useState(emptyDraft);
+const emptyDraft = (format: CircleFormat) => ({ title: '', description: '', format, city: '', region: '', venueName: '', venueType: 'library', weekday: '2', time: '19:00', timezone: 'America/New_York', startDate: '', maxMembers: '8', onlineUrl: '' });
+export default function StartCircleForm({ initialContext = null, invalidContext = false, onlinePreset = false }: { initialContext?: ReadingContext | null; invalidContext?: boolean; onlinePreset?: boolean } = {}) {
+  const defaultFormat = onlinePreset ? 'online' : 'in_person';
+  const [draft, setDraft] = useState(() => emptyDraft(defaultFormat));
   const [agreed, setAgreed] = useState(false);
   const [programDraft, setProgramDraft] = useState(emptyReadingProgramDraft);
   const [editorEpoch, setEditorEpoch] = useState(0);
   const draftGeneration = useRef(0), generation = draftGeneration.current;
   const focusPreview = useCallback((element: HTMLHeadingElement | null) => element?.focus({ preventScroll: true }), []);
-  const clearDraft = useCallback(() => { draftGeneration.current++; setDraft(emptyDraft()); setAgreed(false); setProgramDraft(emptyReadingProgramDraft()); setEditorEpoch(value => value + 1); }, []);
+  const clearDraft = useCallback(() => { draftGeneration.current++; setDraft(emptyDraft(defaultFormat)); setAgreed(false); setProgramDraft(emptyReadingProgramDraft()); setEditorEpoch(value => value + 1); }, [defaultFormat]);
   const hosting = useCircleHosting(clearDraft);
   const { active, busy, preview, edition: previewEdition, confirmed, created, notice } = hosting;
   const disabled = !active || busy;
@@ -38,8 +39,9 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
       hosting.review({ ...parsed.value, ...(program ? { readingProgram: program } : {}) }, program ? programDraft.metadata : null);
     });
   }
-  const returnPath = initialContext ? readingStartHref(initialContext) : '/circles/start';
-  const encodedReturn = initialContext ? encodeURIComponent(returnPath) : returnPath;
+  const basePath = initialContext ? readingStartHref(initialContext) : '/circles/start';
+  const returnPath = onlinePreset ? basePath + (initialContext ? '&' : '?') + 'format=online' : basePath;
+  const encodedReturn = initialContext || onlinePreset ? encodeURIComponent(returnPath) : returnPath;
   return <div className={styles.scope}>
     <p role="status" aria-live="polite" style={{ ...body, marginBottom: '1rem' }}>{notice}</p>
     <p style={{ ...small, marginBottom: '1rem' }}>{hosting.uncertain || hosting.phase === 'review' || busy ? <span>Close this hosting view before changing sign-in.</span> : <><Link href={`/login?next=${encodedReturn}`}>Sign in</Link> · <Link href={`/login?mode=signup&next=${encodedReturn}`}>Create a free account</Link></>} · {hosting.uncertain || hosting.phase === 'review' || busy ? <span>My Circles (close this hosting view before leaving)</span> : <Link href="/circles/mine">My Circles</Link>}</p>
@@ -80,7 +82,7 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
         <div className={styles.columns}><Field id="circle-weekday" label="Day"><select id="circle-weekday" value={draft.weekday} onChange={event => edit('weekday', event.target.value)} style={input}>{WEEKDAYS.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></Field><Field id="circle-time" label="Time"><input id="circle-time" type="time" value={draft.time} onChange={event => edit('time', event.target.value)} required style={input} /></Field><Field id="circle-timezone" label="Time zone"><select id="circle-timezone" value={draft.timezone} onChange={event => edit('timezone', event.target.value)} style={input}>{Object.entries(TIMEZONES).map(([zone, name]) => <option key={zone} value={zone}>{name}</option>)}</select></Field></div>
         <div className={styles.columns}><Field id="circle-start" label="First week starts"><input id="circle-start" type="date" value={draft.startDate} onChange={event => edit('startDate', event.target.value)} required style={input} /></Field><Field id="circle-size" label={`Size (${CIRCLE_MIN_MEMBERS}–${CIRCLE_MAX_MEMBERS})`}><input id="circle-size" type="number" min={CIRCLE_MIN_MEMBERS} max={CIRCLE_MAX_MEMBERS} value={draft.maxMembers} onChange={event => edit('maxMembers', event.target.value)} style={input} /></Field></div>
         <Field id="circle-description" label="A note for newcomers (optional)"><textarea id="circle-description" maxLength={600} rows={3} value={draft.description} onChange={event => edit('description', event.target.value)} style={{ ...input, resize: 'vertical' }} /></Field>
-        <label className={styles.check}><input type="checkbox" checked={agreed} onChange={event => editDraft(() => setAgreed(event.target.checked))} /><span>I will meet only in public places, keep the Circle free, and follow the <Link href="/circles/norms">community norms</Link>.</span></label>
+        <label className={styles.check}><input type="checkbox" checked={agreed} onChange={event => editDraft(() => setAgreed(event.target.checked))} /><span>I will use a public venue for in-person meetings, keep online links private, keep the Circle free, and follow the <Link href="/circles/norms">community norms</Link>.</span></label>
         <div className={styles.row}><button type="submit" style={primary}>Review my Circle listing</button><button type="button" style={button} onClick={hosting.clearDraft}>Clear Circle draft</button></div>
       </fieldset>
     </form>}

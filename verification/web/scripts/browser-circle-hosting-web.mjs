@@ -3,7 +3,12 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-const ROOT=process.cwd(),output='verification/web/evidence/circle-hosting-web-browser.json',sha=b=>createHash('sha256').update(b).digest('hex');
+const [run,...extra]=process.argv.slice(2);
+if(extra.length||(run!==undefined&&(run.length>64||run.split('-').some(part=>!part||/[^a-z0-9]/.test(part)))))throw Error('Expected one optional evidence run name');
+const suffix=run?'-'+run:'';
+const ROOT=process.cwd(),output='verification/web/evidence/circle-hosting-web-browser'+suffix+'.json',sha=b=>createHash('sha256').update(b).digest('hex');
+if(run&&fs.existsSync(output))throw Error('Evidence run already exists');
+const fixtureDir='verification/web/evidence/circle-hosting-web-fixture'+suffix;
 function read(name){const file=path.resolve(ROOT,name),s=fs.lstatSync(file);assert(s.isFile()&&!s.isSymbolicLink()&&(!s.size||s.blocks),'Unavailable source '+name);return fs.readFileSync(file);}
 read('verification/web/tests/support/public-profile-app.mjs');
 process.chdir(path.join(ROOT,'verification/web'));
@@ -19,8 +24,8 @@ try{
  assert(process.execArgv.some(value=>value.endsWith('/deny-build-network.cjs')),'Startup network guard required');
  const require=createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');read(require.resolve('playwright'));
  const executablePath='/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';read(executablePath);
- bundle=read('verification/web/evidence/circle-hosting-web-fixture/page.js');const css=read('verification/web/evidence/circle-hosting-web-fixture/participation.css');
- sourceHashes={...JSON.parse(read('verification/web/evidence/circle-hosting-web-fixture/source-manifest.json')).sourceHashes,...await hostingAppHashes(),
+ bundle=read(fixtureDir+'/page.js');const css=read(fixtureDir+'/participation.css');
+ sourceHashes={...JSON.parse(read(fixtureDir+'/source-manifest.json')).sourceHashes,...await hostingAppHashes(),
   'verification/web/scripts/browser-circle-hosting-web.mjs':sha(read('verification/web/scripts/browser-circle-hosting-web.mjs'))};
  for(const[name,hash]of Object.entries(sourceHashes))assert.equal(sha(read(name)),hash,'Changed source '+name);
  fixture=await createCircleHostingApp();
@@ -47,10 +52,10 @@ try{
  const enabled=name=>p.waitForFunction(name=>[...document.querySelectorAll('button')].some(node=>node.textContent===name&&!node.disabled),name);
  const startDate=new Date(Date.now()+2*86400000).toISOString().slice(0,10);
  async function release(){if(!held)return;held.release();await bounded(async()=>{while(!held.done)await new Promise(resolve=>setTimeout(resolve,10));});held=null;}
- async function show({preserve=false,who='author',context:readingContext,invalidContext=false}={}){
+ async function show({preserve=false,who='author',context:readingContext,invalidContext=false,onlinePreset=false}={}){
   await release();hold=false;before=null;after=null;cookie=null;await p.evaluate(()=>window.hostingQa.unmount());await settle();
   if(!preserve){await fixture.close();fixture=await createCircleHostingApp();}
-  await p.evaluate(value=>window.hostingQa.show(value),{token:who==='anonymous'?'':TOKENS[who],context:readingContext,invalidContext});await enabled('Check hosting access');await settle();
+  await p.evaluate(value=>window.hostingQa.show(value),{token:who==='anonymous'?'':TOKENS[who],context:readingContext,invalidContext,onlinePreset});await enabled('Check hosting access');await settle();
  }
  async function load(){await button('Check hosting access').click();await enabled('Check hosting access');}
  async function fill({title='Web hosting proof Circle',format='in_person'}={}){
@@ -59,7 +64,7 @@ try{
   if(format!=='online'){await p.getByLabel('Venue name',{exact:true}).fill('Public library');await p.getByLabel('City',{exact:true}).fill('Boston');}
   if(format!=='in_person')await p.getByLabel('Private video link (https)',{exact:true}).fill('https://meeting.example.test/private-room');
   await p.getByLabel('First week starts',{exact:true}).fill(startDate);await p.getByLabel('Time zone',{exact:true}).selectOption('UTC');
-  await p.getByRole('checkbox',{name:/I will meet only in public places/}).check();
+  await p.getByRole('checkbox',{name:/I will use a public venue for in-person meetings/}).check();
  }
  async function review(){await button('Review my Circle listing').click();await p.getByRole('heading',{name:'Review your Circle listing',exact:true}).waitFor();}
  async function confirm(retry=false){await p.getByRole('checkbox',{name:/I checked the public listing/}).check();await button(retry?'Confirm exact Circle creation retry':'Confirm and list my Circle').click();await enabled('Close hosting view');}
@@ -67,14 +72,49 @@ try{
  const rows=async(who='author')=>(await fixture.db.query('SELECT id,title,circle_reading_program,created_by FROM book_cohorts WHERE created_by=$1 ORDER BY id',[fixture.actors[who]])).rows;
  const createdLink=()=>p.getByRole('link',{name:'Open my Circle',exact:true});
  const createdId=async()=>String(await createdLink().getAttribute('href')).split('/').at(-1);
+ async function currentWalletCookie(who) {
+  const intent=crypto.randomUUID();
+  return await fixture.walletCookie(who)+'; soe_auth_intent='+intent+'; soe_auth_selection_v1=v1.'+intent+'.wallet.'+fixture.actors[who];
+ }
 
  await show();const mountAt=http.length;await settle();assert.equal(http.length,mountAt);assert.equal(await p.getByLabel('Circle name',{exact:true}).count(),0);
  pass('mounting the actual hosting form makes no identity, hosting, metadata or create request and exposes no private draft');
  await load();await fill();const reviewAt=http.length,postAt=posts().length;await review();assert.equal(http.length,reviewAt+2);assert.equal(posts().length,postAt);assert.equal(await button('Confirm and list my Circle').isDisabled(),true);assert.match(await text(),/First meeting \d{4}-\d{2}-\d{2}/);assert.match(await text(),/twelve-week starter path/);
- await p.screenshot({path:path.join(ROOT,'verification/web/evidence/circle-hosting-web-review-320.png'),fullPage:true});await confirm();await createdLink().waitFor();
+ await p.screenshot({path:path.join(ROOT,'verification/web/evidence/circle-hosting-web-review-320'+suffix+'.png'),fullPage:true});await confirm();await createdLink().waitFor();
  let created=await createdId(),payload=JSON.parse(posts().at(-1).body),stored=await rows();assert.equal(stored.length,1);assert.equal(stored[0].id,created);assert.equal(payload.expectedMemberId,fixture.authorId);assert.equal(posts().at(-1).expectedMember,fixture.authorId);assert.equal(payload.readingProgram,undefined);assert.equal(http.at(-1).path,`/api/circles/${created}`);assert.equal(http.at(-1).expectedMember,fixture.authorId);
  const host=(await fixture.db.query('SELECT member_id FROM book_cohort_members WHERE cohort_id=$1',[created])).rows;assert.deepEqual(host.map(x=>x.member_id),[fixture.authorId]);
  pass('starter creation freshly checks canonical actor and owner-bound hosting access at review and confirm, requires explicit checkbox confirmation, creates one host/member atomically and exposes the Circle only after owned receipt plus current detail');
+
+ await show({onlinePreset:true});await load();
+ assert.equal(await p.getByRole('radio',{name:'Online',exact:true}).isChecked(),true);
+ assert.equal(await p.getByLabel('Venue name',{exact:true}).count(),0);
+ const meeting='https://meeting.example.test/private-room';
+ const meetingField=p.getByLabel('Private video link (https)',{exact:true});
+ await meetingField.fill(meeting);await button('Clear Circle draft').click();
+ assert.equal(await meetingField.inputValue(),'');
+ assert.equal(await p.getByRole('radio',{name:'Online',exact:true}).isChecked(),true);
+ await fill({title:'Philemon remote salon',format:'online'});await review();
+ assert.equal(await button('Confirm and list my Circle').isDisabled(),true);
+ await confirm();await createdLink().waitFor();
+ const remoteId=await createdId(),remotePath='/api/circles/'+remoteId,remotePayload=JSON.parse(posts().at(-1).body);
+ assert.equal(remotePayload.format,'online');assert.equal(remotePayload.onlineUrl,meeting);assert.equal(remotePayload.venueName,null);
+ const readerHeaders={Authorization:'Bearer '+TOKENS.other};
+ async function remoteDetail(headers) {
+  const response=await fixture.dispatch(remotePath,{headers});
+  assert.equal(response.status,200);assert.match(response.headers.get('cache-control'),/private.*no-store/);
+  return response.json();
+ }
+ assert(!JSON.stringify(await remoteDetail()).includes(meeting));
+ let reader=await remoteDetail(readerHeaders);assert(!JSON.stringify(reader).includes(meeting));
+ async function remoteMembership(action,expectedRevision) {
+  const response=await fixture.dispatch(remotePath+'/'+action,{method:'POST',headers:readerHeaders,body:{requestId:crypto.randomUUID(),expectedRevision}});
+  assert.equal(response.status,200);
+ }
+ await remoteMembership('join',reader.revision);
+ reader=await remoteDetail(readerHeaders);assert.equal(reader.online_url,meeting);
+ await remoteMembership('leave',reader.revision);
+ assert(!JSON.stringify(await remoteDetail(readerHeaders)).includes(meeting));
+ pass('the online preset clears a private draft, requires deliberate creation, and limits the meeting link to a currently joined participant');
 
  await show();await load();await fill({format:'hybrid'});await p.getByLabel('Reading plan',{exact:true}).selectOption('book');await p.getByLabel('Book and pinned source edition',{exact:true}).selectOption('hamlet');const metadataAt=http.length;
  await button('Load and verify selected edition').click();await p.getByLabel('Week 1 begins at reading position',{exact:true}).waitFor();assert.equal(http.length,metadataAt+1);assert.equal(http.at(-1).path,'/api/great-books/text/hamlet');assert.equal(http.at(-1).expectedMember,null);
@@ -114,7 +154,12 @@ try{
  await show();await load();await fill();await review();before=({entry,headers})=>{if(entry.method==='POST')headers.authorization='Bearer '+TOKENS.other;return null;};await confirm();assert.equal(posts().at(-1).status,409);assert.equal((await rows()).length,0);assert.equal(await createdLink().count(),0);before=null;
  pass('the actual canonical server rejects an actor change after proof using both expected-member header and required owner body');
 
- await show({who:'anonymous'});cookie=await fixture.walletCookie('author');await load();await fill();await review();before=async({entry,headers})=>{if(entry.method==='POST')headers.cookie=await fixture.walletCookie('other');return null;};await confirm();assert.equal(posts().at(-1).status,409);assert.equal((await rows()).length,0);before=null;await load();await fill();await review();await confirm();await createdLink().waitFor();assert.equal((await rows()).length,1);
+ await show({who:'anonymous'});cookie=await fixture.walletCookie('author');await load();
+ assert.equal(http.at(-1).status,401);assert.equal(await p.getByLabel('Circle name',{exact:true}).count(),0);
+ cookie=await currentWalletCookie('author');await load();await fill();await review();
+ before=async({entry,headers})=>{if(entry.method==='POST')headers.cookie=await currentWalletCookie('other');return null;};
+ await confirm();assert.equal(posts().at(-1).status,409);assert.equal((await rows()).length,0);
+ before=null;await load();await fill();await review();await confirm();await createdLink().waitFor();assert.equal((await rows()).length,1);
  pass('actual signed synthetic wallet-cookie hosting remains supported, and a cookie switch between proof and POST cannot create a Circle for the wrong account');
 
  await show();await load();await fill();await review();after=({entry,response})=>entry.method==='POST'?Response.json({error:'Synthetic lost reply'},{status:503}):response;await confirm();assert.equal((await rows()).length,1);assert.equal(await createdLink().count(),0);after=null;await load();assert.match(await text(),/still uncertain/);await button('Review exact Circle creation retry').click();await confirm(true);await createdLink().waitFor();assert.equal((await rows()).length,1);
@@ -152,7 +197,7 @@ try{
  await show();await load();await fill();await review();after=({entry,response})=>entry.method==='POST'?Response.json({error:'Lost committed response'},{status:503}):response;await confirm();after=null;const oldClose=await p.evaluate(()=>window.hostingQa.retain('Close hosting view'));await button('Close hosting view').click();assert.match(await text(),/may still complete/);assert.match(await text(),/absence does not cancel/);await load();await fill({title:'Deliberately separate listing'});await review();const closeAt=http.length;await p.evaluate(id=>window.hostingQa.invoke(id),oldClose);await settle();assert.equal(http.length,closeAt);assert.match(await text(),/Deliberately separate listing/);assert.equal(await button('Confirm and list my Circle').isDisabled(),true);await confirm();await createdLink().waitFor();assert.equal((await rows()).length,2);
  pass('explicit terminal close discloses that a sent creation can still complete and discards recovery deliberately; its retired Close callback cannot dismiss a newly reviewed separate listing');
 
- await show();await load();await fill();await review();await confirm();await createdLink().waitFor();await p.screenshot({path:path.join(ROOT,'verification/web/evidence/circle-hosting-web-created-320.png'),fullPage:true});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.evaluate(()=>window.hostingQa.unmount());await settle();stats=await p.evaluate(()=>window.hostingQa.stats());assert.deepEqual(stats,{subscriptions:0,deadlines:0,callbacks:0});assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
+ await show();await load();await fill();await review();await confirm();await createdLink().waitFor();await p.screenshot({path:path.join(ROOT,'verification/web/evidence/circle-hosting-web-created-320'+suffix+'.png'),fullPage:true});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.evaluate(()=>window.hostingQa.unmount());await settle();stats=await p.evaluate(()=>window.hostingQa.stats());assert.deepEqual(stats,{subscriptions:0,deadlines:0,callbacks:0});assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
  for(const[name,hash]of Object.entries(sourceHashes))assert.equal(sha(read(name)),hash,'Source changed during proof '+name);
  pass('320px rendered controls do not overflow; terminal unmount clears subscriptions, deadlines and retained callbacks with no browser errors or unexpected requests');
 }catch(error){failure=error.stack||String(error);console.error(failure);}

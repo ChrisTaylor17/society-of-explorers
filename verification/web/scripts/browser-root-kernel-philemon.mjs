@@ -133,6 +133,26 @@ try {
   await scripture(scriptless.page);
   await scriptless.ctx.close();
   stories.push('The complete text and publisher footnotes render with JavaScript disabled.');
+
+  const host = await pageFor(320);
+  await host.page.goto(origin + routePath);
+  await host.page.getByRole('link', { name: 'Host a Philemon salon', exact: true }).press('Enter');
+  await host.page.waitForURL(origin + '/circles/host#philemon-salon');
+  const guide = host.page.getByRole('region', { name: 'Host a Philemon salon online' });
+  await guide.waitFor();
+  assert.equal(await guide.getByRole('listitem').count(), 5);
+  assert.match(await guide.innerText(), /Share the Root Kernel Philemon study\.\s+Ask everyone/);
+  assert.equal(await guide.getByRole('link', { name: 'Root Kernel Philemon study', exact: true }).getAttribute('href'), routePath);
+  await screenshot(host.page, 'host-guide');
+  await guide.getByRole('link', { name: 'Start a weekly online Circle', exact: true }).press('Enter');
+  await host.page.waitForURL(origin + '/circles/start?format=online');
+  const signIn = host.page.locator('#main').getByRole('link', { name: 'Sign in', exact: true });
+  assert.equal(new URL(await signIn.getAttribute('href'), origin).searchParams.get('next'), '/circles/start?format=online');
+  assert.equal(await host.page.getByLabel('Private video link (https)', { exact: true }).count(), 0);
+  await host.page.goto(origin + '/circles/start?format=online&format=in_person');
+  assert.equal(new URL(await signIn.getAttribute('href'), origin).searchParams.get('next'), '/circles/start');
+  await host.ctx.close();
+  stories.push('The public study leads to the Philemon host guide and retains the online preset through sign-in. An ambiguous format is ignored.');
   assert.deepEqual(external, []);
   assert.deepEqual(privateCalls, []);
   assert.deepEqual(errors, []);

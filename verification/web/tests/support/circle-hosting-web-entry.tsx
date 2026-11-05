@@ -18,8 +18,8 @@ Object.defineProperty(document, 'hasFocus', { value: () => active, configurable:
 const qa = {
   credentials: async () => token ? { Authorization: 'Bearer ' + token } : {},
   subscribe(listener: (event: string) => void) { auth.add(listener); return () => auth.delete(listener); },
-  show(value: { token: string; context?: ReadingContext; invalidContext?: boolean }) { token = value.token; active = true; online = true; generation++;
-    root.render(<React.StrictMode><main style={{ padding: 16, maxWidth: 800, margin: 'auto' }}><StartCircleForm key={generation} initialContext={value.context} invalidContext={value.invalidContext} /></main></React.StrictMode>); },
+  show(value: { token: string; context?: ReadingContext; invalidContext?: boolean; onlinePreset?: boolean }) { token = value.token; active = true; online = true; generation++;
+    root.render(<React.StrictMode><main style={{ padding: 16, maxWidth: 800, margin: 'auto' }}><StartCircleForm key={generation} initialContext={value.context} invalidContext={value.invalidContext} onlinePreset={value.onlinePreset} /></main></React.StrictMode>); },
   identity(value: string) { token = value; for (const listener of [...auth]) listener('SIGNED_IN'); },
   token(value: string) { token = value; },
   activity(value: boolean) { active = value; window.dispatchEvent(new Event(value ? 'focus' : 'blur')); },

@@ -78,7 +78,10 @@ export default function PhilemonStudyPage() {
           <li>How does each reading account for both the distinction and the shared blessing in <a href="#verse-3">verse 3</a>?</li>
           <li>What would it ask of Philemon to receive Onesimus as a beloved brother in <a href="#verse-16">verse 16</a>? What does the letter leave open about what happened next?</li>
         </ol>
-        <Link className={reading.bookLink} href="/circles">Find a reading Circle</Link>
+        <nav className={reading.nav} aria-label="Salon next steps">
+          <Link href="/circles">Find a reading Circle</Link>
+          <Link href="/circles/host#philemon-salon">Host a Philemon salon</Link>
+        </nav>
       </section>
 
       <section className={reading.panel} aria-labelledby="edition-sources">

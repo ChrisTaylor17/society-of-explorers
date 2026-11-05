@@ -20,6 +20,8 @@ export default async function StartCirclePage({ searchParams }: { searchParams: 
     else if (value !== undefined) query.append(key, value);
   }
   const { context, invalid } = parseReadingContext(query);
+  const formats = query.getAll('format');
+  const onlinePreset = formats.length === 1 && formats[0] === 'online';
   return (
     <div style={page}>
       <CircleSafetyNav />
@@ -27,12 +29,12 @@ export default async function StartCirclePage({ searchParams }: { searchParams: 
         <p style={label}><Link href="/circles" style={{ color: gold }}>Circles</Link> · Start</p>
         <h1 style={h1}>Start a circle</h1>
         <p style={lead}>
-          Pick a public place, a weekly time and a start date. Choose the existing{' '}
+          Choose a public venue or a private video link, then pick a weekly time and a start date. Choose the existing{' '}
           <Link href="/circles/path" style={{ color: gold }}>twelve-week starter path</Link> or agree 1 to 12 weekly readings from a pinned free book edition. Read the{' '}
           <Link href="/circles/host" style={{ color: gold }}>host toolkit</Link> and{' '}
           <Link href="/circles/norms" style={{ color: gold }}>norms</Link> before you list it.
         </p>
-        <StartCircleForm key={context ? JSON.stringify(context) : invalid ? 'invalid' : 'starter'} initialContext={context} invalidContext={invalid} />
+        <StartCircleForm key={JSON.stringify([context, invalid, onlinePreset])} initialContext={context} invalidContext={invalid} onlinePreset={onlinePreset} />
       </main>
       <PublicFooter />
     </div>

@@ -19,7 +19,7 @@ const NORMS: Array<[string, string]> = [
 ];
 
 const SAFETY: string[] = [
-  'Meet only in public places: libraries, cafés, community centers, campus rooms. Circles cannot list a private home, and hosts should not invite members to one.',
+  'For in-person meetings, use a public venue such as a library, café, community center, or campus room. Keep private homes out of Circle listings and invitations.',
   'First names are enough. You never have to share your surname, address, workplace or phone number.',
   'Online circles share their video link only with members who have joined, never on the public listing.',
   'Circles are for adults (18+). If you want to run a circle for teenagers, do it through a school or library that has its own safeguarding rules.',

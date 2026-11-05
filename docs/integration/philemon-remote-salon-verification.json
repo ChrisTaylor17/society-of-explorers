@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T19:00:33.750358+00:00",
+  "baseCheckpoint": "2bb6495619aee1a51d935d84ceaead7874fcf12a",
+  "status": "LOCAL_WEB_SALON_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "build": {
+    "path": "verification/web/evidence/built-shell-philemon-salon-03-next-build.json",
+    "sha256": "6f85bb2cd15f0ea531704cd2b26d61e38148c647acce03fb21eb7c7360cfdf55",
+    "log": {
+      "path": "verification/web/evidence/built-shell-philemon-salon-03-next-build.log",
+      "sha256": "9563cb9109efebb70077105e979a980c6ae8ef7ccaba64a23f79d6c949435ab1"
+    },
+    "sources": 1045,
+    "webpack": true,
+    "typeCheckCompleted": true,
+    "lint": {
+      "path": "verification/web/evidence/root-kernel-philemon-04/lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    }
+  },
+  "builtBrowser": {
+    "path": "verification/web/evidence/root-kernel-philemon-04/browser.json",
+    "sha256": "a63088d6ce58a1b18e4b2449fcdad7b8689ab317ce57b845cfc62ba4c987c27c",
+    "stories": 7,
+    "apiRequests": 0,
+    "externalRequests": 0,
+    "browserClosed": true,
+    "screenshots": [
+      {
+        "path": "verification/web/evidence/root-kernel-philemon-04/desktop.png",
+        "sha256": "e87e5bccb2e2eaef7a9b81e1df5a14515d532045e1e58837a6a8435d8aa19b7c"
+      },
+      {
+        "path": "verification/web/evidence/root-kernel-philemon-04/mobile.png",
+        "sha256": "86179acf8d605800a9340c93d393cfcea1d3af15ffeebc19fefcefa4cc101a22"
+      },
+      {
+        "path": "verification/web/evidence/root-kernel-philemon-04/host-guide.png",
+        "sha256": "2d70d10cf0281bdf45c236ca2cee933ced4dc06edea1a75c7d7d010dccb61e36"
+      }
+    ]
+  },
+  "server": {
+    "path": "verification/web/evidence/built-shell-philemon-salon-03-server.json",
+    "sha256": "e9f6d956f83c5d7e05655a42243349e40de2932fd1ab3d979fac4908158a862f",
+    "buildId": "4rMkzD_2Fc38hsMfMxIKs",
+    "builtFiles": 2344,
+    "startupRuntimeBindings": 768,
+    "portClosed": true
+  },
+  "hostingBrowser": {
+    "path": "verification/web/evidence/circle-hosting-web-browser-philemon-salon-02.json",
+    "sha256": "589f4c842055b2772ad0b7f8f553697b3fdebb197deb4d4d6d26303c77c343a6",
+    "stories": 24,
+    "interceptedRequests": 263,
+    "scope": "Actual form, handlers and disposable SQL with synthetic identities and delivery.",
+    "cleanup": {
+      "browser": "closed",
+      "database": "closed"
+    },
+    "screenshots": [
+      {
+        "path": "verification/web/evidence/circle-hosting-web-review-320-philemon-salon-02.png",
+        "sha256": "542ef508f2f03567f988b8bc0fb958c178d07656bde853973471ac7b0f99ef2c"
+      },
+      {
+        "path": "verification/web/evidence/circle-hosting-web-created-320-philemon-salon-02.png",
+        "sha256": "2cc29f35e7d91c0bc28331d3f278ffc69a336653c92f6e4ece4c493dc89ba18b"
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "path": "verification/web/evidence/root-kernel-philemon-02/browser.json",
+      "sha256": "bda5d1494fb199511dbc9643c0d346194dcc4bae69c23acf3dc48720409a63a2"
+    },
+    {
+      "path": "verification/web/evidence/circle-hosting-web-browser-philemon-salon-01.json",
+      "sha256": "9443dc83a33f44ab2a15dd9fe7edbdba347d5e0b6070b8d0af59537f37df431f"
+    }
+  ],
+  "changedSources": {
+    "app/circles/host/page.tsx": "0d98525735f1fe03f6e032e8b75f2c553af149ad76a3a76e0af565540aec899a",
+    "app/circles/norms/page.tsx": "c1b2a10b6f0e2f2991f91474264e7cbedbdeb08fbacdd21b479f67cf7684b698",
+    "app/circles/start/StartCircleForm.tsx": "2ab2c91e9920432899b4a8d5143cb0899b2144186f75339783dc76e14735dff6",
+    "app/circles/start/page.tsx": "2f337bb7d779ad495bddf483e0eafcfb0d0f815025bd8c6aa05bb61535d506d6",
+    "app/great-books/scripture/philemon/page.tsx": "ed8b81092b36d91b1998b755684292a9bf952a2c0d166cfb26ea936893d15736",
+    "verification/web/scripts/browser-circle-hosting-web.mjs": "1f49bc21111b6e01f18af42d24ad14852c454f036dc66bca7260a9cb209eeedf",
+    "verification/web/scripts/browser-root-kernel-philemon.mjs": "720be23355e48d62eb45592d721fbbd716beae874f248797fa0ab8b0c7ad8750",
+    "verification/web/scripts/bundle-circle-hosting-web.mjs": "a30efc73589a90312d83d6105d8421eec408ed4e84651afec80062dab51812c7",
+    "verification/web/tests/support/circle-hosting-web-entry.tsx": "6c65e8f630bfe6a56fcf7d6ba6f6992e941cafae130487d8f0d88e4cfb701d0a"
+  }
+}

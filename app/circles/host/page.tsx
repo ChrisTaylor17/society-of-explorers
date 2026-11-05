@@ -7,18 +7,18 @@ import { body, button, card, gold, h1, h2, label, lead, main, page, parchment, p
 
 export const metadata: Metadata = {
   title: 'Circle Host Toolkit',
-  description: 'Everything a volunteer host needs to start and run an SoE Circle: venue, first meeting, timekeeping and hard moments.',
+  description: 'A guide for volunteer hosts running an online or in-person Circle, with a first salon on Philemon.',
 };
 
 const BEFORE: string[] = [
-  'Book a free public room. Most public libraries lend meeting rooms to community groups; ask at the front desk. A quiet café corner works for up to six people.',
+  'Book a free public room for an in-person meeting, or test a private video link for an online meeting. A waiting room gives you control over who enters the call.',
   'Pick a fixed weekday and time and keep it for all 12 weeks. Consistency matters more than the perfect slot.',
-  'List the circle on Society of Explorers, then share the link yourself with friends, neighbours and the library noticeboard.',
+  'Share the public Circle listing so readers can find the group. Keep the private video link in the members’ meeting details.',
   'Read week 1 and its guide, and choose the one question you will open with.',
 ];
 
 const FIRST: string[] = [
-  'Arrive ten minutes early. Put a book or a printed sign on the table so people can find you.',
+  'Arrive ten minutes early. Set out a sign at a public venue or open the online room and check your microphone.',
   'Start on time, even if only two people are there.',
   'Read the community norms aloud (two minutes). Ask everyone to share a first name and why they came.',
   'Explain the weekly loop, then run it.',
@@ -33,17 +33,41 @@ const HARD: Array<[string, string]> = [
   ['Nobody comes', 'It happens. Read the passage yourself, post a note in the circle discussion, and try again next week. Most circles grow by word of mouth.'],
 ];
 
+const PHILEMON_AGENDA = [
+  { minutes: 5, title: 'Welcome', detail: 'Use first names, read the norms, and open with a brief prayer. Readers are welcome to listen quietly.' },
+  { minutes: 8, title: 'Read aloud', detail: 'Ask a volunteer to read verses 1 through 7 and another to read verses 8 through 25.' },
+  { minutes: 12, title: 'Compare the greeting', detail: 'Read verse 3 again. Ask someone to state each interpretation in terms a reader who holds it would accept. Look together at what the greeting leaves open.' },
+  { minutes: 15, title: 'Discuss the appeal', detail: 'What would it ask of Philemon to receive Onesimus as a beloved brother? What does the letter leave open about what happened next?' },
+  { minutes: 5, title: 'Close', detail: 'Ask each person what they will take away and whether they would return for another meeting. Let anyone pass.' },
+] as const;
+
 export default function CircleHostPage() {
   return (
     <div style={page}>
-      <PublicNav />
+      <PublicNav checkSession={false} />
       <main id="main" style={main}>
         <p style={label}><Link href="/circles" style={{ color: gold }}>Circles</Link> · Host toolkit</p>
         <h1 style={h1}>Host toolkit</h1>
         <p style={lead}>
-          A host is not a teacher. Your job is to book the room, keep time, open with a question and make sure everyone
-          gets a turn. You do not need to have read the books before.
+          Set up the meeting, open with a question, keep time and make room for everyone to speak. You can host as a fellow reader.
         </p>
+
+        <section aria-labelledby="philemon-salon" style={card}>
+          <h2 id="philemon-salon" tabIndex={-1} style={{ ...h2, marginTop: 0, scrollMarginTop: '6rem' }}>Host a Philemon salon online</h2>
+          <p style={body}>
+            Try one 45-minute conversation with four to six readers. Share the{' '}
+            <Link href="/great-books/scripture/philemon" style={{ color: gold }}>Root Kernel Philemon study</Link>.
+            Ask everyone to read the letter ahead of time and bring a question about the greeting or Paul&rsquo;s appeal for Onesimus.
+          </p>
+          <p style={body}>Test the video room before opening it. Share the meeting link privately and keep recording and automated note-taking off.</p>
+          <ol style={{ ...body, paddingLeft: '1.4rem' }}>
+            {PHILEMON_AGENDA.map(({ minutes, title, detail }) => (
+              <li key={title} style={{ marginBottom: '0.5rem' }}><strong>{title}</strong> · {minutes} min. {detail}</li>
+            ))}
+          </ol>
+          <p style={body}>If the group wants to keep meeting, choose a weekly time and list an online Circle.</p>
+          <Link href="/circles/start?format=online" style={primary}>Start a weekly online Circle</Link>
+        </section>
 
         <h2 style={h2}>Before the first meeting</h2>
         <ol style={{ ...body, paddingLeft: '1.4rem' }}>{BEFORE.map((s) => <li key={s} style={{ marginBottom: '0.5rem' }}>{s}</li>)}</ol>
@@ -67,7 +91,7 @@ export default function CircleHostPage() {
 
         <h2 style={h2}>What hosts agree to</h2>
         <ul style={{ ...body, paddingLeft: '1.2rem' }}>
-          <li>Meet only in public places, and follow the <Link href="/circles/norms" style={{ color: gold }}>community norms</Link>.</li>
+          <li>Use public venues for in-person meetings, keep online links private, and follow the <Link href="/circles/norms" style={{ color: gold }}>community norms</Link>.</li>
           <li>Keep members&rsquo; contact details private and never add them to other lists.</li>
           <li>Keep circles free. Hosts may not charge members or sell to them.</li>
           <li>Host at most three circles at once.</li>
