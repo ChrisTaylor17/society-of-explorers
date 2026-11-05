@@ -54,10 +54,11 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
     const generation = ++lifetime.current.generation;
     setPhase('connecting'); setNotice('Connecting your existing account…');
     try {
-      const [{ mountExistingMemberCircle, mountExistingMemberContributions }, { createClient }] = await Promise.all([
+      const [{ mountExistingMemberCircle, mountExistingMemberContributions, assertContributionsMarkup }, { createClient }] = await Promise.all([
         import('@/platforms/quest/member-circle-page.mjs'), import('@/lib/supabase/client'),
       ]);
       if (!lifetime.current.mounted || lifetime.current.generation !== generation) return;
+      assertContributionsMarkup(document, true);
       const memberAuth = createQuestMemberAuth(createClient().auth, { origin: window.location.origin,
         request: (url, init) => window.fetch(url, init),
         isCurrent: () => lifetime.current.mounted && lifetime.current.generation === generation
@@ -65,8 +66,8 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
       });
       try {
         const view = circleId
-          ? mountExistingMemberCircle({ window, document, config: { circleId, origin: window.location.origin, auth: memberAuth.auth } })
-          : mountExistingMemberContributions({ window, document, config: { origin: window.location.origin, auth: memberAuth.auth } });
+          ? mountExistingMemberCircle({ window, document, config: { circleId, origin: window.location.origin, auth: memberAuth.auth, aiConsent: true } })
+          : mountExistingMemberContributions({ window, document, config: { origin: window.location.origin, auth: memberAuth.auth, aiConsent: true } });
         connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
       } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
       setPhase('connected'); setNotice(circleId ? 'Account connection opened. Check the member-session and Circle-access messages below.' : 'Account connection opened. Check the member session, then load your own posted messages when ready.');
@@ -85,7 +86,7 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
     <section><p>READ. REFLECT. SHARE.</p><h1>{circleId ? 'Quest Browser Circle' : 'My Quest Browser contributions'}</h1>
       <p>This view uses your existing web account. It opens in the regular browser window.</p>
       <p>Use email or Google sign-in for this view. For a wallet-only account, use the regular {circleId ? 'Circle view' : 'posted messages page'}.</p>
-      <p>{circleId ? <><Link href={`/circles/${circleId}`}>Regular Circle view and safety controls</Link>{' · '}<Link href={`/circles/${circleId}/discussion`}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages and AI review settings</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
+      <p>{circleId ? <><Link href={`/circles/${circleId}`}>Regular Circle view and safety controls</Link>{' · '}<Link href={`/circles/${circleId}/discussion`}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
       <p><Link href={`/login?next=${encodeURIComponent(circleId ? `/quest/${circleId}` : '/quest/contributions')}`}>Sign in to your account</Link></p>
       <p role="status">{notice}</p>
       <button type="button" disabled={phase !== 'closed'} onClick={() => void connect()}>{phase === 'connecting' ? 'Connecting…' : 'Connect signed-in account'}</button>
@@ -112,8 +113,19 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
           <button id="member-contributions-withdraw" type="button" disabled hidden aria-describedby="member-contributions-privacy">Withdraw my contribution</button>
           <button id="member-contributions-check" type="button" disabled>Check current contribution</button>
           <button id="member-contributions-retry" type="button" hidden disabled>Retry exact withdrawal</button>
-          <button id="member-contributions-back" type="button" disabled>Back to my posted messages</button>
           <p>A current-state check does not confirm an earlier withdrawal request. A sent request may still complete. Nothing retries automatically. These controls do not change AI consent.</p>
+          <section id="member-contributions-ai" aria-label="Optional AI review of this message" hidden>
+            <h4>Optional AI review of this message</h4>
+            <p id="member-contributions-ai-intro" /><p id="member-contributions-ai-provider" /><p id="member-contributions-ai-revocation" />
+            <p><Link id="member-contributions-ai-policy" href="/circles/message-ai-policy" prefetch={false}>Read the message AI policy</Link></p>
+            <p id="member-contributions-ai-status" role="status" /><p id="member-contributions-ai-current" />
+            <button id="member-contributions-ai-check" type="button" disabled>Check AI review settings</button>
+            <button id="member-contributions-ai-off" type="button" disabled>Keep future AI review off</button>
+            <label id="member-contributions-ai-confirm-label" style={{ minHeight: 44, padding: '8px 0' }}><input id="member-contributions-ai-confirm" type="checkbox" disabled /> <span id="member-contributions-ai-confirm-text" /></label>
+            <button id="member-contributions-ai-allow" type="button" disabled>Allow Anthropic review of this message</button>
+            <p id="member-contributions-ai-retirement" />
+          </section>
+          <button id="member-contributions-back" type="button" disabled>Back to my posted messages</button>
         </section>
         <button id="member-contributions-return" type="button" disabled>Return to Circle</button>
       </section>

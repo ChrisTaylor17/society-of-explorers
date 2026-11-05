@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.portable.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["node", "react"],
+    "typeRoots": ["../../node_modules/@types"],
+    "paths": {
+      "@/*": ["./*"],
+      "react-native": ["platforms/tests/native-author-consent-types.d.ts"]
+    }
+  },
+  "include": [
+    "../native/ContributionsScreen.tsx",
+    "../native/src/circles/android-member.ts",
+    "../native/src/circles/native-member-binding.ts",
+    "../native/src/auth/native-auth-ports.ts",
+    "../native/specs/NativeSoeMember.ts",
+    "native-author-consent-types.d.ts"
+  ],
+  "exclude": []
+}

@@ -59,7 +59,7 @@ export async function prepareNativeMemberBinding(options: {
       },
     };
     const createRequestId = ports.newRequestId;
-    return { origin, circleId, auth: guardedAuth, transport,
+    return { origin, circleId, auth: guardedAuth, transport, aiConsent: ports.aiConsent,
       ...(typeof createRequestId === 'function' ? { newRequestId: async () => { assertOpen(); const id = await createRequestId(); assertOpen(); return id; } } : {}),
       ...(verificationTimeoutMs === undefined ? {} : { verificationTimeoutMs }) };
   }

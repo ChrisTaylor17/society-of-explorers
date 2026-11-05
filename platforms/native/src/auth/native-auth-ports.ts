@@ -221,7 +221,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
       if (resetStarted) throw unavailable(); resetStarted = true; retire();
       try { await ports.resetAccountStorage(); } finally { offRetirement(); ports.retireStorage(); }
     },
-    member: { origin, transport, ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
+    member: { origin, transport, aiConsent: ports.aiConsent, ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
   };
 }
 export type NativeAuthPorts = Awaited<ReturnType<typeof createNativeAuthPorts>>;

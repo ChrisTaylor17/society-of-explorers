@@ -1862,32 +1862,263 @@ function memberCircleConfig(input) {
     return null;
   }
 }
+// lib/circles/message-ai.ts
+var MESSAGE_AI_POLICY = "anthropic-message-review-v1";
+
+// lib/circles/message-ai-consent.ts
+var MESSAGE_AI_POLICY_HREF = "/circles/message-ai-policy";
+var record4 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var revision2 = (value) => Number.isSafeInteger(value) && Number(value) >= 0;
+var hash3 = (value) => typeof value === "string" && /^[a-f0-9]{64}$/u.test(value);
+function parseMessageAiConsent(value) {
+  if (!record4(value) || !isUuid(value.circleId) || !isUuid(value.messageId) || typeof value.allowed !== "boolean" || !revision2(value.consentRevision) || value.policy !== MESSAGE_AI_POLICY || !hash3(value.contentHash) || !revision2(value.messageRevision) || typeof value.canEnable !== "boolean")
+    return null;
+  return {
+    circleId: value.circleId.toLowerCase(),
+    messageId: value.messageId.toLowerCase(),
+    allowed: value.allowed,
+    consentRevision: value.consentRevision,
+    policy: MESSAGE_AI_POLICY,
+    contentHash: value.contentHash,
+    messageRevision: value.messageRevision,
+    canEnable: value.canEnable
+  };
+}
+function parseMessageAiConsentInput(value) {
+  if (!record4(value) || Object.keys(value).length !== 4 || !["expectedConsentRevision", "contentHash", "policy", "allowed"].every((key) => Object.hasOwn(value, key)) || !revision2(value.expectedConsentRevision) || !hash3(value.contentHash) || value.policy !== MESSAGE_AI_POLICY || typeof value.allowed !== "boolean")
+    return null;
+  return {
+    expectedConsentRevision: value.expectedConsentRevision,
+    contentHash: value.contentHash,
+    policy: MESSAGE_AI_POLICY,
+    allowed: value.allowed
+  };
+}
+function sameMessageAiConsent(a, b) {
+  return a.circleId === b.circleId && a.messageId === b.messageId && a.allowed === b.allowed && a.consentRevision === b.consentRevision && a.policy === b.policy && a.contentHash === b.contentHash && a.messageRevision === b.messageRevision && a.canEnable === b.canEnable;
+}
+
+// platforms/shared/message-ai-consent.ts
+var MESSAGE_AI_DISCLOSURE = {
+  intro: "Optional for this message only. Human review does not require this permission, and choosing not to allow it carries no review penalty.",
+  provider: "An assigned reviewer may send this message’s text to Anthropic’s Claude for advisory safety review. We do not add your profile or author name, but names or other personal details may be present in your text. Anthropic may retain data under its terms, including safety and legal exceptions. This is not anonymous or zero-retention processing.",
+  revocation: "Revoking blocks new requests. A request already in progress may still transmit or complete; text already sent cannot be recalled. AI advice does not decide whether a message is hidden or restored.",
+  confirmation: "I read this policy and allow this message’s text to be sent to Anthropic for advisory review.",
+  retirement: "Closing or leaving clears these local settings. A decision already sent may still finish. After returning, check settings and explicitly choose your preference. Nothing is retried automatically."
+};
+var copy4 = (value) => JSON.parse(JSON.stringify(value));
+var record5 = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+function createMessageAiConsent(request, circleId, messageId, contextRevision, initialUncertain = false) {
+  if (typeof request !== "function" || !isUuid(circleId) || !isUuid(messageId) || !Number.isSafeInteger(contextRevision) || contextRevision < 0 || typeof initialUncertain !== "boolean")
+    throw Error("Verified message context required");
+  const circle = circleId.toLowerCase(), id = messageId.toLowerCase(), endpoint = `/api/circles/${circle}/messages/${id}/ai-consent`;
+  let active = false, closed = false, busy = false, generation = 0, interaction = 0, confirmed = false, uncertain = initialUncertain;
+  let state = null, phase = "idle";
+  let message = "Check this message’s current AI review settings before choosing. A change sent earlier may still finish.";
+  const listeners = new Set;
+  const model = () => {
+    const ready = active && !closed && !busy && state !== null && (phase === "ready" || phase === "confirmed") && state.consentRevision < Number.MAX_SAFE_INTEGER;
+    return copy4({
+      active: active && !closed,
+      busy,
+      phase,
+      state,
+      confirmed,
+      uncertain,
+      message,
+      canCheck: active && !closed && !busy,
+      canConfirm: ready && state.canEnable,
+      canKeepOff: ready,
+      canAllow: ready && state.canEnable && confirmed,
+      canNavigate: !busy,
+      action: { circleId: circle, messageId: id, contextRevision, interactionRevision: interaction }
+    });
+  };
+  const emit = () => {
+    for (const listener of listeners) {
+      try {
+        listener(model());
+      } catch {}
+    }
+  };
+  const current = (g) => active && !closed && generation === g;
+  const sameAction = (action) => record5(action) && Object.keys(action).sort().join(",") === "circleId,contextRevision,interactionRevision,messageId" && action.circleId === circle && action.messageId === id && action.contextRevision === contextRevision && action.interactionRevision === interaction;
+  const matches = (value) => value.circleId === circle && value.messageId === id;
+  const advance = () => {
+    generation++;
+    interaction++;
+  };
+  function clear(notice) {
+    advance();
+    busy = false;
+    state = null;
+    confirmed = false;
+    phase = closed ? "closed" : "idle";
+    message = notice;
+    emit();
+  }
+  function unavailable(unknown, status) {
+    interaction++;
+    busy = false;
+    state = null;
+    confirmed = false;
+    phase = unknown || uncertain ? "unknown" : "unavailable";
+    message = status === 401 ? "Sign in again before checking your message’s AI review settings." : status === 403 || status === 404 ? "These settings are not available to this account. Private settings are cleared." : unknown || uncertain ? "The change could not be confirmed and may still finish. Check current settings, then explicitly keep future AI review off or allow it. Nothing is retried automatically." : "AI review settings could not be verified. Permission is not being assumed. Check again when available.";
+    emit();
+  }
+  async function check(action) {
+    if (!sameAction(action) || !model().canCheck)
+      return;
+    advance();
+    const g = generation;
+    busy = true;
+    state = null;
+    confirmed = false;
+    phase = "loading";
+    message = "Checking AI review settings…";
+    emit();
+    try {
+      if (!current(g))
+        return;
+      const result = await request(endpoint, { method: "GET", cache: "no-store", redirect: "error" }, () => current(g));
+      if (!current(g))
+        return;
+      const value = result.http === 200 ? parseMessageAiConsent(result.body) : null;
+      if (!value || !matches(value))
+        return unavailable(false, result.http);
+      state = value;
+      busy = false;
+      phase = "ready";
+      interaction++;
+      message = uncertain ? "The earlier change is still uncertain. This read does not cancel it. Choose a new decision below to settle your preference." : "Current saved settings are shown. A change sent earlier may still finish. Choose a decision below to settle your preference.";
+      emit();
+    } catch {
+      if (current(g))
+        unavailable(false);
+    }
+  }
+  async function change(allowed, action) {
+    if (typeof allowed !== "boolean" || !sameAction(action) || !state || !(allowed ? model().canAllow : model().canKeepOff))
+      return;
+    const checked = state;
+    advance();
+    const g = generation;
+    busy = true;
+    state = null;
+    confirmed = false;
+    uncertain = true;
+    phase = "sending";
+    message = allowed ? "Saving permission for this message…" : "Saving your choice to keep future AI review off…";
+    emit();
+    try {
+      if (!current(g))
+        return;
+      const result = await request(endpoint, { method: "POST", cache: "no-store", redirect: "error", body: JSON.stringify({
+        expectedConsentRevision: checked.consentRevision,
+        contentHash: checked.contentHash,
+        policy: MESSAGE_AI_POLICY,
+        allowed
+      }) }, () => current(g));
+      if (!current(g))
+        return;
+      const receipt = result.http === 200 ? parseMessageAiConsent(result.body) : null;
+      if (!receipt || !matches(receipt) || receipt.allowed !== allowed || receipt.contentHash !== checked.contentHash || receipt.consentRevision !== checked.consentRevision + 1 || receipt.messageRevision < checked.messageRevision)
+        return unavailable(true, result.http);
+      phase = "checking";
+      interaction++;
+      message = "Permission receipt received. Reading current settings to verify…";
+      emit();
+      if (!current(g))
+        return;
+      const fresh = await request(endpoint, { method: "GET", cache: "no-store", redirect: "error" }, () => current(g));
+      if (!current(g))
+        return;
+      const value = fresh.http === 200 ? parseMessageAiConsent(fresh.body) : null;
+      if (!value || !matches(value) || !sameMessageAiConsent(value, receipt))
+        return unavailable(true, fresh.http);
+      state = value;
+      busy = false;
+      uncertain = false;
+      phase = "confirmed";
+      interaction++;
+      message = allowed ? "Permission confirmed for this message. This setting does not itself send the message." : "Future AI review is confirmed off. A review request already in progress may still transmit or complete; text already sent to Anthropic cannot be recalled.";
+      emit();
+    } catch {
+      if (current(g))
+        unavailable(true);
+    }
+  }
+  return {
+    model,
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(model());
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    check,
+    change,
+    confirm(value, action) {
+      if (typeof value !== "boolean" || !sameAction(action) || !model().canConfirm || value === confirmed)
+        return false;
+      interaction++;
+      confirmed = value;
+      emit();
+      return true;
+    },
+    activity(value) {
+      if (closed || typeof value !== "boolean" || active === value)
+        return;
+      active = value;
+      if (!value)
+        clear("AI review settings cleared while inactive. A decision already sent may still finish. Check settings and choose again after returning.");
+      else {
+        interaction++;
+        emit();
+      }
+    },
+    retire() {
+      if (closed)
+        return;
+      closed = true;
+      active = false;
+      clear("AI review settings closed. A decision already sent may still finish. Nothing is retried automatically.");
+      listeners.clear();
+    }
+  };
+}
+
 // platforms/shared/member-contributions.ts
 var same3 = (a, b) => a.toLowerCase() === b.toLowerCase();
-var copy4 = (value) => JSON.parse(JSON.stringify(value));
+var copy5 = (value) => JSON.parse(JSON.stringify(value));
 var listPath = "/api/circles/contributions";
 function createMemberContributions(config) {
   const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15000;
-  if (!config.owner || !["scope", "bearer", "subscribe"].every((key) => typeof config.owner[key] === "function") || typeof config.transport !== "function" || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000 || config.initialOnline !== undefined && typeof config.initialOnline !== "boolean" || config.newRequestId !== undefined && typeof config.newRequestId !== "function")
+  if (!config.owner || !["scope", "bearer", "subscribe"].every((key) => typeof config.owner[key] === "function") || typeof config.transport !== "function" || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000 || config.initialOnline !== undefined && typeof config.initialOnline !== "boolean" || config.aiConsent !== undefined && typeof config.aiConsent !== "boolean" || config.newRequestId !== undefined && typeof config.newRequestId !== "function")
     throw Error("Verified member connection required");
   let attached = false, active = true, online = config.initialOnline ?? false, scope = null, generation = 0;
   let phase = "closed", loading = false, items = [], nextCursor = null;
   let selected = null, safety = null, offSafety = () => {}, offOwner = () => {};
+  let aiConsent = null, offConsent = () => {}, consentContext = 0, consentUncertain = false, actionTransition = false;
   let message = "Load your own posted messages when ready. Current Circle membership is not required.";
   const listeners = new Set, requests = new Set;
   const enabled = () => attached && active && online && scope !== null && config.owner.scope() === scope;
   const model = () => {
-    const action = safety?.model() ?? null, canNavigate = !loading && (action?.canNavigate ?? true), usable = enabled() && canNavigate;
+    const action = safety?.model() ?? null, consent = aiConsent?.model() ?? null;
+    const canNavigate = !loading && (action?.canNavigate ?? true) && !consent?.busy, usable = enabled() && canNavigate;
+    const projectedSafety = action && consent?.busy ? { ...action, canCheck: false, canConfirm: false, canWithdraw: false, canRetry: false, canClose: false, canNavigate: false } : action;
     return {
       connected: attached && scope !== null,
       active,
       online,
-      busy: loading || Boolean(action?.busy),
+      busy: loading || Boolean(action?.busy || consent?.busy),
       phase,
-      items: copy4(items),
+      items: copy5(items),
       nextCursor,
       selected: selected ? { ...selected } : null,
-      safety: action,
+      safety: projectedSafety,
+      aiConsent: consent,
       message,
       canRefresh: usable,
       canNext: usable && selected === null && phase === "ready" && nextCursor !== null,
@@ -1903,7 +2134,46 @@ function createMemberContributions(config) {
       } catch {}
     }
   };
+  function clearConsent() {
+    offConsent();
+    offConsent = () => {};
+    const previous = aiConsent;
+    aiConsent = null;
+    if (previous) {
+      consentUncertain = previous.model().uncertain;
+      previous.retire();
+    }
+  }
+  function authorReady() {
+    const action = safety?.model();
+    return enabled() && selected !== null && !!action?.state?.message.is_mine && !action.busy && action.pendingRequestId === null && same3(action.state.circleId, selected.circleId) && same3(action.state.message.id, selected.messageId) && ["ready", "confirmed"].includes(action.phase);
+  }
+  function syncConsent() {
+    if (!config.aiConsent || !authorReady() || !selected) {
+      clearConsent();
+      return;
+    }
+    if (aiConsent)
+      return;
+    const context = ++consentContext, g = generation;
+    const child = createMessageAiConsent(request, selected.circleId, selected.messageId, context, consentUncertain);
+    aiConsent = child;
+    child.activity(true);
+    const stop = child.subscribe((value) => {
+      consentUncertain = value.uncertain;
+      emit();
+    });
+    if (aiConsent !== child || generation !== g || !authorReady()) {
+      stop();
+      if (aiConsent === child)
+        clearConsent();
+      return;
+    }
+    offConsent = stop;
+  }
   function clearSelection() {
+    clearConsent();
+    consentUncertain = false;
     offSafety();
     offSafety = () => {};
     const previous = safety;
@@ -1928,8 +2198,17 @@ function createMemberContributions(config) {
     const listing = options.method === "GET" && (path === listPath || after !== null && isUuid(after) && after === after.toLowerCase());
     const selection = selected ? { ...selected } : null;
     const messagePath = selection ? `/api/circles/${selection.circleId}/messages/${selection.messageId}` : null;
-    if (!listing && !(selection && path === messagePath && ["GET", "POST"].includes(options.method)))
+    const consentOperation = config.aiConsent === true && selection && aiConsent && authorReady() && path === messagePath + "/ai-consent" && ["GET", "POST"].includes(options.method);
+    if (!listing && !consentOperation && !(selection && path === messagePath && ["GET", "POST"].includes(options.method)))
       throw Error("Unexpected contribution operation");
+    if (consentOperation) {
+      if (options.method === "GET" && options.body !== undefined)
+        throw Error("Unexpected consent body");
+      if (options.method === "POST") {
+        if (typeof options.body !== "string" || options.body.length > 4096 || !parseMessageAiConsentInput(JSON.parse(options.body)))
+          throw Error("Unexpected consent body");
+      }
+    }
     const expected = scope, g = generation, abort = new AbortController;
     const current = () => enabled() && scope === expected && generation === g && !abort.signal.aborted && mayTransmit();
     if (!expected || !current())
@@ -1956,7 +2235,11 @@ function createMemberContributions(config) {
         const body = await response.json();
         if (!current())
           throw Error("Contribution session retired");
-        if (!listing && response.status === 200) {
+        if (consentOperation && response.status === 200) {
+          const consent = parseMessageAiConsent(body);
+          if (!consent || !same3(consent.circleId, selection.circleId) || !same3(consent.messageId, selection.messageId))
+            throw Error("Author consent not verified");
+        } else if (!listing && response.status === 200) {
           const state = options.method === "GET" ? parseMessageSafetyState(body) : parseMessageActionReceipt(body)?.state;
           if (!state || !state.message.is_mine || !same3(state.circleId, selection.circleId) || !same3(state.message.id, selection.messageId)) {
             throw Error("Author contribution not verified");
@@ -2034,6 +2317,42 @@ function createMemberContributions(config) {
       emit();
     }
   }
+  function consentAction(action) {
+    if (!config.aiConsent || !authorReady() || !aiConsent || !action || typeof action !== "object")
+      return null;
+    const expected = aiConsent.model().action;
+    return Object.keys(action).sort().join(",") === "circleId,contextRevision,interactionRevision,messageId" && action.circleId === expected.circleId && action.messageId === expected.messageId && action.contextRevision === expected.contextRevision && action.interactionRevision === expected.interactionRevision ? aiConsent : null;
+  }
+  async function withSafety(work) {
+    if (actionTransition || !enabled() || loading || !safety || aiConsent?.model().busy)
+      return;
+    const action = safety, child = aiConsent, g = generation;
+    actionTransition = true;
+    try {
+      if (child) {
+        child.activity(false);
+        if (enabled() && generation === g && aiConsent === child)
+          child.activity(true);
+      }
+      return enabled() && generation === g && safety === action ? work(action) : undefined;
+    } finally {
+      actionTransition = false;
+    }
+  }
+  function withConsent(action, work) {
+    if (actionTransition)
+      return;
+    const child = consentAction(action);
+    if (!child)
+      return;
+    actionTransition = true;
+    try {
+      safety?.confirm(false);
+      return consentAction(action) === child ? work(child) : undefined;
+    } finally {
+      actionTransition = false;
+    }
+  }
   return {
     model,
     subscribe(listener) {
@@ -2091,7 +2410,10 @@ function createMemberContributions(config) {
       const action = createMessageSafety(request, selected.circleId, newRequestId);
       safety = action;
       action.activity(enabled());
-      const stop = action.subscribe(emit);
+      const stop = action.subscribe(() => {
+        syncConsent();
+        emit();
+      });
       if (!enabled() || generation !== g || safety !== action) {
         stop();
         return;
@@ -2108,21 +2430,37 @@ function createMemberContributions(config) {
         generation++;
         clearSelection();
         phase = "idle";
-        message = "Message details cleared. Load your posted messages again when ready.";
+        message = "Message details cleared. A decision already sent may still finish. Load your posted messages again when ready.";
         emit();
       }
     },
     check() {
-      return safety?.refresh() ?? Promise.resolve();
+      return withSafety((action) => action.refresh());
     },
     confirm(value) {
-      safety?.confirm(value);
+      withSafety((action) => action.confirm(value));
     },
     withdraw() {
-      return safety?.submit("withdraw") ?? Promise.resolve();
+      return withSafety((action) => action.submit("withdraw"));
     },
     retry() {
-      return safety?.retry() ?? Promise.resolve();
+      return withSafety((action) => action.retry());
+    },
+    checkAiConsent(action) {
+      if (!consentAction(action)?.model().canCheck)
+        return Promise.resolve();
+      return withConsent(action, (child) => child.check(action)) ?? Promise.resolve();
+    },
+    confirmAiConsent(value, action) {
+      if (typeof value !== "boolean" || !consentAction(action)?.model().canConfirm)
+        return false;
+      return withConsent(action, (child) => child.confirm(value, action)) ?? false;
+    },
+    setAiConsent(allowed, action) {
+      const child = consentAction(action);
+      if (typeof allowed !== "boolean" || !child || !(allowed ? child.model().canAllow : child.model().canKeepOff))
+        return Promise.resolve();
+      return withConsent(action, (value) => value.change(allowed, action)) ?? Promise.resolve();
     },
     close() {
       retire("Private contribution view closed. A previously sent action may still have completed. Nothing retries automatically.");
@@ -2130,6 +2468,9 @@ function createMemberContributions(config) {
   };
 }
 export {
+  MESSAGE_AI_DISCLOSURE,
+  MESSAGE_AI_POLICY,
+  MESSAGE_AI_POLICY_HREF,
   MESSAGE_REPORT_OPTIONS,
   MESSAGE_WITHDRAWAL_PRIVACY,
   approvedOrigin,

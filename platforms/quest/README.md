@@ -11,3 +11,5 @@ env -i PATH=/opt/homebrew/bin:/usr/bin:/bin HOME=/Users/christaylor python3 plat
 ```
 
 The active member path provides current flat conversation/posting plus complete archive and thread reads. The preserved WebXR renderer/session files in `prototypes/` are not connected to authenticated member data. There is no claim of headset, controller, XR text input, native Quest APK or immersive acceptance.
+
+The canonical Quest contribution views now opt into per-message author AI consent controls with `aiConsent: true`. Older configurations default to unavailable. The complete consent markup is required before the canonical page constructs its account client. See [author AI consent](AUTHOR_AI_CONSENT.md) for behavior, proof and remaining acceptance limits.

@@ -31,6 +31,7 @@ export async function currentMessageAiApp({ allowance = null } = {}) {
   const reported = await api.dispatch(api.messagePath, 'POST', { action: 'report', expectedRevision: current.revision, contentHash: current.contentHash, requestId: crypto.randomUUID(), reason: 'safety', note: 'PRIVATE_REPORT_NOTE: synthetic human review allegation.' });
   assert.equal(reported.status, 200, 'Actual current message state and report must seed successfully');
   api.setActor(f.authorId);
-  return { ...api, close: () => f.close() };
+  // Preserve the actual canonical member dispatcher for registered native-App proof.
+  return { ...api, memberDispatch: f.dispatch, close: () => f.close() };
  } catch (error) { await f.close(); throw error; }
 }

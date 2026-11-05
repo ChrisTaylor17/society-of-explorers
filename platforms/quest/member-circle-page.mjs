@@ -1,13 +1,15 @@
 import {createVerifiedSupabaseCircleOwner,memberCircleConfig,approvedOrigin} from './circle-host.mjs';
 import {mountCirclePage,browserCircleTransport,assertCircleMarkup} from './circle-view.mjs';
 import {assertContributionsMarkup,mountMemberContributions} from './member-contributions-view.mjs';
+export {assertContributionsMarkup};
 /** The authenticated application supplies its existing client. No SDK method is
  * called until the user chooses Check member session. */
 export function mountExistingMemberCircle(options) { return mount(options,true); }
 export function mountExistingMemberContributions(options) { return mount(options,false); }
 function mount({window:win,document:doc,config},withCircle) {
   if(withCircle)assertCircleMarkup(doc);
-  if(!assertContributionsMarkup(doc)&&!withCircle)throw Error('Contribution controls unavailable');
+  const aiConsent=config?.aiConsent===undefined?false:config.aiConsent;
+  if(!assertContributionsMarkup(doc,aiConsent)&&!withCircle)throw Error('Contribution controls unavailable');
   const button=doc.getElementById('member-session-check'),status=doc.getElementById('member-session-status');
   if(!button||!status)throw Error('Member session controls unavailable');
   const newRequestId=typeof win.crypto?.randomUUID==='function'?async()=>win.crypto.randomUUID():undefined;
@@ -26,7 +28,7 @@ function mount({window:win,document:doc,config},withCircle) {
   };
   try {
     if(withCircle)screen=mountCirclePage({window:win,document:doc,config:{...hostConfig,owner:binding.owner}});
-    contributions=mountMemberContributions({window:win,document:doc,config:{...hostConfig,owner:binding.owner},circleHost:screen?.host});
+    contributions=mountMemberContributions({window:win,document:doc,config:{...hostConfig,aiConsent,owner:binding.owner},circleHost:screen?.host});
     off=binding.subscribe(m=>{status.textContent=m.message;button.disabled=m.busy||!m.active;button.textContent=m.busy?'Checking member session…':'Check member session';});
     const listen=(target,event,fn)=>{target.addEventListener(event,fn);handlers.push(()=>target.removeEventListener(event,fn));};
     const activity=()=>binding.activity(visible&&focused&&online);

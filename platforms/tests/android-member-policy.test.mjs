@@ -59,14 +59,14 @@ test('actual typed v2 spec declares native methods/events and nullable module lo
  assert.equal(ast.parseDiagnostics.length,0);
  const spec=ast.statements.find(n=>ts.isInterfaceDeclaration(n)&&n.name.text==='Spec');assert(spec);
  const methods=new Map(spec.members.filter(ts.isMethodSignature).map(n=>[n.name.getText(ast),n]));
- assert.deepEqual([...methods.keys()],['capabilities','begin','newRequestId','send','sendAuth','sendPublic','cancel','read','write','remove','resetAccountStorage','getConnectivitySnapshot']);
- for(const [name,args]of Object.entries({begin:['generation'],newRequestId:['generation'],read:['slot','generation'],write:['slot','value','generation'],remove:['slot','generation'],resetAccountStorage:['expectedGeneration']}))
+  assert.deepEqual([...methods.keys()],['capabilities','begin','newRequestId','send','sendAuth','prepareEmailLink','pendingEmailLink','claimEmailLink','discardEmailLink','sendEmailAuth','sendPublic','cancel','read','write','remove','resetAccountStorage','getConnectivitySnapshot']);
+  for(const [name,args]of Object.entries({begin:['generation'],newRequestId:['generation'],prepareEmailLink:['generation','purpose','email'],pendingEmailLink:['generation'],claimEmailLink:['generation','flowId'],discardEmailLink:['generation','flowId'],sendEmailAuth:['id','request'],read:['slot','generation'],write:['slot','value','generation'],remove:['slot','generation'],resetAccountStorage:['expectedGeneration']}))
   assert.deepEqual(methods.get(name).parameters.map(p=>p.name.getText(ast)),args);
  assert.equal(methods.get('getConnectivitySnapshot').type.getText(ast),'string');
  assert(source.includes('readonly onConnectivityChange: CodegenTypes.EventEmitter'));
  assert.match(source,/TurboModuleRegistry\.get<Spec>\('NativeSoeMember'\)/);assert(!source.includes('getEnforcing'));
  const pkg=JSON.parse(read(native+'package.json'));
- assert.deepEqual(pkg.codegenConfig,{name:'SoeMemberSpecs',type:'modules',jsSrcsDir:'specs',android:{javaPackageName:'com.anonymous.soesyntheticdemo.member'}});
+  assert.deepEqual(pkg.codegenConfig,{name:'SoeMemberSpecs',type:'all',jsSrcsDir:'specs',android:{javaPackageName:'com.anonymous.soesyntheticdemo.member'},ios:{componentProvider:{SoeSourceReader:'SoeSourceReaderView'}}});
 });
 test('actual app source registers new-architecture package and only network-state permission (STATIC)',()=>{
  const files=capture(),main=read(android+'app/src/main/java/com/anonymous/soesyntheticdemo/MainApplication.kt'),manifest=read(android+'app/src/main/AndroidManifest.xml');

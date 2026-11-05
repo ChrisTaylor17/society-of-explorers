@@ -266,6 +266,7 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val discussion = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion").matchEntire(url.encodedPath)
     val preview = Regex("/api/circles/([0-9a-fA-F-]{36})/discussion/preview").matchEntire(url.encodedPath)
     val messageAction = Regex("/api/circles/([0-9a-fA-F-]{36})/messages/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
+    val messageAiConsent = Regex("/api/circles/([0-9a-f-]{36})/messages/([0-9a-f-]{36})/ai-consent").matchEntire(url.encodedPath)
     val detail = Regex("/api/circles/([0-9a-fA-F-]{36})(?:/membership)?").matchEntire(url.encodedPath)
     val participation = Regex("/api/circles/([0-9a-fA-F-]{36})/(join|leave)").matchEntire(url.encodedPath)
     val attendance = Regex("/api/circles/([0-9a-f-]{36})/rsvp").matchEntire(url.encodedPath)
@@ -323,6 +324,10 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     else if (preview != null) { require(uuid(preview.groupValues[1]) && input.method == "POST" && url.encodedQuery == null) }
     else if (discussion != null && input.method == "POST") { require(uuid(discussion.groupValues[1]) && url.encodedQuery == null) }
     else if (messageAction != null) { require(uuid(messageAction.groupValues[1]) && uuid(messageAction.groupValues[2]) && url.encodedQuery == null) }
+    else if (messageAiConsent != null) {
+      require(uuid(messageAiConsent.groupValues[1]) && uuid(messageAiConsent.groupValues[2]) && url.encodedQuery == null)
+      if (input.method == "POST") validateMessageAiConsentBody(input.body ?: throw IllegalArgumentException())
+    }
     else {
       require(discussion != null && uuid(discussion.groupValues[1]) && input.method == "GET")
       val query = mutableMapOf<String, String>()
@@ -338,6 +343,20 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     if (input.method == "GET") require(input.body == null)
     else if (url.encodedPath == "/api/great-books/progress") require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= 4096)
     else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= if (url.encodedPath == "/api/members/profile") 65536 else 16384)
+  }
+  /** Author consent is a narrow CAS choice. No message text, author profile,
+   * reporter notes or provider operation is admitted by this native lane. */
+  private fun validateMessageAiConsentBody(body: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 512)
+    val value = JSONObject(body)
+    require(value.keys().asSequence().toSet() == setOf("expectedConsentRevision", "contentHash", "policy", "allowed"))
+    val revision = value.get("expectedConsentRevision"); val hash = value.get("contentHash")
+    val policy = value.get("policy"); val allowed = value.get("allowed")
+    require(revision is Int || revision is Long)
+    val version = (revision as Number).toLong(); require(version in 0..9007199254740991L)
+    require(hash is String && Regex("[a-f0-9]{64}").matches(hash))
+    require(policy == "anthropic-message-review-v1" && allowed is Boolean)
+    require(body == "{\"expectedConsentRevision\":$version,\"contentHash\":\"$hash\",\"policy\":\"$policy\",\"allowed\":$allowed}")
   }
   /** The independent native policy accepts only the complete reviewed RSVP
    * wire. The server verifies this actor, current membership and meeting date. */
