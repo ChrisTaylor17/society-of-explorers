@@ -1,3 +1,4 @@
+import 'server-only';
 import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { pickFallbackQuestion } from '@/lib/practice/fallbackQuestions';
@@ -8,9 +9,9 @@ export interface DailyQuestion {
   question_text: string;
   question_context: string | null;
   date: string;
-  engagement_score?: number;
   created_at: string;
 }
+const DAILY_QUESTION_SELECT = 'id, thinker_id, question_text, question_context, date, created_at';
 
 const THINKERS = [
   { id: 'socrates', name: 'Socrates', lens: 'You find the question behind the question.' },
@@ -70,19 +71,20 @@ async function generateQuestion(
   }
 }
 
-export async function getOrCreateTodayQuestion(): Promise<DailyQuestion | null> {
+export async function getOrCreateTodayQuestion({ allowProvider = false } = {}): Promise<DailyQuestion | null> {
   const supabase = getSupabaseAdmin();
   const today = getTodayET();
 
-  const { data: existing } = await supabase
+  const { data: existing, error } = await supabase
     .from('daily_questions')
-    .select('*')
+    .select(DAILY_QUESTION_SELECT)
     .eq('date', today)
     .maybeSingle();
-  if (existing) return existing as DailyQuestion;
+  if (error) return null;
+  if (existing) return existing;
 
   const thinker = pickThinker();
-  const generated = await generateQuestion(thinker);
+  const generated = allowProvider ? await generateQuestion(thinker) : null;
   const fallback = pickFallbackQuestion(today);
   const row = generated
     ? { thinker_id: thinker.id, question_text: generated.question, question_context: generated.context, date: today }
@@ -91,17 +93,17 @@ export async function getOrCreateTodayQuestion(): Promise<DailyQuestion | null> 
   const { data: inserted, error: insertError } = await supabase
     .from('daily_questions')
     .insert(row)
-    .select()
+    .select(DAILY_QUESTION_SELECT)
     .single();
-  if (inserted) return inserted as DailyQuestion;
+  if (inserted) return inserted;
 
   // date is UNIQUE: another request may have created today's row first.
   const { data: raced } = await supabase
     .from('daily_questions')
-    .select('*')
+    .select(DAILY_QUESTION_SELECT)
     .eq('date', today)
     .maybeSingle();
-  if (raced) return raced as DailyQuestion;
+  if (raced) return raced;
 
   console.error('[practice/todayQuestion] could not store today\'s question:', insertError?.message);
   return null;

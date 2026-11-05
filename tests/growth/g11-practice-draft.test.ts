@@ -91,7 +91,7 @@ test('G11f load failures are not shown as "no question today"', () => {
 test('G11g submit errors explain what happened and that the answer is kept', () => {
   expect(submitErrorMessage(401)).toMatch(/Sign in again/);
   expect(submitErrorMessage(429)).toMatch(/Wait a minute/);
-  expect(submitErrorMessage(500)).toMatch(/not saved/);
+  expect(submitErrorMessage(500)).toMatch(/could not confirm/);
   expect(submitErrorMessage(0)).toMatch(/connection/);
 });
 

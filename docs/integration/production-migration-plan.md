@@ -4,6 +4,8 @@
 
 The November 5 review binds the current Vercel alias to the uploaded Thinker and reading-award implementations and seven older browser pages that depend on a raw member lookup. Supabase reports that scheduled backups are unavailable for this Free plan project. The synthetic PostgreSQL restore and lock rehearsal passed. A tested production export, its isolated restoration and the remaining caller review are still required. [Current caller and restore evidence](production-boundary-2026-11-05.md) · [Migration rehearsal](full-chain-migration-rehearsal.md)
 
+Daily Practice has a separate four-table privacy draft. Include those tables in the production restore review and pair its SQL with retirement of the legacy public answer routes. Verify the two older member aliases, generated deployment URLs and forwarding from the branded exhibition site before opening traffic. [Practice scope and verification](practice-privacy.md)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.

@@ -39,7 +39,7 @@ test('today question no longer uses the retired model and falls back instead of 
   expect(src).toMatch(/timeout/i);
 });
 
-const goodPayload = { recentResponses: [], stats: { totalResponses: 0 }, todayQuestion: null };
+const goodPayload = { todayQuestion: null };
 const fakeFetch = (res: { ok: boolean; body?: unknown; throws?: boolean }) =>
   async () => {
     if (res.throws) throw new Error('offline');
@@ -73,6 +73,14 @@ test('fetchPulse times out a stalled request instead of waiting forever', async 
 test('isPulsePayload rejects error bodies', () => {
   expect(isPulsePayload({ error: 'nope', recentResponses: [], stats: {} })).toBe(false);
   expect(isPulsePayload(goodPayload)).toBe(true);
+});
+
+test('the feed client keeps only the question fields even if a legacy endpoint adds private fields', async () => {
+  const todayQuestion = { date: '2026-11-05', thinker_id: 'socrates', question_text: 'What makes a good question?' };
+  const result = await fetchPulse(fakeFetch({ ok: true, body: {
+    todayQuestion: { ...todayQuestion, response_text: 'private' }, recentResponses: [{ response_text: 'private' }],
+  } }));
+  expect(result).toEqual({ ok: true, data: { todayQuestion } });
 });
 
 test('feed page has an error state with retry and honest recency copy', () => {

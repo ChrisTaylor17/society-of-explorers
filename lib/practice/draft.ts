@@ -74,5 +74,5 @@ export function classifyTodayResponse(ok: boolean, data: unknown): PracticeLoadS
 export function submitErrorMessage(status: number): string {
   if (status === 401 || status === 403) return 'Your session ended. Sign in again; your answer is kept on this device.';
   if (status === 429) return 'Too many tries. Wait a minute, then commit again.';
-  return 'Your answer was not saved. Check your connection and try again.';
+  return 'We could not confirm your answer. Check your connection and try again.';
 }

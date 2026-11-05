@@ -1,0 +1,84 @@
+.page {
+  min-height: 100vh;
+  background: #0b0a08;
+  color: #f5f0e8;
+}
+
+.main {
+  display: grid;
+  gap: 2rem;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 6.25rem clamp(1rem, 5vw, 2rem) 4rem;
+  overflow-wrap: anywhere;
+}
+
+.main h1 {
+  margin: 0;
+  font-size: clamp(2.15rem, 7vw, 3.5rem);
+  line-height: 1.1;
+  font-weight: 500;
+}
+
+.lead {
+  margin: .75rem 0 0;
+  max-width: 32rem;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: #d0c5b4;
+}
+
+.question {
+  min-width: 0;
+  border: 1px solid #695632;
+  border-radius: .35rem;
+  background: #17130e;
+  padding: clamp(1rem, 4vw, 1.75rem);
+}
+
+.question h2 {
+  margin: 0 0 1rem;
+  color: #e0c48a;
+  font-size: .9rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.question time {
+  color: #c4b8a4;
+  font-variant-numeric: tabular-nums;
+}
+
+.prompt {
+  margin: .35rem 0 .75rem;
+  font-size: clamp(1.3rem, 4vw, 1.65rem);
+  line-height: 1.4;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.5rem;
+}
+
+.main :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #efd397;
+  text-decoration: underline;
+  text-underline-offset: .22em;
+}
+
+.main button {
+  border: 1px solid #695632;
+  background: transparent;
+  padding: 0 .8rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.main :is(a, button):focus-visible {
+  outline: 2px solid #efd397;
+  outline-offset: 4px;
+}

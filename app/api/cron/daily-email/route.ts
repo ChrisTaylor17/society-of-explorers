@@ -45,7 +45,7 @@ async function handler(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  const question = await getOrCreateTodayQuestion();
+  const question = await getOrCreateTodayQuestion({ allowProvider: true });
   if (!question) {
     return privateJson({ error: 'No question' }, { status: 500 });
   }

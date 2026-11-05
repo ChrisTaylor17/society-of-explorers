@@ -1,33 +1,13 @@
 import { NextRequest } from 'next/server';
-import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-type MatchPrompt = { prompt: string; depth: number };
-
-function parseMatchPrompts(text: string): MatchPrompt[] {
-  try {
-    const parsed = JSON.parse(text.replace(/```json\n?|```/g, '').trim());
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .map((item) => {
-        if (!item || typeof item !== 'object') return null;
-        const prompt = typeof item.prompt === 'string' ? item.prompt.trim() : '';
-        const depth = Number(item.depth);
-        if (!prompt || !Number.isFinite(depth)) return null;
-        return {
-          prompt: prompt.slice(0, 280),
-          depth: Math.max(1, Math.min(3, Math.round(depth))),
-        };
-      })
-      .filter((item): item is MatchPrompt => Boolean(item))
-      .slice(0, 3);
-  } catch {
-    return [];
-  }
-}
+const SHARED_PRACTICE_PROMPTS = [
+  { prompt: 'Which shared question stayed with you, and why?', depth: 1 },
+  { prompt: 'What assumption in your answer would you most like to test?', depth: 2 },
+  { prompt: 'What would persuade you to see the question differently?', depth: 3 },
+];
 
 export async function POST(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
@@ -45,7 +25,7 @@ export async function POST(req: NextRequest) {
   // Find candidates: members who answered same questions in last 14 days
   const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString();
   const { data: myResponses } = await supabase.from('question_responses')
-    .select('question_id, response_text').eq('member_id', memberId).gte('created_at', twoWeeksAgo);
+    .select('question_id').eq('member_id', memberId).gte('created_at', twoWeeksAgo);
 
   if (!myResponses || myResponses.length < 3) {
     return privateJson({ match: null, reason: 'not_enough_recent_responses' });
@@ -55,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   // Find other members who answered the same questions
   const { data: candidates } = await supabase.from('question_responses')
-    .select('member_id, question_id, response_text')
+    .select('member_id')
     .in('question_id', myQuestionIds)
     .neq('member_id', memberId)
     .gte('created_at', twoWeeksAgo);
@@ -76,22 +56,18 @@ export async function POST(req: NextRequest) {
   }
 
   // Score candidates by overlap count
-  const scores = new Map<string, { overlap: number; responses: string[] }>();
-  for (const c of candidates) {
-    if (excludeIds.has(c.member_id)) continue;
-    const existing = scores.get(c.member_id) || { overlap: 0, responses: [] };
-    existing.overlap++;
-    existing.responses.push(c.response_text);
-    scores.set(c.member_id, existing);
+  const scores = new Map<string, number>();
+  for (const candidate of candidates) {
+    if (excludeIds.has(candidate.member_id)) continue;
+    scores.set(candidate.member_id, (scores.get(candidate.member_id) || 0) + 1);
   }
 
   if (scores.size === 0) {
     return privateJson({ match: null, reason: 'not_enough_members' });
   }
 
-  // Pick best candidate
-  const sorted = [...scores.entries()].sort((a, b) => b[1].overlap - a[1].overlap);
-  const [bestMemberId, bestData] = sorted[0];
+  const sorted = [...scores.entries()].sort((a, b) => b[1] - a[1]);
+  const [bestMemberId, overlap] = sorted[0];
 
   // Get partner name
   const { data: partner } = await supabase.from('members').select('display_name').eq('id', bestMemberId).single();
@@ -101,25 +77,8 @@ export async function POST(req: NextRequest) {
     .select('thinker_id').in('id', myQuestionIds).limit(1).single();
   const thinkerId = sharedQ?.thinker_id || 'socrates';
 
-  // Generate prompts
-  const THINKER_NAMES: Record<string, string> = { socrates: 'Socrates', plato: 'Plato', aurelius: 'Marcus Aurelius', nietzsche: 'Nietzsche', einstein: 'Einstein', jobs: 'Steve Jobs' };
-  let prompts: MatchPrompt[] = [];
-  try {
-    const anthropic = createAnthropicClient();
-    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
-    const myRecent = myResponses.slice(-3).map(r => r.response_text).join('\n');
-    const theirRecent = bestData.responses.slice(-3).join('\n');
-
-    const res = await anthropic.messages.create({
-      model, max_tokens: 300,
-      system: `You are ${THINKER_NAMES[thinkerId] || thinkerId}. Two members have been matched. Generate 3 discussion prompts that escalate in depth. Respond with ONLY a JSON array: [{"prompt":"...","depth":1},{"prompt":"...","depth":2},{"prompt":"...","depth":3}]`,
-      messages: [{ role: 'user', content: `Member A recent responses:\n${myRecent}\n\nMember B recent responses:\n${theirRecent}` }],
-    });
-    const text = res.content.find(b => b.type === 'text')?.text || '';
-    prompts = parseMatchPrompts(text);
-  } catch {}
-
-  const matchReason = `You both responded to ${bestData.overlap} of the same daily questions.`;
+  const prompts = SHARED_PRACTICE_PROMPTS;
+  const matchReason = 'You both responded to ' + overlap + ' of the same daily questions.';
 
   const { data: match, error: matchError } = await supabase.from('matched_conversations').insert({
     member_a: memberId, member_b: bestMemberId, thinker_id: thinkerId,

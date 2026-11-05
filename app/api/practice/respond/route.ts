@@ -17,16 +17,20 @@ function trimmedText(value: unknown): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  let body: PracticeRespondBody;
+  let body: unknown;
 
   try {
-    body = (await req.json()) as PracticeRespondBody;
+    body = await req.json();
   } catch {
     return privateJson({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const questionId = trimmedText(body.questionId);
-  const responseText = trimmedText(body.responseText);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return privateJson({ error: 'Invalid answer' }, { status: 400 });
+  }
+  const input = body as PracticeRespondBody;
+  const questionId = trimmedText(input.questionId);
+  const responseText = trimmedText(input.responseText);
 
   if (!questionId || !responseText) {
     return privateJson({ error: 'questionId and responseText required' }, { status: 400 });
@@ -40,14 +44,19 @@ export async function POST(req: NextRequest) {
   if (!auth) {
     return privateJson({ error: 'Authentication required' }, { status: 401 });
   }
+  const expectedOwner = req.headers.get('x-soe-practice-owner');
+  if (expectedOwner !== null && expectedOwner !== auth.memberId) {
+    return privateJson({ error: 'The Practice account changed.' }, { status: 409 });
+  }
 
   const supabase = getSupabaseAdmin();
-  const { data: existingResponse } = await supabase
+  const { data: existingResponse, error: existingError } = await supabase
     .from('question_responses')
     .select('id')
     .eq('member_id', auth.memberId)
     .eq('question_id', questionId)
     .maybeSingle();
+  if (existingError) return privateJson({ error: 'Could not verify the saved answer' }, { status: 503 });
   const isFirstResponseForQuestion = !existingResponse;
 
   const { data: upserted, error: responseError } = await supabase
@@ -60,14 +69,14 @@ export async function POST(req: NextRequest) {
       },
       { onConflict: 'member_id,question_id' },
     )
-    .select('id')
+    .select('id, response_text, created_at')
     .single();
 
-  if (responseError) {
+  if (responseError || !upserted) {
     return privateJson({ error: 'Failed to save response' }, { status: 500 });
   }
 
-  const responseId = upserted?.id;
+  const responseId = upserted.id;
   const today = getTodayET();
   const { data: member, error: memberError } = await supabase
     .from('members')
@@ -117,6 +126,7 @@ export async function POST(req: NextRequest) {
   return privateJson({
     success: true,
     responseId,
+    response: { id: responseId, response_text: upserted.response_text, created_at: upserted.created_at },
     streak: updated?.current_streak ?? streak,
     longest: updated?.longest_streak ?? longest,
     total: updated?.total_responses ?? total,

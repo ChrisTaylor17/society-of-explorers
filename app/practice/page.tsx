@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import {
   PRACTICE_MAX_CHARS,
   PRACTICE_SIGNIN_PATH,
@@ -61,7 +61,7 @@ const THINKER_AVATARS: Record<string, string> = {
   jobs: 'SJ',
 };
 
-type Phase = 'loading' | 'composing' | 'submitting' | 'revealing' | 'complete';
+type Phase = 'loading' | 'composing' | 'submitting' | 'complete';
 
 interface Question {
   id: string;
@@ -80,13 +80,6 @@ interface Streak {
   longest_streak: number;
   total_responses: number;
 }
-interface Other {
-  id: string;
-  display_name: string;
-  response_text: string;
-  created_at: string;
-}
-
 const MILESTONE_NOTES: Record<number, string> = {
   7: 'a week of noticing',
   30: 'a month of presence',
@@ -112,20 +105,6 @@ function formatTimeOfDay(iso: string): string {
     .toUpperCase();
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins === 1) return '1 minute ago';
-  if (mins < 60) return `${mins} minutes ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs === 1) return '1 hour ago';
-  if (hrs < 24) return `${hrs} hours ago`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return 'yesterday';
-  return `${days} days ago`;
-}
-
 function counterColor(n: number): string {
   if (n >= 280) return '#fde68a';
   if (n >= 261) return '#fcd34d';
@@ -143,82 +122,80 @@ export default function PracticePage() {
   const [myResponse, setMyResponse] = useState<MyResponse | null>(null);
   const [myReflection, setMyReflection] = useState<string | null>(null);
   const [streak, setStreak] = useState<Streak | null>(null);
-  const [others, setOthers] = useState<Other[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
 
   const [draft, setDraft] = useState('');
-  const [textareaHidden, setTextareaHidden] = useState(false);
-  const [reflectionMounted, setReflectionMounted] = useState(false);
-  const [streakMounted, setStreakMounted] = useState(false);
-  const [commonsMounted, setCommonsMounted] = useState(false);
   const [textareaFocused, setTextareaFocused] = useState(false);
-  const [todayCount, setTodayCount] = useState<number>(0);
   const [loadError, setLoadError] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const lifetime = useRef<AbortController | null>(null);
+  const saving = useRef(false);
 
   const { day: dayName, monthDay } = useMemo(() => formatToday(), []);
 
+  const retire = useCallback(() => {
+    lifetime.current?.abort();
+    setMemberId(null);
+    setQuestion(null);
+    setMyResponse(null);
+    setMyReflection(null);
+    setStreak(null);
+    setDraft('');
+    setSubmitError('');
+    setLoadError(true);
+    setPhase('composing');
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    lifetime.current = controller;
+    const unsubscribe = subscribeAuthProviderChanges(retire);
+    window.addEventListener('pagehide', retire);
 
     async function load() {
-      let token: string | null = null;
-      let mid: string | null = null;
-      try {
-        const session = await getMemberSession();
-        if (session?.member) mid = session.member.id;
-        token = await getSupabaseAccessToken();
-      } catch {}
-
-      if (cancelled) return;
-      setMemberId(mid);
-      setAuthToken(token);
-
       try {
         const res = await fetch('/api/practice/my-today', {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
         });
         const data = await res.json().catch(() => null);
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         const state = classifyTodayResponse(res.ok, data);
         if (state !== 'question') {
           setLoadError(state === 'error');
           setPhase('composing');
           return;
         }
+        const owner = typeof data.memberId === 'string' ? data.memberId : null;
+        setMemberId(owner);
         setQuestion(data.question);
         const saved = loadDraft(draftStorage(), data.question.id);
-        if (saved && !data.myResponse) setDraft(saved);
-        setOthers(Array.isArray(data.others) ? data.others : []);
-        if (typeof data.todayCount === 'number') setTodayCount(data.todayCount);
-        if (data.streak) setStreak(data.streak);
-        if (data.myResponse) {
+        if (owner) clearDraft(draftStorage());
+        if (owner && data.streak) setStreak(data.streak);
+        if (owner && data.myResponse) {
           setMyResponse(data.myResponse);
           setMyReflection(data.myReflection || null);
-          setTextareaHidden(true);
-          setReflectionMounted(true);
-          setStreakMounted(true);
-          setCommonsMounted(true);
           setPhase('complete');
         } else {
+          if (saved) setDraft(saved);
           setPhase('composing');
         }
       } catch {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setLoadError(true);
           setPhase('composing');
         }
       }
     }
 
-    load();
+    void load();
     return () => {
-      cancelled = true;
+      unsubscribe();
+      window.removeEventListener('pagehide', retire);
+      controller.abort();
     };
-  }, []);
+  }, [retire]);
 
   useEffect(() => {
     if (phase !== 'composing') return;
@@ -228,108 +205,59 @@ export default function PracticePage() {
   }, [phase]);
 
   async function handleSubmit() {
-    if (!question || !draft.trim()) return;
+    const controller = lifetime.current;
+    if (!controller || controller.signal.aborted || saving.current || !question || !draft.trim()) return;
     if (!memberId) {
       saveDraft(draftStorage(), question.id, draft);
       window.location.assign(PRACTICE_SIGNUP_PATH);
       return;
     }
+    const responseText = draft.trim();
+    saving.current = true;
     setSubmitError('');
     setPhase('submitting');
     try {
       const res = await fetch('/api/practice/respond', {
         method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          'X-SOE-Practice-Owner': memberId,
         },
-        body: JSON.stringify({
-          questionId: question.id,
-          responseText: draft.trim(),
-        }),
+        body: JSON.stringify({ questionId: question.id, responseText }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.success || !data?.responseId) {
-        saveDraft(draftStorage(), question.id, draft);
+      if (controller.signal.aborted) return;
+      if (res.status === 401 || res.status === 409) {
+        retire();
+        return;
+      }
+      if (!res.ok || !data?.success || typeof data.responseId !== 'string' ||
+        data.response?.id !== data.responseId || data.response.response_text !== responseText ||
+        typeof data.response.created_at !== 'string') {
         setSubmitError(submitErrorMessage(res.status));
         setPhase('composing');
         return;
       }
-      clearDraft(draftStorage());
 
-      const responseId: string = data.responseId;
-      const nowIso = new Date().toISOString();
-      setMyResponse({ id: responseId, response_text: draft.trim(), created_at: nowIso });
+      clearDraft(draftStorage());
+      setDraft('');
+      setMyResponse({ id: data.responseId, response_text: responseText, created_at: data.response.created_at });
       setStreak({
         current_streak: data.streak ?? 0,
         longest_streak: data.longest ?? 0,
         total_responses: data.total ?? 0,
       });
-      setTodayCount((n) => n + 1);
-
-      setTextareaHidden(true);
-      setPhase('revealing');
-
-      // Start fetching the reflection immediately (parallel with the fade).
-      const reflectionPromise = fetchReflection(responseId, authToken);
-      const othersPromise = fetch(
-        `/api/practice/others?questionId=${encodeURIComponent(question.id)}`,
-        { headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined },
-      )
-        .then((r) => r.json())
-        .then((d) => (Array.isArray(d?.others) ? (d.others as Other[]) : []))
-        .catch(() => [] as Other[]);
-
-      const [text, freshOthers] = await Promise.all([reflectionPromise, othersPromise]);
-      setMyReflection(text);
-      setOthers(freshOthers);
-
-      await new Promise((r) => setTimeout(r, 800));
-      setReflectionMounted(true);
-      await new Promise((r) => setTimeout(r, 700));
-      setStreakMounted(true);
-      await new Promise((r) => setTimeout(r, 500));
-      setCommonsMounted(true);
       setPhase('complete');
     } catch {
-      if (question) saveDraft(draftStorage(), question.id, draft);
-      setSubmitError(submitErrorMessage(0));
-      setPhase('composing');
-    }
-  }
-
-  async function fetchReflection(responseId: string, token: string | null): Promise<string> {
-    try {
-      const res = await fetch('/api/practice/reflect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ responseId }),
-      });
-      if (!res.ok || !res.body) return '';
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let accumulated = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const evt = JSON.parse(line.slice(6));
-            if (typeof evt.delta === 'string') accumulated += evt.delta;
-          } catch {}
-        }
+      if (!controller.signal.aborted) {
+        setSubmitError(submitErrorMessage(0));
+        setPhase('composing');
       }
-      return accumulated.trim();
-    } catch {
-      return '';
+    } finally {
+      saving.current = false;
     }
   }
 
@@ -340,10 +268,6 @@ export default function PracticePage() {
 
   const charCount = draft.length;
   const canSubmit = draft.trim().length > 0 && phase === 'composing';
-  const showReflection =
-    phase === 'complete' || (phase === 'revealing' && reflectionMounted);
-  const showStreak = phase === 'complete' || (phase === 'revealing' && streakMounted);
-  const showCommons = phase === 'complete' || (phase === 'revealing' && commonsMounted);
   const loggedOut = !memberId;
 
   const streakNumber = streak?.current_streak ?? 0;
@@ -525,7 +449,7 @@ export default function PracticePage() {
               )}
 
               {/* TEXTAREA SECTION */}
-              {!textareaHidden && phase === 'composing' && (
+              {phase === 'composing' && (
                 <div
                   style={{
                     width: '100%',
@@ -638,7 +562,7 @@ export default function PracticePage() {
                           transition: 'opacity 150ms ease',
                         }}
                       >
-                        COMMIT YOUR ANSWER
+                        Save answer
                       </button>
                     )}
                   </div>
@@ -654,46 +578,14 @@ export default function PracticePage() {
                           Already a member? Sign in
                         </Link>
                       </span>
-                    ) : null}
+                    ) : (
+                      <span>Save your answer to your account. You can share a thought separately in a Circle.</span>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* FOOTNOTE: N explorers answered today */}
-              {phase === 'composing' && (
-                <p
-                  style={{
-                    fontFamily: CINZEL,
-                    fontSize: '12px',
-                    letterSpacing: '0.25em',
-                    color: '#888',
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    marginTop: '48px',
-                    margin: '48px 0 0',
-                  }}
-                >
-                  {todayCount > 0
-                    ? `${todayCount} EXPLORER${todayCount === 1 ? '' : 'S'} ANSWERED TODAY`
-                    : 'BE THE FIRST EXPLORER TODAY'}
-                </p>
-              )}
             </div>
-
-            {/* Revealing — contemplation dot while the reflection buffers */}
-            {phase === 'revealing' && !reflectionMounted && (
-              <section className="flex flex-col items-center py-12">
-                <span
-                  className="inline-block rounded-full animate-pulse"
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    background: '#fcd34d',
-                    boxShadow: '0 0 16px rgba(252, 211, 77, 0.55)',
-                  }}
-                />
-              </section>
-            )}
 
             {/* Submitting indicator */}
             {phase === 'submitting' && (
@@ -713,7 +605,7 @@ export default function PracticePage() {
             )}
 
             {/* BEAT 3 — REFLECTION */}
-            {showReflection && myReflection && (
+            {phase === 'complete' && myReflection && (
               <section
                 className="flex flex-col items-center gap-4 py-8"
                 style={{
@@ -765,7 +657,7 @@ export default function PracticePage() {
             )}
 
             {/* BEAT 4 — STREAK */}
-            {showStreak && streak && (
+            {phase === 'complete' && streak && (
               <section
                 className="flex flex-col items-center py-10"
                 style={{ animation: 'fadeUp 600ms ease-out both' }}
@@ -830,75 +722,11 @@ export default function PracticePage() {
               </section>
             )}
 
-            {/* BEAT 5 — COMMONS */}
-            {showCommons && others.length > 0 && (
-              <section
-                className="flex flex-col items-center py-10"
-                style={{ animation: 'fadeUp 600ms ease-out both' }}
-              >
-                <div
-                  style={{
-                    fontFamily: CINZEL,
-                    fontSize: '12px',
-                    letterSpacing: '0.3em',
-                    color: '#c9a84c',
-                    opacity: 0.7,
-                    marginBottom: '1.5rem',
-                  }}
-                >
-                  OTHER EXPLORERS TODAY
-                </div>
-                <div className="flex flex-col gap-6 w-full" style={{ maxWidth: '560px' }}>
-                  {others.map((o) => (
-                    <article key={o.id} className="flex flex-col gap-2">
-                      <div
-                        style={{
-                          fontFamily: CORMORANT,
-                          fontSize: '13px',
-                          fontStyle: 'italic',
-                          color: '#9a8f7a',
-                        }}
-                      >
-                        {o.display_name}
-                      </div>
-                      <blockquote
-                        className="border-l pl-4"
-                        style={{
-                          borderColor: 'rgba(146, 64, 14, 0.35)',
-                          fontFamily: CORMORANT,
-                          fontSize: '16px',
-                          color: 'rgba(255, 251, 235, 0.82)',
-                          lineHeight: 1.6,
-                          margin: 0,
-                        }}
-                      >
-                        {o.response_text}
-                      </blockquote>
-                      <div
-                        style={{
-                          fontFamily: CORMORANT,
-                          fontSize: '12px',
-                          color: '#57534e',
-                        }}
-                      >
-                        {timeAgo(o.created_at)}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-                <Link
-                  href="/practice/today"
-                  className="mt-8"
-                  style={{
-                    fontFamily: CINZEL,
-                    fontSize: '12px',
-                    letterSpacing: '0.3em',
-                    color: '#c9a84c',
-                    textDecoration: 'none',
-                    opacity: 0.75,
-                  }}
-                >
-                  SEE ALL RESPONSES →
+            {phase === 'complete' && (
+              <section style={{ display: 'grid', justifyItems: 'center', margin: '2rem 1rem 3rem', textAlign: 'center' }}>
+                <p style={{ color: '#d0c5b4' }}>Take the question further with other readers.</p>
+                <Link href="/circles" prefetch={false} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, color: '#fde68a', textUnderlineOffset: '.2em' }}>
+                  Find a Circle
                 </Link>
               </section>
             )}

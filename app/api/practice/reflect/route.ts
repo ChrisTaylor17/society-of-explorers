@@ -136,6 +136,9 @@ function sseError(message: string, status = 400) {
 }
 
 export async function POST(req: NextRequest) {
+  if (process.env.DAILY_PRACTICE_AI_REFLECTIONS_ENABLED !== 'true') {
+    return sseError('New AI reflections are paused.', 503);
+  }
   let body: unknown;
 
   try {
@@ -299,7 +302,7 @@ export async function POST(req: NextRequest) {
             thinker_id: thinkerId,
             member_id: response.member_id || null,
             reflection_text: clean,
-            is_public: true,
+            is_public: false,
           }, { onConflict: 'response_id' });
 
           // --- MEMORY LAYER (non-fatal) ---

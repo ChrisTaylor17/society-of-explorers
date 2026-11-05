@@ -170,7 +170,6 @@ const helpers = {
   dailyPracticeEmail: read('lib/email/dailyPractice.ts'),
   publicLeadCapture: read('lib/leads/publicLeadCapture.ts'),
   todayQuestion: read('lib/practice/todayQuestion.ts'),
-  practiceOthers: read('lib/practice/others.ts'),
   community: read('lib/community/getCommunity.ts'),
   governance: read('lib/governance/hats.ts'),
   liveScheduler: read('lib/live/scheduler.ts'),
@@ -277,7 +276,8 @@ const checks = [
       routes.cronDailyEmail.indexOf('DAILY_PRACTICE_EMAIL_NOTIFICATIONS_ENABLED') <
         routes.cronDailyEmail.indexOf('getSupabaseAdmin()') &&
       routes.cronDailyEmail.indexOf('DAILY_PRACTICE_EMAIL_NOTIFICATIONS_ENABLED') <
-        routes.cronDailyEmail.indexOf('getOrCreateTodayQuestion()') &&
+        routes.cronDailyEmail.indexOf('getOrCreateTodayQuestion({ allowProvider: true })') &&
+      routes.cronDailyEmail.includes('getOrCreateTodayQuestion({ allowProvider: true })') &&
       routes.cronDailyEmail.indexOf('getResend()') > routes.cronDailyEmail.indexOf('no-matching-subs') &&
       routes.practiceDailyEmail.includes(
         "process.env.DAILY_PRACTICE_FOLLOWUP_EMAIL_NOTIFICATIONS_ENABLED === 'true'",
@@ -850,26 +850,21 @@ const checks = [
         routes.practiceResponses,
         routes.practiceStreak,
         routes.practiceOthers,
-        helpers.practiceOthers,
       ].every(lacksModuleScopeClients) &&
       [
         routes.practiceMyToday,
         routes.practiceRespond,
-        routes.practiceResponses,
         routes.practiceStreak,
-        helpers.practiceOthers,
       ].every((source) => source.includes('getSupabaseAdmin()')) &&
       routes.practiceMyToday.includes('privateJson') &&
       !routes.practiceMyToday.includes('NextResponse') &&
-      routes.practiceResponses.includes('privateJson') &&
-      !routes.practiceResponses.includes('NextResponse') &&
-      routes.practiceResponses.indexOf('!daysParam && !questionId') <
-        routes.practiceResponses.indexOf('getSupabaseAdmin()') &&
-      !routes.practiceResponses.includes('map(async') &&
-      routes.practiceOthers.includes('privateJson') &&
-      routes.practiceOthers.includes('getAuthenticatedMember(req)') &&
-      !routes.practiceOthers.includes('NextResponse') &&
-      routes.practiceOthers.indexOf('!questionId') < routes.practiceOthers.indexOf('getAuthenticatedMember(req)') &&
+      [routes.practiceResponses, routes.practiceOthers].every((source) =>
+        source.includes('privateJson') && source.includes('status: 410') &&
+        !source.includes('getSupabaseAdmin') && !source.includes('NextResponse'),
+      ) &&
+      routes.practiceMyToday.indexOf('if (!auth) return privateJson') <
+        routes.practiceMyToday.indexOf("from('question_responses')") &&
+      routes.practiceMyToday.includes(".eq('member_id', memberId)") &&
       routes.practiceRespond.includes('privateJson') &&
       routes.practiceRespond.includes('member_id: auth.memberId') &&
       routes.practiceRespond.includes(".eq('member_id', auth.memberId)") &&
@@ -878,8 +873,9 @@ const checks = [
       routes.practiceRespond.indexOf('getAuthenticatedMember(req)') <
         routes.practiceRespond.indexOf('getSupabaseAdmin()') &&
       pages.practice.includes('/api/practice/respond') &&
-      pages.practice.includes('getSupabaseAccessToken') &&
-      pages.practice.includes('Authorization: `Bearer ${authToken}`') &&
+      pages.practice.includes("'X-SOE-Practice-Owner': memberId") &&
+      routes.practiceRespond.indexOf("req.headers.get('x-soe-practice-owner')") <
+        routes.practiceRespond.indexOf('getSupabaseAdmin()') &&
       !pages.practice.includes('responseText: draft.trim(),\n          memberId') &&
       !routes.practiceRespond.includes('NextResponse') &&
       !routes.practiceRespond.includes('as any') &&
@@ -1623,6 +1619,9 @@ const checks = [
       routes.feed.indexOf('parseLimit') < routes.feed.indexOf('getSupabaseAdmin()') &&
       routes.feed.includes('Failed to load community feed') &&
       routes.feedPulse.includes('Failed to load community pulse') &&
+      routes.feedPulse.includes("from('daily_questions')") &&
+      !routes.feedPulse.includes("from('question_responses')") &&
+      !routes.feedPulse.includes("from('practice_reflections')") &&
       [routes.feed, routes.feedPulse].every(
         (source) => !source.includes('NextResponse') && !source.includes('as any') && !source.includes(': any'),
       ),
@@ -2176,7 +2175,7 @@ const checks = [
     name: 'private AI context routes use lazy Anthropic and Supabase admin clients',
     ok:
       [routes.practiceReflect, routes.insights, routes.matchGenerate].every(lacksModuleScopeClients) &&
-      [routes.practiceReflect, routes.insights, routes.matchGenerate].every(
+      [routes.practiceReflect, routes.insights].every(
         (source) => source.includes('createAnthropicClient()') && source.includes('resolveClaudeModel('),
       ) &&
       [routes.practiceReflect, routes.insights, routes.matchGenerate].every((source) =>
@@ -2187,6 +2186,9 @@ const checks = [
       routes.practiceReflect.includes('Cannot generate reflection for another member') &&
       routes.practiceReflect.includes('response.member_id !== auth.memberId') &&
       routes.practiceReflect.includes('privateEventStreamHeaders') &&
+      routes.practiceReflect.indexOf('DAILY_PRACTICE_AI_REFLECTIONS_ENABLED') <
+        routes.practiceReflect.indexOf('getSupabaseAdmin()') &&
+      routes.practiceReflect.includes('is_public: false') &&
       helpers.routeError.includes('export function privateEventStreamHeaders') &&
       appendVaryPattern('Cookie').test(helpers.routeError) &&
       appendVaryPattern('Authorization').test(helpers.routeError) &&
@@ -2204,19 +2206,17 @@ const checks = [
       !routes.insights.includes('episodesError.message') &&
       routes.matchGenerate.includes('privateJson') &&
       !routes.matchGenerate.includes('NextResponse') &&
-      routes.matchGenerate.includes('parseMatchPrompts') &&
+      routes.matchGenerate.includes('SHARED_PRACTICE_PROMPTS') &&
+      !routes.matchGenerate.includes('response_text') &&
       routes.matchGenerate.includes('Failed to create match') &&
       routes.matchGenerate.includes('member_a: memberId') &&
       routes.matchGenerate.includes('member_b: bestMemberId') &&
       routes.matchGenerate.indexOf('getAuthenticatedMember(req)') <
         routes.matchGenerate.indexOf('getSupabaseAdmin()') &&
-      routes.matchGenerate.indexOf('getAuthenticatedMember(req)') <
-        routes.matchGenerate.indexOf('createAnthropicClient()') &&
-      routes.matchGenerate.indexOf("if ((member?.total_responses || 0) < 7)") <
-        routes.matchGenerate.indexOf('createAnthropicClient()') &&
+      !routes.matchGenerate.includes('createAnthropicClient') &&
       !routes.matchGenerate.includes('console.error') &&
-      pages.practice.includes('fetchReflection(responseId, authToken)') &&
-      pages.practice.includes('Authorization: `Bearer ${token}`') &&
+      !pages.practice.includes('/api/practice/reflect') &&
+      !pages.practice.includes('/api/practice/others') &&
       pages.match.includes("fetch('/api/match/generate'") &&
       pages.match.includes("'Authorization': `Bearer ${authToken}`"),
   },
