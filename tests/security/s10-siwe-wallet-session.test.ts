@@ -5,7 +5,8 @@
 // These tests use the real siwe + ethers libraries with a throwaway random key (no network, nothing real) and
 // a PostgREST-faithful fake DB (.single() fails on 0 or 2+ rows). Each case failed on the release before this fix.
 import { test, expect, beforeEach, afterEach } from 'bun:test';
-import { installMocks, resetDb, makeReq, ADA, JULES, db } from './fakes';
+import { installMocks, resetDb, ADA, JULES, db } from './fakes';
+import { signInReq as makeReq } from './auth-request';
 
 installMocks();
 const { Wallet, Signature, verifyMessage } = await import('ethers');

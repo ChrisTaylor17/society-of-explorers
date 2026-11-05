@@ -7,28 +7,28 @@
   "scope": "Registered native App signup, distinct confirmation resend, explicit native PKCE callback continuation and isolated password recovery; ordinary sign-in remains required for members.",
   "proofs": [
     {
-      "path": "verification/web/evidence/native-email-auth-unit.json",
+      "path": "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-unit.json",
       "sha256": "c895b48dc0fa3773ae0b8d5cb8a24df674e6775c7cb929bcf8f550ba018aaf6b",
       "tests": 56,
       "stories": null,
       "syntheticRequests": null
     },
     {
-      "path": "verification/web/evidence/native-email-auth-browser.json",
+      "path": "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-browser.json",
       "sha256": "c225f881817db5876e7315392377cd6c6c26a126bd48f380a909cb8150c248d1",
       "tests": null,
       "stories": 21,
       "syntheticRequests": 50
     },
     {
-      "path": "verification/web/evidence/native-email-bridge-policy.json",
+      "path": "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-bridge-policy.json",
       "sha256": "1f0bf04e962401e364e0e12c76fac801944dc29f702a44fe06d68e1f6a346427",
       "tests": 33,
       "stories": null,
       "syntheticRequests": null
     },
     {
-      "path": "verification/web/evidence/native-email-auth-static.json",
+      "path": "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-static.json",
       "sha256": "0a871004e4e1e791dbdac56019c5ecbcb0ca9be889fbcadf5ac79eb68d7c7db7",
       "tests": null,
       "stories": null,
@@ -393,22 +393,29 @@
     "node_modules/typescript/lib/_tsc.js": "e8f349eabd48486bdb2bf9dc1a00c89d58297270c54b745838879e2859194419"
   },
   "evidenceSha256": {
-    "verification/web/evidence/native-email-auth-unit.log": "aa7f656c014d3f35c297693d7e23df217324b55af7cbcf3cf38180e25ae178d7",
-    "verification/web/evidence/native-email-auth-unit-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/native-email-auth-unit.json": "c895b48dc0fa3773ae0b8d5cb8a24df674e6775c7cb929bcf8f550ba018aaf6b",
-    "verification/web/evidence/native-email-auth-fixture/page.js": "7e24940d126b3f3c0b9a8a53dff96306043d3125bde6fc8cb6b8ee14028dba7c",
-    "verification/web/evidence/native-email-auth-fixture/source-manifest.json": "0d972aab9e9f0e2854c11925256919d09dc033f378d840f2b7e6fdcf8901246c",
-    "verification/web/evidence/native-email-auth-320.png": "640f6ad271ea54594bed3160784d9d9a23ff458cdafd7bd2decea700250c7ba3",
-    "verification/web/evidence/native-email-auth-prior-1793855451907.json": "0600d6bb078bb88a5be7fbfb09fbc7609c4c0f7351f9ca5b0ac9120e39b37112",
-    "verification/web/evidence/native-email-auth-browser.json": "c225f881817db5876e7315392377cd6c6c26a126bd48f380a909cb8150c248d1",
-    "verification/web/evidence/native-email-bridge-policy.log": "7568d2903bde6e7bb636d4fe03a299be2a057ecf2b5efcfa91ce25d97d3a4d16",
-    "verification/web/evidence/native-email-bridge-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/native-email-bridge-policy.json": "1f0bf04e962401e364e0e12c76fac801944dc29f702a44fe06d68e1f6a346427",
-    "verification/web/evidence/native-email-auth-web-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/native-email-auth-portable-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/native-email-auth-adapter-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/native-email-auth-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/native-email-auth-static.json": "0a871004e4e1e791dbdac56019c5ecbcb0ca9be889fbcadf5ac79eb68d7c7db7",
-    "verification/web/evidence/native-email-auth-browser.log": "3de0fdbe391c6190a8d4e5884c215df20e2dac0527f604846570cdc6c3e3b169"
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-unit.log": "aa7f656c014d3f35c297693d7e23df217324b55af7cbcf3cf38180e25ae178d7",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-unit-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-unit.json": "c895b48dc0fa3773ae0b8d5cb8a24df674e6775c7cb929bcf8f550ba018aaf6b",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-fixture/page.js": "7e24940d126b3f3c0b9a8a53dff96306043d3125bde6fc8cb6b8ee14028dba7c",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-fixture/source-manifest.json": "0d972aab9e9f0e2854c11925256919d09dc033f378d840f2b7e6fdcf8901246c",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-320.png": "640f6ad271ea54594bed3160784d9d9a23ff458cdafd7bd2decea700250c7ba3",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-prior-1793855451907.json": "0600d6bb078bb88a5be7fbfb09fbc7609c4c0f7351f9ca5b0ac9120e39b37112",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-browser.json": "c225f881817db5876e7315392377cd6c6c26a126bd48f380a909cb8150c248d1",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-bridge-policy.log": "7568d2903bde6e7bb636d4fe03a299be2a057ecf2b5efcfa91ce25d97d3a4d16",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-bridge-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-bridge-policy.json": "1f0bf04e962401e364e0e12c76fac801944dc29f702a44fe06d68e1f6a346427",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-web-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-portable-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-adapter-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-static.json": "0a871004e4e1e791dbdac56019c5ecbcb0ca9be889fbcadf5ac79eb68d7c7db7",
+    "verification/web/evidence/checkpoint-fcafaff/files/verification/web/evidence/native-email-auth-browser.log": "3de0fdbe391c6190a8d4e5884c215df20e2dac0527f604846570cdc6c3e3b169"
+  },
+  "historicalCheckpoint": {
+    "commit": "fcafaff39db6b71b0fd2fbe806139611e7772aa0",
+    "originalReceipt": "verification/web/evidence/checkpoint-fcafaff/native-email-auth-verification.original.json",
+    "originalReceiptSha256": "1c62fe02fc3b12953943435e9daf76c1474bfec7662528c77fe4506ca19cde90",
+    "evidenceFiles": 17,
+    "note": "Historical acceptance for this commit only; source hashes do not certify later edits."
   }
 }

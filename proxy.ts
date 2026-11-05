@@ -43,9 +43,9 @@ function applyPrivateRouteHeaders(response: NextResponse) {
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Recovery URLs can carry one-time codes. Protect the document and its
+  // Email callback URLs can carry one-time codes. Protect the document and its
   // subresource referrers before the client captures and scrubs the URL.
-  if (pathname === '/auth/recovery') return applyPrivateRouteHeaders(NextResponse.next());
+  if (pathname === '/auth/recovery' || pathname === '/auth/confirm' || pathname === '/auth/complete' || pathname === '/login') return applyPrivateRouteHeaders(NextResponse.next());
 
   // Protected routes
   const protectedRoutes = [
@@ -87,6 +87,9 @@ export function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/login',
+    '/auth/confirm',
+    '/auth/complete',
     '/auth/recovery',
     '/dashboard/:path*',
     '/salon/:path*',

@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ordinaryMethods = new Set(['oauth', 'email/signup']);
+const ordinaryMethods = new Set(['oauth']);
 
 /** Purpose routing only. The caller must also verify this exact token with
  * the configured provider before releasing any cookie or selecting an account. */

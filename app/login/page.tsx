@@ -1,368 +1,165 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { getMemberSession, setWalletCookie } from '@/lib/auth/getSession';
-import { confirmSupabaseProvider, notifyAuthProviderChanged } from '@/lib/auth/providerSelection';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import {
-  DEFAULT_NEXT_PATH,
-  MIN_PASSWORD_LENGTH,
-  friendlyAuthError,
-  getSafeNextPath,
-  isExistingAccountSignup,
-  modeFromSearch,
-  validateCredentials,
-} from '@/lib/auth/loginForm';
+import { createBrowserEmailSignup, type EmailSignup, type EmailSignupModel } from '@/lib/auth/emailSignup';
+import { createBrowserWebAccount, type WebAccountModel } from '@/lib/auth/webAccount';
+import { getSafeNextPath } from '@/lib/auth/loginForm';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
+import styles from './login.module.css';
 
-const gold = '#c9a84c';
-const parchment = '#E8DCC8';
-const muted = '#9a8f7a';
+type Mode = 'signin' | 'signup' | 'resend';
+type Retire = { current: (() => void) | null };
+type Lifecycle = { activity(active: boolean): void; connectivity(online: boolean): void };
+type WebAccount = ReturnType<typeof createBrowserWebAccount>;
 
-// Visually hidden but read by screen readers.
-const srOnly: React.CSSProperties = {
-  position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px',
-  overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0,
-};
-
-type EthereumProvider = {
-  request(args: { method: string; params?: readonly unknown[] }): Promise<unknown>;
-};
-
-function hasErrorCode(error: unknown, code: number): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
+function listen(controller: Lifecycle, clear: () => void) {
+  const focus = () => controller.activity(document.visibilityState !== 'hidden');
+  const blur = () => { clear(); controller.activity(false); };
+  const visibility = () => { if (document.visibilityState === 'hidden') blur(); else focus(); };
+  const offline = () => { clear(); controller.connectivity(false); };
+  const online = () => controller.connectivity(true);
+  window.addEventListener('focus', focus); window.addEventListener('blur', blur);
+  document.addEventListener('visibilitychange', visibility);
+  window.addEventListener('offline', offline); window.addEventListener('online', online);
+  controller.connectivity(navigator.onLine); controller.activity(document.visibilityState !== 'hidden' && document.hasFocus());
+  return () => {
+    window.removeEventListener('focus', focus); window.removeEventListener('blur', blur);
+    document.removeEventListener('visibilitychange', visibility);
+    window.removeEventListener('offline', offline); window.removeEventListener('online', online);
+  };
 }
 
-function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+function SignIn({ nextPath, retireRef }: { nextPath: string; retireRef: Retire }) {
+  const router = useRouter(), connection = useRef<WebAccount | null>(null), epoch = useRef(0);
+  const [model, setModel] = useState<WebAccountModel | null>(null), [error, setError] = useState('');
+  const [email, setEmail] = useState(''), [password, setPassword] = useState('');
+  useEffect(() => {
+    let controller: WebAccount;
+    try { controller = createBrowserWebAccount({ nextPath, navigate: path => router.push(path) }); }
+    catch { let mounted = true; queueMicrotask(() => { if (mounted) setError('Sign-in is unavailable in this browser. Use a secure browser with cookies enabled.'); }); return () => { mounted = false; }; }
+    connection.current = controller;
+    const clear = () => { epoch.current++; setEmail(''); setPassword(''); };
+    const close = () => { clear(); connection.current = null; controller.close(); };
+    retireRef.current = close;
+    const off = controller.subscribe(value => {
+      epoch.current++; setModel(value);
+      // Controller emissions retire drafts, including an account change while idle.
+      setEmail(''); setPassword('');
+    });
+    const stop = listen(controller, clear);
+    return () => { off(); stop(); close(); if (retireRef.current === close) retireRef.current = null; };
+  }, [nextPath, retireRef, router]);
+  const instance = connection.current, generation = epoch.current;
+  const current = () => instance !== null && connection.current === instance && generation === epoch.current && instance.model().active && instance.model().online && instance.model().phase === model?.phase && !instance.model().busy;
+  const begin = (action: (controller: WebAccount) => void) => {
+    if (!instance || !current() || !instance.model().canSignIn) return;
+    epoch.current++; setEmail(''); setPassword(''); action(instance);
+  };
+  return <>
+    <p role="status" aria-live="polite" id="login-status">{error || model?.message || 'Preparing sign-in…'}</p>
+    <div className={styles.providers}>
+      <button type="button" disabled={!model?.canSignIn} onClick={() => begin(controller => { void controller.google(); })}>Continue with Google</button>
+      <button type="button" disabled={!model?.canSignIn} onClick={() => begin(controller => { void controller.wallet(); })}>Connect wallet</button>
+    </div>
+    {model?.canContinueWallet && <button type="button" onClick={() => {
+      if (!instance || !current() || !instance.model().canContinueWallet) return;
+      epoch.current++; void instance.continueWallet();
+    }}>Continue wallet sign-in</button>}
+    <p className={styles.divider}>or sign in with email</p>
+    <form noValidate aria-describedby="login-status" onSubmit={event => {
+      event.preventDefault(); const submittedEmail = email, submittedPassword = password;
+      begin(controller => { void controller.signIn(submittedEmail, submittedPassword); });
+    }}>
+      <label htmlFor="login-email">Email</label>
+      <input id="login-email" name="email" type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} maxLength={254} value={email} disabled={!model?.canSignIn} onChange={event => { if (current()) { epoch.current++; setEmail(event.target.value); } }} required />
+      <label htmlFor="login-password">Password</label>
+      <input id="login-password" name="password" type="password" autoComplete="current-password" maxLength={1024} value={password} disabled={!model?.canSignIn} onChange={event => { if (current()) { epoch.current++; setPassword(event.target.value); } }} required />
+      <button type="submit" disabled={!model?.canSignIn} aria-busy={model?.busy}>Sign in</button>
+    </form>
+    <p><a href="/auth/recovery">Forgot your password?</a></p>
+  </>;
 }
 
-function requestedNextPath(): string {
-  if (typeof window === 'undefined') return DEFAULT_NEXT_PATH;
-  return getSafeNextPath(new URLSearchParams(window.location.search).get('next'));
+function EmailForm({ mode, nextPath, retireRef }: { mode: 'signup' | 'resend'; nextPath: string; retireRef: Retire }) {
+  const connection = useRef<EmailSignup | null>(null), epoch = useRef(0);
+  const [model, setModel] = useState<EmailSignupModel | null>(null), [error, setError] = useState('');
+  const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [confirmation, setConfirmation] = useState('');
+  useEffect(() => {
+    let controller: EmailSignup;
+    try { controller = createBrowserEmailSignup(undefined, { kind: 'none' }, nextPath); }
+    catch { let mounted = true; queueMicrotask(() => { if (mounted) setError('Email signup is unavailable in this browser. Use a secure browser with local storage enabled.'); }); return () => { mounted = false; }; }
+    connection.current = controller;
+    const clear = () => { epoch.current++; setEmail(''); setPassword(''); setConfirmation(''); };
+    const close = () => { clear(); connection.current = null; controller.close(); };
+    retireRef.current = close;
+    const off = controller.subscribe(value => {
+      epoch.current++; setModel(value);
+      if (!value.active || !value.online || value.busy) { setEmail(''); setPassword(''); setConfirmation(''); }
+    });
+    const stop = listen(controller, clear);
+    const stopProvider = subscribeAuthProviderChanges(() => {
+      clear(); controller.activity(false);
+      controller.activity(document.visibilityState !== 'hidden' && document.hasFocus());
+    });
+    return () => { off(); stop(); stopProvider(); close(); if (retireRef.current === close) retireRef.current = null; };
+  }, [nextPath, retireRef]);
+  const instance = connection.current, generation = epoch.current;
+  const current = () => instance !== null && connection.current === instance && generation === epoch.current && instance.model().active && instance.model().online && instance.model().phase === model?.phase && !instance.model().busy;
+  const enabled = mode === 'signup' ? model?.canSignUp : model?.canResend;
+  return <>
+    <p role="status" aria-live="polite" id="signup-status">{error || model?.message || 'Preparing email confirmation…'}</p>
+    <form noValidate aria-describedby="signup-status" onSubmit={event => {
+      event.preventDefault(); if (!instance || !current() || !(mode === 'signup' ? instance.model().canSignUp : instance.model().canResend)) return;
+      const submittedEmail = email, submittedPassword = password, repeated = confirmation;
+      epoch.current++; setEmail(''); setPassword(''); setConfirmation('');
+      if (mode === 'signup') void instance.signUp(submittedEmail, submittedPassword, repeated);
+      else void instance.resend(submittedEmail);
+    }}>
+      <label htmlFor="signup-email">Email</label>
+      <input id="signup-email" name="email" type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} maxLength={254} value={email} disabled={!enabled} onChange={event => { if (current()) { epoch.current++; setEmail(event.target.value); } }} required />
+      {mode === 'signup' && <>
+        <label htmlFor="signup-password">Password</label>
+        <input id="signup-password" name="password" type="password" autoComplete="new-password" minLength={8} maxLength={1024} value={password} disabled={!enabled} onChange={event => { if (current()) { epoch.current++; setPassword(event.target.value); } }} required />
+        <label htmlFor="signup-confirmation">Confirm password</label>
+        <input id="signup-confirmation" name="confirmation" type="password" autoComplete="new-password" minLength={8} maxLength={1024} value={confirmation} disabled={!enabled} onChange={event => { if (current()) { epoch.current++; setConfirmation(event.target.value); } }} required />
+        <p className={styles.note}>Use at least eight characters.</p>
+      </>}
+      <button type="submit" disabled={!enabled} aria-busy={model?.busy}>{mode === 'signup' ? 'Create free account' : 'Resend confirmation email'}</button>
+    </form>
+    <p className={styles.note}>Open the latest email in this browser within one hour. After confirming, sign in with your email and password. If your email is already confirmed, you can sign in now.</p>
+  </>;
 }
 
-function authCallbackUrl(nextPath: string): string {
-  const callback = new URL('/auth/callback', window.location.origin);
-  callback.searchParams.set('next', nextPath);
-  return callback.toString();
-}
+const subscribeLocation = () => () => {};
+const browserSearch = () => window.location.search;
+const serverSearch = () => null;
 
 export default function LoginPage() {
-  const router = useRouter();
-  const supabase = createClient();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [walletLoading, setWalletLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const choseProvider = useRef(false);
-  const authInFlight = useRef(false);
-  const busy = loading || walletLoading || googleLoading;
-
-  function beginSignIn() {
-    if (authInFlight.current) return false;
-    authInFlight.current = true;
-    choseProvider.current = true;
-    notifyAuthProviderChanged();
-    return true;
-  }
-
-  // Links from "Start free" open the form in create-account mode.
-  useEffect(() => {
-    if (modeFromSearch(window.location.search) === 'signup') setIsSignUp(true);
-    if (new URLSearchParams(window.location.search).get('auth_error') === '1') {
-      setError('We could not finish that link. Sign in with your email and password, or request a new recovery link.');
-    }
-  }, []);
-
-  // If already authed, redirect to dashboard
-  useEffect(() => {
-    let active = true;
-
-    // Recovery ends with a deliberate password sign-in. An unrelated saved
-    // session must not skip that step or be treated as proof of the new password.
-    if (new URLSearchParams(window.location.search).get('recovery') === '1') return;
-
-    getMemberSession()
-      .then((session) => {
-        if (active && !choseProvider.current && session?.member) router.replace(requestedNextPath());
-      })
-      .catch(() => {});
-
-    return () => {
-      active = false;
-    };
-  }, [router]);
-
-  async function signInWithGoogle() {
-    if (!beginSignIn()) return;
-    setError('');
-    setMessage('');
-    setGoogleLoading(true);
-    try {
-      const nextPath = requestedNextPath();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: authCallbackUrl(nextPath) },
-      });
-      if (error) {
-        setError(friendlyAuthError(error, isSignUp ? 'signup' : 'signin'));
-        setGoogleLoading(false);
-        authInFlight.current = false;
-      }
-      // On success the browser navigates to Google; keep the button disabled.
-    } catch (err: unknown) {
-      setError(friendlyAuthError(err as { message?: string }, isSignUp ? 'signup' : 'signin'));
-      setGoogleLoading(false);
-      authInFlight.current = false;
-    }
-  }
-
-  async function handleEmailSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (loading) return;
-    setError('');
-    setMessage('');
-    const mode = isSignUp ? 'signup' : 'signin';
-    const invalid = validateCredentials(mode, email, password);
-    if (invalid) {
-      setError(invalid);
-      return;
-    }
-
-    if (!beginSignIn()) return;
-    setLoading(true);
-    try {
-      const nextPath = requestedNextPath();
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: { emailRedirectTo: authCallbackUrl(nextPath) },
-        });
-        if (error) setError(friendlyAuthError(error, mode));
-        else if (isExistingAccountSignup(data)) setError(friendlyAuthError({ code: 'user_already_exists' }, mode));
-        else if (data?.session) {
-          if (await confirmSupabaseProvider(supabase)) router.push(nextPath);
-          else setError('Unable to select this account. Please sign in again.');
-        }
-        else setMessage(`Check ${email.trim()} for a confirmation link. It opens your first question.`);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) setError(friendlyAuthError(error, mode));
-        else if (await confirmSupabaseProvider(supabase)) router.push(nextPath);
-        else setError('Unable to select this account. Please sign in again.');
-      }
-    } catch (err: unknown) {
-      setError(friendlyAuthError(err as { message?: string }, mode));
-    } finally {
-      setLoading(false);
-      authInFlight.current = false;
-    }
-  }
-
-  async function connectWallet() {
-    if (!beginSignIn()) return;
-    setWalletLoading(true);
-    setError('');
-    try {
-      const eth = (window as Window & { ethereum?: EthereumProvider }).ethereum;
-      if (!eth) { setError('MetaMask not found. Install it to continue.'); setWalletLoading(false); authInFlight.current = false; return; }
-
-      const requestedAccounts = await eth.request({ method: 'eth_requestAccounts' });
-      const accounts = Array.isArray(requestedAccounts)
-        ? requestedAccounts.filter((value): value is string => typeof value === 'string')
-        : [];
-      if (!accounts?.length) { setError('No accounts found.'); setWalletLoading(false); authInFlight.current = false; return; }
-
-      const { ethers } = await import('ethers');
-      const address = ethers.getAddress(accounts[0]);
-
-      const nonceRes = await fetch('/api/auth/nonce');
-      const { nonce } = await nonceRes.json();
-
-      const { SiweMessage } = await import('siwe');
-      const siweMsg = new SiweMessage({
-        domain: window.location.host,
-        address,
-        statement: 'Sign in to Society of Explorers.',
-        uri: window.location.origin,
-        version: '1',
-        chainId: 1,
-        nonce,
-      });
-      const msgStr = siweMsg.prepareMessage();
-      const signature = await eth.request({ method: 'personal_sign', params: [msgStr, address] });
-
-      const res = await fetch('/api/auth/siwe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msgStr, signature, address }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.verified && data.member) {
-        notifyAuthProviderChanged();
-        setWalletCookie(data.member.id);
-        router.push(requestedNextPath());
-      } else {
-        setError(data.error || 'Verification failed.');
-      }
-    } catch (error: unknown) {
-      if (hasErrorCode(error, 4001)) setError('Signature cancelled.');
-      else setError(errorMessage(error, 'Connection failed.'));
-    }
-    setWalletLoading(false);
-    authInFlight.current = false;
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <PublicNav />
-
-      <section style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '8rem 2rem 4rem' }}>
-        <div style={{ maxWidth: '400px', width: '100%' }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>SOCIETY OF EXPLORERS</div>
-            <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.5rem' }}>
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
-            </h1>
-            <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic' }}>
-              {isSignUp ? 'Begin your exploration.' : 'The thinkers are waiting.'}
-            </p>
-          </div>
-
-          {/* Auth card */}
-          <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d', padding: '2.5rem 2rem' }}>
-            {/* Google OAuth */}
-            <button
-              type="button"
-              onClick={signInWithGoogle}
-              disabled={busy}
-              aria-busy={googleLoading}
-              style={{
-                width: '100%', padding: '12px', background: 'transparent',
-                border: `1px solid ${gold}44`, color: gold,
-                fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
-                cursor: googleLoading ? 'wait' : 'pointer', marginBottom: '10px', opacity: googleLoading ? 0.5 : 1,
-              }}
-            >
-              {googleLoading ? 'OPENING GOOGLE...' : 'CONTINUE WITH GOOGLE'}
-            </button>
-
-            {/* MetaMask */}
-            <button
-              type="button"
-              onClick={connectWallet}
-              disabled={busy}
-              aria-busy={walletLoading}
-              style={{
-                width: '100%', padding: '12px',
-                background: 'linear-gradient(135deg, #0a1220, #111a2e)',
-                border: '1px solid rgba(100,150,220,0.4)', color: '#8ab0d8',
-                fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em',
-                cursor: 'pointer', opacity: walletLoading ? 0.5 : 1,
-              }}
-            >
-              {walletLoading ? 'CONNECTING...' : 'CONNECT WALLET'}
-            </button>
-
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
-              <div style={{ flex: 1, height: '1px', background: `${gold}15` }} />
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>OR</span>
-              <div style={{ flex: 1, height: '1px', background: `${gold}15` }} />
-            </div>
-
-            {/* Email form */}
-            <form onSubmit={handleEmailSubmit} noValidate aria-describedby="login-status" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <label htmlFor="login-email" style={srOnly}>Email</label>
-              <input
-                id="login-email" name="email"
-                type="email" placeholder="Email" value={email}
-                autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false}
-                aria-invalid={!!error && !email.trim()}
-                onChange={e => setEmail(e.target.value)} required
-                style={{
-                  background: '#111', border: `1px solid ${gold}22`, padding: '11px 14px',
-                  fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment,
-                  outline: 'none', width: '100%', boxSizing: 'border-box' as const,
-                }}
-              />
-              <label htmlFor="login-password" style={srOnly}>Password</label>
-              <input
-                id="login-password" name="password"
-                type="password" placeholder={isSignUp ? `Password (${MIN_PASSWORD_LENGTH}+ characters)` : 'Password'} value={password}
-                autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                minLength={isSignUp ? MIN_PASSWORD_LENGTH : undefined}
-                onChange={e => setPassword(e.target.value)} required
-                style={{
-                  background: '#111', border: `1px solid ${gold}22`, padding: '11px 14px',
-                  fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment,
-                  outline: 'none', width: '100%', boxSizing: 'border-box' as const,
-                }}
-              />
-
-              <div id="login-status" aria-live="polite">
-                {error && <div role="alert" style={{ fontSize: '14px', color: '#e07070', textAlign: 'center' }}>{error}</div>}
-                {message && <div role="status" style={{ fontSize: '14px', color: gold, textAlign: 'center' }}>{message}</div>}
-              </div>
-
-              <button
-                type="submit" disabled={busy} aria-busy={loading}
-                style={{
-                  fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em',
-                  color: '#000', background: gold, border: 'none', padding: '12px',
-                  cursor: 'pointer', opacity: loading ? 0.5 : 1,
-                }}
-              >
-                {loading ? (isSignUp ? 'CREATING...' : 'ENTERING...') : isSignUp ? 'CREATE FREE ACCOUNT' : 'SIGN IN'}
-              </button>
-            </form>
-
-            {!isSignUp && (
-              <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '14px' }}>
-                <a href="/auth/recovery" style={{ color: gold }}>Forgot your password?</a>
-              </p>
-            )}
-
-            {/* Toggle */}
-            <div style={{ fontSize: '13px', color: muted, textAlign: 'center', marginTop: '1.5rem' }}>
-              {isSignUp ? (
-                <>Have an account?{' '}
-                  <button type="button" disabled={busy} onClick={() => { setIsSignUp(false); setError(''); setMessage(''); }}
-                    style={{ color: gold, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>
-                    Sign in
-                  </button>
-                </>
-              ) : (
-                <>New here?{' '}
-                  <button type="button" disabled={busy} onClick={() => { setIsSignUp(true); setError(''); setMessage(''); }}
-                    style={{ color: gold, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>
-                    Create account
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Footer note */}
-          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <p style={{ fontSize: '13px', color: muted, fontStyle: 'italic' }}>
-              Free Explorer accounts get 3 Socrates exchanges. <a href="/join" style={{ color: gold, textDecoration: 'none' }}>See all tiers →</a>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <PublicFooter />
-    </div>
-  );
+  const search = useSyncExternalStore(subscribeLocation, browserSearch, serverSearch);
+  const [chosenMode, setMode] = useState<Mode | null>(null), [noticeDismissed, setNoticeDismissed] = useState(false);
+  const retireRef = useRef<(() => void) | null>(null), query = new URLSearchParams(search ?? '');
+  const mode: Mode = chosenMode ?? (query.get('mode') === 'signup' ? 'signup' : query.get('mode') === 'resend' ? 'resend' : 'signin');
+  const nextPath = getSafeNextPath(query.get('next')), ready = search !== null;
+  const notice = noticeDismissed ? '' : query.get('auth_error') === '1' ? 'We could not finish that sign-in link. Please sign in again.'
+    : query.get('confirmation') === '1' ? 'Email confirmation finished. Sign in to continue.'
+      : query.get('recovery') === '1' ? 'Sign in with your chosen password to continue.' : '';
+  const changeMode = (next: Mode) => { retireRef.current?.(); retireRef.current = null; setNoticeDismissed(true); setMode(next); };
+  return <div className={styles.page}>
+    <PublicNav checkSession={false} />
+    <main className={styles.main}><section className={styles.card} aria-labelledby="login-title">
+      <p className={styles.brand}>Society of Explorers</p>
+      <h1 id="login-title">{mode === 'signup' ? 'Create an account' : mode === 'resend' ? 'Confirm your email' : 'Welcome back'}</h1>
+      {notice && <p role="status">{notice}</p>}
+      {ready ? mode === 'signin' ? <SignIn key="signin" nextPath={nextPath} retireRef={retireRef} /> : <EmailForm key={mode} mode={mode} nextPath={nextPath} retireRef={retireRef} /> : <p role="status">Preparing your account options…</p>}
+      <div className={styles.modes} aria-label="Account options">
+        {mode !== 'signin' && <button type="button" onClick={() => changeMode('signin')}>Sign in instead</button>}
+        {mode !== 'signup' && <button type="button" onClick={() => changeMode('signup')}>Create account</button>}
+        {mode !== 'resend' && <button type="button" onClick={() => changeMode('resend')}>Resend confirmation</button>}
+      </div>
+      <p className={styles.note}>Your account opens the community, reading, and discussion spaces. <a href="/join">Explore membership</a>.</p>
+    </section></main>
+    <PublicFooter />
+  </div>;
 }

@@ -7,6 +7,7 @@ const require = createRequire(import.meta.url);
 const { NextRequest } = require('next/server');
 const subject = '11111111-1111-4111-8111-111111111111';
 const other = '22222222-2222-4222-8222-222222222222';
+const intent = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 function data(method = 'oauth', claims = {}) {
   const now = Math.floor(Date.now() / 1000);
   const payload = { sub: subject, exp: now + 3600, amr: [{ method, timestamp: now }], ...claims };
@@ -40,23 +41,27 @@ function fixture(result = data(), options = {}) {
 }
 async function run(result, options, query = 'code=synthetic-code&next=%2Fpractice') {
   const f = fixture(result, options);
-  const response = await f.GET(new NextRequest('https://soe.invalid/auth/callback?' + query));
+  const response = await f.GET(new NextRequest('https://soe.invalid/auth/callback?' + query + '&intent=' + intent, { headers: { cookie: 'soe_auth_intent=' + intent + '; soe_auth_pkce_intent=' + intent } }));
   assert.equal(response.headers.get('cache-control'), 'private, no-store');
   assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
   assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
   return { ...f, response };
 }
 function rejected(response) {
-  assert.equal(response.headers.get('location'), 'https://soe.invalid/login?recovery=1&auth_error=1');
+  const location = new URL(response.headers.get('location')); assert.equal(location.pathname, '/login'); assert.equal(location.searchParams.get('auth_error'), '1');
   assert.equal(response.headers.get('set-cookie'), null);
 }
 
-for (const method of ['oauth', 'email/signup']) test(`ordinary ${method} callback publishes cookies only after exact-token user proof`, async () => {
+for (const method of ['oauth']) test(`ordinary ${method} callback publishes cookies only after exact-token user proof`, async () => {
   const { response, calls } = await run(data(method));
   assert.deepEqual(calls, ['create', 'exchange', 'proof']);
-  assert.equal(response.headers.get('location'), 'https://soe.invalid/auth/complete?next=%2Fpractice');
+  assert.equal(response.headers.get('location'), 'https://soe.invalid/auth/complete?next=%2Fpractice&intent=' + intent);
   assert.equal(response.cookies.get('sb-test-auth-token')?.value, 'synthetic-session');
   assert.equal(response.cookies.get('soe_auth_provider')?.value, 'supabase');
+});
+
+test('email signup confirmation cannot publish ordinary cookies through the OAuth callback', async () => {
+  const { response, calls } = await run(data('email/signup')); rejected(response); assert.deepEqual(calls, ['create', 'exchange']);
 });
 
 test('recovery suffix never publishes cookies even with an ordinary AMR', async () => {
@@ -114,19 +119,21 @@ test('ambiguous, oversized, error and recovery callbacks do not initialize an au
 
 test('ordinary callback keeps safe return paths and refuses external destinations', async () => {
   const { response } = await run(data(), {}, 'code=synthetic-code&next=https%3A%2F%2Fevil.invalid');
-  assert.equal(response.headers.get('location'), 'https://soe.invalid/auth/complete?next=%2Fdashboard');
+  assert.equal(response.headers.get('location'), 'https://soe.invalid/auth/complete?next=%2Fdashboard&intent=' + intent);
   const empty = await run(data(), {}, 'next=%2Fpractice');
-  assert.equal(empty.response.headers.get('location'), 'https://soe.invalid/practice');
+  rejected(empty.response); assert.equal(new URL(empty.response.headers.get('location')).searchParams.get('next'), '/practice');
   assert.equal(empty.response.headers.get('set-cookie'), null);
   assert.deepEqual(empty.calls, []);
 });
 
-test('recovery document receives private cache and no-referrer headers before client execution', () => {
+test('account documents receive private cache and no-referrer headers before client execution', () => {
   const { proxy, config } = sourceLoader()('proxy.ts');
-  assert(config.matcher.includes('/auth/recovery'));
-  const response = proxy(new NextRequest('https://soe.invalid/auth/recovery?flow=synthetic&code=synthetic'));
-  assert.match(response.headers.get('cache-control'), /no-store/);
-  assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
-  assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
-  assert.equal(response.headers.get('set-cookie'), null);
+  for (const pathname of ['/auth/recovery', '/auth/confirm', '/auth/complete', '/login']) {
+    assert(config.matcher.includes(pathname));
+    const response = proxy(new NextRequest('https://soe.invalid' + pathname + '?flow=synthetic&code=synthetic'));
+    assert.match(response.headers.get('cache-control'), /no-store/);
+    assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+    assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive');
+    assert.equal(response.headers.get('set-cookie'), null);
+  }
 });

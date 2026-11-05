@@ -7,6 +7,8 @@ import { SIWE_NONCE_COOKIE, verifyNonceCookie } from '@/lib/auth/siweNonce'
 import { selectAuthProvider } from '@/lib/auth/provider'
 import { canonicalizeSignature, shortAddress } from '@/lib/auth/siweSignature'
 import { findOrCreateWalletMember, isDbUnreachable } from '@/lib/auth/walletMember'
+import { AUTH_INTENT_COOKIE, parseBrowserIntent } from '@/lib/auth/browserIntent'
+import { authWriteOriginAllowed, readAuthJson } from '@/lib/auth/request'
 
 // siwe rejects with a SiweResponse ({ success, error: SiweError { type } }), not an Error.
 function errorMessage(error: unknown): string {
@@ -21,24 +23,22 @@ function logFailure(reason: string, address: string | null, extra: Record<string
 }
 
 export async function POST(req: NextRequest) {
-  let body: { message?: unknown; signature?: unknown; address?: unknown }
-
-  try {
-    body = (await req.json()) as { message?: unknown; signature?: unknown; address?: unknown }
-  } catch {
-    return privateJson({ error: 'Invalid JSON body' }, { status: 400 })
-  }
+  if (!authWriteOriginAllowed(req)) return privateJson({ error: 'Request refused.' }, { status: 403 })
+  const body = await readAuthJson(req)
+  if (!body || Object.keys(body).sort().join(',') !== 'address,intent,message,signature') return privateJson({ error: 'Invalid sign-in request.' }, { status: 400 })
+  const intent = parseBrowserIntent(body.intent)
+  if (!intent || req.cookies.get(AUTH_INTENT_COOKIE)?.value !== intent) return privateJson({ error: 'Start wallet sign-in again.' }, { status: 409 })
 
   const message = typeof body.message === 'string' ? body.message : null
   const signature = typeof body.signature === 'string' ? body.signature : null
   const address = typeof body.address === 'string' ? body.address : null
 
-  if (!message || !signature || !address) {
+  if (!message || message.length > 2048 || !signature || signature.length > 512 || !address || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
     return privateJson({ error: 'message, signature, and address are required' }, { status: 400 })
   }
 
   // S3: only a nonce this server signed (and that has not expired) is accepted.
-  const nonce = await verifyNonceCookie(req.cookies.get(SIWE_NONCE_COOKIE)?.value)
+  const nonce = await verifyNonceCookie(req.cookies.get(SIWE_NONCE_COOKIE)?.value, intent)
 
   try {
     if (!nonce) {
@@ -46,10 +46,11 @@ export async function POST(req: NextRequest) {
     }
 
     const siweMessage = new SiweMessage(message)
-    const domain =
-      req.headers.get('x-forwarded-host') ||
-      req.headers.get('host') ||
-      undefined
+    const origin = new URL(req.url)
+    const domain = origin.host
+    if (siweMessage.uri !== origin.origin || siweMessage.address.toLowerCase() !== address.toLowerCase()) {
+      return privateJson({ error: 'Invalid wallet sign-in request.' }, { status: 400 })
+    }
     const canonical = canonicalizeSignature(signature)
     let verified: Awaited<ReturnType<typeof siweMessage.verify>>
     try {
@@ -96,8 +97,8 @@ export async function POST(req: NextRequest) {
 
     // Set cookie server-side — server Set-Cookie headers are honored by MetaMask's
     // WKWebView on iOS where document.cookie writes can be silently blocked
-    const res = privateJson({ verified: true, member: { id: member.id } })
-    selectAuthProvider(res, 'wallet')
+    const res = privateJson({ verified: true, member: { id: member.id }, intent })
+    selectAuthProvider(res, 'wallet', intent, member.id)
     res.cookies.set('soe_wallet_id', walletSession, {
       path: '/',
       maxAge: 60 * 60 * 24 * 30,

@@ -25,7 +25,7 @@ function truncate(name: string, max = 12): string {
   return name.length > max ? name.slice(0, max - 1) + '\u2026' : name;
 }
 
-export default function PublicNav() {
+export default function PublicNav({ checkSession = true }: { checkSession?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -38,6 +38,7 @@ export default function PublicNav() {
   }, []);
 
   useEffect(() => {
+    if (!checkSession) return;
     let active = true;
     const stop = subscribeAuthProviderChanges(() => { active = false; setDisplayName(null); setAuthChecked(true); });
     getMemberSession()
@@ -50,15 +51,16 @@ export default function PublicNav() {
       .catch(() => {})
       .finally(() => { if (active) setAuthChecked(true); });
     return () => { active = false; stop(); };
-  }, []);
+  }, [checkSession]);
 
   const linkStyle = { fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: parchment, textDecoration: 'none', opacity: 0.7 } as const;
-  const authLabel = displayName || 'Sign In';
-  const authHref = displayName ? '/dashboard' : '/login';
+  const selectedName = checkSession ? displayName : null;
+  const authLabel = selectedName || 'Sign In';
+  const authHref = selectedName ? '/dashboard' : '/login';
 
   // Insights link surfaces only when the viewer is signed in.
   const visibleLinks = NAV_LINKS.flatMap(lk => {
-    if (lk.l === 'Council' && displayName) {
+    if (lk.l === 'Council' && selectedName) {
       return [{ l: 'Insights', h: '/insights' }, lk];
     }
     return [lk];
@@ -84,12 +86,12 @@ export default function PublicNav() {
           <a
             href={authHref}
             style={{
-              ...linkStyle, color: gold, opacity: authChecked ? 1 : 0,
+              ...linkStyle, color: gold, opacity: !checkSession || authChecked ? 1 : 0,
               border: `1px solid ${gold}44`, padding: '6px 14px',
               transition: 'opacity 0.3s',
             }}
           >{authLabel}</a>
-          <AccountSignOut available={Boolean(displayName)} />
+          <AccountSignOut available={Boolean(selectedName)} />
         </div>
 
         <button onClick={() => setMenuOpen(v => !v)} style={{ display: 'none', background: 'none', border: 'none', color: gold, fontSize: '20px', cursor: 'pointer' }} className="show-mobile">
@@ -99,7 +101,7 @@ export default function PublicNav() {
 
       {menuOpen && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,10,0.98)', zIndex: 199, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <AccountSignOut available={Boolean(displayName)} />
+          <AccountSignOut available={Boolean(selectedName)} />
           {[...visibleLinks, { l: authLabel, h: authHref }].map(lk => (
             <a key={lk.h + lk.l} href={lk.h} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}

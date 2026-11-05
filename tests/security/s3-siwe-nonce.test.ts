@@ -3,7 +3,8 @@
 // nonce must be bound to the client (signed, httpOnly, short-lived cookie) and
 // checked on verify, then cleared.
 import { test, expect, beforeEach } from 'bun:test';
-import { installMocks, resetDb, makeReq, ADA } from './fakes';
+import { installMocks, resetDb, ADA } from './fakes';
+import { signInReq as makeReq, TEST_AUTH_INTENT } from './auth-request';
 
 let lastVerify: any = null;
 let messageNonce = 'nonceAAAA1111';
@@ -11,7 +12,7 @@ installMocks({
   'siwe': () => ({
     generateNonce: () => 'nonceAAAA1111',
     SiweMessage: class {
-      nonce: string; address = '0xAbCdEf0000000000000000000000000000000001';
+      nonce: string; address = '0xAbCdEf0000000000000000000000000000000001'; uri = 'http://localhost';
       constructor(public m: any) { this.nonce = messageNonce; }
       async verify(opts: any) {
         lastVerify = opts;
@@ -45,7 +46,7 @@ test('nonce route binds the nonce in a signed httpOnly short-lived cookie', asyn
   expect(c.opts.maxAge).toBeLessThanOrEqual(600);
 });
 const refused = (status: number) => expect([400, 401]).toContain(status);
-const B = { message: 'm', signature: '0xsig', address: '0xabc' };
+const B = { message: 'm', signature: '0xsig', address: '0xAbCdEf0000000000000000000000000000000001' };
 test('siwe without the nonce cookie is refused', async () => {
   const res = await siwe.POST(makeReq(B));
   refused(res.status);
@@ -74,7 +75,7 @@ test('a forged (unsigned, attacker-chosen) nonce cookie is refused before verify
 });
 test('an expired signed nonce cookie is refused', async () => {
   const { signNonce } = await import('../../lib/auth/siweNonce.ts');
-  const old = await signNonce('nonceAAAA1111', Date.now() - 3600_000);
+  const old = await signNonce('nonceAAAA1111', TEST_AUTH_INTENT, Date.now() - 3600_000);
   const res = await siwe.POST(makeReq(B, { cookies: { soe_siwe_nonce: old! } }));
   refused(res.status);
 });

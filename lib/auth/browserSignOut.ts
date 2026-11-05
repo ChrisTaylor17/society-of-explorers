@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { notifyAuthProviderChanged } from '@/lib/auth/providerSelection';
+import { beginBrowserAuthIntent, isCurrentBrowserAuthIntent } from '@/lib/auth/browserIntent';
 
 export type BrowserSignOutResult = { confirmed: false } | { confirmed: true; sdkCleanup: 'completed' | 'unconfirmed' };
 const ownedKey = (key: string) => key === 'soe_wallet_id' || /^sb-[A-Za-z0-9_-]+-auth-token(?:-code-verifier)?(?:\.\d+)?$/.test(key)
@@ -33,16 +34,22 @@ async function boundedJson(url: string, options: RequestInit) {
 }
 
 export async function signOutBrowser(client: () => Pick<SupabaseClient, 'auth'>, requestId: string): Promise<BrowserSignOutResult> {
+  // Rotate before dispatch. A delayed login response may overwrite server
+  // cookies, but its receipt can no longer match this browser's intent.
+  let intent: string;
+  try { intent = beginBrowserAuthIntent(); } catch { return { confirmed: false }; }
   notifyAuthProviderChanged();
+  if (!isCurrentBrowserAuthIntent(intent)) return { confirmed: false };
   clearBrowserAuthCaches();
   try {
     const { response, body: receipt } = await boundedJson('/api/auth/logout', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'browser', requestId }),
     });
-    if (!response.ok || receipt?.outcome !== 'signed_out' || receipt.scope !== 'browser' || receipt.requestId !== requestId) return { confirmed: false };
+    if (!isCurrentBrowserAuthIntent(intent) || !response.ok || receipt?.outcome !== 'signed_out' || receipt.scope !== 'browser' || receipt.requestId !== requestId) return { confirmed: false };
     const { response: check, body: state } = await boundedJson('/api/auth/member', {});
-    if (check.status !== 401 || state?.session !== 'signed_out' || state.browserSignedOut !== true) return { confirmed: false };
+    if (!isCurrentBrowserAuthIntent(intent) || check.status !== 401 || state?.session !== 'signed_out' || state.browserSignedOut !== true) return { confirmed: false };
     notifyAuthProviderChanged();
+    if (!isCurrentBrowserAuthIntent(intent)) return { confirmed: false };
     let timer: ReturnType<typeof setTimeout> | undefined;
     let cleaned = false;
     try {
@@ -51,7 +58,8 @@ export async function signOutBrowser(client: () => Pick<SupabaseClient, 'auth'>,
         new Promise<false>(resolve => { timer = setTimeout(() => resolve(false), 3_000); }),
       ]);
     } catch { cleaned = false; }
-    finally { if (timer) clearTimeout(timer); clearBrowserAuthCaches(); }
+    finally { if (timer) clearTimeout(timer); if (isCurrentBrowserAuthIntent(intent)) clearBrowserAuthCaches(); }
+    if (!isCurrentBrowserAuthIntent(intent)) return { confirmed: false };
     return { confirmed: true, sdkCleanup: cleaned ? 'completed' : 'unconfirmed' };
   } catch { return { confirmed: false }; }
 }

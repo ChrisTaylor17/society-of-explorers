@@ -1,26 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-// Called only after a deliberate successful provider sign-in. A saved wallet
-// remains a separate credential; it cannot override the newly selected user.
-export async function confirmSupabaseProvider(client: Pick<SupabaseClient, 'auth'>): Promise<boolean> {
-  try {
-    const { data: { user }, error } = await client.auth.getUser();
-    if (error || !user) return false;
-    const response = await fetch('/api/auth/provider', {
-      method: 'POST', credentials: 'same-origin', cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: 'supabase', expectedSubject: user.id }),
-    });
-    if (!response.ok) return false;
-    const result: unknown = await response.json();
-    const confirmed = !!result && typeof result === 'object' &&
-      (result as { selected?: unknown }).selected === 'supabase' &&
-      (result as { subject?: unknown }).subject === user.id;
-    if (confirmed) notifyAuthProviderChanged();
-    return confirmed;
-  } catch { return false; }
-}
-
 export const AUTH_PROVIDER_CHANGED_EVENT = 'soe:auth-provider-changed';
 export const AUTH_PROVIDER_CHANGE_STORAGE_KEY = 'soe.auth.provider.changed';
 const PROVIDER_CHANNEL = 'soe:auth-provider';
