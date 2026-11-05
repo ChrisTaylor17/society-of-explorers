@@ -5,13 +5,17 @@ import { memberCircleConfig } from '../shared/bootstrap';
 import type { ExistingMemberCircleConfig } from './src/circles/verified-member-session';
 import type { NativeConnectivityPort } from './src/circles/native-connectivity';
 import { OwnedAccountScreen, type OwnedAccountConnection } from './OwnedAccountScreen';
+import type { PublicCircleDiscoveryConnection } from './src/circles/installed-member';
 
 /** The registered app owns sign-in through its trusted native public policy.
  * Existing verified Circle composition remains available to trusted callers. */
-export default function App({ memberCircle, connectivity, ownedAccountPrepare }: { memberCircle?: ExistingMemberCircleConfig; connectivity?: NativeConnectivityPort; ownedAccountPrepare?: () => Promise<OwnedAccountConnection> } = {}) {
+export default function App({ memberCircle, connectivity, ownedAccountPrepare, publicCirclesPrepare }: {
+  memberCircle?: ExistingMemberCircleConfig; connectivity?: NativeConnectivityPort;
+  ownedAccountPrepare?: () => Promise<OwnedAccountConnection>; publicCirclesPrepare?: () => Promise<PublicCircleDiscoveryConnection>;
+} = {}) {
   const config = useMemo(() => memberCircleConfig(memberCircle), [memberCircle]);
   const [closed, setClosed] = useState<ExistingMemberCircleConfig | null>(null);
-  if (!memberCircle) return <OwnedAccountScreen prepare={ownedAccountPrepare}/>;
+  if (!memberCircle) return <OwnedAccountScreen prepare={ownedAccountPrepare} publicCirclesPrepare={publicCirclesPrepare}/>;
   if (config && closed !== config) return <MemberCircleScreen config={config} connectivity={connectivity} onClose={() => setClosed(config)}/>;
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>

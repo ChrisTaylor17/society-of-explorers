@@ -5,6 +5,7 @@ declare module 'react-native' {
   export type HostComponent<T> = import('react').ComponentType<T>;
   export const ActivityIndicator: import('react').ComponentType<{ [name: string]: unknown }>;
   export const UIManager: { getViewManagerConfig(name: string): object | null };
+  export const Linking: { openURL(url: string): Promise<void> };
   export function codegenNativeComponent<T>(name: string): HostComponent<T>;
   export namespace CodegenTypes {
     export type Int32 = number;

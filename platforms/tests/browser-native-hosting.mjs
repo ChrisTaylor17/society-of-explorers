@@ -7,6 +7,7 @@ const [run,platform='android',...extra]=process.argv.slice(2);
 assert(!extra.length&&(run===undefined||/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run))&&['android','ios'].includes(platform));
 const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hosting-browser-'+run+'-'+platform:'');
 const clipMode=run?.startsWith('clips-');
+const salonMode=run?.startsWith('clips-salon-');
 if(run)fs.mkdirSync(path.join(ROOT,output));
 const file=output+(run?'/browser.json':'/native-hosting-browser.json'),sha=b=>createHash('sha256').update(b).digest('hex');
 const fixtureDir='verification/web/evidence/native-hosting-fixture'+(run?'-'+run:'');
@@ -120,6 +121,81 @@ try{
  const edition=JSON.parse(read('content/root-kernel/philemon.web-classic.json'));
  const radio=name=>p.getByRole('radio',{name,exact:true});
  const hostingChoice='Prepare Philemon Circle online';
+ if(salonMode){
+   const beforeUnavailable=http.length;
+   await p.evaluate(()=>window.nativeQa.showUnconfigured());
+   await button('Find an online Circle').click();
+   await p.getByText('Public Circle search is unavailable in this build.',{exact:true}).waitFor();
+   assert(await button('Load online Circles').isDisabled());assert.equal(http.length,beforeUnavailable);
+   pass('an unconfigured app shows a closed public search and makes no request');
+   await show();
+   const onlineTitle='Philemon online salon',hybridTitle='Scripture hybrid salon',localTitle='Local-only reading salon';
+   const meeting='https://meeting.example.test/synthetic-salon';
+   const seed=async(who,title,format)=>{
+     const expectedMemberId=fixture.actors[who];
+     const body=await fixture.createBody({expectedMemberId,title,description:'A synthetic public listing.',format,
+       ...(format==='online'?{city:null,venueName:null,venueType:'online'}:{}),onlineUrl:format==='in_person'?null:meeting});
+     const reply=await fixture.dispatch('/api/circles',{method:'POST',body,headers:{authorization:'Bearer '+ACCESS[who],origin:ORIGIN,'x-soe-expected-member':expectedMemberId}});
+     const result=await reply.json();assert.equal(reply.status,200,result.error);return result.circleId;
+   };
+   const chosen=await seed('other',onlineTitle,'online');
+   await seed('other',hybridTitle,'hybrid');
+   await seed('author',localTitle,'in_person');
+   const start=http.length,guestButton='Sign in for '+onlineTitle;
+   await button('Explore Clips').click();await button('Find an online Circle').click();await enabled('Load online Circles');
+   assert.equal(http.length,start);
+   await button('Load online Circles').click();await enabled(guestButton);
+   assert.equal(await button('Sign in for '+hybridTitle).count(),1);assert.equal(await button('Sign in for '+localTitle).count(),0);
+   assert.deepEqual(http.slice(start).map(row=>[row.kind,row.path,row.method]),[['public','/api/circles?format=online','GET']]);
+   assert.equal((await state()).stats.prepared,0);assert.equal((await state()).stats.reads,0);
+   assert(!(await text()).includes(meeting));assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+   await screenshot('online-circles-guest-320.png',true);
+   const staleChoice=await retain(guestButton);
+   await button('Back from online Circles').click();await button('Read the full Philemon study').click();
+   await button('Find an online reading Circle').click();await enabled('Load online Circles');await invoke(staleChoice);
+   assert.equal(await button('Clear selected Circle').count(),0);
+   await button('Load online Circles').click();await enabled(guestButton);
+   await button(guestButton).click();await enabled('Connect my account');
+   assert((await text()).includes('Sign in to continue with '+onlineTitle));
+   assert.equal((await state()).stats.prepared,0);assert.equal((await state()).stats.reads,0);
+   pass('signed-out Clips and Philemon reach online and hybrid listings through the anonymous policy without an account client or a saved-session read; retiring the public screen prevents an old selection');
+
+   await signIn();await button('Continue to my member account').click();await enabled('Check my member account');
+   assert(await button('Open selected Circle').isDisabled());
+   await button('Check my member account').click();await enabled('Open selected Circle');
+   const path='/api/circles/'+chosen,at=http.length;
+   await button('Open selected Circle').click();await enabled('Review joining this Circle');
+   assert.deepEqual(http.slice(at).filter(row=>row.path.startsWith('/api/circles/')).map(row=>[row.path,row.method]),[[path,'GET']]);
+   assert((await text()).includes(onlineTitle));assert.equal(await button('Open online meeting').count(),0);
+   await button('Review joining this Circle').click();await enabled('Confirm join');
+   assert.equal(await button('Open online meeting').count(),0);
+   await button('Confirm join').click();await enabled('Open online meeting');
+   pass('the selected public Circle survives sign-in and opens only after current member verification; the meeting stays closed through join review');
+
+   const openings=()=>p.evaluate(()=>[...window.nativeQa.openedMeetings]);
+   const firstOpenAt=http.length;
+   await button('Open online meeting').click();await p.waitForFunction(()=>window.nativeQa.openedMeetings.length===1);
+   assert.deepEqual(await openings(),[meeting]);assert(!(await text()).includes(meeting));
+   assert.equal(http.slice(firstOpenAt).filter(row=>row.path===path&&row.method==='GET').length,1);
+   const staleMeeting=await retain('Open online meeting');
+   await button('Review leaving this Circle').click();await button('Confirm leave').click();await enabled('Review joining this Circle');
+   await invoke(staleMeeting);await settle();assert.deepEqual(await openings(),[meeting]);assert.equal(await button('Open online meeting').count(),0);
+   pass('current members open the exact meeting after a fresh read, and confirmed leave retires the button and its old callback');
+
+   await button('Review joining this Circle').click();await button('Confirm join').click();await enabled('Open online meeting');
+   await fixture.leave('author',chosen);
+   await button('Open online meeting').click();await enabled('Review joining this Circle');
+   assert.deepEqual(await openings(),[meeting]);assert.equal(await button('Open online meeting').count(),0);
+   pass('an explicit open rechecks SQL after remote membership removal and declines the old meeting link');
+
+   await button('Review joining this Circle').click();await button('Confirm join').click();await enabled('Open online meeting');
+   await p.evaluate(path=>window.nativeQa.hold(path,'GET'),path);
+   await button('Open online meeting').click();await p.waitForFunction(path=>window.nativeQa.requests.some(request=>request.path===path&&request.held),path);
+   await p.evaluate(()=>window.nativeQa.activity('change','background'));await p.evaluate(()=>window.nativeQa.release());await settle();
+   assert.deepEqual(await openings(),[meeting]);assert.equal(await button('Open online meeting').count(),0);
+   pass('a meeting reply delivered after backgrounding cannot open the meeting');
+   await show();
+ }
  if(clipMode){
    const video=p.locator('video');
    const first=platform==='android'?clips[1]:clips[0],second=platform==='android'?clips[0]:clips[1];
@@ -191,8 +267,9 @@ try{
 
    await signIn();await account();
    const signedInAt=http.length,mediaAt=mediaHttp.length;
-   await open();await button('Browse Circles').waitFor();
-   await button('Browse Circles').click();await button('Search Circles').waitFor();await settle();
+   await open();await button('Find an online Circle').waitFor();
+   await button('Find an online Circle').click();await button('Search Circles').waitFor();await settle();
+   assert.equal(await radio('Online').getAttribute('aria-checked'),'true');
    assert.equal(await video.count(),0);assert.equal(http.length,signedInAt);assert.equal(mediaHttp.length,mediaAt);
    pass('the verified member screen opens Clips and continues to Circle discovery without an automatic account, discovery or media request');
    await show();

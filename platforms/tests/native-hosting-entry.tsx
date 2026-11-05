@@ -4,6 +4,8 @@ import App from '../native/App';
 import {MemberCircleScreen} from '../native/MemberCircleScreen';
 import {createOwnedNativeAuth} from '../native/src/auth/owned-auth';
 import {createNativeAuthPorts} from '../native/src/auth/native-auth-ports';
+import {prepareInstalledPublicCircles} from '../native/src/circles/installed-member';
+import type {Spec} from '../native/specs/NativeSoeMember';
 const root=createRoot(document.getElementById('root')!);
 const origin='https://native-circle-directory.test',providerOrigin='https://native-auth-provider.test',publishableKey='sb_publishable_NONISSUED_NATIVE_OWNED_AUTH',storageKey='soe.native.owned.qa';
 type Network='online'|'offline'|'unknown';
@@ -11,6 +13,7 @@ type Gate={path:string;method?:string;promise:Promise<void>;release():void};
 type Disk={generation:string;slots:Map<string,string>;resetUnknown:boolean};
 type CapturedCallback=(value?:string)=>unknown;
 const latestCallbacks=new Map<string,CapturedCallback>(),retainedCallbacks=new Map<string,CapturedCallback>();
+const openedMeetings:string[]=[];
 let savedEnabled=true,readingEnabled=true,attendanceEnabled=true,hostingEnabled=true;
 let sequence=0,epoch=0,online:Network='online',disk:Disk={generation:uuid(),slots:new Map(),resetUnknown:false},held:Gate|null=null;
 let prepared=0,reads=0,writes=0,resets=0,cancels=0,handles=0,connectionsClosed=0,preparationHeld=false;
@@ -49,6 +52,7 @@ function createBridge(store:Disk){
  };
 }
 const qa={appState,requests,platform:new URL(window.location.href).searchParams.get('platform')==='ios'?'ios':'android',
+ openedMeetings,recordMeeting(url:string){openedMeetings.push(url);},
  capture(kind:string,label:string|undefined,callback:CapturedCallback){if(label&&typeof callback==='function')latestCallbacks.set(kind+':'+label,callback);},
  retainCallback(kind:string,label:string){const callback=latestCallbacks.get(kind+':'+label);if(!callback)throw Error('No real native callback for '+kind+':'+label);const id=uuid();retainedCallbacks.set(id,callback);return id;},
  invokeCallback(id:string,value?:string){const callback=retainedCallbacks.get(id);if(!callback)throw Error('Captured callback unavailable');return callback(value);},
@@ -62,12 +66,17 @@ const qa={appState,requests,platform:new URL(window.location.href).searchParams.
   held?.release();held=null;heldDelivery?.release();heldDelivery=null;heldPreparation?.release();heldPreparation=null;preparationHeld=false;online=network;appState.currentState='active';requests.length=0;prepared=0;reads=0;writes=0;resets=0;cancels=0;connectionsClosed=0;
   if(!preserve)disk={generation:uuid(),slots:new Map(),resetUnknown:false};
   const bridge=createBridge(disk);
+  openedMeetings.length=0;
+  const installed={...bridge,async capabilities(){return{...await bridge.capabilities(),authPolicy:undefined,providerOrigin:undefined,publishableKey:undefined};},
+    getConnectivitySnapshot:connectivity.snapshot,
+    onConnectivityChange(listener:(state:Network)=>void){return{remove:connectivity.subscribe(listener)};}} as unknown as Spec;
+  const publicCirclesPrepare=()=>prepareInstalledPublicCircles(installed);
   const prepare=async()=>{prepared++;const ports=await createNativeAuthPorts(bridge,{origin,storageKey,providerOrigin,publishableKey,timeoutMs:2000});
    const controller=createOwnedNativeAuth({ports,publishableKey,timeoutMs:2000});
    let closed=false;const connection={controller,config:{origin,auth:controller.auth,transport:ports.member.transport,savedReadingTransport:ports.member.savedReadingTransport,attendanceTransport:ports.member.attendanceTransport,hostingTransport:ports.member.hostingTransport,editionTransport:ports.member.editionTransport,publicTransport:ports.member.publicTransport,passageTransport:ports.member.passageTransport,timeoutMs:1200,newRequestId:ports.member.newRequestId},connectivity,close(){if(!closed){closed=true;connectionsClosed++;controller.close();ports.retire();}}};
    const gate=heldPreparation;if(gate){preparationHeld=true;await gate.promise;}return connection;
   };
-  root.render(<React.StrictMode key={++epoch}><App ownedAccountPrepare={prepare}/></React.StrictMode>);
+  root.render(<React.StrictMode key={++epoch}><App ownedAccountPrepare={prepare} publicCirclesPrepare={publicCirclesPrepare}/></React.StrictMode>);
  },
  stats:()=>({prepared,reads,writes,resets,cancels,handles,connectionsClosed,preparationHeld,invalidMemberClosed,retainedCallbacks:retainedCallbacks.size,storedSlots:[...disk.slots.keys()].sort(),netListeners:netListeners.size,appListeners:[...appListeners.values()].reduce((n,set)=>n+set.size,0)}),
  activity(name:string,value='active'){if(name==='change')appState.currentState=value;for(const fn of [...appListeners.get(name)??[]])fn(value);},

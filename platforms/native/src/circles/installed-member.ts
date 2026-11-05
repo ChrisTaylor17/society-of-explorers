@@ -2,12 +2,14 @@ import { Platform } from 'react-native';
 import NativeSoeMember, { type Spec } from '../../specs/NativeSoeMember';
 import { prepareNativeMemberBinding } from './native-member-binding';
 import { createNativeAuthPorts } from '../auth/native-auth-ports';
-import type { NativeMemberBridge } from './native-ports';
+import { createNativeMemberPorts, type NativeMemberBridge } from './native-ports';
 import type { NativeConnectivityPort, NativeConnectivityState } from './native-connectivity';
+import type { CircleTransport } from './host';
 import { isUuid } from '../../../../lib/ids/uuid';
 
 const unavailable = () => Error('Native member service unavailable');
 type InstalledMemberAdapter = { bridge: NativeMemberBridge; connectivity: NativeConnectivityPort };
+export type PublicCircleDiscoveryConnection = { origin: string; publicTransport: CircleTransport; connectivity: NativeConnectivityPort; close(): void };
 const adapters = new WeakMap<Spec, InstalledMemberAdapter>();
 
 /** Explicit module injection also permits isolated contract tests. This does not
@@ -82,13 +84,31 @@ export async function prepareInstalledMemberBinding(options: {
   return { ...binding, connectivity };
 }
 
+async function installedCapabilities(bridge: NativeMemberBridge) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([bridge.capabilities(), new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(unavailable()), 15000);
+  })]).finally(() => clearTimeout(timer));
+}
+
+/** Reuse the anonymous native request policy without creating an account client. */
+export async function prepareInstalledPublicCircles(module: Spec | null = NativeSoeMember): Promise<PublicCircleDiscoveryConnection> {
+  if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw unavailable();
+  const { bridge, connectivity } = createInstalledMemberAdapter(module);
+  const caps = await installedCapabilities(bridge);
+  if (caps?.publicPolicy !== 'circle-discovery-v1' || typeof caps.origin !== 'string' || typeof caps.storageKey !== 'string'
+    || typeof bridge.sendPublic !== 'function') throw unavailable();
+  const ports = await createNativeMemberPorts({ ...bridge, capabilities: async () => caps }, { origin: caps.origin, storageKey: caps.storageKey });
+  if (!ports.publicTransport) { ports.retireStorage(); throw unavailable(); }
+  return { origin: caps.origin, publicTransport: ports.publicTransport, connectivity, close: ports.retireStorage };
+}
+
 /** Public policy comes only from the trusted installed native module. No launch
  * extras, environment, global credential or invented Circle is consulted. */
 export async function prepareInstalledAuthPorts() {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw unavailable();
   const { bridge, connectivity } = createInstalledMemberAdapter(NativeSoeMember);
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const caps = await Promise.race([bridge.capabilities(), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(unavailable()), 15000); })]).finally(() => clearTimeout(timer));
+  const caps = await installedCapabilities(bridge);
   if (!caps || typeof caps !== 'object' || Array.isArray(caps) || caps.version !== 2
     || caps.redirectPolicy !== 'reject-before-send' || caps.storagePolicy !== 'os-protected' || !isUuid(caps.storageGeneration)
     || caps.authPolicy !== 'supabase-password-v1' || typeof caps.origin !== 'string' || typeof caps.storageKey !== 'string'

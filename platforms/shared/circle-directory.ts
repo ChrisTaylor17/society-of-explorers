@@ -9,7 +9,8 @@ import { approvedOrigin, type CircleOwner, type CircleTransport } from '../nativ
 
 export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport; publicProfileTransport?: CircleTransport;
   memberId?: string; attendanceTransport?: CircleTransport; hostingTransport?: CircleTransport;
-  timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
+  timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string>; previewCircleId?: string };
+export type PublicCircleChoice = { id: string; title: string };
 export type CircleAttendanceReview = { date: string; status: 'going' | 'not_going'; previousStatus: 'going' | 'not_going' | null;
   circleTitle: string; time: string; timezone: string };
 export type CircleDirectoryModel = {
@@ -37,7 +38,9 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
     || config.hostingTransport !== undefined && typeof config.hostingTransport !== 'function'
     || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000
     || config.initialOnline !== undefined && typeof config.initialOnline !== 'boolean'
-    || config.newRequestId !== undefined && typeof config.newRequestId !== 'function') throw Error('Approved Circle connections required');
+    || config.newRequestId !== undefined && typeof config.newRequestId !== 'function'
+    || config.previewCircleId !== undefined && !isUuid(config.previewCircleId)) throw Error('Approved Circle connections required');
+  const previewCircleId = config.previewCircleId?.toLowerCase();
   let attached = false, closed = false, active = true, online = config.initialOnline ?? false, scope: string | null = null, generation = 0, attachment = 0;
   let phase: CircleDirectoryModel['phase'] = 'closed', busy = false, list: CircleDirectoryModel['list'] = null;
   let page: DiscoveryPageReply | null = null, own: MyCircles | null = null, selected: string | null = null;
@@ -60,7 +63,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       selected, detail: copy(detail), management: copy(management), intent, attendanceReview: copy(attendanceReview), message,
       canSearch: publicReady && Boolean(config.publicTransport), canNextPage: publicReady && Boolean(config.publicTransport && page?.page.nextCursor),
       canFirstPage: publicReady && Boolean(config.publicTransport && list === 'discover'), canMine: ready,
-      canSelect: ready && Boolean(page?.circles.length || own?.items.length), canRefresh: ready && selected !== null,
+      canSelect: ready && Boolean(previewCircleId || page?.circles.length || own?.items.length), canRefresh: ready && selected !== null,
       canPrepareJoin: ready && Boolean(config.newRequestId) && allowed('join'),
       canPrepareLeave: ready && Boolean(config.newRequestId) && allowed('leave'),
       canPrepareComplete: ready && Boolean(config.newRequestId) && allowed('complete'),
@@ -234,7 +237,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
     async select(circleId: string) {
       if (!model().canSelect || !isUuid(circleId)) return;
       const id = circleId.toLowerCase();
-      if (!page?.circles.some(row => row.id === id) && !own?.items.some(row => row.circle.id === id)) return;
+      if (id !== previewCircleId && !page?.circles.some(row => row.id === id) && !own?.items.some(row => row.circle.id === id)) return;
       const g = ++generation; clear(); selected = id; await read(g, null);
     },
     refresh() { return model().canRefresh ? read(++generation, null) : Promise.resolve(); },
@@ -250,3 +253,11 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
   };
 }
 export type CircleDirectory = ReturnType<typeof createCircleDirectory>;
+
+export function createPublicCircleDirectory(origin: string, publicTransport: CircleTransport): Pick<CircleDirectory,
+  'model' | 'subscribe' | 'connect' | 'close' | 'activity' | 'connectivity' | 'search' | 'nextPage'> {
+  return createCircleDirectory({ origin, publicTransport, initialOnline: false,
+    owner: { scope: () => null, bearer: async () => null, subscribe: () => () => {} },
+    transport: async () => { throw Error('Member access requires a verified account'); },
+  });
+}

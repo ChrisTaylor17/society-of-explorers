@@ -10,7 +10,7 @@ const sections = [
 ] as const;
 const noteVerses = new Set(philemonEdition.footnotes.map(note => note.verse));
 
-export function PhilemonStudyScreen({ onBack, onHost }: { onBack(): void; onHost?: () => void }) {
+export function PhilemonStudyScreen({ onBack, onHost, onBrowse }: { onBack(): void; onHost?: () => void; onBrowse?: () => void }) {
   const [section, setSection] = useState<(typeof sections)[number]['id']>('letter');
 
   return <SafeAreaView style={styles.screen}>
@@ -80,6 +80,9 @@ export function PhilemonStudyScreen({ onBack, onHost }: { onBack(): void; onHost
           <Text style={styles.buttonText}>Prepare a weekly online Circle</Text>
         </Pressable> : <Text style={styles.note}>Circle hosting is unavailable in this connection.</Text>}
       </>}
+      {onBrowse ? <Pressable accessibilityRole="button" accessibilityLabel="Find an online reading Circle" onPress={onBrowse} style={styles.button}>
+        <Text style={styles.buttonText}>Find an online reading Circle</Text>
+      </Pressable> : null}
     </ScrollView>
     <View style={styles.footer}>
       <Pressable accessibilityRole="button" accessibilityLabel="Back to account" onPress={onBack} style={styles.button}>

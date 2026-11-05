@@ -101,7 +101,7 @@ export function ClipsScreen({ onBack, onRead, onBrowse }: { onBack(): void; onRe
         <Text selectable style={styles.address}>{philemonEdition.publisherUrl}</Text>
         <Action label="Read the full Philemon study" onPress={onRead}/>
       </View>
-      {onBrowse ? <Action label="Browse Circles" onPress={onBrowse}/> : null}
+      {onBrowse ? <Action label="Find an online Circle" onPress={onBrowse}/> : null}
     </ScrollView>
     <View style={styles.footer}><Action label="Back to account" onPress={onBack}/></View>
   </SafeAreaView>;

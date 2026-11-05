@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T23:31:12.334Z",
+  "baseCheckpoint": "ee2c49fc0a13d85d0261f7c9c2c6b9d77a6f8743",
+  "status": "LOCAL_PHONE_ONLINE_CIRCLE_PASS_DEVICE_ACCEPTANCE_OPEN",
+  "productionCleared": false,
+  "productSourceSha256": {
+    "platforms/native/App.tsx": "7a26c60621a813d4ff92a96b64d86d465bb646f037c40aa4b4828c864aefeaa3",
+    "platforms/native/OwnedAccountScreen.tsx": "76024352a5c4d4f8f7c79dd7abea5c279c85bbd77c42a819f520bf2c625ba2a5",
+    "platforms/native/PublicCirclesScreen.tsx": "978df9057a0714f4046420e6dd8c347152beb98f9a2eafc666ae4524877b5b99",
+    "platforms/native/MemberCircleScreen.tsx": "26788dd968cc5d6bb14d762f82cc14b4aeeb56b11d02766254361965b076e50e",
+    "platforms/native/CircleDirectoryScreen.tsx": "769df49c497a386e85ba4ac2c9811865940960b8b0f63fee29bd497b6739c531",
+    "platforms/native/ClipsScreen.tsx": "1c15dcc8f8bbde38d54d7841cedfeb14fe390883f7f4331ed6c9e4a6e5c03a6d",
+    "platforms/native/PhilemonStudyScreen.tsx": "2b502295e08465dd89d5ff5fa22cebf1dca990ecb1414c6a6d57957d3b35dbf7",
+    "platforms/native/src/circles/installed-member.ts": "4bcc14319fbaeb5a90facd1e6eed9c1b98108110ef0359dfe3b9932ff42e468a",
+    "platforms/shared/circle-directory.ts": "1d86e158b67b0ddc44274dc809bd6386a8c978f8e532982632259d5d9cb7111a"
+  },
+  "composedBrowser": {
+    "android": {
+      "stories": 32,
+      "newOnlineCircleStories": 6,
+      "interceptedRequests": 463,
+      "packagedClipReads": 4,
+      "report": {
+        "path": "verification/web/evidence/native-hosting-browser-clips-salon-03-android/browser.json",
+        "sha256": "e831f7d2f5b186d00618bca6801bf7815c414cf44406bd3c3786d8b63e8bbc14"
+      },
+      "guestScreenshot": {
+        "path": "verification/web/evidence/native-hosting-browser-clips-salon-03-android/online-circles-guest-320.png",
+        "sha256": "0a8b8845273f445bf3830a8595f1c2b0a7810483d3b24f6197a240e3c09df062"
+      }
+    },
+    "ios": {
+      "stories": 15,
+      "newOnlineCircleStories": 6,
+      "interceptedRequests": 72,
+      "packagedClipReads": 4,
+      "report": {
+        "path": "verification/web/evidence/native-hosting-browser-clips-salon-03-ios/browser.json",
+        "sha256": "6b9b53879270c1a34fccaf22e97549dae59a5cea0895e18404574bf8f00534d9"
+      },
+      "guestScreenshot": {
+        "path": "verification/web/evidence/native-hosting-browser-clips-salon-03-ios/online-circles-guest-320.png",
+        "sha256": "0a8b8845273f445bf3830a8595f1c2b0a7810483d3b24f6197a240e3c09df062"
+      }
+    }
+  },
+  "localChecks": {
+    "portableTypesPassed": true,
+    "registeredAppTypesPassed": true,
+    "scopedLintPassed": true,
+    "existingAccountFixtureBundled": true,
+    "macSwiftRequestPolicyChecks": 560,
+    "macSwiftReport": {
+      "path": "verification/web/evidence/native-ios-salon-online-policy-01/receipt.json",
+      "sha256": "5860ff3466ebf8a1ebbc4f1e8155c94267a8def83deb2b14e15d6ab5fd25fcc6"
+    },
+    "androidHardeningChecks": 12,
+    "androidHardeningReport": {
+      "path": "verification/web/evidence/native-salon-android-policy.tap",
+      "sha256": "faa885d1a90db48a7939614bec721ab8bd8e786e8cf651fa5ea6e78740531a71"
+    }
+  },
+  "scope": "The registered App uses the cached authentication SDK and the installed adapter contract with synthetic React Native, device and provider services. Canonical HTTP handlers and SQL execute against disposable PGlite. The meeting handoff is recorded by a browser double. Mac Swift verifies the actual iOS request constructor and HTTP headers.",
+  "deviceAcceptance": {
+    "androidSmokeSource": "platforms/native/android/app/src/androidTest/java/com/anonymous/soesyntheticdemo/MemberEntryRuntimeTest.kt",
+    "androidSmokeSourceSha256": "d7232dc71296e3f82c879a6e5d0454b0286fe14afcb0bb371718ec1a512938f3",
+    "androidSmokeRan": false,
+    "androidApkBuilt": false,
+    "iosProjectGenerated": false,
+    "physicalMeetingHandoffTested": false,
+    "localToolchain": "Apple command-line tools available. Full Xcode, iOS simulator tooling and Android SDK unavailable at the named installed paths."
+  }
+}

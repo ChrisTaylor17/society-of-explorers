@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { createCircleDirectory, type CircleDirectoryConfig } from '../shared/circle-directory';
+import { createCircleDirectory, type CircleDirectoryConfig, type CircleDirectoryModel, type PublicCircleChoice } from '../shared/circle-directory';
 import { parseDiscoveryPageRequest } from '../../lib/circles/discovery-page';
 import { readingEditionLabel, readingSessionLabel, starterReadingContext, type ReadingContext } from '../../lib/circles/reading-program';
 import { formatDay } from '../../lib/circles/schedule';
@@ -12,23 +12,33 @@ import { CircleCommunityNorms } from './CircleCommunityNorms';
 import { sourceReaderAvailable } from './SourceReader';
 import { CircleReadingScreen } from './CircleReadingScreen';
 import type { SavedReading } from '../shared/saved-reading';
+import { safePrivateMeetingUrl } from './src/circles/discussion-reader';
 
-export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', savedReading, onBack, onClose }: {
-  config: CircleDirectoryConfig; connectivity?: NativeConnectivityPort; initialMode?: 'discover' | 'mine'; savedReading?: SavedReading; onBack(): void; onClose(): void;
+function meetingHref(model: CircleDirectoryModel | undefined) {
+  return model?.phase === 'ready' && model.canRefresh && model.detail?.viewer.is_member && !model.detail.circle.hidden
+    ? safePrivateMeetingUrl(model.detail.online_url) : null;
+}
+
+export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', initialOnlineFilter = false, initialCircle, savedReading, onBack, onClose }: {
+  config: CircleDirectoryConfig; connectivity?: NativeConnectivityPort; initialMode?: 'discover' | 'mine'; initialOnlineFilter?: boolean;
+  initialCircle?: PublicCircleChoice; savedReading?: SavedReading; onBack(): void; onClose(): void;
 }) {
+  const previewCircleId = initialCircle?.id;
   const connection = useMemo(() => {
-    try { return { session: createCircleDirectory({ ...config, initialOnline: false }), config, connectivity }; }
+    try { return { session: createCircleDirectory({ ...config, initialOnline: false, previewCircleId }), config, connectivity }; }
     catch { return null; }
-  }, [config, connectivity]);
+  }, [config, connectivity, previewCircleId]);
+  const previewAttempt = useRef<NonNullable<typeof connection> | null>(null);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.session.model() }));
   const [mode, setMode] = useState(initialMode);
   const [q, setQ] = useState(''), [city, setCity] = useState('');
-  const [format, setFormat] = useState(''), [open, setOpen] = useState(false), [sort, setSort] = useState('next');
+  const [format, setFormat] = useState(initialOnlineFilter ? 'online' : ''), [open, setOpen] = useState(false), [sort, setSort] = useState('next');
   const [filterError, setFilterError] = useState('');
   const [discussion, setDiscussion] = useState<{ connection: NonNullable<typeof connection>; circleId: string } | null>(null);
   const [reading, setReading] = useState<{ connection: NonNullable<typeof connection>; context: ReadingContext } | null>(null);
   const [publicProfile, setPublicProfile] = useState<{ connection: NonNullable<typeof connection>; circleId: string; memberId: string } | null>(null);
   const [readingNotice, setReadingNotice] = useState('');
+  const [meetingNotice, setMeetingNotice] = useState('');
   const readingLifetime = useRef({ generation: 0 });
   const [viewEpoch, setViewEpoch] = useState(0), viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const m = snapshot.connection === connection ? snapshot.model : connection?.session.model(), session = connection?.session;
@@ -49,7 +59,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
       // Loading a fresh selected detail retains its selection. Retirement,
       // background/offline or an account change must also cancel a pending
       // Read intent even when this directory stays mounted independently.
-      if (!model.connected || !model.active || !model.online || !model.selected) lifetime.generation++;
+      if (!model.connected || !model.active || !model.online || !model.selected) { lifetime.generation++; setMeetingNotice(''); }
       setSnapshot({ connection, model });
       if (!model.canOpenDiscussion) setDiscussion(null);
       if (!model.detail || !model.connected || !model.active || !model.online) { setReading(null); setPublicProfile(null); }
@@ -63,8 +73,13 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     active = AppState.currentState === 'active'; sync();
     const offConnectivity = observeNativeConnectivity(connection.connectivity, value => { if (mounted) session.connectivity(value === 'online'); });
     active = AppState.currentState === 'active'; sync(); session.connect();
+    if (previewCircleId) queueMicrotask(() => {
+      if (!mounted || previewAttempt.current === connection) return;
+      previewAttempt.current = connection;
+      if (session.model().canSelect) void session.select(previewCircleId);
+    });
     return () => { mounted = false; life.mounted = false; life.enabled = false; ++life.epoch; lifetime.generation++; session.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
-  }, [connection]);
+  }, [connection, previewCircleId]);
   useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [reading, discussion, publicProfile]);
   const act = (work: () => void, allowInactive = false) => {
     const life = viewLife.current;
@@ -78,6 +93,23 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     if (!request.ok) { setFilterError('Check the search words and city, then try again.'); return; }
     setFilterError(''); void session?.search(request.value);
   });
+  const openMeeting = async () => {
+    const before = session?.model(), owner = config.owner.scope();
+    if (!session || !owner || !before?.selected || !meetingHref(before)) return;
+    const attempt = ++readingLifetime.current.generation;
+    const stillCurrent = () => attempt === readingLifetime.current.generation && config.owner.scope() === owner;
+    setMeetingNotice('');
+    await session.refresh();
+    if (!stillCurrent()) return;
+    const fresh = session.model(), link = fresh.selected === before.selected ? meetingHref(fresh) : null;
+    if (!link) { setMeetingNotice('The meeting link is unavailable for your current Circle access.'); return; }
+    try {
+      const { Linking } = await import('react-native');
+      if (!stillCurrent() || meetingHref(session.model()) !== link) return;
+      await Linking.openURL(link);
+    }
+    catch { if (stillCurrent()) setMeetingNotice('The meeting could not open on this device.'); }
+  };
   const openReading = async (context: ReadingContext, sessionIndex: number | null) => {
     const before = session?.model(), owner = config.owner.scope();
     if (!connection || !session || !config.passageTransport || !owner || before?.phase !== 'ready' || !before.detail || !before.canNavigate) return;
@@ -128,6 +160,10 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     <Text accessibilityRole="header" style={styles.title}>{m?.selected ? circle?.title ?? management?.circle.title ?? 'Your Circle' : mode === 'mine' ? 'My Circles' : 'Discover Circles'}</Text>
     <Text accessibilityLiveRegion="polite" style={styles.copy}>{m?.message ?? 'The Circle connection is unavailable. Return to your member account and check again.'}</Text>
     {!m?.selected ? <>
+      {initialCircle ? <View style={styles.card}>
+        <Text accessibilityRole="header" style={styles.heading}>{initialCircle.title}</Text>
+        <Action label="Check selected Circle access" disabled={!m?.canSelect} onPress={() => act(() => void session?.select(initialCircle.id))}/>
+      </View> : null}
       <View accessibilityRole="radiogroup" accessibilityLabel="Circle list" style={styles.list}>
         <Choice label="Discover Circles" checked={mode === 'discover'} disabled={!m?.canNavigate} onPress={() => act(() => setMode('discover'))}/>
         <Choice label="My Circles" checked={mode === 'mine'} disabled={!m?.canNavigate} onPress={() => act(() => setMode('mine'))}/>
@@ -187,6 +223,8 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
         {circle.hidden ? <Text style={styles.copy}>This listing is hidden. Discussion access is closed.</Text> : null}
         {detail?.ended ? <Text style={styles.copy}>This Circle has ended.</Text> : null}
         <Text style={styles.copy}>{detail?.viewer.is_member ? 'You are a member of this Circle.' : 'You have not joined this Circle.'}</Text>
+        {meetingHref(m) ? <Action label="Open online meeting" onPress={() => act(() => void openMeeting())}/> : null}
+        {meetingNotice ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{meetingNotice}</Text> : null}
         {m?.phase === 'review' && m.intent === 'rsvp' ? null : <>
         <Text accessibilityRole="header" style={styles.heading}>Next meetings</Text>
         {detail?.meetings.map(meeting => <View key={meeting.date} style={styles.card}>

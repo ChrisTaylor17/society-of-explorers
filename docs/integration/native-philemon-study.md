@@ -2,6 +2,8 @@
 
 **Read Philemon** opens from the registered phone app before account connection and from the verified member screen. The study bundles all 25 verses and both publisher footnotes. The reading, comparison notes and 45-minute guide use the same material as the web study. Exact source addresses are selectable in the phone view. The signed-out study runs offline and opens without a credential form. [Source and rights](root-kernel-philemon.md) · [Web salon guide](philemon-remote-salon.md)
 
+**Find an online reading Circle** opens public online and hybrid listings for guests and presets Online for verified members. A guest's selection carries into sign-in and the member-account check. [Online Circle verification](native-online-circles-verification.json)
+
 **Prepare a weekly online Circle** from the signed-out guide carries the Online choice into the existing sign-in flow in the current app session. The member still chooses to connect, signs in, checks the member account and requests hosting access. A verified member can reach the same draft directly from the guide. The preset leaves the name, schedule and private meeting link for the host to enter. Clearing the choice preserves the standard in-person entry.
 
 The form uses the existing eligibility, review, confirmation and receipt checks. The failed-owner test cleared the private meeting link and restored a blank online draft on a fresh check. The fixture verified the member and hosting eligibility before creating one Circle. The authenticated host could read its meeting link and the public listing omitted it.

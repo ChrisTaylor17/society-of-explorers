@@ -168,5 +168,13 @@ func runSoeMemberRequestPolicyTests() throws {
     try denies(.publicRead, "/api/circles", bearer: token)
     try denies(.publicRead, "/api/circles", "GET", "")
     try denies(.publicRead, "/api/circles", "POST", "{}")
+    let onlinePath = "/api/circles?format=online"
+    let online = try noAuth.request(for: .publicRead, input: input(.publicRead, onlinePath))
+    try expect(online.url?.absoluteString == origin + onlinePath && online.httpMethod == "GET", "online search without provider configuration")
+    try expect(!online.httpShouldHandleCookies && online.value(forHTTPHeaderField: "Cookie") == nil &&
+               online.value(forHTTPHeaderField: "Authorization") == nil && online.value(forHTTPHeaderField: "apikey") == nil,
+               "online search omits cookies and credentials")
+    try denies(.publicRead, onlinePath + "&format=in_person")
+    try denies(.publicRead, onlinePath, bearer: token)
     print("SOE_MEMBER_REQUEST_POLICY_TESTS " + String(checks) + " checks passed")
 }

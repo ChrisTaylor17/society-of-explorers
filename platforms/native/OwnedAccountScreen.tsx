@@ -9,6 +9,9 @@ import type { createNativeEmailAuth } from './src/auth/email-auth';
 import { NativeEmailAccountForm } from './NativeEmailAccountForm';
 import { PhilemonStudyScreen } from './PhilemonStudyScreen';
 import { ClipsScreen } from './ClipsScreen';
+import { PublicCirclesScreen } from './PublicCirclesScreen';
+import type { PublicCircleChoice } from '../shared/circle-directory';
+import type { PublicCircleDiscoveryConnection } from './src/circles/installed-member';
 
 export type OwnedAccountConnection = {
   controller: ReturnType<typeof createOwnedNativeAuth>;
@@ -22,7 +25,9 @@ type AccountMode = 'signin' | 'signup' | 'recovery';
 
 /** Only the native policy factory is used by the registered app. The explicit
  * prepare prop is a trusted composition seam, never populated from a URL. */
-export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: { prepare?: () => Promise<OwnedAccountConnection> }) {
+export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, publicCirclesPrepare }: {
+  prepare?: () => Promise<OwnedAccountConnection>; publicCirclesPrepare?: () => Promise<PublicCircleDiscoveryConnection>;
+}) {
   const [connection, setConnection] = useState<OwnedAccountConnection | null>(null);
   const [snapshot, setSnapshot] = useState<{ connection: OwnedAccountConnection; model: AuthModel } | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -34,6 +39,8 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
   const [memberProblem, setMemberProblem] = useState('');
   const [studyOpen, setStudyOpen] = useState(false);
   const [clipsOpen, setClipsOpen] = useState(false);
+  const [publicCirclesOpen, setPublicCirclesOpen] = useState(false);
+  const [circleChoice, setCircleChoice] = useState<PublicCircleChoice | null>(null);
   const [philemonHosting, setPhilemonHosting] = useState(false);
   const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
@@ -120,7 +127,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
   function close() {
     if (!validView()) return;
     invalidate(); preparing.current = false;
-    ++attempt.current; setConnecting(false); clearFields(); setEntered(null);
+    ++attempt.current; setConnecting(false); clearFields(); setEntered(null); setCircleChoice(null);
     const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
     setMemberContext(null);
     const old = current.current; current.current = null; old?.close(); setConnection(null); setSnapshot(null);
@@ -140,7 +147,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     if (!validView() || mode !== 'signin') return;
     const value = connection;
     if (!value?.controller.model().canClear) return;
-    invalidate(); setPhilemonHosting(false);
+    invalidate(); setPhilemonHosting(false); setCircleChoice(null);
     clearFields(); setEntered(null);
     const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
     setMemberContext(null);
@@ -177,7 +184,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
   function closeStudy(prepareHosting: boolean) {
     if (!validView() || !studyOpen || current.current) return;
     invalidate(); setStudyOpen(false);
-    if (prepareHosting) setPhilemonHosting(true);
+    if (prepareHosting) { setPhilemonHosting(true); setCircleChoice(null); }
   }
   function openClips() {
     if (!validView() || current.current || preparing.current) return;
@@ -188,12 +195,22 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     invalidate(); setClipsOpen(false);
     if (read) setStudyOpen(true);
   }
-  if (clipsOpen) return <ClipsScreen onBack={() => closeClips(false)} onRead={() => closeClips(true)}/>;
-  if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)}/>;
+  function openPublicCircles() {
+    if (!validView() || !active.current || current.current || preparing.current || publicCirclesOpen) return;
+    invalidate(); setPublicCirclesOpen(true);
+  }
+  function closePublicCircles(choice?: PublicCircleChoice) {
+    if (!validView() || !publicCirclesOpen || current.current || choice && !active.current) return;
+    invalidate(); setPublicCirclesOpen(false);
+    if (choice) { setClipsOpen(false); setStudyOpen(false); setPhilemonHosting(false); setCircleChoice(choice); }
+  }
+  if (publicCirclesOpen) return <PublicCirclesScreen prepare={publicCirclesPrepare} onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
+  if (clipsOpen) return <ClipsScreen onBack={() => closeClips(false)} onRead={() => closeClips(true)} onBrowse={openPublicCircles}/>;
+  if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)} onBrowse={openPublicCircles}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
-    retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} onClose={() => {
+    retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} circleChoice={circleChoice ?? undefined} onClose={() => {
       if (current.current !== connection || memberView.current !== memberContext) return;
-      const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberContext(null); setEntered(null);
+      const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberContext(null); setEntered(null); setCircleChoice(null);
     }}/>;
 
   return <SafeAreaView style={styles.screen}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
@@ -201,8 +218,16 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     <Text accessibilityRole="header" style={styles.title}>Your account, on this device</Text>
     <Text style={styles.copy}>Read deeply. Share thoughtfully. A Great Books community rooted in Christian and American traditions, open to everyone willing to explore in good faith.</Text>
     {!connection ? <>
+      <Action label="Find an online Circle" disabled={connecting} onPress={openPublicCircles}/>
       <Action label="Explore Clips" disabled={connecting} onPress={openClips}/>
       <Action label="Read Philemon" disabled={connecting} onPress={openStudy}/>
+    </> : null}
+    {circleChoice ? <>
+      <Text style={styles.note}>Sign in to continue with {circleChoice.title}.</Text>
+      <Action label="Clear selected Circle" onPress={() => {
+        if (!validView()) return;
+        invalidate(); setCircleChoice(null);
+      }}/>
     </> : null}
     {philemonHosting ? <>
       <Text style={styles.note}>Sign in and check your member account to prepare a weekly online Circle from the Philemon guide.</Text>

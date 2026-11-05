@@ -46,6 +46,12 @@ class MemberEntryRuntimeTest {
                     "assets://index.android.bundle", context.sourceURL)
             }
 
+            press(scenario, "Find an online Circle")
+            awaitStudyText(scenario, "Online Circles")
+            awaitStudyText(scenario, "Public Circle search is unavailable in this build.")
+            press(scenario, "Back from online Circles")
+            awaitEntry(scenario, initial)
+
             press(scenario, "Read Philemon")
             awaitStudyText(scenario, "Paul’s Letter to Philemon")
             awaitStudyText(scenario, "Grace to you and peace from God our Father and the Lord Jesus Christ.")
