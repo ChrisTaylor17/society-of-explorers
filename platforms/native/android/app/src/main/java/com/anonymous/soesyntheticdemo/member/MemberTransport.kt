@@ -72,6 +72,10 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     try { validate(input); transmit(id, input.url, input.method, input.body, mapOf("Authorization" to "Bearer " + input.bearer), success, failure) }
     catch (_: Exception) { cancel(id); failure() }
   }
+  fun sendReview(id: String, input: Input, success: (Result) -> Unit, failure: () -> Unit) {
+    try { validateReview(input); transmit(id, input.url, input.method, input.body, mapOf("Authorization" to "Bearer " + input.bearer), success, failure) }
+    catch (_: Exception) { cancel(id); failure() }
+  }
   fun sendAuth(id: String, input: AuthInput, success: (Result) -> Unit, failure: () -> Unit) {
     try {
       validateAuth(input)
@@ -156,6 +160,95 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     synchronized(lock) { closed = true }
     cancelAll(); offReset(); timer.shutdownNow()
     client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll()
+  }
+  /** Reviewer endpoints have a separate native entry. Ordinary member requests
+   * cannot acquire this lane; server assignment/conflict checks remain authoritative. */
+  private fun validateReview(input: Input) {
+    require(Regex("[A-Za-z0-9._~+/-]+=*").matches(input.bearer) && input.bearer.length <= 16384)
+    require(input.method in setOf("GET", "POST"))
+    val url = input.url.toHttpUrl()
+    val origin = "https://" + url.host + if (url.port == 443) "" else ":" + url.port
+    require(url.scheme == "https" && origin == config.origin && url.username.isEmpty() && url.password.isEmpty() && url.fragment == null && url.toString() == input.url)
+    if (url.encodedPath == "/api/admin/circles/messages") {
+      require(input.method == "GET")
+      url.encodedQuery?.let { require(it.startsWith("after=") && reviewUuid(it.removePrefix("after="))) }
+    } else {
+      val target = Regex("/api/admin/circles/([0-9a-f-]{36})/messages/([0-9a-f-]{36})(/coverage/decision|/coverage|/advice)?").matchEntire(url.encodedPath)
+        ?: throw IllegalArgumentException()
+      require(reviewUuid(target.groupValues[1]) && reviewUuid(target.groupValues[2]))
+      val suffix = target.groupValues[3]
+      if (suffix == "/coverage" && input.method == "GET") {
+        val query = Regex("sessionId=([0-9a-f-]{36})(?:&page=([1-9][0-9]{0,7}))?").matchEntire(url.encodedQuery ?: "")
+          ?: throw IllegalArgumentException()
+        require(reviewUuid(query.groupValues[1]))
+        if (query.groupValues[2].isNotEmpty()) require((query.groupValues[2].toIntOrNull() ?: 0) in 1..42949673)
+      } else {
+        require(url.encodedQuery == null)
+        if (suffix.isNotEmpty()) require(input.method == "POST")
+        if (input.method == "POST") validateReviewBody(input.body ?: throw IllegalArgumentException(), suffix)
+      }
+    }
+    if (input.method == "GET") require(input.body == null)
+    else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= 12000)
+  }
+  private fun reviewUuid(value: String) = uuid(value) && value == value.lowercase()
+  private fun reviewRevision(value: Any): Long {
+    require(value is Int || value is Long)
+    return (value as Number).toLong().also { require(it in 0..9007199254740991L) }
+  }
+  private fun reviewText(value: String, minimum: Int, maximum: Int) {
+    require(value.length in minimum..maximum)
+    require(value == value.trim { it in '\u0009'..'\u000d' || it == '\u0020' || it == '\u00a0' || it == '\u1680' || it in '\u2000'..'\u200a' || it == '\u2028' || it == '\u2029' || it == '\u202f' || it == '\u205f' || it == '\u3000' || it == '\ufeff' })
+    for (index in value.indices) {
+      val c = value[index]
+      require(c.code != 127 && (c.code >= 32 || c in listOf('\t', '\n', '\r')))
+      if (c in '\ud800'..'\udbff') require(index + 1 < value.length && value[index + 1] in '\udc00'..'\udfff')
+      if (c in '\udc00'..'\udfff') require(index > 0 && value[index - 1] in '\ud800'..'\udbff')
+    }
+  }
+  private fun validateReviewBody(body: String, suffix: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 12000)
+    val value = JSONObject(body)
+    val keys = value.keys().asSequence().toSet()
+    if (suffix == "/coverage" && value.opt("action") == "ack") {
+      require(keys == setOf("action", "sessionId", "pageToken"))
+      val session = value.get("sessionId"); val page = value.get("pageToken")
+      require(session is String && reviewUuid(session) && page is String && reviewUuid(page))
+      require(body == "{\"action\":\"ack\",\"sessionId\":\"$session\",\"pageToken\":\"$page\"}")
+      return
+    }
+    val revision = reviewRevision(value.get("expectedRevision")); val hash = value.get("contentHash")
+    require(hash is String && Regex("[a-f0-9]{64}").matches(hash))
+    if (suffix == "/advice") {
+      require(keys == setOf("expectedRevision", "contentHash"))
+      require(body == "{\"expectedRevision\":$revision,\"contentHash\":\"$hash\"}")
+      return
+    }
+    if (suffix == "/coverage") {
+      require(keys == setOf("action", "expectedRevision", "contentHash") && value.get("action") == "start")
+      require(body == "{\"action\":\"start\",\"expectedRevision\":$revision,\"contentHash\":\"$hash\"}")
+      return
+    }
+    require(suffix == "" || suffix == "/coverage/decision")
+    val expected = setOf("expectedRevision", "contentHash", "requestId", "action", "reason", "summary", "evidenceReportId", "evidenceExcerpt")
+    require(keys == if (suffix.isEmpty()) expected else expected + "sessionId")
+    val requestId = value.get("requestId"); val action = value.get("action"); val reason = value.get("reason"); val summary = value.get("summary")
+    require(requestId is String && reviewUuid(requestId) && summary is String && action is String && reason is String)
+    reviewText(summary, 20, 1000)
+    val evidenceId = value.get("evidenceReportId"); val excerpt = value.get("evidenceExcerpt")
+    require(evidenceId === JSONObject.NULL || evidenceId is String && reviewUuid(evidenceId))
+    if (action == "hide") {
+      require(reason in setOf("safety", "harassment", "spam", "misleading", "inappropriate") && excerpt is String)
+      reviewText(excerpt, 5, 500)
+    } else require(action == "restore" && reason in setOf("no_violation", "insufficient_evidence", "resolved") && evidenceId === JSONObject.NULL && excerpt === JSONObject.NULL)
+    val evidenceWire = if (evidenceId === JSONObject.NULL) "null" else profileQuote(evidenceId as String)
+    val excerptWire = if (excerpt === JSONObject.NULL) "null" else profileQuote(excerpt as String)
+    val prefix = "{\"expectedRevision\":$revision,\"contentHash\":\"$hash\",\"requestId\":\"$requestId\",\"action\":\"$action\",\"reason\":\"$reason\",\"summary\":" + profileQuote(summary) + ",\"evidenceReportId\":" + evidenceWire + ",\"evidenceExcerpt\":" + excerptWire
+    val canonical = if (suffix.isEmpty()) prefix + "}" else {
+      val session = value.get("sessionId"); require(session is String && reviewUuid(session))
+      prefix + ",\"sessionId\":\"$session\"}"
+    }
+    require(body == canonical)
   }
   /** Independent provider allowlist; no public/member path reaches this channel. */
   private fun validateAuth(input: AuthInput) {

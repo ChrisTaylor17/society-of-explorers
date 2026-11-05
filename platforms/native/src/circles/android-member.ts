@@ -21,6 +21,7 @@ export function createAndroidMemberAdapter(module: Spec | null): AndroidMemberAd
     capabilities: () => module.capabilities(),
     begin: generation => module.begin(generation),
     send: (id, request) => module.send(id, request),
+    ...(typeof module.sendReview === 'function' ? { sendReview: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendReview']>>[1]) => module.sendReview(id, request) } : {}),
     ...(typeof module.sendAuth === 'function' ? { sendAuth: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendAuth']>>[1]) => module.sendAuth(id, request) } : {}),
     ...(typeof module.prepareEmailLink === 'function' ? { prepareEmailLink: (...args: Parameters<NonNullable<NativeMemberBridge['prepareEmailLink']>>) => module.prepareEmailLink(...args) } : {}),
     ...(typeof module.pendingEmailLink === 'function' ? { pendingEmailLink: (...args: Parameters<NonNullable<NativeMemberBridge['pendingEmailLink']>>) => module.pendingEmailLink(...args) } : {}),

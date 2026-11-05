@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.native-author-consent.json",
+  "include": [
+    "../native/MessageReviewsScreen.tsx",
+    "../native/src/circles/android-member.ts",
+    "../native/src/circles/native-member-binding.ts",
+    "../native/src/auth/native-auth-ports.ts",
+    "../native/specs/NativeSoeMember.ts",
+    "native-author-consent-types.d.ts",
+    "native-message-review-types.d.ts"
+  ],
+  "exclude": []
+}

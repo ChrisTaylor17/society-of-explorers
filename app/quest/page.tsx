@@ -14,5 +14,6 @@ export default function QuestPage() {
     <p><Link href="/circles" style={button}>Find a Circle</Link></p>
     <p><Link href="/circles/mine" style={button}>My Circles</Link></p>
     <p><Link href="/quest/contributions" style={button}>My posted messages across Circles</Link></p>
+    <p><Link href="/quest/reviews" style={button}>Assigned message reviews</Link></p>
   </main></div>;
 }

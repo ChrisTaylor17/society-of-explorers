@@ -33,6 +33,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   // allocation, send, storage and delivery; no stale receipt can restore an epoch.
   const ports = await createNativeMemberPorts({
     capabilities: async () => ({ ...caps }), begin: generation => bridge.begin(generation), send: (id, request) => bridge.send(id, request), cancel: id => bridge.cancel(id),
+    ...(typeof bridge.sendReview === 'function' ? { sendReview: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendReview']>>[1]) => bridge.sendReview!(id, request) } : {}),
     ...(bridge.sendPublic ? { sendPublic: (id: string, request: Parameters<NonNullable<NativeMemberBridge['sendPublic']>>[1]) => bridge.sendPublic!(id, request) } : {}),
     read: (slot, generation) => bridge.read(slot, generation), write: (slot, value, generation) => bridge.write(slot, value, generation), remove: (slot, generation) => bridge.remove(slot, generation),
     resetAccountStorage: generation => bridge.resetAccountStorage(generation), ...(bridge.newRequestId ? { newRequestId: (generation: string) => bridge.newRequestId!(generation) } : {}),
@@ -207,6 +208,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
     } finally { requests.delete(controller); init.signal.removeEventListener('abort', abort); }
   };
   const transport = wrapTransport(ports.transport);
+  const reviewerTransport = ports.reviewerTransport ? wrapTransport(ports.reviewerTransport) : undefined;
   const publicTransport = ports.publicTransport ? wrapTransport(ports.publicTransport) : undefined;
   const passageTransport = ports.passageTransport ? wrapTransport(ports.passageTransport) : undefined;
   const profileTransport = ports.profileTransport ? wrapTransport(ports.profileTransport) : undefined;
@@ -221,7 +223,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
       if (resetStarted) throw unavailable(); resetStarted = true; retire();
       try { await ports.resetAccountStorage(); } finally { offRetirement(); ports.retireStorage(); }
     },
-    member: { origin, transport, aiConsent: ports.aiConsent, ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
+    member: { origin, transport, aiConsent: ports.aiConsent, ...(reviewerTransport ? { reviewerTransport } : {}), ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
   };
 }
 export type NativeAuthPorts = Awaited<ReturnType<typeof createNativeAuthPorts>>;

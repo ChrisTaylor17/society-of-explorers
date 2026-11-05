@@ -18,7 +18,7 @@ export async function prepareNativeMemberBinding(options: {
   const requests = new Set<AbortController>();
   const subscriptions = new Set<{ retire(): void }>();
   const assertOpen = () => { if (closed) throw unavailable(); };
-  const transport: CircleTransport = async (url, init) => {
+  const wrapTransport = (send: CircleTransport): CircleTransport => async (url, init) => {
     assertOpen();
     const controller = new AbortController();
     const abort = () => controller.abort();
@@ -27,12 +27,14 @@ export async function prepareNativeMemberBinding(options: {
     requests.add(controller);
     try {
       if (closed || init.signal.aborted) throw unavailable();
-      const result = await ports.transport(url, { ...init, signal: controller.signal });
+      const result = await send(url, { ...init, signal: controller.signal });
       assertOpen();
       return result;
     } catch { throw unavailable(); }
     finally { requests.delete(controller); init.signal.removeEventListener('abort', abort); }
   };
+  const transport = wrapTransport(ports.transport);
+  const reviewerTransport = ports.reviewerTransport ? wrapTransport(ports.reviewerTransport) : undefined;
   function bind(auth: ExistingVerifiedAuth, circleId: string, verificationTimeoutMs?: number): ExistingMemberCircleConfig {
     assertOpen();
     if (bound || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(circleId) ||
@@ -60,6 +62,7 @@ export async function prepareNativeMemberBinding(options: {
     };
     const createRequestId = ports.newRequestId;
     return { origin, circleId, auth: guardedAuth, transport, aiConsent: ports.aiConsent,
+      ...(reviewerTransport ? { reviewerTransport } : {}),
       ...(typeof createRequestId === 'function' ? { newRequestId: async () => { assertOpen(); const id = await createRequestId(); assertOpen(); return id; } } : {}),
       ...(verificationTimeoutMs === undefined ? {} : { verificationTimeoutMs }) };
   }

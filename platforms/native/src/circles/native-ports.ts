@@ -9,15 +9,17 @@ import { parseCircleCreateMutation, circleCreateMutationBody, parseCircleComplet
   CIRCLE_CREATE_BODY_MAX_BYTES, CIRCLE_COMPLETE_BODY_MAX_BYTES } from '../../../../lib/circles/hosting';
 import { parseProfileMutation } from '../../../../lib/members/profile';
 import { parseMessageAiConsentInput } from '../../../../lib/circles/message-ai-consent';
+import { validateMessageReviewRequest, MESSAGE_REVIEW_BODY_MAX_BYTES } from '../../../../lib/circles/message-review-wire';
 import { parseReadingProgressMutation, readingProgressMutationBody, READING_PROGRESS_BODY_MAX_BYTES } from '../../../../lib/books/reading-progress';
 
 /** The native implementation owns the durable storage generation. Every storage
  * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; emailAuthPolicy?: string; emailCallbackUrl?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; publicProfilePolicy?: string; savedReadingPolicy?: string; attendancePolicy?: string; hostingPolicy?: string; messageAiConsentPolicy?: string }>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; emailAuthPolicy?: string; emailCallbackUrl?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; publicProfilePolicy?: string; savedReadingPolicy?: string; attendancePolicy?: string; hostingPolicy?: string; messageAiConsentPolicy?: string; messageReviewPolicy?: string }>;
   newRequestId?(generation: string): Promise<string>;
   begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
+  sendReview?(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   sendAuth?(id: string, request: { url: string; method: 'GET' | 'POST'; bearer?: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   // Native strings are untrusted until native-auth-ports validates the envelope.
   prepareEmailLink?(generation: string, purpose: NativeEmailPurpose, email: string): Promise<unknown>;
@@ -79,7 +81,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
     setItem(name:string,value:string):Promise<void>{const s=slot(name);if(typeof value!=='string'||size(value)>65536)throw fail();return enqueue(async()=>{await bridge.write(s,value,nativeGeneration);if(!current())throw fail();});},
     removeItem(name:string):Promise<void>{const s=slot(name);return enqueue(async()=>{await bridge.remove(s,nativeGeneration);if(!current())throw fail();});},
   };
-  const makeTransport=(channel:'member'|'discovery'|'passage'|'profile'|'publicProfile'|'savedReading'|'attendance'|'hosting'|'edition'):CircleTransport=>async(url,init)=>{
+  const makeTransport=(channel:'member'|'discovery'|'passage'|'profile'|'publicProfile'|'savedReading'|'attendance'|'hosting'|'edition'|'reviewer'):CircleTransport=>async(url,init)=>{
     const publicRead = channel === 'discovery' || channel === 'passage' || channel === 'publicProfile' || channel === 'edition';
     let id:string|undefined;
     let finished=false,cancelled=false;
@@ -176,9 +178,11 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
         const value = typeof init.body === 'string' && size(init.body) <= 512 ? parseMessageAiConsentInput(JSON.parse(init.body)) : null;
         messageAiConsent = value !== null && init.body === JSON.stringify(value);
       }
-      const bodyLimit = messageAiConsent ? 512 : channel === 'hosting' ? u.pathname === '/api/circles' ? CIRCLE_CREATE_BODY_MAX_BYTES : CIRCLE_COMPLETE_BODY_MAX_BYTES
+      const reviewer = channel === 'reviewer' && (!hasQuery || Boolean(u.search))
+        && validateMessageReviewRequest(u.pathname + u.search, { method: init.method, ...(init.body === undefined ? {} : { body: init.body }) });
+      const bodyLimit = channel === 'reviewer' ? MESSAGE_REVIEW_BODY_MAX_BYTES : messageAiConsent ? 512 : channel === 'hosting' ? u.pathname === '/api/circles' ? CIRCLE_CREATE_BODY_MAX_BYTES : CIRCLE_COMPLETE_BODY_MAX_BYTES
         : channel === 'attendance' ? CIRCLE_ATTENDANCE_BODY_MAX_BYTES : channel === 'profile' ? 65536 : channel === 'savedReading' ? READING_PROGRESS_BODY_MAX_BYTES : 16384;
-      const approvedPath = publicRead ? discovery || passage || publicProfile || edition : channel === 'hosting' ? hosting : channel === 'profile' ? profile : channel === 'savedReading' ? savedReading : channel === 'attendance' ? attendance : messageAiConsent || account || contributions || mine || membershipChange
+      const approvedPath = publicRead ? discovery || passage || publicProfile || edition : channel === 'reviewer' ? reviewer : channel === 'hosting' ? hosting : channel === 'profile' ? profile : channel === 'savedReading' ? savedReading : channel === 'attendance' ? attendance : messageAiConsent || account || contributions || mine || membershipChange
         || Boolean(detail && isUuid(detail[1]) && init.method === 'GET' && !hasQuery) || (legacy ? isUuid(legacy[1]) && !hasQuery
         : discussion ? isUuid(discussion[1]) && (init.method === 'GET' ? query !== null && (!hasQuery || Boolean(u.search)) : init.method === 'POST' && !hasQuery)
         : preview ? isUuid(preview[1]) && init.method === 'POST' && !hasQuery
@@ -206,6 +210,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
         const requestId=await timed(Promise.race([begun,aborted]),timeout);
         if(signal.aborted||!current())throw fail();
         const transmission = publicRead ? bridge.sendPublic!(requestId,{url,method:'GET'})
+          : channel === 'reviewer' ? bridge.sendReview!(requestId,{url,method:init.method,bearer:match ? match[1] : '',...(init.body===undefined?{}:{body:init.body})})
           : bridge.send(requestId,{url,method:init.method,bearer:match ? match[1] : '',...(init.body===undefined?{}:{body:init.body})});
         const response=await timed(Promise.race([transmission,aborted]),timeout);
         if(signal.aborted||!current()||!Number.isInteger(response.status)||response.status<100||response.status>599||response.status>=300&&response.status<400||response.redirected!==false||response.url!==url||typeof response.body!=='string'||size(response.body)>1048576)throw fail();
@@ -220,6 +225,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
     finally {finished=true;queue.requests.delete(lifetime);init.signal.removeEventListener('abort',abortLifetime);}
   };
   const transport = makeTransport('member');
+  const reviewerTransport = caps.messageReviewPolicy === 'assigned-message-review-v1' && typeof bridge.sendReview === 'function' ? makeTransport('reviewer') : undefined;
   const publicTransport = caps.publicPolicy === 'circle-discovery-v1' && typeof bridge.sendPublic === 'function' ? makeTransport('discovery') : undefined;
   const passageTransport = caps.readingPolicy === 'pinned-passage-v1' && typeof bridge.sendPublic === 'function' ? makeTransport('passage') : undefined;
   const profileTransport = caps.profilePolicy === 'owner-profile-v1' ? makeTransport('profile') : undefined;
@@ -228,7 +234,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
   const attendanceTransport = caps.attendancePolicy === 'circle-rsvp-v1' ? makeTransport('attendance') : undefined;
   const hostingTransport = caps.hostingPolicy === 'circle-host-v1' ? makeTransport('hosting') : undefined;
   const editionTransport = caps.hostingPolicy === 'circle-host-v1' && typeof bridge.sendPublic === 'function' ? makeTransport('edition') : undefined;
-  return { transport, aiConsent, ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), storage, ...(newRequestId ? { newRequestId } : {}), retireStorage(){retired=true;},
+  return { transport, aiConsent, ...(reviewerTransport ? { reviewerTransport } : {}), ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), storage, ...(newRequestId ? { newRequestId } : {}), retireStorage(){retired=true;},
     onAccountRetired(listener:()=>void) { if(!current()){listener();return ()=>{};}queue.retirements.add(listener);return ()=>{queue.retirements.delete(listener);}; },
     async resetAccountStorage() {
       if(!current())throw fail();

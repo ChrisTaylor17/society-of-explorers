@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CircleScreen } from './CircleScreen';
 import { ContributionsScreen } from './ContributionsScreen';
+import { MessageReviewsScreen } from './MessageReviewsScreen';
 import { CircleDirectoryScreen } from './CircleDirectoryScreen';
 import { MemberProfileScreen } from './MemberProfileScreen';
 import { createMemberProfile, type MemberProfile } from '../shared/member-profile';
@@ -80,7 +81,7 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' } | null>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -88,6 +89,8 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
   const account = accountSnapshot.connection === connection ? accountSnapshot.model : connection?.account.model();
   const memberId = account?.member?.id;
   const directoryConfig = useMemo(() => connection && memberId ? { ...connection.host, memberId } : null, [connection, memberId]);
+  const reviewerConfig = useMemo(() => connection?.host.reviewerTransport && connection.host.newRequestId
+    ? { ...connection.host, reviewerTransport: connection.host.reviewerTransport, newRequestId: connection.host.newRequestId } : null, [connection]);
   useLayoutEffect(() => {
     const life = viewLife.current;
     life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
@@ -176,6 +179,8 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       initialMode={entered.destination} savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined} onBack={back} onClose={close}/>;
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
       onBack={back} onClose={close}/>;
+    if (entered.destination === 'reviews' && reviewerConfig) return <MessageReviewsScreen config={reviewerConfig} connectivity={connection.connectivity}
+      onBack={back} onClose={close}/>;
     if (connection.host.circleId) return <CircleScreen config={{ ...connection.host, circleId: connection.host.circleId }} connectivity={connection.connectivity} onClose={close}/>;
   }
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
@@ -217,6 +222,9 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); })}/> : null}
     <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'contributions' }); })}/>
+    <Action label="Check assigned message reviews" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !reviewerConfig}
+      onPress={() => act(() => { if (reviewerConfig && connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'reviews' }); })}/>
+    {!reviewerConfig ? <Text selectable style={styles.copy}>Assigned message reviews are unavailable in this app connection. You can use {config.origin}/moderation/messages in your browser. The review service checks your assignment.</Text> : null}
     <Action label="Close member view" onPress={close}/>
   </ScrollView></SafeAreaView>;
 }
