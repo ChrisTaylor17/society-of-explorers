@@ -2,7 +2,15 @@
 
 **No migration in this plan has been applied to the connected project.** Approval must name exact reviewed files, target, expected client breakage, restore evidence and acceptance checks. This document is a reviewable local plan, not a deployment instruction or implicit permission to change production.
 
-Current facts are in [current-service-readiness.md](current-service-readiness.md); metadata queries/results are archived under `verification/web/evidence/live-service-metadata-2026-11-04.json`. Local profile, ordinary-salon and Hall adapters are verified, but the production caller/restore inventory remains incomplete.
+The current caller and restore inventory remains incomplete. Catalog evidence is archived under `verification/web/evidence/live-service-metadata-2026-11-04.json`. The disposable rehearsal records the composed sequence and the later-state restrictions on reversal. [Current service readiness](current-service-readiness.md) · [Migration rehearsal](full-chain-migration-rehearsal.md)
+
+## Stage 0: choose the saved-reading policy baseline
+
+Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.
+
+If the owner inventory confirms those legacy policies, review `docs/sql/great-books-private-data.sql` before Stage 1. Verify the policy definitions, ownership and effective privileges before choosing this branch. The script recognizes policy names, refuses unexpected names and refuses residual inherited or column-level browser access. It removes the recognized policies, enables RLS and closes browser table grants on those two tables. Stage 1 then records that already-contained state. Its rollback would restore that recorded baseline, including the absence of those policies. Stage 0 has no restoration script in this plan.
+
+If both tables have no policies, proceed directly to Stage 1. The November 4 catalog query returned that state for `reading_progress` and `book_highlights`, with RLS disabled and broad browser table grants. Recheck the actual state before choosing a rollout path. Resolve unrecognized policies, inherited authority or unexpected column grants in a separate review. After Stage 9, the earlier two-table script would reopen raw service writes, so exclude it from any later replay.
 
 ## Stage 1: bounded private-data containment
 
@@ -57,7 +65,7 @@ Existing files and intended dependency order, after the separate strict baseline
 | 8 | `docs/sql/circle-discovery-unicode.sql` | Pinned generated fold/sort profile; verify embedded identity hash, do not hand edit. Can precede unrelated discussion deltas after prerequisites are reviewed. |
 | 9 | `docs/sql/circle-discovery-search.sql` | Service-only live discovery using participation/program/Unicode prerequisites. |
 
-`docs/sql/great-books-private-data.sql` is a separately reviewed two-table privacy candidate for `reading_progress`/`book_highlights`, not `great_books_progress`/`great_books_highlights`. Stage 1 already contains both pairs. Reconcile redundant operations and its policy expectations rather than automatically apply both as independent repairs.
+Stage 0 covers the conditional legacy-policy cleanup for `reading_progress` and `book_highlights`. Stage 1 covers raw access for those two tables and the separate `great_books_progress` and `great_books_highlights` tables.
 
 After private profile consent and the Circle chain, `book-salon-conversation.sql` supplies service-only ordinary-salon read/write RPCs with explicit published-profile joins, bounded messages and actor-bound posting. Its function-only reverse file preserves posts and containment. See `book-salon-conversation.md`; 23 final affected cases and five composed browser stories pass locally. Missing functions fail closed rather than falling back to raw tables. This does not resolve all old direct-Supabase callers.
 
@@ -81,6 +89,12 @@ Re-application and reversal require the exact recorded post-state. Reversal rest
 
 **Do not include `current_prompt_member_id()` in that revoke.** Its exact local 84-character body maps `auth.uid()` to `members.supabase_auth_id`; live metadata confirms eight policy dependencies. The complete unchanged Prompt Atlas migration reproduces their expression hashes and the invoker-view hash locally. Core raw-member containment and identity uniqueness preserve this lookup and its RLS paths in the synthetic compatibility proof. It is Supabase-subject mapping, not wallet-cookie authority, and no global role/default ACL changes are proposed.
 
+## Stage 6b: separate EXP event table containment
+
+The November 4 catalog records broad `exp_events` table grants for `anon` and `authenticated`, including `TRUNCATE`, while RLS and the owner SELECT policy are enabled. Review `exp-events-containment-preflight.sql` → `exp-events-containment-apply.sql` before Stage 8. The candidate locks the table with a bounded deadline, verifies ownership, role authority, table shape and policy, and revokes all table and column privileges for PUBLIC and the two browser roles. Existing rows, constraints, the owner policy, explicit service grants and effective service CRUD are preserved. The three legacy reward function bodies and their execution containment remain separate.
+
+The owner-only receipt binds the prior and contained states. `exp-events-containment-rollback.sql` restores prior access only when that receipt and the contained state match. It can reopen browser access to retained events, so reversal needs its own review. Stage 8 adds receipt foreign-key triggers to `exp_events` and changes the fingerprint. After that point the old apply and reversal refuse the newer state. Preserve the ledger and use a reviewed forward reconciliation or restore plan. A dated catalog projection and a single local backend establish the rehearsal scope. [Migration rehearsal](full-chain-migration-rehearsal.md)
+
 ## Stage 7: additive moderation workflows — locally verified, unapplied
 
 After the existing Circle chain, separately review these current candidates with their matching server/client changes:
@@ -102,7 +116,7 @@ The listing receipt candidate changes only four listing return projections in th
 
 ## Stage 8: atomic Thinker rewards — separate, unapplied candidate
 
-`docs/sql/thinker-reward-accounting.sql` adds a private immutable actor/request receipt table and two service-only invoker functions. One award transaction locks the current member balance, checks exact request replay, updates by the server-fixed 4/8 amount, inserts the existing EXP event and records its receipt. Failures roll back all three effects. Receipt lookup is read-only; a missing receipt remains an unknown result. Existing reward-function bodies and the separate execution-containment scripts remain unchanged.
+After Stage 6b, `docs/sql/thinker-reward-accounting.sql` adds a private immutable actor/request receipt table and two service-only invoker functions. One award transaction locks the current member balance, checks exact request replay, updates by the server-fixed 4/8 amount, inserts the existing EXP event and records its receipt. Failures roll back all three effects. A missing receipt leaves the award outcome uncertain. The accounting script uses the retained service access to the event ledger.
 
 This candidate requires a coordinated SQL/server/four-caller rollout: authenticated Thinker POSTs now require a logical request UUID, and the server uses the new accounting RPC without a stale-balance fallback. Older deployed callers without that key will be rejected by the new server. A successful model response without a verified award receipt shows an unconfirmed reward; manual confirmation does not call the model or retry the award. The key makes the award idempotent only; model requests, messages, memory and actions are not covered. See [accounting behavior and local evidence](thinker-reward-accounting.md).
 
@@ -110,7 +124,7 @@ Review current member/event schema, role/default privileges, object collisions a
 
 ## Stage 9: revision-bound saved reading — separate, unapplied candidate
 
-Review `reading-progress-preflight.sql` → `reading-progress-apply.sql` with the matching `/api/great-books/progress` server and both web/native clients. This candidate targets **`reading_progress` only**, not `great_books_progress` or highlights. It requires canonical `members` UUID keys, the table owner, a regular RLS-enabled table, the existing member/book unique key, no policies/custom triggers/rewrite rules, contained browser table/column privileges, and reviewed service-only grants. The earlier two-table `great-books-private-data.sql` candidate supplies that zero-policy privacy baseline in the local fixture. Stage 1 preserves historical policies, so Stage 1 alone does not satisfy the zero-policy check if an old `Progress open` policy remains. Reconcile the actual containment order and policy ownership; never bypass the preflight or blindly re-run the two-table candidate later.
+Review `reading-progress-preflight.sql` → `reading-progress-apply.sql` with the matching `/api/great-books/progress` server and both web/native clients. This candidate targets `reading_progress`. It requires canonical `members` UUID keys, the table owner, a regular RLS-enabled table, the existing member/book unique key, no policies, custom triggers or rewrite rules, contained browser table and column privileges, and reviewed service-only grants. Use the Stage 0 decision to establish the appropriate baseline before core containment and require the unmodified Stage 9 preflight to pass.
 
 The apply script repeats its checks under an ACCESS EXCLUSIVE lock, with five-second lock and sixty-second statement deadlines. It adds `progress_revision` (safe integer, initially zero) and `progress_removed` (initially false), preserving existing rows and legacy locators. A service-only SECURITY DEFINER RPC with fixed `search_path=pg_catalog,public`, owner-bound arguments and a narrow return projection creates/locks the member/book row and compares the reviewed revision atomically. The server verifies the canonical member and current materialized edition/block bounds before invoking it. SQL independently checks the canonical book set, bounded locator syntax/index, action envelope and actor existence; current edition metadata is a server/content trust boundary. Administrative owner writes remain trusted, not a client channel.
 
