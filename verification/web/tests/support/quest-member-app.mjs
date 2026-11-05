@@ -4,30 +4,34 @@ import assert from 'node:assert/strict';
 import { offlineApp } from './offline-app.mjs';
 import { rpc, requestId, COVERAGE_FIXTURE_LIMITS } from './review-coverage-db.mjs';
 import { createPublicProfileApp, publicProfileAppHashes } from './public-profile-app.mjs';
+import { runSql } from './circle-live-db.mjs';
 
 export const QUEST_ORIGIN = 'https://quest-member-composed.test';
 export const SUBJECTS = Object.freeze({ author: '72111111-1111-4111-8111-111111111111', outsider: '72222222-2222-4222-8222-222222222222' });
 export const TOKENS = Object.freeze({ author: 'NONISSUED_QUEST_COMPOSED_AUTHOR', outsider: 'NONISSUED_QUEST_COMPOSED_OUTSIDER' });
 export { publicProfileAppHashes as questMemberAppHashes, COVERAGE_FIXTURE_LIMITS };
 
-export async function questMemberApp() {
+export async function questMemberApp({ sharedSalon = false } = {}) {
   const f = await createPublicProfileApp(), app = offlineApp(), calls = [], argumentNames = new Map();
+  const requestAccounts = new WeakMap();
+  const salonRpc = 'soe_circle_salon_presence';
   let selected = { actor: 'author', provider: 'supabase' }, closed = false;
   const memberId = actor => actor === 'author' ? f.authorId : f.reviewerId;
   // Explicit synthetic identity authority. SQL independently authorizes the mapped
   // member; a real reviewer grant does not confer ordinary Circle membership.
   app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async req => {
     const bearer = req.headers.get('authorization');
-    const actor = bearer ? Object.keys(TOKENS).find(key => bearer === 'Bearer ' + TOKENS[key]) : selected?.actor;
+    const account = requestAccounts.get(req) ?? selected;
+    const actor = bearer ? Object.keys(TOKENS).find(key => bearer === 'Bearer ' + TOKENS[key]) : account?.actor;
     if (!actor) return null;
-    const provider = bearer ? 'supabase' : selected.provider;
+    const provider = bearer ? 'supabase' : account.provider;
     const subject = provider === 'supabase' ? SUBJECTS[actor] : memberId(actor);
     return { memberId: memberId(actor), member: { id: memberId(actor), supabase_auth_id: SUBJECTS[actor], display_name: 'Synthetic own-session name' }, auth: { provider, subject } };
   } }));
-  app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => ({ rpc: async (name, args) => {
+  async function callRpc(name, args) {
     const call = { name, keys: Object.keys(args).sort(), status: 'pending' }; calls.push(call);
     try {
-      assert.ok(['soe_circle_discussion_read_profiles', 'soe_circle_discussion_thread_profiles'].includes(name));
+      assert.ok(['soe_circle_discussion_read_profiles', 'soe_circle_discussion_thread_profiles'].includes(name) || (sharedSalon && name === salonRpc));
       if (!argumentNames.has(name)) {
         const result = await f.db.query("SELECT proargnames FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace", [name]);
         assert.equal(result.rows.length, 1); argumentNames.set(name, result.rows[0].proargnames);
@@ -37,9 +41,19 @@ export async function questMemberApp() {
       const data = await rpc(f.db, name, names.map(key => args[key])); call.status = 'ok';
       return { data, error: null };
     } catch (error) { call.status = error.code ?? 'FIXTURE_ERROR'; return { data: null, error: { code: call.status } }; }
-  } }) }));
+  }
+  app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => ({
+    rpc: (name, args) => name === salonRpc ? { abortSignal(signal) { signal.throwIfAborted(); return callRpc(name, args); } } : callRpc(name, args),
+  }) }));
   try {
     const member = app.load('app/api/auth/member/route.ts'), discussion = app.load('app/api/circles/[circleId]/discussion/route.ts');
+    let salon;
+    if (sharedSalon) {
+      app.context.AbortSignal = AbortSignal;
+      await f.db.query("UPDATE book_cohorts SET circle_format='online' WHERE id=$1", [f.circleId]);
+      await runSql(f.db, 'docs/sql/circle-salon-presence-apply.sql');
+      salon = app.load('app/api/circles/[circleId]/salon-presence/route.ts');
+    }
     const format = app.load('lib/circles/thread.ts').formatDiscussionContent;
     // 105 tied historical roots test exact keyset paging beyond the old 100.
     // Direct owner setup is synthetic, separate from all browser operations.
@@ -64,13 +78,17 @@ export async function questMemberApp() {
     assert.equal(expectedArchiveIds.length, 108);
     return { ...f, calls, replies, expectedArchiveIds, root: f.messageId,
       select(actor = 'author', provider = 'supabase') { assert.ok(['author', 'outsider'].includes(actor)); assert.ok(['supabase', 'wallet'].includes(provider)); selected = { actor, provider }; },
-      async dispatch(path, headers = {}, signal) {
+      enableSalon(enabled) { app.context.process.env.SOE_SHARED_SALON_ENABLED = enabled ? 'true' : 'false'; },
+      async dispatch(path, headers = {}, signal, { body, account } = {}) {
         assert.equal(closed, false);
         const url = new URL(path, QUEST_ORIGIN); assert.equal(url.origin, QUEST_ORIGIN);
-        const request = new Request(url, { method: 'GET', headers, signal });
+        const request = new Request(url, { method: body === undefined ? 'GET' : 'POST', headers, signal, body });
+        if (account) requestAccounts.set(request, account);
         // Cookie accessor is a NextRequest transport port, never an issued cookie.
         Object.defineProperty(request, 'cookies', { value: { get: () => undefined } });
         if (url.pathname === '/api/auth/member') { assert.equal(url.search, ''); assert.equal(request.headers.get('authorization'), null); return member.GET(request); }
+        const salonMatch = /^\/api\/circles\/([^/]+)\/salon-presence$/.exec(url.pathname);
+        if (salon && salonMatch) return salon.POST(request, { params: Promise.resolve({ circleId: salonMatch[1] }) });
         const match = /^\/api\/circles\/([^/]+)\/discussion$/.exec(url.pathname);
         assert.ok(match, 'Unexpected Quest composed route');
         return discussion.GET(request, { params: Promise.resolve({ circleId: match[1] }) });

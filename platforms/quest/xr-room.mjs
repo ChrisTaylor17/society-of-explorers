@@ -112,7 +112,7 @@ export async function renderXRRoom(session, doc, readPanel, signal, onFailure) {
           previous = content;
           if (content) {
             ctx.fillStyle = '#e3cb8e'; ctx.font = 'bold 30px system-ui';
-            ctx.fillText('SOCIETY OF EXPLORERS  ·  CIRCLE DISCUSSION', MARGIN, 66, WIDTH - 2 * MARGIN);
+            ctx.fillText('SOCIETY OF EXPLORERS  ·  ' + (content.label ?? 'CIRCLE DISCUSSION'), MARGIN, 66, WIDTH - 2 * MARGIN);
             ctx.fillStyle = '#eef0e7'; ctx.font = 'bold 39px system-ui';
             drawText(ctx, content.heading, 140, 1);
             ctx.font = '34px system-ui';

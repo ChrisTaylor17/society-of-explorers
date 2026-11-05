@@ -17,4 +17,5 @@ const qa = { factory() { factories++; return { auth }; }, counts: () => ({ facto
   actor(value: keyof typeof subjects) { actor = value; }, providerChanged: notifyAuthProviderChanged,
   emit(event: string) { for (const listener of [...listeners]) listener(event, null); }, unmount() { root.unmount(); } };
 Object.assign(window, { questComposedQa: qa });
-root.render(<React.StrictMode><QuestCircle circleId={document.documentElement.dataset.circle!} /></React.StrictMode>);
+root.render(<React.StrictMode><QuestCircle circleId={document.documentElement.dataset.circle!}
+  sharedSalon={document.documentElement.hasAttribute('data-shared-salon')} /></React.StrictMode>);

@@ -1,9 +1,11 @@
 import { createCircleHost, createVerifiedSupabaseCircleOwner, discussionContentSuffix } from './circle-host.mjs';
 import { createXRSession } from './xr-session.mjs';
 import { renderXRRoom } from './xr-room.mjs';
+import { createSalonPresence } from './salon-presence.mjs';
 
-const ids = ['quest-immersive-status', 'quest-immersive-enter', 'quest-immersive-exit'];
-export function immersiveControls(doc) {
+export function immersiveControls(doc, sharedSalon) {
+  const ids = ['quest-immersive-status', 'quest-immersive-enter', 'quest-immersive-exit'];
+  if (sharedSalon) ids.push('quest-salon-headset');
   const controls = ids.map(id => doc.getElementById(id));
   if (controls.some((control, index) => !control || doc.querySelectorAll(`[id="${ids[index]}"]`).length !== 1)) {
     throw Error('Immersive Circle controls unavailable');
@@ -11,21 +13,25 @@ export function immersiveControls(doc) {
   return controls;
 }
 
-/** The headset gets a separate, read-only lifetime. A visible headset may
+/** The headset gets a separate member lifetime. A visible headset may
  * have focus while the regular browser window's private session is paused. */
 export function mountImmersiveCircle({ window: win, document: doc, config, onModeChange }) {
-  const [status, enter, exit] = immersiveControls(doc);
+  const [status, enter, exit, enterSalon] = immersiveControls(doc, config.sharedSalon);
   const { origin, circleId, transport, immersive } = config;
   const discussion = origin + '/api/circles/' + circleId + '/discussion';
   let support = null, room = null, disposed = false, mode = false;
+  let view = 'discussion';
   let state = { open: false, busy: false, message: '' };
-  const prompt = (text, footer = 'Use the headset controls to leave the room.') => ({ heading: 'Your Circle', text, footer });
+  const prompt = (text, footer = 'Use the headset controls to leave the room.') => view === 'salon'
+    ? { label: 'SHARED SALON', heading: 'Your shared salon', text, footer }
+    : { heading: 'Your Circle', text, footer };
   let panel = prompt('Press the controller trigger to check your signed-in account.');
   const focused = () => doc.visibilityState === 'visible' && doc.hasFocus() && win.navigator.onLine !== false;
   const active = () => !disposed && headset.active() && win.navigator.onLine !== false;
   const update = () => {
     if (disposed) return;
     enter.disabled = support !== true || state.open || state.busy || !focused();
+    if (enterSalon) enterSalon.disabled = enter.disabled;
     exit.disabled = !state.open;
     status.textContent = support === null ? 'Checking this browser for immersive viewing…' :
       support ? state.message || 'Open the room, then use your controller to check access.' :
@@ -36,7 +42,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     room = null;
     panel = prompt('Press the controller trigger to check your signed-in account.');
     if (!current) return;
-    for (const release of [current.off, current.auth.retire, current.host.disconnect, current.binding.stop]) {
+    for (const release of [current.off, () => current.salon?.dispose(), current.auth.retire, () => current.host?.disconnect(), current.binding.stop]) {
       try { release(); } catch { /* Complete each independent retirement. */ }
     }
   }
@@ -55,15 +61,24 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     const auth = immersive.createAuth(active);
     try {
       const binding = createVerifiedSupabaseCircleOwner(auth.auth);
-      const host = createCircleHost({ origin, circleId, owner: binding.owner,
+      const host = view === 'discussion' ? createCircleHost({ origin, circleId, owner: binding.owner,
         transport(url, init) {
           if (!active() || url !== discussion || init.method !== 'GET') throw Error('Immersive Circle read unavailable');
           return transport(url, init);
         },
-      });
-      const current = { auth, binding, host, scope: null, off: () => {}, pending: false, cards: [], index: 0 };
+      }) : null;
+      const current = { auth, binding, host, salon: null, scope: null, off: () => {}, pending: false, cards: [], index: 0 };
       room = current;
-      host.connect();
+      host?.connect();
+      if (view === 'salon') current.salon = createSalonPresence({
+        window: win, origin, circleId, transport, owner: binding.owner, isActive: active,
+        onState(model) {
+          if (room !== current || !active()) return;
+          const footer = model.phase === 'present' ? 'Trigger to leave the salon. Squeeze to exit the headset room.' :
+            model.phase === 'idle' ? 'Trigger to join. Squeeze to exit the headset room.' : 'Squeeze to exit the headset room.';
+          panel = prompt(model.message, footer);
+        },
+      });
       current.off = binding.subscribe(model => {
         if (room !== current) return;
         const scope = binding.owner.scope();
@@ -71,7 +86,8 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
           void headset.leave('Your member session changed. Open the room again to check access.');
         } else if (scope) {
           current.scope = scope;
-          panel = prompt('Press the trigger to check Circle access and load recent discussion.');
+          panel = prompt(current.salon ? 'Press the trigger to join the shared salon count.' :
+            'Press the trigger to check Circle access and load recent discussion.');
         } else {
           panel = prompt(model.busy ? 'Checking your signed-in account…' :
             'Press the trigger to check your signed-in account. Sign in through the regular browser if needed.');
@@ -94,6 +110,11 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     try {
       if (!current) { await prepare().binding.start(); return; }
       if (!current.scope) { await current.binding.check(); return; }
+      if (current.salon) {
+        if (current.salon.model().phase === 'present') await current.salon.leave();
+        else await current.salon.join();
+        return;
+      }
       if (current.index + 1 < current.cards.length) { current.index++; showCard(current); return; }
       current.pending = true;
       current.cards = [];
@@ -118,11 +139,17 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       if (room === current && active()) panel = prompt('Circle access could not be checked. Trigger to try again or use the regular Circle view.');
     } finally { if (current && room === current) current.pending = false; }
   }
-  const open = () => { if (!enter.disabled && !enter.closest('[hidden]') && focused()) void headset.enter(); };
+  const open = (control, next) => {
+    if (control.disabled || control.closest('[hidden]') || !focused()) return;
+    view = next;
+    panel = prompt('Press the controller trigger to check your signed-in account.');
+    void headset.enter();
+  };
   const close = () => void headset.leave();
   const offline = () => { void headset.leave('Connection lost. Private discussion cleared. Re-enter when online.'); update(); };
-  const listeners = [[enter, 'click', open], [exit, 'click', close], [win, 'offline', offline],
+  const listeners = [[enter, 'click', () => open(enter, 'discussion')], [exit, 'click', close], [win, 'offline', offline],
     [win, 'online', update], [win, 'focus', update], [win, 'blur', update], [doc, 'visibilitychange', update]];
+  if (enterSalon) listeners.push([enterSalon, 'click', () => open(enterSalon, 'salon')]);
   for (const [target, event, handler] of listeners) target.addEventListener(event, handler);
   update();
   void headset.supported().then(value => { support = value; update(); });
@@ -133,6 +160,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       for (const [target, event, handler] of listeners) target.removeEventListener(event, handler);
       void headset.dispose();
       enter.disabled = exit.disabled = true;
+      if (enterSalon) enterSalon.disabled = true;
       status.textContent = 'Connect a member account to open the immersive room.';
     },
   };

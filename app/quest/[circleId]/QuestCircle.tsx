@@ -20,7 +20,7 @@ function providerConfigured() {
 
 /** The platform view owns this DOM island. React only owns its surrounding
  * connect controls; no credential or private message enters React props/state. */
-export default function QuestCircle({ circleId }: { circleId?: string }) {
+export default function QuestCircle({ circleId, sharedSalon = false }: { circleId?: string; sharedSalon?: boolean }) {
   const connection = useRef<Connection | null>(null);
   const lifetime = useRef({ mounted: false, generation: 0 });
   const [phase, setPhase] = useState<'closed' | 'connecting' | 'connected'>('closed');
@@ -68,7 +68,7 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
       const memberAuth = verifiedAuth(() => document.visibilityState === 'visible' && document.hasFocus());
       try {
         const view = circleId
-          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, auth: memberAuth.auth, aiConsent: true,
+          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, auth: memberAuth.auth, aiConsent: true, sharedSalon,
             immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate } } })
           : mountExistingMemberContributions({ window, document, config: { origin, auth: memberAuth.auth, aiConsent: true } });
         connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
@@ -132,6 +132,13 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
         </section>
         <button id="member-contributions-return" type="button" disabled>Return to Circle</button>
       </section>
+      {circleId && sharedSalon ? <section aria-labelledby="quest-salon-heading">
+        <h2 id="quest-salon-heading">Shared salon</h2>
+        <p>Check in to see how many Circle members are here. Other members in this room can see the count. Use the Circle’s meeting link for live conversation.</p>
+        <p id="quest-salon-status" role="status">Connect a member account to join the shared salon.</p>
+        <button id="quest-salon-join" type="button" disabled>Join shared salon in this browser</button>
+        <button id="quest-salon-leave" type="button" disabled>Leave shared salon</button>
+      </section> : null}
       <div id="member-circle-workspace">
       {circleId ? <>
       <section aria-labelledby="quest-immersive-heading">
@@ -140,6 +147,7 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
         <p>Opening the room clears the regular Circle view. Check your session when you return.</p>
         <p id="quest-immersive-status" role="status">Connect a member account to open the immersive room.</p>
         <button id="quest-immersive-enter" type="button" disabled>Enter immersive room</button>
+        {sharedSalon ? <button id="quest-salon-headset" type="button" disabled>Enter shared salon in headset</button> : null}
         <button id="quest-immersive-exit" type="button" disabled>Exit immersive room</button>
       </section>
       <section aria-label="Circle access"><p id="circle-host-status" role="status">Circle access is not connected.</p><p id="circle-read-status" role="status" /><button id="circle-refresh" type="button" disabled>Refresh circle access</button><button id="circle-archive-open" type="button" disabled>Open discussion archive</button><button id="circle-close" type="button" disabled>Close and clear Circle</button></section>

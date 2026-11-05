@@ -2,6 +2,7 @@ import {createVerifiedSupabaseCircleOwner,memberCircleConfig,approvedOrigin} fro
 import {mountCirclePage,browserCircleTransport,assertCircleMarkup} from './circle-view.mjs';
 import {assertContributionsMarkup,mountMemberContributions} from './member-contributions-view.mjs';
 import {immersiveControls,mountImmersiveCircle} from './immersive-circle.mjs';
+import {mountBrowserSalon,salonControls} from './salon-presence.mjs';
 export {assertContributionsMarkup};
 /** The authenticated application supplies its existing client. Account checks
  * start only on a deliberate action in the regular window or headset room. */
@@ -10,8 +11,10 @@ export function mountExistingMemberContributions(options) { return mount(options
 function mount({window:win,document:doc,config},withCircle) {
   if(withCircle)assertCircleMarkup(doc);
   const immersive=withCircle?config?.immersive:null;
+  const sharedSalon=withCircle&&config?.sharedSalon===true;
+  if(sharedSalon)salonControls(doc);
   if(immersive){
-    immersiveControls(doc);
+    immersiveControls(doc,sharedSalon);
     if(typeof immersive.createAuth!=='function'||typeof immersive.pauseRegular!=='function')throw Error('Immersive Circle configuration unavailable');
   }
   const aiConsent=config?.aiConsent===undefined?false:config.aiConsent;
@@ -25,25 +28,28 @@ function mount({window:win,document:doc,config},withCircle) {
   if(!approved)throw Error('Member Circle configuration unavailable');
   const {auth,verificationTimeoutMs,...hostConfig}=approved;
   const binding=createVerifiedSupabaseCircleOwner(auth,{timeoutMs:verificationTimeoutMs});
-  let visible=doc.visibilityState==='visible',focused=doc.hasFocus(),online=win.navigator.onLine!==false,disposed=false,started=false,screen=null,contributions=null,off=()=>{},room=null,immersiveOpen=false;
+  let visible=doc.visibilityState==='visible',focused=doc.hasFocus(),online=win.navigator.onLine!==false,disposed=false,started=false,screen=null,contributions=null,off=()=>{},room=null,immersiveOpen=false,browserSalon=null;
+  const regularActive=()=>!disposed&&visible&&focused&&online&&!immersiveOpen;
   const handlers=[];
   const dispose=()=>{
     if(disposed)return;disposed=true;
-    for(const stop of [()=>room?.dispose(),()=>binding.stop(),()=>contributions?.dispose(),()=>screen?.dispose(),()=>off(),...handlers]){try{stop();}catch{/* Finish every independent retirement step. */}}
+    for(const stop of [()=>room?.dispose(),()=>browserSalon?.dispose(),()=>binding.stop(),()=>contributions?.dispose(),()=>screen?.dispose(),()=>off(),...handlers]){try{stop();}catch{/* Finish every independent retirement step. */}}
     handlers.length=0;
   };
   try {
     if(withCircle)screen=mountCirclePage({window:win,document:doc,config:{...hostConfig,owner:binding.owner}});
     contributions=mountMemberContributions({window:win,document:doc,config:{...hostConfig,aiConsent,owner:binding.owner},circleHost:screen?.host});
-    const renderSession=m=>{status.textContent=m.message;button.disabled=m.busy||!m.active;button.textContent=m.busy?'Checking member session…':'Check member session';};
+    if(sharedSalon)browserSalon=mountBrowserSalon(doc,{window:win,...hostConfig,owner:binding.owner,isActive:regularActive});
+    const renderSession=m=>{status.textContent=m.message;button.disabled=m.busy||!m.active;button.textContent=m.busy?'Checking member session…':'Check member session';browserSalon?.render();};
     off=binding.subscribe(renderSession);
     const listen=(target,event,fn)=>{target.addEventListener(event,fn);handlers.push(()=>target.removeEventListener(event,fn));};
     const activity=()=>{
       if(disposed)return;
-      binding.activity(visible&&focused&&online&&!immersiveOpen);
+      if(!regularActive())browserSalon?.retire();
+      binding.activity(regularActive());
       renderSession(binding.model());
     };
-    if(withCircle&&immersive)room=mountImmersiveCircle({window:win,document:doc,config:{...hostConfig,immersive},onModeChange(open){
+    if(withCircle&&immersive)room=mountImmersiveCircle({window:win,document:doc,config:{...hostConfig,immersive,sharedSalon},onModeChange(open){
       immersiveOpen=open;
       if(open)immersive.pauseRegular();
       activity();
