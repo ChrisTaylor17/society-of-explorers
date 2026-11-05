@@ -28,7 +28,7 @@ The preceding contribution milestone's 39 evidence files were archived byte-for-
 
 ## Remaining account parity and acceptance
 
-Native signup/email confirmation, password recovery, Google/system-browser PKCE, native discovery/selection and full profile/reading parity remain open. The SDK's PKCE fallback can use weak randomness/plain challenges when secure native crypto is absent; no PKCE operation is exposed by this milestone. A later browser/PKCE flow must verify secure randomness, SHA-256 and exact callback ownership.
+This historical milestone exposed no PKCE operation. The later [native email account milestone](native-email-auth.md) adds signup, confirmation/resend and password recovery using native secure randomness/SHA-256 and an independently scoped callback. It avoids the SDK's insecure-crypto fallback. Native discovery, profile and reading composition also have later local proofs. Google/system-browser sign-in, real provider and installed-device acceptance remain open; historical counts here do not verify those later changes.
 
 Native dependency acquisition, full lockfile installation, Codegen, Kotlin/Gradle build and Android device testing still need the pending bounded toolchain approval. iOS has no generated native project or equivalent protected implementation. Provider configuration, real email/password/refresh acceptance, remote session revocation, storage/reset interruption, TLS, lifecycle/input/accessibility and signing remain release gates. No provider account sign-in, issued credential, download, install, production change or spending is part of this local proof.
 

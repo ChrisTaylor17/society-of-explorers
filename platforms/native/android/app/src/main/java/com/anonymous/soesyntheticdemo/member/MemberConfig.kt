@@ -5,6 +5,8 @@ import java.net.URI
 import java.security.MessageDigest
 
 internal class MemberConfig private constructor(val origin: String, val storageKey: String, val providerOrigin: String, val publishableKey: String) {
+  // Derived from the installed variant, never supplied by JS or an Intent.
+  val emailCallbackUrl: String = BuildConfig.APPLICATION_ID + ".email://auth/callback"
   // Neither namespace nor filenames contain credentials or caller-controlled paths.
   val namespace: String = MessageDigest.getInstance("SHA-256")
     .digest((BuildConfig.APPLICATION_ID + "|" + origin + "|" + storageKey + if (providerOrigin.isEmpty()) "" else "|" + providerOrigin + "|" + publishableKey).toByteArray(Charsets.UTF_8))

@@ -13,18 +13,23 @@ import java.util.UUID
 
 /** Actual app-local TurboModule; generated supertype is a later Codegen gate. */
 @ReactModule(name = NativeSoeMemberModule.NAME)
-class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberSpec(context) {
+class NativeSoeMemberModule(private val context: ReactApplicationContext) : NativeSoeMemberSpec(context) {
   private val closed = AtomicBoolean(false)
   private val worker = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, ArrayBlockingQueue<Runnable>(64))
   private val pending = mutableSetOf<Reply>()
   private val config by lazy { MemberConfig.configured() ?: throw IllegalStateException() }
   private val store by lazy { MemberSecureStore.open(context, config) }
   private var transportValue: MemberTransport? = null
+  private var emailValue: EmailLinkSession? = null
   private val connectivity = MemberConnectivity(context) { state ->
+    if (state != "online") EmailLinkLifecycle.retireConnectivity()
     if (!closed.get()) { try { emitOnConnectivityChange(Arguments.createMap().apply { putString("state", state) }) } catch (_: Exception) { /* No JS listener/context. */ } }
   }
   private fun transport(): MemberTransport = synchronized(this) {
     check(!closed.get()); transportValue ?: MemberTransport(config, store).also { transportValue = it }
+  }
+  private fun emailSession(): EmailLinkSession = synchronized(this) {
+    check(!closed.get()); emailValue ?: EmailLinkSession.open(context, config).also { emailValue = it }
   }
   private inner class Reply(private val promise: Promise) {
     private val settled = AtomicBoolean(false)
@@ -36,6 +41,14 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
     val reply = Reply(promise)
     try { worker.execute { try { check(!closed.get()); block(reply) } catch (_: Exception) { reply.fail() } } }
     catch (_: Exception) { reply.fail() }
+  }
+  private fun emailWork(promise: Promise, block: (Reply, Long) -> Unit) {
+    // Capture BEFORE FIFO queueing: a paused/resumed Activity cannot authorize
+    // old queued preparations or claims with its new foreground epoch.
+    val epoch = try { check(connectivity.snapshot() == "online"); EmailLinkLifecycle.stamp() } catch (_: Exception) {
+      promise.reject("SOE_MEMBER_UNAVAILABLE", "Native member service unavailable"); return
+    }
+    work(promise) { reply -> connectivity.withOnline { EmailLinkLifecycle.withCurrent(epoch) { block(reply, epoch) } } }
   }
   override fun getName() = NAME
   override fun capabilities(promise: Promise) = work(promise) { reply ->
@@ -53,6 +66,7 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
       putString("hostingPolicy", "circle-host-v1")
       if (config.providerOrigin.isNotEmpty()) {
         putString("authPolicy", "supabase-password-v1"); putString("providerOrigin", config.providerOrigin); putString("publishableKey", config.publishableKey)
+        putString("emailAuthPolicy", "supabase-email-pkce-v1"); putString("emailCallbackUrl", config.emailCallbackUrl)
       }
     })
   }
@@ -81,6 +95,26 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
       })
     }, { reply.fail() })
   }
+  override fun prepareEmailLink(generation: String, purpose: String, email: String, promise: Promise) = emailWork(promise) { reply, epoch ->
+    reply.resolve(Arguments.makeNativeMap(emailSession().prepare(generation, epoch, purpose, email)))
+  }
+  override fun pendingEmailLink(generation: String, promise: Promise) = emailWork(promise) { reply, epoch ->
+    reply.resolve(emailSession().pending(generation, epoch)?.let { Arguments.makeNativeMap(it) })
+  }
+  override fun claimEmailLink(generation: String, flowId: String, promise: Promise) = emailWork(promise) { reply, epoch ->
+    reply.resolve(Arguments.makeNativeMap(emailSession().claim(generation, epoch, flowId)))
+  }
+  override fun discardEmailLink(generation: String, flowId: String, promise: Promise) = work(promise) { reply ->
+    // Local-only erasure is safe while inactive; exact flow protects a newer link.
+    emailSession().discard(generation, flowId); reply.resolve(null)
+  }
+  override fun sendEmailAuth(id: String, request: ReadableMap, promise: Promise) = emailWork(promise) { reply, epoch ->
+    transport().sendEmailAuth(id, MemberTransport.emailInput(request), emailSession(), epoch, { result ->
+      reply.resolve(Arguments.createMap().apply {
+        putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
+      })
+    }, { reply.fail() })
+  }
   override fun cancel(id: String, promise: Promise) {
     // Cancellation never waits behind storage/decryption/reset work.
     try { synchronized(this) { transportValue }?.cancel(id); promise.resolve(null) }
@@ -99,7 +133,7 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
   override fun invalidate() {
     if (closed.compareAndSet(false, true)) {
       connectivity.close()
-      synchronized(this) { transportValue?.close(); transportValue = null }
+      synchronized(this) { emailValue?.retire(); emailValue = null; transportValue?.close(); transportValue = null }
       synchronized(pending) { pending.toList() }.forEach { it.fail() }
       worker.shutdownNow()
     }

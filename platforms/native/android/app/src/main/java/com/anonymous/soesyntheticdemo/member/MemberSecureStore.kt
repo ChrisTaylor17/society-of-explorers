@@ -82,6 +82,15 @@ internal class MemberSecureStore private constructor(private val context: Contex
     retirements.add(listener)
     return { synchronized(this) { retirements.remove(listener); Unit } }
   }
+  // Reserved typed email-flow storage is deliberately outside the generic JS
+  // session/pkce/user slot API. Reset still clears it in the same durable epoch.
+  @Synchronized internal fun emailRead(expected: String): String? = withGeneration(expected) { ready().slots[EMAIL_SLOT] }
+  @Synchronized internal fun emailWrite(expected: String, value: String?) = withGeneration(expected) {
+    require(value == null || value.toByteArray(Charsets.UTF_8).size <= 8192)
+    val current = ready(); val next = Record(current.generation, current.slots.toMutableMap())
+    if (value == null) next.slots.remove(EMAIL_SLOT) else next.slots[EMAIL_SLOT] = value
+    persist(next); record = next
+  }
   @Synchronized fun reset(expected: String): Pair<String, String> = withGeneration(expected) {
     val previous = ready().generation
     val next = UUID.randomUUID().toString()
@@ -131,7 +140,12 @@ internal class MemberSecureStore private constructor(private val context: Contex
     require(decoded.keys().asSequence().toSet() == setOf("version", "generation", "slots") && decoded.getInt("version") == 2)
     val generation = decoded.getString("generation"); MemberConfig.generation(generation)
     val slots = decoded.getJSONObject("slots"); val values = mutableMapOf<String, String>()
-    for (slot in slots.keys()) { MemberConfig.slot(slot); val value = slots.getString(slot); MemberConfig.value(value); values[slot] = value }
+    for (slot in slots.keys()) {
+      if (slot != EMAIL_SLOT) MemberConfig.slot(slot)
+      val value = slots.getString(slot); MemberConfig.value(value)
+      if (slot == EMAIL_SLOT) require(value.toByteArray(Charsets.UTF_8).size <= 8192)
+      values[slot] = value
+    }
     return Record(generation, values)
   }
   private fun atomicWrite(file: AtomicFile, bytes: ByteArray) {
@@ -146,6 +160,7 @@ internal class MemberSecureStore private constructor(private val context: Contex
     output.toByteArray()
   }
   companion object {
+    private const val EMAIL_SLOT = "email-link-v1"
     private const val MAX_RECORD = 1300000
     private val stores = mutableMapOf<String, MemberSecureStore>()
     @Synchronized fun open(context: Context, config: MemberConfig): MemberSecureStore =

@@ -1,6 +1,7 @@
 import { approvedOrigin, type CircleTransport } from '../circles/host';
 import { createNativeMemberPorts, type NativeMemberBridge } from '../circles/native-ports';
 import { isUuid } from '../../../../lib/ids/uuid';
+import type { NativeEmailAuthPorts, NativeEmailPending, NativeEmailClaim, NativeEmailPurpose } from './email-auth-types';
 
 export const NATIVE_AUTH_POLICY = 'supabase-password-v1';
 const unavailable = () => Error('Native account connection unavailable');
@@ -37,11 +38,15 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
     resetAccountStorage: generation => bridge.resetAccountStorage(generation), ...(bridge.newRequestId ? { newRequestId: (generation: string) => bridge.newRequestId!(generation) } : {}),
   }, { origin, storageKey: storageKey, timeoutMs: timeout });
   let retired = false, resetStarted = false, offRetirement = () => {};
-  const requests = new Set<AbortController>(), listeners = new Set<() => void>();
+  const requests = new Set<AbortController>(), listeners = new Set<() => void>(), emailClaims = new Set<string>();
   const assertOpen = () => { if (retired) throw unavailable(); };
   function retire() {
     if (retired) return; retired = true; offRetirement();
     for (const controller of requests) controller.abort();
+    // Direct local retirement remains available after the JS wrapper is closed.
+    // Native binds the generation and exact flow, so this cannot delete a newer link.
+    for (const id of emailClaims) void bridge!.discardEmailLink?.(caps.storageGeneration, id).catch(() => {});
+    emailClaims.clear();
     for (const listener of Array.from(listeners)) { try { listener(); } catch { /* Retire all owners independently. */ } }
     listeners.clear();
   }
@@ -87,8 +92,8 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
     return { url: input, method: method as 'GET' | 'POST', ...(['user', 'logout'].includes(operation) ? { bearer } : {}),
       ...(typeof init.body === 'string' ? { body: init.body } : {}) };
   }
-  const fetch = async (input: string, init: RequestInit): Promise<Response> => {
-    assertOpen(); const request = parse(input, init), controller = new AbortController(), signal = controller.signal;
+  const dispatch = async (input: string, init: RequestInit, send: (id: string) => ReturnType<NonNullable<NativeMemberBridge['sendAuth']>>): Promise<Response> => {
+    assertOpen(); const controller = new AbortController(), signal = controller.signal;
     const abort = () => controller.abort(); init.signal!.addEventListener('abort', abort, { once: true }); requests.add(controller);
     let id: string | undefined, finished = false, cancelled = false, timeoutId: ReturnType<typeof setTimeout> | undefined, rejectAbort = () => {};
     const current = () => !retired && !signal.aborted && !init.signal!.aborted;
@@ -102,7 +107,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
         const allocated = await allocation;
         if (!handle(allocated)) throw unavailable(); id = allocated;
         if (!current()) throw unavailable();
-        const result = await bridge.sendAuth!(id, request);
+        const result = await send(id);
         if (!current() || !result || !Number.isInteger(result.status) || result.status < 200 || result.status > 599 || result.status >= 300 && result.status < 400
           || result.redirected !== false || result.url !== input || typeof result.body !== 'string' || bytes(result.body) > 1048576) throw unavailable();
         const response = new Response(result.status === 204 || result.status === 205 || result.status === 304 ? null : result.body,
@@ -118,6 +123,81 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
     } catch { cancel(); throw unavailable(); }
     finally { finished = true; clearTimeout(timeoutId); signal.removeEventListener('abort', cancel); signal.removeEventListener('abort', rejectAbort); init.signal!.removeEventListener('abort', abort); requests.delete(controller); }
   };
+  const fetch = async (input: string, init: RequestInit): Promise<Response> => {
+    assertOpen(); const request = parse(input, init); return dispatch(input, init, id => bridge.sendAuth!(id, request));
+  };
+  // Optional email lane has its own native allowlist and flow capability. The
+  // existing password-v1 fetch parser above continues to reject every new path.
+  let email: NativeEmailAuthPorts | undefined;
+  if (caps.emailAuthPolicy === 'supabase-email-pkce-v1') {
+    const callbackUrl = caps.emailCallbackUrl;
+    if (typeof callbackUrl !== 'string' || !/^[a-z][a-z0-9+.-]{1,120}:\/\/auth\/callback$/.test(callbackUrl)
+      || !bridge.prepareEmailLink || !bridge.pendingEmailLink || !bridge.claimEmailLink || !bridge.discardEmailLink || !bridge.sendEmailAuth) throw unavailable();
+    const flow = (value: unknown): value is string => isUuid(value) && value === value.toLowerCase();
+    const address = (value: unknown): value is string => validText(value, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    const purpose = (value: unknown): value is NativeEmailPurpose => value === 'signup' || value === 'recovery';
+    function parsePending(value: unknown): NativeEmailPending {
+      if (!plain(value) || !exactKeys(value, ['flowId', 'purpose', 'email', 'challenge', 'redirectTo', 'createdAt', 'expiresAt', 'phase'])
+        || !flow(value.flowId) || !purpose(value.purpose) || !address(value.email) || typeof value.challenge !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(value.challenge)
+        || value.redirectTo !== callbackUrl + '?flow=' + value.flowId || !Number.isSafeInteger(value.createdAt) || !Number.isSafeInteger(value.expiresAt)
+        || (value.createdAt as number) > Date.now() + 30000 || (value.expiresAt as number) !== (value.createdAt as number) + 3600000 || (value.expiresAt as number) <= Date.now()
+        || !['waiting', 'callback_ready', 'callback_error'].some(phase => phase === value.phase)) throw unavailable();
+      return { ...value } as NativeEmailPending;
+    }
+    function parseClaim(value: unknown, id: string): NativeEmailClaim {
+      if (!plain(value) || !exactKeys(value, ['flowId', 'purpose', 'email', 'code', 'verifier', 'expiresAt']) || value.flowId !== id || !purpose(value.purpose) || !address(value.email)
+        || typeof value.code !== 'string' || !/^[A-Za-z0-9._~-]{1,2048}$/.test(value.code) || typeof value.verifier !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(value.verifier)
+        || !Number.isSafeInteger(value.expiresAt) || (value.expiresAt as number) <= Date.now() || (value.expiresAt as number) > Date.now() + 3630000) throw unavailable();
+      return { ...value } as NativeEmailClaim;
+    }
+    async function local<T>(signal: AbortSignal, work: () => Promise<T>): Promise<T> {
+      assertOpen(); if (!signal || signal.aborted) throw unavailable(); const controller = new AbortController(), abort = () => controller.abort();
+      signal.addEventListener('abort', abort, { once: true }); requests.add(controller); let timer: ReturnType<typeof setTimeout> | undefined, rejectAbort = () => {};
+      try {
+        const value = await Promise.race([Promise.resolve().then(() => { assertOpen(); if (signal.aborted || controller.signal.aborted) throw unavailable(); return work(); }),
+          new Promise<never>((_, reject) => { rejectAbort = () => reject(unavailable()); controller.signal.addEventListener('abort', rejectAbort, { once: true }); timer = setTimeout(() => { controller.abort(); }, timeout); })]);
+        assertOpen(); if (signal.aborted || controller.signal.aborted) throw unavailable(); return value;
+      } finally { clearTimeout(timer); controller.signal.removeEventListener('abort', rejectAbort); signal.removeEventListener('abort', abort); requests.delete(controller); }
+    }
+    function emailRequest(id: string, input: string, init: RequestInit) {
+      if (!flow(id) || typeof input !== 'string' || !init?.signal || init.signal.aborted || init.credentials !== 'omit' || init.redirect !== 'error' || init.cache !== 'no-store'
+        || init.referrerPolicy !== undefined && init.referrerPolicy !== 'no-referrer' || init.referrer || init.integrity || init.keepalive || init.mode !== undefined && init.mode !== 'cors') throw unavailable();
+      const url = new URL(input), headers = new Headers(init.headers), allowed = new Set(['apikey', 'authorization', 'content-type', 'x-client-info', 'x-supabase-api-version']);
+      if (url.href !== input || url.origin !== providerOrigin || url.username || url.password || input.includes('#') || [...headers.keys()].some(key => !allowed.has(key)) || headers.get('apikey') !== publishableKey) throw unavailable();
+      const path = url.pathname, method = init.method;
+      const action = method === 'POST' && ['/auth/v1/signup', '/auth/v1/resend', '/auth/v1/recover'].includes(path) ? path.slice(9)
+        : method === 'POST' && input === providerOrigin + '/auth/v1/token?grant_type=pkce' ? 'exchange'
+          : input === providerOrigin + '/auth/v1/user' && method === 'GET' ? 'user' : input === providerOrigin + '/auth/v1/user' && method === 'PUT' ? 'update' : null;
+      if (!action) throw unavailable();
+      const auth = headers.get('authorization'), bearer = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined, info = headers.get('x-client-info'), version = headers.get('x-supabase-api-version');
+      if (info !== null && !/^[A-Za-z0-9._/+ -]{1,160}$/.test(info) || version !== null && version !== '2024-01-01') throw unavailable();
+      if (action === 'user' || action === 'update') { if (!token(bearer) || bearer === publishableKey) throw unavailable(); }
+      else if (auth !== null && auth !== 'Bearer ' + publishableKey) throw unavailable();
+      if (action === 'user') { if (init.body !== undefined || headers.has('content-type')) throw unavailable(); }
+      else {
+        if (typeof init.body !== 'string' || bytes(init.body) > 16384 || !/^application\/json(?:;\s*charset=UTF-8)?$/i.test(headers.get('content-type') ?? '')) throw unavailable();
+        const body: unknown = JSON.parse(init.body); if (!plain(body) || JSON.stringify(body) !== init.body) throw unavailable();
+        if (action === 'exchange') { if (!exactKeys(body, ['auth_code', 'code_verifier']) || JSON.stringify({ auth_code: body.auth_code, code_verifier: body.code_verifier }) !== init.body || typeof body.auth_code !== 'string' || !/^[A-Za-z0-9._~-]{1,2048}$/.test(body.auth_code) || typeof body.code_verifier !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(body.code_verifier)) throw unavailable(); }
+        else if (action === 'update') { if (!exactKeys(body, ['password', 'code_challenge', 'code_challenge_method']) || JSON.stringify({ password: body.password, code_challenge: body.code_challenge, code_challenge_method: body.code_challenge_method }) !== init.body || !validText(body.password, 4096) || body.code_challenge !== null || body.code_challenge_method !== null) throw unavailable(); }
+        else {
+          const required = ['email', ...(action === 'signup' ? ['password', 'data'] : action === 'resend' ? ['type'] : []), 'code_challenge', 'code_challenge_method', 'gotrue_meta_security'];
+          if (!exactKeys(body, required) || JSON.stringify(Object.fromEntries(required.map(key => [key, body[key]]))) !== init.body || !address(body.email) || typeof body.code_challenge !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(body.code_challenge) || body.code_challenge_method !== 's256'
+            || !plain(body.gotrue_meta_security) || Object.keys(body.gotrue_meta_security).length || [...url.searchParams.keys()].join(',') !== 'redirect_to'
+            || url.searchParams.get('redirect_to') !== callbackUrl + '?flow=' + id || input !== providerOrigin + path + '?redirect_to=' + encodeURIComponent(callbackUrl + '?flow=' + id)) throw unavailable();
+          if (action === 'signup' && (!validText(body.password, 4096) || !plain(body.data) || Object.keys(body.data).length) || action === 'resend' && body.type !== 'signup') throw unavailable();
+        }
+      }
+      return { flowId: id, url: input, method: method as 'GET' | 'POST' | 'PUT', ...(['user', 'update'].includes(action) ? { bearer } : {}), ...(typeof init.body === 'string' ? { body: init.body } : {}) };
+    }
+    email = { providerOrigin, callbackUrl,
+      prepare: (kind, value, signal) => { if (!purpose(kind) || !address(value)) return Promise.reject(unavailable()); return local(signal, async () => { const p = parsePending(await bridge.prepareEmailLink!(caps.storageGeneration, kind, value)); if (p.purpose !== kind || p.email !== value || p.phase !== 'waiting') throw unavailable(); return p; }); },
+      pending: signal => local(signal, async () => { const value = await bridge.pendingEmailLink!(caps.storageGeneration); return value === null ? null : parsePending(value); }),
+      claim: (id, signal) => { if (!flow(id)) return Promise.reject(unavailable()); return local(signal, async () => { emailClaims.add(id); return parseClaim(await bridge.claimEmailLink!(caps.storageGeneration, id), id); }); },
+      discard: (id, signal) => { if (!flow(id)) return Promise.reject(unavailable()); return local(signal, async () => { await bridge.discardEmailLink!(caps.storageGeneration, id); emailClaims.delete(id); }); },
+      fetch: async (id, input, init) => { assertOpen(); const request = emailRequest(id, input, init); return dispatch(input, init, allocated => bridge.sendEmailAuth!(allocated, request)); },
+      onRetired(listener) { if (retired) { listener(); return () => {}; } listeners.add(listener); return () => { listeners.delete(listener); }; },
+    };
+  }
   const wrapTransport = (send: CircleTransport): CircleTransport => async (url, init) => {
     assertOpen(); const controller = new AbortController(), abort = () => controller.abort();
     if (init.signal.aborted) throw unavailable(); init.signal.addEventListener('abort', abort, { once: true }); requests.add(controller);
@@ -135,7 +215,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   const hostingTransport = ports.hostingTransport ? wrapTransport(ports.hostingTransport) : undefined;
   const editionTransport = ports.editionTransport ? wrapTransport(ports.editionTransport) : undefined;
   const savedReadingTransport = ports.savedReadingTransport ? wrapTransport(ports.savedReadingTransport) : undefined;
-  return { providerOrigin, storageKey: storageKey, storage, fetch, retire,
+  return { providerOrigin, storageKey: storageKey, storage, fetch, retire, ...(email ? { email } : {}),
     onRetired(listener: () => void) { if (retired) { listener(); return () => {}; } listeners.add(listener); return () => { listeners.delete(listener); }; },
     async resetAccountStorage() {
       if (resetStarted) throw unavailable(); resetStarted = true; retire();

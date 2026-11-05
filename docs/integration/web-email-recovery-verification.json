@@ -7,7 +7,7 @@
   "scope": "Isolated web password recovery, ordinary callback purpose guard and login entrypoint.",
   "proofs": [
     {
-      "path": "verification/web/evidence/email-recovery-unit.json",
+      "path": "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-unit.json",
       "sha256": "c5f200054a7112fabbbebc25bee1f7025199d22d72991610a21a9d23307faee4",
       "tests": 19,
       "stories": null,
@@ -15,7 +15,7 @@
       "scope": "Actual cached SDK with synthetic browser storage, locks, time and provider HTTP."
     },
     {
-      "path": "verification/web/evidence/email-recovery-callback.json",
+      "path": "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-callback.json",
       "sha256": "1aeeb6e4d5fa863669391b18c74e38643ac9716370f5e54c2c2c55068be78eb9",
       "tests": 11,
       "stories": null,
@@ -23,7 +23,7 @@
       "scope": "Actual callback handler, purpose parser, provider cookie writer and NextResponse; explicit SSR AuthClient exchange/user-proof double. Recovery proxy headers execute without auth."
     },
     {
-      "path": "verification/web/evidence/email-recovery-browser.json",
+      "path": "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-browser.json",
       "sha256": "4df050ed36747ed7af9d6bf1486276d67c29358e104220d113455c6307cd8fd8",
       "tests": null,
       "stories": 21,
@@ -1236,22 +1236,29 @@
     "/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright-core/lib/utilsBundle.js": "1295945f0054d2504c9b751945b15aa3c672530ad5a340f3f9636e5e238f304a"
   },
   "evidenceSha256": {
-    "verification/web/evidence/email-recovery-unit.log": "af19c92953248d963f165b5885486bd8a99a4fe6e26d20bcad7debfc37e07f48",
-    "verification/web/evidence/email-recovery-unit-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/email-recovery-unit.json": "c5f200054a7112fabbbebc25bee1f7025199d22d72991610a21a9d23307faee4",
-    "verification/web/evidence/email-recovery-callback.log": "aece15c81bf6494f52f387f8bdf1800babdbf00c8e0178377e6f849c48337ca2",
-    "verification/web/evidence/email-recovery-callback.json": "1aeeb6e4d5fa863669391b18c74e38643ac9716370f5e54c2c2c55068be78eb9",
-    "verification/web/evidence/email-recovery-fixture/page.js": "131fb676149d13db06438ef31f4f0bdf64fa3b689e73eb18c5878d8f8791f007",
-    "verification/web/evidence/email-recovery-fixture/page.css": "050df84f214a6cf25566b240620025d284002544e6dd8db74d0bdc76207e76bc",
-    "verification/web/evidence/email-recovery-fixture/source-manifest.json": "9c8cc5dd900ac05bf601f5fd18f1686a3e333fa7d07960f4cd1945b424267610",
-    "verification/web/evidence/email-recovery-320.png": "27bb306c230fdb4f9154681fdb8e5596641cd9ff5aa555597d4ecfd3cca9bdd6",
-    "verification/web/evidence/email-recovery-prior-1793853477906.json": "62bbce85baa4d518b16d56a6d45ff7907cb1221325819f211a2ef2e4598f4043",
-    "verification/web/evidence/email-recovery-browser.json": "4df050ed36747ed7af9d6bf1486276d67c29358e104220d113455c6307cd8fd8",
-    "verification/web/evidence/email-recovery-next-build.json": "570754d47c4cf5d5c2470bb9faab4e32bfd921e97a73d005c389eb9a7deeb596",
-    "verification/web/evidence/email-recovery-next-build.log": "9373bb7e95d6dcbb96e1aff6b005e62c0466e848f7ae6691997120c8290a93a1",
-    "verification/web/evidence/email-recovery-build-source-sha256.json": "86f38bc57e8d980b24d72e43eebdd9fe70e6fda5aa8c63e9589eb26c2b086182",
-    "verification/web/evidence/email-recovery-browser.log": "bb4b47f62bdcdc9c48a634b1414972b7c27edb0c42f98e036de5707765788fcf",
-    "verification/web/evidence/email-recovery-web-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/email-recovery-web-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-unit.log": "af19c92953248d963f165b5885486bd8a99a4fe6e26d20bcad7debfc37e07f48",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-unit-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-unit.json": "c5f200054a7112fabbbebc25bee1f7025199d22d72991610a21a9d23307faee4",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-callback.log": "aece15c81bf6494f52f387f8bdf1800babdbf00c8e0178377e6f849c48337ca2",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-callback.json": "1aeeb6e4d5fa863669391b18c74e38643ac9716370f5e54c2c2c55068be78eb9",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-fixture/page.js": "131fb676149d13db06438ef31f4f0bdf64fa3b689e73eb18c5878d8f8791f007",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-fixture/page.css": "050df84f214a6cf25566b240620025d284002544e6dd8db74d0bdc76207e76bc",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-fixture/source-manifest.json": "9c8cc5dd900ac05bf601f5fd18f1686a3e333fa7d07960f4cd1945b424267610",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-320.png": "27bb306c230fdb4f9154681fdb8e5596641cd9ff5aa555597d4ecfd3cca9bdd6",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-prior-1793853477906.json": "62bbce85baa4d518b16d56a6d45ff7907cb1221325819f211a2ef2e4598f4043",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-browser.json": "4df050ed36747ed7af9d6bf1486276d67c29358e104220d113455c6307cd8fd8",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-next-build.json": "570754d47c4cf5d5c2470bb9faab4e32bfd921e97a73d005c389eb9a7deeb596",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-next-build.log": "9373bb7e95d6dcbb96e1aff6b005e62c0466e848f7ae6691997120c8290a93a1",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-build-source-sha256.json": "86f38bc57e8d980b24d72e43eebdd9fe70e6fda5aa8c63e9589eb26c2b086182",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-browser.log": "bb4b47f62bdcdc9c48a634b1414972b7c27edb0c42f98e036de5707765788fcf",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-web-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-9b9435f/files/verification/web/evidence/email-recovery-web-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "historicalCheckpoint": {
+    "commit": "9b9435f9bbe9b7c2571b61b306ff6bf9af39bdb1",
+    "originalReceipt": "verification/web/evidence/checkpoint-9b9435f/web-email-recovery-verification.original.json",
+    "originalReceiptSha256": "edfd52b77d7ff22396ad2cdf308d6cea73db7dcf484f08a60ef5d5feaf03777e",
+    "evidenceFiles": 17,
+    "note": "Historical acceptance for this commit only; source hashes do not certify later edits."
   }
 }

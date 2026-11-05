@@ -54,6 +54,11 @@ internal class MemberConnectivity(context: Context, private val emit: (String) -
   // Caller holds lock. Keep retirement/default-network/event order serialized.
   private fun publish(network: Network?, next: String) { sequence++; current = network; state = next; emit(next) }
   fun snapshot(): String = synchronized(lock) { if (retired) "unknown" else state }
+  // Keep the native online observation and a bounded local authorization/enqueue
+  // in one order. Lock order is connectivity -> email lifecycle -> store.
+  fun <T> withOnline(work: () -> T): T = synchronized(lock) {
+    check(!retired && registered && state == "online"); work()
+  }
   fun close() {
     val unregister = synchronized(lock) { if (retired) return; retired = true; state = "unknown"; registered }
     if (unregister) { try { manager?.unregisterNetworkCallback(callback) } catch (_: Exception) { /* Retired first. */ } }

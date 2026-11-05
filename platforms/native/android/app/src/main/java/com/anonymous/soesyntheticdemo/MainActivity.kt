@@ -2,6 +2,8 @@ package com.anonymous.soesyntheticdemo
 
 import android.os.Build
 import android.os.Bundle
+import android.content.Intent
+import com.anonymous.soesyntheticdemo.member.EmailLinkLifecycle
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -16,15 +18,34 @@ class MainActivity : ReactActivity() {
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
+    // Capture before React/Linking exists. The Activity retains no raw callback.
+    val callback = intent?.dataString
+    intent?.data = null
+    intent?.clipData = null
+    EmailLinkLifecycle.capture(applicationContext, callback)
     super.onCreate(null)
     ReportPrivacyGuard.install(window.decorView)
   }
 
   override fun onPause() {
+    EmailLinkLifecycle.background()
     // Fabric can defer native commits while paused. Clear the owned editable
     // surface and keep it hidden until the JS lifecycle clear unmounts it.
     ReportPrivacyGuard.clearAndHide(window.decorView)
     super.onPause()
+  }
+
+  override fun onResume() {
+    super.onResume()
+    EmailLinkLifecycle.foreground()
+  }
+
+  override fun onNewIntent(incoming: Intent) {
+    val callback = incoming.dataString
+    val sanitized = Intent(incoming).apply { data = null; clipData = null }
+    EmailLinkLifecycle.capture(applicationContext, callback)
+    setIntent(sanitized)
+    super.onNewIntent(sanitized)
   }
 
   /**

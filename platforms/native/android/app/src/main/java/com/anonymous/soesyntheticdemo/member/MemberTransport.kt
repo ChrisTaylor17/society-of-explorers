@@ -83,6 +83,20 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     try { validatePublic(input); transmit(id, input.url, "GET", null, emptyMap(), success, failure) }
     catch (_: Exception) { cancel(id); failure() }
   }
+  fun sendEmailAuth(id: String, input: EmailLinkSession.Input, session: EmailLinkSession, epoch: Long, success: (Result) -> Unit, failure: () -> Unit) {
+    var permit: EmailLinkSession.Permit? = null
+    val failed = { session.failed(id, permit); failure() }
+    try {
+      val generation = synchronized(lock) { require(!closed); handles[id]?.generation ?: throw IllegalStateException() }
+      session.dispatch(id, generation, epoch, input, { cancel(id) }) { authorized ->
+        permit = authorized
+        transmit(id, input.url, input.method, input.body, mapOf("apikey" to config.publishableKey,
+          "Authorization" to "Bearer " + (input.bearer ?: config.publishableKey), "X-Supabase-Api-Version" to "2024-01-01"), { result ->
+          try { session.receive(id, authorized, result); success(result) } catch (_: Exception) { failed() }
+        }, failed)
+      }
+    } catch (_: Exception) { cancel(id); failed() }
+  }
   private fun transmit(id: String, url: String, method: String, body: String?, headers: Map<String, String>, success: (Result) -> Unit, failure: () -> Unit) {
     try {
       val generation = synchronized(lock) { require(!closed); handles[id]?.generation ?: throw IllegalStateException() }
@@ -96,6 +110,7 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
             .header("Cache-Control", "no-store").header("Pragma", "no-cache")
             .tag(Transmission::class.java, Transmission())
           if (method == "GET") builder.get()
+          else if (method == "PUT") builder.put((body ?: "").toRequestBody("application/json".toMediaType()))
           else builder.post((body ?: "").toRequestBody("application/json".toMediaType()))
           val call = client.newCall(builder.build()); handle.call = call
           call.timeout().deadlineNanoTime(handle.deadline)
@@ -500,6 +515,15 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
       require(names.containsAll(setOf("url", "method")) && names.all { it in setOf("url", "method", "bearer", "body") })
       for (key in names) require(value.getType(key) == ReadableType.String)
       return AuthInput(value.getString("url")!!, value.getString("method")!!,
+        if (value.hasKey("bearer")) value.getString("bearer") else null,
+        if (value.hasKey("body")) value.getString("body") else null)
+    }
+    fun emailInput(value: ReadableMap): EmailLinkSession.Input {
+      val keys = value.keySetIterator(); val names = mutableSetOf<String>()
+      while (keys.hasNextKey()) names.add(keys.nextKey())
+      require(names.containsAll(setOf("flowId", "url", "method")) && names.all { it in setOf("flowId", "url", "method", "bearer", "body") })
+      for (key in names) require(value.getType(key) == ReadableType.String)
+      return EmailLinkSession.Input(value.getString("flowId")!!, value.getString("url")!!, value.getString("method")!!,
         if (value.hasKey("bearer")) value.getString("bearer") else null,
         if (value.hasKey("body")) value.getString("body") else null)
     }

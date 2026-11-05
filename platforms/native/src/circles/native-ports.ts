@@ -1,4 +1,5 @@
 import { approvedOrigin, type CircleTransport } from './host';
+import type { NativeEmailPurpose } from '../auth/email-auth-types';
 import { parseDiscussionQuery } from '../../../../lib/circles/thread';
 import { isUuid } from '../../../../lib/ids/uuid';
 import { discoveryPageSearchParams, parseDiscoveryPageRequest } from '../../../../lib/circles/discovery-page';
@@ -12,11 +13,17 @@ import { parseReadingProgressMutation, readingProgressMutationBody, READING_PROG
 /** The native implementation owns the durable storage generation. Every storage
  * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; publicProfilePolicy?: string; savedReadingPolicy?: string; attendancePolicy?: string; hostingPolicy?: string }>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; emailAuthPolicy?: string; emailCallbackUrl?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; publicProfilePolicy?: string; savedReadingPolicy?: string; attendancePolicy?: string; hostingPolicy?: string }>;
   newRequestId?(generation: string): Promise<string>;
   begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   sendAuth?(id: string, request: { url: string; method: 'GET' | 'POST'; bearer?: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
+  // Native strings are untrusted until native-auth-ports validates the envelope.
+  prepareEmailLink?(generation: string, purpose: NativeEmailPurpose, email: string): Promise<unknown>;
+  pendingEmailLink?(generation: string): Promise<unknown>;
+  claimEmailLink?(generation: string, flowId: string): Promise<unknown>;
+  discardEmailLink?(generation: string, flowId: string): Promise<void>;
+  sendEmailAuth?(id: string, request: { flowId: string; url: string; method: 'GET' | 'POST' | 'PUT'; bearer?: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   sendPublic?(id: string, request: { url: string; method: 'GET' }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
   cancel(id: string): Promise<void>;
   read(slot: 'session' | 'pkce' | 'user', generation: string): Promise<string | null>;
