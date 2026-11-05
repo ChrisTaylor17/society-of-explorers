@@ -12,6 +12,18 @@ def packageSourceReaderCatalog = tasks.register('packageSourceReaderCatalog', Co
 }
 tasks.configureEach { task -> if (task.name == 'preBuild') task.dependsOn(packageSourceReaderCatalog) }
 
+def clipResources = layout.buildDirectory.dir('generated/soeClipResources')
+def clipPackager = new File(projectRoot, 'prepare-clip-assets.cjs')
+def packageClipAssets = tasks.register('packageSoeClipAssets', Exec) {
+    inputs.files(clipPackager, new File(projectRoot, 'clip-catalog.json'), new File(projectRoot, '../../lib/clips/registry.json'))
+    inputs.files(fileTree(new File(projectRoot, '../../content/clips')) {
+        include 'circle-intro.*', 'night-sky-traffic.*', 'circle-intro-inspection.json', 'night-sky-traffic-inspection.json'
+    })
+    outputs.dir(clipResources)
+    doFirst { commandLine('node', clipPackager.absolutePath, clipResources.get().dir('raw').asFile.absolutePath) }
+}
+tasks.configureEach { task -> if (task.name == 'preBuild') task.dependsOn(packageClipAssets) }
+
 // Public application policy only. No environment/launch-extra/credential lookup.
 // Empty policy keeps NativeSoeMember unavailable; partial/invalid policy aborts.
 def soeMemberPolicyProcess = new ProcessBuilder('node', rootProject.file('member-config.cjs').absolutePath,
@@ -144,6 +156,7 @@ def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
     sourceSets.main.assets.srcDir(sourceReaderAssets)
+    sourceSets.main.res.srcDir(clipResources)
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion

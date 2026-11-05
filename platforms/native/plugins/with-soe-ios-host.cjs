@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { memberConfig } = require('../android/member-config.cjs');
+const { packageClipAssets } = require('../prepare-clip-assets.cjs');
 const sceneClass = 'SoeMemberSceneDelegate';
 const callbackType = 'org.soe.member.email';
 const sceneRole = 'UIWindowSceneSessionRoleApplication';
@@ -111,6 +112,7 @@ function withSoeIOSHost(config) {
   });
   return withDangerousMod(config, ['ios', mod => {
     packageReaderPins(mod.modRequest.projectRoot);
+    packageClipAssets(path.join(fs.realpathSync(mod.modRequest.projectRoot), 'ios-source', 'generated', 'clips'));
     return mod;
   }]);
 }

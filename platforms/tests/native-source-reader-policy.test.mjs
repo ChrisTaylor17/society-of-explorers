@@ -129,7 +129,7 @@ test('Fabric/package catalog wiring exists without a new runtime dependency (STA
   assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['@supabase/auth-js', 'expo', 'expo-status-bar', 'react', 'react-native']);
   assert(gradle.includes("'../../lib/books/source-reader-catalog.json'") && gradle.includes('sourceSets.main.assets.srcDir(sourceReaderAssets)'));
   assert(pod.includes("'generated/source-reader-catalog.json'") && pod.includes("s.frameworks = 'WebKit'"));
-  assert(safe('platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/SoeMemberPackage.kt').includes('listOf(SourceReaderManager())'));
+  assert(safe('platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/SoeMemberPackage.kt').includes('listOf(SourceReaderManager(), ClipPlayerManager())'));
 });
 test('native same-edition reuse binds exact selected fragment and retires bytes with the view (STATIC SOURCE ONLY)', () => {
   const androidView = safe(android + 'SourceReaderView.kt'), ios = safe('platforms/native/ios-source/SoeSourceReaderView.mm');

@@ -7,9 +7,10 @@ import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
 import com.facebook.react.uimanager.ViewManager
 import com.anonymous.soesyntheticdemo.reader.SourceReaderManager
+import com.anonymous.soesyntheticdemo.reader.ClipPlayerManager
 
 class SoeMemberPackage : BaseReactPackage() {
-  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> = listOf(SourceReaderManager())
+  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> = listOf(SourceReaderManager(), ClipPlayerManager())
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
     if (name == NativeSoeMemberModule.NAME) NativeSoeMemberModule(reactContext) else null
   override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {

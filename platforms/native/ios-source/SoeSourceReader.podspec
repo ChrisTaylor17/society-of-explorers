@@ -8,7 +8,10 @@ Pod::Spec.new do |s|
   s.source = { :path => '.' }
   s.platforms = { :ios => '15.1' }
   s.source_files = '*.{h,mm}'
-  s.frameworks = 'WebKit'
-  s.resource_bundles = { 'SoeSourceReaderPins' => ['generated/source-reader-catalog.json'] }
+  s.frameworks = 'WebKit', 'AVFoundation'
+  s.resource_bundles = {
+    'SoeSourceReaderPins' => ['generated/source-reader-catalog.json'],
+    'SoeClipAssets' => ['generated/clips/soe_circle_intro.mp4', 'generated/clips/soe_night_sky.mp4']
+  }
   install_modules_dependencies(s)
 end

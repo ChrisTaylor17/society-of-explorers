@@ -8,6 +8,7 @@ import { observeNativeConnectivity, type NativeConnectivityPort } from './src/ci
 import type { createNativeEmailAuth } from './src/auth/email-auth';
 import { NativeEmailAccountForm } from './NativeEmailAccountForm';
 import { PhilemonStudyScreen } from './PhilemonStudyScreen';
+import { ClipsScreen } from './ClipsScreen';
 
 export type OwnedAccountConnection = {
   controller: ReturnType<typeof createOwnedNativeAuth>;
@@ -32,6 +33,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
   const [entered, setEntered] = useState<OwnedAccountConnection | null>(null);
   const [memberProblem, setMemberProblem] = useState('');
   const [studyOpen, setStudyOpen] = useState(false);
+  const [clipsOpen, setClipsOpen] = useState(false);
   const [philemonHosting, setPhilemonHosting] = useState(false);
   const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
@@ -177,6 +179,16 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     invalidate(); setStudyOpen(false);
     if (prepareHosting) setPhilemonHosting(true);
   }
+  function openClips() {
+    if (!validView() || current.current || preparing.current) return;
+    invalidate(); setClipsOpen(true);
+  }
+  function closeClips(read: boolean) {
+    if (!validView() || !clipsOpen || current.current) return;
+    invalidate(); setClipsOpen(false);
+    if (read) setStudyOpen(true);
+  }
+  if (clipsOpen) return <ClipsScreen onBack={() => closeClips(false)} onRead={() => closeClips(true)}/>;
   if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
     retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} onClose={() => {
@@ -188,7 +200,10 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Your account, on this device</Text>
     <Text style={styles.copy}>Read deeply. Share thoughtfully. A Great Books community rooted in Christian and American traditions, open to everyone willing to explore in good faith.</Text>
-    {!connection ? <Action label="Read Philemon" disabled={connecting} onPress={openStudy}/> : null}
+    {!connection ? <>
+      <Action label="Explore Clips" disabled={connecting} onPress={openClips}/>
+      <Action label="Read Philemon" disabled={connecting} onPress={openStudy}/>
+    </> : null}
     {philemonHosting ? <>
       <Text style={styles.note}>Sign in and check your member account to prepare a weekly online Circle from the Philemon guide.</Text>
       <Action label="Clear Philemon hosting choice" onPress={() => {

@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T22:27:33.940627+00:00",
+  "baseCheckpoint": "8b1df9d02a196cc2b78f55881e9d2f155259b727",
+  "status": "LOCAL_PHONE_CLIPS_PASS_NATIVE_DEVICE_ACCEPTANCE_OPEN",
+  "productionCleared": false,
+  "androidApkBuilt": false,
+  "iosProjectGenerated": false,
+  "physicalPlaybackVerified": false,
+  "clipCatalog": {
+    "path": "platforms/native/clip-catalog.json",
+    "sha256": "71626c01a95c5a3a44bb1113651ca13e8718ebcb8b6eef1872f1b2a17a79b1f0"
+  },
+  "packagedMedia": [
+    {
+      "clipId": "how-a-circle-works",
+      "asset": {
+        "path": "verification/web/evidence/native-hosting-fixture-clips-04/media/soe_circle_intro.mp4",
+        "sha256": "1b1e4331aeb76c5401d9f5f43a709108c5c3330959f2c33b36cca6a63e132155"
+      },
+      "bytes": 157621
+    },
+    {
+      "clipId": "night-sky-traffic",
+      "asset": {
+        "path": "verification/web/evidence/native-hosting-fixture-clips-04/media/soe_night_sky.mp4",
+        "sha256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f"
+      },
+      "bytes": 3346521
+    }
+  ],
+  "registeredAppBrowser": {
+    "fixture": {
+      "path": "verification/web/evidence/native-hosting-fixture-clips-04/source-manifest.json",
+      "sha256": "6b936e70baf4fb36410892b9c1aa26362a92c3d4461f7604b438857e16422987"
+    },
+    "bun": "1.4.4",
+    "paths": {
+      "android": {
+        "receipt": {
+          "path": "verification/web/evidence/native-hosting-browser-clips-04-android/browser.json",
+          "sha256": "c6fad483824dbdbac88b6000af51b195e57a64fe43311ce94818498a59ace376"
+        },
+        "stories": 26,
+        "clipsStories": 5,
+        "packagedMediaReads": 4,
+        "inspectedScreenshot": {
+          "path": "verification/web/evidence/native-hosting-browser-clips-04-android/clips-playing-320.png",
+          "sha256": "d1c61d6d24226d295b9941d97d48b10ddad6f1785a864f1907161521665ca667"
+        }
+      },
+      "ios": {
+        "receipt": {
+          "path": "verification/web/evidence/native-hosting-browser-clips-04-ios/browser.json",
+          "sha256": "cc27611d7faa4ae9a7fea73b76cc350b4a10703574ef7aba6a8c9c18d9493d43"
+        },
+        "stories": 9,
+        "clipsStories": 5,
+        "packagedMediaReads": 4,
+        "inspectedScreenshot": {
+          "path": "verification/web/evidence/native-hosting-browser-clips-04-ios/clips-playing-320.png",
+          "sha256": "93675a5fe2a1b6f38f17fd8c65cf7d202b95439dca9e21f286738ce68b6eb59b"
+        }
+      }
+    }
+  },
+  "assetAndClipChecks": {
+    "path": "verification/web/evidence/native-hosting-fixture-clips-04/clips-tests.tap",
+    "sha256": "e9b78a734ccc52a0108f8b4d3bea3d75d2492f7895503ddf32533d1fc2cbc8eb",
+    "passed": 26
+  },
+  "nativeSourcePolicyChecks": {
+    "path": "verification/web/evidence/native-hosting-fixture-clips-04/native-policy-tests.tap",
+    "sha256": "0ad3c9cf80868974ec5b654a024d52d85f2230b36adf2df5c5446116d3cb8c73",
+    "passed": 36
+  },
+  "macDecoder": {
+    "receipt": {
+      "path": "verification/web/evidence/native-hosting-fixture-clips-04/mac-avfoundation.json",
+      "sha256": "3b955831e8361c8c6516b06d138a527e26509e67fb81469bd9b8293e9fd360e0"
+    },
+    "source": {
+      "path": "verification/web/evidence/native-hosting-fixture-clips-04/mac-avfoundation-decode.swift",
+      "sha256": "eb0ca6cadd6dcf68d346141a3cbb14f047fe4619b4de2da7ef9b733de28e467a"
+    },
+    "frames": 6,
+    "reportedDurationsSeconds": {
+      "soe_circle_intro.mp4": 24.664,
+      "soe_night_sky.mp4": 24
+    }
+  },
+  "staticChecks": {
+    "narrowRegisteredAppTypeScript": true,
+    "scopedLint": true,
+    "podspecRubySyntax": true
+  },
+  "nativeInputs": [
+    {
+      "path": "platforms/native/prepare-clip-assets.cjs",
+      "sha256": "572fe7ae3f901aa25c559b823d63f03541df877c18b5fb9cc4a028b9136c1c67"
+    },
+    {
+      "path": "platforms/native/package.json",
+      "sha256": "f54dff23652f132ef5ed66c4108d39f875101e925529bb2f15bac6867f37ff75"
+    },
+    {
+      "path": "platforms/native/ios-source/SoeSourceReader.podspec",
+      "sha256": "5e31fde8cd253c7cc9f7bbe1b2d35fe11a470db34767fc23c63491f6ff42f4d4"
+    },
+    {
+      "path": "platforms/native/ios-source/SoeClipPlayerView.mm",
+      "sha256": "075cef10799d80326615bbe636a4aba3e65543778500c73acd452f29108f834c"
+    },
+    {
+      "path": "platforms/native/plugins/with-soe-ios-host.cjs",
+      "sha256": "1ea7c7a942bb20bafa9ffe0e5640de845d7a4fb489a410129a676b3b9fedb7e6"
+    },
+    {
+      "path": "platforms/native/android/app/build.gradle",
+      "sha256": "39f566f60c3ff29bb5926ea1c3d8e044487350e9e5e35d31b21a63fb379fcf43"
+    },
+    {
+      "path": "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/reader/ClipPlayerManager.kt",
+      "sha256": "a0a749be2467ecbd8719c933d3b798547660cb82f3dd1768d17a0a91081c2c3f"
+    },
+    {
+      "path": "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/SoeMemberPackage.kt",
+      "sha256": "5d978ee31a134249ab648a832b58243685fd6d78fae64ac02e1be37c4b1905c6"
+    },
+    {
+      "path": "platforms/native/android/app/src/androidTest/java/com/anonymous/soesyntheticdemo/MemberEntryRuntimeTest.kt",
+      "sha256": "58c183c354564e3e7e85d47e125302245b9eea94bcf0ee9e6a5ea2aa34e505c8"
+    }
+  ],
+  "limits": [
+    "Registered App composition uses Chromium, platform event doubles and synthetic account authority.",
+    "AVFoundation decoding ran on macOS. Android instrumentation and iOS device playback are still pending.",
+    "Playback controls use an approximate duration because Chromium and macOS report different times for the first-party introduction."
+  ]
+}

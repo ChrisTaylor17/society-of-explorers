@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "videos": [
+    {
+      "id": "how-a-circle-works",
+      "resource": "soe_circle_intro",
+      "title": "How a Circle works",
+      "description": "A short introduction to reading, respectful disagreement and sharing with care. Original silent SoE video with captions.",
+      "credit": "Original Society of Explorers text and canvas graphics. No third-party media, audio, music or voice.",
+      "sourcePage": null,
+      "attribution": null,
+      "transcript": "How a Circle works\nRead. Reflect. Share.\nA good conversation starts with a good question.\n\nChoose a Circle\nFind a time and place that work for you.\nRead the source before your meeting.\n\nBring your perspective\nChristian and conservative roots.\nEvery faith and view is welcome.\n\nMake room for disagreement\nChallenge an idea.\nTreat the person with respect.\n\nShare with care\nKeep other members’ words private.\nAsk before recording.\n\nStart with the reading\nFind a Circle. Read.\nJoin the conversation.",
+      "durationMs": 23955,
+      "width": 720,
+      "height": 404,
+      "mediaFile": "circle-intro.mp4",
+      "mediaSHA256": "1b1e4331aeb76c5401d9f5f43a709108c5c3330959f2c33b36cca6a63e132155",
+      "mediaBytes": 157621,
+      "captionsFile": "circle-intro.vtt",
+      "captionsSHA256": "d5279f41285491f031c889a51b142b3cce48c1c82a76cf908a1a0ce3594a0e1c",
+      "captionsBytes": 698
+    },
+    {
+      "id": "night-sky-traffic",
+      "resource": "soe_night_sky",
+      "title": "Who gets the night sky?",
+      "description": "The Archivist looks at actual 2026 footage from Paranal, Chile, and asks how we should weigh satellite internet against a shared night sky. A silent 24-second Reel.",
+      "credit": "B. Häußler/ESO",
+      "sourcePage": "https://www.eso.org/public/videos/eso2607d/",
+      "attribution": {
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "edits": "Trimmed, framed vertically and annotated with AI-assisted commentary. Source audio omitted.",
+        "captionPresentation": "embedded-text"
+      },
+      "transcript": "The night sky has traffic. A time-lapse\nexcerpt from Paranal, Chile, filmed May 19,\n2026.\n\nA lifeline far from a tower. Satellite\ninternet can connect places beyond ground\nnetworks.\n\nA cost for the telescope. Bright trails can\nobscure part of a telescope image.\n\nWho gets the night sky? What brightness\nlimit would you set? Bring your reason to a\nCircle.",
+      "durationMs": 24000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "night-sky-traffic.mp4",
+      "mediaSHA256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f",
+      "mediaBytes": 3346521,
+      "captionsFile": "night-sky-traffic.vtt",
+      "captionsSHA256": "1cb633b7dd2b658db6933b92e1b7da836ed8d1cc7dbc3972ce93018a2d9b56cf",
+      "captionsBytes": 535
+    }
+  ]
+}

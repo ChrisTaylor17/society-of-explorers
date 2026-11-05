@@ -6,6 +6,7 @@ import {createRequire} from 'node:module';
 const [run,platform='android',...extra]=process.argv.slice(2);
 assert(!extra.length&&(run===undefined||/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run))&&['android','ios'].includes(platform));
 const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hosting-browser-'+run+'-'+platform:'');
+const clipMode=run?.startsWith('clips-');
 if(run)fs.mkdirSync(path.join(ROOT,output));
 const file=output+(run?'/browser.json':'/native-hosting-browser.json'),sha=b=>createHash('sha256').update(b).digest('hex');
 const fixtureDir='verification/web/evidence/native-hosting-fixture'+(run?'-'+run:'');
@@ -15,10 +16,10 @@ async function bounded(fn,ms=5000){let timer;try{return await Promise.race([fn()
 read('verification/web/tests/support/public-profile-app.mjs');
 process.chdir(path.join(ROOT,'verification/web'));
 const {createPublicProfileApp:createCircleHostingApp,publicProfileAppHashes:hostingAppHashes,ORIGIN,PROVIDER,PUBLIC_KEY,TOKENS:ACCESS,SUBJECTS,NEW_SUBJECT}=await import('../../verification/web/tests/support/public-profile-app.mjs');
-const priorReceipt=fs.existsSync(path.join(ROOT,file))?{sha256:sha(read(file)),status:JSON.parse(read(file)).status}:null,startedAt=new Date().toISOString(),stories=[],errors=[],unexpected=[],http=[],cleanup={browser:'pending',database:'pending'};
+const priorReceipt=fs.existsSync(path.join(ROOT,file))?{sha256:sha(read(file)),status:JSON.parse(read(file)).status}:null,startedAt=new Date().toISOString(),stories=[],errors=[],unexpected=[],http=[],mediaHttp=[],cleanup={browser:'pending',database:'pending'};
 let holdNextPost=false,heldPost=null;
 let sourceHashes={},bundle,browser,page,fixture,failure=null,actor='author',mismatch=false,denied=false,stats;
-function write(status){fs.writeFileSync(path.join(ROOT,file),JSON.stringify({status,platform,startedAt,completedAt:new Date().toISOString(),stories,errors,unexpected,http,cleanup,sourceHashes,bundleSHA256:bundle?sha(bundle):null,stats,priorReceipt,failure,
+function write(status){fs.writeFileSync(path.join(ROOT,file),JSON.stringify({status,platform,startedAt,completedAt:new Date().toISOString(),stories,errors,unexpected,http,mediaHttp,cleanup,sourceHashes,bundleSHA256:bundle?sha(bundle):null,stats,priorReceipt,failure,
  scope:'Actual registered App, cached AuthClient, native JS hosting/member/anonymous-edition/passage ports, Circle creation and completion screens. Canonical bearer/member/Circle/participation handlers and the current owner-aware hosting and additive membership intent SQL run in disposable PGlite. Native primitives, OS services, delivery and provider identity are explicit doubles. Actual callback functions are retained to model late native events. No native compilation, SDK acquisition, provider call, deployment or production SQL.'},null,2)+'\n');}
 const pass=name=>{stories.push(name);write('RUNNING');console.log('PASS '+stories.length+': '+name);};write('RUNNING');
 try{
@@ -29,13 +30,30 @@ try{
  for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Rebundle changed source '+n);
  fixture=await createCircleHostingApp();
  browser=await require('playwright').chromium.launch({headless:true,timeout:15000,executablePath,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
- const context=await browser.newContext({viewport:{width:320,height:850}});page=await context.newPage();const p=page;p.setDefaultTimeout(6500);
+ const context=await browser.newContext({viewport:{width:320,height:850},serviceWorkers:'block'});page=await context.newPage();const p=page;p.setDefaultTimeout(6500);
+ const clips=clipMode?JSON.parse(read('platforms/native/clip-catalog.json')).videos:[];
+ const media=new Map(clips.map(clip=>{
+   const bytes=read(fixtureDir+'/media/'+clip.resource+'.mp4');
+   assert.equal(sha(bytes),clip.mediaSHA256);
+   return ['/native-clip-media/'+clip.id+'.mp4',bytes];
+ }));
+ if(clipMode)await context.addInitScript(()=>{window.nativeClipQa={available:true,callbacks:new Map()};});
  p.on('pageerror',e=>errors.push(e.stack||String(e)));p.on('console',m=>{if(m.type()==='error'&&!/^Failed to load resource: the server responded with a status of (400|401|403|404|409|422|429|503)/.test(m.text()))errors.push(m.text());});
  await context.route('**/*',async route=>{try{
   const req=route.request(),u=new URL(req.url());
   if(u.origin===ORIGIN&&u.pathname==='/'){await route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#101d1a;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif"><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>'});return;}
   if(u.origin===ORIGIN&&u.pathname==='/page.mjs'){await route.fulfill({contentType:'text/javascript',body:bundle});return;}
   const headers=await req.allHeaders();assert.equal(headers.cookie,undefined);
+  if(u.origin===ORIGIN&&media.has(u.pathname)){
+   assert.equal(u.search,'');assert.equal(req.method(),'GET');assert.equal(headers.authorization,undefined);
+   const bytes=media.get(u.pathname),range=headers.range?/^bytes=(\d+)-(\d*)$/.exec(headers.range):null;
+   assert(!headers.range||range);
+   const first=range?Number(range[1]):0,last=range?.[2]?Math.min(Number(range[2]),bytes.length-1):bytes.length-1;
+   assert(first<=last&&first>=0);
+   mediaHttp.push({path:u.pathname,status:range?206:200,start:first,end:last});
+   await route.fulfill({status:range?206:200,contentType:'video/mp4',headers:{'accept-ranges':'bytes','cache-control':'no-store',
+      ...(range?{'content-range':`bytes ${first}-${last}/${bytes.length}`}:{})},body:bytes.subarray(first,last+1)});return;
+  }
   if(u.origin===PROVIDER){
    assert.equal(headers.apikey,PUBLIC_KEY);let status=200,body;
    const user=id=>({id,aud:'authenticated',role:'authenticated',email:'PRIVATE_PROVIDER_EMAIL',app_metadata:{provider:'email'},user_metadata:{private:'PRIVATE_PROVIDER_PROFILE'},identities:[],created_at:'2026-01-01T00:00:00Z'});
@@ -102,6 +120,83 @@ try{
  const edition=JSON.parse(read('content/root-kernel/philemon.web-classic.json'));
  const radio=name=>p.getByRole('radio',{name,exact:true});
  const hostingChoice='Prepare Philemon Circle online';
+ if(clipMode){
+   const video=p.locator('video');
+   const first=platform==='android'?clips[1]:clips[0],second=platform==='android'?clips[0]:clips[1];
+   const open=()=>button('Explore Clips').click();
+   const play=clip=>button('Play '+clip.title).click();
+   const playing=async clip=>{
+     try{await p.waitForFunction(id=>[...document.querySelectorAll('video')].some(el=>el.dataset.clipId===id&&!el.paused&&el.currentTime>0.25),clip.id);}
+     catch(error){
+       const states=await video.evaluateAll(elements=>elements.map(el=>({id:el.dataset.clipId,ready:el.readyState,paused:el.paused,ended:el.ended,time:el.currentTime,error:el.error?.code})));
+       throw Error('Playback did not start for '+clip.id+' '+JSON.stringify(states),{cause:error});
+     }
+   };
+   const normalise=value=>value.replace(/\s+/g,' ').trim();
+   const originalHttp=http.length;
+   await p.evaluate(()=>window.nativeQa.network('offline'));await open();await enabled('Play '+first.title);
+   assert.equal(await field('Password').count(),0);
+   assert.equal(await video.count(),0);assert.deepEqual(mediaHttp,[]);assert.equal(http.length,originalHttp);
+   assert.equal((await state()).stats.prepared,0);
+   const publicCopy=normalise(await text());
+   for(const clip of clips){assert(publicCopy.includes(clip.credit));assert(publicCopy.includes(normalise(clip.transcript)));}
+   assert(publicCopy.includes(edition.paragraphs[0][2].text)&&publicCopy.includes('https://creativecommons.org/licenses/by/4.0/'));
+   pass('signed-out offline Clips shows exact transcripts, Philemon and the Reel credit before any player, account or media request');
+
+   await play(first);await playing(first);
+   assert.equal(await video.count(),1);
+   const firstKey=await video.getAttribute('data-request-key');
+   const dimensions=await video.evaluate(el=>({width:el.videoWidth,height:el.videoHeight,duration:el.duration,rate:el.playbackRate}));
+   assert.equal(dimensions.width,first.width);assert.equal(dimensions.height,first.height);
+   assert(Math.abs(dimensions.duration-first.durationMs/1000)<0.25);assert.equal(dimensions.rate,1);
+   await video.scrollIntoViewIfNeeded();await screenshot('clips-playing-320.png');
+   await button('Pause '+first.title).click();
+   await p.waitForFunction(()=>document.querySelector('video')?.paused&&document.body.textContent.includes('Paused'));
+   await play(first);await playing(first);
+   assert.equal(await video.getAttribute('data-request-key'),firstKey);
+   await button('Replay '+first.title).waitFor({timeout:31_000});
+   assert(await video.evaluate(el=>el.ended&&el.currentTime>=el.duration-0.05));
+   pass('the actual packaged video decodes at the pinned size and normal speed, pauses, resumes the same view and reaches the end');
+
+   await button('Replay '+first.title).click();await playing(first);
+   assert.notEqual(await video.getAttribute('data-request-key'),firstKey);
+   await play(second);await playing(second);assert.equal(await video.count(),1);
+   const retiredKey=await video.getAttribute('data-request-key');
+   const beforeBlur=mediaHttp.length;
+   await p.evaluate(platform=>window.nativeQa.activity(platform==='android'?'blur':'change','inactive'),platform);
+   await p.waitForFunction(()=>document.querySelectorAll('video').length===0);
+   await p.evaluate(platform=>window.nativeQa.activity(platform==='android'?'focus':'change','active'),platform);
+   await p.evaluate(key=>window.nativeClipQa.callbacks.get(key)('playing'),retiredKey);
+   await settle();assert.equal(await video.count(),0);assert.equal(mediaHttp.length,beforeBlur);assert.equal(http.length,originalHttp);
+   pass('replay and clip switching own one player, and focus loss stops it without replay from a late event');
+
+   await play(second);await playing(second);
+   const closedKey=await video.getAttribute('data-request-key');
+   await button('Back to account').click();await enabled('Connect my account');
+   const afterClose=mediaHttp.length;
+   await open();await button('Back to account').waitFor();
+   await p.evaluate(key=>window.nativeClipQa.callbacks.get(key)('playing'),closedKey);
+   await settle();assert.equal(await video.count(),0);assert.equal(mediaHttp.length,afterClose);
+   await button('Read the full Philemon study').click();
+   await button('Read the letter').waitFor();assert((await text()).includes(edition.paragraphs.at(-1).at(-1).text));
+   await button('Back to account').click();
+   await p.evaluate(()=>{window.nativeClipQa.available=false;});
+   await open();await button('Back to account').waitFor();
+   assert.equal(await button('Play '+first.title).count(),0);
+   assert(normalise(await text()).includes(normalise(first.transcript)));
+   await button('Back to account').click();
+   await p.evaluate(()=>{window.nativeClipQa.available=true;window.nativeClipQa.callbacks.clear();window.nativeQa.network('online');});
+   assert.equal(http.length,originalHttp);
+   pass('closing retires active playback, the reading clip opens the full study, and a build without the player still provides the text');
+
+   await signIn();await account();
+   const signedInAt=http.length,mediaAt=mediaHttp.length;
+   await open();await button('Browse Circles').waitFor();
+   await button('Browse Circles').click();await button('Search Circles').waitFor();await settle();
+   assert.equal(await video.count(),0);assert.equal(http.length,signedInAt);assert.equal(mediaHttp.length,mediaAt);
+   pass('the verified member screen opens Clips and continues to Circle discovery without an automatic account, discovery or media request');
+   await show();
+ }
  const chooseOnline=async()=>{await button('Read Philemon').click();await button('Host guide').click();await button('Prepare a weekly online Circle').click();};
 
  await show();

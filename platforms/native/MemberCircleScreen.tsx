@@ -15,6 +15,7 @@ import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } f
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { createMemberAccountSession } from '../shared/account-session';
 import { PhilemonStudyScreen } from './PhilemonStudyScreen';
+import { ClipsScreen } from './ClipsScreen';
 
 /** Retained by the owned sign-in screen across temporary member-view unmounts.
  * It contains no active authority after disconnect/stop; recovery requires new
@@ -85,7 +86,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
   const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean;
-    destination: 'circle' | 'contributions' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' } | null>(null);
+    destination: 'circle' | 'contributions' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' | 'clips' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -171,6 +172,9 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   const hostingConnection = connection?.hosting();
   const hostingAvailable = Boolean(connection?.host.hostingTransport && connection.host.newRequestId);
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
+    if (entered.destination === 'clips') return <ClipsScreen onBack={back}
+      onRead={() => act(() => setEntered({ connection, destination: 'philemon' }))}
+      onBrowse={() => openReadingDestination('discover')}/>;
     if (entered.destination === 'philemon') {
       return <PhilemonStudyScreen onBack={back} onHost={hostingAvailable ? () => openHosting(true) : undefined}/>;
     }
@@ -222,6 +226,9 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
     </View> : null}
     <Action label="My profile" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.profileTransport} onPress={openProfile}/>
     <Action label="Saved reading" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.savedReadingTransport} onPress={() => openReadingDestination('saved')}/>
+    <Action label="Explore Clips" disabled={!account?.canOpenCircle || model?.phase !== 'ready'} onPress={() => act(() => {
+      if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'clips' });
+    })}/>
     {!connection?.host.profileTransport ? <Text style={styles.copy}>Profile editing is unavailable in this connection.</Text> : null}
     {profileNotice ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{profileNotice}</Text> : null}
     <Action label="Discover Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}

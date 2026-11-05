@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.VideoView
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -69,6 +70,41 @@ class MemberEntryRuntimeTest {
             scenario.recreate()
             awaitEntry(scenario, initial)
         }
+    }
+
+    @Test
+    fun packagedClipsPlayBeforeAccountConnectionAndRetireOnPause() {
+        assumeTrue("Requires the synthetic build variant", BuildConfig.SOE_EMBEDDED_SYNTHETIC)
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            awaitEntry(scenario, initial)
+            press(scenario, "Explore Clips")
+            awaitStudyText(scenario, "Grace and peace")
+            awaitVideo(scenario, playing = false)
+            press(scenario, "Play Who gets the night sky?")
+            awaitVideo(scenario, playing = true)
+            scenario.moveToState(Lifecycle.State.CREATED)
+            scenario.moveToState(Lifecycle.State.RESUMED)
+            awaitStudyText(scenario, "Grace and peace")
+            awaitVideo(scenario, playing = false)
+            press(scenario, "Back to account")
+            awaitEntry(scenario, initial)
+        }
+    }
+
+    private fun awaitVideo(scenario: ActivityScenario<MainActivity>, playing: Boolean) {
+        val deadline = SystemClock.elapsedRealtime() + 20_000L
+        while (SystemClock.elapsedRealtime() < deadline) {
+            var ready = false
+            scenario.onActivity { activity ->
+                val videos = descendants(activity.window.decorView).filterIsInstance<VideoView>().toList()
+                ready = if (playing) videos.singleOrNull()?.let {
+                    it.isPlaying && it.currentPosition > 250 && it.duration in 23_750..24_250
+                } == true else videos.isEmpty()
+            }
+            if (ready) return
+            SystemClock.sleep(50L)
+        }
+        throw AssertionError("The packaged clip did not enter the expected playing state $playing")
     }
 
     private fun press(scenario: ActivityScenario<MainActivity>, label: String) {

@@ -1,4 +1,4 @@
-import fs from 'node:fs';import path from 'node:path';import{createHash}from'node:crypto';
+import fs from 'node:fs';import path from 'node:path';import{createHash}from'node:crypto';import{createRequire}from'node:module';
 const hashes={},sha=b=>createHash('sha256').update(b).digest('hex');
 function read(file){const s=fs.lstatSync(file);if(s.isSymbolicLink()||s.size&&!s.blocks)throw Error('Refuse source placeholder/link '+file);const b=fs.readFileSync(file),name=path.relative(process.cwd(),file);if(!name.startsWith('..'))hashes[name]=sha(b);return b;}
 read(path.resolve('platforms/tests/bundle-native-hosting.mjs'));
@@ -25,6 +25,11 @@ const [run,...extra]=process.argv.slice(2);
 if(extra.length||(run!==undefined&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run)))throw Error('Expected one optional evidence run name');
 const output='verification/web/evidence/native-hosting-fixture'+(run?'-'+run:'');
 if(run)fs.mkdirSync(output);
+const clips=run?.startsWith('clips-');
+if(clips){
+  read(path.resolve('platforms/native/prepare-clip-assets.cjs'));
+  createRequire(import.meta.url)('../native/prepare-clip-assets.cjs').packageClipAssets(path.resolve(output,'media'));
+}
 const primitive=`import React from 'react';
 function style(value){const v=Object.assign({},...[value].flat(Infinity).filter(x=>x&&typeof x==='object'));for(const pair of [['paddingVertical','paddingTop','paddingBottom'],['paddingHorizontal','paddingLeft','paddingRight'],['marginVertical','marginTop','marginBottom']])if(pair[0]in v){v[pair[1]]=v[pair[0]];v[pair[2]]=v[pair[0]];delete v[pair[0]];}if(typeof v.lineHeight==='number')v.lineHeight=v.lineHeight+'px';return v;}
 function box(tag){return function Primitive(p){return React.createElement(tag,{'aria-label':p.accessibilityLabel,'aria-live':p.accessibilityLiveRegion,role:p.accessibilityRole==='radiogroup'?'radiogroup':undefined,style:style([tag==='span'?{display:'block',whiteSpace:'pre-wrap',overflowWrap:'anywhere'}:{display:'flex',flexDirection:'column',boxSizing:'border-box'},p.style,p.contentContainerStyle])},p.children);};}
@@ -32,7 +37,8 @@ export const SafeAreaView=box('main'),ScrollView=box('div'),View=box('div'),Text
 function capture(kind,p,callback){window.nativeQa?.capture(kind,p.accessibilityLabel,callback);return callback;}
 export const Pressable=p=>React.createElement('button',{'aria-label':p.accessibilityLabel,role:['checkbox','radio'].includes(p.accessibilityRole)?p.accessibilityRole:'button','aria-checked':['checkbox','radio'].includes(p.accessibilityRole)?p.accessibilityState?.checked:undefined,disabled:p.disabled,onClick:capture('press',p,p.onPress),style:style([{display:'flex',flexDirection:'column',boxSizing:'border-box'},p.style])},p.children);
 export const TextInput=p=>{const onChangeText=capture('change',p,p.onChangeText);return React.createElement(p.multiline?'textarea':'input',{'aria-label':p.accessibilityLabel,type:p.secureTextEntry?'password':'text',disabled:p.editable===false,value:p.value,maxLength:p.maxLength,autoComplete:'off',onChange:e=>onChangeText(e.target.value),style:style([{boxSizing:'border-box',width:'100%',fontFamily:'inherit'},p.style])});};
-export const UIManager={getViewManagerConfig:()=>null},codegenNativeComponent=()=>()=>null;
+${clips ? "import { NativeClipPlayerDouble } from './platforms/tests/native-clip-player-double';" : 'const NativeClipPlayerDouble = () => null;'}
+export const UIManager={getViewManagerConfig:name=>name==='SoeClipPlayer'&&window.nativeClipQa?.available?{}:null},codegenNativeComponent=name=>name==='SoeClipPlayer'?NativeClipPlayerDouble:()=>null;
 export const StyleSheet={create:x=>x},Platform={get OS(){return window.nativeQa?.platform??'android';}},TurboModuleRegistry={get:()=>null};
 export const AppState={get currentState(){return window.nativeQa?.appState.currentState??'active';},addEventListener(name,fn){return window.nativeQa.appState.addEventListener(name,fn);}};`;
 const result=await Bun.build({entrypoints:['platforms/tests/native-hosting-entry.tsx'],outdir:output,target:'browser',format:'esm',naming:'page.[ext]',define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'native-primitives-explicit-double',setup(build){
