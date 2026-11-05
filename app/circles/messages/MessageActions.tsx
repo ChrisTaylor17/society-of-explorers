@@ -10,6 +10,7 @@ import styles from './safety.module.css';
 import { MessagePassageContext } from '@/app/great-books/PassageContext';
 import Link from 'next/link';
 import { discussionHref } from '@/lib/circles/thread';
+import PublishedProfileLink from '@/components/PublishedProfileLink';
 
 export const WITHDRAWAL_PRIVACY = 'Withdrawal removes the message from member views. It is not physical erasure: restricted evidence may remain for safety review. The retention policy is not yet finalized.';
 export const messageReasonLabel = (reason: string) => reason === 'misleading' ? 'Misleading content' : reason === 'no_violation' ? 'No violation found' : reason === 'insufficient_evidence' ? 'Insufficient evidence' : reason === 'resolved' ? 'Concern resolved' : REPORT_LABELS[reason as ReportReason] || reason;
@@ -20,7 +21,7 @@ type Pending = { action: 'report' | 'withdraw'; expectedRevision: number; conten
 export default function MessageActions(props: Props) {
   // The portable conversation projection represents held content as a new
   // tombstone string. A fresh projection must replace an older checked body.
-  return <MessageCard key={JSON.stringify([props.circleId, props.message.id, props.message.content, props.message.is_mine, props.initialState?.revision])} {...props} />;
+  return <MessageCard key={JSON.stringify([props.circleId, props.message.id, props.message.content, props.message.is_mine, props.message.publicProfileId, props.initialState?.revision])} {...props} />;
 }
 function MessageCard({ circleId, message, active: parentActive = true, initialState, onAccessDenied, onCurrentState }: Props) {
   const id = useId();
@@ -92,6 +93,7 @@ function MessageCard({ circleId, message, active: parentActive = true, initialSt
   return <article className={styles.scope} style={card} aria-busy={busy}>
     {visible && !cleared ? <>
       <p style={{ ...small, marginBottom: '.5rem' }}>{byline.member_name}{byline.is_mine ? ' · you' : ''} · <time dateTime={byline.created_at}>{new Date(byline.created_at).toUTCString()}</time></p>
+      <PublishedProfileLink profileId={state ? state.message.publicProfileId : message.publicProfileId} active={!disabled && !pending && (visibility === undefined || visibility === 'visible')} />
       <p style={{ ...body, whiteSpace: 'pre-wrap', margin: 0 }}>{content === null ? visibility === 'withdrawn' ? 'Message withdrawn by its author.' : 'Message hidden from member views.' : content}</p>
       {content !== null && <MessagePassageContext content={content} />}
       {content !== null && <p style={small}><Link href={discussionHref(circleId, message.id)} prefetch={false}>Open discussion thread and replies</Link></p>}

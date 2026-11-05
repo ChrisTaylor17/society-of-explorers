@@ -1,3 +1,4 @@
+import { hasPublicProfileReference, parsePublicProfileReference } from '@/lib/members/public-reference';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
@@ -31,6 +32,8 @@ function circleMessage(value: unknown, own = false) {
   if (!isRecord(value) || !messageId(value.id) || !plainText(value.member_name, 200) || !timestamp(value.created_at)
     || typeof value.is_mine !== 'boolean' || (own && value.is_mine !== true)
     || !['visible', 'hidden', 'withdrawn'].includes(String(value.visibility))) return null;
+  const publicProfileId = parsePublicProfileReference(value.publicProfileId);
+  if (publicProfileId === undefined || (value.visibility !== 'visible' && publicProfileId !== null)) return null;
   const visibility = value.visibility as 'visible' | 'hidden' | 'withdrawn';
   if (own && visibility !== 'visible') return null;
   if (visibility === 'visible' && !plainText(value.content, 2000)) return null;
@@ -38,7 +41,7 @@ function circleMessage(value: unknown, own = false) {
   // the fixed public tombstone even if an RPC accidentally includes more data.
   return { id: value.id, member_name: value.member_name.includes('@') ? 'Explorer' : value.member_name,
     content: visibility === 'visible' ? value.content as string : tombstones[visibility],
-    created_at: value.created_at, is_mine: value.is_mine, visibility };
+    created_at: value.created_at, is_mine: value.is_mine, visibility, publicProfileId };
 }
 
 function circleRead(value: unknown, circleId: string) {
@@ -64,6 +67,7 @@ function circleRead(value: unknown, circleId: string) {
   const messages = [];
   const messageIds = new Set<string>();
   for (const row of value.messages) {
+    if (!hasPublicProfileReference(row)) return null;
     const message = circleMessage(row);
     if (!message || messageIds.has(message.id)) return null;
     messageIds.add(message.id); messages.push(message);
@@ -104,7 +108,7 @@ async function readConversation(req: NextRequest, { params }: { params: Promise<
     if (!auth) return privateJson({ error: 'Sign in to read this circle' }, { status: 401 });
     // One service-only transaction checks current membership and projects the
     // visibility state under the same locks. Missing safety SQL fails closed.
-    const result = await supabaseAdmin.rpc('soe_circle_messages_read', { p_actor: auth.memberId, p_circle_id: cohortId });
+    const result = await supabaseAdmin.rpc('soe_circle_messages_read_profiles', { p_actor: auth.memberId, p_circle_id: cohortId });
     if (result.error) return privateJson({ error: 'Circle discussion unavailable' }, { status: rpcStatus(result.error) });
     const projected = circleRead(result.data, cohortId);
     if (!projected) return privateJson({ error: 'Circle discussion unavailable' }, { status: 503 });

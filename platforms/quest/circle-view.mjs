@@ -20,22 +20,29 @@ export function mountCirclePage({window:win,document:doc,config}) {
   assertCircleMarkup(doc);
   const $=id=>doc.getElementById(id),hasThreadWriter=threadControls.every(id=>$(id)),hasSafety=safetyControls.every(id=>$(id));
   let safetyWasOpen=false,safetyMessage=null;
-  let host=null;
+  let host=null,renderEpoch=0;
   try { if(config)host=createCircleHost(config); } catch { /* Fail closed without exposing configuration. */ }
   const text=(tag,value)=>{const e=doc.createElement(tag);e.textContent=value;return e;};
   const render=m=>{
+    const epoch=++renderEpoch;
     const read=m?.participation.read,write=m?.participation.write,archive=m?.archive,thread=m?.threadWrite,safety=m?.messageSafety;
     const safetyNavigation=safety?.canNavigate!==false;
     $('circle-host-status').textContent=m?.status??'Circle access is not connected. An existing member session and approved HTTPS transport are required.';
     $('circle-read-status').textContent=archive?.open?'':read?.message??'';
     $('circle-title').textContent=read?.conversation?.title??'A conversation worth having.';
     const canRead=Boolean(m?.connected&&m.active&&m.online&&!read?.busy&&!write?.busy&&!archive?.busy&&thread?.canNavigate!==false&&safetyNavigation);
+    const profileLink=(article,profileId)=>{
+      if(!canRead||write?.phase==='unknown'||typeof profileId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(profileId))return;
+      const link=text('a','View published profile');link.href=`/explorer/${profileId}`;link.referrerPolicy='no-referrer';
+      link.style.minHeight='44px';link.style.display='inline-flex';link.style.alignItems='center';
+      link.addEventListener('click',event=>{if(disposed||epoch!==renderEpoch)event.preventDefault();});article.append(link);
+    };
     $('circle-refresh').disabled=!canRead;
     $('circle-close').disabled=!m?.connected;
     $('circle-archive-open').disabled=!canRead;
     $('circle-conversation').hidden=Boolean(archive?.open)||!read?.conversation;
     $('circle-messages').replaceChildren(...(read?.conversation?.messages.map(message=>{
-      const article=doc.createElement('article');article.append(text('strong',message.member_name+(message.is_mine?' · You':'')),text('p',message.created_at),text('p',message.content));return article;
+      const article=doc.createElement('article');article.append(text('strong',message.member_name+(message.is_mine?' · You':'')),text('p',message.created_at),text('p',message.content));profileLink(article,message.publicProfileId);return article;
     })??[]));
     $('circle-composer').hidden=Boolean(archive?.open);
     $('circle-draft').value=write?.draft??'';$('circle-draft').disabled=!write?.canEdit||thread?.canNavigate===false||!safetyNavigation;
@@ -51,6 +58,7 @@ export function mountCirclePage({window:win,document:doc,config}) {
       const article=doc.createElement('article');article.dataset.messageId=message.id;article.append(text('strong',message.member_name+(message.is_mine?' · You':'')));
       if(message.created_at)article.append(text('p',message.created_at));
       article.append(text('p',message.content??(message.visibility==='withdrawn'?'This contribution was withdrawn.':message.visibility==='hidden'?'This contribution is restricted by moderation.':'This contribution is unavailable.')));
+      if(message.visibility==='visible')profileLink(article,message.publicProfileId);
       const button=text('button','Open thread');button.type='button';button.disabled=!canRead;button.addEventListener('click',()=>void host?.archiveThread(message.id));article.append(button);
       if(hasThreadWriter&&message.visibility==='visible'){
         const reply=text('button','Reply to this message');reply.type='button';reply.disabled=!thread?.canStart||!safetyNavigation;

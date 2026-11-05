@@ -1,196 +1,257 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import PublishedProfileLink from '@/components/PublishedProfileLink';
 import { circleHeaders } from '@/lib/circles/client';
-import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
-import { parseOwnerProfile, type OwnerProfile, type ProfileFields } from '@/lib/members/profile';
+import { bindCircleAccess } from '@/lib/circles/browser-access';
+import { createClient } from '@/lib/supabase/client';
+import { memberSessionDto } from '@/lib/auth/memberDto';
+import { PROFILE_LIMITS, parseOwnerProfile, parseProfileMutation, parsePublicMemberProfileResponse,
+  type OwnerProfile, type ProfileFields, type ProfileVisibility, type PublicMemberProfile } from '@/lib/members/profile';
 import styles from './profile.module.css';
 
 type Draft = Omit<ProfileFields, 'skills'> & { skillsText: string };
-type Phase = 'idle' | 'loading' | 'ready' | 'saving' | 'saved' | 'conflict' | 'unknown' | 'error';
+type Phase = 'idle' | 'loading' | 'editing' | 'review' | 'saving' | 'unknown' | 'closed';
+type Pending = { memberId: string; subject: string; base: number; body: string; profile: ProfileFields; visibility: ProfileVisibility; sent: boolean };
+type View = { active: boolean; phase: Phase; owner: OwnerProfile | null; draft: Draft | null; visibility: ProfileVisibility;
+  review: Pending | null; recovered: boolean; publicProfile: PublicMemberProfile | null; publicMessage: string; message: string };
+const initial = (): View => ({ active: true, phase: 'idle', owner: null, draft: null, visibility: 'private', review: null, recovered: false,
+  publicProfile: null, publicMessage: 'Your saved public profile has not been checked.', message: 'Load your profile to edit it. Nothing loads automatically.' });
 const fields = [
-  { key: 'bio', label: 'About you', limit: 2000 },
-  { key: 'discipline', label: 'Your field', limit: 100 },
-  { key: 'projectDescription', label: 'What you are building', limit: 2000 },
-  { key: 'seeking', label: 'What you are looking for', limit: 1000 },
-  { key: 'philosophy', label: 'Your philosophy', limit: 2000 },
+  { key: 'displayName', label: 'Display name', multiline: false }, { key: 'bio', label: 'About you', multiline: true },
+  { key: 'discipline', label: 'Your field', multiline: false }, { key: 'projectDescription', label: 'What you are building', multiline: true },
+  { key: 'seeking', label: 'What you are looking for', multiline: true }, { key: 'philosophy', label: 'Your philosophy', multiline: true },
 ] as const;
+const refused = new Set([400, 401, 403, 404, 409, 413, 415, 429]);
+const draftFrom = ({ skills, ...text }: ProfileFields): Draft => ({ ...text, skillsText: skills.join(', ') });
+const sameFields = (a: ProfileFields, b: ProfileFields) => fields.every(field => a[field.key] === b[field.key]) && JSON.stringify(a.skills) === JSON.stringify(b.skills);
+const matches = (value: OwnerProfile, pending: Pending) => value.memberId === pending.memberId && value.visibility === pending.visibility && sameFields(value.profile, pending.profile);
 
-function draftFrom(profile: ProfileFields): Draft {
-  const { skills, ...text } = profile;
-  return { ...text, skillsText: skills.join(', ') };
-}
-
-function authoredFields(draft: Draft): ProfileFields | null {
-  const skills = draft.skillsText.split(',').map(value => value.trim()).filter(Boolean);
-  if (skills.length > 40 || skills.some(value => value.length > 100) || !draft.displayName.trim()) return null;
-  return {
-    displayName: draft.displayName.trim(), bio: draft.bio.trim(), discipline: draft.discipline.trim(),
-    projectDescription: draft.projectDescription.trim(), seeking: draft.seeking.trim(),
-    philosophy: draft.philosophy.trim(), skills,
-  };
-}
-
-function sameFields(a: ProfileFields, b: ProfileFields) {
-  return a.displayName === b.displayName && a.bio === b.bio && a.discipline === b.discipline &&
-    a.projectDescription === b.projectDescription && a.seeking === b.seeking && a.philosophy === b.philosophy &&
-    a.skills.length === b.skills.length && a.skills.every((skill, index) => skill === b.skills[index]);
-}
-
-async function readProfile(signal: AbortSignal) {
-  if (signal.aborted) throw new Error('retired');
-  const headers = await circleHeaders();
-  if (signal.aborted) throw new Error('retired');
-  const response = await fetch('/api/members/profile', {
-    credentials: 'same-origin', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', headers, signal,
-  });
-  if (!response.ok) throw new Error(response.status === 401 ? 'signin' : 'unavailable');
-  const owner = parseOwnerProfile(await response.json());
-  if (!owner) throw new Error('unavailable');
-  return owner;
-}
-
-async function bounded<T>(controller: AbortController, work: () => Promise<T>): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => { controller.abort(); reject(new Error('deadline')); }, 15_000);
-  });
-  try { return await Promise.race([work(), deadline]); }
-  finally { if (timer) clearTimeout(timer); }
-}
-
+/** Recovery belongs to this mounted view. Temporary retirement hides the exact
+ * pending CAS without treating an abort or unchanged GET as cancellation. */
 export default function ProfileEditor() {
-  const [owner, setOwner] = useState<OwnerProfile | null>(null);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [visibility, setVisibility] = useState<'private' | 'public'>('private');
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [message, setMessage] = useState('Load your profile to edit it.');
-  const epoch = useRef(0);
-  const active = useRef<AbortController | null>(null);
-
+  const [view, setView] = useState<View>(initial);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (view.phase === 'review') reviewHeading.current?.focus(); }, [view.phase]);
+  const ref = useRef({ mounted: false, observing: false, active: true, closed: false, busy: false, epoch: 0, generation: 0,
+    subject: null as string | null, pending: null as Pending | null, controller: null as AbortController | null, view: initial() });
+  const core = ref.current;
+  const publish = (next: Partial<View>) => { core.view = { ...core.view, ...next }; ++core.epoch; if (core.mounted) setView(core.view); };
   useEffect(() => {
-    const invalidate = () => { epoch.current++; active.current?.abort(); };
-    const unsubscribe = subscribeAuthProviderChanges(() => {
-      invalidate();
-      setOwner(null); setDraft(null); setVisibility('private'); setPhase('idle');
-      setMessage('Sign-in changed. Load your profile again.');
-    });
-    return () => { invalidate(); unsubscribe(); };
+    core.mounted = true; core.closed = false; core.active = document.visibilityState === 'visible' && navigator.onLine !== false;
+    core.view = { ...initial(), active: core.active }; setView(core.view);
+    const retire = (inactive: boolean) => {
+      ++core.generation; ++core.epoch; core.controller?.abort(); core.controller = null; core.busy = false; core.subject = null;
+      if (!core.pending?.sent) core.pending = null;
+      if (inactive) core.active = false;
+      core.view = { ...initial(), active: core.active, phase: core.closed ? 'closed' : 'idle', message: core.pending?.sent
+        ? 'Private fields were cleared. A save may still complete. Load your profile under the same account to check it before reviewing an exact retry.'
+        : 'Private fields were cleared. Load your profile to check your current account.' };
+      if (core.mounted) setView(core.view);
+    };
+    const active = () => { if (core.mounted && core.observing && !core.closed && document.visibilityState === 'visible' && navigator.onLine !== false) {
+      core.active = true; core.view = { ...core.view, active: true }; setView(core.view);
+    } };
+    const offline = () => retire(true);
+    const wrappers = new Map<() => void, () => void>();
+    const profileWindow = { addEventListener(name: string, listener: () => void) {
+      const fn = name === 'blur' ? () => { if (!document.hasFocus()) listener(); } : listener;
+      if (name === 'blur') wrappers.set(listener, fn); window.addEventListener(name, fn);
+    }, removeEventListener(name: string, listener: () => void) { window.removeEventListener(name, name === 'blur' ? wrappers.get(listener) || listener : listener); if (name === 'blur') wrappers.delete(listener); } };
+    window.addEventListener('offline', offline); window.addEventListener('online', active);
+    const dispose = bindCircleAccess({ window: profileWindow, document,
+      subscribeAuth(listener) { try { const { data } = createClient().auth.onAuthStateChange(listener); core.observing = true; return () => data.subscription.unsubscribe(); }
+        catch { retire(true); return () => {}; } },
+      onInactive: () => retire(true), onActive: active, onIdentity: () => retire(false) });
+    return () => { core.mounted = false; retire(true); core.pending = null; core.observing = false; dispose();
+      window.removeEventListener('offline', offline); window.removeEventListener('online', active); };
+  // This mounted account view owns its private recovery lifetime.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const epoch = core.epoch;
+  const valid = () => core.mounted && !core.closed && core.observing && core.active && !core.busy && core.epoch === epoch;
+  const editable = valid() && view.phase === 'editing' && !!view.owner && !!view.draft && !core.pending;
 
-  async function load() {
-    const generation = ++epoch.current;
-    active.current?.abort();
-    const controller = new AbortController(); active.current = controller;
-    setOwner(null); setDraft(null); setVisibility('private'); setPhase('loading'); setMessage('Loading your profile…');
+  async function run(action: 'load' | 'confirm' | 'public') {
+    if (!valid()) return;
+    const pending = action === 'confirm' ? core.pending : null;
+    const earlierUnknown = pending?.sent === true;
+    if (action === 'confirm' && (!pending || core.view.phase !== 'review') || action === 'load' && core.view.phase === 'review'
+      || action === 'public' && (!core.view.owner || core.view.phase === 'review')) return;
+    const publicId = core.view.owner?.memberId;
+    const generation = ++core.generation, controller = new AbortController(); core.controller = controller; core.busy = true;
+    const current = () => core.mounted && !core.closed && core.active && core.generation === generation && !controller.signal.aborted;
+    const visible = () => core.mounted && !core.closed && core.active && core.generation === generation;
+    publish(action === 'public' ? { publicProfile: null, publicMessage: 'Checking your saved public profile…' }
+      : { phase: pending ? 'saving' : 'loading', owner: null, draft: null, visibility: 'private', review: null, recovered: false,
+        publicProfile: null, publicMessage: initial().publicMessage, message: pending ? 'Checking your account before saving the reviewed profile…' : 'Checking your current account and saved profile…' });
+    let status: number | null = null, posted = false, receipt: OwnerProfile | null = null, discarded = false;
+    const aborted = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(Error('Profile request retired')), { once: true }));
+    const timer = setTimeout(() => controller.abort(), 15_000);
     try {
-      const current = await bounded(controller, () => readProfile(controller.signal));
-      if (generation !== epoch.current || controller.signal.aborted) return;
-      setOwner(current); setDraft(draftFrom(current.profile)); setVisibility(current.visibility); setPhase('ready');
-      setMessage(current.visibility === 'public' ? 'Your saved profile is published.' : 'Your saved profile is private.');
-    } catch (error) {
-      if (generation !== epoch.current) return;
-      setPhase('error'); setMessage(error instanceof Error && error.message === 'signin'
-        ? 'Sign in to load your profile.' : 'Profile settings are unavailable. You can try loading again.');
-    }
-  }
-
-  async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!owner || !draft || !['ready', 'saved'].includes(phase)) return;
-    const profile = authoredFields(draft);
-    if (!profile) { setMessage('Enter a display name and up to 40 skills of at most 100 characters each.'); return; }
-    const generation = ++epoch.current;
-    active.current?.abort();
-    const controller = new AbortController(); active.current = controller;
-    let sent = false;
-    setPhase('saving'); setMessage('Saving your profile…');
-    try {
-      await bounded(controller, async () => {
-      const headers = await circleHeaders(true);
-      if (generation !== epoch.current || controller.signal.aborted) return;
-      sent = true;
-      const response = await fetch('/api/members/profile', {
-        method: 'POST', credentials: 'same-origin', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer',
-        headers, signal: controller.signal,
-        body: JSON.stringify({ expectedMemberId: owner.memberId, expectedRevision: owner.revision, patch: { ...profile, visibility } }),
-      });
-      if (generation !== epoch.current || controller.signal.aborted) return;
-      if (response.status === 409) {
-        setPhase('conflict'); setMessage('Your profile or sign-in changed. Load the latest profile before editing again.'); return;
-      }
-      if (response.status === 401 || response.status === 403) {
-        setOwner(null); setDraft(null); setVisibility('private'); setPhase('error'); setMessage('Sign in again, then load your profile.'); return;
-      }
-      if (response.status === 400) { setPhase('ready'); setMessage('Review your profile fields and try again.'); return; }
-      if (!response.ok) throw new Error('unknown');
-      const receipt = parseOwnerProfile(await response.json());
-      if (generation !== epoch.current || controller.signal.aborted) return;
-      if (!receipt || receipt.memberId !== owner.memberId || receipt.revision < owner.revision ||
-        receipt.visibility !== visibility || !sameFields(receipt.profile, profile)) throw new Error('unknown');
-      const confirmed = await readProfile(controller.signal);
-      if (generation !== epoch.current || controller.signal.aborted) return;
-      if (confirmed.memberId !== owner.memberId) {
-        setOwner(null); setDraft(null); setVisibility('private'); setPhase('idle'); setMessage('Sign-in changed. Load your profile again.'); return;
-      }
-      if (confirmed.revision !== receipt.revision || confirmed.visibility !== visibility || !sameFields(confirmed.profile, profile)) {
-        setPhase('conflict'); setMessage('Your profile changed during confirmation. Load the latest profile before editing again.'); return;
-      }
-      setOwner(confirmed); setDraft(draftFrom(confirmed.profile)); setVisibility(confirmed.visibility); setPhase('saved');
-      setMessage(confirmed.visibility === 'public' ? 'Saved and confirmed: your profile is published.' : 'Saved and confirmed: your profile is private.');
-      });
+      await Promise.race([aborted, (async () => {
+        if (action === 'public') {
+          const response = await fetch(`/api/explorer/${publicId}`, { headers: {}, credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: controller.signal });
+          if (!current() || response.redirected) throw Error('Public profile request retired');
+          const value: unknown = await response.json(); if (!current()) return;
+          if (response.status === 404 && value && typeof value === 'object' && !Array.isArray(value)
+            && Object.keys(value).length === 1 && (value as { error?: unknown }).error === 'Public profile unavailable.') {
+            publish({ publicMessage: 'No public profile is visible at this address.' }); return;
+          }
+          const profile = response.status === 200 ? parsePublicMemberProfileResponse(value) : null;
+          if (!profile || profile.id !== publicId) throw Error('Public profile invalid');
+          publish({ publicProfile: profile, publicMessage: 'The public profile returned these saved fields.' }); return;
+        }
+        let operationOwner: { memberId: string; subject: string } | null = null;
+        async function proof() {
+          if (!current()) throw Error('Profile operation retired');
+          const headers = new Headers(await circleHeaders()); if (!current()) throw Error('Profile operation retired');
+          const response = await fetch('/api/auth/member', { headers, credentials: 'same-origin', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: controller.signal });
+          if (!current() || !response.ok || response.redirected) throw Error('Member check unavailable');
+          const value = await response.json(); if (!current()) throw Error('Profile operation retired');
+          const member = memberSessionDto(value?.member), auth = value?.auth;
+          if (!member || !auth || !['supabase', 'wallet'].includes(auth.provider) || typeof auth.subject !== 'string' || !auth.subject
+            || auth.subject.length > 300 || /[\u0000-\u001f\u007f]/.test(auth.subject)) throw Error('Member check invalid');
+          const subject = `${auth.provider}:${auth.subject}`, owner = { memberId: member.id, subject };
+          if (operationOwner && (operationOwner.memberId !== owner.memberId || operationOwner.subject !== subject)) throw Error('Account changed');
+          if (core.pending && (core.pending.memberId !== owner.memberId || core.pending.subject !== subject)) {
+            discarded = core.pending.sent; core.pending = null; core.subject = null;
+            if (pending) throw Error('Account changed');
+          }
+          if (pending && core.pending !== pending) throw Error('Account changed');
+          operationOwner = owner; core.subject = subject; return { ...owner, headers };
+        }
+        async function request(method: 'GET' | 'POST') {
+          const owner = await proof(); if (!current()) throw Error('Profile operation retired');
+          const headers = new Headers(owner.headers); if (method === 'POST') headers.set('content-type', 'application/json');
+          if (method === 'POST') { posted = true; pending!.sent = true; }
+          const response = await fetch('/api/members/profile', { method, headers, credentials: 'same-origin', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: controller.signal,
+            ...(method === 'POST' ? { body: pending!.body } : {}) });
+          status = response.status;
+          if (!current() || response.redirected || !response.ok) throw Error('Profile request unavailable');
+          const value = parseOwnerProfile(await response.json());
+          if (!current() || !value || value.memberId !== owner.memberId) throw Error('Profile reply invalid');
+          return value;
+        }
+        if (pending) {
+          receipt = await request('POST'); if (!current()) return;
+          if (!matches(receipt, pending) || receipt.revision !== pending.base + 1) throw Error('Profile receipt invalid');
+        }
+        const saved = await request('GET'); if (!current()) return;
+        const held = core.pending;
+        if (pending && receipt) {
+          if (saved.revision < receipt.revision || saved.revision === receipt.revision && !matches(saved, pending)) throw Error('Profile readback invalid');
+          core.pending = null;
+          publish({ owner: saved, draft: draftFrom(saved.profile), visibility: saved.visibility, phase: 'editing',
+            message: saved.revision > receipt.revision ? 'Your profile changed again. The current saved profile is shown.'
+              : saved.visibility === 'public' ? 'Saved and confirmed: your profile is published.' : 'Saved and confirmed: your profile is private.' });
+        } else if (held?.sent && saved.revision <= held.base) {
+          if (saved.revision < held.base) throw Error('Profile revision moved backwards');
+          publish({ owner: saved, phase: 'unknown', recovered: true, message: 'The earlier save is still uncertain. An unchanged profile does not prove it failed. You can review an exact retry.' });
+        } else {
+          core.pending = null;
+          publish({ owner: saved, draft: draftFrom(saved.profile), visibility: saved.visibility, phase: 'editing',
+            message: discarded ? 'Your account changed. An earlier account’s save may still complete; its private recovery was discarded. This is your current profile.'
+              : held?.sent ? 'A newer saved profile prevents the earlier save from changing it. Review the current state.'
+              : saved.visibility === 'public' ? 'Your saved profile is published.' : 'Your saved profile is private.' });
+        }
+      })()]);
     } catch {
-      if (generation !== epoch.current) return;
-      setPhase(sent ? 'unknown' : 'error');
-      if (!sent) { setOwner(null); setDraft(null); setVisibility('private'); }
-      setMessage(sent ? 'Save outcome unknown. Load your profile to check its saved state before editing again.'
-        : 'Unable to verify your sign-in. Load your profile again.');
-    }
+      if (visible()) {
+        if (action === 'public') publish({ publicProfile: null, publicMessage: 'The public profile could not be checked. Its visibility has not been confirmed.' });
+        else {
+          if (pending && posted && !receipt && refused.has(status || 0) && !earlierUnknown) core.pending = null;
+          if (!core.pending?.sent) core.pending = null;
+          core.subject = null;
+          publish({ owner: null, draft: null, visibility: 'private', review: null, recovered: false, phase: core.pending?.sent ? 'unknown' : 'idle',
+            message: discarded ? 'Your account changed. The earlier save may still complete; its private recovery was discarded. Load your current profile.'
+              : core.pending?.sent ? 'The save could not be confirmed and may still complete. Load your profile before reviewing an exact retry.'
+              : 'Your profile or sign-in could not be confirmed. Load the latest profile before editing again.' });
+        }
+      }
+    } finally { clearTimeout(timer); if (core.generation === generation) { core.busy = false; core.controller = null; if (core.mounted) setView({ ...core.view }); } }
   }
-
-  const busy = phase === 'loading' || phase === 'saving';
-  const editable = phase === 'ready' || phase === 'saved';
-  const preview = draft ? authoredFields(draft) : null;
+  function edit(key: keyof Draft, value: string) {
+    if (!valid() || core.view.phase !== 'editing' || !core.view.draft || core.pending) return;
+    publish({ draft: { ...core.view.draft, [key]: value }, publicProfile: null, publicMessage: initial().publicMessage });
+  }
+  function review(retry = false) {
+    if (!valid()) return;
+    if (retry) {
+      if (core.view.phase !== 'unknown' || !core.view.recovered || !core.pending?.sent || core.subject !== core.pending.subject || core.view.owner?.memberId !== core.pending.memberId) return;
+    } else {
+      const { owner, draft, visibility } = core.view;
+      if (core.view.phase !== 'editing' || !owner || !draft || !core.subject || core.pending) return;
+      const { skillsText, ...text } = draft;
+      const parsed = parseProfileMutation({ expectedMemberId: owner.memberId, expectedRevision: owner.revision,
+        patch: { ...text, skills: skillsText.split(',').map(value => value.trim()).filter(Boolean), visibility } });
+      if (!parsed) { publish({ message: 'Review the field limits, enter a display name and use up to 40 skills of 100 characters each.' }); return; }
+      const profile = parsed.patch as ProfileFields;
+      const patch = { displayName: profile.displayName, bio: profile.bio, discipline: profile.discipline, skills: profile.skills,
+        projectDescription: profile.projectDescription, seeking: profile.seeking, philosophy: profile.philosophy, visibility };
+      core.pending = { memberId: owner.memberId, subject: core.subject, base: owner.revision, profile: { displayName: profile.displayName, bio: profile.bio, discipline: profile.discipline, skills: [...profile.skills], projectDescription: profile.projectDescription, seeking: profile.seeking, philosophy: profile.philosophy }, visibility, sent: false,
+        body: JSON.stringify({ expectedMemberId: owner.memberId, expectedRevision: owner.revision, patch }) };
+    }
+    publish({ phase: 'review', review: core.pending, publicProfile: null, publicMessage: initial().publicMessage,
+      message: retry ? 'Review the exact earlier save. Confirming sends the same fields and original revision; the earlier request may still complete.' : 'Review all of these fields. Nothing has been sent.' });
+  }
+  function cancel() {
+    if (!valid() || core.view.phase !== 'review') return;
+    const uncertain = core.pending?.sent;
+    if (!uncertain) core.pending = null;
+    publish({ phase: uncertain ? 'unknown' : 'editing', review: null, message: uncertain ? 'The earlier save remains uncertain. Nothing was retried.' : 'Review cancelled. Nothing was sent.' });
+  }
+  function close() {
+    if (!core.mounted || core.epoch !== epoch || core.closed) return;
+    const uncertain = core.pending?.sent; core.closed = true; ++core.generation; core.controller?.abort(); core.controller = null; core.busy = false;
+    core.pending = null; core.subject = null;
+    publish({ ...initial(), active: false, phase: 'closed', message: uncertain ? 'Profile view closed. The save already sent may still complete. Local recovery was discarded.' : 'Profile view closed. Private fields were cleared.' });
+  }
   return <section className={styles.editor} aria-label="Profile settings">
     <div className={styles.actions}>
-      <button type="button" onClick={load} disabled={busy}>{owner ? 'Reload profile' : 'Load your profile'}</button>
-      <Link href="/login?next=%2Faccount%2Fprofile">Sign in</Link>
+      <button type="button" onClick={() => void run('load')} disabled={!valid() || view.phase === 'review'}>{view.phase === 'unknown' ? 'Check saved profile' : 'Load your profile'}</button>
+      {view.phase === 'closed' || !core.busy && !core.pending ? <Link href="/login?next=%2Faccount%2Fprofile">Sign in</Link> : null}
     </div>
-    <p role="status" aria-live="polite" className={styles.status}>{message}</p>
-    {owner && draft && <form onSubmit={save}>
-      <fieldset disabled={!editable} className={styles.fields}>
-        <legend>Profile fields</legend>
-        <label htmlFor="profile-name">Display name</label>
-        <input id="profile-name" name="displayName" autoComplete="nickname" required maxLength={200}
-          value={draft.displayName} onChange={event => { setDraft({ ...draft, displayName: event.target.value }); setPhase('ready'); }} />
-        {fields.map(field => <div className={styles.field} key={field.key}>
-          <label htmlFor={`profile-${field.key}`}>{field.label}</label>
-          {field.key === 'discipline'
-            ? <input id={`profile-${field.key}`} name={field.key} maxLength={field.limit} value={draft[field.key]} onChange={event => { setDraft({ ...draft, [field.key]: event.target.value }); setPhase('ready'); }} />
-            : <textarea id={`profile-${field.key}`} name={field.key} rows={4} maxLength={field.limit}
-              value={draft[field.key]} onChange={event => { setDraft({ ...draft, [field.key]: event.target.value }); setPhase('ready'); }} />}
-        </div>)}
-        <label htmlFor="profile-skills">Skills, separated by commas</label>
-        <input id="profile-skills" name="skills" maxLength={4078} value={draft.skillsText}
-          onChange={event => { setDraft({ ...draft, skillsText: event.target.value }); setPhase('ready'); }} />
-        <p className={styles.hint}>Up to 40 skills, 100 characters each.</p>
-        <label htmlFor="profile-visibility">Who can see these profile fields?</label>
-        <select id="profile-visibility" value={visibility} onChange={event => { setVisibility(event.target.value === 'public' ? 'public' : 'private'); setPhase('ready'); }}>
-          <option value="private">Private — hidden from profiles and directory</option>
-          <option value="public">Public — visible to everyone</option>
-        </select>
-        <p>{visibility === 'public' ? 'Saving will publish your display name, about text, field, skills, project, interests and philosophy.'
-          : 'Saving keeps these profile fields out of public profiles and the member directory.'}</p>
-        {visibility === 'public' && preview && <section className={styles.preview} aria-label="Public profile preview">
-          <h2>Public profile preview</h2><h3>{preview.displayName}</h3>
-          {fields.map(field => preview[field.key] ? <div key={field.key}><h4>{field.label}</h4><p>{preview[field.key]}</p></div> : null)}
-          {preview.skills.length > 0 && <p>Skills: {preview.skills.join(', ')}</p>}
-        </section>}
-        <button type="submit">{visibility === 'public' ? 'Save and publish profile' : 'Save private profile'}</button>
-      </fieldset>
-      {phase === 'saving' && <p>Confirming the saved state…</p>}
-      {phase === 'saved' && owner.visibility === 'public' && <Link href={`/explorer/${owner.memberId}`}>View your published profile</Link>}
-    </form>}
+    <p role="status" aria-live="polite" className={styles.status}>{view.message}</p>
+    {view.owner ? <p>Current saved profile: {view.owner.visibility === 'public' ? 'Published' : 'Private'}.</p> : null}
+    {view.draft && !view.review ? <fieldset disabled={!editable} className={styles.fields}>
+      <legend>Profile fields</legend>
+      {fields.map(field => <div className={styles.field} key={field.key}>
+        <label htmlFor={`profile-${field.key}`}>{field.label}</label>
+        {field.multiline ? <textarea id={`profile-${field.key}`} rows={4} maxLength={PROFILE_LIMITS[field.key]} value={view.draft![field.key]} onChange={event => edit(field.key, event.target.value)}/>
+          : <input id={`profile-${field.key}`} autoComplete={field.key === 'displayName' ? 'nickname' : undefined} maxLength={PROFILE_LIMITS[field.key]} value={view.draft![field.key]} onChange={event => edit(field.key, event.target.value)}/>}
+      </div>)}
+      <label htmlFor="profile-skills">Skills, separated by commas</label>
+      <input id="profile-skills" maxLength={4078} value={view.draft.skillsText} onChange={event => edit('skillsText', event.target.value)}/>
+      <p className={styles.hint}>Up to 40 skills, 100 characters each.</p>
+      <label htmlFor="profile-visibility">Who can see these profile fields?</label>
+      <select id="profile-visibility" value={view.visibility} onChange={event => { if (editable && valid()) publish({ visibility: event.target.value === 'public' ? 'public' : 'private', publicProfile: null, publicMessage: initial().publicMessage }); }}>
+        <option value="private">Private — hidden from profiles and directory</option><option value="public">Public — visible to everyone</option>
+      </select>
+      <p>{view.visibility === 'public' ? 'Publishing makes all seven profile fields visible to everyone.' : 'Your profile stays hidden from public profiles and directories. Your display name can still appear with contributions you shared.'}</p>
+      <button type="button" onClick={() => review()}>Review profile changes</button>
+    </fieldset> : null}
+    {view.review ? <section className={styles.preview} aria-label="Profile save review">
+      <h2 ref={reviewHeading} tabIndex={-1}>{view.review.sent ? 'Review this same save again' : view.review.visibility === 'public' ? 'Review publication' : 'Review private profile'}</h2>
+      <p>{view.review.visibility === 'public' ? 'Confirming will publish these exact profile fields for everyone to see.' : 'Confirming will save these profile fields privately. Existing contributions remain visible where they were shared.'}</p>
+      <ProfileText profile={view.review.profile}/>
+      <div className={styles.actions}><button type="button" disabled={!valid()} onClick={() => void run('confirm')}>{view.review.sent ? 'Confirm retry of same profile save' : view.review.visibility === 'public' ? 'Confirm save and publish profile' : 'Confirm save private profile'}</button>
+        <button type="button" disabled={!valid()} onClick={cancel}>Cancel profile review</button></div>
+    </section> : null}
+    {view.phase === 'unknown' && view.recovered ? <button type="button" disabled={!valid()} onClick={() => review(true)}>Review retry of same profile save</button> : null}
+    {view.owner && view.phase !== 'review' ? <section className={styles.preview} aria-label="Saved public profile">
+      <h2>Your saved public profile</h2><p>Check the saved fields visible to everyone. Unsaved changes are not included.</p>
+      <button type="button" disabled={!valid()} onClick={() => void run('public')}>Check my public profile</button>
+      <p role="status">{view.publicMessage}</p>
+      {view.publicProfile ? <><ProfileText profile={{ displayName: view.publicProfile.display_name, bio: view.publicProfile.bio ?? '', discipline: view.publicProfile.discipline ?? '', skills: view.publicProfile.skills,
+        projectDescription: view.publicProfile.project_description ?? '', seeking: view.publicProfile.seeking ?? '', philosophy: view.publicProfile.philosophy ?? '' }}/>
+        <PublishedProfileLink profileId={view.publicProfile.id} active={!core.busy && !core.pending} label="View your published profile"/></> : null}
+    </section> : null}
+    <p className={styles.hint}>Leaving this page clears private fields and local recovery. A save already sent may still complete. Nothing retries automatically.</p>
+    <button type="button" disabled={view.phase === 'closed'} onClick={close}>Close profile view</button>
   </section>;
+}
+function ProfileText({ profile }: { profile: ProfileFields }) {
+  return <div>{fields.map(field => <div key={field.key}><h3>{field.label}</h3><p>{profile[field.key] || 'Not provided'}</p></div>)}<h3>Skills</h3><p>{profile.skills.join(', ') || 'Not provided'}</p></div>;
 }

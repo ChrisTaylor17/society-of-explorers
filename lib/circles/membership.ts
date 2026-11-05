@@ -1,3 +1,4 @@
+import { parsePublicProfileReference } from '@/lib/members/public-reference';
 import { isUuid } from '@/lib/ids/uuid';
 import { parseReadingProgram, type ReadingProgram } from './reading-program';
 
@@ -14,7 +15,7 @@ export type CirclePublicSummary = {
   weekday: number; time: string; timezone: string; start_date: string; first_meeting: string; next_meeting: string | null; week: number;
   reading: { week: number; title: string; slug: string; author: string; selection: string } | null;
   reading_program: ReadingProgram | null; program_length: number;
-  member_count: number; max_members: number; spots_left: number; status: string; host_name: string; going_next: number | null; hidden: boolean;
+  publicProfileId?: string | null; member_count: number; max_members: number; spots_left: number; status: string; host_name: string; going_next: number | null; hidden: boolean;
 };
 export type CircleMembershipSummary = { circle: CirclePublicSummary; revision: number; viewer: CircleViewer; ended: boolean; capabilities: CircleCapabilities };
 export type CircleDetail = CircleMembershipSummary & { ready: true; meetings: Array<{ date: string; going: number; my_status: CircleRsvpStatus | null }>; online_url: string | null };
@@ -65,6 +66,8 @@ function publicCircle(value: unknown): CirclePublicSummary | null {
     || !membershipInteger(value.week) || value.week < 1 || !membershipInteger(value.member_count, 100_000)
     || !membershipInteger(value.max_members, 12) || value.max_members < 3 || !membershipInteger(value.spots_left, 12)
     || (value.going_next !== null && !membershipInteger(value.going_next, 100_000)) || typeof value.hidden !== 'boolean') return null;
+  const publicProfileId = parsePublicProfileReference(value.publicProfileId);
+  if (publicProfileId === undefined || (value.hidden && publicProfileId !== null)) return null;
   let reading: CirclePublicSummary['reading'] = null;
   const program = value.reading_program == null ? null : parseReadingProgram(value.reading_program);
   if (value.reading_program != null && !program) return null;
@@ -84,7 +87,7 @@ function publicCircle(value: unknown): CirclePublicSummary | null {
     first_meeting: value.first_meeting, next_meeting: value.next_meeting, week: value.week, reading,
     reading_program: program, program_length: programLength,
     member_count: value.member_count, max_members: value.max_members, spots_left: value.spots_left, status: value.status as string,
-    host_name: value.host_name as string, going_next: value.going_next as number | null, hidden: value.hidden };
+    host_name: value.host_name as string, publicProfileId, going_next: value.going_next as number | null, hidden: value.hidden };
 }
 function summary(value: unknown): CircleMembershipSummary | null {
   if (!membershipRecord(value) || !membershipInteger(value.revision) || typeof value.ended !== 'boolean') return null;

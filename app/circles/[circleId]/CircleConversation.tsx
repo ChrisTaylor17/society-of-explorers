@@ -1,4 +1,5 @@
 'use client';
+import PublishedProfileLink from '@/components/PublishedProfileLink';
 import { useLayoutEffect, useId, useMemo, useState } from 'react';
 import type { DiscussionMessage } from '@/lib/circles/discussion-reader';
 import { CIRCLE_MESSAGE_LIMIT } from '@/lib/circles/discussion-composer';
@@ -60,6 +61,7 @@ export function CircleMessageList({ messages, circleId, active = true, onAccessD
   return <div style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
     {messages.length === 0 ? <p style={small}>No messages were returned for this circle.</p> : messages.map(message => circleId ? <MessageActions key={message.id} circleId={circleId} message={message} active={active} onAccessDenied={onAccessDenied} /> : <article key={message.id} style={card}>
       <p style={{ ...small, marginBottom: '0.5rem', overflowWrap: 'anywhere' }}>{message.member_name}{message.is_mine ? ' · you' : ''} · <time dateTime={message.created_at}>{new Date(message.created_at).toUTCString()}</time></p>
+      <PublishedProfileLink profileId={message.publicProfileId} active={active} />
       <p style={{ ...body, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', margin: 0 }}>{message.content}</p>
     </article>)}
   </div>;

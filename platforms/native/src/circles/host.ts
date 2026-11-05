@@ -1,5 +1,5 @@
 import { createCircleParticipationSession, type CircleParticipationModel, type CircleSessionRequest } from './participation-session';
-import { createDiscussionArchive, type ArchiveModel } from '../../../shared/archive';
+import { createDiscussionArchive, type ArchiveModel, type ArchiveQuery } from '../../../shared/archive';
 import { createThreadWriter, type ThreadWriteModel } from '../../../shared/thread-writer';
 import { createMessageSafety, type MessageSafetyModel } from '../../../shared/message-safety';
 import { parseDiscussionQuery } from '../../../../lib/circles/thread';
@@ -17,7 +17,7 @@ export type CircleTransport = (url: string, init: {
 }) => Promise<{ status: number; url: string; redirected: boolean; json(): Promise<unknown> }>;
 /** A native transport must reject redirects BEFORE forwarding credentials.
  * React Native's default fetch is deliberately not selected here. */
-export type CircleHostConfig = { circleId: string; origin: string; owner: CircleOwner; transport: CircleTransport; timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
+export type CircleHostConfig = { circleId: string; origin: string; owner: CircleOwner; transport: CircleTransport; publicProfileTransport?: CircleTransport; timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
 export type CircleHostModel = { configured: boolean; connected: boolean; active: boolean; online: boolean; status: string; participation: CircleParticipationModel; archive: ArchiveModel; threadWrite: ThreadWriteModel; messageSafety: MessageSafetyModel };
 export function approvedOrigin(value: string) {
   const url = new URL(value);
@@ -108,6 +108,8 @@ export function createCircleHost(config: CircleHostConfig) {
     connectivity(value: boolean) { if (!value) abortPending(); online = value; setActivity(); emit(); },
     async refresh() { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); archive.close(); await participation.open(); } },
     async openArchive() { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); participation.retire(); await archive.open(); } },
+    archiveSelection: () => archive.currentQuery(),
+    async restoreArchive(query: ArchiveQuery) { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); participation.retire(); await archive.restore(query); } },
     archiveNext() { if (!canNavigate()) return Promise.resolve(); messageSafety.retire(); return archive.next(); },
     archiveThread(id: string) { if (!canNavigate()) return Promise.resolve(); messageSafety.retire(); return archive.thread(id); },
     edit(value: string) { return canNavigate() && participation.edit(value); },

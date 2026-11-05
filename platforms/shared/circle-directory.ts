@@ -7,7 +7,7 @@ import { isUuid } from '../../lib/ids/uuid';
 import { parseCircleCompleteMutation, circleCompleteMutationBody, parseOwnedCircleCompleteReceipt } from '../../lib/circles/hosting';
 import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
 
-export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport;
+export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport; publicProfileTransport?: CircleTransport;
   memberId?: string; attendanceTransport?: CircleTransport; hostingTransport?: CircleTransport;
   timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
 export type CircleAttendanceReview = { date: string; status: 'going' | 'not_going'; previousStatus: 'going' | 'not_going' | null;

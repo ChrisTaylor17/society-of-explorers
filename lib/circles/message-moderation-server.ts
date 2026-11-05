@@ -1,3 +1,4 @@
+import { hasPublicProfileReference } from '@/lib/members/public-reference';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
@@ -33,8 +34,9 @@ export async function messageSafetyRpc<T>(req: NextRequest, name: MessageSafetyR
       const budget = rateLimit(`circle-message-report:${actor.memberId}`, 10, 60 * 60 * 1000);
       if (!budget.ok) return { ok: false, response: privateJson({ error: 'Reporting is temporarily limited. Try again later.' }, { status: 429, headers: { 'Retry-After': String(budget.retryAfterS) } }) };
     }
-    const { data, error } = await getSupabaseAdmin().rpc(name, { ...args, p_actor: actor.memberId });
+    const { data, error } = await getSupabaseAdmin().rpc(name === 'soe_circle_message_state' ? 'soe_circle_message_state_profiles' : name, { ...args, p_actor: actor.memberId });
     if (error) return { ok: false, response: failure(error) };
+    if (name === 'soe_circle_message_state' && (!data || typeof data !== 'object' || !('message' in data) || !hasPublicProfileReference(data.message))) return { ok: false, response: messageSafetyUnavailable() };
     const value = parse(data);
     return value === null ? { ok: false, response: messageSafetyUnavailable() } : { ok: true, value };
   } catch { return { ok: false, response: messageSafetyUnavailable() }; }

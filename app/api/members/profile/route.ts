@@ -58,8 +58,7 @@ export async function POST(req: NextRequest) {
     });
     if (error?.code === 'PT409') return privateJson({ error: 'Profile changed. Reload before saving.' }, { status: 409 });
     const profile = !error ? ownerProfileFromRow(data) : null;
-    if (!profile || profile.memberId !== auth.memberId.toLowerCase() || profile.revision < mutation.expectedRevision ||
-        profile.revision > mutation.expectedRevision + 1) return unavailable();
+    if (!profile || profile.memberId !== auth.memberId.toLowerCase() || profile.revision !== mutation.expectedRevision + 1) return unavailable();
     return privateJson(profile);
   } catch { return unavailable(); }
 }

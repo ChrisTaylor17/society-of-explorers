@@ -1,5 +1,7 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { ArchiveQuery } from '../shared/archive';
+import { PublicProfileScreen } from './PublicProfileScreen';
 import type { MemberSessionModel } from './src/circles/verified-member-session';
 import { createCircleHost, type CircleHostConfig } from './src/circles/host';
 import type { ThreadMessage } from '../../lib/circles/thread';
@@ -7,15 +9,23 @@ import { observeNativeConnectivity, type NativeConnectivityPort, type NativeConn
 import { MESSAGE_REPORT_OPTIONS, MESSAGE_WITHDRAWAL_PRIVACY } from '../shared/message-safety';
 
 export function CircleScreen({ config, connectivity, onClose, onBack, memberSession }: { config?: CircleHostConfig; connectivity?: NativeConnectivityPort; onClose(): void; onBack?(): void; memberSession?: { model: MemberSessionModel; onCheck(): void } }) {
-  const connection = useMemo(() => { try { return config ? { host: createCircleHost({ ...config, initialOnline: false }), connectivity } : null; } catch { return null; } }, [config, connectivity]);
+  const connection = useMemo(() => { try { return config ? { host: createCircleHost({ ...config, initialOnline: false }), connectivity, config } : null; } catch { return null; } }, [config, connectivity]);
   const host = connection?.host;
   const [network, setNetwork] = useState<NativeConnectivityState>('unknown');
   const [snapshot, setSnapshot] = useState(() => ({ host, model: host?.model() }));
+  const [publicProfile, setPublicProfile] = useState<{ connection: NonNullable<typeof connection>; memberId: string; origin: ArchiveQuery | null } | null>(null);
+  const publicProfileConfig = useMemo(() => publicProfile ? { ...publicProfile.connection.config, memberId: publicProfile.memberId } : null, [publicProfile]);
+  const [viewEpoch, setViewEpoch] = useState(0), viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const m = snapshot.host === host ? snapshot.model : host?.model();
   useLayoutEffect(() => {
-    if (!connection) return;
+    const life = viewLife.current; life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
+    if (!connection) return () => { life.mounted = false; life.enabled = false; ++life.epoch; };
     const { host, connectivity } = connection;
-    const off = host.subscribe(model => setSnapshot({ host, model }));
+    const off = host.subscribe(model => {
+      life.enabled = model.connected && model.active && model.online; setViewEpoch(++life.epoch); setSnapshot({ host, model });
+      if (!model.active || !model.online) setPublicProfile(null);
+    });
+    const offOwner = connection.config.owner.subscribe(() => { ++life.epoch; life.enabled = false; setViewEpoch(life.epoch); setPublicProfile(null); });
     let mounted = true, appActive = false, blurred = false;
     const syncActivity = () => { if (mounted) host.activity(appActive && !blurred); };
     host.activity(false); host.connectivity(false);
@@ -27,8 +37,11 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
     appActive = AppState.currentState === 'active'; syncActivity();
     host.connect();
     void host.refresh();
-    return () => { mounted = false; host.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
+    return () => { mounted = false; life.mounted = false; life.enabled = false; ++life.epoch; off(); offOwner(); host.disconnect(); offConnectivity(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
+  useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [publicProfile]);
+  const act = (work: () => void, allowInactive = false) => { const life = viewLife.current;
+    if (life.mounted && life.epoch === viewEpoch && (allowInactive || life.enabled)) work(); };
   const p = m?.participation, read = p?.read, write = m?.threadWrite, archive = m?.archive, safety = m?.messageSafety;
   const archivePage = archive?.page;
   const rootMessage = archivePage?.kind === 'thread' ? archivePage.root : null;
@@ -36,7 +49,27 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
   const focusedMessage = archivePage?.kind === 'thread' && archivePage.focus.id !== archivePage.root.id && !archivePage.items.some(item => item.id === archivePage.focus.id) ? archivePage.focus : null;
   const navigate = Boolean(write?.canNavigate && safety?.canNavigate);
   const refresh = Boolean(m?.connected && m.active && m.online && navigate && !read?.busy && !write?.busy && !archive?.busy);
-  const leave = () => { host?.disconnect(); onClose(); };
+  const canLeaveDiscussion = () => { const current = host?.model();
+    return Boolean(current?.connected && current.active && current.online && current.threadWrite.canNavigate && current.messageSafety.canNavigate
+      && !current.participation.read.busy && !current.participation.write.busy && !current.threadWrite.busy && !current.archive.busy && !current.messageSafety.busy); };
+  const openAuthorProfile = (messageId: string, memberId: string) => act(() => {
+    if (!connection || !config?.publicProfileTransport || !canLeaveDiscussion()) return;
+    const current = host!.model(), page = current.archive.page;
+    const candidates = current.messageSafety.open ? [] : current.archive.open
+      ? page ? [...page.items, ...(page.kind === 'thread' ? [page.root, page.focus] : [])] : []
+      : current.participation.read.conversation?.messages ?? [];
+    if (!candidates.some(message => message.id === messageId && message.publicProfileId === memberId
+      && (!('visibility' in message) || message.visibility === 'visible'))) return;
+    // Retire private drafts and callbacks before replacing their visible surface.
+    const origin = current.archive.open ? host!.archiveSelection() : null;
+    host!.disconnect(); setPublicProfile({ connection, memberId, origin });
+  });
+  const leave = () => act(() => { host?.disconnect(); setPublicProfile(null); onClose(); }, true);
+  if (publicProfile && publicProfile.connection === connection && publicProfileConfig) return <PublicProfileScreen config={publicProfileConfig}
+    connectivity={connectivity} backLabel="Back to discussion" onClose={leave} onBack={() => act(() => {
+      setPublicProfile(null);
+      if (m?.active && m.online && config?.owner.scope()) { host?.connect(); if (publicProfile.origin) void host?.restoreArchive(publicProfile.origin); else void host?.refresh(); }
+    }, true)}/>;
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS · CIRCLES</Text>
     <Text accessibilityRole="header" style={styles.title}>{read?.conversation?.title ?? 'A conversation worth having.'}</Text>
@@ -45,21 +78,21 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
     {memberSession ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Member session</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{memberSession.model.message}</Text>
-      <Action label={memberSession.model.busy ? 'Checking member session…' : 'Check member session'} disabled={!memberSession.model.canCheck} onPress={memberSession.onCheck}/>
+      <Action label={memberSession.model.busy ? 'Checking member session…' : 'Check member session'} disabled={!memberSession.model.canCheck} onPress={() => act(memberSession.onCheck)}/>
     </View> : null}
     <Action label="Close circle" onPress={leave}/>
     {onBack ? <Action label="Back to Circle" disabled={!navigate || Boolean(read?.busy || p?.write.busy || write?.busy || archive?.busy || safety?.busy)}
-      onPress={() => {
+      onPress={() => act(() => {
         const current = host?.model();
         if (current?.threadWrite.canNavigate && current.messageSafety.canNavigate && !current.participation.read.busy && !current.participation.write.busy && !current.threadWrite.busy && !current.archive.busy && !current.messageSafety.busy) { host?.disconnect(); onBack(); }
-      }}/> : null}
+      }, true)}/> : null}
     <View accessibilityLiveRegion="polite" accessibilityRole="summary" style={styles.status}>
       <Text style={styles.copy}>{m?.status ?? 'Member sign-in and the secure Circle connection are not connected in this build.'}</Text>
       {read && !archive?.open && !safety?.open ? <Text style={styles.copy}>{read.message}</Text> : null}
     </View>
     {read?.busy ? <ActivityIndicator accessibilityLabel="Checking current circle access" color="#e8cb8d"/> : null}
-    <Action label="Refresh circle access" disabled={!refresh} onPress={() => void host?.refresh()}/>
-    <Action label="Open complete discussion archive" disabled={!refresh} onPress={() => void host?.openArchive()}/>
+    <Action label="Refresh circle access" disabled={!refresh} onPress={() => act(() => void host?.refresh())}/>
+    <Action label="Open complete discussion archive" disabled={!refresh} onPress={() => act(() => void host?.openArchive())}/>
     {archive?.open && !safety?.open ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Discussion archive</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{archive.message}</Text>
@@ -68,14 +101,14 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
         {archive.page.kind === 'thread' ? <>
           <Text accessibilityRole="header" style={styles.heading}>Thread</Text>
           {rootMessage ? <ArchiveMessage message={rootMessage} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
-            onOpen={() => void host?.archiveThread(rootMessage.id)} onReply={() => host?.threadStart(rootMessage.id)} onActions={() => void host?.messageOpen(rootMessage.id)}/> : null}
+            onOpen={() => act(() => void host?.archiveThread(rootMessage.id))} onReply={() => act(() => host?.threadStart(rootMessage.id))} onActions={() => act(() => void host?.messageOpen(rootMessage.id))} onProfile={config?.publicProfileTransport && rootMessage.publicProfileId ? () => openAuthorProfile(rootMessage.id, rootMessage.publicProfileId!) : undefined}/> : null}
           {focusedMessage ? <ArchiveMessage message={focusedMessage} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
-            onOpen={() => void host?.archiveThread(focusedMessage.id)} onReply={() => host?.threadStart(focusedMessage.id)} onActions={() => void host?.messageOpen(focusedMessage.id)}/> : null}
+            onOpen={() => act(() => void host?.archiveThread(focusedMessage.id))} onReply={() => act(() => host?.threadStart(focusedMessage.id))} onActions={() => act(() => void host?.messageOpen(focusedMessage.id))} onProfile={config?.publicProfileTransport && focusedMessage.publicProfileId ? () => openAuthorProfile(focusedMessage.id, focusedMessage.publicProfileId!) : undefined}/> : null}
         </> : null}
         {archive.page.items.map(message => <ArchiveMessage key={message.id} message={message} disabled={!navigate || archive.busy} replyDisabled={!write?.canStart}
-          onOpen={() => void host?.archiveThread(message.id)} onReply={() => host?.threadStart(message.id)} onActions={() => void host?.messageOpen(message.id)}/>)}
+          onOpen={() => act(() => void host?.archiveThread(message.id))} onReply={() => act(() => host?.threadStart(message.id))} onActions={() => act(() => void host?.messageOpen(message.id))} onProfile={config?.publicProfileTransport && message.publicProfileId ? () => openAuthorProfile(message.id, message.publicProfileId!) : undefined}/>)}
         {archive.page.items.length === 0 ? <Text style={styles.copy}>{archive.page.kind === 'thread' ? 'No replies in this page.' : 'No messages in this page.'}</Text> : null}
-        {archive.page.nextCursor ? <Action label={archive.page.kind === 'thread' ? 'Next replies' : 'Older messages'} disabled={archive.busy || !navigate} onPress={() => void host?.archiveNext()}/> : null}
+        {archive.page.nextCursor ? <Action label={archive.page.kind === 'thread' ? 'Next replies' : 'Older messages'} disabled={archive.busy || !navigate} onPress={() => act(() => void host?.archiveNext())}/> : null}
       </> : null}
       <Text style={styles.note}>Reply only to a visible message after reviewing its current server preview. Message actions require a separate current-state check. Reporting does not grant AI consent.</Text>
     </View> : null}
@@ -86,22 +119,23 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
       {read.conversation.messages.map(message => <View key={message.id} style={styles.message}>
         <Text style={styles.author}>{message.member_name}{message.is_mine ? ' · You' : ''}</Text>
         <Text style={styles.note}>{message.created_at}</Text><Text selectable style={styles.copy}>{message.content}</Text>
+        {config?.publicProfileTransport && message.publicProfileId ? <Action label="View author public profile" disabled={!refresh} onPress={() => openAuthorProfile(message.id, message.publicProfileId!)}/> : null}
       </View>)}
     </View> : null}
     {write && !safety?.open ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Your discussion message</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{write.message}</Text>
-      <Action label="Start a new discussion message" disabled={!write.canStart || Boolean(archive?.busy)} onPress={() => host?.threadStart(null)}/>
+      <Action label="Start a new discussion message" disabled={!write.canStart || Boolean(archive?.busy)} onPress={() => act(() => host?.threadStart(null))}/>
       {write.phase === 'editing' || write.phase === 'previewing' ? <>
         <Text style={styles.note}>{write.target ? 'Replying to the selected message. Your reply includes a stable link; its author and words are not copied into your message.' : 'Share your own thoughts with this Circle. Nothing posts until you review and confirm.'}</Text>
         <Text nativeID="circle-message-label" style={styles.copy}>Your discussion comment</Text>
         <TextInput accessibilityLabel="Your discussion comment" accessibilityLabelledBy="circle-message-label"
           accessibilityHint="Plain text. Prepare and review the complete message before choosing Post."
-          value={write.draft} onChangeText={value => host?.threadEdit(value)} editable={write.canEdit}
+          value={write.draft} onChangeText={value => act(() => host?.threadEdit(value))} editable={write.canEdit}
           multiline maxLength={write.commentLimit} autoCorrect={false} autoComplete="off" textContentType="none"
           style={[styles.input, !write.canEdit && styles.disabled]}/>
         <Text style={styles.note}>{write.draft.length} of {write.commentLimit} comment characters. Full message limit: 2,000.</Text>
-        <Action label={write.phase === 'previewing' ? 'Preparing discussion preview…' : 'Prepare discussion preview'} disabled={!write.canReview} onPress={() => void host?.threadReview()}/>
+        <Action label={write.phase === 'previewing' ? 'Preparing discussion preview…' : 'Prepare discussion preview'} disabled={!write.canReview} onPress={() => act(() => void host?.threadReview())}/>
       </> : null}
       {write.phase === 'review' && write.preview ? <>
         <Text accessibilityRole="header" style={styles.heading}>Review discussion message</Text>
@@ -113,22 +147,22 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
         <Text selectable style={styles.copy}>{write.preview.content}</Text>
         <Pressable accessibilityRole="checkbox" accessibilityLabel="I reviewed this exact message and target, and want to post it to this Circle"
           accessibilityState={{ checked: write.confirmed, disabled: !write.active || write.busy }} disabled={!write.active || write.busy}
-          onPress={() => host?.threadConfirm(!write.confirmed)} style={[styles.button, (!write.active || write.busy) && styles.disabled]}>
+          onPress={() => act(() => host?.threadConfirm(!write.confirmed))} style={[styles.button, (!write.active || write.busy) && styles.disabled]}>
           <Text style={styles.buttonText}>{write.confirmed ? '✓ ' : '□ '}I reviewed this exact message and target, and want to post it to this Circle.</Text>
         </Pressable>
-        <Action label="Post reviewed discussion message" disabled={!write.canPost} onPress={() => void host?.threadPost()}/>
-        <Action label="Edit discussion comment" disabled={write.busy} onPress={() => host?.threadEditReview()}/>
+        <Action label="Post reviewed discussion message" disabled={!write.canPost} onPress={() => act(() => void host?.threadPost())}/>
+        <Action label="Edit discussion comment" disabled={write.busy} onPress={() => act(() => host?.threadEditReview())}/>
       </> : null}
       {write.phase === 'unknown' ? <>
         <Text style={styles.note}>The message may already have been saved. Keep this screen open to preserve the exact request. Checking a missing receipt does not prove that an earlier attempt will not complete. Nothing is retried automatically.</Text>
-        <Action label="Check discussion posting receipt" disabled={!write.canCheck} onPress={() => void host?.threadLookup()}/>
-        <Action label="Retry exact reviewed discussion post" disabled={!write.canRetry} onPress={() => void host?.threadRetry()}/>
+        <Action label="Check discussion posting receipt" disabled={!write.canCheck} onPress={() => act(() => void host?.threadLookup())}/>
+        <Action label="Retry exact reviewed discussion post" disabled={!write.canRetry} onPress={() => act(() => void host?.threadRetry())}/>
       </> : null}
       {write.phase === 'confirmed' && savedMessage ? <>
         <Text style={styles.copy}>{savedMessage.visibility === 'visible' ? 'The message was saved. Open its current thread to read it and any replies.' : `The saved message is currently ${savedMessage.visibility}. Its earlier body is not displayed.`}</Text>
-        <Action label="Open saved discussion message" disabled={!navigate || Boolean(archive?.busy)} onPress={() => void host?.archiveThread(savedMessage.id)}/>
+        <Action label="Open saved discussion message" disabled={!navigate || Boolean(archive?.busy)} onPress={() => act(() => void host?.archiveThread(savedMessage.id))}/>
       </> : null}
-      {write.canCancel ? <Action label="Cancel discussion draft" onPress={() => host?.threadCancel()}/> : null}
+      {write.canCancel ? <Action label="Cancel discussion draft" onPress={() => act(() => host?.threadCancel())}/> : null}
     </View> : null}
     {safety?.open && safety.active ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Current message actions</Text>
@@ -151,14 +185,14 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
           <View accessibilityRole="radiogroup" accessibilityLabel="Report reason">
             {MESSAGE_REPORT_OPTIONS.map(option => <Pressable key={option.value} accessibilityRole="radio" accessibilityLabel={option.label}
               accessibilityState={{ checked: safety.reason === option.value, disabled: !safety.canEditReport }} disabled={!safety.canEditReport}
-              onPress={() => host?.messageReason(option.value)} style={[styles.button, !safety.canEditReport && styles.disabled]}>
+              onPress={() => act(() => host?.messageReason(option.value))} style={[styles.button, !safety.canEditReport && styles.disabled]}>
               <Text style={styles.buttonText}>{safety.reason === option.value ? '● ' : '○ '}{option.label}</Text>
             </Pressable>)}
           </View>
           <Text nativeID="circle-report-note-label" style={styles.copy}>Private report details (optional)</Text>
           <TextInput accessibilityLabel="Private report details (optional)" accessibilityLabelledBy="circle-report-note-label"
             accessibilityHint="Up to 1,000 characters. Do not include unnecessary personal details."
-            value={safety.note} onChangeText={value => host?.messageNote(value)} editable={safety.canEditReport}
+            value={safety.note} onChangeText={value => act(() => host?.messageNote(value))} editable={safety.canEditReport}
             multiline maxLength={1000} autoCorrect={false} autoComplete="off" textContentType="none"
             style={[styles.input, !safety.canEditReport && styles.disabled]}/>
         </> : null}
@@ -166,27 +200,28 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
         {safety.state.canReport || safety.state.canWithdraw ? <Pressable accessibilityRole="checkbox"
           accessibilityLabel={safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here' : 'I checked this message and want to send this report for private human review'}
           accessibilityState={{ checked: safety.confirmed, disabled: !safety.canConfirm }} disabled={!safety.canConfirm}
-          onPress={() => host?.messageConfirm(!safety.confirmed)} style={[styles.button, !safety.canConfirm && styles.disabled]}>
+          onPress={() => act(() => host?.messageConfirm(!safety.confirmed))} style={[styles.button, !safety.canConfirm && styles.disabled]}>
           <Text style={styles.buttonText}>{safety.confirmed ? '✓ ' : '□ '}{safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here.' : 'I checked this message and want to send this report for private human review.'}</Text>
         </Pressable> : <Text style={styles.note}>No report or withdrawal action is available for this message.</Text>}
-        {safety.state.canReport ? <Action label="Send private report" disabled={!safety.canReport} onPress={() => void host?.messageSubmit('report')}/> : null}
-        {safety.state.canWithdraw ? <Action label="Withdraw my message" disabled={!safety.canWithdraw} onPress={() => void host?.messageSubmit('withdraw')}/> : null}
+        {safety.state.canReport ? <Action label="Send private report" disabled={!safety.canReport} onPress={() => act(() => void host?.messageSubmit('report'))}/> : null}
+        {safety.state.canWithdraw ? <Action label="Withdraw my message" disabled={!safety.canWithdraw} onPress={() => act(() => void host?.messageSubmit('withdraw'))}/> : null}
       </> : null}
-      <Action label="Check current message state" disabled={!safety.canCheck} onPress={() => void host?.messageRefresh()}/>
+      <Action label="Check current message state" disabled={!safety.canCheck} onPress={() => act(() => void host?.messageRefresh())}/>
       {safety.pendingRequestId ? <>
         <Text style={styles.note}>The result is unconfirmed. Checking current state does not confirm that this request was received. Retry only the same request manually. Leaving clears its local retry details; a request already sent may still complete.</Text>
-        <Action label={safety.pendingAction === 'withdraw' ? 'Retry exact withdrawal' : 'Retry exact report'} disabled={!safety.canRetry} onPress={() => void host?.messageRetry()}/>
+        <Action label={safety.pendingAction === 'withdraw' ? 'Retry exact withdrawal' : 'Retry exact report'} disabled={!safety.canRetry} onPress={() => act(() => void host?.messageRetry())}/>
       </> : null}
-      <Action label="Close message actions" disabled={!safety.canClose} onPress={() => host?.messageClose()}/>
+      <Action label="Close message actions" disabled={!safety.canClose} onPress={() => act(() => host?.messageClose())}/>
     </View> : null}
     <Text style={styles.note}>Drafts stay in memory and clear when the view, account or activity ends. Closing does not erase stored messages or cancel a post already sent.</Text>
   </ScrollView></SafeAreaView>;
 }
-function ArchiveMessage({ message, onOpen, onReply, onActions, disabled, replyDisabled }: { message: ThreadMessage; onOpen(): void; onReply(): void; onActions(): void; disabled: boolean; replyDisabled: boolean }) {
+function ArchiveMessage({ message, onOpen, onReply, onActions, onProfile, disabled, replyDisabled }: { message: ThreadMessage; onOpen(): void; onReply(): void; onActions(): void; onProfile?(): void; disabled: boolean; replyDisabled: boolean }) {
   return <View style={styles.message}>
     <Text style={styles.author}>{message.member_name}{message.is_mine ? ' · You' : ''}</Text>
     {message.created_at ? <Text style={styles.note}>{message.created_at}</Text> : null}
     <Text selectable style={styles.copy}>{message.content ?? (message.visibility === 'withdrawn' ? 'This contribution was withdrawn.' : message.visibility === 'hidden' ? 'This contribution is restricted by moderation.' : 'This contribution is unavailable.')}</Text>
+    {message.visibility === 'visible' && message.publicProfileId && onProfile ? <Action label="View author public profile" disabled={disabled} onPress={onProfile}/> : null}
     <Action label="Open thread" disabled={disabled} onPress={onOpen}/>
     {message.visibility === 'visible' && message.content !== null ? <Action label="Reply to this message" disabled={disabled || replyDisabled} onPress={onReply}/> : null}
     <Action label="Check message actions" disabled={disabled} onPress={onActions}/>

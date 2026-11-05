@@ -32,9 +32,15 @@ export function useReviewAccess(onRetire: () => void) {
   useEffect(() => {
     const lifetime = access.current;
     lifetime.mounted = true;
-    lifetime.active = document.visibilityState === 'visible';
+    lifetime.active = document.visibilityState === 'visible' && navigator.onLine !== false;
     lifetime.observing = false;
     setActive(lifetime.active);
+    const resume = () => {
+      if (!lifetime.mounted || !lifetime.observing || document.visibilityState !== 'visible' || navigator.onLine === false) return;
+      lifetime.active = true;
+      setActive(true);
+    };
+    const offline = () => retire(true);
     const dispose = bindCircleAccess({
       window, document,
       subscribeAuth: listener => {
@@ -49,13 +55,13 @@ export function useReviewAccess(onRetire: () => void) {
       },
       onInactive: () => retire(true),
       onIdentity: () => retire(),
-      onActive: () => {
-        if (!lifetime.observing || document.visibilityState !== 'visible') return;
-        lifetime.active = true;
-        setActive(true);
-      },
+      onActive: resume,
     });
+    window.addEventListener('offline', offline);
+    window.addEventListener('online', resume);
     return () => {
+      window.removeEventListener('offline', offline);
+      window.removeEventListener('online', resume);
       dispose();
       lifetime.generation++;
       lifetime.mounted = false;
@@ -74,13 +80,13 @@ export function useReviewAccess(onRetire: () => void) {
   ): Promise<void> => {
     const lifetime = access.current;
     // This fence is synchronous, including before React paints disabled controls.
-    if (!lifetime.mounted || !lifetime.active || !lifetime.observing || lifetime.busy) return;
+    if (!lifetime.mounted || !lifetime.active || !lifetime.observing || lifetime.busy || navigator.onLine === false) return;
     lifetime.busy = true;
     const generation = ++lifetime.generation;
     const controller = new AbortController();
     lifetime.controller = controller;
     setBusy(true);
-    const current = () => lifetime.mounted && lifetime.active && lifetime.generation === generation;
+    const current = () => lifetime.mounted && lifetime.active && navigator.onLine !== false && lifetime.generation === generation;
     let sent = false;
     let result: ReviewResult | undefined;
     let failed = false;

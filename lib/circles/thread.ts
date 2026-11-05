@@ -1,9 +1,10 @@
+import { parsePublicProfileReference } from '@/lib/members/public-reference';
 import { isUuid } from '@/lib/ids/uuid';
 
 export const DISCUSSION_MESSAGE_LIMIT = 2000;
 export const DISCUSSION_PAGE_LIMIT = 25;
 export type ThreadMessage = {
-  id: string; member_name: string; content: string | null; created_at: string | null; is_mine: boolean;
+  id: string; member_name: string; publicProfileId?: string | null; content: string | null; created_at: string | null; is_mine: boolean;
   visibility: 'visible' | 'hidden' | 'withdrawn' | 'unavailable'; parentMessageId: string | null; rootMessageId: string;
 };
 export type DiscussionArchive = { kind: 'archive'; circleId: string; items: ThreadMessage[]; nextCursor: string | null; limit: number };
@@ -97,10 +98,12 @@ export function parseThreadMessage(value: unknown): ThreadMessage | null {
   if (!record(value) || !uuid(value.id) || !plain(value.member_name, 400) || (value.created_at !== null && !timestamp(value.created_at))
     || typeof value.is_mine !== 'boolean' || !['visible', 'hidden', 'withdrawn', 'unavailable'].includes(String(value.visibility))
     || !uuid(value.rootMessageId) || value.parentMessageId !== null && !uuid(value.parentMessageId)) return null;
+  const publicProfileId = parsePublicProfileReference(value.publicProfileId);
+  if (publicProfileId === undefined || (value.visibility !== 'visible' && publicProfileId !== null)) return null;
   const id = value.id.toLowerCase(), root = value.rootMessageId.toLowerCase(), parent = value.parentMessageId === null ? null : value.parentMessageId.toLowerCase();
   if (parent === null ? root !== id : parent === id || root === id) return null;
   if (value.visibility === 'visible' ? !timestamp(value.created_at) || !plain(value.content, DISCUSSION_MESSAGE_LIMIT) || !value.content.trim() : value.content !== null) return null;
-  return { id, rootMessageId: root, parentMessageId: parent, member_name: displayName(value.member_name),
+  return { id, rootMessageId: root, parentMessageId: parent, member_name: displayName(value.member_name), publicProfileId,
     content: value.content as string | null, created_at: value.created_at, is_mine: value.is_mine, visibility: value.visibility as ThreadMessage['visibility'] };
 }
 export function parseDiscussionPage(value: unknown, expected?: { circleId?: string; kind?: 'archive' | 'thread'; before?: string | null; messageId?: string; after?: string | null; limit?: number }): DiscussionPage | null {

@@ -1,4 +1,4 @@
-import { discussionSearchParams, parseDiscussionPage, type DiscussionPage, type DiscussionQuery } from '../../lib/circles/thread';
+import { discussionSearchParams, parseDiscussionPage, parseDiscussionQuery, type DiscussionPage, type DiscussionQuery } from '../../lib/circles/thread';
 import { isUuid } from '../../lib/ids/uuid';
 
 export type ArchiveQuery = Exclude<DiscussionQuery, { kind: 'receipt' }>;
@@ -13,19 +13,19 @@ export type ArchiveModel = {
 export function createDiscussionArchive(request: ArchiveRequest, circleId: string) {
   if (!isUuid(circleId)) throw Error('Valid Circle required');
   const circle = circleId.toLowerCase();
-  let generation = 0;
+  let generation = 0, selection: ArchiveQuery | null = null;
   let state: ArchiveModel = { open: false, active: true, busy: false, phase: 'closed', page: null, revision: 0, message: 'Open the complete discussion archive to check current access.' };
   const listeners = new Set<(model: ArchiveModel) => void>();
   const model = (): ArchiveModel => JSON.parse(JSON.stringify(state)) as ArchiveModel;
   const emit = () => { for (const listener of listeners) listener(model()); };
   const current = (g: number) => g === generation && state.open && state.active;
   function retire(message = 'Private archive cleared. Check current Circle access again.') {
-    generation++; state = { ...state, revision: state.revision + 1, busy: false, page: null, phase: state.open ? 'paused' : 'closed', message }; emit();
+    generation++; selection = null; state = { ...state, revision: state.revision + 1, busy: false, page: null, phase: state.open ? 'paused' : 'closed', message }; emit();
   }
   async function read(query: ArchiveQuery) {
     if (!state.active || state.busy) return;
     const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : '';
-    const g = ++generation;
+    const g = ++generation; selection = null;
     state = { ...state, revision: state.revision + 1, open: true, busy: true, phase: 'loading', page: null, message: 'Checking current membership and loading discussion.' }; emit();
     try {
       const reply = await request(`/api/circles/${circle}/discussion${suffix}`, { method: 'GET', cache: 'no-store', redirect: 'error' }, () => current(g));
@@ -35,12 +35,17 @@ export function createDiscussionArchive(request: ArchiveRequest, circleId: strin
         const denied = [401, 403, 404].includes(reply.http);
         state = { ...state, busy: false, phase: denied ? 'denied' : 'unavailable', page: null,
           message: denied ? 'Current Circle access could not be confirmed. No discussion is shown.' : 'Discussion is unavailable. No messages were posted or retried.' };
-      } else state = { ...state, busy: false, phase: 'ready', page, message: page.kind === 'thread' ? 'Current thread loaded. Hidden or withdrawn messages stay restricted.' : 'Current archive page loaded. Older messages are available through pagination.' };
+      } else { selection = { ...query }; state = { ...state, busy: false, phase: 'ready', page, message: page.kind === 'thread' ? 'Current thread loaded. Hidden or withdrawn messages stay restricted.' : 'Current archive page loaded. Older messages are available through pagination.' }; }
       emit();
     } catch { if (current(g)) { state = { ...state, busy: false, phase: 'unavailable', page: null, message: 'Discussion read is unavailable. Try an explicit refresh when ready.' }; emit(); } }
   }
   return {
     model,
+    currentQuery: (): ArchiveQuery | null => selection ? { ...selection } : null,
+    restore(query: ArchiveQuery) {
+      const parsed = parseDiscussionQuery(discussionSearchParams(query));
+      return parsed && parsed.kind !== 'receipt' ? read(parsed) : Promise.resolve();
+    },
     subscribe(listener: (model: ArchiveModel) => void) { listeners.add(listener); listener(model()); return () => { listeners.delete(listener); }; },
     open: () => read({ kind: 'archive', before: null, limit: 25 }),
     thread(messageId: string) { if (!isUuid(messageId)) return Promise.resolve(); return read({ kind: 'thread', messageId: messageId.toLowerCase(), after: null, limit: 25 }); },

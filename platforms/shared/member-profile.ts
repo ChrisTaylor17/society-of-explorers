@@ -72,10 +72,9 @@ export function createMemberProfile(config: MemberProfileConfig) {
     const m = model(); if (action === 'load' ? !m.canLoad : action === 'save' ? !m.canConfirm : !m.canCheckPublic) return;
     const g = ++generation, expectedScope = scope!, controller = new AbortController(), priorPending = pending;
     const chosen = action === 'save' ? copy(review!) : null, base = priorPending?.base ?? profile?.revision;
-    // An authored change must advance the canonical revision. An apparent no-op
-    // may still advance it when the server normalizes legacy NULL/blank fields.
-    // Keep this floor from the original review across every uncertain retry.
-    const minimumRevision = action === 'save' ? priorPending?.minimumRevision ?? base! + (matches(profile!, chosen!) ? 0 : 1) : 0;
+    // Every accepted profile intent advances once, including unchanged values.
+    // Preserve this floor across every uncertain retry.
+    const minimumRevision = action === 'save' ? priorPending?.minimumRevision ?? base! + 1 : 0;
     let operationSubject: string | null = null, sent = false, timer: ReturnType<typeof setTimeout> | undefined;
     const current = () => generation === g && enabled() && scope === expectedScope && !controller.signal.aborted;
     const visible = () => generation === g && enabled() && scope === expectedScope;

@@ -1,3 +1,4 @@
+import { parsePublicProfileReference } from '@/lib/members/public-reference';
 import { isUuid } from '@/lib/ids/uuid';
 import { REPORT_REASONS, type ReportReason } from './report';
 import { REVIEW_REPORT_COUNT_MAX } from './review-coverage';
@@ -9,7 +10,7 @@ export type MessageExplanation = { id: string; action: 'hide' | 'restore'; reaso
 export type MessageReviewDecision = MessageExplanation & { report_count: number };
 export type MessageSafetyState = {
   circleId: string;
-  message: { id: string; member_name: string; content: string | null; created_at: string; is_mine: boolean; visibility: MessageVisibility };
+  message: { id: string; member_name: string; publicProfileId?: string | null; content: string | null; created_at: string; is_mine: boolean; visibility: MessageVisibility };
   revision: number; contentHash: string | null; canReport: boolean; canWithdraw: boolean; explanations: MessageExplanation[];
 };
 export type MessageContributions = { items: MessageSafetyState[]; nextCursor: string | null };
@@ -62,11 +63,13 @@ export function parseMessageSafetyState(value: unknown): MessageSafetyState | nu
     || (m.visibility === 'visible' ? !plain(m.content, 1, 2000) : m.content !== null)
     || (m.is_mine || m.visibility === 'visible' ? !hash(value.contentHash) : value.contentHash !== null)
     || (value.canReport && (m.is_mine || m.visibility !== 'visible')) || (value.canWithdraw && (!m.is_mine || m.visibility === 'withdrawn'))) return null;
+  const publicProfileId = parsePublicProfileReference(m.publicProfileId);
+  if (publicProfileId === undefined || (m.visibility !== 'visible' && publicProfileId !== null)) return null;
   const explanations = value.explanations.map(explanation);
   if (explanations.some((item) => item === null) || (!m.is_mine && explanations.length > 0)) return null;
   const valid = explanations as MessageExplanation[];
   if (!unique(valid.map((item) => item.id))) return null;
-  return { circleId: value.circleId, message: { id: m.id, member_name: m.member_name, content: m.content as string | null, created_at: m.created_at, is_mine: m.is_mine, visibility: m.visibility },
+  return { circleId: value.circleId, message: { id: m.id, member_name: m.member_name, publicProfileId, content: m.content as string | null, created_at: m.created_at, is_mine: m.is_mine, visibility: m.visibility },
     revision: value.revision, contentHash: value.contentHash as string | null, canReport: value.canReport, canWithdraw: value.canWithdraw, explanations: valid };
 }
 export function parseMessageContributions(value: unknown): MessageContributions | null {

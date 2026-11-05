@@ -10,6 +10,7 @@ import ReportButton from '../ReportButton';
 import CircleConversation from './CircleConversation';
 import styles from '../participation.module.css';
 import ReadingProgramSummary from '../ReadingProgramSummary';
+import PublishedProfileLink from '@/components/PublishedProfileLink';
 
 const completionCopy = 'Close to new members and RSVPs; existing members can continue the conversation or leave. Completing a Circle does not delete messages or remove members.';
 
@@ -55,6 +56,7 @@ function CircleView({ circleId }: { circleId: string }) {
     </section>}
     {detail && c && viewer && <>
       <p style={lead}>{c.format_label} · {c.meeting_label} · hosted by {c.host_name}</p>
+      <PublishedProfileLink profileId={c.publicProfileId} active={!actionDisabled} label="View host’s published profile" />
       <div style={card} className={styles.stack}>
         {c.hidden && <p style={body}>This Circle is hidden from public listings. Private meeting links and the ordinary conversation are unavailable while hidden. You can still leave, and the host can complete the Circle.</p>}
         {detail.ended && <p style={body}>{c.status === 'completed' ? 'The host completed this Circle.' : `The scheduled ${c.program_length}-week reading plan has ended.`} New joins and RSVPs are closed. Existing members can continue the conversation or leave.</p>}

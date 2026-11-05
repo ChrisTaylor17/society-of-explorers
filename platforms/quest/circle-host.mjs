@@ -1,3 +1,11 @@
+// lib/members/public-reference.ts
+var lowerUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+function parsePublicProfileReference(value) {
+  if (value === undefined || value === null)
+    return null;
+  return typeof value === "string" && lowerUuid.test(value) ? value : undefined;
+}
+
 // platforms/native/src/circles/path.ts
 var CIRCLE_BOOK_ID = "soe-circles-path";
 
@@ -9,7 +17,10 @@ var copy = (x) => JSON.parse(JSON.stringify(x));
 function discussionMessageFrom(value) {
   if (!object(value) || !id(value.id) || !text(value.member_name, 200) || !text(value.content, 2000) || !text(value.created_at, 64) || !Number.isFinite(Date.parse(value.created_at)) || typeof value.is_mine !== "boolean")
     return null;
-  return { id: value.id, member_name: value.member_name, content: value.content, created_at: value.created_at, is_mine: value.is_mine };
+  const publicProfileId = parsePublicProfileReference(value.publicProfileId);
+  if (publicProfileId === undefined || publicProfileId !== null && value.visibility !== "visible")
+    return null;
+  return { publicProfileId, id: value.id, member_name: value.member_name, content: value.content, created_at: value.created_at, is_mine: value.is_mine };
 }
 function conversationFrom(value, circleId) {
   if (!object(value) || !object(value.cohort) || value.cohort.id !== circleId || value.cohort.book_id !== CIRCLE_BOOK_ID || !text(value.cohort.title, 200) || !Array.isArray(value.messages) || value.messages.length > 100)
@@ -510,6 +521,9 @@ function discussionSearchParams(query) {
 function parseThreadMessage(value) {
   if (!record2(value) || !uuid(value.id) || !plain(value.member_name, 400) || value.created_at !== null && !timestamp(value.created_at) || typeof value.is_mine !== "boolean" || !["visible", "hidden", "withdrawn", "unavailable"].includes(String(value.visibility)) || !uuid(value.rootMessageId) || value.parentMessageId !== null && !uuid(value.parentMessageId))
     return null;
+  const publicProfileId = parsePublicProfileReference(value.publicProfileId);
+  if (publicProfileId === undefined || value.visibility !== "visible" && publicProfileId !== null)
+    return null;
   const id = value.id.toLowerCase(), root = value.rootMessageId.toLowerCase(), parent = value.parentMessageId === null ? null : value.parentMessageId.toLowerCase();
   if (parent === null ? root !== id : parent === id || root === id)
     return null;
@@ -520,6 +534,7 @@ function parseThreadMessage(value) {
     rootMessageId: root,
     parentMessageId: parent,
     member_name: displayName(value.member_name),
+    publicProfileId,
     content: value.content,
     created_at: value.created_at,
     is_mine: value.is_mine,
@@ -599,7 +614,7 @@ function createDiscussionArchive(request, circleId) {
   if (!isUuid(circleId))
     throw Error("Valid Circle required");
   const circle = circleId.toLowerCase();
-  let generation = 0;
+  let generation = 0, selection = null;
   let state = { open: false, active: true, busy: false, phase: "closed", page: null, revision: 0, message: "Open the complete discussion archive to check current access." };
   const listeners = new Set;
   const model = () => JSON.parse(JSON.stringify(state));
@@ -610,6 +625,7 @@ function createDiscussionArchive(request, circleId) {
   const current = (g) => g === generation && state.open && state.active;
   function retire(message = "Private archive cleared. Check current Circle access again.") {
     generation++;
+    selection = null;
     state = { ...state, revision: state.revision + 1, busy: false, page: null, phase: state.open ? "paused" : "closed", message };
     emit();
   }
@@ -618,6 +634,7 @@ function createDiscussionArchive(request, circleId) {
       return;
     const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : "";
     const g = ++generation;
+    selection = null;
     state = { ...state, revision: state.revision + 1, open: true, busy: true, phase: "loading", page: null, message: "Checking current membership and loading discussion." };
     emit();
     try {
@@ -634,8 +651,10 @@ function createDiscussionArchive(request, circleId) {
           page: null,
           message: denied ? "Current Circle access could not be confirmed. No discussion is shown." : "Discussion is unavailable. No messages were posted or retried."
         };
-      } else
+      } else {
+        selection = { ...query };
         state = { ...state, busy: false, phase: "ready", page, message: page.kind === "thread" ? "Current thread loaded. Hidden or withdrawn messages stay restricted." : "Current archive page loaded. Older messages are available through pagination." };
+      }
       emit();
     } catch {
       if (current(g)) {
@@ -646,6 +665,11 @@ function createDiscussionArchive(request, circleId) {
   }
   return {
     model,
+    currentQuery: () => selection ? { ...selection } : null,
+    restore(query) {
+      const parsed = parseDiscussionQuery(discussionSearchParams(query));
+      return parsed && parsed.kind !== "receipt" ? read(parsed) : Promise.resolve();
+    },
     subscribe(listener) {
       listeners.add(listener);
       listener(model());
@@ -1001,6 +1025,9 @@ function parseMessageSafetyState(value) {
   const m = value.message;
   if (!isUuid(m.id) || !plain2(m.member_name, 0, 200) || !timestamp2(m.created_at) || typeof m.is_mine !== "boolean" || !visibility(m.visibility) || (m.visibility === "visible" ? !plain2(m.content, 1, 2000) : m.content !== null) || (m.is_mine || m.visibility === "visible" ? !hash2(value.contentHash) : value.contentHash !== null) || value.canReport && (m.is_mine || m.visibility !== "visible") || value.canWithdraw && (!m.is_mine || m.visibility === "withdrawn"))
     return null;
+  const publicProfileId = parsePublicProfileReference(m.publicProfileId);
+  if (publicProfileId === undefined || m.visibility !== "visible" && publicProfileId !== null)
+    return null;
   const explanations = value.explanations.map(explanation);
   if (explanations.some((item) => item === null) || !m.is_mine && explanations.length > 0)
     return null;
@@ -1009,7 +1036,7 @@ function parseMessageSafetyState(value) {
     return null;
   return {
     circleId: value.circleId,
-    message: { id: m.id, member_name: m.member_name, content: m.content, created_at: m.created_at, is_mine: m.is_mine, visibility: m.visibility },
+    message: { id: m.id, member_name: m.member_name, publicProfileId, content: m.content, created_at: m.created_at, is_mine: m.is_mine, visibility: m.visibility },
     revision: value.revision,
     contentHash: value.contentHash,
     canReport: value.canReport,
@@ -1498,6 +1525,14 @@ function createCircleHost(config) {
         messageSafety.retire();
         participation.retire();
         await archive.open();
+      }
+    },
+    archiveSelection: () => archive.currentQuery(),
+    async restoreArchive(query) {
+      if (scope && current(scope) && canNavigate()) {
+        messageSafety.retire();
+        participation.retire();
+        await archive.restore(query);
       }
     },
     archiveNext() {

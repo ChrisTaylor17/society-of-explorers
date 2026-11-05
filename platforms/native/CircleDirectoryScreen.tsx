@@ -7,6 +7,7 @@ import { formatDay } from '../../lib/circles/schedule';
 import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
+import { PublicProfileScreen } from './PublicProfileScreen';
 import { CircleCommunityNorms } from './CircleCommunityNorms';
 import { CircleReadingScreen } from './CircleReadingScreen';
 import type { SavedReading } from '../shared/saved-reading';
@@ -25,12 +26,14 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
   const [filterError, setFilterError] = useState('');
   const [discussion, setDiscussion] = useState<{ connection: NonNullable<typeof connection>; circleId: string } | null>(null);
   const [reading, setReading] = useState<{ connection: NonNullable<typeof connection>; context: ReadingContext } | null>(null);
+  const [publicProfile, setPublicProfile] = useState<{ connection: NonNullable<typeof connection>; circleId: string; memberId: string } | null>(null);
   const [readingNotice, setReadingNotice] = useState('');
   const readingLifetime = useRef({ generation: 0 });
   const [viewEpoch, setViewEpoch] = useState(0), viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const m = snapshot.connection === connection ? snapshot.model : connection?.session.model(), session = connection?.session;
   const discussionConfig = useMemo(() => discussion ? { ...discussion.connection.config, circleId: discussion.circleId } : null, [discussion]);
   const readingConfig = useMemo(() => reading ? { ...reading.connection.config, context: reading.context } : null, [reading]);
+  const publicProfileConfig = useMemo(() => publicProfile ? { ...publicProfile.connection.config, memberId: publicProfile.memberId } : null, [publicProfile]);
   useLayoutEffect(() => {
     const life = viewLife.current; life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
     if (!connection) return () => { life.mounted = false; life.enabled = false; ++life.epoch; };
@@ -48,7 +51,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
       if (!model.connected || !model.active || !model.online || !model.selected) lifetime.generation++;
       setSnapshot({ connection, model });
       if (!model.canOpenDiscussion) setDiscussion(null);
-      if (!model.detail || !model.connected || !model.active || !model.online) setReading(null);
+      if (!model.detail || !model.connected || !model.active || !model.online) { setReading(null); setPublicProfile(null); }
     });
     let mounted = true, active = false, blurred = false;
     const sync = () => { if (mounted) session.activity(active && !blurred); };
@@ -61,12 +64,12 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     active = AppState.currentState === 'active'; sync(); session.connect();
     return () => { mounted = false; life.mounted = false; life.enabled = false; ++life.epoch; lifetime.generation++; session.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
-  useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [reading, discussion]);
+  useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [reading, discussion, publicProfile]);
   const act = (work: () => void, allowInactive = false) => {
     const life = viewLife.current;
     if (life.mounted && life.epoch === viewEpoch && (allowInactive || life.enabled)) { readingLifetime.current.generation++; work(); }
   };
-  const close = () => act(() => { session?.close(); setDiscussion(null); setReading(null); onClose(); }, true);
+  const close = () => act(() => { session?.close(); setDiscussion(null); setReading(null); setPublicProfile(null); onClose(); }, true);
   const back = () => act(() => { if (session?.model().canNavigate) { session.close(); onBack(); } }, true);
   const search = () => act(() => {
     const params = new URLSearchParams({ q, city, format, open: open ? '1' : '0', sort });
@@ -91,6 +94,25 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     }
     setReading({ connection, context: { ...verified } });
   };
+  const openHostProfile = async (memberId: string) => {
+    const before = session?.model(), owner = config.owner.scope();
+    if (!connection || !session || !config.publicProfileTransport || !owner || before?.phase !== 'ready' || !before.canNavigate
+      || before.detail?.circle.hidden || before.detail?.circle.publicProfileId !== memberId) return;
+    const attempt = ++readingLifetime.current.generation, circleId = before.selected;
+    setReadingNotice(''); await session.refresh();
+    if (attempt !== readingLifetime.current.generation || config.owner.scope() !== owner) return;
+    const current = session.model();
+    if (current.selected !== circleId || !circleId || current.phase !== 'ready' || !current.connected || !current.active || !current.online || !current.canNavigate) return;
+    if (!current.detail || current.detail.circle.hidden || current.detail.circle.publicProfileId !== memberId) {
+      setReadingNotice('This host profile reference changed. Review the current Circle before choosing a profile.'); return;
+    }
+    setPublicProfile({ connection, circleId, memberId });
+  };
+  if (publicProfile && publicProfile.connection === connection && publicProfileConfig && m?.selected === publicProfile.circleId
+    && m.detail?.circle.publicProfileId === publicProfile.memberId && !m.detail.circle.hidden && m.connected && m.active && m.online) {
+    return <PublicProfileScreen config={publicProfileConfig} connectivity={connectivity} onClose={close}
+      onBack={() => act(() => { setPublicProfile(null); void session?.refresh(); }, true)}/>;
+  }
   if (reading && reading.connection === connection && readingConfig && m?.detail && m.connected && m.active && m.online) {
     return <CircleReadingScreen config={readingConfig} connectivity={connectivity} savedReading={savedReading} onClose={close}
       onBack={() => act(() => { setReading(null); void session?.refresh(); }, true)}/>;
@@ -159,6 +181,8 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
         {circle.description ? <Text style={styles.copy}>{circle.description}</Text> : null}
         <Text style={styles.copy}>{circle.meeting_label} · {circle.venue_label}</Text>
         <Text style={styles.note}>{circle.member_count} members · {circle.spots_left} spaces available · Hosted by {circle.host_name}</Text>
+        {!circle.hidden && circle.publicProfileId && config.publicProfileTransport ? <Action label="View host public profile"
+          disabled={m?.phase !== 'ready' || !m?.canNavigate} onPress={() => act(() => void openHostProfile(circle.publicProfileId!))}/> : null}
         {circle.hidden ? <Text style={styles.copy}>This listing is hidden. Discussion access is closed.</Text> : null}
         {detail?.ended ? <Text style={styles.copy}>This Circle has ended.</Text> : null}
         <Text style={styles.copy}>{detail?.viewer.is_member ? 'You are a member of this Circle.' : 'You have not joined this Circle.'}</Text>

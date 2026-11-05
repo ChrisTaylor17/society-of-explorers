@@ -1,3 +1,4 @@
+import { hasPublicProfileReference, parsePublicProfileReference } from '@/lib/members/public-reference';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
@@ -98,7 +99,7 @@ function projectSnapshot(value: unknown, detail: boolean): Record<string, unknow
     member_count: value.memberCount, max_members: c.max_members, spots_left: value.ended ? 0 : Math.max(0, c.max_members - value.memberCount),
     status: c.status, host_name: hostName && !hostName.includes('@') ? hostName.slice(0, 40) : 'An explorer',
     going_next: detail && Array.isArray(value.meetings) && membershipRecord(value.meetings[0]) ? value.meetings[0].going : null,
-    hidden: c.circle_hidden };
+    hidden: c.circle_hidden, publicProfileId: detail ? parsePublicProfileReference(value.publicProfileId) : null };
   return { circle, revision: value.revision, viewer: value.viewer, ended: value.ended, capabilities: value.capabilities,
     ...(detail ? { ready: true, meetings: value.meetings, online_url: value.online_url } : {}) };
 }
@@ -109,7 +110,8 @@ export async function circleDetail(req: NextRequest, circleId: string): Promise<
     const actor = await getAuthenticatedMember(req);
     const mismatch = expectedMember(req, actor?.memberId ?? null);
     if (mismatch) return mismatch;
-    return await rpc('soe_circle_detail', { p_actor: actor?.memberId ?? null, p_circle_id: circleId.toLowerCase() }, value => {
+    return await rpc('soe_circle_detail_profiles', { p_actor: actor?.memberId ?? null, p_circle_id: circleId.toLowerCase() }, value => {
+      if (!hasPublicProfileReference(value)) return null;
       const projected = projectSnapshot(value, true);
       return projected ? parseCircleDetail(projected, circleId) : null;
     });

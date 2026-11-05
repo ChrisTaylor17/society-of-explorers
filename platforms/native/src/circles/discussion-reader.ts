@@ -1,7 +1,9 @@
+import { parsePublicProfileReference } from '../../../../lib/members/public-reference';
 import { CIRCLE_BOOK_ID } from './path';
 export type DiscussionMessage = {
     id: string;
     member_name: string;
+    publicProfileId?: string | null;
     content: string;
     created_at: string;
     is_mine: boolean;
@@ -34,7 +36,9 @@ const copy = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 export function discussionMessageFrom(value: unknown): DiscussionMessage | null {
     if (!object(value) || !id(value.id) || !text(value.member_name, 200) || !text(value.content, 2000) ||
         !text(value.created_at, 64) || !Number.isFinite(Date.parse(value.created_at)) || typeof value.is_mine !== 'boolean') return null;
-    return { id: value.id, member_name: value.member_name, content: value.content, created_at: value.created_at, is_mine: value.is_mine };
+    const publicProfileId = parsePublicProfileReference(value.publicProfileId);
+    if (publicProfileId === undefined || (publicProfileId !== null && value.visibility !== 'visible')) return null;
+    return { publicProfileId, id: value.id, member_name: value.member_name, content: value.content, created_at: value.created_at, is_mine: value.is_mine };
 }
 export function safePrivateMeetingUrl(value: unknown): string | null {
     if (typeof value !== 'string' || value.length > 2048)

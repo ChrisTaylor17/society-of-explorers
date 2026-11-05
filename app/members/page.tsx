@@ -7,6 +7,7 @@ import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice'
+import PublishedProfileLink from '@/components/PublishedProfileLink'
 
 interface Member {
   id: string
@@ -409,6 +410,7 @@ export default function MembersPage() {
                         ))}
                       </div>
                     )}
+                    <PublishedProfileLink profileId={m.id} />
                     {m.id !== currentMember?.id && (
                       <button onClick={() => openChat(m)} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, background: 'none', border: `1px solid ${goldBorder}`, padding: '6px 14px', cursor: 'pointer', width: '100%' }}>
                         SEND MESSAGE

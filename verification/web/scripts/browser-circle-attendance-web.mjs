@@ -5,9 +5,9 @@ import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 const ROOT=process.cwd(),output='verification/web/evidence/circle-attendance-web-browser.json',sha=b=>createHash('sha256').update(b).digest('hex');
 function read(name){const file=path.resolve(ROOT,name),s=fs.lstatSync(file);assert(s.isFile()&&!s.isSymbolicLink()&&(!s.size||s.blocks),'Unavailable source '+name);return fs.readFileSync(file);}
-read('verification/web/tests/support/circle-attendance-app.mjs');
+read('verification/web/tests/support/public-profile-app.mjs');
 process.chdir(path.join(ROOT,'verification/web'));
-const {createCircleAttendanceApp,attendanceAppHashes,ORIGIN,TOKENS}=await import('../tests/support/circle-attendance-app.mjs');
+const {createPublicProfileApp: createCircleAttendanceApp,publicProfileAppHashes: attendanceAppHashes,ORIGIN,TOKENS}=await import('../tests/support/public-profile-app.mjs');
 const startedAt=new Date().toISOString(),stories=[],errors=[],unexpected=[],http=[],cleanup={browser:'pending',database:'pending'};
 let browser,page,fixture,bundle,sourceHashes={},stats,failure=null,after=null,before=null,hold=false,held=null,cookie=null,circleId,dates=[];
 const write=status=>fs.writeFileSync(path.join(ROOT,output),JSON.stringify({status,startedAt,completedAt:new Date().toISOString(),stories,errors,unexpected,http,cleanup,sourceHashes,stats,failure,bundleSHA256:bundle?sha(bundle):null,

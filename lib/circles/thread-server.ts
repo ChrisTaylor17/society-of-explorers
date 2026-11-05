@@ -1,3 +1,4 @@
+import { hasPublicProfileReference } from '@/lib/members/public-reference';
 import { createHash } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
@@ -20,8 +21,8 @@ import {
 } from './thread';
 
 type Actor = NonNullable<Awaited<ReturnType<typeof getAuthenticatedMember>>>;
-type RpcName = 'soe_circle_discussion_read' | 'soe_circle_discussion_thread' | 'soe_circle_discussion_target'
-  | 'soe_circle_discussion_receipt' | 'soe_circle_discussion_post';
+type RpcName = 'soe_circle_discussion_read_profiles' | 'soe_circle_discussion_thread_profiles' | 'soe_circle_discussion_target'
+  | 'soe_circle_discussion_receipt_profiles' | 'soe_circle_discussion_post';
 type RpcResult = { data: unknown; error: unknown };
 const same = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 const sha = (value: string): string => createHash('sha256').update(value, 'utf8').digest('hex');
@@ -95,17 +96,20 @@ export async function getCircleDiscussion(req: NextRequest, circleId: string): P
     const actor = await authenticate(req);
     if (actor instanceof Response) return actor;
     if (query.kind === 'receipt') {
-      const result = await rpc('soe_circle_discussion_receipt', { p_actor: actor.memberId, p_circle_id: circleId, p_request_id: query.requestId });
+      const result = await rpc('soe_circle_discussion_receipt_profiles', { p_actor: actor.memberId, p_circle_id: circleId, p_request_id: query.requestId });
       if (result.error) return rpcFailure(result.error);
+      if (result.data !== null && (!result.data || typeof result.data !== 'object' || !('message' in result.data) || !hasPublicProfileReference(result.data.message))) return discussionUnavailable();
       const receipt = result.data === null ? null : parseDiscussionReceipt(result.data);
       if (result.data !== null && (!receipt || !same(receipt.circleId, circleId) || receipt.requestId !== query.requestId || !receipt.replayed)) return discussionUnavailable();
       return privateJson({ circleId: circleId.toLowerCase(), requestId: query.requestId, receipt });
     }
     const result = query.kind === 'archive'
-      ? await rpc('soe_circle_discussion_read', { p_actor: actor.memberId, p_circle_id: circleId, p_before: query.before, p_limit: query.limit })
-      : await rpc('soe_circle_discussion_thread', { p_actor: actor.memberId, p_circle_id: circleId,
+      ? await rpc('soe_circle_discussion_read_profiles', { p_actor: actor.memberId, p_circle_id: circleId, p_before: query.before, p_limit: query.limit })
+      : await rpc('soe_circle_discussion_thread_profiles', { p_actor: actor.memberId, p_circle_id: circleId,
         p_message_id: query.messageId, p_after: query.after, p_limit: query.limit });
     if (result.error) return rpcFailure(result.error);
+    if (!result.data || typeof result.data !== 'object' || !('items' in result.data) || !Array.isArray(result.data.items) || !result.data.items.every(hasPublicProfileReference) ||
+      (query.kind === 'thread' && (!('root' in result.data) || !hasPublicProfileReference(result.data.root) || !('focus' in result.data) || !hasPublicProfileReference(result.data.focus)))) return discussionUnavailable();
     const page = parseDiscussionPage(result.data, { ...query, circleId });
     return page ? privateJson(page) : discussionUnavailable();
   } catch { return discussionUnavailable(); }
