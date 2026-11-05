@@ -125,10 +125,10 @@ test('iOS private renderer/resource isolation and lifecycle are present (STATIC 
 });
 test('Fabric/package catalog wiring exists without a new runtime dependency (STATIC SOURCE ONLY)', () => {
   const pkg = JSON.parse(safe('platforms/native/package.json')), gradle = safe('platforms/native/android/app/build.gradle'), pod = safe('platforms/native/ios-source/SoeSourceReader.podspec');
-  assert.equal(pkg.codegenConfig.type, 'all'); assert.equal(pkg.codegenConfig.ios.componentProvider.SoeSourceReader, 'SoeSourceReaderView');
+  assert.equal(pkg.codegenConfig.type, 'all'); assert.equal(pkg.codegenConfig.ios.components.SoeSourceReader.className, 'SoeSourceReaderView');
   assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['@supabase/auth-js', 'expo', 'expo-status-bar', 'react', 'react-native']);
   assert(gradle.includes("'../../lib/books/source-reader-catalog.json'") && gradle.includes('sourceSets.main.assets.srcDir(sourceReaderAssets)'));
-  assert(pod.includes("'../../../lib/books/source-reader-catalog.json'") && pod.includes("s.frameworks = 'WebKit'"));
+  assert(pod.includes("'generated/source-reader-catalog.json'") && pod.includes("s.frameworks = 'WebKit'"));
   assert(safe('platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/SoeMemberPackage.kt').includes('listOf(SourceReaderManager())'));
 });
 test('native same-edition reuse binds exact selected fragment and retires bytes with the view (STATIC SOURCE ONLY)', () => {

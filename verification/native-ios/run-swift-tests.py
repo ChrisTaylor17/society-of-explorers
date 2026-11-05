@@ -57,6 +57,8 @@ def main():
     parser.add_argument('--run', required=True)
     parser.add_argument('--suite', action='append', default=[])
     parser.add_argument('--async-suite', action='append', default=[])
+    parser.add_argument('--objc-header', action='store_true',
+                        help='Emit and bind the Swift Objective-C compatibility header for SoeMember')
     parser.add_argument('sources', nargs='+')
     args = parser.parse_args()
     if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', args.run):
@@ -79,10 +81,16 @@ def main():
     launcher = out / 'exec-swift.py'
     launcher.write_text(f'import os, sys\nos.execv({str(DRIVER)!r}, ["swiftc", *sys.argv[1:]])\n')
     entry = out / 'TestMain.swift'
-    calls = ['try ' + name + '()' for name in args.suite] + ['try await ' + name + '()' for name in args.async_suite]
-    entry.write_text('@main\nstruct TestMain {\n    static func main() async throws {\n' +
-                     ''.join('        ' + call + '\n' for call in calls) + '    }\n}\n')
+    calls = [(name, 'try ' + name + '()') for name in args.suite]
+    calls += [(name, 'try await ' + name + '()') for name in args.async_suite]
+    entry.write_text('import Foundation\n\n@main\nstruct TestMain {\n    static func main() async {\n' +
+                     ''.join(f'        do {{ {call} }} catch {{\n'
+                             f'            FileHandle.standardError.write(Data("FAIL {name}: \\(error)\\n".utf8))\n'
+                             '            exit(1)\n        }\n'
+                             for name, call in calls) + '    }\n}\n')
     binary = out / 'test-suites'
+    header = out / 'SoeMember-Swift.h'
+    header_flags = ['-module-name', 'SoeMember', '-emit-objc-header-path', str(header)] if args.objc_header else []
     prefix = [str(SANDBOX), '-f', str(sandbox)]
     compiler = [*prefix, str(PYTHON), str(launcher)]
     env = {'PATH': str(DEV / 'usr/bin') + ':/usr/bin:/bin', 'HOME': str(Path.home()),
@@ -131,8 +139,11 @@ def main():
         report['swiftVersion'] = log.read_text().splitlines()[0]
         run_step('compile', [*compiler, '-sdk', str(SDK), '-target', TARGET, '-tools-directory', str(DEV / 'usr/bin'),
                              '-module-cache-path', str(out / 'modules'), '-swift-version', '6', '-strict-concurrency=complete',
-                             '-warnings-as-errors', '-parse-as-library', '-o', str(binary), *map(str, sources), str(entry)], 120)
+                             '-warnings-as-errors', '-parse-as-library', *header_flags,
+                             '-o', str(binary), *map(str, sources), str(entry)], 120)
         report['binarySha256'] = digest(binary)
+        if args.objc_header:
+            report['objcHeader'] = {'path': str(header.relative_to(ROOT)), 'sha256': digest(header)}
         log = run_step('execute', [*prefix, str(binary)], 45)
         print(log.read_text()[-10000:], end='', flush=True)
         report['status'] = 'PASS'

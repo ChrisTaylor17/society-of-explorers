@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { MemberCircleScreen, createMemberViewConnection, type MemberViewConnection } from './MemberCircleScreen';
 import type { createOwnedNativeAuth } from './src/auth/owned-auth';
-import { prepareAndroidOwnedAccount } from './src/auth/android-owned-account';
+import { prepareInstalledOwnedAccount } from './src/auth/installed-owned-account';
 import type { ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import type { createNativeEmailAuth } from './src/auth/email-auth';
@@ -20,7 +20,7 @@ type AccountMode = 'signin' | 'signup' | 'recovery';
 
 /** Only the native policy factory is used by the registered app. The explicit
  * prepare prop is a trusted composition seam, never populated from a URL. */
-export function OwnedAccountScreen({ prepare = prepareAndroidOwnedAccount }: { prepare?: () => Promise<OwnedAccountConnection> }) {
+export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: { prepare?: () => Promise<OwnedAccountConnection> }) {
   const [connection, setConnection] = useState<OwnedAccountConnection | null>(null);
   const [snapshot, setSnapshot] = useState<{ connection: OwnedAccountConnection; model: AuthModel } | null>(null);
   const [connecting, setConnecting] = useState(false);

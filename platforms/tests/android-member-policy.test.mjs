@@ -66,7 +66,7 @@ test('actual typed v2 spec declares native methods/events and nullable module lo
  assert(source.includes('readonly onConnectivityChange: CodegenTypes.EventEmitter'));
  assert.match(source,/TurboModuleRegistry\.get<Spec>\('NativeSoeMember'\)/);assert(!source.includes('getEnforcing'));
  const pkg=JSON.parse(read(native+'package.json'));
-  assert.deepEqual(pkg.codegenConfig,{name:'SoeMemberSpecs',type:'all',jsSrcsDir:'specs',android:{javaPackageName:'com.anonymous.soesyntheticdemo.member'},ios:{componentProvider:{SoeSourceReader:'SoeSourceReaderView'}}});
+  assert.deepEqual(pkg.codegenConfig,{name:'SoeMemberSpecs',type:'all',jsSrcsDir:'specs',android:{javaPackageName:'com.anonymous.soesyntheticdemo.member'},ios:{modules:{NativeSoeMember:{className:'NativeSoeMemberIOS',unstableRequiresMainQueueSetup:true}},components:{SoeSourceReader:{className:'SoeSourceReaderView'}}}});
 });
 test('actual app source registers new-architecture package and only network-state permission (STATIC)',()=>{
  const files=capture(),main=read(android+'app/src/main/java/com/anonymous/soesyntheticdemo/MainApplication.kt'),manifest=read(android+'app/src/main/AndroidManifest.xml');

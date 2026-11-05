@@ -11,8 +11,16 @@
       "javaPackageName": "com.anonymous.soesyntheticdemo.member"
     },
     "ios": {
-      "componentProvider": {
-        "SoeSourceReader": "SoeSourceReaderView"
+      "modules": {
+        "NativeSoeMember": {
+          "className": "NativeSoeMemberIOS",
+          "unstableRequiresMainQueueSetup": true
+        }
+      },
+      "components": {
+        "SoeSourceReader": {
+          "className": "SoeSourceReaderView"
+        }
       }
     }
   },

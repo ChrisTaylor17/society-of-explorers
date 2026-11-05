@@ -48,6 +48,12 @@ final class SoeMemberAccessFence: @unchecked Sendable {
         lock.withLock { closed ? .unknown : connectivity }
     }
 
+    func interactiveConnectivitySnapshot() -> SoeMemberConnectivity {
+        lock.withLock {
+            closed || !appActive || !protectedDataAvailable ? .unknown : connectivity
+        }
+    }
+
     func stamp(for purpose: SoeMemberAccessPurpose) throws -> SoeMemberAccessStamp {
         try lock.withLock {
             let value = SoeMemberAccessStamp(epoch: epoch(for: purpose), purpose: purpose)
@@ -87,6 +93,19 @@ final class SoeMemberAccessFence: @unchecked Sendable {
 
     func detach(_ id: UUID) {
         lock.withLock { _ = retirements.removeValue(forKey: id) }
+    }
+
+    func isAdmissionCurrent(_ id: UUID, stamp: SoeMemberAccessStamp) -> Bool {
+        lock.withLock {
+            (try? requireLocked(stamp, purpose: .network)) != nil && retirements[id] != nil
+        }
+    }
+
+    /// The app can accept protected callbacks between React attachments.
+    /// A replaced attachment cannot use the new interactive lifetime.
+    func retireInteractive() {
+        let actions = lock.withLock { rotateLocked(includingCallbacks: false) }
+        actions.forEach { $0() }
     }
 
     func retireForReset(_ stamp: SoeMemberAccessStamp) throws -> SoeMemberAccessStamp {

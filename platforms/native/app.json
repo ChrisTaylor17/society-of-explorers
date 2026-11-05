@@ -5,7 +5,9 @@
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "plugins": ["./plugins/with-soe-ios-host.cjs"],
     "ios": {
+      "bundleIdentifier": "com.anonymous.soesyntheticdemo",
       "supportsTablet": false
     },
     "android": {

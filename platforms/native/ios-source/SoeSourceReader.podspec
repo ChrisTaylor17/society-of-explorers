@@ -9,6 +9,6 @@ Pod::Spec.new do |s|
   s.platforms = { :ios => '15.1' }
   s.source_files = '*.{h,mm}'
   s.frameworks = 'WebKit'
-  s.resource_bundles = { 'SoeSourceReaderPins' => ['../../../lib/books/source-reader-catalog.json'] }
+  s.resource_bundles = { 'SoeSourceReaderPins' => ['generated/source-reader-catalog.json'] }
   install_modules_dependencies(s)
 end

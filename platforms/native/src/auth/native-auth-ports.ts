@@ -29,6 +29,12 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   const caps = await Promise.race([bridge.capabilities(), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(unavailable()), timeout); })]).finally(() => clearTimeout(timer));
   if (caps.authPolicy !== NATIVE_AUTH_POLICY || caps.providerOrigin !== providerOrigin || caps.publishableKey !== publishableKey
     || caps.origin !== origin || caps.storageKey !== storageKey || !isUuid(caps.storageGeneration)) throw unavailable();
+  // Reject a partial advertised email lane before member-port allocation or
+  // retirement subscriptions exist, including in installed iOS composition.
+  if (caps.emailAuthPolicy === 'supabase-email-pkce-v1' && (typeof caps.emailCallbackUrl !== 'string'
+    || !/^[a-z][a-z0-9+.-]{1,120}:\/\/auth\/callback$/.test(caps.emailCallbackUrl)
+    || !(['prepareEmailLink', 'pendingEmailLink', 'claimEmailLink', 'discardEmailLink', 'sendEmailAuth'] as const)
+      .every(name => typeof bridge[name] === 'function'))) throw unavailable();
   // Capture one capability receipt. Native checks its durable generation again at
   // allocation, send, storage and delivery; no stale receipt can restore an epoch.
   const ports = await createNativeMemberPorts({
@@ -132,9 +138,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   // existing password-v1 fetch parser above continues to reject every new path.
   let email: NativeEmailAuthPorts | undefined;
   if (caps.emailAuthPolicy === 'supabase-email-pkce-v1') {
-    const callbackUrl = caps.emailCallbackUrl;
-    if (typeof callbackUrl !== 'string' || !/^[a-z][a-z0-9+.-]{1,120}:\/\/auth\/callback$/.test(callbackUrl)
-      || !bridge.prepareEmailLink || !bridge.pendingEmailLink || !bridge.claimEmailLink || !bridge.discardEmailLink || !bridge.sendEmailAuth) throw unavailable();
+    const callbackUrl = caps.emailCallbackUrl!;
     const flow = (value: unknown): value is string => isUuid(value) && value === value.toLowerCase();
     const address = (value: unknown): value is string => validText(value, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
     const purpose = (value: unknown): value is NativeEmailPurpose => value === 'signup' || value === 'recovery';

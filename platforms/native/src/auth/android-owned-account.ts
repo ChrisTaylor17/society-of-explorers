@@ -1,24 +1,9 @@
-import { prepareAndroidAuthPorts } from '../circles/android-member';
-import { createOwnedNativeAuth } from './owned-auth';
-import { createNativeEmailAuth } from './email-auth';
+import { Platform } from 'react-native';
+import { prepareInstalledOwnedAccount } from './installed-owned-account';
 import type { OwnedAccountConnection } from '../../OwnedAccountScreen';
 
-/** Public configuration comes only from the installed native module. No account
- * secret is read from build variables, links, launch options or JS globals. */
+/** Compatibility entry for callers that explicitly require Android. */
 export async function prepareAndroidOwnedAccount(): Promise<OwnedAccountConnection> {
-  const { ports, publishableKey, connectivity } = await prepareAndroidAuthPorts();
-  try {
-    const controller = createOwnedNativeAuth({ ports, publishableKey, initialOnline: false });
-    const email = ports.email ? createNativeEmailAuth({ ports: ports.email, publishableKey, initialOnline: false }) : undefined;
-    controller.activity(false);
-    email?.activity(false);
-    return {
-      controller, connectivity, ...(email ? { email } : {}),
-      config: { ...ports.member, auth: controller.auth },
-      close() { email?.close(); controller.close(); ports.retire(); },
-    };
-  } catch {
-    ports.retire();
-    throw Error('Native account connection unavailable');
-  }
+  if (Platform.OS !== 'android') throw Error('Native account connection unavailable');
+  return prepareInstalledOwnedAccount();
 }

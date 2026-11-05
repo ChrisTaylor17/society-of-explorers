@@ -106,6 +106,126 @@ private func checkExclusive(_ config: SoeMemberConfiguration) throws {
     throw AuthorityTestFailure(message: "Another process-local authority acquired an owned namespace")
 }
 
+@MainActor
+func runSoeMemberIOSHostTests() async throws {
+    let appID = "org.soe.HostFixture"
+    let scene = "SoeMemberSceneDelegate"
+    let callback = "org.soe.hostfixture.email"
+    let manifest: [String: Any] = [
+        "UIApplicationSupportsMultipleScenes": false,
+        "UISceneConfigurations": [
+            "UIWindowSceneSessionRoleApplication": [["UISceneDelegateClassName": scene]]
+        ],
+    ]
+    let info: [String: Any] = [
+        "SoeMemberOrigin": member, "SoeMemberStorageKey": "soe-host-session",
+        "SoeProviderOrigin": provider, "SoePublishableKey": publishable,
+        "UIApplicationSceneManifest": manifest,
+        "CFBundleURLTypes": [["CFBundleURLName": "org.soe.member.email", "CFBundleURLSchemes": [callback]]],
+    ]
+    let empty = try SoeMemberInstalledPolicy.configuration(applicationID: appID, info: [:], sceneDelegate: scene)
+    try check(empty == nil, "Blank installed policy must not open an authority")
+    guard let config = try SoeMemberInstalledPolicy.configuration(applicationID: appID, info: info, sceneDelegate: scene) else {
+        throw AuthorityTestFailure(message: "Valid installed host policy was not available")
+    }
+    try check(config.emailCallbackURL == callback + "://auth/callback", "Installed callback did not use the exact application ID")
+    try check(SoeMemberInstalledPolicy.ownsEmailLink(URL(string: callback.uppercased() + "://malformed")!, applicationID: appID),
+              "A malformed URL under the reserved scheme must not reach public link delivery")
+    try check(!SoeMemberInstalledPolicy.ownsEmailLink(URL(string: "https://soe.invalid/auth/callback")!, applicationID: appID),
+              "Ordinary public links must remain outside the owned scheme")
+    print("PASS installed host policy reserves only the app-owned callback scheme")
+
+    for (key, value): (String, Any) in [
+        ("SoePublishableKey", "sb_secret_synthetic"), ("SoeProviderOrigin", ""),
+        ("SoeMemberStorageKey", 3), ("UIApplicationSceneManifest", [:] as [String: Any]),
+        ("CFBundleURLTypes", [["CFBundleURLName": "expo", "CFBundleURLSchemes": [callback]]]),
+        ("CFBundleURLTypes", [
+            ["CFBundleURLName": "org.soe.member.email", "CFBundleURLSchemes": [callback]],
+            ["CFBundleURLName": "expo", "CFBundleURLSchemes": [callback.uppercased()]],
+        ]),
+    ] {
+        var bad = info
+        bad[key] = value
+        do {
+            _ = try SoeMemberInstalledPolicy.configuration(applicationID: appID, info: bad, sceneDelegate: scene)
+            throw AuthorityTestFailure(message: "An unsafe installed host policy was accepted")
+        } catch SoeMemberCoreError.unavailable {}
+    }
+    print("PASS malformed policy, unexpected scene and ambiguous callback registrations stay closed")
+
+    let transport = RecordingTransport()
+    let authority = try SoeMemberAuthority(configuration: config, backend: RecordBackend(), transport: transport,
+                                            clockMilliseconds: { fixedTime })
+    let host = SoeMemberIOSHost(configuration: config, authority: authority)
+    host.update(protectedDataAvailable: true, connectivity: .online)
+    guard let first = host.attach() else { throw AuthorityTestFailure(message: "Could not attach to an installed host") }
+    try check(host.attach() == nil && first.getConnectivitySnapshot() == "unknown",
+              "An inactive host appeared online or accepted two React owners")
+    host.update(appActive: true)
+    let storage = try authority.fence.stamp(for: .storage)
+    let network = try authority.fence.stamp(for: .network)
+    let generation = try await authority.generation(stamp: storage)
+    let id = try await authority.begin(generation: generation, stamp: network)
+    let transfer = Task { try await authority.send(id: id, lane: .member, input: memberRead, stamp: network) }
+    let oldWire = try await transport.started(0)
+    SoeMemberIOSHost.detachBridge(first)
+    try check(oldWire.didCancel && !authority.fence.isCurrent(storage) && first.getConnectivitySnapshot() == "unknown",
+              "Detaching a React owner did not synchronously close its transfer and storage epoch")
+    do {
+        _ = try await transfer.value
+        throw AuthorityTestFailure(message: "A detached React owner received a transfer result")
+    } catch SoeMemberCoreError.unavailable {}
+    guard let replacement = host.attach() else { throw AuthorityTestFailure(message: "Could not replace a detached React owner") }
+    SoeMemberIOSHost.detachBridge(first)
+    let nextStorage = try authority.fence.stamp(for: .storage)
+    let nextNetwork = try authority.fence.stamp(for: .network)
+    let sameGeneration = try await authority.generation(stamp: nextStorage)
+    try check(sameGeneration == generation && replacement.getConnectivitySnapshot() == "online",
+              "The old owner retired or replaced the new owner's installed account authority")
+    print("PASS React replacement retires the old transfer and preserves one device vault")
+
+    let address = "member@example.invalid"
+    let prepared = try await authority.prepareEmailLink(purpose: "recovery", email: address, generation: generation, stamp: nextStorage)
+    let redirect = prepared.redirectTo.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn:
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"))!
+    let start = SoeMemberWireInput(url: provider + "/auth/v1/recover?redirect_to=" + redirect, method: "POST", bearer: nil,
+                                   body: "{\"email\":\"\(address)\",\"code_challenge\":\"\(prepared.challenge)\",\"code_challenge_method\":\"s256\",\"gotrue_meta_security\":{}}")
+    let deliveryID = try await authority.begin(generation: generation, stamp: nextNetwork)
+    let delivery = Task { try await authority.sendEmailAuth(id: deliveryID, flowID: prepared.flowId, input: start, stamp: nextNetwork) }
+    try await transport.started(1).reply()
+    _ = try await delivery.value
+    host.update(appActive: false, connectivity: .offline)
+    let background = try authority.fence.stamp(for: .callback)
+    SoeMemberIOSHost.detachBridge(replacement)
+    try check(authority.fence.isCurrent(background), "React retirement also revoked the native callback lifetime")
+    host.captureEmailLink(URL(string: prepared.redirectTo + "&code=synthetic-host-code")!)
+    host.update(appActive: true, connectivity: .online)
+    guard let restored = host.attach() else { throw AuthorityTestFailure(message: "Could not reattach after a native callback") }
+    let restoredStorage = try authority.fence.stamp(for: .storage)
+    var phase: String?
+    for _ in 0..<100 {
+        phase = try await authority.pendingEmailLink(generation: generation, stamp: restoredStorage)?.phase
+        if phase == "callback_ready" { break }
+        try await Task.sleep(for: .milliseconds(5))
+    }
+    try check(phase == "callback_ready", "Protected callback was not staged between React owners")
+    let claim = try await authority.claimEmailLink(flowID: prepared.flowId, generation: generation,
+                                                    stamp: authority.fence.stamp(for: .network))
+    try check(claim.code == "synthetic-host-code", "Staged native callback did not claim through the matching flow")
+    print("PASS protected native email delivery survives an inactive interval between React owners")
+
+    host.update(protectedDataAvailable: false)
+    try check(restored.getConnectivitySnapshot() == "unknown" && !authority.fence.isCurrent(restoredStorage)
+                && !authority.fence.isCurrent(background), "Protected-data retirement left an app or callback lifetime available")
+    host.update(protectedDataAvailable: true)
+    try check(restored.getConnectivitySnapshot() == "online", "Unlock did not publish the current physical path")
+    host.close()
+    try check(host.attach() == nil && restored.getConnectivitySnapshot() == "unknown",
+              "A terminated installed host reopened")
+    await authority.close()
+    print("PASS protected-data loss and app termination close the effective connection immediately")
+}
+
 func runSoeMemberAuthorityTests() async throws {
     let config = try configuration()
     let other = try SoeMemberConfiguration(applicationID: "org.soe.otherfixture", memberOrigin: member, storageKey: "soe-session",

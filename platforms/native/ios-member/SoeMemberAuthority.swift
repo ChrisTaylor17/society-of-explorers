@@ -27,7 +27,7 @@ actor SoeMemberAuthority {
         case regular(SoeMemberLane, SoeMemberWireInput)
         case email(String, SoeMemberWireInput)
     }
-    private typealias Delivery = (reply: SoeMemberWireResponse, emailWatchID: UUID?)
+    private typealias Delivery = (reply: SoeMemberWireResponse, emailWatchID: UUID?, deadline: ContinuousClock.Instant)
 
     private final class CallerCancellation: @unchecked Sendable {
         private let lock = NSLock()
@@ -142,6 +142,13 @@ actor SoeMemberAuthority {
     }
 
     func resetAccountStorage(expectedGeneration: String, stamp: SoeMemberAccessStamp) throws -> SoeMemberReset {
+        try resetAccountStorageWithStamp(expectedGeneration: expectedGeneration, stamp: stamp).reset
+    }
+
+    /// Delivery must retain this exact successor, rather than taking a new
+    /// stamp after another reset or native lifecycle change has occurred.
+    func resetAccountStorageWithStamp(expectedGeneration: String, stamp: SoeMemberAccessStamp) throws
+        -> (reset: SoeMemberReset, stamp: SoeMemberAccessStamp) {
         try storage(stamp) {
             guard let exposedGeneration, exposedGeneration.utf8.elementsEqual(expectedGeneration.utf8) else {
                 throw SoeMemberCoreError.unavailable
@@ -154,7 +161,7 @@ actor SoeMemberAuthority {
         return try storage(successor) {
             let reset = try vault.reset(expectedGeneration: expectedGeneration)
             exposedGeneration = reset.generation
-            return reset
+            return (reset, successor)
         }
     }
 
@@ -177,12 +184,27 @@ actor SoeMemberAuthority {
 
     func send(id: String, lane: SoeMemberLane, input: SoeMemberWireInput,
               stamp: SoeMemberAccessStamp) async throws -> SoeMemberWireResponse {
+        try await sendWithDeadline(id: id, lane: lane, input: input, stamp: stamp).reply
+    }
+
+    func sendWithDeadline(id: String, lane: SoeMemberLane, input: SoeMemberWireInput,
+                          stamp: SoeMemberAccessStamp) async throws -> (reply: SoeMemberWireResponse, deadline: ContinuousClock.Instant) {
         try await send(id: id, work: .regular(lane, input), stamp: stamp)
     }
 
     func sendEmailAuth(id: String, flowID: String, input: SoeMemberWireInput,
                        stamp: SoeMemberAccessStamp) async throws -> SoeMemberWireResponse {
+        try await sendEmailAuthWithDeadline(id: id, flowID: flowID, input: input, stamp: stamp).reply
+    }
+
+    func sendEmailAuthWithDeadline(id: String, flowID: String, input: SoeMemberWireInput,
+                                   stamp: SoeMemberAccessStamp) async throws -> (reply: SoeMemberWireResponse, deadline: ContinuousClock.Instant) {
         try await send(id: id, work: .email(flowID, input), stamp: stamp)
+    }
+
+    func cancel(_ id: String, stamp: SoeMemberAccessStamp) {
+        guard leases[id]?.stamp == stamp else { return }
+        cancel(id)
     }
 
     func cancel(_ id: String) {
@@ -230,6 +252,11 @@ actor SoeMemberAuthority {
     }
 
     func claimEmailLink(flowID: String, generation: String, stamp: SoeMemberAccessStamp) throws -> SoeMemberEmailClaim {
+        try claimEmailLinkWithScope(flowID: flowID, generation: generation, stamp: stamp).claim
+    }
+
+    func claimEmailLinkWithScope(flowID: String, generation: String, stamp: SoeMemberAccessStamp) throws
+        -> (claim: SoeMemberEmailClaim, watchID: UUID, deadline: ContinuousClock.Instant) {
         discardRetired()
         let claimed = try fence.withCurrent(stamp, purpose: .network) {
             guard let email else { throw SoeMemberCoreError.unavailable }
@@ -248,7 +275,10 @@ actor SoeMemberAuthority {
                                         deadline: clock.now.advanced(by: .milliseconds(remaining)))
             }
             scheduleEmailExpiry()
-            return try fence.withCurrent(stamp, purpose: .network) { claimed }
+            return try fence.withCurrent(stamp, purpose: .network) {
+                guard let watch = emailWatch, watch.id == watchID else { throw SoeMemberCoreError.unavailable }
+                return (claimed, watchID, watch.deadline)
+            }
         } catch {
             retireEmail()
             throw SoeMemberCoreError.unavailable
@@ -264,7 +294,8 @@ actor SoeMemberAuthority {
         cancelEmailLeases(flowID: flowID)
     }
 
-    private func send(id: String, work: Work, stamp: SoeMemberAccessStamp) async throws -> SoeMemberWireResponse {
+    private func send(id: String, work: Work, stamp: SoeMemberAccessStamp) async throws
+        -> (reply: SoeMemberWireResponse, deadline: ContinuousClock.Instant) {
         let caller = CallerCancellation()
         let result: Delivery = try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { response in
@@ -279,7 +310,7 @@ actor SoeMemberAuthority {
         do {
             return try fence.withCurrent(stamp, purpose: .network) {
                 try Task.checkCancellation()
-                return try caller.whileActive { result.reply }
+                return try caller.whileActive { (result.reply, result.deadline) }
             }
         } catch {
             if let watchID = result.emailWatchID { retireEmail(watchID: watchID) }
@@ -368,7 +399,7 @@ actor SoeMemberAuthority {
                     }
                     try email.receive(permit, response: response, vault: vault)
                 }
-                try flight.caller.whileActive { flight.response.resume(returning: (response, flight.emailWatchID)) }
+                try flight.caller.whileActive { flight.response.resume(returning: (response, flight.emailWatchID, lease.deadline)) }
             }
         } catch {
             if let permit = flight.emailPermit { email?.failed(permit) }
