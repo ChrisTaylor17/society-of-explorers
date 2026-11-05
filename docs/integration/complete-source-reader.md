@@ -1,0 +1,32 @@
+# Complete native source reader
+
+This local milestone extends profile/navigation checkpoint `5006dfba8d7dd2853d8a19aaf855eb663c897a54`. It prepares a complete native source view for the eight verified Great Books editions. The Android/iOS renderer code has not been compiled or exercised on a device. Deployment and production migrations remain held.
+
+## Product behavior
+
+Circle selections, saved reading and host previews converge on `CircleReadingScreen`. An installed source component selects the complete reader. Older app builds retain the explicit passage reader and its honest notices for content it cannot display. A source-loading failure does not silently switch to a partial passage.
+
+The full document retains introductions, illustrations, equations, tables, source headings, footnotes and license material, including content outside the passage index. Previous/Next select a position inside the agreed range; opening a saved place permits the full edition's range. The document itself is never cropped to a Circle range. Scrolling and following source links do not change the explicitly labelled save target. Private progress still needs review, confirmation, exact owner/revision handling and fresh readback. Hiding the details panel preserves an open review.
+
+On account change, inactivity, Android blur, offline/unknown connectivity, close or unmount, the selected source is retired. Foreground/reconnection does not reload it. Stale renderer callbacks must match the mounted binding, request key and selected position. A failed or timed-out document requires manual retry. Native platform lifecycle guards independently cancel resources and destroy the view.
+
+## Source integrity
+
+The deterministic generator leaves canonical `reader.html`, assets, passage indexes and edition identities unchanged. Each `native-reader.html` derivative adds only a viewport declaration and collision-checked IDs to indexed elements that lack an existing ID. Existing IDs and every original internal link are retained. The separate derivative hash and byte length are packaged alongside original document pins and exact asset paths, hashes, byte lengths and MIME types.
+
+`GET /api/great-books/edition/:book/reader?edition=:edition` requires one exact edition parameter and verifies both original and derivative bytes. It does not access member credentials or a database. Existing verified asset routes serve the same image bytes. The native allowlist is stricter than those older routes: only each packaged exact asset path and hash query are permitted.
+
+The native renderer accepts public book/edition/position coordinates and an opaque request lifetime; it accepts no arbitrary URL, HTML, script, bearer, header, member ID or Circle ID. Its trusted public origin comes from native build configuration. It verifies the full document and every manifest asset before showing the edition. Same-edition position changes reuse only that active view's verified bytes and renderer. Retirement, failure or a different edition destroys both; no durable or cross-view resource cache is introduced. See [native transport and platform limits](native-source-reader-platforms.md).
+
+## Verification and limits
+
+- Actual anonymous backend/catalog tests: **36**. Generator insertion/collision tests: **5**, plus deterministic regeneration across all eight editions and 312 assets.
+- Actual Chromium source-fidelity proof: **9** stories, **938** intercepted requests. Original archives and canonical readers agree on visible text and image counts; the derivative preserves DOM/styles apart from the declared additions. All **10,198** indexed anchors, **375** image occurrences, **150** images outside the index and **312** manifest assets are checked. Tables, equations and internal links are exercised at 320px and 20/30px source text sizes.
+- One Relativity CSS image request in raw Chromium includes only the exact public same-edition reader URL as its referrer. It is recorded and passed unchanged to the actual asset handler. This proof does not claim zero referrers from raw Chromium. The native resource lane constructs its own anonymous requests.
+- Actual registered App browser composition passes **8** stories and **75** intercepted requests: owned account, fresh Circle detail, complete **Hamlet** source, bounded navigation, saved-reading entry, reviewed CAS save/readback, hidden review preservation, stale events, manual retry and cleanup. The explicit Fabric surface uses an iframe; Hamlet has no image assets. All-book imagery/layout is established by the separate fidelity proof, not these App stories. Current-source older-bridge regressions also pass: passage reader **18**, saved reading **19**, hosting **18**.
+- Portable controller regressions cover **106** cases, including **16** new source-lifetime cases. Native policy/wrapper tests and static native-source assertions are separate; neither executes Kotlin, Objective-C++, WebKit or Android WebView.
+- Full web and portable TypeScript pass. Portable checking includes the new pure native reading policy, but excludes native TSX/Fabric/OS compilation. The offline web build uses invalid public provider placeholders, no issued credentials and startup network denial. A failed generated-cache attempt is preserved; the identical source build passes after preserving and replacing that cache.
+
+See [the checkpoint receipt](source-reader-verification.json) for exact current hashes, tests, limitations and evidence. Existing profile/navigation evidence is preserved under `verification/web/evidence/checkpoint-5006dfb/`; older proofs establish their recorded historical source only. Local ignored evidence is not a portable export.
+
+Remaining native acceptance includes Codegen, Kotlin/Objective-C++ compilation, Android resource interception and cancellation, iOS scheme-handler/URL observation, fragment visibility, memory and load behavior, touch zoom, source accessibility and real devices. iOS has source/podspec integration material but no generated app project or owned-account bridge. Some canonical source images have empty alternative text; visual fidelity does not establish accessible descriptions. Dedicated font controls and scroll-derived saved positions are not implemented. Android SDK acquisition and production backup questions remain pending.

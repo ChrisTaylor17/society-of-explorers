@@ -5,8 +5,11 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
+import com.facebook.react.uimanager.ViewManager
+import com.anonymous.soesyntheticdemo.reader.SourceReaderManager
 
 class SoeMemberPackage : BaseReactPackage() {
+  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> = listOf(SourceReaderManager())
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
     if (name == NativeSoeMemberModule.NAME) NativeSoeMemberModule(reactContext) else null
   override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {

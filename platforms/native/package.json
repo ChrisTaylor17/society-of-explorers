@@ -5,10 +5,15 @@
   "main": "index.ts",
   "codegenConfig": {
     "name": "SoeMemberSpecs",
-    "type": "modules",
+    "type": "all",
     "jsSrcsDir": "specs",
     "android": {
       "javaPackageName": "com.anonymous.soesyntheticdemo.member"
+    },
+    "ios": {
+      "componentProvider": {
+        "SoeSourceReader": "SoeSourceReaderView"
+      }
     }
   },
   "scripts": {

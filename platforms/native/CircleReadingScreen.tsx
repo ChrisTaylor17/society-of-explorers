@@ -5,12 +5,18 @@ import { readingSessionLabel } from '../../lib/circles/reading-program';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import type { SavedReading } from '../shared/saved-reading';
 import { SavedReadingTools } from './SavedReadingTools';
+import { sourceReaderAvailable } from './SourceReader';
+import { SourceReadingScreen } from './SourceReadingScreen';
 
 /** Mounted only by an explicit selection from freshly checked Circle detail. */
-export function CircleReadingScreen({ config, connectivity, savedReading, savedReadingManaged = false, backLabel = 'Back to Circle reading plan', onBack, onClose }: {
+export type CircleReadingScreenProps = {
   config: CircleReadingConfig; connectivity?: NativeConnectivityPort; savedReading?: SavedReading; savedReadingManaged?: boolean;
   backLabel?: string; onBack(): void; onClose(): void;
-}) {
+};
+export function CircleReadingScreen(props: CircleReadingScreenProps) {
+  return sourceReaderAvailable() ? <SourceReadingScreen {...props}/> : <PassageReadingScreen {...props}/>;
+}
+function PassageReadingScreen({ config, connectivity, savedReading, savedReadingManaged = false, backLabel = 'Back to Circle reading plan', onBack, onClose }: CircleReadingScreenProps) {
   const connection = useMemo(() => {
     try { return { reader: createCircleReading({ ...config, initialOnline: false }), connectivity }; }
     catch { return null; }

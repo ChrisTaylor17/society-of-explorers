@@ -9,6 +9,7 @@ import { observeNativeConnectivity, type NativeConnectivityPort } from './src/ci
 import { CircleScreen } from './CircleScreen';
 import { PublicProfileScreen } from './PublicProfileScreen';
 import { CircleCommunityNorms } from './CircleCommunityNorms';
+import { sourceReaderAvailable } from './SourceReader';
 import { CircleReadingScreen } from './CircleReadingScreen';
 import type { SavedReading } from '../shared/saved-reading';
 
@@ -262,7 +263,10 @@ function AgreedReading({ circle, available, disabled, onRead }: {
       {starter ? <><Text style={styles.note}>{readingEditionLabel(starter)}</Text><Text style={styles.note}>{readingSessionLabel(starter, starter)}</Text>
         {available ? <Action label="Read current selection" disabled={disabled} onPress={() => onRead(starter, null)}/> : null}</> : null}
     </> : <Text style={styles.copy}>No current reading selection.</Text>}
-    <Text style={styles.note}>{available ? 'Open a selection to read its verified text. Tables and nontext content are identified in place; the native reader does not reproduce the complete source layout.' : 'The reading schedule is shown here. Reading text is unavailable in this connection.'}</Text>
+    <Text style={styles.note}>{available ? sourceReaderAvailable()
+      ? 'Open a selection in the complete source edition, including illustrations, tables and notes. Your saved place changes only after you review and confirm a save.'
+      : 'Open a selection to read its verified text. Tables and nontext content are identified in place; the native reader does not reproduce the complete source layout.'
+      : 'The reading schedule is shown here. Reading text is unavailable in this connection.'}</Text>
   </View>;
 }
 function Field({ label, value, editable, maxLength, onChange }: { label: string; value: string; editable: boolean; maxLength: number; onChange(value: string): void }) {

@@ -4,6 +4,14 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+// Package only the canonical public pins, never the content tree or account data.
+def sourceReaderAssets = layout.buildDirectory.dir('generated/sourceReaderAssets')
+def packageSourceReaderCatalog = tasks.register('packageSourceReaderCatalog', Copy) {
+    from(new File(projectRoot, '../../lib/books/source-reader-catalog.json'))
+    into(sourceReaderAssets)
+}
+tasks.configureEach { task -> if (task.name == 'preBuild') task.dependsOn(packageSourceReaderCatalog) }
+
 // Public application policy only. No environment/launch-extra/credential lookup.
 // Empty policy keeps NativeSoeMember unavailable; partial/invalid policy aborts.
 def soeMemberPolicyProcess = new ProcessBuilder('node', rootProject.file('member-config.cjs').absolutePath,
@@ -135,6 +143,7 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
+    sourceSets.main.assets.srcDir(sourceReaderAssets)
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion

@@ -8,6 +8,7 @@ function box(tag){return function Primitive(p){return React.createElement(tag,{'
 export const SafeAreaView=box('main'),ScrollView=box('div'),View=box('div'),Text=box('span'),ActivityIndicator=box('span');
 export const Pressable=p=>React.createElement('button',{'aria-label':p.accessibilityLabel,role:p.accessibilityRole==='checkbox'?'checkbox':'button','aria-checked':p.accessibilityRole==='checkbox'?p.accessibilityState?.checked:undefined,disabled:p.disabled,onClick:p.onPress,style:style(p.style)},p.children);
 export const TextInput=p=>React.createElement('textarea',{'aria-label':p.accessibilityLabel,disabled:!p.editable,value:p.value,maxLength:p.maxLength,onChange:e=>p.onChangeText(e.target.value),style:style(p.style)});
+export const UIManager={getViewManagerConfig:()=>null},codegenNativeComponent=()=>()=>null;
 export const StyleSheet={create:x=>x},Platform={OS:'android'};
 export const AppState={get currentState(){return window.nativeQa?.appState.currentState??'active';},addEventListener(name,fn){return window.nativeQa.appState.addEventListener(name,fn);}};`;
 const result=await Bun.build({entrypoints:['platforms/tests/native-connectivity-entry.tsx'],outdir:output,target:'browser',format:'esm',naming:'page.[ext]',define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'native-primitives-explicit-double',setup(build){
