@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T18:23:15.639532+00:00",
+  "baseCheckpoint": "8496eb6280bd1a885f7b6abf8feaafc9137d9961",
+  "status": "LOCAL_ROOT_KERNEL_PHILEMON_WEB_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "deployed": false,
+  "source": {
+    "path": "verification/web/evidence/root-kernel-philemon-01/edition.json",
+    "sha256": "e1f3005b5b74d4a7dad20587b474f94572d8b92e6c9580f0c8c26b85a9dff4f4",
+    "publisherHtml": {
+      "path": "verification/web/evidence/root-kernel-philemon-01/publisher-philemon.html",
+      "sha256": "64ea8ae650993c047d98727ec2658cccf1c5af2fb2b000f4cccfbf0a1b64219c"
+    },
+    "comparison": {
+      "status": "PASS",
+      "verses": 25,
+      "paragraphs": 8,
+      "publisherFootnotes": 2,
+      "archiveSha256": "05b0440bd8994dd4da7cc53dd8167a759ed7c09617e4a562c64eb9b3343589c8",
+      "sourceMemberSha256": "9c9148cf45eee6558410a74f58804de3793eb5d26c394e291634a47fb9b50a47",
+      "publisherHtmlSha256": "64ea8ae650993c047d98727ec2658cccf1c5af2fb2b000f4cccfbf0a1b64219c",
+      "editionSha256": "13fa48b22414dba11a2cf659699b1bc9ea7beda0f6996911bd24f6ab91c0934a"
+    },
+    "archive": "https://ebible.org/Scriptures/eng-web_usfm.zip",
+    "publisher": "https://ebible.org/eng-web/PHM01.htm",
+    "reuseTerms": "https://ebible.org/eng-web/webfaq.htm"
+  },
+  "build": {
+    "path": "verification/web/evidence/built-shell-root-kernel-01-next-build.json",
+    "sha256": "4f4070473b39a7a2c5a9357f9fd78d37ac9b1a46b7c85059ea3899b57d2f5c9c",
+    "log": {
+      "path": "verification/web/evidence/built-shell-root-kernel-01-next-build.log",
+      "sha256": "5186ff1a95cb9b4c9d7d4e6a11c691ad321a4895d154440a6e27468879b39631"
+    },
+    "sourceInputs": 1045,
+    "staticRoute": true,
+    "typeCheckCompleted": true,
+    "scope": "Offline guarded build with invalid fixture public configuration."
+  },
+  "lint": {
+    "path": "verification/web/evidence/root-kernel-philemon-01/lint.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exitCode": 0
+  },
+  "browser": {
+    "path": "verification/web/evidence/root-kernel-philemon-01/browser.json",
+    "sha256": "2ef846892e0ab492aa0869b17531b6858aefc55812d963acb962ed130155568e",
+    "cases": 6,
+    "browserClosed": true,
+    "externalRequests": 0,
+    "apiRequests": 0,
+    "screenshotsReviewed": true
+  },
+  "server": {
+    "path": "verification/web/evidence/built-shell-root-kernel-01-server.json",
+    "sha256": "5c6ee1621018323b315d37f365b3b278ac0a9445a7785799262e7ba2cd57c1af",
+    "closedPort": 38462,
+    "runtimeBindings": 768,
+    "builtFiles": 2344,
+    "mismatches": 0
+  },
+  "preservedBuild": {
+    "buildId": "RTRvWsAiy3rj1R3LMKQso",
+    "path": "verification/web/evidence/root-kernel-philemon-01/previous-build"
+  },
+  "changedFileSha256": {
+    "RELEASE_STATUS.md": "7f1757438f15cea2b02d6c7e49746c43ae318027c3306f6e0ed763c913abeaaf",
+    "app/great-books/page.tsx": "86f82a14744de0c2d2cef162b8fd4aeec53d17eed12d055ec509ae65f9279e29",
+    "app/great-books/scripture/philemon/page.tsx": "41c1f8f6c28ee428b4e6108f1f4af33eb08b74ccce7f4ca14704adba8576d6c2",
+    "app/great-books/scripture/philemon/study.module.css": "3552a15a6d0dfe2ec2bc5065801f61b1aefd349c2688c5dca65c6dc28f7ae5f3",
+    "content/root-kernel/philemon.web-classic.json": "13fa48b22414dba11a2cf659699b1bc9ea7beda0f6996911bd24f6ab91c0934a",
+    "docs/integration/root-kernel-philemon.md": "3f3856547328bc8453c63529f3568a9c194ec945ecd306cc02c0905c1c673546",
+    "verification/web/scripts/browser-root-kernel-philemon.mjs": "ab92b92bd53060da9da9175e9baea3878c57d3774f81b972e6ca7831158b37df",
+    "verification/web/scripts/verify-root-kernel-philemon.py": "b142a8772738b14ff82dcafa6f5e8d1d162a96abb064e1d38a497febda7a4329"
+  },
+  "originalCheckoutStatusMatches": true
+}

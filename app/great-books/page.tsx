@@ -19,6 +19,11 @@ export default async function GreatBooksLibrary() {
       <p className={styles.lead}>A free library of complete Great Books editions, with the actual authors, translators and source credits. Read at your own pace, then explore the questions with other people.</p>
       <p className={styles.help}>Our community grows from Christian-conservative American roots and welcomes readers of every background and belief. Read charitably, stay with the text, and make room for disagreement.</p>
       <nav className={styles.nav} aria-label="Reading community"><Link href="/circles">Find a reading Circle</Link><Link href="/circles/path">Explore the 12-week reading path</Link><Link href="/circles/norms">Community norms</Link></nav>
+      <section className={styles.panel} aria-labelledby="root-kernel-title">
+        <h2 id="root-kernel-title" className={styles.sectionTitle}>Root Kernel Scripture study</h2>
+        <p className={styles.help}>Read the complete Letter to Philemon in a free Bible edition, compare two readings of its greeting, and bring a question to your reading salon.</p>
+        <Link className={styles.bookLink} href="/great-books/scripture/philemon">Read and discuss Philemon</Link>
+      </section>
       <section className={styles.panel} aria-label="Free editions and rights">
         <h2 className={styles.sectionTitle}>Free source editions</h2>
         {editions[0] && <p className={styles.notice}>{editions[0].licenseNotice}</p>}
