@@ -143,5 +143,85 @@
       "path": "verification/web/evidence/native-core-restore-01/receipt.json",
       "sha256": "4a5c03deaad9ebe719f2686d053b140e25a6bf043fd6e9595e9eaf520ec73f90"
     }
+  },
+  "browserCallers": {
+    "verifiedAt": "2026-11-05T19:11:09.636100+00:00",
+    "pageManifests": 7,
+    "rootManifests": 1,
+    "verifiedBrowserChunks": 23,
+    "manifestDownloads": {
+      "path": "verification/web/evidence/deployed-caller-20261105/browser-artifacts/manifest-downloads.json",
+      "sha256": "65c50ebd5b6fa5e64e394f4aa31fa0eed854e8593f67555d9ddf33c3daabc24a"
+    },
+    "chunkDownloads": {
+      "path": "verification/web/evidence/deployed-caller-20261105/browser-artifacts/chunk-downloads.json",
+      "sha256": "7225c361fe43e00941afc24d708f42b8dc24325c160fd8d791fd706603d08a4a"
+    },
+    "astScan": {
+      "path": "verification/web/evidence/deployed-caller-20261105/browser-artifacts/ast-observations.json",
+      "sha256": "0df8d5da66a141be62708313358e1ffe866b6cb27a1bd5abf306a4edaf66026b"
+    },
+    "boundCalls": {
+      "path": "verification/web/evidence/deployed-caller-20261105/browser-artifacts/verified-browser-boundary.json",
+      "sha256": "6ae92227db31ca329f38106a52756eb4b9c7b3736951463320483ba1a4173e97"
+    },
+    "routes": [
+      "dashboard",
+      "great-books",
+      "great-books/[bookId]",
+      "book-salons",
+      "book-salons/[cohortId]",
+      "circles/start",
+      "circles/[circleId]"
+    ],
+    "rawMemberLookup": {
+      "asset": "3ex0ms0h4j0wc.js",
+      "sessionModule": 1372,
+      "factoryModule": 920755,
+      "verifiedProviderUserLookup": true,
+      "walletHintFromCookieOrLocalStorage": true,
+      "compiledPublicProjectMatchesCatalog": true,
+      "rawMemberReads": [
+        {
+          "columns": "*",
+          "where": "supabase_auth_id"
+        },
+        {
+          "columns": "*",
+          "where": "id"
+        }
+      ]
+    },
+    "legacyAwardPost": {
+      "asset": "2qicwoeavu1fa.js",
+      "route": "/great-books/[bookId]",
+      "request": "/api/exp/award",
+      "method": "POST",
+      "payloadFields": [
+        "memberId",
+        "amount",
+        "reason",
+        "bookId",
+        "section"
+      ]
+    },
+    "localReplacementTests": {
+      "path": "verification/web/evidence/deployed-caller-20261105/browser-artifacts/local-replacements-02.tap",
+      "sha256": "2265fa4a8a3873c369a0fff16bf0321aaba25d929545a80d5d063899f5078638",
+      "passed": 37,
+      "networkGuarded": true,
+      "initialHarnessWorkingDirectoryDiagnostic": {
+        "path": "verification/web/evidence/deployed-caller-20261105/browser-artifacts/local-replacements.tap",
+        "sha256": "e0085775bfc33bc36d97615dd4ad45af953f6dc9276b493e10477f39c7e76014"
+      }
+    },
+    "replacementSources": {
+      "lib/auth/getSession.ts": "c66161e8daab37f902383b4f0bee3111a0f706aa7fd677c7ea6192d11b996b4e",
+      "lib/auth/memberDto.ts": "b3a750c2841642c7782d31edd5f623c10b3cec543f9288ae3a05c7d21ce7f936",
+      "app/api/auth/member/route.ts": "842ee7f9aa44bb28c34b87a068ee0ac5c9899534579e37de2bd28ca691d4b225",
+      "app/api/exp/award/route.ts": "57a8c8d971e2392acc94122d80ec87b46e1194b6ce966a3e01b0e925aca33792",
+      "verification/web/tests/account-security.test.mjs": "e27c44b363d3bc673351124f4f27de79007d9c44d6b3100203660119033bed19",
+      "verification/web/tests/retired-reading-award.test.mjs": "5ef915c8414d867943de611e010364ba98783924cc3ae467d1606375241db1a7"
+    }
   }
 }
