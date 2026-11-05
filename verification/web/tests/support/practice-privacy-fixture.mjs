@@ -25,13 +25,14 @@ export const day = new Date().toLocaleDateString('en-CA', { timeZone: 'America/N
 export const prompt = 'What habit makes it easier to listen well?';
 export const tables = ['daily_questions', 'matched_conversations', 'practice_reflections', 'question_responses'];
 
-export async function practiceDb(onClose) {
+export async function practiceDb(onClose, { withCoreBaseline = false } = {}) {
   const db = new PGlite({ extensions: { vector } });
   onClose(() => db.close());
   await db.waitReady;
-  await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;"
-    + " CREATE SCHEMA extensions; SET search_path = public, extensions;"
+  if (withCoreBaseline) await db.exec(await read('verification/web/tests/fixtures/core-containment-synthetic.sql'));
+  else await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;"
     + " CREATE TABLE members(id uuid PRIMARY KEY, display_name text NOT NULL);");
+  await db.exec("CREATE SCHEMA extensions; SET search_path = public, extensions;");
   await db.exec(base);
   await db.exec(reflections);
   await db.exec("CREATE TABLE unrelated_catalog(label text); INSERT INTO unrelated_catalog VALUES ('PUBLIC_SAMPLE');"
@@ -103,8 +104,8 @@ function sqlRequest(request) {
   return { params, bind, table, query, select, fields, where, ordered, capped };
 }
 
-export async function practiceHttp(onClose) {
-  const db = await practiceDb(onClose);
+export async function practiceHttp(onClose, preparedDb) {
+  const db = preparedDb ?? await practiceDb(onClose);
   await db.exec(applySql);
   await db.exec('SET ROLE service_role');
   const calls = [], failures = [];

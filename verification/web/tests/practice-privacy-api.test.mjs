@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { A, B, C, Q, RA, RB, day, prompt, practiceHttp } from './support/practice-privacy-fixture.mjs';
+import { readFile } from 'node:fs/promises';
+import { A, B, C, Q, RA, RB, day, prompt, practiceDb, practiceHttp } from './support/practice-privacy-fixture.mjs';
 
 async function fixture(t) {
   const f = await practiceHttp(t.after.bind(t));
@@ -53,6 +54,80 @@ test('legacy response routes retire without data access and anonymous Practice r
   assert.equal(result.streak, null);
   assert.deepEqual(f.calls.map(call => call.table), ['daily_questions']);
   assert(!('others' in result) && !('todayCount' in result));
+});
+
+test('core and Practice containment close direct reads and require the replacement app to close old service projections', async t => {
+  const db = await practiceDb(t.after.bind(t), { withCoreBaseline: true });
+  const subject = '50000000-0000-4000-8000-000000000001';
+  const otherSubject = '50000000-0000-4000-8000-000000000002';
+  await db.query("UPDATE members SET supabase_auth_id=$2, stripe_customer_id='SYNTHETIC_BILLING' WHERE id=$1", [A, subject]);
+  await db.query('UPDATE members SET supabase_auth_id=$2 WHERE id=$1', [B, otherSubject]);
+  const rawMember = 'SELECT stripe_customer_id FROM members WHERE id=$1';
+  const rawAnswers = 'SELECT response_text FROM question_responses ORDER BY response_text';
+  const queryAs = (role, query, parameters = []) => db.transaction(async tx => {
+    await tx.exec('SET LOCAL ROLE ' + role);
+    return tx.query(query, parameters);
+  });
+  assert.equal((await queryAs('anon', rawMember, [A])).rows[0].stripe_customer_id, 'SYNTHETIC_BILLING');
+  assert.equal((await queryAs('anon', rawAnswers)).rows.length, 2);
+  for (const step of ['preflight', 'apply']) {
+    await db.exec(await readFile(new URL('../../../docs/sql/first-release-core-containment-' + step + '.sql', import.meta.url), 'utf8'));
+  }
+  const f = await practiceHttp(t.after.bind(t), db);
+  for (const role of ['anon', 'authenticated']) {
+    await assert.rejects(queryAs(role, rawMember, [A]), { code: '42501' });
+    await assert.rejects(queryAs(role, rawAnswers), { code: '42501' });
+    await assert.rejects(queryAs(role, 'SELECT reflection_text FROM practice_reflections'), { code: '42501' });
+  }
+  // The old upload reads these fields through the service role. The migration
+  // deliberately preserves that authority so the application must change too.
+  const oldResponses = await db.query('SELECT id, response_text, created_at, member_id, question_id FROM question_responses ORDER BY created_at DESC LIMIT 20');
+  assert.deepEqual(oldResponses.rows.map(row => row.response_text).sort(), ['OWNER_A_ANSWER', 'OWNER_B_ANSWER']);
+  const oldReflections = await db.query('SELECT response_id, reflection_text, thinker_id, created_at FROM practice_reflections WHERE response_id IN ($1,$2)', [RA, RB]);
+  assert.deepEqual(oldReflections.rows.map(row => row.reflection_text).sort(), ['OWNER_A_REFLECTION', 'OWNER_B_REFLECTION']);
+
+  let owner = null;
+  f.app.setMock('@/lib/getAuthenticatedMember', () => ({
+    getAuthenticatedMember: async () => {
+      if (owner === null) return null;
+      const { rows } = await db.query('SELECT * FROM members WHERE id=$1', [owner]);
+      return { memberId: owner, member: rows[0], auth: { provider: 'supabase', subject: rows[0].supabase_auth_id } };
+    },
+  }));
+  const session = load(f, '/auth/member');
+  const sessionRequest = request('/auth/member');
+  Object.defineProperty(sessionRequest, 'cookies', { value: { get: () => undefined } });
+  await json(await session.GET(sessionRequest), 401);
+  for (const path of ['/practice/responses', '/practice/others']) {
+    await json(await load(f, path).GET(request(path + '?questionId=' + Q)), 410);
+  }
+  await json(await load(f, '/exp/award').POST(request('/exp/award', {
+    method: 'POST', body: { memberId: A, amount: 50, reason: 'reading' },
+  })), 410);
+  assert.deepEqual(f.calls, []);
+  assert.deepEqual(await json(await load(f, '/feed/pulse').GET()), { todayQuestion: { question_text: prompt, thinker_id: 'socrates', date: day } });
+  assert.deepEqual(f.calls.map(call => call.table), ['daily_questions']);
+
+  owner = A;
+  const current = await json(await session.GET(sessionRequest));
+  assert.equal(current.member.id, A);
+  assert.equal(current.auth.subject, subject);
+  assert.equal(current.member.display_name, 'Synthetic A');
+  assert.equal('stripe_customer_id' in current.member, false);
+  const save = await json(await load(f, '/practice/respond').POST(request('/practice/respond', {
+    method: 'POST', owner: A, body: { questionId: Q, responseText: 'AFTER_CUTOVER_OWNER_A', memberId: B },
+  })));
+  const own = await json(await load(f, '/practice/my-today').GET(request('/practice/my-today?memberId=' + B)));
+  assert.deepEqual(own.myResponse, save.response);
+  assert.equal(own.myResponse.response_text, 'AFTER_CUTOVER_OWNER_A');
+  assert.equal(own.myReflection, 'OWNER_A_REFLECTION');
+  owner = B;
+  assert.equal((await json(await session.GET(sessionRequest))).auth.subject, otherSubject);
+  const other = await json(await load(f, '/practice/my-today').GET(request('/practice/my-today')));
+  assert.equal(other.myResponse.response_text, 'OWNER_B_ANSWER');
+  assert.equal(other.myReflection, 'OWNER_B_REFLECTION');
+  assert.equal(f.providers(), 0);
+  assert.deepEqual(f.failures, []);
 });
 
 test('both authors receive their own answers and reflections, including a legacy null-owner reflection', async t => {

@@ -4,7 +4,7 @@
 
 The November 5 review binds the current Vercel alias to the uploaded Thinker and reading-award implementations and seven older browser pages that depend on a raw member lookup. Supabase reports that scheduled backups are unavailable for this Free plan project. The synthetic PostgreSQL restore and lock rehearsal passed. A tested production export, its isolated restoration and the remaining caller review are still required. [Current caller and restore evidence](production-boundary-2026-11-05.md) · [Migration rehearsal](full-chain-migration-rehearsal.md)
 
-Daily Practice has a separate four-table privacy draft. Include those tables in the production restore review and pair its SQL with retirement of the legacy public answer routes. Verify the two older member aliases, generated deployment URLs and forwarding from the branded exhibition site before opening traffic. [Practice scope and verification](practice-privacy.md)
+Daily Practice has a separate four-table privacy draft. Include those tables in the production restore review and pair its SQL with retirement of the legacy public answer routes. The live route audit identified one signed-out member entry and verified Vercel sign-in on the other three aliases and all 40 generated deployment URLs. The branded exhibition site holds member entry separately. Keep the public member alias under maintenance while changing the database and replacing the old service-backed readers. Recheck old tabs across a full page reload, since the published Feed client rejects the prompt-only response. [Practice scope](practice-privacy.md) · [Route audit and combined rehearsal](production-route-closure-2026-11-05.md)
 
 ## Stage 0: choose the saved-reading policy baseline
 

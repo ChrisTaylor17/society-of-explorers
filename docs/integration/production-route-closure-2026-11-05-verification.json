@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T21:56:12.445413+00:00",
+  "baseCheckpoint": "a32e76607cb307707ce13aa9e2bf22522efd8e30",
+  "status": "READ_ONLY_ROUTE_AUDIT_AND_LOCAL_CUTOVER_REPLAY_PASS_PRODUCTION_HOLD",
+  "liveMutationPerformed": false,
+  "liveMemberDataRead": false,
+  "productionRestoreVerified": false,
+  "productionCleared": false,
+  "reachability": {
+    "controlPlane": {
+      "path": "verification/web/evidence/production-route-closure-20261105/current-alias-map.json",
+      "sha256": "5c9fdfa549c03164bfb3742cbd2f8fdd576d5f82b36a1b4b88f2c304367b9aa5"
+    },
+    "readyDeployments": {
+      "path": "verification/web/evidence/production-route-closure-20261105/member-ready-page1.json",
+      "sha256": "d359d812c88579ad53fd336679d81bd70a4fdd09a778b483d0db7c5584901759"
+    },
+    "anonymousChecks": {
+      "path": "verification/web/evidence/production-route-closure-20261105/anonymous-reachability.json",
+      "sha256": "16a359e3d8babe840b6f0902e3ef5cfcd5a535a68823b0635a2c08237a1af317"
+    },
+    "memberGeneratedUrls": 40,
+    "memberAliases": 4,
+    "memberHostsRedirectingToVercelSignIn": 43,
+    "publicMemberAlias": "society-of-explorers.vercel.app",
+    "brandedPathChecks": 12
+  },
+  "uploadedArtifacts": {
+    "verifiedContentFiles": 32,
+    "serverAndBrandedIndex": {
+      "path": "verification/web/evidence/production-route-closure-20261105/verified-artifact-index.json",
+      "sha256": "1a57408ca3d1a711b6cc281c833f1d4da829b532d249b5b2618ba555f4197b89"
+    },
+    "feedBrowserIndex": {
+      "path": "verification/web/evidence/production-route-closure-20261105/verified-feed-browser-index.json",
+      "sha256": "a8f442e5e0f59a10e89d791f5cae7c4f69897d9bbae1d0a670fa708815a282dd"
+    },
+    "currentTree": {
+      "path": "verification/web/evidence/deployed-caller-20261105/tree.json",
+      "sha256": "030b105a8a35b15265c0c9c23f5aa7da2fd5951a4ee3688a3a26c09526d5e803"
+    },
+    "olderTree": {
+      "path": "verification/web/evidence/production-route-closure-20261105/older-tree.json",
+      "sha256": "390144131ad5d84a5d3a19fc2084d111016f2481a2f5b4fae29f7ef5f77a704b"
+    },
+    "compiledRoutes": {
+      "path": "verification/web/evidence/deployed-caller-20261105/files/output-config.json",
+      "sha256": "21b46c9b36bdac0c24d6ab9e5290c612d3e1d75c130a9c108587769fd6610d99"
+    },
+    "functionFileMap": {
+      "path": "verification/web/evidence/deployed-caller-20261105/files/thinker-function-config.json",
+      "sha256": "9b947ae3b3064369de25ded474f214043889671907cf5ec5cbf23d555c7af4e8"
+    },
+    "appPaths": {
+      "path": "verification/web/evidence/deployed-caller-20261105/files/thinker-app-paths.json",
+      "sha256": "2c9f40a13a3a79452048dc59f3d3d039b280c8be32ea34a32fb73b15631796af"
+    },
+    "reachableUpload": "dpl_FqmzK79EiKmDcur1of6RFPpbUyFX",
+    "protectedJuneUpload": "dpl_8PSS1iRp7s7tvNx8mRnwQ38Lfv2d",
+    "handlerModules": {
+      "/api/feed/pulse": 347906,
+      "/api/practice/others": 649414,
+      "/api/practice/responses": 788615
+    },
+    "feedBrowserModule": 303880
+  },
+  "localReplay": {
+    "passedChecks": 28,
+    "failedChecks": 0,
+    "log": {
+      "path": "verification/web/evidence/production-route-closure-20261105/local-cutover-tests-02.tap",
+      "sha256": "7a14e2d7aed0836df6b699aab03b4825e3884844db954dcf48b3754c99fc15b1"
+    },
+    "disposableDatabase": true,
+    "startupNetworkDeny": true,
+    "syntheticAccountSubjects": 2,
+    "inputs": [
+      {
+        "path": "verification/web/tests/practice-privacy-api.test.mjs",
+        "sha256": "5965677c791fc82abd399f7d49ac1c243600c113cb5db40c9ed11803448745cf"
+      },
+      {
+        "path": "verification/web/tests/support/practice-privacy-fixture.mjs",
+        "sha256": "ad96688ca9f0e3c806013b8c7c1b267c6a48dee30ac312cff16e7ec45f887e14"
+      },
+      {
+        "path": "verification/web/tests/fixtures/core-containment-synthetic.sql",
+        "sha256": "c09a83634f7feb6ea58b02600070dccaaf67d7086949adffc40b44d2b0098433"
+      },
+      {
+        "path": "docs/sql/first-release-core-containment-preflight.sql",
+        "sha256": "17db6ff8b73d65de0b3d87fb60fc43a84d84437341a062cb2e195f078a2f34d1"
+      },
+      {
+        "path": "docs/sql/first-release-core-containment-apply.sql",
+        "sha256": "b88ffa86bb265f467dbf9fe9d7ba17ce246df8a8d2618db86ade8a6401fb1b1b"
+      },
+      {
+        "path": "docs/sql/practice-data-containment-apply.sql",
+        "sha256": "0e1c494fb39add6b9e6c656faa32dd4e888f4baedc5468905af6011841b88593"
+      },
+      {
+        "path": "app/api/auth/member/route.ts",
+        "sha256": "842ee7f9aa44bb28c34b87a068ee0ac5c9899534579e37de2bd28ca691d4b225"
+      },
+      {
+        "path": "app/api/feed/pulse/route.ts",
+        "sha256": "7cca28061616ec789f7e09b9fac4a470e42c1ac856d9f4520e28c11760b7ad8b"
+      },
+      {
+        "path": "app/api/practice/my-today/route.ts",
+        "sha256": "ac1ba60c38c60bc3ee5a10381b74d0461d9f906976a37949825cffae28d4bacb"
+      },
+      {
+        "path": "app/api/practice/respond/route.ts",
+        "sha256": "35e8243c71508689569f7b7b7fb34a3fd90b9a805367061285248375c9f17792"
+      },
+      {
+        "path": "app/api/practice/others/route.ts",
+        "sha256": "415ef1fcc4e1097bd188b333fcf0ab6776f30259470f94f8b41d35f375d84226"
+      },
+      {
+        "path": "app/api/practice/responses/route.ts",
+        "sha256": "415ef1fcc4e1097bd188b333fcf0ab6776f30259470f94f8b41d35f375d84226"
+      },
+      {
+        "path": "app/api/exp/award/route.ts",
+        "sha256": "57a8c8d971e2392acc94122d80ec87b46e1194b6ce966a3e01b0e925aca33792"
+      }
+    ]
+  },
+  "limits": [
+    "Hosted HTTP checks used anonymous HEAD on home and branded paths.",
+    "Uploaded bytes were inspected statically. The June implementation findings concern uploaded source.",
+    "The database replay uses synthetic data and identity authority, with old SQL projections and actual replacement handlers.",
+    "Hosted provider behavior, deployment pinning, approved production restore and rollout acceptance remain open."
+  ]
+}

@@ -13,9 +13,7 @@ The SQL draft locks the four exact tables for a bounded transaction. It changes 
 
 ## Deployment scope
 
-The member project has four assigned aliases across two READY deployments. The current Vercel domain and project alias share the current upload. Two older aliases point to a different CLI upload without Git provenance. The current upload's three route entries matched the provider file IDs, but the implementation chunks exceeded the connector's response limit. The older file index was also truncated. Its caller behavior and protection still require verification. [Vercel deployment files](https://vercel.com/docs/rest-api/deployments/list-deployment-files)
-
-The branded apex and www domains currently point to the separate soe-exhibition project. Its complete 177-file index showed site files and no bundled app function. The route configuration download was truncated. Verify any forwarding and external references when choosing the member rollout target.
+The follow-up audit retrieved the full older file index, the active Practice implementation chunks and the exhibition’s route configuration. The member homepage answered signed-out requests on one alias. The other three aliases and all 40 generated URLs redirected to Vercel sign-in. The branded site separately holds Login, Dashboard, Feed and Movement. The reachable upload contains three service-backed answer readers, so the planned browser grant changes require the matching app replacement. [Route audit and combined rehearsal](production-route-closure-2026-11-05.md)
 
 For an approved cutover, restore the owner-held production export on an isolated target and include all four Practice tables. Review legacy data integrity given the open write authority. Coordinate database containment with replacement or isolation of the old app routes and reachable deployment hosts. An old service-backed endpoint can still read rows after browser grants are removed. Verify direct browser denial, public prompt rendering, signed-out response behavior and an author's save and reload before opening traffic. A rollback decision must preserve the privacy boundary.
 
