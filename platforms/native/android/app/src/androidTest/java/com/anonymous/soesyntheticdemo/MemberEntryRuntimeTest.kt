@@ -38,16 +38,24 @@ class MemberEntryRuntimeTest {
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             awaitEntry(scenario, initial)
-            scenario.onActivity { activity ->
+            scenario.onActivity {
                 val context = app.reactHost.currentReactContext
                     ?: throw AssertionError("The rendered entry has no React context")
                 assertEquals("The member entry loads from the packaged bundle",
                     "assets://index.android.bundle", context.sourceURL)
-                val button = descendants(activity.window.decorView).single {
-                    it.isShown && it.isEnabled && it.isClickable && it.contentDescription?.toString() == connect
-                }
-                assertTrue("Dispatch the app's own Connect action", button.performClick())
             }
+
+            press(scenario, "Read Philemon")
+            awaitStudyText(scenario, "Paul’s Letter to Philemon")
+            awaitStudyText(scenario, "Grace to you and peace from God our Father and the Lord Jesus Christ.")
+            press(scenario, "Compare readings")
+            awaitStudyText(scenario, "Two readings of the greeting")
+            press(scenario, "Host guide")
+            awaitStudyText(scenario, "Host a Philemon salon online")
+            press(scenario, "Back to account")
+            awaitEntry(scenario, initial)
+
+            press(scenario, connect)
             awaitEntry(scenario, unavailable)
             scenario.onActivity {
                 assertTrue("The installed package registers the actual member module",
@@ -61,6 +69,30 @@ class MemberEntryRuntimeTest {
             scenario.recreate()
             awaitEntry(scenario, initial)
         }
+    }
+
+    private fun press(scenario: ActivityScenario<MainActivity>, label: String) {
+        scenario.onActivity { activity ->
+            val button = descendants(activity.window.decorView).single {
+                it.isShown && it.isEnabled && it.isClickable && it.contentDescription?.toString() == label
+            }
+            assertTrue("Dispatch the app action: $label", button.performClick())
+        }
+    }
+
+    private fun awaitStudyText(scenario: ActivityScenario<MainActivity>, marker: String) {
+        val deadline = SystemClock.elapsedRealtime() + 20_000L
+        while (SystemClock.elapsedRealtime() < deadline) {
+            var ready = false
+            scenario.onActivity { activity ->
+                val views = descendants(activity.window.decorView).toList()
+                ready = views.filterIsInstance<TextView>().any { it.isShown && marker in it.text.toString() }
+                if (ready) assertFalse("The public study must not show credential inputs", views.any { it is EditText })
+            }
+            if (ready) return
+            SystemClock.sleep(50L)
+        }
+        throw AssertionError("The bundled study did not show: $marker")
     }
 
     private fun awaitEntry(scenario: ActivityScenario<MainActivity>, notice: String) {

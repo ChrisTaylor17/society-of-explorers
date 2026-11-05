@@ -48,7 +48,7 @@ function createBridge(store:Disk){
   async resetAccountStorage(generation:string){resets++;assertGeneration(generation);store.slots.clear();store.generation=uuid();if(store.resetUnknown)throw Error('Synthetic reset receipt lost after local clear');return{previousGeneration:generation,generation:store.generation,cleared:true};},
  };
 }
-const qa={appState,requests,
+const qa={appState,requests,platform:new URL(window.location.href).searchParams.get('platform')==='ios'?'ios':'android',
  capture(kind:string,label:string|undefined,callback:CapturedCallback){if(label&&typeof callback==='function')latestCallbacks.set(kind+':'+label,callback);},
  retainCallback(kind:string,label:string){const callback=latestCallbacks.get(kind+':'+label);if(!callback)throw Error('No real native callback for '+kind+':'+label);const id=uuid();retainedCallbacks.set(id,callback);return id;},
  invokeCallback(id:string,value?:string){const callback=retainedCallbacks.get(id);if(!callback)throw Error('Captured callback unavailable');return callback(value);},

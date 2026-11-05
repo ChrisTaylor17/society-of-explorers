@@ -3,7 +3,12 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-const ROOT=process.cwd(),file='verification/web/evidence/native-hosting-browser.json',sha=b=>createHash('sha256').update(b).digest('hex');
+const [run,platform='android',...extra]=process.argv.slice(2);
+assert(!extra.length&&(run===undefined||/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run))&&['android','ios'].includes(platform));
+const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hosting-browser-'+run+'-'+platform:'');
+if(run)fs.mkdirSync(path.join(ROOT,output));
+const file=output+(run?'/browser.json':'/native-hosting-browser.json'),sha=b=>createHash('sha256').update(b).digest('hex');
+const fixtureDir='verification/web/evidence/native-hosting-fixture'+(run?'-'+run:'');
 function read(name){const p=path.resolve(ROOT,name),s=fs.lstatSync(p);assert(s.isFile()&&!s.isSymbolicLink()&&(!s.size||s.blocks),'Refuse linked/offloaded source '+name);return fs.readFileSync(p);}
 function runtime(p){const s=fs.statSync(p);assert(s.size&&s.blocks,'Refuse offloaded runtime');}
 async function bounded(fn,ms=5000){let timer;try{return await Promise.race([fn(),new Promise((_,no)=>timer=setTimeout(()=>no(Error('Owned operation timed out')),ms))]);}finally{clearTimeout(timer);}}
@@ -13,14 +18,14 @@ const {createPublicProfileApp:createCircleHostingApp,publicProfileAppHashes:host
 const priorReceipt=fs.existsSync(path.join(ROOT,file))?{sha256:sha(read(file)),status:JSON.parse(read(file)).status}:null,startedAt=new Date().toISOString(),stories=[],errors=[],unexpected=[],http=[],cleanup={browser:'pending',database:'pending'};
 let holdNextPost=false,heldPost=null;
 let sourceHashes={},bundle,browser,page,fixture,failure=null,actor='author',mismatch=false,denied=false,stats;
-function write(status){fs.writeFileSync(path.join(ROOT,file),JSON.stringify({status,startedAt,completedAt:new Date().toISOString(),stories,errors,unexpected,http,cleanup,sourceHashes,bundleSHA256:bundle?sha(bundle):null,stats,priorReceipt,failure,
+function write(status){fs.writeFileSync(path.join(ROOT,file),JSON.stringify({status,platform,startedAt,completedAt:new Date().toISOString(),stories,errors,unexpected,http,cleanup,sourceHashes,bundleSHA256:bundle?sha(bundle):null,stats,priorReceipt,failure,
  scope:'Actual registered App, cached AuthClient, native JS hosting/member/anonymous-edition/passage ports, Circle creation and completion screens. Canonical bearer/member/Circle/participation handlers and the current owner-aware hosting and additive membership intent SQL run in disposable PGlite. Native primitives, OS services, delivery and provider identity are explicit doubles. Actual callback functions are retained to model late native events. No native compilation, SDK acquisition, provider call, deployment or production SQL.'},null,2)+'\n');}
 const pass=name=>{stories.push(name);write('RUNNING');console.log('PASS '+stories.length+': '+name);};write('RUNNING');
 try{
  assert(process.execArgv.some(v=>v.endsWith('/deny-build-network.cjs')),'Startup network denial required');
  const require=createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');runtime(require.resolve('playwright'));
  const executablePath='/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';runtime(executablePath);
- bundle=read('verification/web/evidence/native-hosting-fixture/page.js');sourceHashes={...JSON.parse(read('verification/web/evidence/native-hosting-fixture/source-manifest.json')).sourceHashes,...await hostingAppHashes(),'platforms/tests/browser-native-hosting.mjs':sha(read('platforms/tests/browser-native-hosting.mjs'))};
+ bundle=read(fixtureDir+'/page.js');sourceHashes={...JSON.parse(read(fixtureDir+'/source-manifest.json')).sourceHashes,...await hostingAppHashes(),'platforms/tests/browser-native-hosting.mjs':sha(read('platforms/tests/browser-native-hosting.mjs'))};
  for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Rebundle changed source '+n);
  fixture=await createCircleHostingApp();
  browser=await require('playwright').chromium.launch({headless:true,timeout:15000,executablePath,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
@@ -59,7 +64,7 @@ try{
  }catch(error){errors.push(error.stack||String(error));try{await route.abort();}catch{}}});
 
 
- await p.goto(ORIGIN);
+ await p.goto(ORIGIN+'/?platform='+platform);
  const button=name=>p.getByRole('button',{name,exact:true}),field=name=>p.getByLabel(name,{exact:true});
  const settle=()=>p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const enabled=name=>p.waitForFunction(name=>[...document.querySelectorAll('button')].some(x=>x.getAttribute('aria-label')===name&&!x.disabled),name);
@@ -79,8 +84,8 @@ try{
  async function enter(){await button('Start a Circle').click();await enabled('Check hosting access');}
  async function check(){await button('Check hosting access').click();await enabled('Check hosting access');}
  async function start(){await show();await signIn();await account();await enter();await check();await field('Circle name').waitFor();}
- async function fill({name=title,format='In person'}={}){
-  await field('Circle name').fill(name);await p.getByRole('radio',{name:format,exact:true}).click();
+ async function fill({name=title,format='In person',selectFormat=true}={}){
+  await field('Circle name').fill(name);if(selectFormat)await p.getByRole('radio',{name:format,exact:true}).click();
   if(format!=='Online'){await field('City').fill('Boston');await field('Public venue name').fill('Public library');}
   if(format!=='In person')await field('Private meeting link (HTTPS)').fill('https://meeting.example.test/private-host-room');
   await field('Start on or after (YYYY-MM-DD)').fill(startDate);await p.getByRole('radio',{name:'UTC · UTC',exact:true}).click();
@@ -93,7 +98,110 @@ try{
  async function mine(name=title){await button('View my Circles').click();await enabled('Load my Circles');await button('Load my Circles').click();await button('View Circle: '+name).click();await enabled('Check current Circle');}
  async function restore(){await button('Restore saved sign-in').click();await enabled('Continue to my member account');await account();await enter();await check();}
 
- await show();const beforeConnect=http.length;await settle();assert.equal(http.length,beforeConnect);await signIn();await account();const beforeEntry=http.length;await enter();await settle();assert.equal(http.length,beforeEntry);assert.equal(await field('Circle name').count(),0);await check();await fill();const beforeReview=posts().length;await review();assert.equal(posts().length,beforeReview);assert.equal(await button('Confirm and list Circle').isDisabled(),true);assert.match(await text(),/First meeting:/);assert.match(await text(),/Shared 12-week starter/);await p.screenshot({path:path.join(ROOT,'verification/web/evidence/native-hosting-review-320.png'),fullPage:true});await confirm();let circleId=await created();assert(!String(await text()).includes('Active Circles at your last hosting check'));assert(!String(await text()).includes('Active Circles you host:'));assert(circleId);assert.equal((await fixture.hosted()).length,1);assert.equal(await fixture.isMember(circleId),true);assert.equal(JSON.parse(posts().at(-1).body).expectedMemberId,fixture.authorId);assert.equal(http.at(-1).path,'/api/circles/'+circleId);
+ const screenshot=(name,fullPage=false)=>p.screenshot({path:path.join(ROOT,output,name),fullPage});
+ const edition=JSON.parse(read('content/root-kernel/philemon.web-classic.json'));
+ const radio=name=>p.getByRole('radio',{name,exact:true});
+ const hostingChoice='Prepare Philemon Circle online';
+ const chooseOnline=async()=>{await button('Read Philemon').click();await button('Host guide').click();await button('Prepare a weekly online Circle').click();};
+
+ await show();
+ await p.evaluate(()=>window.nativeQa.network('offline'));
+ const offlineAt=http.length, staleConnect=await retain('Connect my account');
+ await button('Read Philemon').press('Enter');
+ await invoke(staleConnect);
+ const scripture=await text();
+ for(const paragraph of edition.paragraphs)for(const verse of paragraph)assert(scripture.includes(verse.text),'Missing verse '+verse.verse);
+ for(const note of edition.footnotes)assert(scripture.includes(note.text),'Missing footnote '+note.verse);
+ assert(scripture.includes(edition.publisherUrl)&&scripture.includes(edition.rightsUrl));
+ assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await screenshot('philemon-letter-320.png');
+ await button('Compare readings').click();
+ const notes=await text();
+ assert.match(notes,/Nicene Christian reading/);
+ assert.match(notes,/Biblical Unitarian reading/);
+ assert.match(notes,/Catholic Catechism, paragraphs 253–255/);
+ assert.match(notes,/https:\/\/www\.biblicalunitarian\.com\/articles\/what-do-biblical-unitarians-believe/);
+ assert.match(notes,/Questions for your salon/);
+ await screenshot('philemon-notes-320.png');
+ await button('Host guide').click();
+ const guide=await text();
+ assert.match(guide,/45-minute conversation with four to six readers/);
+ assert.match(guide,/Share the meeting link privately/);
+ for(const stage of ['Welcome · 5 min','Read aloud · 8 min','Compare the greeting · 12 min','Discuss the appeal · 15 min','Close · 5 min'])assert(guide.includes(stage));
+ await screenshot('philemon-guide-320.png');
+ const staleGuide=await retain('Prepare a weekly online Circle');
+ await button('Back to account').click();
+ await invoke(staleGuide);await settle();
+ assert.equal(http.length,offlineAt);
+ assert.equal((await state()).stats.prepared,0);
+ assert.equal(await button('Clear Philemon hosting choice').count(),0);
+ pass('signed-out readers open all 25 exact verses, both publisher notes, both sourced perspectives and the 45-minute host guide offline. Retired Connect and host-guide callbacks leave the account and hosting choice untouched');
+
+ await show();
+ const choiceAt=http.length;
+ await chooseOnline();await settle();
+ assert.equal(http.length,choiceAt);
+ assert.equal((await state()).stats.prepared,0);
+ assert.equal(await button('Clear Philemon hosting choice').count(),1);
+ await signIn();await account();await enabled(hostingChoice);
+ const checkAt=http.length;
+ await button(hostingChoice).click();await enabled('Check hosting access');await settle();
+ assert.equal(http.length,checkAt);
+ assert.equal(await field('Circle name').count(),0);
+ await check();await field('Circle name').waitFor();
+ assert.equal(await radio('Online').getAttribute('aria-checked'),'true');
+ assert.equal(await field('Private meeting link (HTTPS)').inputValue(),'');
+ assert.equal(await field('Public venue name').count(),0);
+ await fill({name:'Philemon native salon',format:'Online',selectFormat:false});
+ const reviewAt=posts().length;
+ await review();
+ assert.equal(posts().length,reviewAt);
+ assert.equal(await button('Confirm and list Circle').isDisabled(),true);
+ await confirm();await enabled('New Circle draft');
+ const hosted=(await fixture.hosted()).find(row=>row.title==='Philemon native salon');
+ assert(hosted&&await fixture.isMember(hosted.id));
+ assert.equal(posts().length,reviewAt+1);
+ const posted=JSON.parse(posts().at(-1).body);
+ assert.equal(posted.format,'online');
+ assert.equal(posted.expectedMemberId,fixture.authorId);
+ const anonymous=await fixture.dispatch('/api/circles/'+hosted.id);
+ const owned=await fixture.dispatch('/api/circles/'+hosted.id,{headers:{authorization:'Bearer '+ACCESS.author}});
+ assert.equal(anonymous.status,200);assert.equal(owned.status,200);
+ assert.doesNotMatch(await anonymous.text(),/private-host-room/);
+ assert.match(await owned.text(),/private-host-room/);
+ pass('the Philemon guide carries Online through explicit sign-in, current member proof and hosting eligibility. Review and confirmation create one fixture Circle whose private link is visible to the host');
+
+ await show();
+ await chooseOnline();
+ await button('Clear Philemon hosting choice').click();
+ await signIn();await account();
+ assert.equal(await button(hostingChoice).count(),0);
+ await enter();await check();await field('Circle name').waitFor();
+ assert.equal(await radio('In person').getAttribute('aria-checked'),'true');
+ assert.equal(await field('Private meeting link (HTTPS)').count(),0);
+ await button('Return to member account').click();
+ const memberStudyAt=http.length;
+ await chooseOnline();await enabled('Check hosting access');await settle();
+ assert.equal(http.length,memberStudyAt);
+ await check();await field('Circle name').waitFor();
+ assert.equal(await radio('Online').getAttribute('aria-checked'),'true');
+ assert.equal(await field('Private meeting link (HTTPS)').inputValue(),'');
+ await field('Private meeting link (HTTPS)').fill('https://meeting.example.test/retired-philemon-draft');
+ fixture.transformHttp(async({path,response})=>{
+  if(path!=='/api/circles/start')return response;
+  const result=await response.json();result.memberId=fixture.actors.other;return Response.json(result);
+ });
+ await check();
+ assert.equal(await field('Private meeting link (HTTPS)').count(),0);
+ assert.doesNotMatch(await text(),/retired-philemon-draft/);
+ fixture.transformHttp(null);
+ await check();await field('Circle name').waitFor();
+ assert.equal(await radio('Online').getAttribute('aria-checked'),'true');
+ assert.equal(await field('Private meeting link (HTTPS)').inputValue(),'');
+ pass('clearing the signed-out choice keeps ordinary hosting in person. A verified member can choose Online from the guide, and a failed owner check clears the private draft while preserving only the public format');
+
+ if(platform==='android'){
+ await show();const beforeConnect=http.length;await settle();assert.equal(http.length,beforeConnect);await signIn();await account();const beforeEntry=http.length;await enter();await settle();assert.equal(http.length,beforeEntry);assert.equal(await field('Circle name').count(),0);await check();await fill();const beforeReview=posts().length;await review();assert.equal(posts().length,beforeReview);assert.equal(await button('Confirm and list Circle').isDisabled(),true);assert.match(await text(),/First meeting:/);assert.match(await text(),/Shared 12-week starter/);await screenshot('native-hosting-review-320.png',true);await confirm();let circleId=await created();assert(!String(await text()).includes('Active Circles at your last hosting check'));assert(!String(await text()).includes('Active Circles you host:'));assert(circleId);assert.equal((await fixture.hosted()).length,1);assert.equal(await fixture.isMember(circleId),true);assert.equal(JSON.parse(posts().at(-1).body).expectedMemberId,fixture.authorId);assert.equal(http.at(-1).path,'/api/circles/'+circleId);
  pass('actual App sign-in with cached AuthClient and canonical member checks reaches inert hosting entry; explicit owner eligibility, reviewed starter schedule and checkbox create one Circle and host membership, with current detail checked before another draft');
 
  const firstCircle=circleId;await button('New Circle draft').click();assert.equal(await field('Circle name').count(),0);await check();assert.equal(await field('Circle name').inputValue(),'');await fill({name:'Second deliberate hosted Circle'});await review();await confirm();await enabled('New Circle draft');assert.equal((await fixture.hosted()).length,2);assert((await fixture.hosted()).some(row=>row.id===firstCircle));
@@ -147,8 +255,10 @@ try{
  await show({hosting:false});await signIn();await button('Continue to my member account').click();await enabled('Check my member account');await button('Check my member account').click();await enabled('Discover Circles');assert.equal(await button('Start a Circle').isDisabled(),true);assert.equal((await state()).requests.some(row=>row.path==='/api/circles/start'),false);
  pass('a native connection without the reviewed hosting capability leaves Start a Circle unavailable and sends no hosting request');
 
- await start();await fill();await review();await confirm();await created();assert(!String(await text()).includes('Active Circles at your last hosting check'));assert(!String(await text()).includes('Active Circles you host:'));await p.screenshot({path:path.join(ROOT,'verification/web/evidence/native-hosting-created-320.png'),fullPage:true});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.evaluate(()=>window.nativeQa.unmount());await settle();stats=(await state()).stats;assert.equal(stats.netListeners,0);assert.equal(stats.appListeners,0);assert.equal(stats.handles,0);assert.equal(stats.retainedCallbacks,0);assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Changed source during proof '+n);
+ await start();await fill();await review();await confirm();await created();assert(!String(await text()).includes('Active Circles at your last hosting check'));assert(!String(await text()).includes('Active Circles you host:'));await screenshot('native-hosting-created-320.png',true);
+ }
+ assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.evaluate(()=>window.nativeQa.unmount());await settle();stats=(await state()).stats;assert.equal(stats.netListeners,0);assert.equal(stats.appListeners,0);assert.equal(stats.handles,0);assert.equal(stats.retainedCallbacks,0);assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Changed source during proof '+n);
  pass('the composed 320px screen fits without horizontal overflow and terminal unmount releases native handles, subscriptions and retained callbacks, with no unexpected network or browser errors');
 }catch(error){failure=error.stack||String(error);console.error(failure);}
-finally{try{heldPost?.release();if(browser)await browser.close();cleanup.browser='closed';}catch(error){cleanup.browser=String(error);}try{if(fixture)await fixture.close();cleanup.database='closed';}catch(error){cleanup.database=String(error);}write(failure?'FAIL':'PASS');}
-if(failure)process.exitCode=1;
+finally{try{heldPost?.release();if(browser)await browser.close();cleanup.browser='closed';}catch(error){cleanup.browser=String(error);}try{if(fixture)await fixture.close();cleanup.database='closed';}catch(error){cleanup.database=String(error);}write(failure||cleanup.browser!=='closed'||cleanup.database!=='closed'?'FAIL':'PASS');}
+if(failure||cleanup.browser!=='closed'||cleanup.database!=='closed')process.exitCode=1;

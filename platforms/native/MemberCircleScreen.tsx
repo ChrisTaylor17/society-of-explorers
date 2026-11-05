@@ -14,6 +14,7 @@ import { createCircleHosting, type CircleHosting } from '../shared/circle-hostin
 import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { createMemberAccountSession } from '../shared/account-session';
+import { PhilemonStudyScreen } from './PhilemonStudyScreen';
 
 /** Retained by the owned sign-in screen across temporary member-view unmounts.
  * It contains no active authority after disconnect/stop; recovery requires new
@@ -71,8 +72,9 @@ export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>
 
 /** Uses the app's existing verified account. Member setup is deliberate; this
  * screen does not create an auth client, sign in or choose an account. */
-export function MemberCircleScreen({ config, connectivity, retained, onClose }: {
-  config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection; onClose(): void;
+export function MemberCircleScreen({ config, connectivity, retained, philemonHosting = false, onClose }: {
+  config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection;
+  philemonHosting?: boolean; onClose(): void;
 }) {
   const connection = useMemo(() => {
     try {
@@ -82,7 +84,8 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' } | null>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean;
+    destination: 'circle' | 'contributions' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -157,18 +160,22 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       setProfileNotice(''); setEntered({ connection, destination });
     } catch { setProfileNotice('Saved reading is unavailable. Check the member account and try again.'); }
   });
-  const openHosting = () => act(() => {
+  const openHosting = (onlinePreset = false) => act(() => {
     const current = connection?.account.model();
     if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
-    try { connection.openHosting(current.member.id); setProfileNotice(''); setEntered({ connection, destination: 'hosting' }); }
+    try { connection.openHosting(current.member.id); setProfileNotice(''); setEntered({ connection, destination: 'hosting', onlinePreset }); }
     catch { setProfileNotice('Circle hosting is unavailable. Check your member account and try again.'); }
   });
   const profileConnection = connection?.profile();
   const savedReadingConnection = connection?.savedReading();
   const hostingConnection = connection?.hosting();
+  const hostingAvailable = Boolean(connection?.host.hostingTransport && connection.host.newRequestId);
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
+    if (entered.destination === 'philemon') {
+      return <PhilemonStudyScreen onBack={back} onHost={hostingAvailable ? () => openHosting(true) : undefined}/>;
+    }
     if (entered.destination === 'hosting' && hostingConnection && hostingConnection.memberId === account.member?.id) {
-      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity}
+      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity} onlinePreset={entered.onlinePreset}
         onBack={back} onMyCircles={() => openReadingDestination('mine')} onClose={close}/>;
     }
     if (entered.destination === 'saved' && savedReadingConnection && savedReadingConnection.memberId === account.member?.id) {
@@ -221,8 +228,16 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       onPress={() => openReadingDestination('discover')}/>
     <Action label="My Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => openReadingDestination('mine')}/>
-    <Action label="Start a Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.hostingTransport || !connection?.host.newRequestId}
-      onPress={openHosting}/>
+    <Action label="Read Philemon" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
+      onPress={() => act(() => {
+        if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') {
+          setEntered({ connection, destination: 'philemon' });
+        }
+      })}/>
+    {philemonHosting ? <Action label="Prepare Philemon Circle online" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !hostingAvailable}
+      onPress={() => openHosting(true)}/> : null}
+    <Action label="Start a Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !hostingAvailable}
+      onPress={() => openHosting()}/>
     {connection?.host.circleId ? <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); })}/> : null}
     <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}

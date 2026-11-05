@@ -7,6 +7,7 @@ import type { ExistingMemberAccountConfig } from './src/circles/verified-member-
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import type { createNativeEmailAuth } from './src/auth/email-auth';
 import { NativeEmailAccountForm } from './NativeEmailAccountForm';
+import { PhilemonStudyScreen } from './PhilemonStudyScreen';
 
 export type OwnedAccountConnection = {
   controller: ReturnType<typeof createOwnedNativeAuth>;
@@ -30,6 +31,8 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');
   const [entered, setEntered] = useState<OwnedAccountConnection | null>(null);
   const [memberProblem, setMemberProblem] = useState('');
+  const [studyOpen, setStudyOpen] = useState(false);
+  const [philemonHosting, setPhilemonHosting] = useState(false);
   const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
   const epoch = useRef(0), modeRef = useRef<AccountMode>('signin'), preparing = useRef(false);
@@ -135,7 +138,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     if (!validView() || mode !== 'signin') return;
     const value = connection;
     if (!value?.controller.model().canClear) return;
-    invalidate();
+    invalidate(); setPhilemonHosting(false);
     clearFields(); setEntered(null);
     const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
     setMemberContext(null);
@@ -165,8 +168,18 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     if (!validView() || mode !== 'signin' || !connection?.controller.model().canSignIn) return;
     invalidate(); setter(value);
   }
+  function openStudy() {
+    if (!validView() || current.current || preparing.current) return;
+    invalidate(); setStudyOpen(true);
+  }
+  function closeStudy(prepareHosting: boolean) {
+    if (!validView() || !studyOpen || current.current) return;
+    invalidate(); setStudyOpen(false);
+    if (prepareHosting) setPhilemonHosting(true);
+  }
+  if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
-    retained={memberContext.view} connectivity={connection.connectivity} onClose={() => {
+    retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} onClose={() => {
       if (current.current !== connection || memberView.current !== memberContext) return;
       const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberContext(null); setEntered(null);
     }}/>;
@@ -175,6 +188,14 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount }: {
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Your account, on this device</Text>
     <Text style={styles.copy}>Read deeply. Share thoughtfully. A Great Books community rooted in Christian and American traditions, open to everyone willing to explore in good faith.</Text>
+    {!connection ? <Action label="Read Philemon" disabled={connecting} onPress={openStudy}/> : null}
+    {philemonHosting ? <>
+      <Text style={styles.note}>Sign in and check your member account to prepare a weekly online Circle from the Philemon guide.</Text>
+      <Action label="Clear Philemon hosting choice" onPress={() => {
+        if (!validView()) return;
+        invalidate(); setPhilemonHosting(false);
+      }}/>
+    </> : null}
     {mode === 'signin' ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{m?.message ?? notice}</Text> : null}
     {memberProblem ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{memberProblem}</Text> : null}
     {!connection ? <Action label={connecting ? 'Connecting…' : 'Connect my account'} disabled={connecting} onPress={() => void connect()}/> : <>

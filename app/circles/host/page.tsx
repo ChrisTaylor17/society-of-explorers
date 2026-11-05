@@ -4,6 +4,7 @@ import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { WEEKLY_LOOP } from '@/lib/circles/path';
 import { body, button, card, gold, h1, h2, label, lead, main, page, parchment, primary, small } from '@/lib/circles/ui';
+import { PHILEMON_AGENDA, PHILEMON_VIDEO_ROOM } from '@/lib/root-kernel/philemon-study';
 
 export const metadata: Metadata = {
   title: 'Circle Host Toolkit',
@@ -33,14 +34,6 @@ const HARD: Array<[string, string]> = [
   ['Nobody comes', 'It happens. Read the passage yourself, post a note in the circle discussion, and try again next week. Most circles grow by word of mouth.'],
 ];
 
-const PHILEMON_AGENDA = [
-  { minutes: 5, title: 'Welcome', detail: 'Use first names, read the norms, and open with a brief prayer. Readers are welcome to listen quietly.' },
-  { minutes: 8, title: 'Read aloud', detail: 'Ask a volunteer to read verses 1 through 7 and another to read verses 8 through 25.' },
-  { minutes: 12, title: 'Compare the greeting', detail: 'Read verse 3 again. Ask someone to state each interpretation in terms a reader who holds it would accept. Look together at what the greeting leaves open.' },
-  { minutes: 15, title: 'Discuss the appeal', detail: 'What would it ask of Philemon to receive Onesimus as a beloved brother? What does the letter leave open about what happened next?' },
-  { minutes: 5, title: 'Close', detail: 'Ask each person what they will take away and whether they would return for another meeting. Let anyone pass.' },
-] as const;
-
 export default function CircleHostPage() {
   return (
     <div style={page}>
@@ -59,7 +52,7 @@ export default function CircleHostPage() {
             <Link href="/great-books/scripture/philemon" style={{ color: gold }}>Root Kernel Philemon study</Link>.
             Ask everyone to read the letter ahead of time and bring a question about the greeting or Paul&rsquo;s appeal for Onesimus.
           </p>
-          <p style={body}>Test the video room before opening it. Share the meeting link privately and keep recording and automated note-taking off.</p>
+          <p style={body}>{PHILEMON_VIDEO_ROOM}</p>
           <ol style={{ ...body, paddingLeft: '1.4rem' }}>
             {PHILEMON_AGENDA.map(({ minutes, title, detail }) => (
               <li key={title} style={{ marginBottom: '0.5rem' }}><strong>{title}</strong> · {minutes} min. {detail}</li>

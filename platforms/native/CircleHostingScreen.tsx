@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { CircleHosting } from '../shared/circle-hosting';
 import type { CircleReadingConfig } from '../shared/circle-reading';
@@ -9,19 +9,19 @@ import { observeNativeConnectivity, type NativeConnectivityPort } from './src/ci
 import { CircleCommunityNorms } from './CircleCommunityNorms';
 import { CircleReadingScreen } from './CircleReadingScreen';
 
-const emptyDraft = () => ({ title: '', description: '', format: 'in_person', city: '', region: '', venueName: '', venueType: 'library',
+const emptyDraft = (onlinePreset = false) => ({ title: '', description: '', format: onlinePreset ? 'online' : 'in_person', city: '', region: '', venueName: '', venueType: 'library',
   weekday: '2', time: '19:00', timezone: 'America/New_York', startDate: '', maxMembers: '8', onlineUrl: '' });
 type Draft = ReturnType<typeof emptyDraft>;
 type Range = { from: string; to: string };
 
 /** The parent retains only the owned controller. Unsent fields are cleared on
  * retirement; a sent, unresolved request survives privately for exact retry. */
-export function CircleHostingScreen({ session, config, connectivity, onBack, onMyCircles, onClose }: {
-  session: CircleHosting; config: Omit<CircleReadingConfig, 'context'>; connectivity?: NativeConnectivityPort;
+export function CircleHostingScreen({ session, config, connectivity, onlinePreset = false, onBack, onMyCircles, onClose }: {
+  session: CircleHosting; config: Omit<CircleReadingConfig, 'context'>; connectivity?: NativeConnectivityPort; onlinePreset?: boolean;
   onBack(): void; onMyCircles(): void; onClose(): void;
 }) {
   const [snapshot, setSnapshot] = useState(() => ({ session, model: session.model() }));
-  const [draft, setDraft] = useState(emptyDraft), [norms, setNorms] = useState(false);
+  const [draft, setDraft] = useState(() => emptyDraft(onlinePreset)), [norms, setNorms] = useState(false);
   const [custom, setCustom] = useState(false), [bookId, setBookId] = useState(READING_EDITIONS[0].bookId);
   const [ranges, setRanges] = useState<Range[]>([]), [rangeNotice, setRangeNotice] = useState('');
   const [headings, setHeadings] = useState(false), [reading, setReading] = useState<ReadingContext | null>(null);
@@ -29,8 +29,8 @@ export function CircleHostingScreen({ session, config, connectivity, onBack, onM
   const m = snapshot.session === session ? snapshot.model : session.model();
   const edition = m.edition?.bookId === bookId ? m.edition : null;
   const readingConfig = useMemo(() => reading ? { ...config, context: reading } : null, [config, reading]);
-  const clearDraft = () => { setDraft(emptyDraft()); setNorms(false); setCustom(false); setBookId(READING_EDITIONS[0].bookId);
-    setRanges([]); setRangeNotice(''); setHeadings(false); setReading(null); };
+  const clearDraft = useCallback(() => { setDraft(emptyDraft(onlinePreset)); setNorms(false); setCustom(false); setBookId(READING_EDITIONS[0].bookId);
+    setRanges([]); setRangeNotice(''); setHeadings(false); setReading(null); }, [onlinePreset]);
   useLayoutEffect(() => {
     const life = viewLife.current; life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
     let signature = '', loadedEdition: string | null = null;
@@ -57,7 +57,7 @@ export function CircleHostingScreen({ session, config, connectivity, onBack, onM
     active = AppState.currentState === 'active'; sync(); session.connect();
     return () => { mounted = false; life.mounted = false; life.enabled = false; ++life.epoch;
       off(); session.disconnect(); offConnectivity(); change.remove(); blur?.remove(); focus?.remove(); };
-  }, [session, connectivity]);
+  }, [session, connectivity, clearDraft]);
   // A callback from an earlier form render cannot review an older listing or
   // open a reading range after the member has changed that local intent.
   useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [reading, draft, norms, custom, bookId, ranges]);

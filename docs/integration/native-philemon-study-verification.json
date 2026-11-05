@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T21:06:39.648707+00:00",
+  "baseCheckpoint": "c978230e5eb2e8e936f744dae818a5dfdbf9dfc7",
+  "status": "LOCAL_NATIVE_PHILEMON_FLOW_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "nativeCompilationVerified": false,
+  "physicalDeviceVerified": false,
+  "edition": {
+    "path": "content/root-kernel/philemon.web-classic.json",
+    "bytes": 4325,
+    "sha256": "13fa48b22414dba11a2cf659699b1bc9ea7beda0f6996911bd24f6ab91c0934a",
+    "verses": 25,
+    "publisherFootnotes": 2,
+    "editionId": "eng-web",
+    "sharedStudy": {
+      "path": "lib/root-kernel/philemon-study.ts",
+      "bytes": 3026,
+      "sha256": "4c5ad4abb8bd93187ff7e41e1f620fa53add97aac11086bee29540b15083e838"
+    }
+  },
+  "nativeComposition": {
+    "browserFixtureRunner": {
+      "path": "platforms/tests/browser-native-hosting.mjs",
+      "bytes": 38990,
+      "sha256": "5778f0e496840711194c9c3c2cc87504433f1d94e661bd67a795583b5633ab40"
+    },
+    "bundle": {
+      "path": "verification/web/evidence/native-hosting-fixture-philemon-03/page.js",
+      "bytes": 2103647,
+      "sha256": "03a303b844475b31ea5fbebc8cf9364afaf76cbfc5617005916e9632cf411249"
+    },
+    "bundleManifest": {
+      "path": "verification/web/evidence/native-hosting-fixture-philemon-03/source-manifest.json",
+      "bytes": 13031,
+      "sha256": "93f2aff8a8ded3c7b38e4d8f8894cad111f8dbf06c5c779897f09645d02aa3f6"
+    },
+    "sourceBindings": 108,
+    "bunVersion": "1.4.4",
+    "platformRuns": {
+      "android": {
+        "path": "verification/web/evidence/native-hosting-browser-philemon-03-android/browser.json",
+        "bytes": 129333,
+        "sha256": "2b69b16ed60bbd97ed503b3c5799cf1c04d5207231f3e0838b62c86a6779ca57",
+        "stories": 21,
+        "syntheticHttpRequests": 419,
+        "sourceBindings": 223,
+        "cleanup": {
+          "browser": "closed",
+          "database": "closed"
+        },
+        "screenshots": [
+          {
+            "path": "verification/web/evidence/native-hosting-browser-philemon-03-android/philemon-letter-320.png",
+            "bytes": 62108,
+            "sha256": "db81264f76738e23230cce027c892405ab56f0a372fc9df2b07a11d12541c276"
+          },
+          {
+            "path": "verification/web/evidence/native-hosting-browser-philemon-03-android/philemon-notes-320.png",
+            "bytes": 71954,
+            "sha256": "24b8c0614042c4362ef09584d19ae65be29d183f2e7209162a6d9953e7011ad7"
+          },
+          {
+            "path": "verification/web/evidence/native-hosting-browser-philemon-03-android/philemon-guide-320.png",
+            "bytes": 64851,
+            "sha256": "368195bf5d80f67ade19f64e5aa6621c96b2809107e4d23a234cac5b4ccec54b"
+          }
+        ]
+      },
+      "ios": {
+        "path": "verification/web/evidence/native-hosting-browser-philemon-03-ios/browser.json",
+        "bytes": 32290,
+        "sha256": "35742950b00f06bc72caaa0e25f8a7fa4c2862ee85f74bc7606cc7cc773315c8",
+        "stories": 4,
+        "syntheticHttpRequests": 28,
+        "sourceBindings": 223,
+        "cleanup": {
+          "browser": "closed",
+          "database": "closed"
+        },
+        "screenshots": [
+          {
+            "path": "verification/web/evidence/native-hosting-browser-philemon-03-ios/philemon-letter-320.png",
+            "bytes": 62108,
+            "sha256": "db81264f76738e23230cce027c892405ab56f0a372fc9df2b07a11d12541c276"
+          },
+          {
+            "path": "verification/web/evidence/native-hosting-browser-philemon-03-ios/philemon-notes-320.png",
+            "bytes": 71954,
+            "sha256": "24b8c0614042c4362ef09584d19ae65be29d183f2e7209162a6d9953e7011ad7"
+          },
+          {
+            "path": "verification/web/evidence/native-hosting-browser-philemon-03-ios/philemon-guide-320.png",
+            "bytes": 64851,
+            "sha256": "368195bf5d80f67ade19f64e5aa6621c96b2809107e4d23a234cac5b4ccec54b"
+          }
+        ]
+      }
+    }
+  },
+  "nativePolicy": {
+    "path": "verification/web/evidence/native-philemon-01/native-policy.tap",
+    "bytes": 9640,
+    "sha256": "665881d7a2590dd2fa3bcf96b3c61f0a53b40c776fcdb3a099aaf664c22932ae",
+    "passed": 36
+  },
+  "nativeRegisteredAppTypes": {
+    "path": "verification/web/evidence/native-philemon-01/registered-app-types-final.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exitCode": 0,
+    "scope": "Existing narrow registered App type declarations"
+  },
+  "androidDeviceSmoke": {
+    "path": "platforms/native/android/app/src/androidTest/java/com/anonymous/soesyntheticdemo/MemberEntryRuntimeTest.kt",
+    "bytes": 5982,
+    "sha256": "b2173bda46bfe706914c6d5731424c7bd90ab9f98631691f417236287fb00767",
+    "executed": false
+  },
+  "lint": {
+    "path": "verification/web/evidence/native-philemon-01/lint-final.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exitCode": 0
+  },
+  "previousPracticeGrowthRegression": {
+    "path": "verification/web/evidence/native-philemon-01/practice-growth.log",
+    "bytes": 1841,
+    "sha256": "cd0e2a4983f987976072a27b1905eac222017341e182d90d51464347e8d94e46",
+    "passed": 21
+  },
+  "builtWeb": {
+    "build": {
+      "path": "verification/web/evidence/built-shell-native-philemon-01-next-build.json",
+      "bytes": 673,
+      "sha256": "e307fa1cecd091edaeb8d46db4018b3e10f1af0878f2ecd2cb58cc32a8ffe6c8"
+    },
+    "log": {
+      "path": "verification/web/evidence/built-shell-native-philemon-01-next-build.log",
+      "bytes": 16059,
+      "sha256": "a49d8f8f03d9e5c2cacbd58e73209f0ee1e22a36f03625a9d9c96e40fc2cd384"
+    },
+    "sourceManifest": {
+      "path": "verification/web/evidence/built-shell-native-philemon-01-build-source-sha256.json",
+      "bytes": 128338,
+      "sha256": "388206f9df32df18c381ad568e20669ddf78c00660814ed6e701e8dcf9ee573e"
+    },
+    "server": {
+      "path": "verification/web/evidence/built-shell-native-philemon-01-server.json",
+      "bytes": 724392,
+      "sha256": "0e78cbd60fcb6e3f4cfe60f1f1a97ff642c79da09ae85cd833b037d424bfe12b"
+    },
+    "buildId": "EUUyx-ns-WdTTEgl9FDtO",
+    "portCheckedClosed": 38474,
+    "browser": {
+      "path": "verification/web/evidence/root-kernel-philemon-05/browser.json",
+      "bytes": 1910,
+      "sha256": "9e9bf7b9ac3b2de417adc25692133f1b36d6dab1760d4fc6baa9b70d0c9f5146"
+    },
+    "stories": 7,
+    "externalRequests": 0,
+    "privateRequests": 0,
+    "browserClosed": true
+  },
+  "diagnosticLint": {
+    "path": "verification/web/evidence/native-philemon-01/lint.log",
+    "bytes": 289,
+    "sha256": "4cc68ccae3f19f4a6626683cac97b4a4734adcdeb7bc09a7ebc0c9722dd0369d",
+    "finding": "Initial preset-dependent draft reset needed a stable hook dependency. Final scoped lint passed."
+  }
+}

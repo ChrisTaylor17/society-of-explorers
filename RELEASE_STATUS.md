@@ -16,6 +16,8 @@ The current Vercel alias's uploaded Thinker and reading-award routes both use th
 
 The Great Books library now includes the first Root Kernel study: the complete public-domain Philemon text, publisher footnotes, two source-linked interpretations of the greeting, and salon questions. The offline production build and **six browser checks** passed. [Study and source provenance](docs/integration/root-kernel-philemon.md) · [Verification receipt](docs/integration/root-kernel-philemon-verification.json)
 
+The phone release candidate now opens the complete Philemon study and 45-minute host guide before sign-in. The guide carries Online into the existing account, eligibility and listing review flow. **21 Android-path and four iOS-path browser stories** passed, including exact offline reading, a confirmed synthetic Circle and private meeting link checks. Seven built web study and guide stories also passed. The Android packaged-bundle test now covers the study and remains unrun. Phone builds and device acceptance are open. [Native study](docs/integration/native-philemon-study.md) · [Verification receipt](docs/integration/native-philemon-study-verification.json)
+
 Local commit `8496eb6280bd1a885f7b6abf8feaafc9137d9961` updates the Android device smoke test for the registered member app. Its browser companion passed **15 account scenarios and 42 synthetic HTTP requests**, and **21 Android policy checks** passed. The device test remains unrun. [Android smoke test](docs/integration/android-member-entry-smoke.md) · [Verification receipt](docs/integration/android-member-entry-verification.json)
 
 ## iOS bridge and host

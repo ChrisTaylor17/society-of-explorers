@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import edition from '@/content/root-kernel/philemon.web-classic.json';
+import { philemonEdition as edition, PHILEMON_COMPARISON, PHILEMON_FURTHER_READING,
+  PHILEMON_GREETING, PHILEMON_PERSPECTIVES, PHILEMON_SALON_QUESTIONS } from '@/lib/root-kernel/philemon-study';
 import ReadingNav, { ReadingFooter } from '../../ReadingNav';
 import reading from '../../reading.module.css';
 import study from './study.module.css';
@@ -10,8 +11,6 @@ export const metadata: Metadata = {
   description: 'Read the complete Letter to Philemon in the World English Bible Classic and compare two readings of its opening blessing.',
 };
 
-const catechism = 'https://www.vatican.va/content/catechism/en/part_one/section_two/chapter_one/article_1/paragraph_2_the_father.html';
-const unitarian = 'https://www.biblicalunitarian.com/articles/what-do-biblical-unitarians-believe';
 const footnotesByVerse = new Map(edition.footnotes.map((note, index) => [note.verse, index + 1]));
 
 export default function PhilemonStudyPage() {
@@ -57,26 +56,27 @@ export default function PhilemonStudyPage() {
         <aside className={study.notes} aria-labelledby="study-notes">
           <p className={study.kicker}>Study notes · Philemon 1:3</p>
           <h2 className={reading.sectionTitle} id="study-notes" tabIndex={-1}>Two readings of the greeting</h2>
-          <p className={reading.help}>Paul names the Father and Jesus together in one blessing. The greeting distinguishes them and leaves their relationship to be explored in other passages.</p>
-          <section className={study.perspective} aria-labelledby="nicene-reading">
-            <h3 id="nicene-reading">Nicene Christian reading</h3>
-            <p>This reading hears the Father and the Son as distinct persons named together in the blessing. In Nicene theology, their distinction is compatible with their sharing the one divine nature.</p>
-            <a href={catechism} rel="noreferrer">Catholic Catechism, paragraphs 253–255</a>
-          </section>
-          <section className={study.perspective} aria-labelledby="unitarian-reading">
-            <h3 id="unitarian-reading">Biblical Unitarian reading</h3>
-            <p>This reading takes “God our Father” as naming the one God and “the Lord Jesus Christ” as naming the Messiah whom God made Lord. It sees the shared blessing as compatible with the Father granting authority to Jesus.</p>
-            <a href={unitarian} rel="noreferrer">Biblical Unitarian statement of beliefs</a>
-          </section>
-          <p className={reading.help}>The greeting alone leaves the later doctrinal question open. Compare it with <a href="https://ebible.org/eng-web/JHN17.htm#V3" rel="noreferrer">John 17:3</a> and <a href="https://ebible.org/eng-web/PHP02.htm#V5" rel="noreferrer">Philippians 2:5–11</a>.</p>
+          <p className={reading.help}>{PHILEMON_GREETING}</p>
+          {PHILEMON_PERSPECTIVES.map(({ id, title, detail, source }) => (
+            <section key={id} className={study.perspective} aria-labelledby={id}>
+              <h3 id={id}>{title}</h3>
+              <p>{detail}</p>
+              <a href={source.href} rel="noreferrer">{source.label}</a>
+            </section>
+          ))}
+          <p className={reading.help}>{PHILEMON_COMPARISON} Compare it with{' '}
+            <a href={PHILEMON_FURTHER_READING[0].href} rel="noreferrer">{PHILEMON_FURTHER_READING[0].label}</a>{' and '}
+            <a href={PHILEMON_FURTHER_READING[1].href} rel="noreferrer">{PHILEMON_FURTHER_READING[1].label}</a>.
+          </p>
         </aside>
       </div>
 
       <section className={reading.panel} aria-labelledby="salon-questions">
         <h2 className={reading.sectionTitle} id="salon-questions" tabIndex={-1}>Questions for your salon</h2>
         <ol className={study.questions}>
-          <li>How does each reading account for both the distinction and the shared blessing in <a href="#verse-3">verse 3</a>?</li>
-          <li>What would it ask of Philemon to receive Onesimus as a beloved brother in <a href="#verse-16">verse 16</a>? What does the letter leave open about what happened next?</li>
+          {PHILEMON_SALON_QUESTIONS.map(({ before, verse, after }) => (
+            <li key={verse}>{before}<a href={`#verse-${verse}`}>verse {verse}</a>{after}</li>
+          ))}
         </ol>
         <nav className={reading.nav} aria-label="Salon next steps">
           <Link href="/circles">Find a reading Circle</Link>
