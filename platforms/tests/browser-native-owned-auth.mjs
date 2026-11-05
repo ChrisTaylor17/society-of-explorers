@@ -3,13 +3,17 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-const ROOT=process.cwd(),file='verification/web/evidence/native-owned-auth-browser.json',sha=b=>createHash('sha256').update(b).digest('hex');
+const [run,...extra]=process.argv.slice(2);
+if(extra.length||(run!==undefined&&(run.length>64||run.split('-').some(part=>!part||/[^a-z0-9]/.test(part)))))throw Error('Expected one optional evidence run name');
+const suffix=run?'-'+run:'',fixtureDir='verification/web/evidence/native-owned-auth-fixture'+suffix;
+const ROOT=process.cwd(),file='verification/web/evidence/native-owned-auth-browser'+suffix+'.json',sha=b=>createHash('sha256').update(b).digest('hex');
+if(run&&fs.existsSync(file))throw Error('Evidence run already exists');
 function read(name){const p=path.resolve(ROOT,name),s=fs.lstatSync(p);assert(s.isFile()&&!s.isSymbolicLink()&&(!s.size||s.blocks),'Refuse linked/offloaded source '+name);return fs.readFileSync(p);}
 function runtime(p){const s=fs.statSync(p);assert(s.size&&s.blocks,'Refuse offloaded runtime');}
 async function bounded(fn,ms=5000){let timer;try{return await Promise.race([fn(),new Promise((_,no)=>timer=setTimeout(()=>no(Error('Owned operation timed out')),ms))]);}finally{clearTimeout(timer);}}
-read('verification/web/tests/support/native-owned-auth-app.mjs');
+read('verification/web/tests/support/public-profile-app.mjs');
 process.chdir(path.join(ROOT,'verification/web'));
-const {createOwnedAuthApp,ownedAuthHashes,ORIGIN,PROVIDER,PUBLIC_KEY,ACCESS,SUBJECTS,NEW_SUBJECT}=await import('../../verification/web/tests/support/native-owned-auth-app.mjs');
+const {createPublicProfileApp,publicProfileAppHashes,ORIGIN,PROVIDER,PUBLIC_KEY,ACCESS,SUBJECTS,NEW_SUBJECT}=await import('../../verification/web/tests/support/public-profile-app.mjs');
 const priorReceipt=fs.existsSync(path.join(ROOT,file))?{sha256:sha(read(file)),receipt:JSON.parse(read(file))}:null,startedAt=new Date().toISOString(),stories=[],errors=[],unexpected=[],http=[],cleanup={browser:'pending',database:'pending'};
 let sourceHashes={},bundle,browser,page,fixture,failure=null,actor='author',mismatch=false,denied=false,stats;
 function write(status){fs.writeFileSync(path.join(ROOT,file),JSON.stringify({status,startedAt,completedAt:new Date().toISOString(),stories,errors,unexpected,http,cleanup,sourceHashes,bundleSHA256:bundle?sha(bundle):null,stats,priorReceipt,failure,
@@ -19,9 +23,9 @@ try{
  assert(process.execArgv.some(v=>v.endsWith('/deny-build-network.cjs')),'Startup network denial required');
  const require=createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');runtime(require.resolve('playwright'));
  const executablePath='/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';runtime(executablePath);
- bundle=read('verification/web/evidence/native-owned-auth-fixture/page.js');sourceHashes={...JSON.parse(read('verification/web/evidence/native-owned-auth-fixture/source-manifest.json')).sourceHashes,...await ownedAuthHashes(),'platforms/tests/browser-native-owned-auth.mjs':sha(read('platforms/tests/browser-native-owned-auth.mjs'))};
+ bundle=read(fixtureDir+'/page.js');sourceHashes={...JSON.parse(read(fixtureDir+'/source-manifest.json')).sourceHashes,...await publicProfileAppHashes(),'platforms/tests/browser-native-owned-auth.mjs':sha(read('platforms/tests/browser-native-owned-auth.mjs'))};
  for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Rebundle changed source '+n);
- fixture=await createOwnedAuthApp();
+ fixture=await createPublicProfileApp();
  browser=await require('playwright').chromium.launch({headless:true,timeout:15000,executablePath,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
  const context=await browser.newContext({viewport:{width:320,height:850}});page=await context.newPage();const p=page;p.setDefaultTimeout(6500);
  p.on('pageerror',e=>errors.push(e.stack||String(e)));p.on('console',m=>{if(m.type()==='error'&&!/^Failed to load resource: the server responded with a status of (400|401|403|409|422|429|503)/.test(m.text()))errors.push(m.text());});
@@ -58,7 +62,7 @@ try{
  const state=()=>p.evaluate(()=>({stats:window.nativeQa.stats(),requests:window.nativeQa.requests}));
  const enabled=name=>p.waitForFunction(name=>[...document.querySelectorAll('button')].some(x=>x.getAttribute('aria-label')===name&&!x.disabled),name);
  async function show({network='online',who='author',preserve=false}={}){
-  await p.evaluate(()=>window.nativeQa.unmount());await settle();if(!preserve){await fixture.close();fixture=await createOwnedAuthApp();}actor=who;mismatch=false;denied=false;
+  await p.evaluate(()=>window.nativeQa.unmount());await settle();if(!preserve){await fixture.close();fixture=await createPublicProfileApp();}actor=who;mismatch=false;denied=false;
   await p.evaluate(({network,preserve})=>window.nativeQa.show(network,preserve),{network,preserve});await button('Connect my account').waitFor();await settle();
  }
  async function connect(){await button('Connect my account').click();await field('Email').waitFor();await settle();}
@@ -77,7 +81,10 @@ try{
  pass('actual App default branch performs no preparation/storage/provider/member request at mount; explicit Connect prepares the account controller through native JS ports without a storage/provider call, with a masked password field');
  await signIn();assert.equal(await field('Email').inputValue(),'');assert.equal(await field('Password').inputValue(),'');let current=await state();assert.deepEqual(current.requests.map(r=>[r.kind,r.path]),[['provider','/auth/v1/token?grant_type=password'],['provider','/auth/v1/user']]);assert(current.stats.storedSlots.includes('session'));assert.doesNotMatch(await p.locator('body').innerText(),/PRIVATE_PROVIDER|NONISSUED_|73111111/);
  await fixture.leave();await fixture.quarantine();await account();assert.equal(await button('Continue to Circle').count(),0);assert.equal((await state()).requests.filter(r=>r.kind==='member').length,1);await contributions();const own=(await fixture.state()).message.content;await p.getByText(own,{exact:true}).waitFor();
- await button('Check this contribution').first().click();await enabled('Check current message state');assert.equal(await button('Withdraw my message').isDisabled(),true);await p.getByRole('checkbox',{name:'I understand withdrawal removes this message from member views and cannot be undone here',exact:true}).click();await button('Withdraw my message').click();await p.getByText('Withdrawal confirmed. The message is removed from member views; restricted safety evidence may remain.',{exact:true}).waitFor();
+ const beforeSelect=http.length;await button('Check this contribution').first().click();await button('Withdraw my message').waitFor();
+ assert.equal(http.slice(beforeSelect).filter(r=>r.method==='GET'&&r.path==='/api/circles/'+fixture.circleId+'/messages/'+fixture.messageId&&r.status===200).length,1);
+ assert.equal(await button('Withdraw my message').isDisabled(),true);
+ await p.getByRole('checkbox',{name:'I understand withdrawal removes this message from member views and cannot be undone here',exact:true}).click();await button('Withdraw my message').click();await p.getByText('Withdrawal confirmed. The message is removed from member views; restricted safety evidence may remain.',{exact:true}).waitFor();
  assert.equal((await fixture.state()).message.visibility,'withdrawn');
  pass('real AuthClient password exchange and exact-token verification precede explicit canonical member check; account-wide contributions work after leaving/quarantine without configured Circle, and acknowledged withdrawal executes canonical SQL');
  await show({who:'new'});await connect();await signIn();await button('Continue to my member account').click();await enabled('Check my member account');await button('Check my member account').click();await p.getByRole('checkbox',{name:'I want to set up a member record for this signed-in account',exact:true}).waitFor();assert.equal(await button('Set up my member account').isDisabled(),true);
@@ -110,7 +117,7 @@ try{
  await show();await connect();await signIn();const switchBefore=(await state()).requests.length;await field('Email').fill('invalid-replacement-email');await field('Password').fill('Synthetic-password-only-42');await button('Sign in').click();await settle();assert.equal((await state()).requests.length,switchBefore);assert.equal(await field('Email').inputValue(),'');assert.equal(await field('Password').inputValue(),'');assert.equal(await button('Continue to my member account').isDisabled(),true);await enabled('Restore saved sign-in');await button('Restore saved sign-in').click();await enabled('Continue to my member account');assert.deepEqual((await state()).requests.slice(switchBefore).map(r=>r.path),['/auth/v1/user']);
  pass('invalid replacement sign-in clears fields and old readiness without a provider call; the previous saved identity requires explicit restore and fresh verification before Continue');
  await show({network:'unknown'});await connect();assert.equal(await button('Sign in').isDisabled(),true);assert.equal((await state()).requests.length,0);await p.evaluate(()=>window.nativeQa.network('online'));await settle();assert.equal((await state()).requests.length,0);await field('Email').focus();await p.keyboard.press('Tab');assert.equal(await p.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Password');
- assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);const heights=await p.locator('button:visible').evaluateAll(xs=>xs.map(x=>x.getBoundingClientRect().height));assert(heights.every(h=>h>=48));await p.screenshot({path:path.join(ROOT,'verification/web/evidence/native-owned-auth-320.png'),fullPage:true});await button('Close sign-in').click();await settle();assert.equal((await state()).stats.netListeners,0);assert.equal((await state()).stats.handles,0);await p.evaluate(()=>window.nativeQa.unmount());await settle();stats=await state();assert.equal(stats.stats.netListeners,0);assert.equal(stats.stats.appListeners,0);assert.equal(stats.stats.handles,0);
+ assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);const heights=await p.locator('button:visible').evaluateAll(xs=>xs.map(x=>x.getBoundingClientRect().height));assert(heights.every(h=>h>=48));await p.screenshot({path:path.join(ROOT,'verification/web/evidence/native-owned-auth-320'+suffix+'.png'),fullPage:true});await button('Close sign-in').click();await settle();assert.equal((await state()).stats.netListeners,0);assert.equal((await state()).stats.handles,0);await p.evaluate(()=>window.nativeQa.unmount());await settle();stats=await state();assert.equal(stats.stats.netListeners,0);assert.equal(stats.stats.appListeners,0);assert.equal(stats.stats.handles,0);
  pass('unknown connectivity refuses sign-in; keyboard order, masked input, 48px actions and 320px layout work with explicit DOM doubles; Close disposes all app/connectivity observers and request handles');
  assert(!http.some(r=>r.path.includes('/book-salons/')||r.path.includes('/join')||r.path.includes('/logout')));assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Source changed during proof '+n);
 }catch(error){failure=error.stack||String(error);}finally{

@@ -4,7 +4,7 @@ import App from '../native/App';
 import {createOwnedNativeAuth} from '../native/src/auth/owned-auth';
 import {createNativeAuthPorts} from '../native/src/auth/native-auth-ports';
 const root=createRoot(document.getElementById('root')!);
-const origin='https://native-owned-auth.test',providerOrigin='https://native-auth-provider.test',publishableKey='sb_publishable_NONISSUED_NATIVE_OWNED_AUTH',storageKey='soe.native.owned.qa';
+const origin='https://native-circle-directory.test',providerOrigin='https://native-auth-provider.test',publishableKey='sb_publishable_NONISSUED_NATIVE_OWNED_AUTH',storageKey='soe.native.owned.qa';
 type Network='online'|'offline'|'unknown';
 type Gate={path:string;promise:Promise<void>;release():void};
 type Disk={generation:string;slots:Map<string,string>;resetUnknown:boolean};

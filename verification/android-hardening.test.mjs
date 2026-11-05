@@ -139,9 +139,10 @@ function assertNoBackup(section) {
   }
 }
 
-test('parsed main manifest requests only internet and disables backup with both resource formats', () => {
+test('parsed main manifest requests only internet and network state and disables backup with both resource formats', () => {
   const xml = parseXml('app/src/main/AndroidManifest.xml');
-  assert.deepEqual(xml.children.filter(e => e.tag === 'uses-permission').map(e => e.attrs[androidAttr('name')]), ['android.permission.INTERNET']);
+  assert.deepEqual(xml.children.filter(e => e.tag === 'uses-permission').map(e => e.attrs[androidAttr('name')]).sort(),
+    ['android.permission.ACCESS_NETWORK_STATE', 'android.permission.INTERNET']);
   const app = xml.children.find(e => e.tag === 'application');
   assert.equal(app.attrs[androidAttr('allowBackup')], 'false');
   assert.equal(app.attrs[androidAttr('fullBackupContent')], '@xml/soe_backup_rules');

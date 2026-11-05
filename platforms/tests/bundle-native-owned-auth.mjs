@@ -21,7 +21,10 @@ function bindSdk(file){
 }
 bindSdk(path.join(authRoot,'index.js'));
 if(runtimeSeen.size!==19)throw Error('Review changed cached SDK import closure');
-const output='verification/web/evidence/native-owned-auth-fixture';
+const [run,...extra]=process.argv.slice(2);
+if(extra.length||(run!==undefined&&(run.length>64||run.split('-').some(part=>!part||/[^a-z0-9]/.test(part)))))throw Error('Expected one optional evidence run name');
+const output='verification/web/evidence/native-owned-auth-fixture'+(run?'-'+run:'');
+if(run)fs.mkdirSync(output);
 const primitive=`import React from 'react';
 function style(value){const v=Object.assign({},...[value].flat(Infinity).filter(x=>x&&typeof x==='object'));for(const pair of [['paddingVertical','paddingTop','paddingBottom'],['paddingHorizontal','paddingLeft','paddingRight'],['marginVertical','marginTop','marginBottom']])if(pair[0]in v){v[pair[1]]=v[pair[0]];v[pair[2]]=v[pair[0]];delete v[pair[0]];}if(typeof v.lineHeight==='number')v.lineHeight=v.lineHeight+'px';return v;}
 function box(tag){return function Primitive(p){return React.createElement(tag,{'aria-label':p.accessibilityLabel,'aria-live':p.accessibilityLiveRegion,role:p.accessibilityRole==='radiogroup'?'radiogroup':undefined,style:style([tag==='span'?{display:'block'}:{display:'flex',flexDirection:'column',boxSizing:'border-box'},p.style,p.contentContainerStyle])},p.children);};}
