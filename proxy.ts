@@ -43,6 +43,10 @@ function applyPrivateRouteHeaders(response: NextResponse) {
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Recovery URLs can carry one-time codes. Protect the document and its
+  // subresource referrers before the client captures and scrubs the URL.
+  if (pathname === '/auth/recovery') return applyPrivateRouteHeaders(NextResponse.next());
+
   // Protected routes
   const protectedRoutes = [
     '/dashboard',
@@ -83,6 +87,7 @@ export function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/auth/recovery',
     '/dashboard/:path*',
     '/salon/:path*',
     '/members/:path*',

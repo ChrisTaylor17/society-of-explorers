@@ -7,7 +7,7 @@
   "scope": "Web author consent ordering, explicit recovery and stale-action retirement; unapplied SQL successor.",
   "proofs": [
     {
-      "path": "verification/web/evidence/consent-intent-backend.json",
+      "path": "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-backend.json",
       "sha256": "5159f723cb3acce545670fc36fa080d6afb56ca30ad2f3df9a51784a1ecd48c1",
       "scope": "Actual SQL/current handlers and parsers with synthetic server identity and disposable PGlite.",
       "stories": null,
@@ -16,7 +16,7 @@
       "count": null
     },
     {
-      "path": "verification/web/evidence/consent-intent-browser.json",
+      "path": "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-browser.json",
       "sha256": "c81fc21fc6d062eeb31363b4f78aecde91bab98575a73fb34cbfecf78a17c6f6",
       "scope": "Actual MessageAiConsent and Contributions React components, current consent/contribution handlers and additive consent intent SQL in disposable PGlite. Server identity, PostgREST, browser credentials/SDK events/NextLink and delivery are explicit doubles. Real DOM callbacks are captured to exercise retired UI events. Held requests deliberately outlive browser abort before SQL. No remote provider, native runtime, production data, deployed authentication, independent PostgreSQL sessions or human review acceptance.",
       "stories": 14,
@@ -27,13 +27,13 @@
   ],
   "historicalBaselines": [
     {
-      "path": "verification/web/evidence/consent-recovery-baseline.json",
+      "path": "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-recovery-baseline.json",
       "sha256": "5b72d86b86c53f118c1c7d3b7dadebcc63888800e4756ca0764d271f42417ac9",
       "observations": 2,
       "checkpoint": "7e7490c439c613308f51e065f600721e18cde41e"
     },
     {
-      "path": "verification/web/evidence/consent-recovery-baseline-browser.json",
+      "path": "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-recovery-baseline-browser.json",
       "sha256": "b1e25d030c55268a97b6771089ece34db3c9271b71759b4d81e76ae24e89adca",
       "observations": 3,
       "checkpoint": "7e7490c439c613308f51e065f600721e18cde41e"
@@ -1190,36 +1190,43 @@
     "/opt/homebrew/Cellar/node@22/22.22.1_1/bin/node": "a78c41e90c3b48e089a5573e112a963307a6f6da3e3ecd52cc2e7d205a4eba36"
   },
   "evidenceSha256": {
-    "verification/web/evidence/consent-intent-320.png": "0d256fa158f09af139254780e47d781d81a16313d2ad9da3d5baecca34bb68e6",
-    "verification/web/evidence/consent-intent-backend-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/consent-intent-backend-verification.log": "a3d04fe8889d6b37fde4c40c0504fc3ecabf8694defc9b640fd5965b2307876c",
-    "verification/web/evidence/consent-intent-backend.json": "5159f723cb3acce545670fc36fa080d6afb56ca30ad2f3df9a51784a1ecd48c1",
-    "verification/web/evidence/consent-intent-backend.log": "b6040e1df587ff9964aec1c0e562700f6735f1b7553dc327fc4173d05d5ce546",
-    "verification/web/evidence/consent-intent-browser.json": "c81fc21fc6d062eeb31363b4f78aecde91bab98575a73fb34cbfecf78a17c6f6",
-    "verification/web/evidence/consent-intent-browser.log": "ad17db50c4cb8394aa39f5e77c281c5c8dbba63453424578c7775edc448e7b1d",
-    "verification/web/evidence/consent-intent-build-driver.log": "e9e3b75a01ac46d38b79536ab20697028fe19cfff7441a52def39cac883b2ea3",
-    "verification/web/evidence/consent-intent-build-source-sha256.json": "e6688fed201af8850450dc218612e60cfe96ac8e56b1530ad981e19817b4a781",
-    "verification/web/evidence/consent-intent-fixture/page.css": "c276a4023feb571deb37ad31dfb578968264c071552a98bf5e2f40eb6f53473f",
-    "verification/web/evidence/consent-intent-fixture/page.js": "c0ae5355aba75a3d4d16cfbdf11dcf98532ea0aacd8b5ee9630233d0b68411d5",
-    "verification/web/evidence/consent-intent-fixture/source-manifest.json": "136f32bc520e87d16acd2dcabdff347f9b24f64fd607d10bc56cbd81b2e6fc79",
-    "verification/web/evidence/consent-intent-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/consent-intent-next-build.json": "8906884784cd57ac8b6aa0f080d416bba32b10df5c68a06ec564892295691299",
-    "verification/web/evidence/consent-intent-next-build.log": "80ce18cbeb8ca1e72c5b1dfcbf843b311a3ca418efa0fb4c4aec980208fec6ee",
-    "verification/web/evidence/consent-intent-provisional-14/browser-consent-intent.mjs": "e853d48cdc2022565173ed224631260679a5de8ae4bc4fb510dd2407b2dbf663",
-    "verification/web/evidence/consent-intent-provisional-14/consent-intent-browser.json": "eb1296585d468701be9cd8ac6a3d4c01f4a434c0c22ca5946cab3108c4ed8cfc",
-    "verification/web/evidence/consent-intent-provisional-14/consent-intent-browser.log": "ad17db50c4cb8394aa39f5e77c281c5c8dbba63453424578c7775edc448e7b1d",
-    "verification/web/evidence/consent-intent-provisional-card-selector/browser-consent-intent.mjs": "fe8c3af07302c2b7920d51884e4d188d0e71f5aee4d0343d9c46ac4810fbcb2f",
-    "verification/web/evidence/consent-intent-provisional-card-selector/consent-intent-browser.json": "5be043cb930097df959b583490f868c8b8931ae4f2a8e7fe458c392bbf3833ed",
-    "verification/web/evidence/consent-intent-provisional-card-selector/consent-intent-browser.log": "33d735297c95a94d4b13409455689927621b7708a2a89b7b375d2f4134d8f92b",
-    "verification/web/evidence/consent-intent-provisional-lint/browser-consent-intent.mjs": "459cc73470a8b94f710145f26efdfb7657dbfa86998bfe454c4996f8d3d3af71",
-    "verification/web/evidence/consent-intent-provisional-lint/consent-intent-browser.json": "78c33567b4465f94501d8e5880e95ff088815f5acac7fb34cd1eb3ee773478cc",
-    "verification/web/evidence/consent-intent-provisional-lint/consent-intent-browser.log": "ad17db50c4cb8394aa39f5e77c281c5c8dbba63453424578c7775edc448e7b1d",
-    "verification/web/evidence/consent-intent-provisional-lint/consent-intent-lint.log": "f31b3dfb5f0452ce4b4b2f398bd879440da4817986fffc1963c31fe7ef2c006e",
-    "verification/web/evidence/consent-intent-typecheck-build-overlap.log": "840afc561d67c1047b50af348abd9727f914878299507ae06a47976942cba3ac",
-    "verification/web/evidence/consent-intent-web-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/consent-intent-web-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/consent-recovery-baseline-browser.json": "b1e25d030c55268a97b6771089ece34db3c9271b71759b4d81e76ae24e89adca",
-    "verification/web/evidence/consent-recovery-baseline-stale-off-320.png": "f1cd0026f61d712ce9598e59a7e81be76c132dbf3ba7e014aec9a40a6a35e251",
-    "verification/web/evidence/consent-recovery-baseline.json": "5b72d86b86c53f118c1c7d3b7dadebcc63888800e4756ca0764d271f42417ac9"
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-320.png": "0d256fa158f09af139254780e47d781d81a16313d2ad9da3d5baecca34bb68e6",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-backend-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-backend-verification.log": "a3d04fe8889d6b37fde4c40c0504fc3ecabf8694defc9b640fd5965b2307876c",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-backend.json": "5159f723cb3acce545670fc36fa080d6afb56ca30ad2f3df9a51784a1ecd48c1",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-backend.log": "b6040e1df587ff9964aec1c0e562700f6735f1b7553dc327fc4173d05d5ce546",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-browser.json": "c81fc21fc6d062eeb31363b4f78aecde91bab98575a73fb34cbfecf78a17c6f6",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-browser.log": "ad17db50c4cb8394aa39f5e77c281c5c8dbba63453424578c7775edc448e7b1d",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-build-driver.log": "e9e3b75a01ac46d38b79536ab20697028fe19cfff7441a52def39cac883b2ea3",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-build-source-sha256.json": "e6688fed201af8850450dc218612e60cfe96ac8e56b1530ad981e19817b4a781",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-fixture/page.css": "c276a4023feb571deb37ad31dfb578968264c071552a98bf5e2f40eb6f53473f",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-fixture/page.js": "c0ae5355aba75a3d4d16cfbdf11dcf98532ea0aacd8b5ee9630233d0b68411d5",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-fixture/source-manifest.json": "136f32bc520e87d16acd2dcabdff347f9b24f64fd607d10bc56cbd81b2e6fc79",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-next-build.json": "8906884784cd57ac8b6aa0f080d416bba32b10df5c68a06ec564892295691299",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-next-build.log": "80ce18cbeb8ca1e72c5b1dfcbf843b311a3ca418efa0fb4c4aec980208fec6ee",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-14/browser-consent-intent.mjs": "e853d48cdc2022565173ed224631260679a5de8ae4bc4fb510dd2407b2dbf663",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-14/consent-intent-browser.json": "eb1296585d468701be9cd8ac6a3d4c01f4a434c0c22ca5946cab3108c4ed8cfc",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-14/consent-intent-browser.log": "ad17db50c4cb8394aa39f5e77c281c5c8dbba63453424578c7775edc448e7b1d",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-card-selector/browser-consent-intent.mjs": "fe8c3af07302c2b7920d51884e4d188d0e71f5aee4d0343d9c46ac4810fbcb2f",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-card-selector/consent-intent-browser.json": "5be043cb930097df959b583490f868c8b8931ae4f2a8e7fe458c392bbf3833ed",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-card-selector/consent-intent-browser.log": "33d735297c95a94d4b13409455689927621b7708a2a89b7b375d2f4134d8f92b",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-lint/browser-consent-intent.mjs": "459cc73470a8b94f710145f26efdfb7657dbfa86998bfe454c4996f8d3d3af71",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-lint/consent-intent-browser.json": "78c33567b4465f94501d8e5880e95ff088815f5acac7fb34cd1eb3ee773478cc",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-lint/consent-intent-browser.log": "ad17db50c4cb8394aa39f5e77c281c5c8dbba63453424578c7775edc448e7b1d",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-provisional-lint/consent-intent-lint.log": "f31b3dfb5f0452ce4b4b2f398bd879440da4817986fffc1963c31fe7ef2c006e",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-typecheck-build-overlap.log": "840afc561d67c1047b50af348abd9727f914878299507ae06a47976942cba3ac",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-web-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-intent-web-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-recovery-baseline-browser.json": "b1e25d030c55268a97b6771089ece34db3c9271b71759b4d81e76ae24e89adca",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-recovery-baseline-stale-off-320.png": "f1cd0026f61d712ce9598e59a7e81be76c132dbf3ba7e014aec9a40a6a35e251",
+    "verification/web/evidence/checkpoint-21e404e/files/verification/web/evidence/consent-recovery-baseline.json": "5b72d86b86c53f118c1c7d3b7dadebcc63888800e4756ca0764d271f42417ac9"
+  },
+  "historicalCheckpoint": {
+    "commit": "21e404e24e010c34c8fbe810465bc74c4d4c7d4a",
+    "originalReceipt": "verification/web/evidence/checkpoint-21e404e/consent-intent-verification.original.json",
+    "originalReceiptSha256": "924daf50855d2169550df8df81664fbeb548b3e768fd48fec8e8502b5f86faf4",
+    "evidenceFiles": 31,
+    "note": "Historical acceptance for this commit only; source hashes do not certify later edits."
   }
 }

@@ -1,0 +1,12 @@
+.page { min-height: 100vh; display: grid; place-items: center; padding: 2rem 1rem; background: #111c1b; color: #f5f1e7; }
+.card { width: min(100%, 29rem); padding: clamp(1.25rem, 5vw, 2.5rem); border: 1px solid #53645c; border-radius: 1rem; background: #1d2a27; overflow-wrap: anywhere; }
+.card h1 { font-size: 1.9rem; line-height: 1.2; margin: 1.5rem 0 1rem; }
+.card p { line-height: 1.6; }
+.card a { color: #e5cd91; text-underline-offset: 0.2em; }
+.brand { font-size: 0.9rem; letter-spacing: 0.03em; }
+.card form { display: grid; gap: 0.65rem; margin: 1.5rem 0; }
+.card input { box-sizing: border-box; min-width: 0; width: 100%; border: 1px solid #7b8c83; border-radius: 0.35rem; padding: 0.8rem; background: #101b18; color: #fff; font: inherit; }
+.card button { min-height: 44px; margin-top: 0.4rem; border: 1px solid #e5cd91; border-radius: 0.35rem; padding: 0.8rem 1rem; background: #e5cd91; color: #18231f; font: inherit; font-weight: 600; cursor: pointer; }
+.card button:disabled { opacity: 0.5; cursor: default; }
+.card input:focus-visible, .card button:focus-visible, .card a:focus-visible { outline: 3px solid #98c9cb; outline-offset: 3px; }
+.note { font-size: 0.9rem; color: #cad4cb; }

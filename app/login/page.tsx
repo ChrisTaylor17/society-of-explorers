@@ -76,11 +76,18 @@ export default function LoginPage() {
   // Links from "Start free" open the form in create-account mode.
   useEffect(() => {
     if (modeFromSearch(window.location.search) === 'signup') setIsSignUp(true);
+    if (new URLSearchParams(window.location.search).get('auth_error') === '1') {
+      setError('We could not finish that link. Sign in with your email and password, or request a new recovery link.');
+    }
   }, []);
 
   // If already authed, redirect to dashboard
   useEffect(() => {
     let active = true;
+
+    // Recovery ends with a deliberate password sign-in. An unrelated saved
+    // session must not skip that step or be treated as proof of the new password.
+    if (new URLSearchParams(window.location.search).get('recovery') === '1') return;
 
     getMemberSession()
       .then((session) => {
@@ -319,6 +326,12 @@ export default function LoginPage() {
                 {loading ? (isSignUp ? 'CREATING...' : 'ENTERING...') : isSignUp ? 'CREATE FREE ACCOUNT' : 'SIGN IN'}
               </button>
             </form>
+
+            {!isSignUp && (
+              <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '14px' }}>
+                <a href="/auth/recovery" style={{ color: gold }}>Forgot your password?</a>
+              </p>
+            )}
 
             {/* Toggle */}
             <div style={{ fontSize: '13px', color: muted, textAlign: 'center', marginTop: '1.5rem' }}>
