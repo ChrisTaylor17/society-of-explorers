@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reviewCoverageApp } from './support/review-coverage-app.mjs';
+import { listingReceiptApp as reviewCoverageApp, listingReceiptAppCleanup } from './support/circle-listing-receipt-app.mjs';
+test.after(() => console.log('LISTING_COVERAGE_CLEANUP ' + JSON.stringify(listingReceiptAppCleanup)));
 
 const kinds = ['listing', 'message'];
 const coveragePath = (f, kind) => f.targetPath(kind) + '/coverage';

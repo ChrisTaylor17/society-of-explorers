@@ -14,7 +14,7 @@ import ReviewCoverage, { useReviewActionFence, type ReviewCoverageBinding } from
 import type { ReviewCoverageEvidence } from '@/lib/circles/review-coverage';
 import styles from '@/app/circles/messages/safety.module.css';
 
-type Pending = { id: string; endpoint: string; payload: CircleReviewInput & { sessionId?: string } };
+type Pending = { id: string; endpoint: string; reportCount: number; payload: CircleReviewInput & { sessionId?: string } };
 
 export default function CircleReviews() {
   const [queue, setQueue] = useState<CircleReviewQueue | null>(null);
@@ -50,9 +50,9 @@ export default function CircleReviews() {
   }
   const endpoint = (id: string) => `/api/admin/circles/reports/${encodeURIComponent(id)}`;
 
-  function unavailable(status?: number) {
+  function unavailable(status?: number, saved = false) {
     setQueue(null); caseContext.current = null; setDetail(null); setPending(null); clearDraft();
-    setNotice(status === 401 ? 'Sign in before loading assigned Circles.' : status === 403 ? 'No eligible review assignment is available. You cannot review your own Circle, a Circle you participate in, or one you reported.' : status === 404 ? 'This review is no longer available.' : status === 409 ? 'This case changed. Load it again and read the latest reports before deciding.' : 'Review information is unavailable. No empty queue or decision is being assumed.');
+    setNotice(saved ? 'Decision saved and confirmed by its receipt. The latest case could not be loaded. Load assigned Circles to check current access and state before another review.' : status === 401 ? 'Sign in before loading assigned Circles.' : status === 403 ? 'No eligible review assignment is available. You cannot review your own Circle, a Circle you participate in, or one you reported.' : status === 404 ? 'This review is no longer available.' : status === 409 ? 'This case changed. Load it again and read the latest reports before deciding.' : 'Review information is unavailable. No empty queue or decision is being assumed.');
   }
   function loadQueue(after: string | null = null) {
     if (!beginAction()) return;
@@ -69,13 +69,13 @@ export default function CircleReviews() {
   }
   // A matching decision receipt may start its fresh read after the request
   // lifetime releases. It is not a retained UI callback.
-  function readDetail(id: string, saved = false) {
+  function readDetail(id: string, saved = false, minimumRevision = 0) {
     setQueue(null); caseContext.current = null; setDetail(null); setPending(null); clearDraft(); setNotice(saved ? 'Decision saved. Checking the latest case…' : 'Loading current case…');
     void perform(`/api/admin/circles/reports/${encodeURIComponent(id)}`, {}, ({ status, body }) => {
       const value = status === 200 ? parseCircleReviewDetail(body) : null;
-      if (!value || value.circle.id !== id) return unavailable(status);
+      if (!value || value.circle.id !== id || value.revision < minimumRevision) return unavailable(status, saved);
       showDetail(value); setNotice(saved ? 'Decision saved. Current case loaded; a fresh decision requires a fresh review.' : 'Current case loaded. Read the evidence before deciding.');
-    }, () => unavailable());
+    }, () => unavailable(undefined, saved));
   }
   function decide(event: React.FormEvent) {
     event.preventDefault();
@@ -86,26 +86,42 @@ export default function CircleReviews() {
       evidenceReportId: action === 'hide' && source !== 'listing' ? source : null,
       evidenceExcerpt: action === 'hide' ? excerpt : null });
     if (!parsed.ok) { setNotice(parsed.error); return; }
-    if (covered && action === 'hide') {
-      const evidence = source === 'listing' ? `${detail.circle.title}\n${detail.circle.description || ''}` : chosenEvidence?.id === source ? chosenEvidence.note : null;
-      if (!evidence?.includes(parsed.value.evidenceExcerpt || '')) { setNotice('Copy an exact excerpt from the selected evidence source.'); return; }
+    if (action === 'hide') {
+      const quote = parsed.value.evidenceExcerpt || '';
+      const matches = source === 'listing'
+        ? detail.circle.title.includes(quote) || Boolean(detail.circle.description?.includes(quote))
+        : (detail.complete ? detail.reports.find(report => report.id === source)?.note : chosenEvidence?.id === source ? chosenEvidence.note : null)?.includes(quote);
+      if (!matches) { setNotice('Copy an exact excerpt from the selected evidence source. A listing excerpt must be within its title or its description.'); return; }
     }
     send({ id: detail.circle.id, endpoint: endpoint(detail.circle.id) + (covered ? '/coverage/decision' : ''),
+      reportCount: covered && coverage ? coverage.totalReports : detail.reports.length,
       payload: { ...parsed.value, ...(covered && coverage ? { sessionId: coverage.sessionId } : {}) } });
   }
-  function send(request: Pending) {
+  function send(request: Pending, retry = false) {
     if (busy || !active || sending.current) return;
     sending.current = true; caseContext.current = null; setDetail(null); setQueue(null); setPending(null); clearDraft(); setNotice('Saving decision…');
     void perform(request.endpoint, { method: 'POST', body: JSON.stringify(request.payload) }, ({ status, body }) => {
       sending.current = false;
       const receipt = status === 200 ? parseCircleDecisionReceipt(body) : null;
-      const sessionMatches = !request.payload.sessionId || (body !== null && typeof body === 'object' && 'sessionId' in body && body.sessionId === request.payload.sessionId);
-      const valid = receipt && sessionMatches && receipt.decision.action === request.payload.action && receipt.decision.reason === request.payload.reason
-        && receipt.decision.summary === request.payload.summary && receipt.revision > request.payload.expectedRevision;
-      if (valid) readDetail(request.id, true);
-      else if ([400, 401, 403, 404, 409, 413, 429].includes(status)) unavailable(status);
-      else { if (request.payload.sessionId) setPending(request); setNotice(request.payload.sessionId ? 'The decision reply could not be confirmed. It may have been saved. Retry the exact same decision manually, or load a fresh queue and inspect history.' : 'The decision reply could not be confirmed. It may have been saved. Load assigned Circles and review the latest history before another decision. Do not resend this decision.'); }
-    }, sent => { sending.current = false; if (request.payload.sessionId) setPending(request); setNotice(request.payload.sessionId ? 'The decision reply was lost or not sent. It may have been saved. Retry the exact same decision manually or load a fresh queue.' : sent ? 'The decision reply was lost. It may have been saved. Load assigned Circles and review the latest history before another decision. Do not resend this decision.' : 'The decision was not sent. Load assigned Circles to check access before trying again.'); });
+      const sessionMatches = body !== null && typeof body === 'object' && (request.payload.sessionId
+        ? 'sessionId' in body && body.sessionId === request.payload.sessionId
+        : !('sessionId' in body));
+      const valid = receipt && sessionMatches && receipt.circleId === request.id && receipt.requestId === request.payload.requestId
+        && receipt.decision.action === request.payload.action && receipt.decision.reason === request.payload.reason
+        && receipt.decision.summary === request.payload.summary && receipt.decision.report_count === request.reportCount
+        && (receipt.replayed ? receipt.revision > request.payload.expectedRevision : receipt.revision === request.payload.expectedRevision + 1);
+      if (valid) readDetail(request.id, true, receipt.revision);
+      else if (!retry && [400, 401, 403, 404, 409, 413, 429].includes(status)) unavailable(status);
+      else {
+        setPending(request);
+        setNotice('The decision reply could not be confirmed. An earlier send may have been saved, even if this retry was refused. Retry the exact same decision manually, or load a fresh queue to inspect current state. History alone cannot confirm this request.');
+      }
+    }, sent => {
+      sending.current = false; setPending(request);
+      setNotice(sent || retry
+        ? 'The decision reply was lost or not confirmed. It may have been saved. Retry the exact same decision manually, or load a fresh queue to inspect current state. Nothing retries automatically.'
+        : 'The decision was not sent. You may retry the exact reviewed decision manually, or load assigned Circles to check access again.');
+    });
   }
   const reasons = action === 'hide' ? CIRCLE_HIDE_REASONS : CIRCLE_RESTORE_REASONS;
   const disabled = busy || !active;
@@ -113,7 +129,7 @@ export default function CircleReviews() {
     <p role="status" aria-live="polite" aria-atomic="true" style={{ ...lead, marginBottom: '1rem' }}>{notice}</p>
     <p style={{ ...small, marginBottom: '1rem' }}>Reports stay private to eligible assigned reviewers. This page does not grant access. <Link href="/login?next=/moderation/circles" style={{ color: gold }}>Sign in</Link> · <Link href="/circles/norms" style={{ color: gold }}>Community norms</Link> · <Link href="/moderation/messages" style={{ color: gold }}>Review assigned messages</Link></p>
     <button type="button" style={button} disabled={disabled} onClick={() => loadQueue()}>Load assigned Circles</button>
-    {pending && <button type="button" style={button} disabled={disabled} onClick={() => { if (beginAction()) send(pending); }}>Retry exact decision</button>}
+    {pending && <button type="button" style={button} disabled={disabled} onClick={() => { if (beginAction()) send(pending, true); }}>Retry exact decision</button>}
     {queue && <section aria-label="Assigned review queue" style={{ marginTop: '1rem' }}>
       <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: '12px' }}>{queue.items.map(item => <li key={item.id} style={{ ...card, overflowWrap: 'anywhere' }}>
         <h2 style={h2}>{item.title}</h2><p style={body}>{item.hidden ? 'Currently hidden' : 'Currently listed'} · {item.openReports} open reports</p>

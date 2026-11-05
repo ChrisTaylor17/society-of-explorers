@@ -6,7 +6,7 @@ import { body, button, card, fieldLabel, h2, small } from '@/lib/circles/ui';
 import styles from '@/app/circles/messages/safety.module.css';
 import { messageReasonLabel } from '@/app/circles/messages/MessageActions';
 
-export type ReviewCoverageBinding = Pick<ReviewCoveragePage, 'sessionId' | 'circleId' | 'messageId' | 'revision' | 'contentHash' | 'complete' | 'expiresAt'>;
+export type ReviewCoverageBinding = Pick<ReviewCoveragePage, 'sessionId' | 'circleId' | 'messageId' | 'revision' | 'contentHash' | 'complete' | 'expiresAt' | 'totalReports'>;
 
 /** Only a committed render may initiate a user action. Claiming it retires all
  * sibling callbacks synchronously, before React paints the resulting state. */
@@ -81,7 +81,7 @@ export default function ReviewCoverage({ endpoint, circleId, messageId, revision
     }
     setSessionId(value.sessionId); setPage(value); setConfirmed(false);
     onProof({ sessionId: value.sessionId, circleId: value.circleId, messageId: value.messageId, revision: value.revision,
-      contentHash: value.contentHash, complete: value.complete, expiresAt: value.expiresAt });
+      contentHash: value.contentHash, complete: value.complete, expiresAt: value.expiresAt, totalReports: value.totalReports });
     setNotice(value.complete ? 'Every report page is acknowledged for this current case. Check your conduct finding and explanation before deciding.'
       : value.acknowledged ? 'Previously acknowledged report page loaded. You may revisit evidence without advancing review progress.'
         : 'Read every report on this page, then explicitly acknowledge it to continue. A report is an allegation, not a finding.');

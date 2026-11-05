@@ -15,14 +15,16 @@ let browser,page,f,r,latestQueue=null,view='message';const pending=new Set();
 write();
 try{
  assert(process.execArgv.some(v=>v.endsWith('/deny-build-network.cjs')));process.chdir(path.join(ROOT,'verification/web'));
- const fixture='verification/web/evidence/reviewer-retained-actions-'+mode+'-all-fixture';
+ assert(process.env.SOE_REVIEWER_FIXTURE===undefined||process.env.SOE_REVIEWER_FIXTURE==='circle-receipts');
+ const fixture=process.env.SOE_REVIEWER_FIXTURE==='circle-receipts'?'verification/web/evidence/circle-reviewer-web-fixture':'verification/web/evidence/reviewer-retained-actions-'+mode+'-all-fixture';
  const manifest=JSON.parse(read(fixture+'/source-manifest.json')),bundle=read(fixture+'/page.js'),css=read(fixture+'/page.css');
  Object.assign(result.sourceHashes,manifest.sourceHashes);Object.assign(result.runtimeHashes,manifest.runtimeHashes);
  for(const n of ['page.js','page.css','source-manifest.json'])result.evidenceHashes[fixture+'/'+n]=sha(read(fixture+'/'+n));
  for(const n of ['verification/web/tests/browser-reviewer-retained-actions.mjs','verification/web/scripts/bundle-reviewer-retained-actions.mjs','verification/web/tests/support/current-message-ai-consent-app.mjs','verification/web/tests/support/review-coverage-app.mjs','verification/web/tests/support/offline-app.mjs','lib/circles/review-coverage-server.ts','app/api/admin/circles/reports/route.ts','app/api/admin/circles/reports/[circleId]/route.ts','app/api/admin/circles/reports/[circleId]/coverage/route.ts','app/api/admin/circles/reports/[circleId]/coverage/decision/route.ts','app/api/admin/circles/messages/route.ts','app/api/admin/circles/[circleId]/messages/[messageId]/route.ts','app/api/admin/circles/[circleId]/messages/[messageId]/coverage/route.ts','app/api/admin/circles/[circleId]/messages/[messageId]/coverage/decision/route.ts','app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts'])result.sourceHashes[n]=sha(read(n));
  const current=await import('./support/current-message-ai-consent-app.mjs'),coverage=await import('./support/review-coverage-app.mjs');Object.assign(result.sourceHashes,await current.currentConsentSourceHashes());
+ const receiptSql='docs/sql/circle-listing-review-receipt-apply.sql';result.sourceHashes[receiptSql]=sha(read(receiptSql));
  for(const[n,h]of Object.entries(result.sourceHashes))assert.equal(sha(read(n)),h,'Stale source '+n);
- f=await current.currentMessageAiApp({allowance:null});f.setAvailable(false);r=await coverage.reviewCoverageApp({fixture:f});
+ f=await current.currentMessageAiApp({allowance:null});await f.db.exec(read(receiptSql).toString('utf8'));f.setAvailable(false);r=await coverage.reviewCoverageApp({fixture:f});
  const reviewer2='74111111-1111-4111-8111-111111111111';await f.db.query("INSERT INTO members(id,display_name) VALUES($1,'Second synthetic reviewer')",[reviewer2]);
  async function grant(circle){await f.db.query('INSERT INTO circle_reviewer_grants(cohort_id,member_id) VALUES($1,$2),($1,$3) ON CONFLICT DO NOTHING',[circle,f.reviewerId,reviewer2]);}
  await grant(f.circleId);const actor=value=>{r.setActor(value);f.setActor(value);};actor(f.reviewerId);

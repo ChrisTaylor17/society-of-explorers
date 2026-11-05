@@ -34,7 +34,7 @@ export type CircleReviewDetail = {
   decisions: CircleReviewDecision[];
   complete: boolean;
 };
-export type CircleDecisionReceipt = { decision: CircleReviewDecision; revision: number; hidden: boolean; replayed: boolean };
+export type CircleDecisionReceipt = { circleId: string; requestId: string; decision: CircleReviewDecision; revision: number; hidden: boolean; replayed: boolean };
 export type CircleHostReview = { circle: { id: string; title: string; hidden: boolean }; decisions: CircleHostDecision[] };
 export type CircleHostReviews = { items: CircleHostReview[]; nextCursor: string | null };
 export type CircleReviewInput = {
@@ -116,10 +116,11 @@ export function parseCircleReviewDetail(value: unknown): CircleReviewDetail | nu
 }
 
 export function parseCircleDecisionReceipt(value: unknown): CircleDecisionReceipt | null {
-  if (!isRecord(value) || !integer(value.revision) || typeof value.hidden !== 'boolean' || typeof value.replayed !== 'boolean') return null;
+  if (!isRecord(value) || !isUuid(value.circleId) || !isUuid(value.requestId)
+    || !integer(value.revision) || typeof value.hidden !== 'boolean' || typeof value.replayed !== 'boolean') return null;
   const parsed = decision(value.decision);
   if (!parsed || (!value.replayed && (parsed.action === 'hide') !== value.hidden)) return null;
-  return { decision: parsed, revision: value.revision, hidden: value.hidden, replayed: value.replayed };
+  return { circleId: value.circleId, requestId: value.requestId, decision: parsed, revision: value.revision, hidden: value.hidden, replayed: value.replayed };
 }
 
 export function parseCircleHostReview(value: unknown): CircleHostReview | null {

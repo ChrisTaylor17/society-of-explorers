@@ -35,6 +35,7 @@ export async function prepareNativeMemberBinding(options: {
   };
   const transport = wrapTransport(ports.transport);
   const reviewerTransport = ports.reviewerTransport ? wrapTransport(ports.reviewerTransport) : undefined;
+  const circleReviewerTransport = ports.circleReviewerTransport ? wrapTransport(ports.circleReviewerTransport) : undefined;
   function bind(auth: ExistingVerifiedAuth, circleId: string, verificationTimeoutMs?: number): ExistingMemberCircleConfig {
     assertOpen();
     if (bound || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(circleId) ||
@@ -62,7 +63,7 @@ export async function prepareNativeMemberBinding(options: {
     };
     const createRequestId = ports.newRequestId;
     return { origin, circleId, auth: guardedAuth, transport, aiConsent: ports.aiConsent,
-      ...(reviewerTransport ? { reviewerTransport } : {}),
+      ...(reviewerTransport ? { reviewerTransport } : {}), ...(circleReviewerTransport ? { circleReviewerTransport } : {}),
       ...(typeof createRequestId === 'function' ? { newRequestId: async () => { assertOpen(); const id = await createRequestId(); assertOpen(); return id; } } : {}),
       ...(verificationTimeoutMs === undefined ? {} : { verificationTimeoutMs }) };
   }

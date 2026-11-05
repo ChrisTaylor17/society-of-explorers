@@ -32,8 +32,9 @@ export async function POST(req: NextRequest, { params }: Context) {
     p_evidence_report_id: input.evidenceReportId, p_evidence_excerpt: input.evidenceExcerpt,
   }, (value) => {
     const receipt = parseCircleDecisionReceipt(value);
-    if (!receipt || receipt.decision.action !== input.action || receipt.decision.reason !== input.reason
-      || receipt.decision.summary !== input.summary || (!receipt.replayed && receipt.revision <= input.expectedRevision)) return null;
+    if (!receipt || receipt.circleId.toLowerCase() !== circleId.toLowerCase() || receipt.requestId.toLowerCase() !== input.requestId.toLowerCase()
+      || receipt.decision.action !== input.action || receipt.decision.reason !== input.reason || receipt.decision.summary !== input.summary
+      || (receipt.replayed ? receipt.revision <= input.expectedRevision : receipt.revision !== input.expectedRevision + 1)) return null;
     return receipt;
   });
   return result.ok ? privateJson(result.value) : result.response;

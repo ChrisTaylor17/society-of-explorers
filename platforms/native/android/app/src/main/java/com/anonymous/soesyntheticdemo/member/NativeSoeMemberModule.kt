@@ -66,6 +66,7 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
       putString("hostingPolicy", "circle-host-v1")
       putString("messageAiConsentPolicy", "author-message-ai-consent-v1")
       putString("messageReviewPolicy", "assigned-message-review-v1")
+      putString("circleReviewPolicy", "assigned-circle-review-v1")
       if (config.providerOrigin.isNotEmpty()) {
         putString("authPolicy", "supabase-password-v1"); putString("providerOrigin", config.providerOrigin); putString("publishableKey", config.publishableKey)
         putString("emailAuthPolicy", "supabase-email-pkce-v1"); putString("emailCallbackUrl", config.emailCallbackUrl)
@@ -85,6 +86,13 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
   }
   override fun sendReview(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
     transport().sendReview(id, MemberTransport.input(request), { result ->
+      reply.resolve(Arguments.createMap().apply {
+        putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
+      })
+    }, { reply.fail() })
+  }
+  override fun sendCircleReview(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
+    transport().sendCircleReview(id, MemberTransport.input(request), { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
       })

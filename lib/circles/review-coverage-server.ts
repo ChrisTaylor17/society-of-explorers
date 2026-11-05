@@ -96,8 +96,9 @@ async function run(req: NextRequest, targetInput: Target | Promise<Target>, oper
       const input = decision.value;
       if (target.messageId === null) {
         const receipt = parseCircleDecisionReceipt(data);
-        if (!receipt || receipt.decision.action !== input.action || receipt.decision.reason !== input.reason || receipt.decision.summary !== input.summary
-          || receipt.revision < input.expectedRevision || (!receipt.replayed && receipt.revision <= input.expectedRevision)) return unavailable();
+        if (!receipt || !same(receipt.circleId, target.circleId) || !same(receipt.requestId, input.requestId)
+          || receipt.decision.action !== input.action || receipt.decision.reason !== input.reason || receipt.decision.summary !== input.summary
+          || (receipt.replayed ? receipt.revision <= input.expectedRevision : receipt.revision !== input.expectedRevision + 1)) return unavailable();
         return privateJson({ ...receipt, sessionId: data.sessionId });
       }
       const receipt = parseMessageDecisionReceipt(data);

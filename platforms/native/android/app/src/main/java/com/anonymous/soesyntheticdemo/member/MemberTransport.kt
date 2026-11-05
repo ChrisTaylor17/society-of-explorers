@@ -76,6 +76,10 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     try { validateReview(input); transmit(id, input.url, input.method, input.body, mapOf("Authorization" to "Bearer " + input.bearer), success, failure) }
     catch (_: Exception) { cancel(id); failure() }
   }
+  fun sendCircleReview(id: String, input: Input, success: (Result) -> Unit, failure: () -> Unit) {
+    try { validateCircleReview(input); transmit(id, input.url, input.method, input.body, mapOf("Authorization" to "Bearer " + input.bearer), success, failure) }
+    catch (_: Exception) { cancel(id); failure() }
+  }
   fun sendAuth(id: String, input: AuthInput, success: (Result) -> Unit, failure: () -> Unit) {
     try {
       validateAuth(input)
@@ -191,6 +195,35 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     if (input.method == "GET") require(input.body == null)
     else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= 12000)
   }
+  /** Listing review has its own entry and allowlist; message review never accepts it. */
+  private fun validateCircleReview(input: Input) {
+    require(Regex("[A-Za-z0-9._~+/-]+=*").matches(input.bearer) && input.bearer.length <= 16384)
+    require(input.method in setOf("GET", "POST"))
+    val url = input.url.toHttpUrl()
+    val origin = "https://" + url.host + if (url.port == 443) "" else ":" + url.port
+    require(url.scheme == "https" && origin == config.origin && url.username.isEmpty() && url.password.isEmpty() && url.fragment == null && url.toString() == input.url)
+    if (url.encodedPath == "/api/admin/circles/reports") {
+      require(input.method == "GET")
+      url.encodedQuery?.let { require(it.startsWith("after=") && reviewUuid(it.removePrefix("after="))) }
+    } else {
+      val target = Regex("/api/admin/circles/reports/([0-9a-f-]{36})(/coverage/decision|/coverage)?").matchEntire(url.encodedPath)
+        ?: throw IllegalArgumentException()
+      require(reviewUuid(target.groupValues[1]))
+      val suffix = target.groupValues[2]
+      if (suffix == "/coverage" && input.method == "GET") {
+        val query = Regex("sessionId=([0-9a-f-]{36})(?:&page=([1-9][0-9]{0,7}))?").matchEntire(url.encodedQuery ?: "")
+          ?: throw IllegalArgumentException()
+        require(reviewUuid(query.groupValues[1]))
+        if (query.groupValues[2].isNotEmpty()) require((query.groupValues[2].toIntOrNull() ?: 0) in 1..42949673)
+      } else {
+        require(url.encodedQuery == null)
+        if (suffix.isNotEmpty()) require(input.method == "POST")
+        if (input.method == "POST") validateCircleReviewBody(input.body ?: throw IllegalArgumentException(), suffix)
+      }
+    }
+    if (input.method == "GET") require(input.body == null)
+    else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= 12000)
+  }
   private fun reviewUuid(value: String) = uuid(value) && value == value.lowercase()
   private fun reviewRevision(value: Any): Long {
     require(value is Int || value is Long)
@@ -244,6 +277,44 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val evidenceWire = if (evidenceId === JSONObject.NULL) "null" else profileQuote(evidenceId as String)
     val excerptWire = if (excerpt === JSONObject.NULL) "null" else profileQuote(excerpt as String)
     val prefix = "{\"expectedRevision\":$revision,\"contentHash\":\"$hash\",\"requestId\":\"$requestId\",\"action\":\"$action\",\"reason\":\"$reason\",\"summary\":" + profileQuote(summary) + ",\"evidenceReportId\":" + evidenceWire + ",\"evidenceExcerpt\":" + excerptWire
+    val canonical = if (suffix.isEmpty()) prefix + "}" else {
+      val session = value.get("sessionId"); require(session is String && reviewUuid(session))
+      prefix + ",\"sessionId\":\"$session\"}"
+    }
+    require(body == canonical)
+  }
+  private fun validateCircleReviewBody(body: String, suffix: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 12000)
+    val value = JSONObject(body)
+    val keys = value.keys().asSequence().toSet()
+    if (suffix == "/coverage" && value.opt("action") == "ack") {
+      require(keys == setOf("action", "sessionId", "pageToken"))
+      val session = value.get("sessionId"); val page = value.get("pageToken")
+      require(session is String && reviewUuid(session) && page is String && reviewUuid(page))
+      require(body == "{\"action\":\"ack\",\"sessionId\":\"$session\",\"pageToken\":\"$page\"}")
+      return
+    }
+    val revision = reviewRevision(value.get("expectedRevision"))
+    if (suffix == "/coverage") {
+      require(keys == setOf("action", "expectedRevision", "contentHash") && value.get("action") == "start" && value.get("contentHash") === JSONObject.NULL)
+      require(body == "{\"action\":\"start\",\"expectedRevision\":$revision,\"contentHash\":null}")
+      return
+    }
+    require(suffix == "" || suffix == "/coverage/decision")
+    val expected = setOf("expectedRevision", "requestId", "action", "reason", "summary", "evidenceReportId", "evidenceExcerpt")
+    require(keys == if (suffix.isEmpty()) expected else expected + "sessionId")
+    val requestId = value.get("requestId"); val action = value.get("action"); val reason = value.get("reason"); val summary = value.get("summary")
+    require(requestId is String && reviewUuid(requestId) && summary is String && action is String && reason is String)
+    reviewText(summary, 20, 1000)
+    val evidenceId = value.get("evidenceReportId"); val excerpt = value.get("evidenceExcerpt")
+    require(evidenceId === JSONObject.NULL || evidenceId is String && reviewUuid(evidenceId))
+    if (action == "hide") {
+      require(reason in setOf("safety", "harassment", "spam", "misleading") && excerpt is String)
+      reviewText(excerpt, 5, 500)
+    } else require(action == "restore" && reason in setOf("no_violation", "insufficient_evidence", "resolved") && evidenceId === JSONObject.NULL && excerpt === JSONObject.NULL)
+    val evidenceWire = if (evidenceId === JSONObject.NULL) "null" else profileQuote(evidenceId as String)
+    val excerptWire = if (excerpt === JSONObject.NULL) "null" else profileQuote(excerpt as String)
+    val prefix = "{\"expectedRevision\":$revision,\"requestId\":\"$requestId\",\"action\":\"$action\",\"reason\":\"$reason\",\"summary\":" + profileQuote(summary) + ",\"evidenceReportId\":" + evidenceWire + ",\"evidenceExcerpt\":" + excerptWire
     val canonical = if (suffix.isEmpty()) prefix + "}" else {
       val session = value.get("sessionId"); require(session is String && reviewUuid(session))
       prefix + ",\"sessionId\":\"$session\"}"

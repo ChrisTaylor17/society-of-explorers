@@ -9,6 +9,10 @@ const REQUEST = '66666666-6666-4666-8666-666666666666';
 const OTHER = '77777777-7777-4777-8777-777777777777';
 const DATE = '2026-11-03T15:00:00.000Z';
 const ORIGIN = 'https://offline.invalid';
+const AUTH_SUBJECT = 'abababab-abab-4bab-8bab-abababababab';
+const AUTH_INTENT = 'cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd';
+const selectionCookies = (provider, subject) => ({ soe_auth_provider: provider, soe_auth_intent: AUTH_INTENT,
+  soe_auth_selection_v1: `v1.${AUTH_INTENT}.${provider}.${subject}` });
 const PATH = `/api/admin/circles/reports/${CIRCLE}`;
 const plain = value => JSON.parse(JSON.stringify(value));
 const context = id => ({ params: Promise.resolve({ circleId: id }) });
@@ -16,7 +20,7 @@ const event = (extra = {}) => ({ id: DECISION, action: 'hide', reason: 'safety',
 const queue = (extra = {}) => ({ items: [{ id: CIRCLE, title: 'Fictional Readers', hidden: true, openReports: 1, revision: 3 }], nextCursor: null, ...extra });
 const detail = (extra = {}) => ({ circle: { id: CIRCLE, title: 'Fictional Readers', description: 'A fictional public description.', hidden: true }, revision: 3,
   reports: [{ id: REPORT, reason: 'safety', note: 'PRIVATE_REPORT_NOTE', created_at: DATE }], decisions: [event()], complete: true, ...extra });
-const receipt = (extra = {}) => ({ decision: event(), revision: 4, hidden: true, replayed: false, ...extra });
+const receipt = (extra = {}) => ({ circleId: CIRCLE, requestId: REQUEST, decision: event(), revision: 4, hidden: true, replayed: false, ...extra });
 const host = (extra = {}) => ({ circle: { id: CIRCLE, title: 'Fictional Readers', hidden: true }, decisions: [event()], ...extra });
 const input = (extra = {}) => ({ expectedRevision: 3, requestId: REQUEST, action: 'hide', reason: 'safety', summary: 'The listing raises a documented safety concern.', evidenceReportId: REPORT, evidenceExcerpt: 'PRIVATE_REPORT_NOTE', ...extra });
 const reportInput = (extra = {}) => ({ circleId: CIRCLE, requestId: REQUEST, reason: 'safety', note: 'A fictional concern', ...extra });
@@ -24,12 +28,15 @@ const reportInput = (extra = {}) => ({ circleId: CIRCLE, requestId: REQUEST, rea
 function fixture() {
   const app = offlineApp();
   const { ADA, JULES } = app.fakes;
-  app.setUser({ id: 'fictional-auth-ada', user_metadata: { role: 'admin', email: 'untrusted@example.test' } });
-  const db = app.fakes.resetDb({ members: [{ id: ADA, supabase_auth_id: 'fictional-auth-ada', display_name: 'Ada', wallet_address: `0x${'1'.repeat(40)}` }, { id: JULES, display_name: 'Jules' }] });
+  app.setUser({ id: AUTH_SUBJECT, user_metadata: { role: 'admin', email: 'untrusted@example.test' } });
+  const db = app.fakes.resetDb({ members: [{ id: ADA, supabase_auth_id: AUTH_SUBJECT, display_name: 'Ada', wallet_address: `0x${'1'.repeat(40)}` }, { id: JULES, display_name: 'Jules' }] });
   const calls = [];
   const value = { app, db, calls, ADA, JULES, respond: () => ({ data: queue(), error: null }) };
   db.rpc = async (name, args) => { calls.push({ name, args: plain(args) }); return value.respond(name, args); };
-  value.request = (body, path = PATH, headers = { origin: ORIGIN }) => app.fakes.makeReq(body, { url: `${ORIGIN}${path}`, headers });
+  // Synthetic provider delivery; the actual resolver still validates current
+  // browser intent/selection and member ownership. Bearer tests stay cookie-free.
+  value.request = (body, path = PATH, headers = { origin: ORIGIN }) => app.fakes.makeReq(body, { url: `${ORIGIN}${path}`, headers,
+    ...(headers.authorization ? {} : { cookies: selectionCookies('supabase', AUTH_SUBJECT) }) });
   value.queue = () => app.load('app/api/admin/circles/reports/route.ts');
   value.detail = () => app.load('app/api/admin/circles/reports/[circleId]/route.ts');
   value.host = () => app.load('app/api/circles/[circleId]/review/route.ts');
@@ -67,7 +74,7 @@ test('a signed localhost wallet and user metadata cannot bypass the RPC grant de
   const a = fixture(); a.app.setUser(null);
   a.respond = () => ({ data: null, error: { code: 'PT403', message: 'PRIVATE_GRANT_DETAIL' } });
   const cookie = await a.app.fakes.walletCookie(a.ADA);
-  const request = a.app.fakes.makeReq(undefined, { url: 'http://localhost/api/admin/circles/reports', cookies: { soe_wallet_id: cookie } });
+  const request = a.app.fakes.makeReq(undefined, { url: 'http://localhost/api/admin/circles/reports', cookies: { ...selectionCookies('wallet', a.ADA), soe_wallet_id: cookie } });
   const response = await a.queue().GET(request);
   assert.equal(response.status, 403); assert.equal(a.calls[0].args.p_actor, a.ADA);
   assert.doesNotMatch(await response.text(), /PRIVATE_GRANT_DETAIL/);
@@ -193,7 +200,7 @@ test('mutation origin checks reject cross-origin, same-site siblings and unprove
   const a = fixture(); a.respond = () => ({ data: receipt(), error: null });
   // Exact synthetic bearer verification separates origin policy from identity.
   a.app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => a.db }));
-  a.app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({ auth: { getUser: async token => ({ data: { user: token === 'FICTIONAL_ONLY' ? { id: 'fictional-auth-ada' } : null }, error: null }) } }) }));
+  a.app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({ auth: { getUser: async token => ({ data: { user: token === 'FICTIONAL_ONLY' ? { id: AUTH_SUBJECT } : null }, error: null }) } }) }));
   for (const headers of [{ origin: 'https://another.example.test' }, { origin: ORIGIN, 'sec-fetch-site': 'cross-site' }, { 'sec-fetch-site': 'same-site', cookie: 'fictional=session' }, { cookie: 'fictional=session' }, {}]) {
     assert.equal((await a.detail().POST(a.request(input(), PATH, headers), context(CIRCLE))).status, 403);
   }
@@ -238,7 +245,8 @@ test('streaming and fallback body limits count UTF-8 bytes rather than character
 
 test('anonymous reporting binds a private IP hash and never accepts a body actor', async () => {
   const a = fixture(); a.app.setUser(null); a.respond = () => ({ data: { received: true, reporter_key: 'PRIVATE_HASH', note: 'PRIVATE_REPORT_NOTE' }, error: null });
-  const response = await a.report().POST(a.request(reportInput({ memberId: a.ADA, actorMemberId: a.ADA }), '/api/circles/report', { 'x-forwarded-for': '203.0.113.14' }));
+  const response = await a.report().POST(a.app.fakes.makeReq(reportInput({ memberId: a.ADA, actorMemberId: a.ADA }),
+    { url: ORIGIN + '/api/circles/report', headers: { 'x-forwarded-for': '203.0.113.14' } }));
   assert.equal(response.status, 200); assertPrivate(response); assert.deepEqual(await response.json(), { received: true });
   assert.equal(a.calls[0].name, 'soe_circle_report'); assert.equal(a.calls[0].args.p_actor, null);
   assert.match(a.calls[0].args.p_reporter_key, /^[0-9a-f]{32}$/); assert.notEqual(a.calls[0].args.p_reporter_key, '203.0.113.14');

@@ -8,7 +8,7 @@ const page=(kind,extra={})=>({sessionId:session,circleId:circle,messageId:kind==
  totalReports:101,reviewedReports:0,pageToken:token,reports:Array.from({length:50},(_,i)=>report(i+1)),complete:false,expiresAt:'2099-01-01T12:00:00Z',pageNumber:1,acknowledged:false,...extra});
 const decisionInput=kind=>({sessionId:session,expectedRevision:2,...(kind==='message'?{contentHash:hash}:{}),requestId,action:'hide',reason:'safety',summary:'A synthetic explanation based on conduct.',evidenceReportId:null,evidenceExcerpt:'Synthetic evidence'});
 const receipt=kind=>({sessionId:session,decision:{id:other,action:'hide',reason:'safety',summary:'A synthetic explanation based on conduct.',created_at:'2026-11-04T12:00:00Z',report_count:101},replayed:false,
- ...(kind==='message'?{requestId,circleId:circle,messageId:message,safety:{revision:3,visibility:'hidden'}}:{revision:3,hidden:true})});
+ ...(kind==='message'?{requestId,circleId:circle,messageId:message,safety:{revision:3,visibility:'hidden'}}:{requestId,circleId:circle,revision:3,hidden:true})});
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
 const waitFor=async fn=>{for(let i=0;i<100&&!fn();i++)await new Promise(r=>setImmediate(r));assert.ok(fn(),'expected dependency began');};
 function fixture(kind='listing'){

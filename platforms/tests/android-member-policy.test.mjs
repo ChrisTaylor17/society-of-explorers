@@ -59,7 +59,7 @@ test('actual typed v2 spec declares native methods/events and nullable module lo
  assert.equal(ast.parseDiagnostics.length,0);
  const spec=ast.statements.find(n=>ts.isInterfaceDeclaration(n)&&n.name.text==='Spec');assert(spec);
  const methods=new Map(spec.members.filter(ts.isMethodSignature).map(n=>[n.name.getText(ast),n]));
-  assert.deepEqual([...methods.keys()],['capabilities','begin','newRequestId','send','sendReview','sendAuth','prepareEmailLink','pendingEmailLink','claimEmailLink','discardEmailLink','sendEmailAuth','sendPublic','cancel','read','write','remove','resetAccountStorage','getConnectivitySnapshot']);
+  assert.deepEqual([...methods.keys()],['capabilities','begin','newRequestId','send','sendReview','sendCircleReview','sendAuth','prepareEmailLink','pendingEmailLink','claimEmailLink','discardEmailLink','sendEmailAuth','sendPublic','cancel','read','write','remove','resetAccountStorage','getConnectivitySnapshot']);
   for(const [name,args]of Object.entries({begin:['generation'],newRequestId:['generation'],prepareEmailLink:['generation','purpose','email'],pendingEmailLink:['generation'],claimEmailLink:['generation','flowId'],discardEmailLink:['generation','flowId'],sendEmailAuth:['id','request'],read:['slot','generation'],write:['slot','value','generation'],remove:['slot','generation'],resetAccountStorage:['expectedGeneration']}))
   assert.deepEqual(methods.get(name).parameters.map(p=>p.name.getText(ast)),args);
  assert.equal(methods.get('getConnectivitySnapshot').type.getText(ast),'string');
