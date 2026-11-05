@@ -4,7 +4,8 @@ import { participationApp, IDS } from './support/participation-app.mjs';
 import { creationInput, requestId } from './support/participation-db.mjs';
 
 async function response(a, path, method = 'GET', body, expected = 200) {
-  const result = await a.dispatch(path, method, body);
+  const reviewed = method === 'POST' && (path === '/api/circles' || path.endsWith('/complete')) ? { expectedMemberId: a.memberId, ...body } : body;
+  const result = await a.dispatch(path, method, reviewed);
   assert.equal(result.status, expected, await result.clone().text());
   assert.match(result.headers.get('cache-control'), /private.*no-store/);
   return result.json();

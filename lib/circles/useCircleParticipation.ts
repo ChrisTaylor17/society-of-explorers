@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { memberSessionDto } from '@/lib/auth/memberDto';
 import { createClient } from '@/lib/supabase/client';
 import { bindCircleAccess } from './browser-access';
+import { circleCompleteMutationBody, parseOwnedCircleCompleteReceipt } from './hosting';
 import { circleHeaders } from '@/lib/circles/client';
 import { circleAttendanceMutationBody, parseCircleAttendanceReceipt, parseCircleDetail, parseCircleManagement,
   parseCircleMembershipReceipt, type CircleDetail, type CircleManagement } from './membership';
@@ -109,7 +110,8 @@ export function useCircleParticipation(circleId: string) {
           const value = await response.json(); if (!current()) return;
           const receipt = pending.intent.action === 'rsvp'
             ? parseCircleAttendanceReceipt(value, circleId, pending.requestId, pending.memberId)
-            : parseCircleMembershipReceipt(value, pending.intent.action, circleId, pending.requestId);
+            : pending.intent.action === 'complete' ? parseOwnedCircleCompleteReceipt(value, circleId, pending.requestId, pending.memberId)
+              : parseCircleMembershipReceipt(value, pending.intent.action, circleId, pending.requestId);
           if (!receipt || receipt.state.revision < pending.expectedRevision + (pending.intent.action === 'rsvp' ? 1 : 0)
             || pending.intent.action === 'rsvp' && (receipt.receipt.date !== pending.intent.date || receipt.receipt.status !== pending.intent.status)) throw Error('Participation receipt invalid');
           receiptRevision = receipt.state.revision;
@@ -133,7 +135,8 @@ export function useCircleParticipation(circleId: string) {
           if (requested && memberId && allowed(detail, controls, requested)) {
             const requestId = crypto.randomUUID(), expectedRevision = state.revision;
             const body = requested.action === 'rsvp' ? circleAttendanceMutationBody({ expectedMemberId: memberId, requestId, expectedRevision, date: requested.date, status: requested.status })
-              : JSON.stringify({ requestId, expectedRevision });
+              : requested.action === 'complete' ? circleCompleteMutationBody({ expectedMemberId: memberId, requestId, expectedRevision })
+                : JSON.stringify({ requestId, expectedRevision });
             core.pending = { intent: requested, memberId, requestId, expectedRevision, management, body, sent: false };
             publish({ detail, management: controls, intent: requested, phase: 'review', notice: 'Current access checked. Review and confirm this action. Nothing has been changed yet.' });
           } else publish({ detail, management: controls, phase: 'ready', notice: held?.sent

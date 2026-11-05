@@ -7,6 +7,8 @@ import { MemberProfileScreen } from './MemberProfileScreen';
 import { createMemberProfile, type MemberProfile } from '../shared/member-profile';
 import { createSavedReading, type SavedReading } from '../shared/saved-reading';
 import { SavedReadingScreen } from './SavedReadingScreen';
+import { CircleHostingScreen } from './CircleHostingScreen';
+import { createCircleHosting, type CircleHosting } from '../shared/circle-hosting';
 import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { createMemberAccountSession } from '../shared/account-session';
@@ -21,14 +23,27 @@ export function createMemberViewConnection(config: ExistingMemberAccountConfig, 
     timeoutMs: host.timeoutMs, initialOnline: false });
   let profile: { memberId: string; session: MemberProfile } | null = null, closed = false;
   let savedReading: { memberId: string; session: SavedReading } | null = null;
+  let hosting: { memberId: string; session: CircleHosting } | null = null;
   const closeProfile = () => { profile?.session.close(); profile = null; };
   const closeSavedReading = () => { savedReading?.session.close(); savedReading = null; };
+  const closeHosting = () => { hosting?.session.close(); hosting = null; };
   return { config, binding, account, host: { ...host, owner: binding.owner }, connectivity,
     profile: () => profile,
     savedReading: () => savedReading,
+    hosting: () => hosting,
     discardOtherMemberViews(memberId: string) {
       if (profile && profile.memberId !== memberId) closeProfile();
       if (savedReading && savedReading.memberId !== memberId) closeSavedReading();
+      if (hosting && hosting.memberId !== memberId) closeHosting();
+    },
+    openHosting(memberId: string) {
+      if (closed || !host.hostingTransport || !host.newRequestId) throw Error('Circle hosting unavailable');
+      if (hosting?.memberId !== memberId) {
+        closeHosting();
+        hosting = { memberId, session: createCircleHosting({ origin: host.origin, memberId, owner: binding.owner,
+          transport: host.transport, hostingTransport: host.hostingTransport, editionTransport: host.editionTransport,
+          newRequestId: host.newRequestId, timeoutMs: host.timeoutMs, initialOnline: false }) };
+      }
     },
     openSavedReading(memberId: string) {
       if (closed || !host.savedReadingTransport) throw Error('Saved reading unavailable');
@@ -46,8 +61,9 @@ export function createMemberViewConnection(config: ExistingMemberAccountConfig, 
           profileTransport: host.profileTransport, publicProfileTransport: host.publicProfileTransport, timeoutMs: host.timeoutMs, initialOnline: false }) };
       }
     },
-    disconnect(discardProfile = false) { if (discardProfile) { closeProfile(); closeSavedReading(); } else { profile?.session.disconnect(); savedReading?.session.disconnect(); } account.disconnect(); binding.stop(); },
-    close() { if (closed) return; closed = true; closeProfile(); closeSavedReading(); account.close(); binding.stop(); } };
+    disconnect(discardProfile = false) { if (discardProfile) { closeProfile(); closeSavedReading(); closeHosting(); }
+      else { profile?.session.disconnect(); savedReading?.session.disconnect(); hosting?.session.disconnect(); } account.disconnect(); binding.stop(); },
+    close() { if (closed) return; closed = true; closeProfile(); closeSavedReading(); closeHosting(); account.close(); binding.stop(); } };
 }
 export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>;
 
@@ -64,7 +80,7 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'discover' | 'mine' | 'profile' | 'saved' } | null>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -135,9 +151,20 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       setProfileNotice(''); setEntered({ connection, destination });
     } catch { setProfileNotice('Saved reading is unavailable. Check the member account and try again.'); }
   });
+  const openHosting = () => act(() => {
+    const current = connection?.account.model();
+    if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
+    try { connection.openHosting(current.member.id); setProfileNotice(''); setEntered({ connection, destination: 'hosting' }); }
+    catch { setProfileNotice('Circle hosting is unavailable. Check your member account and try again.'); }
+  });
   const profileConnection = connection?.profile();
   const savedReadingConnection = connection?.savedReading();
+  const hostingConnection = connection?.hosting();
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
+    if (entered.destination === 'hosting' && hostingConnection && hostingConnection.memberId === account.member?.id) {
+      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity}
+        onBack={back} onMyCircles={() => openReadingDestination('mine')} onClose={close}/>;
+    }
     if (entered.destination === 'saved' && savedReadingConnection && savedReadingConnection.memberId === account.member?.id) {
       return <SavedReadingScreen session={savedReadingConnection.session} config={connection.host} connectivity={connection.connectivity} onBack={back} onClose={close}/>;
     }
@@ -184,6 +211,8 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       onPress={() => openReadingDestination('discover')}/>
     <Action label="My Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => openReadingDestination('mine')}/>
+    <Action label="Start a Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.hostingTransport || !connection?.host.newRequestId}
+      onPress={openHosting}/>
     {connection?.host.circleId ? <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); })}/> : null}
     <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}

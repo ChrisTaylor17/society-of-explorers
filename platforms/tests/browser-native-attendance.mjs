@@ -8,7 +8,9 @@ function read(name){const p=path.resolve(ROOT,name),s=fs.lstatSync(p);assert(s.i
 function runtime(p){const s=fs.statSync(p);assert(s.size&&s.blocks,'Refuse offloaded runtime');}
 async function bounded(fn,ms=5000){let timer;try{return await Promise.race([fn(),new Promise((_,no)=>timer=setTimeout(()=>no(Error('Owned operation timed out')),ms))]);}finally{clearTimeout(timer);}}
 read('verification/web/tests/support/circle-attendance-app.mjs');
+read('verification/web/tests/support/current-native-participation.mjs');
 process.chdir(path.join(ROOT,'verification/web'));
+const {currentParticipation,currentParticipationHashes}=await import('../../verification/web/tests/support/current-native-participation.mjs');
 const {createCircleAttendanceApp,attendanceAppHashes,ORIGIN,PROVIDER,PUBLIC_KEY,TOKENS:ACCESS,SUBJECTS,NEW_SUBJECT}=await import('../../verification/web/tests/support/circle-attendance-app.mjs');
 const priorReceipt=fs.existsSync(path.join(ROOT,file))?{sha256:sha(read(file)),status:JSON.parse(read(file)).status}:null,startedAt=new Date().toISOString(),stories=[],errors=[],unexpected=[],http=[],cleanup={browser:'pending',database:'pending'};
 let holdNextPost=false,heldPost=null;
@@ -20,9 +22,9 @@ try{
  assert(process.execArgv.some(v=>v.endsWith('/deny-build-network.cjs')),'Startup network denial required');
  const require=createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');runtime(require.resolve('playwright'));
  const executablePath='/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';runtime(executablePath);
- bundle=read('verification/web/evidence/native-attendance-fixture/page.js');sourceHashes={...JSON.parse(read('verification/web/evidence/native-attendance-fixture/source-manifest.json')).sourceHashes,...await attendanceAppHashes(),'platforms/tests/browser-native-attendance.mjs':sha(read('platforms/tests/browser-native-attendance.mjs'))};
+ bundle=read('verification/web/evidence/native-attendance-fixture/page.js');sourceHashes={...JSON.parse(read('verification/web/evidence/native-attendance-fixture/source-manifest.json')).sourceHashes,...await attendanceAppHashes(),...await currentParticipationHashes(),'platforms/tests/browser-native-attendance.mjs':sha(read('platforms/tests/browser-native-attendance.mjs'))};
  for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Rebundle changed source '+n);
- fixture=await createCircleAttendanceApp();
+ fixture=await currentParticipation(await createCircleAttendanceApp());
  browser=await require('playwright').chromium.launch({headless:true,timeout:15000,executablePath,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
  const context=await browser.newContext({viewport:{width:320,height:850}});page=await context.newPage();const p=page;p.setDefaultTimeout(6500);
  p.on('pageerror',e=>errors.push(e.stack||String(e)));p.on('console',m=>{if(m.type()==='error'&&!/^Failed to load resource: the server responded with a status of (400|401|403|404|409|422|429|503)/.test(m.text()))errors.push(m.text());});
@@ -70,7 +72,7 @@ try{
  const title='Native attendance Circle',detailPath=()=>'/api/circles/'+circleId,rsvpPath=()=>detailPath()+'/rsvp';
  const posts=()=>http.filter(r=>r.method==='POST'&&r.path===rsvpPath());
  async function show({fresh=false,attendance=true,who='author'}={}){
-  await p.evaluate(()=>window.nativeQa.unmount());await settle();if(fresh){await fixture.close();fixture=await createCircleAttendanceApp();}
+  await p.evaluate(()=>window.nativeQa.unmount());await settle();if(fresh){await fixture.close();fixture=await currentParticipation(await createCircleAttendanceApp());}
   actor=who;mismatch=false;denied=false;await p.evaluate(attendance=>{window.nativeQa.attendanceAvailable(attendance);window.nativeQa.show();},attendance);await enabled('Connect my account');
  }
  async function signIn(){await button('Connect my account').click();await field('Email').fill(actor==='other'?'other@example.test':'member@example.test');await field('Password').fill('Synthetic-password-only-42');await button('Sign in').click();await enabled('Continue to my member account');}

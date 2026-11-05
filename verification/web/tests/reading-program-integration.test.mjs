@@ -9,7 +9,7 @@ const program = { version: 1, bookId: edition.bookId, editionId: edition.edition
   sessions: [{ from: 20, to: 30 }, { from: 0, to: 10 }, { from: 20, to: 30 }] };
 const url = id => '/api/circles/' + id;
 async function read(a, path, status = 200) { const r = await a.dispatch(path); assert.equal(r.status, status, await r.clone().text()); return r.json(); }
-async function write(a, path, body, status = 200) { const r = await a.dispatch(path, 'POST', body); assert.equal(r.status, status, await r.clone().text()); return r.json(); }
+async function write(a, path, body, status = 200) { const reviewed = path === '/api/circles' || path.endsWith('/complete') || path.endsWith('/rsvp') ? { expectedMemberId: a.memberId, ...body } : body; const r = await a.dispatch(path, 'POST', reviewed); assert.equal(r.status, status, await r.clone().text()); return r.json(); }
 const action = d => ({ requestId: requestId(), expectedRevision: d.revision });
 
 test('actual HTTP→SQL creates edition-bound program, discovers exact pair and range hint, joins/RSVPs finite dates and replays with current state', async t => {

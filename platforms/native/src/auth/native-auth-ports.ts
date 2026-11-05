@@ -132,6 +132,8 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   const profileTransport = ports.profileTransport ? wrapTransport(ports.profileTransport) : undefined;
   const publicProfileTransport = ports.publicProfileTransport ? wrapTransport(ports.publicProfileTransport) : undefined;
   const attendanceTransport = ports.attendanceTransport ? wrapTransport(ports.attendanceTransport) : undefined;
+  const hostingTransport = ports.hostingTransport ? wrapTransport(ports.hostingTransport) : undefined;
+  const editionTransport = ports.editionTransport ? wrapTransport(ports.editionTransport) : undefined;
   const savedReadingTransport = ports.savedReadingTransport ? wrapTransport(ports.savedReadingTransport) : undefined;
   return { providerOrigin, storageKey: storageKey, storage, fetch, retire,
     onRetired(listener: () => void) { if (retired) { listener(); return () => {}; } listeners.add(listener); return () => { listeners.delete(listener); }; },
@@ -139,7 +141,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
       if (resetStarted) throw unavailable(); resetStarted = true; retire();
       try { await ports.resetAccountStorage(); } finally { offRetirement(); ports.retireStorage(); }
     },
-    member: { origin, transport, ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
+    member: { origin, transport, ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
   };
 }
 export type NativeAuthPorts = Awaited<ReturnType<typeof createNativeAuthPorts>>;

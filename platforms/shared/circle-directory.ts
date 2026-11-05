@@ -4,10 +4,11 @@ import { parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt,
   parseCircleAttendanceMutation, circleAttendanceMutationBody, parseCircleAttendanceReceipt,
   type CircleDetail, type CircleManagement, type MyCircles } from '../../lib/circles/membership';
 import { isUuid } from '../../lib/ids/uuid';
+import { parseCircleCompleteMutation, circleCompleteMutationBody, parseOwnedCircleCompleteReceipt } from '../../lib/circles/hosting';
 import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
 
 export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport;
-  memberId?: string; attendanceTransport?: CircleTransport;
+  memberId?: string; attendanceTransport?: CircleTransport; hostingTransport?: CircleTransport;
   timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
 export type CircleAttendanceReview = { date: string; status: 'going' | 'not_going'; previousStatus: 'going' | 'not_going' | null;
   circleTitle: string; time: string; timezone: string };
@@ -16,12 +17,12 @@ export type CircleDirectoryModel = {
   phase: 'idle' | 'loading' | 'ready' | 'review' | 'sending' | 'unknown' | 'unavailable' | 'closed';
   list: 'discover' | 'mine' | null; page: DiscoveryPageReply | null; mine: MyCircles | null;
   selected: string | null; detail: CircleDetail | null; management: CircleManagement | null;
-  intent: 'join' | 'leave' | 'rsvp' | null; attendanceReview: CircleAttendanceReview | null; message: string;
+  intent: 'join' | 'leave' | 'rsvp' | 'complete' | null; attendanceReview: CircleAttendanceReview | null; message: string;
   canSearch: boolean; canNextPage: boolean; canFirstPage: boolean; canMine: boolean; canSelect: boolean; canRefresh: boolean;
-  canPrepareJoin: boolean; canPrepareLeave: boolean; canPrepareAttendance: boolean; canConfirm: boolean; canRetry: boolean; canCancel: boolean;
+  canPrepareJoin: boolean; canPrepareLeave: boolean; canPrepareAttendance: boolean; canPrepareComplete: boolean; canConfirm: boolean; canRetry: boolean; canCancel: boolean;
   canBack: boolean; canOpenDiscussion: boolean; canNavigate: boolean;
 };
-type Action = 'join' | 'leave' | 'rsvp';
+type Action = 'join' | 'leave' | 'rsvp' | 'complete';
 type AttendanceIntent = Pick<CircleAttendanceReview, 'date' | 'status'>;
 type Pending = { action: Action; circleId: string; requestId: string; expectedRevision: number; body: string; management: boolean; attendance?: AttendanceIntent };
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -33,6 +34,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
   if (!config.owner || !['scope', 'bearer', 'subscribe'].every(key => typeof config.owner[key as keyof CircleOwner] === 'function')
     || typeof config.transport !== 'function' || config.publicTransport !== undefined && typeof config.publicTransport !== 'function'
     || config.attendanceTransport !== undefined && typeof config.attendanceTransport !== 'function'
+    || config.hostingTransport !== undefined && typeof config.hostingTransport !== 'function'
     || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000
     || config.initialOnline !== undefined && typeof config.initialOnline !== 'boolean'
     || config.newRequestId !== undefined && typeof config.newRequestId !== 'function') throw Error('Approved Circle connections required');
@@ -42,6 +44,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
   let detail: CircleDetail | null = null, management: CircleManagement | null = null, intent: Action | null = null;
   let attendanceReview: CircleAttendanceReview | null = null;
   const attendanceAvailable = Boolean(config.attendanceTransport && isUuid(config.memberId) && config.memberId === config.memberId?.toLowerCase());
+  const hostingAvailable = Boolean(config.hostingTransport && isUuid(config.memberId) && config.memberId === config.memberId?.toLowerCase());
   let pending: Pending | null = null, minimumRevision = 0, request = defaultDiscoveryPageRequest(), offOwner = () => {};
   let message = config.publicTransport ? 'Search for a Circle or load your Circles when ready.' : 'Public Circle search is unavailable in this connection. You can check your Circles.';
   const listeners = new Set<(model: CircleDirectoryModel) => void>(), requests = new Set<AbortController>();
@@ -49,6 +52,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
   const enabled = () => publicEnabled() && scope !== null && config.owner.scope() === scope;
   const allowed = (action: Action, attendance: AttendanceIntent | null = attendanceReview) => action === 'join' ? Boolean(detail?.capabilities.canJoin)
     : action === 'leave' ? Boolean(detail?.capabilities.canLeave || management?.capabilities.canLeave)
+      : action === 'complete' ? Boolean(hostingAvailable && (detail?.capabilities.canComplete || management?.capabilities.canComplete))
       : Boolean(attendanceAvailable && detail?.capabilities.canRsvp && attendance && detail.meetings.some(meeting => meeting.date === attendance.date));
   const model = (): CircleDirectoryModel => {
     const canNavigate = !busy && !pending && phase !== 'review', publicReady = publicEnabled() && canNavigate, ready = enabled() && canNavigate;
@@ -59,6 +63,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       canSelect: ready && Boolean(page?.circles.length || own?.items.length), canRefresh: ready && selected !== null,
       canPrepareJoin: ready && Boolean(config.newRequestId) && allowed('join'),
       canPrepareLeave: ready && Boolean(config.newRequestId) && allowed('leave'),
+      canPrepareComplete: ready && Boolean(config.newRequestId) && allowed('complete'),
       canPrepareAttendance: ready && Boolean(config.newRequestId && attendanceAvailable && detail?.capabilities.canRsvp && detail.meetings.length),
       canConfirm: enabled() && !busy && (phase === 'unknown' && pending !== null || phase === 'review' && intent !== null && allowed(intent)),
       canRetry: enabled() && !busy && phase === 'unknown' && pending !== null,
@@ -71,10 +76,10 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
     generation++; for (const controller of requests) controller.abort(); clear(); busy = false; phase = attached ? 'idle' : 'closed'; message = notice; emit();
   }
   const current = (g: number, privateCall = true) => generation === g && (privateCall ? enabled() : publicEnabled());
-  async function send(path: string, method: 'GET' | 'POST', g: number, body?: string, publicCall = false, attendanceCall = false) {
+  async function send(path: string, method: 'GET' | 'POST', g: number, body?: string, publicCall = false, attendanceCall = false, hostingCall = false) {
     const expected = scope, abort = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
     const live = () => current(g, !publicCall) && !abort.signal.aborted && (publicCall || scope === expected);
-    if (!live() || publicCall && !config.publicTransport || attendanceCall && !attendanceAvailable) throw Error('Circle connection unavailable');
+    if (!live() || publicCall && !config.publicTransport || attendanceCall && !attendanceAvailable || hostingCall && !hostingAvailable) throw Error('Circle connection unavailable');
     requests.add(abort);
     try {
       return await Promise.race([(async () => {
@@ -85,7 +90,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
           headers = { Authorization: `Bearer ${bearer}`, ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) };
         }
         if (!live()) throw Error('Circle lifetime ended');
-        const response = await (publicCall ? config.publicTransport! : attendanceCall ? config.attendanceTransport! : config.transport)(origin + path,
+        const response = await (publicCall ? config.publicTransport! : attendanceCall ? config.attendanceTransport! : hostingCall ? config.hostingTransport! : config.transport)(origin + path,
           { method, headers, ...(body === undefined ? {} : { body }), cache: 'no-store', redirect: 'error', credentials: 'omit', signal: abort.signal });
         if (!live() || response.redirected || response.url !== origin + path) throw Error('Circle response refused');
         const value = await response.json();
@@ -179,16 +184,21 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
           if (!mutation || !attendanceAvailable) throw Error('Attendance review unavailable');
           pending = { action, circleId: id, requestId, expectedRevision: revision, management: false,
             attendance: { date: mutation.date, status: mutation.status }, body: circleAttendanceMutationBody(mutation) };
+        } else if (action === 'complete') {
+          const mutation = parseCircleCompleteMutation({ expectedMemberId: config.memberId, requestId, expectedRevision: revision });
+          if (!mutation || !hostingAvailable) throw Error('Completion review unavailable');
+          pending = { action, circleId: id, requestId, expectedRevision: revision, management: minimal, body: circleCompleteMutationBody(mutation) };
         } else pending = { action, circleId: id, requestId, expectedRevision: revision, management: minimal, body: JSON.stringify({ requestId, expectedRevision: revision }) };
       }
       if (!current(g) || !pending) return;
       const exact = pending;
-      const result = await send(`/api/circles/${exact.circleId}/${exact.action}`, 'POST', g, exact.body, false, exact.action === 'rsvp');
+      const result = await send(`/api/circles/${exact.circleId}/${exact.action}`, 'POST', g, exact.body, false, exact.action === 'rsvp', exact.action === 'complete');
       if (!current(g)) return;
       const receipt = result.status === 200 ? exact.action === 'rsvp'
         ? parseCircleAttendanceReceipt(result.body, exact.circleId, exact.requestId, config.memberId)
+        : exact.action === 'complete' ? parseOwnedCircleCompleteReceipt(result.body, exact.circleId, exact.requestId, config.memberId)
         : parseCircleMembershipReceipt(result.body, exact.action, exact.circleId, exact.requestId) : null;
-      if (receipt && receipt.state.revision >= exact.expectedRevision + (exact.action === 'rsvp' ? 1 : 0)
+      if (receipt && receipt.state.revision >= exact.expectedRevision + (exact.action === 'complete' ? 0 : 1)
         && (exact.action !== 'rsvp' || receipt.receipt.date === exact.attendance?.date && receipt.receipt.status === exact.attendance?.status)) {
         minimumRevision = receipt.state.revision; pending = null; intent = null;
         await read(g, null, exact.action); return;
@@ -228,7 +238,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       const g = ++generation; clear(); selected = id; await read(g, null);
     },
     refresh() { return model().canRefresh ? read(++generation, null) : Promise.resolve(); },
-    prepare(action: 'join' | 'leave') { return (action === 'join' ? model().canPrepareJoin : action === 'leave' && model().canPrepareLeave) ? read(++generation, action) : Promise.resolve(); },
+    prepare(action: 'join' | 'leave' | 'complete') { return (action === 'join' ? model().canPrepareJoin : action === 'leave' ? model().canPrepareLeave : action === 'complete' && model().canPrepareComplete) ? read(++generation, action) : Promise.resolve(); },
     prepareAttendance(date: string, status: 'going' | 'not_going') {
       return model().canPrepareAttendance && membershipDay(date) && ['going', 'not_going'].includes(status) && detail?.meetings.some(meeting => meeting.date === date)
         ? read(++generation, 'rsvp', false, { date, status }) : Promise.resolve();

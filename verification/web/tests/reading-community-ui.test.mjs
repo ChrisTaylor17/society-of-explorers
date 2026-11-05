@@ -13,7 +13,7 @@ async function fixture() {
   const metadata = await system.app.load('lib/books/editions.ts').readBookEdition('hamlet');
   const program = { version: 1, bookId: metadata.bookId, editionId: metadata.edition.editionId, sessions: [{ from: 35, to: 150 }, { from: 151, to: 300 }] };
   system.setActor(IDS.newcomer);
-  const response = await system.dispatch('/api/circles', 'POST', { ...await creationInput(system.db), readingProgram: program, requestId: requestId() });
+  const response = await system.dispatch('/api/circles', 'POST', { ...await creationInput(system.db), expectedMemberId: IDS.newcomer, readingProgram: program, requestId: requestId() });
   assert.equal(response.status, 200, await response.clone().text());
   const created = await response.json();
   return { system, metadata, program, id: created.circleId };

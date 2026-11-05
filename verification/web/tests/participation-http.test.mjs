@@ -10,7 +10,7 @@ const DATE = '2026-11-03';
 const plain = value => JSON.parse(JSON.stringify(value));
 const context = id => ({ params: Promise.resolve({ circleId: id }) });
 const capabilities = (extra = {}) => ({ canJoin: false, canLeave: true, canRsvp: true, canComplete: false, canReadConversation: true, ...extra });
-const createBody = (extra = {}) => ({ requestId: KEY, title: 'Fictional Readers', description: null, format: 'hybrid', city: 'Boston', region: 'MA', venueName: 'Main Library', venueType: 'library', weekday: 2, time: '19:00', timezone: 'America/New_York', startDate: DATE, maxMembers: 8, onlineUrl: 'https://meet.example.test/fictional', ...extra });
+const createBody = (extra = {}) => ({ expectedMemberId: '22222222-2222-4222-8222-222222222222', requestId: KEY, title: 'Fictional Readers', description: null, format: 'hybrid', city: 'Boston', region: 'MA', venueName: 'Main Library', venueType: 'library', weekday: 2, time: '19:00', timezone: 'America/New_York', startDate: DATE, maxMembers: 8, onlineUrl: 'https://meet.example.test/fictional', ...extra });
 const snapshot = (extra = {}) => ({ kind: 'circle', circle: { id: CIRCLE, title: 'Fictional Readers', description: null, max_members: 8, start_date: `${DATE}T00:00:00+00:00`, status: 'forming', created_at: `${DATE}T00:00:00Z`,
   circle_format: 'hybrid', circle_city: 'Boston', circle_region: 'MA', circle_venue_name: 'Main Library', circle_venue_type: 'library', circle_weekday: 2, circle_time: '19:00', circle_timezone: 'America/New_York', circle_hidden: false, circle_reading_program: null },
   memberCount: 2, hostName: 'Fictional Host', revision: 3, ended: false, nextMeeting: DATE,
@@ -45,7 +45,7 @@ test('hosting eligibility is canonical, explicit, bounded and private', async ()
   const a = fixture(); a.respond = () => ({ data: { canCreate: true, activeHosted: 1, maxActiveHosted: 3, otherActor: a.ADA }, error: null });
   const response = await a.load('start').GET(a.request(undefined));
   assert.equal(response.status, 200); privateHeaders(response);
-  assert.deepEqual(await response.json(), { canCreate: true, activeHosted: 1, maxActiveHosted: 3 });
+  assert.deepEqual(await response.json(), { memberId: a.JULES, canCreate: true, activeHosted: 1, maxActiveHosted: 3 });
   assert.deepEqual(a.calls, [{ name: 'soe_circle_start', args: { p_actor: a.JULES } }]);
   a.app.setUser(null); assert.equal((await a.load('start').GET(a.request(undefined))).status, 401);
 });
@@ -61,7 +61,7 @@ test('create requires a UUID receipt key and supported fields before the atomic 
 
 test('create delegates one normalized payload to SQL without a sequential REST fallback', async () => {
   const a = fixture(); a.respond = () => ({ data: receipt('create'), error: null });
-  const response = await a.load('').POST(a.request(createBody({ title: '  Fictional   Readers ' })));
+  const response = await a.load('').POST(a.request(createBody({ title: 'Fictional Readers' })));
   assert.equal(response.status, 200); privateHeaders(response);
   assert.equal((await response.json()).circleId, CIRCLE);
   assert.equal(a.calls.length, 1); assert.equal(a.calls[0].name, 'soe_circle_create');
@@ -86,7 +86,7 @@ test('join, leave, RSVP and completion forward only the canonical actor and revi
   const a = fixture();
   for (const action of ['join', 'leave', 'rsvp', 'complete']) {
     a.respond = () => ({ data: receipt(action), error: null });
-    const body = { requestId: KEY, expectedRevision: 3, ...(action === 'rsvp' ? { expectedMemberId: a.JULES, date: DATE, status: 'going' } : {}) };
+    const body = { requestId: KEY, expectedRevision: 3, ...(action === 'rsvp' ? { expectedMemberId: a.JULES, date: DATE, status: 'going' } : action === 'complete' ? { expectedMemberId: a.JULES } : {}) };
     const response = await a.load(`[circleId]/${action}`).POST(a.request(body), context(CIRCLE));
     assert.equal(response.status, 200, action); assert.equal((await response.json()).receipt.action, action);
     assert.deepEqual(a.calls.at(-1), { name: `soe_circle_${action}`, args: { p_actor: a.JULES, p_circle_id: CIRCLE, p_expected_revision: 3, p_request_id: KEY,

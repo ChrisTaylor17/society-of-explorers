@@ -20,6 +20,7 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.UUID
 import org.json.JSONObject
+import org.json.JSONArray
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -188,6 +189,8 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     require(url.scheme == "https" && origin == config.origin && url.username.isEmpty() && url.password.isEmpty()
       && url.fragment == null && url.toString() == input.url)
     if (url.encodedPath == "/api/great-books/passage") { validatePassageQuery(url.encodedQuery); return }
+    val edition = Regex("/api/great-books/text/([a-z-]+)").matchEntire(url.encodedPath)
+    if (edition != null) { require(url.encodedQuery == null && savedReadingBook(edition.groupValues[1])); return }
     if (Regex("/api/explorer/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").matches(url.encodedPath)) {
       require(url.encodedQuery == null); return
     }
@@ -251,8 +254,12 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val detail = Regex("/api/circles/([0-9a-fA-F-]{36})(?:/membership)?").matchEntire(url.encodedPath)
     val participation = Regex("/api/circles/([0-9a-fA-F-]{36})/(join|leave)").matchEntire(url.encodedPath)
     val attendance = Regex("/api/circles/([0-9a-f-]{36})/rsvp").matchEntire(url.encodedPath)
+    val completion = Regex("/api/circles/([0-9a-f-]{36})/complete").matchEntire(url.encodedPath)
     if (url.encodedPath == "/api/auth/member") { require(input.method == "GET" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/auth/ensure-member") { require(input.method == "POST" && url.encodedQuery == null) }
+    else if (url.encodedPath == "/api/circles/start") { require(input.method == "GET" && url.encodedQuery == null) }
+    else if (url.encodedPath == "/api/circles") { require(input.method == "POST" && url.encodedQuery == null); validateCreationBody(input.body ?: throw IllegalArgumentException()) }
+    else if (completion != null) { require(uuid(completion.groupValues[1]) && input.method == "POST" && url.encodedQuery == null); validateCompletionBody(input.body ?: throw IllegalArgumentException()) }
     else if (url.encodedPath == "/api/members/profile") {
       require(url.encodedQuery == null)
       if (input.method == "POST") validateProfileBody(input.body ?: throw IllegalArgumentException())
@@ -340,6 +347,68 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
     val days = when (month) { 2 -> if (leap) 29 else 28; 4, 6, 9, 11 -> 30; else -> 31 }
     return day in 1..days
+  }
+  private fun validateCompletionBody(body: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 160)
+    val value = JSONObject(body)
+    require(value.keys().asSequence().toSet() == setOf("expectedMemberId", "requestId", "expectedRevision"))
+    val member = value.get("expectedMemberId"); val key = value.get("requestId"); val revision = value.get("expectedRevision")
+    require(member is String && uuid(member) && member == member.lowercase() && key is String && uuid(key) && key == key.lowercase())
+    require(revision is Int || revision is Long)
+    val version = (revision as Number).toLong(); require(version in 0..9007199254740991L)
+    require(body == "{\"expectedMemberId\":" + profileQuote(member) + ",\"requestId\":" + profileQuote(key) + ",\"expectedRevision\":" + version + "}")
+  }
+  /** Native structural/size/encoding boundary. The shared canonical parser and
+   * server independently validate current source pins and calendar eligibility. */
+  private fun validateCreationBody(body: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 12000)
+    val value = JSONObject(body)
+    val fields = listOf("expectedMemberId", "requestId", "title", "description", "format", "city", "region", "venueName", "venueType", "weekday", "time", "timezone", "startDate", "maxMembers", "onlineUrl")
+    require(value.keys().asSequence().toSet() == (fields + if (value.has("readingProgram")) listOf("readingProgram") else emptyList()).toSet())
+    val member = value.get("expectedMemberId"); val key = value.get("requestId")
+    require(member is String && uuid(member) && member == member.lowercase() && key is String && uuid(key) && key == key.lowercase())
+    fun text(name: String, maximum: Int, nullable: Boolean = false): String? {
+      val raw = value.get(name); if (raw == JSONObject.NULL && nullable) return null
+      require(raw is String); profileText(raw, maximum, true, true)
+      require(raw == raw.replace(Regex("[\\u0020\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+"), " ").trim())
+      return raw
+    }
+    fun number(name: String, minimum: Long, maximum: Long): Long {
+      val raw = value.get(name); require(raw is Int || raw is Long)
+      val parsed = (raw as Number).toLong(); require(parsed in minimum..maximum); return parsed
+    }
+    val title = text("title", 120)!!; require(title.length >= 4)
+    val description = text("description", 600, true); val format = text("format", 20)!!
+    require(format in setOf("in_person", "online", "hybrid"))
+    val city = text("city", 80, true); val region = text("region", 40, true); val venueName = text("venueName", 120, true); val venueType = text("venueType", 30)!!
+    require(venueType in setOf("library", "cafe", "community_center", "campus", "place_of_worship", "other_public", "online"))
+    require(if (format == "online") venueType == "online" && venueName == null else venueType != "online" && city != null && venueName != null)
+    val weekday = number("weekday", 0, 6); val time = text("time", 5)!!; require(Regex("([01][0-9]|2[0-3]):[0-5][0-9]").matches(time))
+    val timezone = text("timezone", 40)!!; require(timezone in setOf("America/New_York", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu", "Europe/London", "UTC"))
+    val startDate = text("startDate", 10)!!; require(attendanceDay(startDate)); val maximum = number("maxMembers", 3, 12)
+    val onlineUrl = text("onlineUrl", 300, true)
+    if (format == "in_person") require(onlineUrl == null) else {
+      require(onlineUrl != null); val link = onlineUrl.toHttpUrl()
+      require(link.scheme == "https" && link.host.contains('.') && link.username.isEmpty() && link.password.isEmpty() && link.toString() == onlineUrl)
+    }
+    fun quote(raw: String?) = raw?.let { profileQuote(it) } ?: "null"
+    var canonical = "{\"expectedMemberId\":" + profileQuote(member) + ",\"requestId\":" + profileQuote(key) + ",\"title\":" + quote(title) + ",\"description\":" + quote(description) + ",\"format\":" + quote(format) + ",\"city\":" + quote(city) + ",\"region\":" + quote(region) + ",\"venueName\":" + quote(venueName) + ",\"venueType\":" + quote(venueType) + ",\"weekday\":" + weekday + ",\"time\":" + quote(time) + ",\"timezone\":" + quote(timezone) + ",\"startDate\":" + quote(startDate) + ",\"maxMembers\":" + maximum + ",\"onlineUrl\":" + quote(onlineUrl)
+    if (value.has("readingProgram")) {
+      val program = value.get("readingProgram"); require(program is JSONObject)
+      require(program.keys().asSequence().toSet() == setOf("version", "bookId", "editionId", "sessions"))
+      val version = program.get("version"); require(version is Int && version == 1)
+      val book = program.get("bookId"); val edition = program.get("editionId"); val sessions = program.get("sessions")
+      require(book is String && savedReadingBook(book) && edition is String && Regex("pg-[1-9][0-9]{0,9}-[a-f0-9]{64}").matches(edition))
+      require(sessions is JSONArray && sessions.length() in 1..12)
+      val rows = (0 until sessions.length()).joinToString(",", "[", "]") { index ->
+        val row = sessions.get(index); require(row is JSONObject && row.keys().asSequence().toSet() == setOf("from", "to"))
+        val from = row.get("from"); val to = row.get("to"); require((from is Int || from is Long) && (to is Int || to is Long))
+        val beginning = (from as Number).toLong(); val end = (to as Number).toLong(); require(beginning in 0..99999L && end in beginning..99999L)
+        "{\"from\":" + beginning + ",\"to\":" + end + "}"
+      }
+      canonical += ",\"readingProgram\":{\"version\":1,\"bookId\":" + quote(book) + ",\"editionId\":" + quote(edition) + ",\"sessions\":" + rows + "}"
+    }
+    require(body == canonical + "}")
   }
   private fun savedReadingBook(value: String) = value in setOf("apology", "divine-comedy", "genealogy-of-morals", "hamlet", "meditations", "odyssey", "relativity", "republic")
   /** Private saved-place CAS wire policy. Shared JS and server contracts also

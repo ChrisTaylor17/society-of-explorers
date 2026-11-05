@@ -10,7 +10,7 @@ export async function participationApp() {
   const db = await createDb(), app = offlineApp();
   // New discovery is a required service RPC. Existing actual-HTTP fixtures
   // apply the same two additive candidates; prior SQL bytes stay unchanged.
-  for (const name of ['circle-discovery-unicode.sql', 'circle-discovery-search.sql', 'circle-attendance-preflight.sql', 'circle-attendance-apply.sql']) {
+  for (const name of ['circle-discovery-unicode.sql', 'circle-discovery-search.sql', 'circle-attendance-preflight.sql', 'circle-attendance-apply.sql', 'circle-membership-intent-preflight.sql', 'circle-membership-intent-apply.sql']) {
     await db.exec(await readFile(new URL('../../../../docs/sql/' + name, import.meta.url), 'utf8'));
   }
   let actor = IDS.host;
@@ -109,5 +109,5 @@ export async function participationApp() {
     if (!handler) throw Error('Unexpected fixture route: ' + method + ' ' + url.pathname);
     return handler(request(body, url.pathname + url.search, headers), params ? { params: Promise.resolve(params) } : undefined);
   }
-  return { db, app, admin, calls, request, dispatch, setActor: value => { actor = value; }, close: () => db.close() };
+  return { db, app, admin, calls, request, dispatch, get memberId() { return actor; }, setActor: value => { actor = value; }, close: () => db.close() };
 }

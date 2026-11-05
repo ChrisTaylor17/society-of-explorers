@@ -8,7 +8,8 @@ import { readBookEdition } from '@/lib/books/editions';
 import { matchesReadingEdition, parseReadingProgram } from './reading-program';
 import { circleWriteOrigin, readCircleReviewJson } from './moderation-server';
 import { getReading } from './path';
-import { CIRCLE_FORMATS, FORMAT_LABELS, TIMEZONES, VENUE_LABELS, VENUE_TYPES, firstMeeting, formatMeeting, pathWeek, validateCircleInput, type CircleFormat, type VenueType } from './schedule';
+import { CIRCLE_FORMATS, FORMAT_LABELS, TIMEZONES, VENUE_LABELS, VENUE_TYPES, firstMeeting, formatMeeting, pathWeek, type CircleFormat, type VenueType } from './schedule';
+import { parseCircleCreateMutation, parseCircleCompleteMutation, parseCircleHostingAccess, parseOwnedCircleCreateReceipt, parseOwnedCircleCompleteReceipt } from './hosting';
 import { CIRCLE_MEMBERSHIP_PAGE_SIZE, membershipDay, membershipInteger, membershipRecord, membershipText,
   parseCircleAttendanceMutation, parseCircleAttendanceReceipt, parseCircleCreateReceipt, parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt, parseCircleStart, parseMyCircles,
   type CircleParticipationAction } from './membership';
@@ -119,7 +120,12 @@ export async function circleStart(req: NextRequest): Promise<Response> {
   try {
     const actor = await getAuthenticatedMember(req);
     if (!actor || !isUuid(actor.memberId)) return refuse('Sign in to check Circle hosting.', 401);
-    return await rpc('soe_circle_start', { p_actor: actor.memberId }, parseCircleStart);
+    const mismatch = expectedMember(req, actor.memberId);
+    if (mismatch) return mismatch;
+    return await rpc('soe_circle_start', { p_actor: actor.memberId }, value => {
+      const parsed = parseCircleStart(value);
+      return parsed ? parseCircleHostingAccess({ memberId: actor.memberId.toLowerCase(), ...parsed }, actor.memberId.toLowerCase()) : null;
+    });
   } catch { return unavailable(); }
 }
 
@@ -168,26 +174,27 @@ async function mutationInput(req: NextRequest, supplied?: unknown): Promise<Resu
 export async function circleCreate(req: NextRequest): Promise<Response> {
   const input = await mutationInput(req);
   if (!input.ok) return input.response;
-  const body = input.value;
-  if (!onlyFields(body, ['requestId', 'title', 'description', 'format', 'city', 'region', 'venueName', 'venueType', 'weekday', 'time', 'timezone', 'startDate', 'maxMembers', 'onlineUrl', 'readingProgram'])) return refuse('Use only the supported Circle creation fields.', 400);
-  // Calendar eligibility belongs in SQL after receipt lookup. An exact replay
-  // remains readable after its original start date or creation quota changes.
-  if (!membershipDay(body.startDate)) return refuse('Use a valid start date.', 400);
-  const parsed = validateCircleInput(body, new Date(`${body.startDate}T12:00:00Z`));
-  if (!parsed.ok) return refuse(parsed.error, 400);
+  // Normalize against the supplied date, not today's clock: exact historical
+  // retries reach SQL receipt lookup before current creation eligibility.
+  const body = parseCircleCreateMutation(input.value);
+  if (!body) return refuse('A reviewed account and normalized Circle listing are required.', 400);
+  const { expectedMemberId: reviewedMember, requestId, ...listing } = body;
   try {
     const actor = await getAuthenticatedMember(req);
     if (!actor || !isUuid(actor.memberId)) return refuse('Sign in to start a Circle.', 401);
     const mismatch = expectedMember(req, actor.memberId);
     if (mismatch) return mismatch;
+    if (reviewedMember !== actor.memberId.toLowerCase()) return refuse('The account changed. Review the Circle with your current account.', 409);
     const budget = rateLimit(`circle-participation:${actor.memberId}`, 120, 60 * 60 * 1000);
     if (!budget.ok) return refuse('Too many requests. Try again later.', 429);
-    if (parsed.value.readingProgram) {
-      const metadata = await readBookEdition(parsed.value.readingProgram.bookId);
-      if (!metadata || !matchesReadingEdition(metadata, parsed.value.readingProgram)) return refuse('The selected source edition changed. Refresh the reading selection before starting a Circle.', 409);
+    if (listing.readingProgram) {
+      const metadata = await readBookEdition(listing.readingProgram.bookId);
+      if (!metadata || !matchesReadingEdition(metadata, listing.readingProgram)) return refuse('The selected source edition changed. Refresh the reading selection before starting a Circle.', 409);
     }
-    const requestId = (body.requestId as string).toLowerCase();
-    return await rpc('soe_circle_create', { p_actor: actor.memberId, p_request_id: requestId, p_input: parsed.value }, value => parseCircleCreateReceipt(value, requestId), true);
+    return await rpc('soe_circle_create', { p_actor: actor.memberId, p_request_id: requestId, p_input: listing }, value => {
+      const parsed = parseCircleCreateReceipt(value, requestId);
+      return parsed ? parseOwnedCircleCreateReceipt({ memberId: actor.memberId.toLowerCase(), ...parsed }, requestId, reviewedMember) : null;
+    }, true);
   } catch { return unavailable(true); }
 }
 
@@ -197,8 +204,10 @@ export async function circleMutation(req: NextRequest, circleId: string, action:
   if (!input.ok) return input.response;
   const body = input.value;
   const attendance = action === 'rsvp' ? parseCircleAttendanceMutation(body) : null;
+  const completion = action === 'complete' ? parseCircleCompleteMutation(body) : null;
+  if (action === 'complete' && !completion) return refuse('A reviewed account and Circle completion are required.', 400);
   if (action === 'rsvp' && !attendance) return refuse('A reviewed account, request and meeting response are required.', 400);
-  if (!onlyFields(body, ['requestId', 'expectedRevision', ...(action === 'rsvp' ? ['expectedMemberId', 'date', 'status'] : []), ...(supplied === undefined ? [] : ['cohortId'])])
+  if (!onlyFields(body, ['requestId', 'expectedRevision', ...(action === 'rsvp' ? ['expectedMemberId', 'date', 'status'] : action === 'complete' ? ['expectedMemberId'] : []), ...(supplied === undefined ? [] : ['cohortId'])])
     || (supplied !== undefined && (typeof body.cohortId !== 'string' || body.cohortId.toLowerCase() !== circleId.toLowerCase()))) return refuse('Use only the supported participation fields.', 400);
   if (!membershipInteger(body.expectedRevision)) return refuse('A current expectedRevision is required. Refresh before confirming.', 400);
   if (action === 'rsvp' && (!membershipDay(body.date) || !['going', 'not_going'].includes(String(body.status)))) return refuse('Use a valid meeting date and RSVP status.', 400);
@@ -207,6 +216,7 @@ export async function circleMutation(req: NextRequest, circleId: string, action:
     if (!actor || !isUuid(actor.memberId)) return refuse('Sign in to change Circle participation.', 401);
     const mismatch = expectedMember(req, actor.memberId);
     if (mismatch) return mismatch;
+    if (completion && completion.expectedMemberId !== actor.memberId.toLowerCase()) return refuse('The account changed. Review completion with your current account.', 409);
     if (attendance && attendance.expectedMemberId !== actor.memberId.toLowerCase()) return refuse('The account changed. Check current access before reviewing another RSVP.', 409);
     const budget = rateLimit(`circle-participation:${actor.memberId}`, 120, 60 * 60 * 1000);
     if (!budget.ok) return refuse('Too many requests. Try again later.', 429);
@@ -215,6 +225,8 @@ export async function circleMutation(req: NextRequest, circleId: string, action:
       p_request_id: requestId, ...(action === 'rsvp' ? { p_date: body.date, p_status: body.status } : {}) }, value => {
       const parsed = parseCircleMembershipReceipt(value, action, id, requestId);
       if (!parsed || parsed.state.revision < (body.expectedRevision as number)) return null;
+      if (['join', 'leave'].includes(action) && parsed.state.revision <= (body.expectedRevision as number)) return null;
+      if (completion) return parseOwnedCircleCompleteReceipt({ memberId: actor.memberId.toLowerCase(), ...parsed }, id, requestId, completion.expectedMemberId);
       if (attendance) {
         if (parsed.state.revision <= attendance.expectedRevision || parsed.receipt.date !== attendance.date || parsed.receipt.status !== attendance.status) return null;
         return parseCircleAttendanceReceipt({ memberId: actor.memberId.toLowerCase(), ...parsed }, id, requestId, attendance.expectedMemberId);

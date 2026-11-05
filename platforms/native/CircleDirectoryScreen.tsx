@@ -7,6 +7,7 @@ import { formatDay } from '../../lib/circles/schedule';
 import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
+import { CircleCommunityNorms } from './CircleCommunityNorms';
 import { CircleReadingScreen } from './CircleReadingScreen';
 import type { SavedReading } from '../shared/saved-reading';
 
@@ -178,14 +179,14 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
         <AgreedReading circle={circle} available={Boolean(config.passageTransport)} disabled={m?.phase !== 'ready' || !m?.canNavigate}
           onRead={(context, index) => act(() => void openReading(context, index))}/>
         </>}
-      </View> : management ? <Text style={styles.copy}>The full listing is unavailable. You can check your membership and leave this Circle here.</Text> : null}
+      </View> : management ? <Text style={styles.copy}>The full listing is unavailable. You can check your membership and leave this Circle here. Current hosts can also review completing it when that control is available.</Text> : null}
       <Action label="Check current Circle" disabled={!m?.canRefresh} onPress={() => act(() => void session?.refresh())}/>
       {m?.phase === 'review' ? <View style={styles.card}>
-        <Text accessibilityRole="header" style={styles.heading}>{m.intent === 'join' ? 'Review joining this Circle' : m.intent === 'rsvp' ? 'Review your attendance response' : 'Review leaving this Circle'}</Text>
-        {m.intent === 'rsvp' && m.attendanceReview ? <AttendanceReview date={m.attendanceReview.date} status={m.attendanceReview.status} previousStatus={m.attendanceReview.previousStatus} circleTitle={m.attendanceReview.circleTitle} time={m.attendanceReview.time} timezone={m.attendanceReview.timezone}/> : <Text style={styles.copy}>{m.intent === 'join' ? 'Join this free Circle with your current member account and share your member display name with the group. Read the community norms below before joining. Its members will be able to see your contributions when you post.' : 'Leave this Circle, remove your current RSVPs and end your member discussion access. Your posted messages remain; you can review or withdraw your own messages from My posted messages. If you are the host, you keep hosting responsibility. Completing a hosted Circle is available on the website.'}</Text>}
-        {m.intent === 'join' ? <CommunityNorms/> : null}
-        <Action label={m.intent === 'join' ? 'Confirm join' : m.intent === 'rsvp' ? 'Confirm attendance response' : 'Confirm leave'} disabled={!m.canConfirm} onPress={() => act(() => void session?.confirm())}/>
-        <Action label={m.intent === 'rsvp' ? 'Cancel attendance change' : 'Cancel membership change'} disabled={!m.canCancel} onPress={() => act(() => session?.cancel())}/>
+        <Text accessibilityRole="header" style={styles.heading}>{m.intent === 'join' ? 'Review joining this Circle' : m.intent === 'rsvp' ? 'Review your attendance response' : m.intent === 'complete' ? 'Review completing this Circle' : 'Review leaving this Circle'}</Text>
+        {m.intent === 'rsvp' && m.attendanceReview ? <AttendanceReview date={m.attendanceReview.date} status={m.attendanceReview.status} previousStatus={m.attendanceReview.previousStatus} circleTitle={m.attendanceReview.circleTitle} time={m.attendanceReview.time} timezone={m.attendanceReview.timezone}/> : <Text style={styles.copy}>{m.intent === 'join' ? 'Join this free Circle with your current member account and share your member display name with the group. Read the community norms below before joining. Its members will be able to see your contributions when you post.' : m.intent === 'complete' ? 'Complete this Circle as its host. This permanently closes new joins and attendance responses. Existing members keep their discussion access and can still leave. Posted messages remain. Completion does not transfer hosting, join you to the Circle or reopen it later.' : 'Leave this Circle, remove your current RSVPs and end your member discussion access. Your posted messages remain; you can review or withdraw your own messages from My posted messages. If you are the host, you keep hosting responsibility. Completing the Circle is a separate host action.'}</Text>}
+        {m.intent === 'join' ? <CircleCommunityNorms/> : null}
+        <Action label={m.intent === 'join' ? 'Confirm join' : m.intent === 'rsvp' ? 'Confirm attendance response' : m.intent === 'complete' ? 'Confirm Circle completion' : 'Confirm leave'} disabled={!m.canConfirm} onPress={() => act(() => void session?.confirm())}/>
+        <Action label={m.intent === 'rsvp' ? 'Cancel attendance change' : m.intent === 'complete' ? 'Cancel Circle completion' : 'Cancel membership change'} disabled={!m.canCancel} onPress={() => act(() => session?.cancel())}/>
       </View> : m?.phase === 'unknown' ? <View style={styles.card}>
         {m.attendanceReview ? <AttendanceReview date={m.attendanceReview.date} status={m.attendanceReview.status} previousStatus={m.attendanceReview.previousStatus} circleTitle={m.attendanceReview.circleTitle} time={m.attendanceReview.time} timezone={m.attendanceReview.timezone}/> : null}
         <Text style={styles.copy}>This participation change may already have completed. Retry only the same request. Closing clears its local retry details, and a request already sent may still finish.</Text>
@@ -193,6 +194,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
       </View> : <>
         {m?.canPrepareJoin ? <Action label="Review joining this Circle" onPress={() => act(() => void session?.prepare('join'))}/> : null}
         {m?.canPrepareLeave ? <Action label="Review leaving this Circle" onPress={() => act(() => void session?.prepare('leave'))}/> : null}
+        {m?.canPrepareComplete ? <Action label="Review completing this Circle" onPress={() => act(() => void session?.prepare('complete'))}/> : null}
       </>}
       <Action label="Open discussion" disabled={!m?.canOpenDiscussion} onPress={() => act(() => {
         const current = session?.model();
@@ -214,34 +216,6 @@ function AttendanceReview({ date, status, previousStatus, circleTitle, time, tim
     <Text style={styles.copy}>{status === 'going' ? 'Mark yourself Going.' : 'Mark yourself Not going.'}</Text>
     <Text style={styles.note}>Previously checked response: {previousStatus === 'going' ? 'Going' : previousStatus === 'not_going' ? 'Not going' : 'No response'}.</Text>
     <Text style={styles.copy}>This response is shared with your Circle. Not going records that you do not plan to attend this meeting and keeps you in the Circle.</Text>
-  </View>;
-}
-
-// Same conduct and meeting-safety expectations as app/circles/norms/page.tsx.
-// Kept local so joining does not need an external browser or another request.
-function CommunityNorms() {
-  const norms = [
-    ['Read charitably', 'State the strongest version of a view before you criticise it, especially one you dislike.'],
-    ['Everyone speaks before anyone speaks twice', 'The host keeps an eye on this. Quiet people are not a problem to be fixed, but the room should make space for them.'],
-    ['Disagree with ideas, not people', 'No insults, no name-calling, no labels in place of arguments. Questions are better than verdicts.'],
-    ['Stay with the text', 'Bring the conversation back to the reading. Current events are welcome when they shed light on it.'],
-    ['What is said in the circle stays in the circle', 'Do not quote other members by name outside the meeting, and never record without everyone’s clear agreement.'],
-    ['No selling, recruiting or campaigning', 'Circles are not a platform for products, causes, parties or congregations, including Society of Explorers memberships.'],
-  ];
-  const safety = [
-    'Meet only in public places: libraries, cafés, community centers, campus rooms. Circles cannot list a private home, and hosts should not invite members to one.',
-    'First names are enough. You never have to share your surname, address, workplace or phone number.',
-    'Online circles share their video link only with members who have joined, never on the public listing.',
-    'Circles are for adults (18+). If you want to run a circle for teenagers, do it through a school or library that has its own safeguarding rules.',
-    'Leave at any time, for any reason, without explaining.',
-    'If anyone is in immediate danger, call 911 (or your local emergency number) first.',
-  ];
-  return <View style={styles.list}>
-    <Text accessibilityRole="header" style={styles.heading}>Community norms and safety</Text>
-    <Text style={styles.copy}>Society of Explorers has Christian and conservative roots and welcomes people of every faith, background and political view. You do not have to share those beliefs to belong. The same conduct standards apply to everyone; moderation considers behavior and evidence, not agreement with a political or religious position.</Text>
-    {norms.map(([title, description]) => <View key={title} style={styles.list}><Text style={styles.copy}>{title}</Text><Text style={styles.note}>{description}</Text></View>)}
-    {safety.map(item => <Text key={item} style={styles.note}>{item}</Text>)}
-    <Text style={styles.note}>Society of Explorers lists circles but does not run, supervise or vet them, and hosts are volunteers, not staff. Use the same judgement you would for any meeting with people you do not know yet.</Text>
   </View>;
 }
 

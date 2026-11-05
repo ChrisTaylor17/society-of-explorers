@@ -8,7 +8,8 @@ async function read(a, path, status = 200) {
   assert.match(response.headers.get('cache-control'), /no-store/); return response.json();
 }
 async function write(a, path, body, status = 200, headers) {
-  const response = await a.dispatch(path, 'POST', body, headers); assert.equal(response.status, status, await response.clone().text());
+  const reviewed = path === '/api/circles' || path.endsWith('/complete') ? { expectedMemberId: a.memberId, ...body } : body;
+  const response = await a.dispatch(path, 'POST', reviewed, headers); assert.equal(response.status, status, await response.clone().text());
   assert.match(response.headers.get('cache-control'), /no-store/); return response.json();
 }
 const action = (snapshot, extra = {}) => ({ expectedRevision: snapshot.revision, requestId: requestId(), ...extra });

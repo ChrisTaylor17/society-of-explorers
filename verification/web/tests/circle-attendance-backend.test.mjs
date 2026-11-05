@@ -58,7 +58,7 @@ test('cookie account switch between proof and RSVP is refused by canonical expec
 });
 test('actual signed wallet switch is guarded for join leave completion and private reads',async()=>{
  const a=await f.walletCookie('author'),b=await f.walletCookie('other');await json(await f.dispatch('/api/auth/member',{headers:{cookie:a}}));
- const headers={origin:ORIGIN,cookie:b,'x-soe-expected-member':f.authorId};for(const action of ['join','leave','complete'])await json(await post({requestId:crypto.randomUUID(),expectedRevision:current.revision},headers,action),409);
+ const headers={origin:ORIGIN,cookie:b,'x-soe-expected-member':f.authorId};for(const action of ['join','leave','complete'])await json(await post({requestId:crypto.randomUUID(),expectedRevision:current.revision,...(action==='complete'?{expectedMemberId:f.authorId}:{})},headers,action),409);
  await json(await read(headers),409);assert.equal(f.sql.filter(x=>x.kind==='rpc').length,0);
 });
 test('invalid explicit bearer cannot fall back to valid cookie or wallet',async()=>{
