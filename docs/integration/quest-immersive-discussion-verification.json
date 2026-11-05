@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T19:39:05.361776+00:00",
+  "baseCheckpoint": "ba34438fff8c433ee1f0ea9a92ddd8f5b4127e5d",
+  "status": "LOCAL_QUEST_IMMERSIVE_DISCUSSION_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "physicalHeadsetVerified": false,
+  "sharedImmersiveMeetingImplemented": false,
+  "composedBrowser": {
+    "path": "platforms/evidence/quest-member-composed-immersive-03.json",
+    "sha256": "da52733ad3656379a9da17f663b74db28d3ae57b712b1f067636e9bc1ea3c2ec",
+    "log": {
+      "path": "platforms/evidence/quest-member-composed-immersive-03.log",
+      "sha256": "112a983521cd462c282b2cc36ac9ff9b682ce688b7a1349c74ddafb3941cba4d"
+    },
+    "manifest": {
+      "path": "platforms/evidence/quest-member-composed-fixture-immersive-03/source-manifest.json",
+      "sha256": "f0d16facfc11719ed23475c59939ac136106375b3bb14ec90d3519cb5e99afec"
+    },
+    "stories": 16,
+    "handlerRequests": 46,
+    "sourceBindings": 119,
+    "sqlBindings": 30,
+    "syntheticHeadset": {
+      "sessions": 8,
+      "ended": 8,
+      "framesDrawn": 68,
+      "textureUploads": 64,
+      "releasedTextures": 7
+    },
+    "cleanup": {
+      "browser": "closed",
+      "database": "closed"
+    },
+    "screenshots": [
+      {
+        "path": "platforms/evidence/quest-member-composed-immersive-03-panel.png",
+        "sha256": "91be826a21d912fa092febaa7546bea2fa12f2dccb8997a85f42dfcb14ace6a5"
+      },
+      {
+        "path": "platforms/evidence/quest-member-composed-immersive-03-320.png",
+        "sha256": "64fddfdfe506ae265ad2b2eca1a991e40d6cb0dd832c03cd4e91219b84664073"
+      }
+    ]
+  },
+  "generatedHost": {
+    "path": "platforms/evidence/quest-immersive-work/shared-build.json",
+    "sha256": "d8635d1f52419fb9ae8893c2331a96edda970ae3656c4b742b3817e49719e03e",
+    "sourceManifest": {
+      "path": "platforms/evidence/quest-immersive-work/shared-source-manifest.json",
+      "sha256": "68456ed14e4b55082a1406597692e466b151cca25bdbb2b3bc95e0a3644d0c12"
+    },
+    "artifactSha256": "ce90683543b0e0adadad9becdedb959f3fb85c8281fa852bb70b31a37c67d960"
+  },
+  "accountTests": {
+    "path": "platforms/evidence/quest-immersive-work/quest-auth.tap",
+    "sha256": "873c2e471ca6e4215ca03c8da14c7c2be62eaa93177bec038a15294a235daf98",
+    "passed": 15
+  },
+  "lint": {
+    "path": "platforms/evidence/quest-immersive-work/final-lint.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exitCode": 0
+  },
+  "build": {
+    "path": "verification/web/evidence/built-shell-quest-immersive-02-next-build.json",
+    "sha256": "649293d68535c43097706612327985a218a1fadda6ab2771b8346a0ec840eb37",
+    "log": {
+      "path": "verification/web/evidence/built-shell-quest-immersive-02-next-build.log",
+      "sha256": "6dc6804316314f5962d1e2202d83965e693cabe6502a53d3bcb592aa09bb3c34"
+    },
+    "inputs": 1046,
+    "typeCheckCompleted": true
+  },
+  "server": {
+    "path": "verification/web/evidence/built-shell-quest-immersive-04-server.json",
+    "sha256": "aa6d44fcbd19ec3b5ff1f4f61d2c01ff89653a9f99e11909a70664b4a1174933",
+    "buildId": "ZHLyb5n-jVxaxtlNWw0Bv",
+    "portClosed": true,
+    "builtFiles": 2344,
+    "startupRuntimeBindings": 768
+  },
+  "builtBrowser": {
+    "path": "verification/web/evidence/quest-immersive-built-04/browser.json",
+    "sha256": "f18892f94747cd24a178d43a6c11cf7c1111194e44c0725c0ab5e66851a86535",
+    "stories": 3,
+    "httpsLoopbackResponses": 101,
+    "closed": true,
+    "externalRequests": 0,
+    "privateRequests": 0,
+    "screenshot": {
+      "path": "verification/web/evidence/quest-immersive-built-04/quest-320.png",
+      "sha256": "a99c2b5bba8f7300da236b1fa45d20996b1a7a47733e24d0fc0c2f2081ae2d41"
+    }
+  },
+  "diagnostics": [
+    {
+      "path": "platforms/evidence/quest-member-composed-immersive-01.json",
+      "sha256": "fd07e0b23600a9e27dff6582b67069e8d2a3377816f4c8ed187d02d0cb7a9150",
+      "finding": "Earlier fixture lacked the current publication-aware RPC. Updated to the existing profile migration fixture."
+    },
+    {
+      "path": "platforms/evidence/quest-member-composed-immersive-02.json",
+      "sha256": "046403328bb68c97a0715249402feb005b5b64d3cbf92adb24f8a3a6eeef9871",
+      "finding": "First passing renderer included an appended archive reply locator. The final run verifies its removal."
+    },
+    {
+      "path": "verification/web/evidence/built-shell-quest-immersive-01-next-build.json",
+      "sha256": "829d8605fa45b814e4a077f95831efe7ada2cc2ef8c7dca6a8321cb1b48b2e92",
+      "finding": "The source guard rejected a README edit during a successful compile. Rebuilt from a fixed snapshot."
+    },
+    {
+      "path": "verification/web/evidence/built-shell-quest-immersive-02-server.json",
+      "sha256": "8b1c5a992db2fa4be8ff7db053baeb4c6a66199baa120ca2b2fa7ad474b9d3cb",
+      "finding": "The first HTTPS harness attempt hit the strict startup guard and stopped the owned server."
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-built-03/browser.json",
+      "sha256": "5a53f588b39010d65ea7613a224fcb1921e07506541b646f3d937e06493330d5",
+      "finding": "Browser response replay missed Next router prefetch paths. The final smoke uses a separate exact-loopback GET guard."
+    }
+  ],
+  "changedSources": {
+    "app/quest/page.tsx": "7ef8affba2b6ea12ee8cef82f4e16dee140980d0f949b6e9c05f9c151226e998",
+    "app/quest/[circleId]/QuestCircle.tsx": "2dbd1fdf6fdcf7d3f11c38761be1cd602fed4fce65cada9d1572a6ad57585b4f",
+    "platforms/quest/README.md": "de76b8fa8ee8ac85c8881cbc68e7a34354ae54dc133f49aa546da6763e33a540",
+    "platforms/quest/member-circle-page.mjs": "9ff6e6eb80396be5e3fef2fd634e404ff2f2f9004ea3ff640f0f2f04e47ab9c2",
+    "platforms/quest/immersive-circle.mjs": "67e959ccd2e294f63b9137c4ff1ee3204eb464a953a7ff522af777a5732c1ef4",
+    "platforms/quest/xr-session.mjs": "7124be8b7584f9d01e2a5545d04146fd1ce31d91f279c68d3a752ab7bcba02bd",
+    "platforms/quest/xr-room.mjs": "81145ff6959f1f7b47c914ef72fe7a1ec0a8b82ced0028347db8dd091c49aa5f",
+    "platforms/quest/circle-host.mjs": "ce90683543b0e0adadad9becdedb959f3fb85c8281fa852bb70b31a37c67d960",
+    "platforms/shared/quest-entry.ts": "7323cfbe718fa5bf8350733c59611cd1550c50dd956af91842fb65a98b81acaa",
+    "platforms/tests/quest-xr-browser-double.mjs": "92c379017ac8e1c46790d82dcdebe0dbc0e443213719d9454241a5e683053f23",
+    "platforms/tests/browser-quest-member-composed.mjs": "635701978d2e98d3031a6262f2c47daaad5461527f061d3e51f798a2ca325a4c",
+    "platforms/tests/bundle-quest-member-composed.mjs": "cac0dfdbe5f58028d66c97aad072ee8289c21777e2d167db16d335e134a4e2dc",
+    "verification/web/tests/support/quest-member-app.mjs": "add15f56352c7ee3be7d03ebd3436a53008aa7e44eb8caa1222607288ff6ff3c",
+    "verification/web/scripts/browser-quest-immersive-shell.mjs": "10cf9a821cf632ed6004e6180463f5618c89a8c97864446da65d06198882df50"
+  }
+}

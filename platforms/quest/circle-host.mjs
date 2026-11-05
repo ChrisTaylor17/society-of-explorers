@@ -2477,5 +2477,6 @@ export {
   createCircleHost,
   createMemberContributions,
   createVerifiedSupabaseCircleOwner,
+  discussionContentSuffix,
   memberCircleConfig
 };

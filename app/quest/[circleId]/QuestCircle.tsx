@@ -59,15 +59,18 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
       ]);
       if (!lifetime.current.mounted || lifetime.current.generation !== generation) return;
       assertContributionsMarkup(document, true);
-      const memberAuth = createQuestMemberAuth(createClient().auth, { origin: window.location.origin,
+      const origin = window.location.origin;
+      const sdk = createClient().auth;
+      const verifiedAuth = (active: () => boolean) => createQuestMemberAuth(sdk, { origin,
         request: (url, init) => window.fetch(url, init),
-        isCurrent: () => lifetime.current.mounted && lifetime.current.generation === generation
-          && document.visibilityState === 'visible' && document.hasFocus() && navigator.onLine !== false,
+        isCurrent: () => lifetime.current.mounted && lifetime.current.generation === generation && navigator.onLine !== false && active(),
       });
+      const memberAuth = verifiedAuth(() => document.visibilityState === 'visible' && document.hasFocus());
       try {
         const view = circleId
-          ? mountExistingMemberCircle({ window, document, config: { circleId, origin: window.location.origin, auth: memberAuth.auth, aiConsent: true } })
-          : mountExistingMemberContributions({ window, document, config: { origin: window.location.origin, auth: memberAuth.auth, aiConsent: true } });
+          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, auth: memberAuth.auth, aiConsent: true,
+            immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate } } })
+          : mountExistingMemberContributions({ window, document, config: { origin, auth: memberAuth.auth, aiConsent: true } });
         connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
       } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
       setPhase('connected'); setNotice(circleId ? 'Account connection opened. Check the member-session and Circle-access messages below.' : 'Account connection opened. Check the member session, then load your own posted messages when ready.');
@@ -131,6 +134,14 @@ export default function QuestCircle({ circleId }: { circleId?: string }) {
       </section>
       <div id="member-circle-workspace">
       {circleId ? <>
+      <section aria-labelledby="quest-immersive-heading">
+        <h2 id="quest-immersive-heading">Immersive Circle discussion</h2>
+        <p>Read recent contributions in your headset. Use the controller trigger to check access and move through the previews. Use the regular browser for the full text, live meeting links, posting and message actions.</p>
+        <p>Opening the room clears the regular Circle view. Check your session when you return.</p>
+        <p id="quest-immersive-status" role="status">Connect a member account to open the immersive room.</p>
+        <button id="quest-immersive-enter" type="button" disabled>Enter immersive room</button>
+        <button id="quest-immersive-exit" type="button" disabled>Exit immersive room</button>
+      </section>
       <section aria-label="Circle access"><p id="circle-host-status" role="status">Circle access is not connected.</p><p id="circle-read-status" role="status" /><button id="circle-refresh" type="button" disabled>Refresh circle access</button><button id="circle-archive-open" type="button" disabled>Open discussion archive</button><button id="circle-close" type="button" disabled>Close and clear Circle</button></section>
       <section id="circle-conversation" aria-labelledby="circle-conversation-heading" hidden><h2 id="circle-conversation-heading">Circle conversation</h2><p>Latest 100 messages. Open the full discussion archive for older conversations.</p><div id="circle-messages" /></section>
       <section id="circle-archive" aria-labelledby="circle-archive-heading" hidden><h2 id="circle-archive-heading">Discussion archive</h2><p id="circle-archive-status" role="status" /><div id="circle-archive-messages" /><button id="circle-archive-next" type="button" hidden>Older discussions</button>

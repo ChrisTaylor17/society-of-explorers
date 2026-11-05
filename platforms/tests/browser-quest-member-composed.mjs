@@ -7,9 +7,14 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { installQuestXrDouble } from './quest-xr-browser-double.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url)), WEB = path.join(ROOT, 'verification/web');
-const output = path.join(ROOT, 'platforms/evidence/quest-member-composed.json');
+const [run, ...extra] = process.argv.slice(2);
+assert(!extra.length && (!run || /^immersive-[a-z0-9-]{1,24}$/.test(run)), 'Use a fresh immersive evidence run name');
+const evidence = path.join(ROOT, 'platforms/evidence/quest-member-composed' + (run ? '-' + run : ''));
+const output = evidence + '.json';
+const fixture = 'platforms/evidence/quest-member-composed-fixture' + (run ? '-' + run : '');
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 function read(name) { const file = path.isAbsolute(name) ? name : path.join(ROOT, name), stat = fs.statSync(file); assert.ok(stat.blocks, 'Refuse offloaded file: ' + name); return fs.readFileSync(file); }
 async function bounded(work, ms = 5000, label = 'Owned operation') { let timer; try { return await Promise.race([Promise.resolve().then(work), new Promise((_, reject) => { timer = setTimeout(() => reject(Error(label + ' timed out')), ms); })]); } finally { clearTimeout(timer); } }
@@ -22,7 +27,8 @@ let browser, ownedBrowserPid, f, failure = null, bundle, css, sourceHashes = {},
 let holdNext = false, held = null;
 const report = status => ({ version: 1, status, startedAt, finishedAt: new Date().toISOString(), stories, api, pageErrors, consoleErrors, unexpected, routeErrors, retiredRoutes,
   cleanup, runtime, sourceHashes, sqlHashes, bundleSHA256: bundle ? sha(bundle) : null, cssSHA256: css ? sha(css) : null, limits, failure, priorReceipt,
-  scope: 'Actual QuestCircle/React/auth bridge/generated Quest host/view and actual Bun CSS modules, actual auth/member + discussion GET handlers and current strict SQL in disposable PGlite. Explicit synthetic identity/SDK events/nonissued credentials and narrow PostgREST/NextResponse/NextLink ports; virtual HTTPS entirely intercepted. No real provider/cookie verification, SDK auth network, hosted database, multi-backend scheduling, native bridge, Quest headset or immersive acceptance. Prior Quest7 outputs untouched.' });
+  scope: 'Actual QuestCircle, auth bridge, host, handlers and strict SQL over intercepted HTTPS. Synthetic identity, credentials, delivery and device input. ' +
+    (run ? 'The headset event/frame double drives real Chromium canvas text, shaders, texture uploads and draw calls. Physical headset, provider and hosted acceptance remain open.' : 'Regular browser view only.') });
 const write = status => { fs.mkdirSync(path.dirname(output), { recursive: true }); fs.writeFileSync(output, JSON.stringify(report(status), null, 2) + '\n'); };
 const pass = name => { stories.push(name); write('RUNNING'); console.log('PASS ' + stories.length + ': ' + name); };
 function cleanErrors() { assert.deepEqual(pageErrors, []); assert.deepEqual(consoleErrors, []); assert.deepEqual(unexpected, []); assert.deepEqual(routeErrors, []); }
@@ -35,25 +41,27 @@ try {
   assert.ok(process.env.SOE_PLAYWRIGHT_PACKAGE && executablePath, 'Explicit cached runtimes required');
   read(executablePath); read(path.join(process.env.SOE_PLAYWRIGHT_PACKAGE, 'package.json'));
   const require = createRequire(path.join(process.env.SOE_PLAYWRIGHT_PACKAGE, 'package.json'));
-  const manifest = JSON.parse(read('platforms/evidence/quest-member-composed-fixture/source-manifest.json'));
+  const manifest = JSON.parse(read(fixture + '/source-manifest.json'));
   sourceHashes = { ...manifest.sourceHashes };
-  const files = ['platforms/tests/bundle-quest-member-composed.mjs', 'platforms/tests/browser-quest-member-composed.mjs',
+  const files = ['platforms/tests/bundle-quest-member-composed.mjs', 'platforms/tests/browser-quest-member-composed.mjs', 'platforms/tests/quest-xr-browser-double.mjs',
     'verification/web/tests/support/quest-member-app.mjs', 'verification/web/tests/support/offline-app.mjs', 'tests/security/fakes.ts',
     'app/api/auth/member/route.ts', 'lib/auth/memberDto.ts', 'lib/auth/provider.ts', 'lib/http/routeError.ts',
     'app/api/circles/[circleId]/discussion/route.ts', 'lib/circles/thread-server.ts', 'lib/circles/thread.ts', 'lib/circles/moderation-server.ts',
     'lib/rateLimit.ts'];
   for (const file of files) sourceHashes[file] = sha(read(file));
   for (const [file, digest] of Object.entries(sourceHashes)) assert.equal(sha(read(file)), digest, 'Changed bundle source: ' + file);
-  bundle = read('platforms/evidence/quest-member-composed-fixture/page.js'); css = read('platforms/evidence/quest-member-composed-fixture/page.css');
+  bundle = read(fixture + '/page.js'); css = read(fixture + '/page.css');
   const module = await import('../../verification/web/tests/support/quest-member-app.mjs');
-  for (const [file, digest] of Object.entries(module.COVERAGE_SOURCE_HASHES)) (file.endsWith('.sql') ? sqlHashes : sourceHashes)[file] = digest;
+  for (const [file, digest] of Object.entries(await module.questMemberAppHashes())) (file.endsWith('.sql') ? sqlHashes : sourceHashes)[file] = digest;
   limits = module.COVERAGE_FIXTURE_LIMITS; f = await module.questMemberApp();
   const origin = module.QUEST_ORIGIN;
   browser = await require('playwright').chromium.launch({ headless: true, timeout: 15000, executablePath,
-    env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin', HOME: '/Users/christaylor' }, args: ['--disable-background-networking', '--disable-component-update', '--no-first-run'] });
+    env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin', HOME: '/Users/christaylor' }, args: ['--disable-background-networking', '--disable-component-update', '--no-first-run',
+      '--host-resolver-rules=MAP * ~NOTFOUND', ...(run ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [])] });
   const pids = ownedChrome(); assert.equal(pids.length, 1); ownedBrowserPid = pids[0];
   runtime = { node: process.version, chromium: browser.version(), bun: manifest.bunVersion, startupDeny: true, cleanEnvironment: true, ownedBrowserPid };
   const context = await browser.newContext({ viewport: { width: 320, height: 844 } }), page = await context.newPage(); page.setDefaultTimeout(7000);
+  if (run) await context.addInitScript(installQuestXrDouble);
   page.on('pageerror', error => pageErrors.push(error.message));
   page.on('console', message => { if (message.type() === 'error' && !message.text().includes('Failed to load resource:')) consoleErrors.push(message.text()); });
   page.on('requestfailed', request => controllers.get(request)?.abort());
@@ -78,7 +86,8 @@ try {
           latest = value;
           assert.doesNotMatch(bytes, /WITHDRAWN_REPLY_TEXT_MUST_NOT_LEAVE_SQL|Synthetic disagreement|contentHash|reporter|email|supabase_auth_id/);
           for (const item of [...value.items, ...(value.root ? [value.root, value.focus] : [])]) {
-            assert.deepEqual(Object.keys(item).sort(), ['id', 'member_name', 'content', 'created_at', 'is_mine', 'visibility', 'parentMessageId', 'rootMessageId'].sort());
+            assert.deepEqual(Object.keys(item).sort(), ['id', 'member_name', 'content', 'created_at', 'is_mine', 'visibility', 'parentMessageId', 'rootMessageId', 'publicProfileId'].sort());
+            assert.equal(item.publicProfileId, null);
             if (['hidden', 'withdrawn'].includes(item.visibility)) assert.equal(item.content, null);
           }
         }
@@ -147,7 +156,7 @@ try {
   assert.equal(await page.locator('#circle-archive-messages article').count(), 3);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   for (const button of await page.locator('#circle-archive-messages button').all()) assert.ok((await button.boundingBox()).height >= 44);
-  await page.screenshot({ path: path.join(ROOT, 'platforms/evidence/quest-member-composed-320.png'), fullPage: true });
+  await page.screenshot({ path: evidence + '-320.png', fullPage: true });
   pass('actual author withdrawal and human restriction render thread tombstones while an independent visible reply remains readable; 320px layout and thread controls hold');
 
   const beforeAccountChange = api.length;
@@ -169,8 +178,140 @@ try {
   }
   pass('held responses already produced by real SQL cannot restore archive data or trigger automatic requests after provider-change or SDK logout retirement');
 
+  if (run) {
+    const enter = page.locator('#quest-immersive-enter'), exit = page.locator('#quest-immersive-exit');
+    const device = () => page.evaluate(() => window.questXrQa.stats());
+    const trigger = () => page.evaluate(() => window.questXrQa.select());
+    const see = text => page.waitForFunction(value => window.questXrQa.panel().replace(/\s+/g, ' ').includes(value), text);
+    assert.equal(await enter.isDisabled(), true);
+    assert.equal((await device()).requests, 0);
+    pass('the unsupported headset state preserves the verified browser archive and never requests device permission');
+
+    async function rebind(actor = 'author', provider = 'supabase') {
+      f.select(actor, provider);
+      await page.evaluate(value => {
+        window.questXrQa.enable();
+        window.questComposedQa.providerChanged();
+        window.questComposedQa.actor(value);
+      }, actor);
+      await connect();
+      await page.waitForFunction(() => !document.getElementById('quest-immersive-enter').disabled);
+    }
+    async function openRoom() {
+      const before = api.length, sdk = await count();
+      await enter.click();
+      await see('Press the controller trigger to check your signed-in account.');
+      assert.equal(api.length, before);
+      assert.deepEqual(await count(), sdk);
+      assert.equal((await device()).activations.at(-1), true);
+      assert.equal(await page.locator('#member-session-check').isDisabled(), true);
+    }
+    async function checkInRoom() {
+      const before = api.length, queries = privateCalls();
+      await trigger();
+      await see('Press the trigger to check Circle access and load recent discussion.');
+      assert.deepEqual(api.slice(before).map(item => item.path), ['/api/auth/member']);
+      assert.equal(privateCalls(), queries);
+    }
+    await rebind(); await check(); await ready();
+    await page.locator('#circle-archive-open').click();
+    await page.waitForFunction(() => document.getElementById('circle-archive-messages').children.length > 0);
+    await openRoom();
+    assert.equal(await page.locator('#circle-archive-messages').innerText(), '');
+    await page.evaluate(() => window.questXrQa.focus(false));
+    await checkInRoom();
+    const readBefore = privateCalls();
+    await trigger();
+    await see('Independent visible reply remains readable.');
+    assert.equal(privateCalls(), readBefore + 1);
+    assert.equal(await page.locator('#circle-archive-messages').innerText(), '');
+    assert.doesNotMatch(await page.evaluate(() => window.questXrQa.panel()), /\/circles\/|In reply to message:/);
+    const panelData = await page.evaluate(() => window.questXrQa.image());
+    assert.match(panelData, /^data:image\/png;base64,/);
+    fs.writeFileSync(evidence + '-panel.png', Buffer.from(panelData.split(',')[1], 'base64'), { flag: 'wx' });
+    assert.ok((await device()).draws > 0);
+    assert.deepEqual((await device()).errors, []);
+    pass('trusted Enter clears the regular archive. Two controller actions verify the account and read authorized discussion into actual WebGL while the regular window is blurred');
+
+    const beforeAdvance = api.length;
+    await trigger();
+    await see('Recent discussion 2 of 5');
+    const words = await page.evaluate(() => window.questXrQa.panel());
+    assert.doesNotMatch(words, /WITHDRAWN_REPLY_TEXT_MUST_NOT_LEAVE_SQL|Synthetic disagreement/);
+    assert.equal(api.length, beforeAdvance);
+    const beforeHide = await device();
+    await page.evaluate(() => window.questXrQa.visibility('visible-blurred'));
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    assert.equal((await device()).ends, beforeHide.ends + 1);
+    assert.equal((await device()).releases, beforeHide.releases + 1);
+    assert.equal((await device()).pendingFrames, 0);
+    await page.evaluate(() => { window.questXrQa.focus(true); window.questXrQa.select(); }); await settle();
+    assert.equal(api.length, beforeAdvance);
+    assert.equal(await page.locator('#circle-archive-open').isDisabled(), true);
+    pass('the controller pages through the bounded preview locally. Headset system focus loss blanks the texture, releases it and requires new access');
+
+    await rebind('outsider'); await openRoom(); await checkInRoom();
+    await trigger(); await see('Current Circle discussion is unavailable.');
+    assert.equal(f.calls.at(-1).status, 'PT403');
+    assert.doesNotMatch(await page.evaluate(() => window.questXrQa.panel()), /Synthetic archived contribution|Independent visible reply/);
+    await exit.click(); await page.waitForFunction(() => !document.getElementById('quest-immersive-enter').disabled);
+    pass('an otherwise verified nonmember gets actual SQL denial and no private headset content');
+
+    await rebind('author', 'wallet'); await openRoom();
+    const beforeMismatch = privateCalls();
+    await trigger(); await see('Sign in through the regular browser if needed.');
+    assert.equal(privateCalls(), beforeMismatch);
+    await exit.click();
+    pass('a selected-wallet mismatch fails the cookie-only identity check before any Circle read');
+
+    await rebind(); await openRoom(); await checkInRoom();
+    holdNext = true; held = null;
+    await trigger(); await bounded(async () => { while (!held) await new Promise(resolve => setImmediate(resolve)); });
+    const beforeExit = await device(), beforeRetire = api.length;
+    await page.evaluate(() => window.questComposedQa.providerChanged());
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    held.resolve(); await bounded(() => Promise.allSettled([...pending])); await settle();
+    assert.equal(api.length, beforeRetire);
+    assert.equal((await device()).ends, beforeExit.ends + 1);
+    assert.equal((await count()).subscriptions, 0);
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    pass('account selection retirement ends the device session and fences a held actual SQL reply');
+
+    await rebind();
+    const beforeLate = await device(), beforeLateApi = api.length;
+    await page.evaluate(() => window.questXrQa.hold());
+    await enter.click(); await page.waitForFunction(() => window.questXrQa.stats().held);
+    await exit.click();
+    await page.evaluate(() => window.questXrQa.release());
+    await page.waitForFunction(ends => window.questXrQa.stats().ends === ends, beforeLate.ends + 1);
+    assert.equal((await device()).draws, beforeLate.draws);
+    assert.equal(api.length, beforeLateApi);
+    pass('cancelled permission closes a late device grant without allocating a display or checking a member session');
+
+    await openRoom(); await checkInRoom(); await trigger(); await see('Independent visible reply remains readable.');
+    const beforeOffline = api.length;
+    await page.evaluate(() => window.questXrQa.online(false));
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    await page.evaluate(() => window.questXrQa.online(true)); await settle();
+    assert.equal(api.length, beforeOffline);
+    await openRoom();
+    await page.evaluate(() => window.questXrQa.contextLost());
+    await page.waitForFunction(() => !document.getElementById('quest-immersive-enter').disabled);
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    assert.equal(api.length, beforeOffline);
+    pass('offline and graphics loss both retire the headset; recovery performs no automatic account check or read');
+
+    await openRoom(); await checkInRoom(); await trigger(); await see('Independent visible reply remains readable.');
+  }
+
   const beforeUnmount = api.length; await page.evaluate(() => window.questComposedQa.unmount()); await settle();
   assert.equal((await count()).subscriptions, 0); assert.equal(await page.locator('[data-quest-member-view]').count(), 0); assert.equal(api.length, beforeUnmount);
+  if (run) {
+    const final = await page.evaluate(() => ({ ...window.questXrQa.stats(), text: window.questXrQa.panel() }));
+    assert.equal(final.pendingFrames, 0); assert.equal(final.text, '');
+    assert.equal(final.requests, final.ends); assert.ok(final.activations.every(Boolean)); assert.deepEqual(final.errors, []);
+    runtime.syntheticXR = { sessions: final.requests, ended: final.ends, framesDrawn: final.draws, textureUploads: final.uploads, releasedTextures: final.releases };
+  }
   pass('unmount disposes the actual DOM host and SDK observation with no late private request');
   cleanErrors();
   for (const [file, digest] of Object.entries({ ...sourceHashes, ...sqlHashes })) assert.equal(sha(read(file)), digest, 'Source changed during composition: ' + file);

@@ -2,15 +2,16 @@
 // Only credential verification and the narrow SDK/PostgREST transport are doubled.
 import assert from 'node:assert/strict';
 import { offlineApp } from './offline-app.mjs';
-import { createReviewCoverageDb, rpc, requestId, COVERAGE_SOURCE_HASHES, COVERAGE_FIXTURE_LIMITS } from './review-coverage-db.mjs';
+import { rpc, requestId, COVERAGE_FIXTURE_LIMITS } from './review-coverage-db.mjs';
+import { createPublicProfileApp, publicProfileAppHashes } from './public-profile-app.mjs';
 
 export const QUEST_ORIGIN = 'https://quest-member-composed.test';
 export const SUBJECTS = Object.freeze({ author: '72111111-1111-4111-8111-111111111111', outsider: '72222222-2222-4222-8222-222222222222' });
 export const TOKENS = Object.freeze({ author: 'NONISSUED_QUEST_COMPOSED_AUTHOR', outsider: 'NONISSUED_QUEST_COMPOSED_OUTSIDER' });
-export { COVERAGE_SOURCE_HASHES, COVERAGE_FIXTURE_LIMITS };
+export { publicProfileAppHashes as questMemberAppHashes, COVERAGE_FIXTURE_LIMITS };
 
 export async function questMemberApp() {
-  const f = await createReviewCoverageDb({ reportCount: 0 }), app = offlineApp(), calls = [], argumentNames = new Map();
+  const f = await createPublicProfileApp(), app = offlineApp(), calls = [], argumentNames = new Map();
   let selected = { actor: 'author', provider: 'supabase' }, closed = false;
   const memberId = actor => actor === 'author' ? f.authorId : f.reviewerId;
   // Explicit synthetic identity authority. SQL independently authorizes the mapped
@@ -26,7 +27,7 @@ export async function questMemberApp() {
   app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => ({ rpc: async (name, args) => {
     const call = { name, keys: Object.keys(args).sort(), status: 'pending' }; calls.push(call);
     try {
-      assert.ok(['soe_circle_discussion_read', 'soe_circle_discussion_thread'].includes(name));
+      assert.ok(['soe_circle_discussion_read_profiles', 'soe_circle_discussion_thread_profiles'].includes(name));
       if (!argumentNames.has(name)) {
         const result = await f.db.query("SELECT proargnames FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace", [name]);
         assert.equal(result.rows.length, 1); argumentNames.set(name, result.rows[0].proargnames);
@@ -74,7 +75,7 @@ export async function questMemberApp() {
         assert.ok(match, 'Unexpected Quest composed route');
         return discussion.GET(request, { params: Promise.resolve({ circleId: match[1] }) });
       },
-      async close() { if (closed) return; closed = true; await f.db.close(); },
+      async close() { if (closed) return; closed = true; await f.close(); },
     };
-  } catch (error) { await f.db.close(); throw error; }
+  } catch (error) { await f.close(); throw error; }
 }

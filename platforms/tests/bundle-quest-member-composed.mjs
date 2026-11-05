@@ -9,7 +9,10 @@ function read(name) {
   if (!relative.startsWith('..') && !relative.split(path.sep).includes('node_modules')) hashes[relative] = sha(bytes);
   return bytes;
 }
-const output = 'platforms/evidence/quest-member-composed-fixture';
+const [run, ...extra] = process.argv.slice(2);
+if (extra.length || (run && !/^immersive-[a-z0-9-]{1,24}$/.test(run))) throw Error('Use a fresh immersive evidence run name');
+const output = 'platforms/evidence/quest-member-composed-fixture' + (run ? '-' + run : '');
+if (run) fs.mkdirSync(output);
 const result = await Bun.build({ entrypoints: ['platforms/tests/quest-member-composed-entry.tsx'], outdir: output,
   target: 'browser', format: 'esm', naming: 'page.[ext]', define: {
     'process.env.NODE_ENV': '"development"',
