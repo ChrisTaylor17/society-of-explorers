@@ -10,7 +10,7 @@ import { circleWriteOrigin, readCircleReviewJson } from './moderation-server';
 import { getReading } from './path';
 import { CIRCLE_FORMATS, FORMAT_LABELS, TIMEZONES, VENUE_LABELS, VENUE_TYPES, firstMeeting, formatMeeting, pathWeek, validateCircleInput, type CircleFormat, type VenueType } from './schedule';
 import { CIRCLE_MEMBERSHIP_PAGE_SIZE, membershipDay, membershipInteger, membershipRecord, membershipText,
-  parseCircleCreateReceipt, parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt, parseCircleStart, parseMyCircles,
+  parseCircleAttendanceMutation, parseCircleAttendanceReceipt, parseCircleCreateReceipt, parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt, parseCircleStart, parseMyCircles,
   type CircleParticipationAction } from './membership';
 
 type Result<T> = { ok: true; value: T } | { ok: false; response: Response };
@@ -19,6 +19,16 @@ const refuse = (message: string, status: number, outcome = 'not_attempted') => p
 const unavailable = (mutation = false, unknown = false) => privateJson({ error: 'Circle participation is unavailable. Refresh before trying again.',
   ...(mutation ? { outcome: unknown ? 'unknown' : 'not_attempted' } : {}) }, { status: 503 });
 const onlyFields = (body: Record<string, unknown>, fields: string[]) => Object.keys(body).every(key => fields.includes(key));
+
+/** An optional reviewed-owner guard closes cookie changes between proof and
+ * operation. It never supplies identity or turns a public read into authority. */
+function expectedMember(req: NextRequest, actor: string | null): Response | null {
+  const expected = req.headers.get('x-soe-expected-member');
+  if (expected === null) return null;
+  if (!isUuid(expected) || expected !== expected.toLowerCase()) return refuse('Use a valid reviewed account.', 400);
+  if (actor === null) return refuse('Sign in to verify the reviewed account.', 401);
+  return expected === actor.toLowerCase() ? null : refuse('The account changed. Check current access before reviewing another action.', 409);
+}
 
 function failure(error: unknown, mutation: boolean): Response {
   const code = membershipRecord(error) ? error.code : null;
@@ -96,6 +106,8 @@ export async function circleDetail(req: NextRequest, circleId: string): Promise<
   if (!isUuid(circleId)) return refuse('Use a valid Circle identifier.', 400);
   try {
     const actor = await getAuthenticatedMember(req);
+    const mismatch = expectedMember(req, actor?.memberId ?? null);
+    if (mismatch) return mismatch;
     return await rpc('soe_circle_detail', { p_actor: actor?.memberId ?? null, p_circle_id: circleId.toLowerCase() }, value => {
       const projected = projectSnapshot(value, true);
       return projected ? parseCircleDetail(projected, circleId) : null;
@@ -116,6 +128,8 @@ export async function circleMembership(req: NextRequest, circleId: string): Prom
   try {
     const actor = await getAuthenticatedMember(req);
     if (!actor || !isUuid(actor.memberId)) return refuse('Sign in to check Circle membership controls.', 401);
+    const mismatch = expectedMember(req, actor.memberId);
+    if (mismatch) return mismatch;
     return await rpc('soe_circle_membership_state', { p_actor: actor.memberId, p_circle_id: circleId.toLowerCase() }, value => parseCircleManagement(value, circleId));
   } catch { return unavailable(); }
 }
@@ -164,6 +178,8 @@ export async function circleCreate(req: NextRequest): Promise<Response> {
   try {
     const actor = await getAuthenticatedMember(req);
     if (!actor || !isUuid(actor.memberId)) return refuse('Sign in to start a Circle.', 401);
+    const mismatch = expectedMember(req, actor.memberId);
+    if (mismatch) return mismatch;
     const budget = rateLimit(`circle-participation:${actor.memberId}`, 120, 60 * 60 * 1000);
     if (!budget.ok) return refuse('Too many requests. Try again later.', 429);
     if (parsed.value.readingProgram) {
@@ -180,20 +196,30 @@ export async function circleMutation(req: NextRequest, circleId: string, action:
   const input = await mutationInput(req, supplied);
   if (!input.ok) return input.response;
   const body = input.value;
-  if (!onlyFields(body, ['requestId', 'expectedRevision', ...(action === 'rsvp' ? ['date', 'status'] : []), ...(supplied === undefined ? [] : ['cohortId'])])
+  const attendance = action === 'rsvp' ? parseCircleAttendanceMutation(body) : null;
+  if (action === 'rsvp' && !attendance) return refuse('A reviewed account, request and meeting response are required.', 400);
+  if (!onlyFields(body, ['requestId', 'expectedRevision', ...(action === 'rsvp' ? ['expectedMemberId', 'date', 'status'] : []), ...(supplied === undefined ? [] : ['cohortId'])])
     || (supplied !== undefined && (typeof body.cohortId !== 'string' || body.cohortId.toLowerCase() !== circleId.toLowerCase()))) return refuse('Use only the supported participation fields.', 400);
   if (!membershipInteger(body.expectedRevision)) return refuse('A current expectedRevision is required. Refresh before confirming.', 400);
   if (action === 'rsvp' && (!membershipDay(body.date) || !['going', 'not_going'].includes(String(body.status)))) return refuse('Use a valid meeting date and RSVP status.', 400);
   try {
     const actor = await getAuthenticatedMember(req);
     if (!actor || !isUuid(actor.memberId)) return refuse('Sign in to change Circle participation.', 401);
+    const mismatch = expectedMember(req, actor.memberId);
+    if (mismatch) return mismatch;
+    if (attendance && attendance.expectedMemberId !== actor.memberId.toLowerCase()) return refuse('The account changed. Check current access before reviewing another RSVP.', 409);
     const budget = rateLimit(`circle-participation:${actor.memberId}`, 120, 60 * 60 * 1000);
     if (!budget.ok) return refuse('Too many requests. Try again later.', 429);
     const requestId = (body.requestId as string).toLowerCase(), id = circleId.toLowerCase();
     return await rpc(`soe_circle_${action}`, { p_actor: actor.memberId, p_circle_id: id, p_expected_revision: body.expectedRevision,
       p_request_id: requestId, ...(action === 'rsvp' ? { p_date: body.date, p_status: body.status } : {}) }, value => {
       const parsed = parseCircleMembershipReceipt(value, action, id, requestId);
-      return parsed && (action !== 'rsvp' || (parsed.receipt.date === body.date && parsed.receipt.status === body.status)) ? parsed : null;
+      if (!parsed || parsed.state.revision < (body.expectedRevision as number)) return null;
+      if (attendance) {
+        if (parsed.state.revision <= attendance.expectedRevision || parsed.receipt.date !== attendance.date || parsed.receipt.status !== attendance.status) return null;
+        return parseCircleAttendanceReceipt({ memberId: actor.memberId.toLowerCase(), ...parsed }, id, requestId, attendance.expectedMemberId);
+      }
+      return parsed;
     }, true);
   } catch { return unavailable(true); }
 }

@@ -86,7 +86,7 @@ test('join, leave, RSVP and completion forward only the canonical actor and revi
   const a = fixture();
   for (const action of ['join', 'leave', 'rsvp', 'complete']) {
     a.respond = () => ({ data: receipt(action), error: null });
-    const body = { requestId: KEY, expectedRevision: 3, ...(action === 'rsvp' ? { date: DATE, status: 'going' } : {}) };
+    const body = { requestId: KEY, expectedRevision: 3, ...(action === 'rsvp' ? { expectedMemberId: a.JULES, date: DATE, status: 'going' } : {}) };
     const response = await a.load(`[circleId]/${action}`).POST(a.request(body), context(CIRCLE));
     assert.equal(response.status, 200, action); assert.equal((await response.json()).receipt.action, action);
     assert.deepEqual(a.calls.at(-1), { name: `soe_circle_${action}`, args: { p_actor: a.JULES, p_circle_id: CIRCLE, p_expected_revision: 3, p_request_id: KEY,

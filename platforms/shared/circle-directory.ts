@@ -1,24 +1,29 @@
 import { defaultDiscoveryPageRequest, discoveryPageSearchParams, isDiscoveryRestart, parseDiscoveryPage, parseDiscoveryPageRequest,
   type DiscoveryPageReply, type DiscoveryPageRequest } from '../../lib/circles/discovery-page';
-import { parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt, parseMyCircles,
+import { parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt, parseMyCircles, membershipDay,
+  parseCircleAttendanceMutation, circleAttendanceMutationBody, parseCircleAttendanceReceipt,
   type CircleDetail, type CircleManagement, type MyCircles } from '../../lib/circles/membership';
 import { isUuid } from '../../lib/ids/uuid';
 import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
 
 export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport;
+  memberId?: string; attendanceTransport?: CircleTransport;
   timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
+export type CircleAttendanceReview = { date: string; status: 'going' | 'not_going'; previousStatus: 'going' | 'not_going' | null;
+  circleTitle: string; time: string; timezone: string };
 export type CircleDirectoryModel = {
   connected: boolean; active: boolean; online: boolean; busy: boolean;
   phase: 'idle' | 'loading' | 'ready' | 'review' | 'sending' | 'unknown' | 'unavailable' | 'closed';
   list: 'discover' | 'mine' | null; page: DiscoveryPageReply | null; mine: MyCircles | null;
   selected: string | null; detail: CircleDetail | null; management: CircleManagement | null;
-  intent: 'join' | 'leave' | null; message: string;
+  intent: 'join' | 'leave' | 'rsvp' | null; attendanceReview: CircleAttendanceReview | null; message: string;
   canSearch: boolean; canNextPage: boolean; canFirstPage: boolean; canMine: boolean; canSelect: boolean; canRefresh: boolean;
-  canPrepareJoin: boolean; canPrepareLeave: boolean; canConfirm: boolean; canRetry: boolean; canCancel: boolean;
+  canPrepareJoin: boolean; canPrepareLeave: boolean; canPrepareAttendance: boolean; canConfirm: boolean; canRetry: boolean; canCancel: boolean;
   canBack: boolean; canOpenDiscussion: boolean; canNavigate: boolean;
 };
-type Action = 'join' | 'leave';
-type Pending = { action: Action; circleId: string; requestId: string; expectedRevision: number; body: string; management: boolean };
+type Action = 'join' | 'leave' | 'rsvp';
+type AttendanceIntent = Pick<CircleAttendanceReview, 'date' | 'status'>;
+type Pending = { action: Action; circleId: string; requestId: string; expectedRevision: number; body: string; management: boolean; attendance?: AttendanceIntent };
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 /** Public listings only select a Circle. Fresh account-scoped reads, confirmed
@@ -27,6 +32,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
   const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15000;
   if (!config.owner || !['scope', 'bearer', 'subscribe'].every(key => typeof config.owner[key as keyof CircleOwner] === 'function')
     || typeof config.transport !== 'function' || config.publicTransport !== undefined && typeof config.publicTransport !== 'function'
+    || config.attendanceTransport !== undefined && typeof config.attendanceTransport !== 'function'
     || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000
     || config.initialOnline !== undefined && typeof config.initialOnline !== 'boolean'
     || config.newRequestId !== undefined && typeof config.newRequestId !== 'function') throw Error('Approved Circle connections required');
@@ -34,37 +40,41 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
   let phase: CircleDirectoryModel['phase'] = 'closed', busy = false, list: CircleDirectoryModel['list'] = null;
   let page: DiscoveryPageReply | null = null, own: MyCircles | null = null, selected: string | null = null;
   let detail: CircleDetail | null = null, management: CircleManagement | null = null, intent: Action | null = null;
+  let attendanceReview: CircleAttendanceReview | null = null;
+  const attendanceAvailable = Boolean(config.attendanceTransport && isUuid(config.memberId) && config.memberId === config.memberId?.toLowerCase());
   let pending: Pending | null = null, minimumRevision = 0, request = defaultDiscoveryPageRequest(), offOwner = () => {};
   let message = config.publicTransport ? 'Search for a Circle or load your Circles when ready.' : 'Public Circle search is unavailable in this connection. You can check your Circles.';
   const listeners = new Set<(model: CircleDirectoryModel) => void>(), requests = new Set<AbortController>();
   const publicEnabled = () => !closed && attached && active && online;
   const enabled = () => publicEnabled() && scope !== null && config.owner.scope() === scope;
-  const allowed = (action: Action) => action === 'join' ? Boolean(detail?.capabilities.canJoin)
-    : Boolean(detail?.capabilities.canLeave || management?.capabilities.canLeave);
+  const allowed = (action: Action, attendance: AttendanceIntent | null = attendanceReview) => action === 'join' ? Boolean(detail?.capabilities.canJoin)
+    : action === 'leave' ? Boolean(detail?.capabilities.canLeave || management?.capabilities.canLeave)
+      : Boolean(attendanceAvailable && detail?.capabilities.canRsvp && attendance && detail.meetings.some(meeting => meeting.date === attendance.date));
   const model = (): CircleDirectoryModel => {
-    const canNavigate = !busy && !pending, publicReady = publicEnabled() && canNavigate, ready = enabled() && canNavigate;
+    const canNavigate = !busy && !pending && phase !== 'review', publicReady = publicEnabled() && canNavigate, ready = enabled() && canNavigate;
     return { connected: attached && scope !== null, active, online, busy, phase, list, page: copy(page), mine: copy(own),
-      selected, detail: copy(detail), management: copy(management), intent, message,
+      selected, detail: copy(detail), management: copy(management), intent, attendanceReview: copy(attendanceReview), message,
       canSearch: publicReady && Boolean(config.publicTransport), canNextPage: publicReady && Boolean(config.publicTransport && page?.page.nextCursor),
       canFirstPage: publicReady && Boolean(config.publicTransport && list === 'discover'), canMine: ready,
       canSelect: ready && Boolean(page?.circles.length || own?.items.length), canRefresh: ready && selected !== null,
       canPrepareJoin: ready && Boolean(config.newRequestId) && allowed('join'),
       canPrepareLeave: ready && Boolean(config.newRequestId) && allowed('leave'),
+      canPrepareAttendance: ready && Boolean(config.newRequestId && attendanceAvailable && detail?.capabilities.canRsvp && detail.meetings.length),
       canConfirm: enabled() && !busy && (phase === 'unknown' && pending !== null || phase === 'review' && intent !== null && allowed(intent)),
       canRetry: enabled() && !busy && phase === 'unknown' && pending !== null,
-      canCancel: ready && phase === 'review', canBack: ready && selected !== null, canNavigate,
+      canCancel: enabled() && !busy && !pending && phase === 'review', canBack: ready && selected !== null, canNavigate,
       canOpenDiscussion: ready && phase === 'ready' && Boolean(detail?.viewer.signed_in && detail.viewer.is_member && detail.capabilities.canReadConversation) };
   };
   const emit = () => { for (const listener of listeners) { try { listener(model()); } catch { /* Independent observers cannot retain authority. */ } } };
-  function clear() { page = null; own = null; selected = null; detail = null; management = null; intent = null; pending = null; minimumRevision = 0; list = null; }
+  function clear() { page = null; own = null; selected = null; detail = null; management = null; intent = null; attendanceReview = null; pending = null; minimumRevision = 0; list = null; }
   function retire(notice: string) {
     generation++; for (const controller of requests) controller.abort(); clear(); busy = false; phase = attached ? 'idle' : 'closed'; message = notice; emit();
   }
   const current = (g: number, privateCall = true) => generation === g && (privateCall ? enabled() : publicEnabled());
-  async function send(path: string, method: 'GET' | 'POST', g: number, body?: string, publicCall = false) {
+  async function send(path: string, method: 'GET' | 'POST', g: number, body?: string, publicCall = false, attendanceCall = false) {
     const expected = scope, abort = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
     const live = () => current(g, !publicCall) && !abort.signal.aborted && (publicCall || scope === expected);
-    if (!live() || publicCall && !config.publicTransport) throw Error('Circle connection unavailable');
+    if (!live() || publicCall && !config.publicTransport || attendanceCall && !attendanceAvailable) throw Error('Circle connection unavailable');
     requests.add(abort);
     try {
       return await Promise.race([(async () => {
@@ -75,7 +85,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
           headers = { Authorization: `Bearer ${bearer}`, ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) };
         }
         if (!live()) throw Error('Circle lifetime ended');
-        const response = await (publicCall ? config.publicTransport! : config.transport)(origin + path,
+        const response = await (publicCall ? config.publicTransport! : attendanceCall ? config.attendanceTransport! : config.transport)(origin + path,
           { method, headers, ...(body === undefined ? {} : { body }), cache: 'no-store', redirect: 'error', credentials: 'omit', signal: abort.signal });
         if (!live() || response.redirected || response.url !== origin + path) throw Error('Circle response refused');
         const value = await response.json();
@@ -84,7 +94,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       })(), new Promise<never>((_, reject) => { timer = setTimeout(() => { abort.abort(); reject(Error('Circle request deadline')); }, timeout); })]);
     } finally { clearTimeout(timer); requests.delete(abort); }
   }
-  function unavailable(notice: string) { detail = null; management = null; intent = null; busy = false; phase = 'unavailable'; message = notice; emit(); }
+  function unavailable(notice: string) { detail = null; management = null; intent = null; attendanceReview = null; busy = false; phase = 'unavailable'; message = notice; emit(); }
   async function search(input: DiscoveryPageRequest) {
     if (!model().canSearch) return;
     const g = ++generation; clear(); busy = true; phase = 'loading'; list = 'discover'; message = 'Checking public Circle listings…'; emit();
@@ -112,10 +122,10 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       own = parsed; busy = false; phase = 'ready'; message = own.items.length ? 'Select one of your Circles to check current access.' : 'No Circles were returned for your account on this page.'; emit();
     } catch { if (current(g)) unavailable('Your Circles could not be verified. Load them again when ready.'); }
   }
-  async function read(g: number, action: Action | null, saved = false) {
+  async function read(g: number, action: Action | null, saved: Action | false = false, attendance: AttendanceIntent | null = null) {
     const id = selected;
     if (!id || !current(g)) return;
-    detail = null; management = null; intent = null; busy = true; phase = 'loading'; message = saved ? 'Request confirmed. Checking current Circle access…' : 'Checking current Circle access…'; emit();
+    detail = null; management = null; intent = null; attendanceReview = null; busy = true; phase = 'loading'; message = saved ? 'Request confirmed. Checking current Circle access…' : 'Checking current Circle access…'; emit();
     try {
       const result = await send('/api/circles/' + id, 'GET', g);
       if (!current(g)) return;
@@ -132,8 +142,14 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
         management = controls;
       }
       busy = false; phase = 'ready';
-      if (action && allowed(action)) { intent = action; phase = 'review'; message = 'Current access checked. Review this change, then confirm it. Nothing has changed yet.'; }
-      else message = saved ? 'Request confirmed. Current access is shown; an earlier receipt does not override later changes.'
+      if (action && allowed(action, attendance)) {
+        intent = action;
+        if (action === 'rsvp' && attendance) attendanceReview = { ...attendance, previousStatus: detail!.meetings.find(meeting => meeting.date === attendance.date)!.my_status,
+          circleTitle: detail!.circle.title, time: detail!.circle.time, timezone: detail!.circle.timezone };
+        phase = 'review'; message = 'Current access checked. Review this change, then confirm it. Nothing has changed yet.';
+      }
+      else message = saved === 'rsvp' ? 'Attendance request accepted. Current meeting responses are shown; an earlier receipt does not override a later response.'
+        : saved ? 'Request confirmed. Current access is shown; an earlier receipt does not override later changes.'
         : action ? 'That action is no longer available. Current access is shown.' : management ? 'Membership controls verified. Full meeting details and conversation are unavailable in this view.' : 'Current Circle access checked.';
       emit();
     } catch { if (current(g)) unavailable(saved ? 'The request was confirmed, but current access could not be verified. Refresh before continuing.' : 'Current Circle access could not be verified. Refresh when ready.'); }
@@ -151,22 +167,31 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
     if (!model().canConfirm) return;
     const g = ++generation, retry = pending;
     const action = intent, id = selected, revision = detail?.revision ?? management?.revision, minimal = management !== null;
+    const attendance = copy(attendanceReview);
     busy = true; phase = 'sending'; detail = null; management = null; message = retry ? 'Retrying the exact participation request…' : 'Saving your confirmed participation change…'; emit();
     try {
       if (!retry) {
         if (!action || !id || revision === undefined || !config.newRequestId) throw Error('No confirmed change');
         const requestId = await allocate(g);
         if (!current(g)) return;
-        pending = { action, circleId: id, requestId, expectedRevision: revision, management: minimal, body: JSON.stringify({ requestId, expectedRevision: revision }) };
+        if (action === 'rsvp') {
+          const mutation = attendance && parseCircleAttendanceMutation({ expectedMemberId: config.memberId, requestId, expectedRevision: revision, date: attendance.date, status: attendance.status });
+          if (!mutation || !attendanceAvailable) throw Error('Attendance review unavailable');
+          pending = { action, circleId: id, requestId, expectedRevision: revision, management: false,
+            attendance: { date: mutation.date, status: mutation.status }, body: circleAttendanceMutationBody(mutation) };
+        } else pending = { action, circleId: id, requestId, expectedRevision: revision, management: minimal, body: JSON.stringify({ requestId, expectedRevision: revision }) };
       }
       if (!current(g) || !pending) return;
       const exact = pending;
-      const result = await send(`/api/circles/${exact.circleId}/${exact.action}`, 'POST', g, exact.body);
+      const result = await send(`/api/circles/${exact.circleId}/${exact.action}`, 'POST', g, exact.body, false, exact.action === 'rsvp');
       if (!current(g)) return;
-      const receipt = result.status === 200 ? parseCircleMembershipReceipt(result.body, exact.action, exact.circleId, exact.requestId) : null;
-      if (receipt && receipt.state.revision >= exact.expectedRevision) {
+      const receipt = result.status === 200 ? exact.action === 'rsvp'
+        ? parseCircleAttendanceReceipt(result.body, exact.circleId, exact.requestId, config.memberId)
+        : parseCircleMembershipReceipt(result.body, exact.action, exact.circleId, exact.requestId) : null;
+      if (receipt && receipt.state.revision >= exact.expectedRevision + (exact.action === 'rsvp' ? 1 : 0)
+        && (exact.action !== 'rsvp' || receipt.receipt.date === exact.attendance?.date && receipt.receipt.status === exact.attendance?.status)) {
         minimumRevision = receipt.state.revision; pending = null; intent = null;
-        await read(g, null, true); return;
+        await read(g, null, exact.action); return;
       }
       if (!retry && [400, 401, 403, 404, 409, 413, 429].includes(result.status)) {
         pending = null; intent = null; unavailable('The change was refused. Refresh current Circle access before confirming a new action.'); return;
@@ -203,9 +228,13 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       const g = ++generation; clear(); selected = id; await read(g, null);
     },
     refresh() { return model().canRefresh ? read(++generation, null) : Promise.resolve(); },
-    prepare(action: Action) { return (action === 'join' ? model().canPrepareJoin : action === 'leave' && model().canPrepareLeave) ? read(++generation, action) : Promise.resolve(); },
+    prepare(action: 'join' | 'leave') { return (action === 'join' ? model().canPrepareJoin : action === 'leave' && model().canPrepareLeave) ? read(++generation, action) : Promise.resolve(); },
+    prepareAttendance(date: string, status: 'going' | 'not_going') {
+      return model().canPrepareAttendance && membershipDay(date) && ['going', 'not_going'].includes(status) && detail?.meetings.some(meeting => meeting.date === date)
+        ? read(++generation, 'rsvp', false, { date, status }) : Promise.resolve();
+    },
     confirm,
-    cancel() { if (!model().canCancel) return; intent = null; phase = 'ready'; message = 'Participation change canceled. Nothing was sent.'; emit(); },
+    cancel() { if (!model().canCancel) return; intent = null; attendanceReview = null; phase = 'ready'; message = 'Participation change canceled. Nothing was sent.'; emit(); },
     back() { if (!model().canBack) return; generation++; clear(); phase = 'idle'; message = 'Search or load your Circles again when ready.'; emit(); },
     close() { if (closed) return; closed = true; attachment++; attached = false; scope = null; offOwner(); offOwner = () => {}; retire('Circle view closed. A previously sent change may still have completed. Nothing retries automatically.'); },
   };

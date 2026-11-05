@@ -3,6 +3,7 @@ import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Te
 import { createCircleDirectory, type CircleDirectoryConfig } from '../shared/circle-directory';
 import { parseDiscoveryPageRequest } from '../../lib/circles/discovery-page';
 import { readingEditionLabel, readingSessionLabel, starterReadingContext, type ReadingContext } from '../../lib/circles/reading-program';
+import { formatDay } from '../../lib/circles/schedule';
 import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
@@ -25,14 +26,21 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
   const [reading, setReading] = useState<{ connection: NonNullable<typeof connection>; context: ReadingContext } | null>(null);
   const [readingNotice, setReadingNotice] = useState('');
   const readingLifetime = useRef({ generation: 0 });
+  const [viewEpoch, setViewEpoch] = useState(0), viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const m = snapshot.connection === connection ? snapshot.model : connection?.session.model(), session = connection?.session;
   const discussionConfig = useMemo(() => discussion ? { ...discussion.connection.config, circleId: discussion.circleId } : null, [discussion]);
   const readingConfig = useMemo(() => reading ? { ...reading.connection.config, context: reading.context } : null, [reading]);
   useLayoutEffect(() => {
-    if (!connection) return;
+    const life = viewLife.current; life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
+    if (!connection) return () => { life.mounted = false; life.enabled = false; ++life.epoch; };
     const lifetime = readingLifetime.current;
     const { session } = connection;
+    let signature = '';
     const off = session.subscribe(model => {
+      const enabled = model.active && model.online;
+      const next = JSON.stringify([model.phase, model.selected, model.intent, model.attendanceReview]);
+      if (signature !== next || life.enabled !== enabled || !enabled) setViewEpoch(++life.epoch);
+      signature = next; life.enabled = enabled;
       // Loading a fresh selected detail retains its selection. Retirement,
       // background/offline or an account change must also cancel a pending
       // Read intent even when this directory stays mounted independently.
@@ -50,16 +58,21 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     active = AppState.currentState === 'active'; sync();
     const offConnectivity = observeNativeConnectivity(connection.connectivity, value => { if (mounted) session.connectivity(value === 'online'); });
     active = AppState.currentState === 'active'; sync(); session.connect();
-    return () => { mounted = false; lifetime.generation++; session.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
+    return () => { mounted = false; life.mounted = false; life.enabled = false; ++life.epoch; lifetime.generation++; session.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
-  const close = () => { readingLifetime.current.generation++; session?.close(); setDiscussion(null); setReading(null); onClose(); };
-  const back = () => { if (session?.model().canNavigate) { session.close(); onBack(); } };
-  const search = () => {
+  useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [reading, discussion]);
+  const act = (work: () => void, allowInactive = false) => {
+    const life = viewLife.current;
+    if (life.mounted && life.epoch === viewEpoch && (allowInactive || life.enabled)) { readingLifetime.current.generation++; work(); }
+  };
+  const close = () => act(() => { session?.close(); setDiscussion(null); setReading(null); onClose(); }, true);
+  const back = () => act(() => { if (session?.model().canNavigate) { session.close(); onBack(); } }, true);
+  const search = () => act(() => {
     const params = new URLSearchParams({ q, city, format, open: open ? '1' : '0', sort });
     const request = parseDiscoveryPageRequest(params);
     if (!request.ok) { setFilterError('Check the search words and city, then try again.'); return; }
     setFilterError(''); void session?.search(request.value);
-  };
+  });
   const openReading = async (context: ReadingContext, sessionIndex: number | null) => {
     const before = session?.model(), owner = config.owner.scope();
     if (!connection || !session || !config.passageTransport || !owner || before?.phase !== 'ready' || !before.detail || !before.canNavigate) return;
@@ -79,11 +92,11 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
   };
   if (reading && reading.connection === connection && readingConfig && m?.detail && m.connected && m.active && m.online) {
     return <CircleReadingScreen config={readingConfig} connectivity={connectivity} savedReading={savedReading} onClose={close}
-      onBack={() => { setReading(null); void session?.refresh(); }}/>;
+      onBack={() => act(() => { setReading(null); void session?.refresh(); }, true)}/>;
   }
   if (discussion && discussion.connection === connection && m?.canOpenDiscussion && discussionConfig) {
     return <CircleScreen config={discussionConfig} connectivity={connectivity} onClose={close}
-      onBack={() => { setDiscussion(null); void session?.refresh(); }}/>;
+      onBack={() => act(() => { setDiscussion(null); void session?.refresh(); }, true)}/>;
   }
   const detail = m?.detail, circle = detail?.circle, management = m?.management;
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -92,25 +105,25 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     <Text accessibilityLiveRegion="polite" style={styles.copy}>{m?.message ?? 'The Circle connection is unavailable. Return to your member account and check again.'}</Text>
     {!m?.selected ? <>
       <View accessibilityRole="radiogroup" accessibilityLabel="Circle list" style={styles.list}>
-        <Choice label="Discover Circles" checked={mode === 'discover'} disabled={!m?.canNavigate} onPress={() => setMode('discover')}/>
-        <Choice label="My Circles" checked={mode === 'mine'} disabled={!m?.canNavigate} onPress={() => setMode('mine')}/>
+        <Choice label="Discover Circles" checked={mode === 'discover'} disabled={!m?.canNavigate} onPress={() => act(() => setMode('discover'))}/>
+        <Choice label="My Circles" checked={mode === 'mine'} disabled={!m?.canNavigate} onPress={() => act(() => setMode('mine'))}/>
       </View>
       {mode === 'discover' ? <>
         <Text style={styles.copy}>Find a small group to read and discuss with. Search results are public; opening a Circle checks your current membership.</Text>
-        <Field label="Search words" value={q} maxLength={160} editable={Boolean(m?.canSearch)} onChange={setQ}/>
-        <Field label="City" value={city} maxLength={80} editable={Boolean(m?.canSearch)} onChange={setCity}/>
+        <Field label="Search words" value={q} maxLength={160} editable={Boolean(m?.canSearch)} onChange={value => act(() => setQ(value))}/>
+        <Field label="City" value={city} maxLength={80} editable={Boolean(m?.canSearch)} onChange={value => act(() => setCity(value))}/>
         <Text accessibilityRole="header" style={styles.heading}>Meeting format</Text>
         <View accessibilityRole="radiogroup" accessibilityLabel="Meeting format" style={styles.list}>
           {[['', 'Any format'], ['in_person', 'In person'], ['online', 'Online']].map(([value, label]) =>
-            <Choice key={value} label={label} checked={format === value} disabled={!m?.canSearch} onPress={() => setFormat(value)}/>)}
+            <Choice key={value} label={label} checked={format === value} disabled={!m?.canSearch} onPress={() => act(() => setFormat(value))}/>)}
         </View>
         <Pressable accessibilityRole="checkbox" accessibilityLabel="Only Circles with space" accessibilityState={{ checked: open, disabled: !m?.canSearch }}
-          disabled={!m?.canSearch} onPress={() => setOpen(!open)} style={[styles.button, !m?.canSearch && styles.disabled]}>
+          disabled={!m?.canSearch} onPress={() => act(() => setOpen(!open))} style={[styles.button, !m?.canSearch && styles.disabled]}>
           <Text style={styles.copy}>{open ? '☑ ' : '☐ '}Only Circles with space</Text>
         </Pressable>
         <View accessibilityRole="radiogroup" accessibilityLabel="Sort Circles" style={styles.list}>
-          <Choice label="Next meeting first" checked={sort === 'next'} disabled={!m?.canSearch} onPress={() => setSort('next')}/>
-          <Choice label="Title A–Z" checked={sort === 'title'} disabled={!m?.canSearch} onPress={() => setSort('title')}/>
+          <Choice label="Next meeting first" checked={sort === 'next'} disabled={!m?.canSearch} onPress={() => act(() => setSort('next'))}/>
+          <Choice label="Title A–Z" checked={sort === 'title'} disabled={!m?.canSearch} onPress={() => act(() => setSort('title'))}/>
         </View>
         {filterError ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{filterError}</Text> : null}
         <Action label="Search Circles" disabled={!m?.canSearch} onPress={search}/>
@@ -122,22 +135,22 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
             {item.description ? <Text style={styles.copy}>{item.description}</Text> : null}
             <Text style={styles.note}>{item.meeting_label} · {item.venue_label}</Text>
             <Text style={styles.note}>{item.spots_left} spaces available · Hosted by {item.host_name}</Text>
-            <Action label={`View Circle: ${item.title}`} disabled={!m.canSelect} onPress={() => void session?.select(item.id)}/>
+            <Action label={`View Circle: ${item.title}`} disabled={!m.canSelect} onPress={() => act(() => void session?.select(item.id))}/>
           </View>)}
-          {m.page.page.nextCursor ? <Action label="Next Circles" disabled={!m.canNextPage} onPress={() => void session?.nextPage()}/> : null}
+          {m.page.page.nextCursor ? <Action label="Next Circles" disabled={!m.canNextPage} onPress={() => act(() => void session?.nextPage())}/> : null}
         </View> : null}
-        <Action label="Restart Circle search" disabled={!m?.canFirstPage} onPress={() => void session?.firstPage()}/>
+        <Action label="Restart Circle search" disabled={!m?.canFirstPage} onPress={() => act(() => void session?.firstPage())}/>
       </> : <>
         <Text style={styles.copy}>Find Circles you joined or host, including groups no longer listed publicly. Membership controls remain available when a listing cannot be shown.</Text>
-        <Action label="Load my Circles" disabled={!m?.canMine} onPress={() => void session?.mine()}/>
+        <Action label="Load my Circles" disabled={!m?.canMine} onPress={() => act(() => void session?.mine())}/>
         {m?.mine ? <View style={styles.list}>
           {m.mine.items.length === 0 ? <Text style={styles.copy}>No Circles returned on this page. Discover a Circle to get started.</Text> : null}
           {m.mine.items.map(item => <View key={item.circle.id} style={styles.card}>
             <Text accessibilityRole="header" style={styles.heading}>{item.circle.title ?? 'Circle membership'}</Text>
             <Text style={styles.note}>{item.circle.hidden ? 'Listing hidden. You can still review your membership.' : item.kind === 'management' ? 'Listing unavailable. Membership controls are available.' : item.ended ? 'This Circle has ended.' : item.circle.meeting_label}</Text>
-            <Action label={`View Circle: ${item.circle.title ?? 'Circle membership'}`} disabled={!m.canSelect} onPress={() => void session?.select(item.circle.id)}/>
+            <Action label={`View Circle: ${item.circle.title ?? 'Circle membership'}`} disabled={!m.canSelect} onPress={() => act(() => void session?.select(item.circle.id))}/>
           </View>)}
-          {m.mine.nextCursor ? <Action label="Next page of my Circles" disabled={!m.canMine} onPress={() => void session?.mine(m.mine!.nextCursor!)}/> : null}
+          {m.mine.nextCursor ? <Action label="Next page of my Circles" disabled={!m.canMine} onPress={() => act(() => void session?.mine(m.mine!.nextCursor!))}/> : null}
         </View> : null}
       </>}
     </> : <>
@@ -148,34 +161,60 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
         {circle.hidden ? <Text style={styles.copy}>This listing is hidden. Discussion access is closed.</Text> : null}
         {detail?.ended ? <Text style={styles.copy}>This Circle has ended.</Text> : null}
         <Text style={styles.copy}>{detail?.viewer.is_member ? 'You are a member of this Circle.' : 'You have not joined this Circle.'}</Text>
-        {detail?.meetings.map(meeting => <Text key={meeting.date} style={styles.note}>Meeting {meeting.date} · {meeting.going} attending{meeting.my_status === 'going' ? ' · You are attending' : ''}</Text>)}
+        {m?.phase === 'review' && m.intent === 'rsvp' ? null : <>
+        <Text accessibilityRole="header" style={styles.heading}>Next meetings</Text>
+        {detail?.meetings.map(meeting => <View key={meeting.date} style={styles.card}>
+          <Text style={styles.copy}>{formatDay(meeting.date)} · {circle.time} ({circle.timezone})</Text>
+          <Text style={styles.note}>{meeting.going} going · {meeting.my_status === 'going' ? 'You are going.' : meeting.my_status === 'not_going' ? 'You are not going.' : 'You have not responded.'}</Text>
+          {detail.capabilities.canRsvp && config.attendanceTransport && config.memberId ? <>
+            <Action label={`Review Going on ${formatDay(meeting.date)}`} disabled={!m.canPrepareAttendance}
+              onPress={() => act(() => void session?.prepareAttendance(meeting.date, 'going'))}/>
+            <Action label={`Review Not going on ${formatDay(meeting.date)}`} disabled={!m.canPrepareAttendance}
+              onPress={() => act(() => void session?.prepareAttendance(meeting.date, 'not_going'))}/>
+          </> : null}
+        </View>)}
+        {detail?.capabilities.canRsvp && (!config.attendanceTransport || !config.memberId) ? <Text style={styles.note}>Attendance changes are unavailable in this connection.</Text> : null}
         {readingNotice ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{readingNotice}</Text> : null}
         <AgreedReading circle={circle} available={Boolean(config.passageTransport)} disabled={m?.phase !== 'ready' || !m?.canNavigate}
-          onRead={(context, index) => void openReading(context, index)}/>
+          onRead={(context, index) => act(() => void openReading(context, index))}/>
+        </>}
       </View> : management ? <Text style={styles.copy}>The full listing is unavailable. You can check your membership and leave this Circle here.</Text> : null}
-      <Action label="Check current Circle" disabled={!m?.canRefresh} onPress={() => void session?.refresh()}/>
+      <Action label="Check current Circle" disabled={!m?.canRefresh} onPress={() => act(() => void session?.refresh())}/>
       {m?.phase === 'review' ? <View style={styles.card}>
-        <Text accessibilityRole="header" style={styles.heading}>{m.intent === 'join' ? 'Review joining this Circle' : 'Review leaving this Circle'}</Text>
-        <Text style={styles.copy}>{m.intent === 'join' ? 'Join this free Circle with your current member account and share your member display name with the group. Read the community norms below before joining. Its members will be able to see your contributions when you post.' : 'Leave this Circle, remove your current RSVPs and end your member discussion access. Your posted messages remain; you can review or withdraw your own messages from My posted messages. If you are the host, you keep hosting responsibility. Completing a hosted Circle is available on the website.'}</Text>
+        <Text accessibilityRole="header" style={styles.heading}>{m.intent === 'join' ? 'Review joining this Circle' : m.intent === 'rsvp' ? 'Review your attendance response' : 'Review leaving this Circle'}</Text>
+        {m.intent === 'rsvp' && m.attendanceReview ? <AttendanceReview date={m.attendanceReview.date} status={m.attendanceReview.status} previousStatus={m.attendanceReview.previousStatus} circleTitle={m.attendanceReview.circleTitle} time={m.attendanceReview.time} timezone={m.attendanceReview.timezone}/> : <Text style={styles.copy}>{m.intent === 'join' ? 'Join this free Circle with your current member account and share your member display name with the group. Read the community norms below before joining. Its members will be able to see your contributions when you post.' : 'Leave this Circle, remove your current RSVPs and end your member discussion access. Your posted messages remain; you can review or withdraw your own messages from My posted messages. If you are the host, you keep hosting responsibility. Completing a hosted Circle is available on the website.'}</Text>}
         {m.intent === 'join' ? <CommunityNorms/> : null}
-        <Action label={m.intent === 'join' ? 'Confirm join' : 'Confirm leave'} disabled={!m.canConfirm} onPress={() => void session?.confirm()}/>
-        <Action label="Cancel membership change" disabled={!m.canCancel} onPress={() => session?.cancel()}/>
+        <Action label={m.intent === 'join' ? 'Confirm join' : m.intent === 'rsvp' ? 'Confirm attendance response' : 'Confirm leave'} disabled={!m.canConfirm} onPress={() => act(() => void session?.confirm())}/>
+        <Action label={m.intent === 'rsvp' ? 'Cancel attendance change' : 'Cancel membership change'} disabled={!m.canCancel} onPress={() => act(() => session?.cancel())}/>
       </View> : m?.phase === 'unknown' ? <View style={styles.card}>
-        <Text style={styles.copy}>This membership change may already have completed. Retry only the same request. Closing clears its local retry details, and a request already sent may still finish.</Text>
-        <Action label="Retry exact participation request" disabled={!m.canConfirm} onPress={() => void session?.confirm()}/>
+        {m.attendanceReview ? <AttendanceReview date={m.attendanceReview.date} status={m.attendanceReview.status} previousStatus={m.attendanceReview.previousStatus} circleTitle={m.attendanceReview.circleTitle} time={m.attendanceReview.time} timezone={m.attendanceReview.timezone}/> : null}
+        <Text style={styles.copy}>This participation change may already have completed. Retry only the same request. Closing clears its local retry details, and a request already sent may still finish.</Text>
+        <Action label="Retry exact participation request" disabled={!m.canConfirm} onPress={() => act(() => void session?.confirm())}/>
       </View> : <>
-        {m?.canPrepareJoin ? <Action label="Review joining this Circle" onPress={() => void session?.prepare('join')}/> : null}
-        {m?.canPrepareLeave ? <Action label="Review leaving this Circle" onPress={() => void session?.prepare('leave')}/> : null}
+        {m?.canPrepareJoin ? <Action label="Review joining this Circle" onPress={() => act(() => void session?.prepare('join'))}/> : null}
+        {m?.canPrepareLeave ? <Action label="Review leaving this Circle" onPress={() => act(() => void session?.prepare('leave'))}/> : null}
       </>}
-      <Action label="Open discussion" disabled={!m?.canOpenDiscussion} onPress={() => {
+      <Action label="Open discussion" disabled={!m?.canOpenDiscussion} onPress={() => act(() => {
         const current = session?.model();
         if (connection && current?.canOpenDiscussion && current.selected) setDiscussion({ connection, circleId: current.selected });
-      }}/>
-      <Action label={mode === 'mine' ? 'Back to my Circles' : 'Back to discovery'} disabled={!m?.canBack} onPress={() => session?.back()}/>
+      })}/>
+      <Action label={mode === 'mine' ? 'Back to my Circles' : 'Back to discovery'} disabled={!m?.canBack} onPress={() => act(() => session?.back())}/>
     </>}
     <Action label="Return to member account" disabled={!m?.canNavigate} onPress={back}/>
     <Action label="Close member view" onPress={close}/>
   </ScrollView></SafeAreaView>;
+}
+
+function AttendanceReview({ date, status, previousStatus, circleTitle, time, timezone }: {
+  date: string; status: 'going' | 'not_going'; previousStatus: 'going' | 'not_going' | null; circleTitle: string; time: string; timezone: string;
+}) {
+  return <View style={styles.list}>
+    <Text style={styles.copy}>{circleTitle}</Text>
+    <Text style={styles.copy}>{formatDay(date)}, {date.slice(0, 4)} · {time} ({timezone})</Text>
+    <Text style={styles.copy}>{status === 'going' ? 'Mark yourself Going.' : 'Mark yourself Not going.'}</Text>
+    <Text style={styles.note}>Previously checked response: {previousStatus === 'going' ? 'Going' : previousStatus === 'not_going' ? 'Not going' : 'No response'}.</Text>
+    <Text style={styles.copy}>This response is shared with your Circle. Not going records that you do not plan to attend this meeting and keeps you in the Circle.</Text>
+  </View>;
 }
 
 // Same conduct and meeting-safety expectations as app/circles/norms/page.tsx.

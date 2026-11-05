@@ -10,7 +10,7 @@ export async function participationApp() {
   const db = await createDb(), app = offlineApp();
   // New discovery is a required service RPC. Existing actual-HTTP fixtures
   // apply the same two additive candidates; prior SQL bytes stay unchanged.
-  for (const name of ['circle-discovery-unicode.sql', 'circle-discovery-search.sql']) {
+  for (const name of ['circle-discovery-unicode.sql', 'circle-discovery-search.sql', 'circle-attendance-preflight.sql', 'circle-attendance-apply.sql']) {
     await db.exec(await readFile(new URL('../../../../docs/sql/' + name, import.meta.url), 'utf8'));
   }
   let actor = IDS.host;

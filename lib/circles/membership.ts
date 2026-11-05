@@ -30,6 +30,9 @@ export type CircleMembershipReceipt = {
   state: CircleParticipationState; replayed: boolean;
 };
 export type CircleCreateReceipt = CircleMembershipReceipt;
+export type CircleAttendanceMutation = { expectedMemberId: string; requestId: string; expectedRevision: number; date: string; status: CircleRsvpStatus };
+export type CircleAttendanceReceipt = CircleMembershipReceipt & { memberId: string };
+export const CIRCLE_ATTENDANCE_BODY_MAX_BYTES = 256;
 
 export const membershipRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 export const membershipText = (value: unknown, max: number): value is string => typeof value === 'string' && value.length <= max
@@ -100,12 +103,20 @@ export function parseCircleDetail(value: unknown, circleId?: string): CircleDeta
   const base = summary(value);
   if (!base || (circleId !== undefined && base.circle.id !== circleId.toLowerCase())
     || ((base.ended || base.circle.hidden) && value.meetings.length !== 0)) return null;
+  // Attendance review must describe a real coordinate of the configured
+  // weekly program, not merely a well-formed date supplied by a response.
+  const start = new Date(`${base.circle.start_date}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() + (base.circle.weekday - start.getUTCDay() + 7) % 7);
+  if (start.toISOString().slice(0, 10) !== base.circle.first_meeting) return null;
+  const first = start.getTime(), weekMs = 7 * 24 * 60 * 60 * 1000;
   const meetings: CircleDetail['meetings'] = [];
   for (const meeting of value.meetings) {
     if (!membershipRecord(meeting) || !membershipDay(meeting.date) || !membershipInteger(meeting.going, 100_000)
       || ![null, 'going', 'not_going'].includes(meeting.my_status as null)
       || (meetings.length > 0 && meetings.at(-1)!.date >= meeting.date)
       || (!base.viewer.is_member && meeting.my_status !== null)) return null;
+    const index = (Date.parse(`${meeting.date}T00:00:00Z`) - first) / weekMs;
+    if (!Number.isInteger(index) || index < 0 || index >= base.circle.program_length) return null;
     meetings.push({ date: meeting.date, going: meeting.going, my_status: meeting.my_status as CircleRsvpStatus | null });
   }
   if (base.circle.next_meeting !== (meetings[0]?.date ?? null)) return null;
@@ -175,4 +186,35 @@ export function parseCircleMembershipReceipt(value: unknown, action?: CirclePart
 }
 export function parseCircleCreateReceipt(value: unknown, requestId?: string): CircleCreateReceipt | null {
   return parseCircleMembershipReceipt(value, 'create', undefined, requestId);
+}
+
+const canonicalUuid = (value: unknown): value is string => isUuid(value) && value === value.toLowerCase();
+const exactKeys = (value: Record<string, unknown>, keys: readonly string[]) => Object.keys(value).length === keys.length && Object.keys(value).every(key => keys.includes(key));
+
+/** The reviewed account is a mismatch guard, never a source of authority. */
+export function parseCircleAttendanceMutation(value: unknown): CircleAttendanceMutation | null {
+  if (!membershipRecord(value) || !exactKeys(value, ['expectedMemberId', 'requestId', 'expectedRevision', 'date', 'status'])
+    || !canonicalUuid(value.expectedMemberId) || !canonicalUuid(value.requestId) || !membershipInteger(value.expectedRevision)
+    || !membershipDay(value.date) || (value.status !== 'going' && value.status !== 'not_going')) return null;
+  return { expectedMemberId: value.expectedMemberId, requestId: value.requestId, expectedRevision: value.expectedRevision,
+    date: value.date, status: value.status as CircleRsvpStatus };
+}
+
+export function circleAttendanceMutationBody(value: CircleAttendanceMutation): string {
+  const parsed = parseCircleAttendanceMutation(value);
+  if (!parsed) throw Error('A current reviewed RSVP is required');
+  return JSON.stringify(parsed);
+}
+
+/** RSVP receipts bind the canonical account as well as the exact request.
+ * Historical events do not override the current state returned beside them. */
+export function parseCircleAttendanceReceipt(value: unknown, circleId?: string, requestId?: string, memberId?: string): CircleAttendanceReceipt | null {
+  if (!membershipRecord(value) || !exactKeys(value, ['memberId', 'requestId', 'circleId', 'receipt', 'state', 'replayed'])
+    || !canonicalUuid(value.memberId) || memberId !== undefined && value.memberId !== memberId
+    || !membershipRecord(value.receipt) || !exactKeys(value.receipt, ['action', 'joined', 'completed', 'date', 'status'])
+    || (value.receipt.status !== 'going' && value.receipt.status !== 'not_going')
+    || !membershipRecord(value.state) || !exactKeys(value.state, ['revision', 'isMember', 'isHost', 'hidden', 'completed', 'ended',
+      'canJoin', 'canLeave', 'canRsvp', 'canComplete', 'canReadConversation'])) return null;
+  const receipt = parseCircleMembershipReceipt(value, 'rsvp', circleId, requestId);
+  return receipt ? { memberId: value.memberId, ...receipt } : null;
 }

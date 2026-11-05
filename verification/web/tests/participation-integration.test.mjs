@@ -35,7 +35,7 @@ test('real HTTP→SQL creation, public discovery, second-member join, RSVP, huma
   detail = await read(a, url(id)); assert.equal(detail.online_url, input.onlineUrl);
   assert.equal((await read(a, '/api/circles/mine')).items.some(item => item.circle.id === id), true);
   const date = detail.meetings[0].date;
-  await write(a, url(id) + '/rsvp', action(detail, { date, status: 'going' }));
+  await write(a, url(id) + '/rsvp', action(detail, { expectedMemberId: IDS.newcomer2, date, status: 'going' }));
   detail = await read(a, url(id)); assert.equal(detail.meetings[0].my_status, 'going'); assert.equal(detail.meetings[0].going, 1);
   const text = 'A human discussion contribution through the actual participation journey.';
   const posted = await write(a, '/api/book-salons/' + id, { content: text, memberId: IDS.newcomer });

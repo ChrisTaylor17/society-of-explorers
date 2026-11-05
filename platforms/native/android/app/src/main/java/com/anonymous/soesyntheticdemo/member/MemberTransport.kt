@@ -250,6 +250,7 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val messageAction = Regex("/api/circles/([0-9a-fA-F-]{36})/messages/([0-9a-fA-F-]{36})").matchEntire(url.encodedPath)
     val detail = Regex("/api/circles/([0-9a-fA-F-]{36})(?:/membership)?").matchEntire(url.encodedPath)
     val participation = Regex("/api/circles/([0-9a-fA-F-]{36})/(join|leave)").matchEntire(url.encodedPath)
+    val attendance = Regex("/api/circles/([0-9a-f-]{36})/rsvp").matchEntire(url.encodedPath)
     if (url.encodedPath == "/api/auth/member") { require(input.method == "GET" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/auth/ensure-member") { require(input.method == "POST" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/members/profile") {
@@ -292,6 +293,10 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
       require(body == "{\"requestId\":\"$requestId\",\"expectedRevision\":$version}"
         || body == "{\"expectedRevision\":$version,\"requestId\":\"$requestId\"}")
     }
+    else if (attendance != null) {
+      require(uuid(attendance.groupValues[1]) && input.method == "POST" && url.encodedQuery == null)
+      validateAttendanceBody(input.body ?: throw IllegalArgumentException())
+    }
     else if (legacy != null) { require(uuid(legacy.groupValues[1]) && url.encodedQuery == null) }
     else if (preview != null) { require(uuid(preview.groupValues[1]) && input.method == "POST" && url.encodedQuery == null) }
     else if (discussion != null && input.method == "POST") { require(uuid(discussion.groupValues[1]) && url.encodedQuery == null) }
@@ -311,6 +316,30 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     if (input.method == "GET") require(input.body == null)
     else if (url.encodedPath == "/api/great-books/progress") require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= 4096)
     else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= if (url.encodedPath == "/api/members/profile") 65536 else 16384)
+  }
+  /** The independent native policy accepts only the complete reviewed RSVP
+   * wire. The server verifies this actor, current membership and meeting date. */
+  private fun validateAttendanceBody(body: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 256)
+    val value = JSONObject(body)
+    require(value.keys().asSequence().toSet() == setOf("expectedMemberId", "requestId", "expectedRevision", "date", "status"))
+    val member = value.get("expectedMemberId"); val requestId = value.get("requestId")
+    val revision = value.get("expectedRevision"); val date = value.get("date"); val status = value.get("status")
+    require(member is String && uuid(member) && member == member.lowercase())
+    require(requestId is String && uuid(requestId) && requestId == requestId.lowercase())
+    require(revision is Int || revision is Long)
+    val version = (revision as Number).toLong(); require(version in 0..9007199254740991L)
+    require(date is String && attendanceDay(date))
+    require(status is String && status in setOf("going", "not_going"))
+    require(body == "{\"expectedMemberId\":\"$member\",\"requestId\":\"$requestId\",\"expectedRevision\":$version,\"date\":\"$date\",\"status\":\"$status\"}")
+  }
+  private fun attendanceDay(value: String): Boolean {
+    val match = Regex("([0-9]{4})-([0-9]{2})-([0-9]{2})").matchEntire(value) ?: return false
+    val year = match.groupValues[1].toInt(); val month = match.groupValues[2].toInt(); val day = match.groupValues[3].toInt()
+    if (month !in 1..12) return false
+    val leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+    val days = when (month) { 2 -> if (leap) 29 else 28; 4, 6, 9, 11 -> 30; else -> 31 }
+    return day in 1..days
   }
   private fun savedReadingBook(value: String) = value in setOf("apology", "divine-comedy", "genealogy-of-morals", "hamlet", "meditations", "odyssey", "relativity", "republic")
   /** Private saved-place CAS wire policy. Shared JS and server contracts also

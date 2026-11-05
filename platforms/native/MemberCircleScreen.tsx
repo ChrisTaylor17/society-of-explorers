@@ -70,6 +70,8 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const model = snapshot.connection === connection ? snapshot.model : connection?.binding.model();
   const account = accountSnapshot.connection === connection ? accountSnapshot.model : connection?.account.model();
+  const memberId = account?.member?.id;
+  const directoryConfig = useMemo(() => connection && memberId ? { ...connection.host, memberId } : null, [connection, memberId]);
   useLayoutEffect(() => {
     const life = viewLife.current;
     life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
@@ -143,7 +145,7 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       return <MemberProfileScreen session={profileConnection.session} connectivity={connection.connectivity}
         publicAvailable={Boolean(connection.host.publicProfileTransport)} onBack={back} onClose={close}/>;
     }
-    if (entered.destination === 'discover' || entered.destination === 'mine') return <CircleDirectoryScreen config={connection.host} connectivity={connection.connectivity}
+    if ((entered.destination === 'discover' || entered.destination === 'mine') && directoryConfig) return <CircleDirectoryScreen config={directoryConfig} connectivity={connection.connectivity}
       initialMode={entered.destination} savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined} onBack={back} onClose={close}/>;
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
       onBack={back} onClose={close}/>;
