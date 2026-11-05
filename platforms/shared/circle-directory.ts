@@ -5,7 +5,7 @@ import { parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt,
 import { isUuid } from '../../lib/ids/uuid';
 import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
 
-export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport;
+export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport;
   timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string> };
 export type CircleDirectoryModel = {
   connected: boolean; active: boolean; online: boolean; busy: boolean;

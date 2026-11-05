@@ -1,6 +1,6 @@
 # Native Circle discovery and membership
 
-This source milestone extends `606f7126469974d145e79005490774d430dc8fd2`. Production clearance remains false. The canonical checkout is `/Users/christaylor/Documents/Codex/soe-release` on `codex/soe-first-release`.
+This historical source milestone was committed at `d8e7961ceab1c5d66a41a33c04fd9f2701ca356a`, extending `606f7126469974d145e79005490774d430dc8fd2`. Its scope and proof below describe that checkpoint. The later [native reading milestone](native-circle-reading.md) adds agreed-reading text. Production clearance remains false. The canonical checkout is `/Users/christaylor/Documents/Codex/soe-release` on `codex/soe-first-release`.
 
 After application-owned sign-in and member verification, **Discover Circles** and **My Circles** reach the directory. Search is deliberate, supports words, city, format, availability and ordering, and replaces bounded pages rather than silently truncating the catalogue. Public discovery uses a separate connection without credentials. My Circles includes joined and hosted groups, including hidden or unusable listings that still need membership controls.
 

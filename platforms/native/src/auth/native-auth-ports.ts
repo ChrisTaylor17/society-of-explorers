@@ -128,13 +128,14 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   };
   const transport = wrapTransport(ports.transport);
   const publicTransport = ports.publicTransport ? wrapTransport(ports.publicTransport) : undefined;
+  const passageTransport = ports.passageTransport ? wrapTransport(ports.passageTransport) : undefined;
   return { providerOrigin, storageKey: storageKey, storage, fetch, retire,
     onRetired(listener: () => void) { if (retired) { listener(); return () => {}; } listeners.add(listener); return () => { listeners.delete(listener); }; },
     async resetAccountStorage() {
       if (resetStarted) throw unavailable(); resetStarted = true; retire();
       try { await ports.resetAccountStorage(); } finally { offRetirement(); ports.retireStorage(); }
     },
-    member: { origin, transport, ...(publicTransport ? { publicTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
+    member: { origin, transport, ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
   };
 }
 export type NativeAuthPorts = Awaited<ReturnType<typeof createNativeAuthPorts>>;

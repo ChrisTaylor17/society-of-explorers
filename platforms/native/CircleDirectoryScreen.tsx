@@ -1,11 +1,12 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createCircleDirectory, type CircleDirectoryConfig } from '../shared/circle-directory';
 import { parseDiscoveryPageRequest } from '../../lib/circles/discovery-page';
-import { readingEditionLabel, readingSessionLabel, starterReadingContext } from '../../lib/circles/reading-program';
+import { readingEditionLabel, readingSessionLabel, starterReadingContext, type ReadingContext } from '../../lib/circles/reading-program';
 import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
+import { CircleReadingScreen } from './CircleReadingScreen';
 
 export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', onBack, onClose }: {
   config: CircleDirectoryConfig; connectivity?: NativeConnectivityPort; initialMode?: 'discover' | 'mine'; onBack(): void; onClose(): void;
@@ -20,14 +21,24 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
   const [format, setFormat] = useState(''), [open, setOpen] = useState(false), [sort, setSort] = useState('next');
   const [filterError, setFilterError] = useState('');
   const [discussion, setDiscussion] = useState<{ connection: NonNullable<typeof connection>; circleId: string } | null>(null);
+  const [reading, setReading] = useState<{ connection: NonNullable<typeof connection>; context: ReadingContext } | null>(null);
+  const [readingNotice, setReadingNotice] = useState('');
+  const readingLifetime = useRef({ generation: 0 });
   const m = snapshot.connection === connection ? snapshot.model : connection?.session.model(), session = connection?.session;
   const discussionConfig = useMemo(() => discussion ? { ...discussion.connection.config, circleId: discussion.circleId } : null, [discussion]);
+  const readingConfig = useMemo(() => reading ? { ...reading.connection.config, context: reading.context } : null, [reading]);
   useLayoutEffect(() => {
     if (!connection) return;
+    const lifetime = readingLifetime.current;
     const { session } = connection;
     const off = session.subscribe(model => {
+      // Loading a fresh selected detail retains its selection. Retirement,
+      // background/offline or an account change must also cancel a pending
+      // Read intent even when this directory stays mounted independently.
+      if (!model.connected || !model.active || !model.online || !model.selected) lifetime.generation++;
       setSnapshot({ connection, model });
       if (!model.canOpenDiscussion) setDiscussion(null);
+      if (!model.detail || !model.connected || !model.active || !model.online) setReading(null);
     });
     let mounted = true, active = false, blurred = false;
     const sync = () => { if (mounted) session.activity(active && !blurred); };
@@ -38,9 +49,9 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     active = AppState.currentState === 'active'; sync();
     const offConnectivity = observeNativeConnectivity(connection.connectivity, value => { if (mounted) session.connectivity(value === 'online'); });
     active = AppState.currentState === 'active'; sync(); session.connect();
-    return () => { mounted = false; session.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
+    return () => { mounted = false; lifetime.generation++; session.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
-  const close = () => { session?.close(); setDiscussion(null); onClose(); };
+  const close = () => { readingLifetime.current.generation++; session?.close(); setDiscussion(null); setReading(null); onClose(); };
   const back = () => { if (session?.model().canNavigate) { session.close(); onBack(); } };
   const search = () => {
     const params = new URLSearchParams({ q, city, format, open: open ? '1' : '0', sort });
@@ -48,6 +59,27 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     if (!request.ok) { setFilterError('Check the search words and city, then try again.'); return; }
     setFilterError(''); void session?.search(request.value);
   };
+  const openReading = async (context: ReadingContext, sessionIndex: number | null) => {
+    const before = session?.model(), owner = config.owner.scope();
+    if (!connection || !session || !config.passageTransport || !owner || before?.phase !== 'ready' || !before.detail || !before.canNavigate) return;
+    const attempt = ++readingLifetime.current.generation, circleId = before.selected;
+    setReadingNotice('');
+    await session.refresh();
+    if (attempt !== readingLifetime.current.generation || config.owner.scope() !== owner) return;
+    const current = session.model(), fresh = current.detail?.circle;
+    if (!fresh || current.selected !== circleId || current.phase !== 'ready' || !current.connected || !current.active || !current.online) return;
+    const program = fresh.reading_program, range = sessionIndex === null ? null : program?.sessions[sessionIndex];
+    const verified = sessionIndex === null && !program ? starterReadingContext(fresh.week)
+      : program && range ? { bookId: program.bookId, editionId: program.editionId, ...range } : null;
+    if (!verified || verified.bookId !== context.bookId || verified.editionId !== context.editionId || verified.from !== context.from || verified.to !== context.to) {
+      setReadingNotice('The reading plan changed. Review the current selection before opening it.'); return;
+    }
+    setReading({ connection, context: { ...verified } });
+  };
+  if (reading && reading.connection === connection && readingConfig && m?.detail && m.connected && m.active && m.online) {
+    return <CircleReadingScreen config={readingConfig} connectivity={connectivity} onClose={close}
+      onBack={() => { setReading(null); void session?.refresh(); }}/>;
+  }
   if (discussion && discussion.connection === connection && m?.canOpenDiscussion && discussionConfig) {
     return <CircleScreen config={discussionConfig} connectivity={connectivity} onClose={close}
       onBack={() => { setDiscussion(null); void session?.refresh(); }}/>;
@@ -116,7 +148,9 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
         {detail?.ended ? <Text style={styles.copy}>This Circle has ended.</Text> : null}
         <Text style={styles.copy}>{detail?.viewer.is_member ? 'You are a member of this Circle.' : 'You have not joined this Circle.'}</Text>
         {detail?.meetings.map(meeting => <Text key={meeting.date} style={styles.note}>Meeting {meeting.date} · {meeting.going} attending{meeting.my_status === 'going' ? ' · You are attending' : ''}</Text>)}
-        <AgreedReading circle={circle}/>
+        {readingNotice ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{readingNotice}</Text> : null}
+        <AgreedReading circle={circle} available={Boolean(config.passageTransport)} disabled={m?.phase !== 'ready' || !m?.canNavigate}
+          onRead={(context, index) => void openReading(context, index)}/>
       </View> : management ? <Text style={styles.copy}>The full listing is unavailable. You can check your membership and leave this Circle here.</Text> : null}
       <Action label="Check current Circle" disabled={!m?.canRefresh} onPress={() => void session?.refresh()}/>
       {m?.phase === 'review' ? <View style={styles.card}>
@@ -171,19 +205,26 @@ function CommunityNorms() {
   </View>;
 }
 
-function AgreedReading({ circle }: { circle: CirclePublicSummary }) {
+function AgreedReading({ circle, available, disabled, onRead }: {
+  circle: CirclePublicSummary; available: boolean; disabled: boolean; onRead(context: ReadingContext, sessionIndex: number | null): void;
+}) {
   const program = circle.reading_program, starter = program ? null : starterReadingContext(circle.week);
   return <View style={styles.card}>
     <Text accessibilityRole="header" style={styles.heading}>Agreed reading</Text>
     {program ? <>
       <Text style={styles.copy}>{readingEditionLabel(program)}</Text>
-      {program.sessions.map((session, index) => <Text key={index} style={styles.note}>Meeting {index + 1}{circle.week === index + 1 ? ' · Current selection' : ''}: {readingSessionLabel(program, session)}</Text>)}
+      {program.sessions.map((session, index) => <View key={index} style={styles.list}>
+        <Text style={styles.note}>Meeting {index + 1}{circle.week === index + 1 ? ' · Current selection' : ''}: {readingSessionLabel(program, session)}</Text>
+        {available ? <Action label={`Read meeting ${index + 1} selection`} disabled={disabled}
+          onPress={() => onRead({ bookId: program.bookId, editionId: program.editionId, ...session }, index)}/> : null}
+      </View>)}
     </> : circle.reading ? <>
       <Text style={styles.copy}>{circle.reading.title} · {circle.reading.author}</Text>
       <Text style={styles.note}>{circle.reading.selection}</Text>
-      {starter ? <><Text style={styles.note}>{readingEditionLabel(starter)}</Text><Text style={styles.note}>{readingSessionLabel(starter, starter)}</Text></> : null}
+      {starter ? <><Text style={styles.note}>{readingEditionLabel(starter)}</Text><Text style={styles.note}>{readingSessionLabel(starter, starter)}</Text>
+        {available ? <Action label="Read current selection" disabled={disabled} onPress={() => onRead(starter, null)}/> : null}</> : null}
     </> : <Text style={styles.copy}>No current reading selection.</Text>}
-    <Text style={styles.note}>The reading schedule is shown here. Reading the full text in this app is not yet available.</Text>
+    <Text style={styles.note}>{available ? 'Open a selection to read its verified text. Tables and nontext content are identified in place; the native reader does not reproduce the complete source layout.' : 'The reading schedule is shown here. Reading text is unavailable in this connection.'}</Text>
   </View>;
 }
 function Field({ label, value, editable, maxLength, onChange }: { label: string; value: string; editable: boolean; maxLength: number; onChange(value: string): void }) {

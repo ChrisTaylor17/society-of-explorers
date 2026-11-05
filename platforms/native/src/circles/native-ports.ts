@@ -2,11 +2,12 @@ import { approvedOrigin, type CircleTransport } from './host';
 import { parseDiscussionQuery } from '../../../../lib/circles/thread';
 import { isUuid } from '../../../../lib/ids/uuid';
 import { discoveryPageSearchParams, parseDiscoveryPageRequest } from '../../../../lib/circles/discovery-page';
+import { passageIndexPin } from '../../../../lib/books/passages';
 
 /** The native implementation owns the durable storage generation. Every storage
  * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; publicPolicy?: string }>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; publicPolicy?: string; readingPolicy?: string }>;
   newRequestId?(generation: string): Promise<string>;
   begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
@@ -64,7 +65,8 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
     setItem(name:string,value:string):Promise<void>{const s=slot(name);if(typeof value!=='string'||size(value)>65536)throw fail();return enqueue(async()=>{await bridge.write(s,value,nativeGeneration);if(!current())throw fail();});},
     removeItem(name:string):Promise<void>{const s=slot(name);return enqueue(async()=>{await bridge.remove(s,nativeGeneration);if(!current())throw fail();});},
   };
-  const makeTransport=(publicRead:boolean):CircleTransport=>async(url,init)=>{
+  const makeTransport=(channel:'member'|'discovery'|'passage'):CircleTransport=>async(url,init)=>{
+    const publicRead = channel !== 'member';
     let id:string|undefined;
     let finished=false,cancelled=false;
     const cancel=()=>{if(!id||cancelled)return;cancelled=true;const requestId=id;void Promise.resolve().then(()=>bridge.cancel(requestId)).catch(()=>{});};
@@ -103,10 +105,16 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
             && init.body === JSON.stringify(value);
         }
       }
-      const publicQuery = publicRead ? parseDiscoveryPageRequest(u.searchParams) : null;
-      const discovery = publicRead && u.pathname === '/api/circles' && init.method === 'GET' && publicQuery?.ok
+      const publicQuery = channel === 'discovery' ? parseDiscoveryPageRequest(u.searchParams) : null;
+      const discovery = channel === 'discovery' && u.pathname === '/api/circles' && init.method === 'GET' && publicQuery?.ok
         && (!hasQuery || Boolean(u.search)) && discoveryPageSearchParams(publicQuery.value).toString() === u.search.slice(1);
-      const approvedPath = publicRead ? discovery : account || contributions || mine || membershipChange
+      const pin = channel === 'passage' ? passageIndexPin(u.searchParams.get('book') ?? '') : null;
+      const block = u.searchParams.get('block');
+      const passage = channel === 'passage' && init.method === 'GET' && u.pathname === '/api/great-books/passage'
+        && pin !== null && u.searchParams.get('edition') === pin.editionId && block !== null && /^(0|[1-9][0-9]{0,5})$/.test(block)
+        && Number.isSafeInteger(Number(block)) && Number(block) < pin.blockCount
+        && u.search.slice(1) === new URLSearchParams({ book: pin.bookId, edition: pin.editionId, block }).toString();
+      const approvedPath = publicRead ? discovery || passage : account || contributions || mine || membershipChange
         || Boolean(detail && isUuid(detail[1]) && init.method === 'GET' && !hasQuery) || (legacy ? isUuid(legacy[1]) && !hasQuery
         : discussion ? isUuid(discussion[1]) && (init.method === 'GET' ? query !== null && (!hasQuery || Boolean(u.search)) : init.method === 'POST' && !hasQuery)
         : preview ? isUuid(preview[1]) && init.method === 'POST' && !hasQuery
@@ -147,9 +155,10 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
     } catch { cancel();throw fail(); }
     finally {finished=true;queue.requests.delete(lifetime);init.signal.removeEventListener('abort',abortLifetime);}
   };
-  const transport = makeTransport(false);
-  const publicTransport = caps.publicPolicy === 'circle-discovery-v1' && typeof bridge.sendPublic === 'function' ? makeTransport(true) : undefined;
-  return { transport, ...(publicTransport ? { publicTransport } : {}), storage, ...(newRequestId ? { newRequestId } : {}), retireStorage(){retired=true;},
+  const transport = makeTransport('member');
+  const publicTransport = caps.publicPolicy === 'circle-discovery-v1' && typeof bridge.sendPublic === 'function' ? makeTransport('discovery') : undefined;
+  const passageTransport = caps.readingPolicy === 'pinned-passage-v1' && typeof bridge.sendPublic === 'function' ? makeTransport('passage') : undefined;
+  return { transport, ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), storage, ...(newRequestId ? { newRequestId } : {}), retireStorage(){retired=true;},
     onAccountRetired(listener:()=>void) { if(!current()){listener();return ()=>{};}queue.retirements.add(listener);return ()=>{queue.retirements.delete(listener);}; },
     async resetAccountStorage() {
       if(!current())throw fail();

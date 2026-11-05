@@ -45,6 +45,7 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
       putString("redirectPolicy", "reject-before-send"); putString("storagePolicy", "os-protected"); putString("storageGeneration", generation)
       putString("requestIdPolicy", "os-random-uuid")
       putString("publicPolicy", "circle-discovery-v1")
+      putString("readingPolicy", "pinned-passage-v1")
       if (config.providerOrigin.isNotEmpty()) {
         putString("authPolicy", "supabase-password-v1"); putString("providerOrigin", config.providerOrigin); putString("publishableKey", config.publishableKey)
       }

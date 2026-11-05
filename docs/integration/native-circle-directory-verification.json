@@ -29,20 +29,20 @@
     "newWebBuild": "NOT_RUN_NATIVE_ONLY_APPLICATION_SCOPE"
   },
   "proofs": {
-    "controller": "verification/web/evidence/circle-directory-controller-tests.log",
-    "platformRegressions": "verification/web/evidence/native-circle-directory-regressions.log",
-    "portableTypes": "verification/web/evidence/native-circle-directory-portable-types.log",
-    "scopedLint": "verification/web/evidence/native-circle-directory-scoped-lint.log",
-    "nativePolicy": "platforms/evidence/native-discovery-policy.json",
-    "sdk": "verification/web/evidence/owned-auth-sdk-tests.json",
-    "browser": "verification/web/evidence/native-circle-directory-browser.json",
-    "originalCheckout": "verification/web/evidence/original-status-native-directory-check.json"
+    "controller": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/circle-directory-controller-tests.log",
+    "platformRegressions": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-regressions.log",
+    "portableTypes": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-portable-types.log",
+    "scopedLint": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-scoped-lint.log",
+    "nativePolicy": "verification/web/evidence/checkpoint-d8e7961/files/platforms/evidence/native-discovery-policy.json",
+    "sdk": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/owned-auth-sdk-tests.json",
+    "browser": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-browser.json",
+    "originalCheckout": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/original-status-native-directory-check.json"
   },
   "review": "Independent controller/server-semantics and UI reviews found no remaining actionable issues. Root reviewed native policy/Kotlin and both final320px screenshots. Display-name sharing, norms, host/RSVP leaving consequences are disclosed. Explicit Open discussion authorizes its initial read; selecting a listing does not mount discussion. Four test-only unused parameter warnings were removed and the affected26 tests/lint rechecked.",
   "priorEvidence": {
     "receipt": "docs/integration/native-owned-auth-verification.json",
     "checkpoint": "606f7126469974d145e79005490774d430dc8fd2",
-    "originalReceipt": "verification/web/evidence/checkpoint-606f712/native-owned-auth-verification.original.json",
+    "originalReceipt": "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/checkpoint-606f712/native-owned-auth-verification.original.json",
     "archivedFiles": 26,
     "allArchiveHashesMatch": true
   },
@@ -256,22 +256,24 @@
     "/opt/homebrew/Cellar/node@22/22.22.1_1/bin/node": "a78c41e90c3b48e089a5573e112a963307a6f6da3e3ecd52cc2e7d205a4eba36"
   },
   "evidenceSha256": {
-    "platforms/evidence/native-discovery-policy-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "platforms/evidence/native-discovery-policy.json": "56842783e398e7faa5f98670a82746dc2255c855c48219a659e8ef25a7c53837",
-    "platforms/evidence/native-discovery-policy.log": "8a47c2407edd7d016c4efc5d8bb135475b79e5535c791ba085027fbf857ad841",
-    "verification/web/evidence/checkpoint-606f712/native-owned-auth-verification.original.json": "90a437f6943998f458e5ed5354f042bcd40925f17d9f089514ebbdb300187d03",
-    "verification/web/evidence/circle-directory-controller-tests.log": "b2a63feb094e7736b87f3f8f6edaa005295b0bfdb443f1069d5064484df66bc6",
-    "verification/web/evidence/native-circle-directory-320.png": "d52a32bb9de8fd8c3e88a1b104da29c8779612e3a9be6d5a149de8b0ad80aa9e",
-    "verification/web/evidence/native-circle-directory-browser.json": "dca38bcfae09450762b1a3cdb4ba8118421778b9b83e9f4225cdbef26a18f228",
-    "verification/web/evidence/native-circle-directory-browser.log": "942cf7398ea8b99d296fda92463a4edd3c254cbe0bce7cc7cacc2de69c220dbb",
-    "verification/web/evidence/native-circle-directory-detail-320.png": "0897c036b4dc8e4b23abeb71a9f9bb5ef558db1f326a19624207129d56a84743",
-    "verification/web/evidence/native-circle-directory-fixture/page.js": "62fdf45789689c595dc342010831ba4b66c04d32809412b7fb080db98a62d9ab",
-    "verification/web/evidence/native-circle-directory-fixture/source-manifest.json": "97209cac94dfc4aa3c2006a427179ef7bed5931c133d4b751d766edeb732d8be",
-    "verification/web/evidence/native-circle-directory-portable-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/native-circle-directory-regressions.log": "a3c982d599514d1bf91ae28bad505b70d67638de1202f2c3e228284405b1bd47",
-    "verification/web/evidence/native-circle-directory-scoped-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "verification/web/evidence/original-status-native-directory-check.json": "965b9ea4fe83bc01826b4df1e25c8bf16b93a2d923433ab2089c7c1817cd4bf3",
-    "verification/web/evidence/owned-auth-sdk-tests.json": "717acaf7b891e096ead6ac44435349b0fa85989638dd70d6ace56a19666e018e",
-    "verification/web/evidence/owned-auth-sdk-tests.log": "5117139cad9ddd020949d4d9100bce20028d667f84faa070123fddd8edb159f4"
-  }
+    "verification/web/evidence/checkpoint-d8e7961/files/platforms/evidence/native-discovery-policy-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-d8e7961/files/platforms/evidence/native-discovery-policy.json": "56842783e398e7faa5f98670a82746dc2255c855c48219a659e8ef25a7c53837",
+    "verification/web/evidence/checkpoint-d8e7961/files/platforms/evidence/native-discovery-policy.log": "8a47c2407edd7d016c4efc5d8bb135475b79e5535c791ba085027fbf857ad841",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/checkpoint-606f712/native-owned-auth-verification.original.json": "90a437f6943998f458e5ed5354f042bcd40925f17d9f089514ebbdb300187d03",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/circle-directory-controller-tests.log": "b2a63feb094e7736b87f3f8f6edaa005295b0bfdb443f1069d5064484df66bc6",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-320.png": "d52a32bb9de8fd8c3e88a1b104da29c8779612e3a9be6d5a149de8b0ad80aa9e",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-browser.json": "dca38bcfae09450762b1a3cdb4ba8118421778b9b83e9f4225cdbef26a18f228",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-browser.log": "942cf7398ea8b99d296fda92463a4edd3c254cbe0bce7cc7cacc2de69c220dbb",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-detail-320.png": "0897c036b4dc8e4b23abeb71a9f9bb5ef558db1f326a19624207129d56a84743",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-fixture/page.js": "62fdf45789689c595dc342010831ba4b66c04d32809412b7fb080db98a62d9ab",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-fixture/source-manifest.json": "97209cac94dfc4aa3c2006a427179ef7bed5931c133d4b751d766edeb732d8be",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-portable-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-regressions.log": "a3c982d599514d1bf91ae28bad505b70d67638de1202f2c3e228284405b1bd47",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/native-circle-directory-scoped-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/original-status-native-directory-check.json": "965b9ea4fe83bc01826b4df1e25c8bf16b93a2d923433ab2089c7c1817cd4bf3",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/owned-auth-sdk-tests.json": "717acaf7b891e096ead6ac44435349b0fa85989638dd70d6ace56a19666e018e",
+    "verification/web/evidence/checkpoint-d8e7961/files/verification/web/evidence/owned-auth-sdk-tests.log": "5117139cad9ddd020949d4d9100bce20028d667f84faa070123fddd8edb159f4"
+  },
+  "historicalCheckpoint": "d8e7961ceab1c5d66a41a33c04fd9f2701ca356a",
+  "historicalEvidenceOriginal": "verification/web/evidence/checkpoint-d8e7961/native-circle-directory-verification.original.json"
 }

@@ -186,7 +186,9 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val url = input.url.toHttpUrl()
     val origin = "https://" + url.host + if (url.port == 443) "" else ":" + url.port
     require(url.scheme == "https" && origin == config.origin && url.username.isEmpty() && url.password.isEmpty()
-      && url.fragment == null && url.toString() == input.url && url.encodedPath == "/api/circles")
+      && url.fragment == null && url.toString() == input.url)
+    if (url.encodedPath == "/api/great-books/passage") { validatePassageQuery(url.encodedQuery); return }
+    require(url.encodedPath == "/api/circles")
     val order = listOf("book", "edition", "from", "to", "q", "city", "format", "open", "sort", "limit", "cursor")
     val query = linkedMapOf<String, String>()
     if (url.encodedQuery != null) for (part in url.encodedQuery!!.split('&')) {
@@ -215,6 +217,23 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
         require(query["from"]!!.toInt() <= query["to"]!!.toInt())
       }
     }
+  }
+  /** Anonymous block locator only. Pinned edition equality and actual block
+   * bounds are checked independently by the JavaScript and canonical server. */
+  private fun validatePassageQuery(encoded: String?) {
+    require(encoded != null && encoded.length <= 400)
+    val order = listOf("book", "edition", "block")
+    val parts = encoded.split('&'); require(parts.size == order.size)
+    val query = mutableMapOf<String, String>()
+    for ((index, part) in parts.withIndex()) {
+      val pair = part.split('='); require(pair.size == 2 && pair[0] == order[index])
+      val value = URLDecoder.decode(pair[1], "UTF-8"); MemberConfig.value(value)
+      require(URLEncoder.encode(value, "UTF-8") == pair[1]); query[pair[0]] = value
+    }
+    require(Regex("[a-z0-9][a-z0-9-]{0,159}").matches(query["book"]!!))
+    require(Regex("pg-[1-9][0-9]{0,9}-[a-f0-9]{64}").matches(query["edition"]!!))
+    require(Regex("0|[1-9][0-9]{0,5}").matches(query["block"]!!))
+    require(query["block"]!!.toInt() in 0..100000)
   }
   private fun validate(input: Input) {
     require(Regex("[A-Za-z0-9._~+/-]+=*").matches(input.bearer) && input.bearer.length <= 16384)
