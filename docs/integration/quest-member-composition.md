@@ -23,7 +23,7 @@ The database is a sanitized three-table catalog rehearsal with synthetic members
 7. Held responses already computed by actual SQL cannot restore private archive data or trigger more requests after provider change or SDK logout.
 8. Unmount removes the platform DOM host and SDK observation with no late request. Final PASS is written only after bounded cleanup and final error checks.
 
-This exercises **discussion GET/archive/thread reading only**. The flat conversation endpoint, composer POST, issued session/cookie verification, hosted PostgREST, provider acceptance, real Quest Browser and headset input/lifecycle remain outside this proof. The separate Next build/browser evidence covers its own runtime; this standalone component bundle does not substitute for it.
+The baseline without a suffix exercises **discussion GET/archive/thread reading only**. The separate [immersive discussion run](quest-immersive-discussion.md) adds simulated controller input, composer POST and receipt recovery. Issued sessions, hosted PostgREST, real Quest Browser and physical headset behavior remain outside both proofs. The separate built-page smoke checks the Next runtime.
 
 ## Reproduce without downloads
 

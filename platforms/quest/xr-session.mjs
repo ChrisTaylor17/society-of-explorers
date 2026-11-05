@@ -53,7 +53,11 @@ export function createXRSession({ xr, render, onState, onRetire, select }) {
         listen('visibilitychange', () => {
           if (session.visibilityState !== 'visible') leave('Headset focus changed. Re-enter the room to check access again.');
         });
-        listen('select', () => { if (active() && current(value)) select(); });
+        listen('select', event => {
+          if (!active() || !current(value)) return;
+          const target = value.surface.selectTarget(event);
+          if (target !== undefined) select(target);
+        });
         listen('squeeze', () => { if (active() && current(value)) leave('Immersive room closed. Check your member session to continue.'); });
         if (session.visibilityState !== 'visible') {
           await finish(value, 'The headset view needs focus. Open the room again when ready.');

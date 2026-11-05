@@ -1,4 +1,7 @@
+import { ROOM_TEXT_COLUMNS } from './room-composer.mjs';
+
 const WIDTH = 1024, HEIGHT = 768, MARGIN = 60;
+const HALF_WIDTH = 1.25, HALF_HEIGHT = .94, DISTANCE = 2;
 const BACKGROUND = '#101d1a';
 const VERTEX = 'attribute vec3 p; attribute vec2 t; uniform mat4 projection; uniform mat4 view; varying vec2 uv; void main(){uv=t;gl_Position=projection*view*vec4(p,1.0);}';
 const FRAGMENT = 'precision mediump float; varying vec2 uv; uniform sampler2D panel; void main(){gl_FragColor=texture2D(panel,uv);}';
@@ -26,6 +29,57 @@ function drawText(ctx, text, firstY, maxLines) {
     MARGIN, firstY + index * 43, WIDTH - 2 * MARGIN));
 }
 
+function drawExact(ctx, text) {
+  ctx.font = '30px monospace';
+  let y = 203;
+  for (const line of text.split('\n')) {
+    for (let start = 0; start < Math.max(1, line.length); start += ROOM_TEXT_COLUMNS) {
+      const part = line.slice(start, start + ROOM_TEXT_COLUMNS);
+      ctx.fillText(part, MARGIN, y, WIDTH - 2 * MARGIN);
+      y += 33;
+    }
+  }
+}
+
+function controlBounds(content) {
+  return (content?.rows ?? []).flatMap((row, index) => {
+    const width = (WIDTH - 2 * MARGIN - (row.length - 1) * 10) / row.length;
+    // Review and Post must never share a target with an unchanged ray.
+    const y = content.keyboard ? 321 + index * 61 : content.review ? 505 : 597;
+    const height = content.keyboard ? 51 : 57;
+    return row.map((control, column) => ({ ...control, x: MARGIN + column * (width + 10), y, width, height }));
+  });
+}
+
+function pointedControl(frame, source, reference, controls) {
+  if (!frame || !source?.targetRaySpace || !controls.length) return null;
+  try {
+    const matrix = frame.getPose(source.targetRaySpace, reference)?.transform.matrix;
+    // The ray points along its local negative Z axis. Intersect it with the
+    // stationary panel and convert from room coordinates to canvas pixels.
+    if (!matrix || ![8, 9, 10, 12, 13, 14].every(index => Number.isFinite(matrix[index])) || matrix[10] <= .0001) return null;
+    const distance = (-DISTANCE - matrix[14]) / -matrix[10];
+    if (distance < 0) return null;
+    const x = (matrix[12] - distance * matrix[8] + HALF_WIDTH) * WIDTH / (2 * HALF_WIDTH);
+    const y = (HALF_HEIGHT - matrix[13] + distance * matrix[9]) * HEIGHT / (2 * HALF_HEIGHT);
+    return controls.find(control => !control.disabled && x >= control.x && x < control.x + control.width &&
+      y >= control.y && y < control.y + control.height)?.id ?? null;
+  } catch { return null; }
+}
+
+function drawControls(ctx, controls, pointed) {
+  for (const control of controls) {
+    const selected = control.id === pointed;
+    ctx.fillStyle = selected ? '#e3cb8e' : '#294638';
+    ctx.fillRect(control.x, control.y, control.width, control.height);
+    ctx.fillStyle = control.disabled ? '#a9b3aa' : selected ? BACKGROUND : '#eef0e7';
+    ctx.font = 'bold 25px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(control.label, control.x + control.width / 2, control.y + (control.height + 17) / 2, control.width - 16);
+    ctx.textAlign = 'start';
+  }
+}
+
 /** Stationary WebXR panel. Text and viewer poses stay inside the local renderer. */
 export async function renderXRRoom(session, doc, readPanel, signal, onFailure) {
   const canvas = doc.createElement('canvas');
@@ -35,16 +89,17 @@ export async function renderXRRoom(session, doc, readPanel, signal, onFailure) {
   const ctx = panel.getContext('2d');
   if (!gl || !ctx) throw Error('Immersive display unavailable');
   const cleanup = [];
-  let stopped = false, frameId, texture, previous = null;
+  let stopped = false, frameId, texture, previous = null, previousPoint = null, controls = [];
   const upload = () => {
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, panel);
   };
-  const clear = () => {
+  const clear = (writeTexture = true) => {
     previous = null;
+    previousPoint = null;
     ctx.fillStyle = BACKGROUND;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    if (texture && !gl.isContextLost()) upload();
+    if (writeTexture && texture && !gl.isContextLost()) upload();
   };
   function dispose() {
     if (stopped) return;
@@ -83,8 +138,8 @@ export async function renderXRRoom(session, doc, readPanel, signal, onFailure) {
     cleanup.push(() => gl.deleteBuffer(buffer));
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      -1.25, .94, -2, 0, 0, -1.25, -.94, -2, 0, 1,
-      1.25, .94, -2, 1, 0, 1.25, -.94, -2, 1, 1,
+      -HALF_WIDTH, HALF_HEIGHT, -DISTANCE, 0, 0, -HALF_WIDTH, -HALF_HEIGHT, -DISTANCE, 0, 1,
+      HALF_WIDTH, HALF_HEIGHT, -DISTANCE, 1, 0, HALF_WIDTH, -HALF_HEIGHT, -DISTANCE, 1, 1,
     ]), gl.STATIC_DRAW);
     texture = gl.createTexture();
     if (!texture) throw Error('Immersive display unavailable');
@@ -107,20 +162,28 @@ export async function renderXRRoom(session, doc, readPanel, signal, onFailure) {
       if (stopped || signal.aborted) return;
       try {
         const content = session.visibilityState === 'visible' ? readPanel() : null;
-        if (content !== previous) {
-          clear();
+        if (content !== previous) controls = controlBounds(content);
+        let pointed = null;
+        if (controls.length) for (const source of session.inputSources ?? []) {
+          pointed = pointedControl(xrFrame, source, reference, controls);
+          if (pointed) break;
+        }
+        if (content !== previous || pointed !== previousPoint) {
+          clear(false);
           previous = content;
+          previousPoint = pointed;
           if (content) {
             ctx.fillStyle = '#e3cb8e'; ctx.font = 'bold 30px system-ui';
             ctx.fillText('SOCIETY OF EXPLORERS  ·  ' + (content.label ?? 'CIRCLE DISCUSSION'), MARGIN, 66, WIDTH - 2 * MARGIN);
             ctx.fillStyle = '#eef0e7'; ctx.font = 'bold 39px system-ui';
             drawText(ctx, content.heading, 140, 1);
-            ctx.font = '34px system-ui';
-            drawText(ctx, content.text, 203, 10);
+            if (content.exact) drawExact(ctx, content.text);
+            else { ctx.font = '34px system-ui'; drawText(ctx, content.text, 203, controls.length ? 9 : 10); }
+            drawControls(ctx, controls, pointed);
             ctx.fillStyle = '#e3cb8e'; ctx.font = '26px system-ui';
             drawText(ctx, content.footer, 684, 2);
-            upload();
           }
+          upload();
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, layer.framebuffer);
         gl.clearColor(.035, .065, .055, 1);
@@ -137,6 +200,9 @@ export async function renderXRRoom(session, doc, readPanel, signal, onFailure) {
       } catch { onFailure(); }
     }
     frameId = session.requestAnimationFrame(frame);
-    return { dispose };
+    return { dispose, selectTarget(event) {
+      if (stopped || signal.aborted || !previous || previous !== readPanel()) return undefined;
+      return pointedControl(event?.frame, event?.inputSource, reference, controls);
+    } };
   } catch (error) { dispose(); throw error; }
 }

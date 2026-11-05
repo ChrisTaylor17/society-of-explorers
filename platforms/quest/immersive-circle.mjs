@@ -2,6 +2,11 @@ import { createCircleHost, createVerifiedSupabaseCircleOwner, discussionContentS
 import { createXRSession } from './xr-session.mjs';
 import { renderXRRoom } from './xr-room.mjs';
 import { createSalonPresence } from './salon-presence.mjs';
+import { ROOM_POST_LIMIT, roomComposerPanel, roomReviewText } from './room-composer.mjs';
+
+const requestId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u;
+const control = (id, label) => ({ id, label });
+const interruptedPost = 'An interrupted post may have been saved. Check the regular discussion before posting again.';
 
 export function immersiveControls(doc, sharedSalon) {
   const ids = ['quest-immersive-status', 'quest-immersive-enter', 'quest-immersive-exit'];
@@ -17,10 +22,12 @@ export function immersiveControls(doc, sharedSalon) {
  * have focus while the regular browser window's private session is paused. */
 export function mountImmersiveCircle({ window: win, document: doc, config, onModeChange }) {
   const [status, enter, exit, enterSalon] = immersiveControls(doc, config.sharedSalon);
-  const { origin, circleId, transport, immersive } = config;
+  const { origin, circleId, transport, immersive, newRequestId } = config;
   const discussion = origin + '/api/circles/' + circleId + '/discussion';
+  const receiptPrefix = discussion + '?requestId=';
   let support = null, room = null, disposed = false, mode = false;
   let view = 'discussion';
+  let interrupted = false;
   let state = { open: false, busy: false, message: '' };
   const prompt = (text, footer = 'Use the headset controls to leave the room.') => view === 'salon'
     ? { label: 'SHARED SALON', heading: 'Your shared salon', text, footer }
@@ -33,15 +40,17 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     enter.disabled = support !== true || state.open || state.busy || !focused();
     if (enterSalon) enterSalon.disabled = enter.disabled;
     exit.disabled = !state.open;
-    status.textContent = support === null ? 'Checking this browser for immersive viewing…' :
+    const message = support === null ? 'Checking this browser for immersive viewing…' :
       support ? state.message || 'Open the room, then use your controller to check access.' :
       'Immersive viewing is unavailable here. Continue in the regular Circle view.';
+    status.textContent = interrupted && !state.open ? `${message} ${interruptedPost}` : message;
   };
   function retire() {
     const current = room;
     room = null;
     panel = prompt('Press the controller trigger to check your signed-in account.');
     if (!current) return;
+    interrupted ||= current.sent;
     for (const release of [current.off, () => current.salon?.dispose(), current.auth.retire, () => current.host?.disconnect(), current.binding.stop]) {
       try { release(); } catch { /* Complete each independent retirement. */ }
     }
@@ -55,19 +64,23 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     },
     render: (session, signal, fail) => renderXRRoom(session, doc, () => active() ? panel : null, signal, fail),
     onRetire: retire,
-    select: () => void select(),
+    select: target => void select(target),
   });
   function prepare() {
     const auth = immersive.createAuth(active);
     try {
       const binding = createVerifiedSupabaseCircleOwner(auth.auth);
-      const host = view === 'discussion' ? createCircleHost({ origin, circleId, owner: binding.owner,
+      const host = view === 'discussion' ? createCircleHost({ origin, circleId, owner: binding.owner, newRequestId,
         transport(url, init) {
-          if (!active() || url !== discussion || init.method !== 'GET') throw Error('Immersive Circle read unavailable');
+          const read = init.method === 'GET' && (url === discussion ||
+            url.startsWith(receiptPrefix) && requestId.test(url.slice(receiptPrefix.length)));
+          const write = init.method === 'POST' && (url === discussion || url === discussion + '/preview');
+          if (!active() || !(read || write)) throw Error('Immersive discussion request unavailable');
           return transport(url, init);
         },
       }) : null;
-      const current = { auth, binding, host, salon: null, scope: null, off: () => {}, pending: false, cards: [], index: 0 };
+      const current = { auth, binding, host, salon: null, scope: null, off: () => {}, pending: false, cards: [], index: 0,
+        keyboard: null, sent: false };
       room = current;
       host?.connect();
       if (view === 'salon') current.salon = createSalonPresence({
@@ -100,43 +113,111 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       throw error;
     }
   }
-  function showCard(current) {
-    panel = { ...current.cards[current.index],
-      footer: `Recent discussion ${current.index + 1} of ${current.cards.length}. Trigger for ${current.index + 1 < current.cards.length ? 'next preview' : 'a fresh check'}.` };
+  const ownsRoom = current => room === current && active() && current.binding.owner.scope() === current.scope;
+  function showDiscussion(current) {
+    const model = current.host.model(), card = current.cards[current.index];
+    const canWrite = model.threadWrite.canStart;
+    const more = current.index + 1 < current.cards.length;
+    const rows = [[...(canWrite ? [control('new', 'Write a post')] : []),
+      ...(card && canWrite ? [control('reply', 'Reply')] : []), control('advance', more ? 'Next preview' : 'Refresh')]];
+    if (card) {
+      panel = { heading: card.heading, text: card.text, rows,
+        footer: `Recent discussion ${current.index + 1} of ${current.cards.length}. Trigger for ${more ? 'next preview' : 'a fresh check'}.` };
+    } else if (model.archive.phase === 'ready') {
+      panel = { ...prompt('No visible contributions in the latest discussion page. Trigger to check again.'), rows };
+    } else {
+      panel = prompt('Current Circle discussion is unavailable. Trigger to check again or use the regular Circle view.');
+    }
   }
-  async function select() {
+  async function loadDiscussion(current) {
+    current.cards = [];
+    current.index = 0;
+    current.keyboard = null;
+    panel = prompt('Checking current Circle access…');
+    await current.host.openArchive();
+    if (!ownsRoom(current)) return;
+    const { page } = current.host.model().archive;
+    current.cards = (page?.kind === 'archive' ? page.items : [])
+      .filter(message => message.visibility === 'visible' && message.content).slice(0, 5)
+      .map(message => {
+        const suffix = '\n\n' + discussionContentSuffix(circleId, message.parentMessageId);
+        const text = message.parentMessageId && message.content.endsWith(suffix)
+          ? message.content.slice(0, -suffix.length) : message.content;
+        return { id: message.id, heading: message.member_name, text };
+      });
+    showDiscussion(current);
+  }
+  function showComposer(current) {
+    const { archive, threadWrite } = current.host.model();
+    if (!archive.page) { current.cards = []; current.index = 0; }
+    panel = roomComposerPanel(threadWrite, current.keyboard);
+  }
+  async function compose(current, target) {
+    const { host, keyboard } = current;
+    const model = host.model().threadWrite;
+    if (!target) return;
+    if (target === 'discussion' && (model.phase === 'confirmed' || model.phase === 'locked')) {
+      await loadDiscussion(current);
+      return;
+    }
+    if (target === 'cancel' && model.canCancel) {
+      host.threadCancel();
+      current.keyboard = null;
+      showDiscussion(current);
+      return;
+    }
+    let operation;
+    if (model.phase === 'editing') {
+      if (target === 'symbols') keyboard.symbols = !keyboard.symbols;
+      else if (target === 'caps') keyboard.caps = !keyboard.caps;
+      else if (target === 'delete') host.threadEdit(model.draft.slice(0, -1));
+      else if (target === 'review' && model.canReview) operation = host.threadReview();
+      else if (model.draft.length < ROOM_POST_LIMIT && (target === 'space' || /^key:[!-~]$/u.test(target))) {
+        host.threadEdit(model.draft + (target === 'space' ? ' ' : target.slice(4)));
+      }
+    } else if (model.phase === 'review') {
+      if (target === 'edit') host.threadEditReview();
+      if (target === 'post' && roomReviewText(model) !== null) {
+        host.threadConfirm(true);
+        if (host.model().threadWrite.canPost) { current.sent = true; operation = host.threadPost(); }
+      }
+    } else if (model.phase === 'unknown') {
+      if (target === 'lookup' && model.canCheck) operation = host.threadLookup();
+      if (target === 'retry' && model.canRetry) operation = host.threadRetry();
+    }
+    showComposer(current);
+    if (!operation) return;
+    await operation;
+    if (!ownsRoom(current)) return;
+    if (host.model().threadWrite.phase === 'confirmed') current.sent = false;
+    showComposer(current);
+  }
+  async function select(target) {
     if (!active() || room?.pending) return;
     let current = room;
     try {
       if (!current) { await prepare().binding.start(); return; }
       if (!current.scope) { await current.binding.check(); return; }
+      current.pending = true;
       if (current.salon) {
         if (current.salon.model().phase === 'present') await current.salon.leave();
         else await current.salon.join();
         return;
       }
-      if (current.index + 1 < current.cards.length) { current.index++; showCard(current); return; }
-      current.pending = true;
-      current.cards = [];
-      current.index = 0;
-      panel = prompt('Checking current Circle access…');
-      await current.host.openArchive();
-      if (room !== current || !active() || current.binding.owner.scope() !== current.scope) return;
-      const { page, phase } = current.host.model().archive;
-      current.host.close();
-      current.cards = (page?.kind === 'archive' ? page.items : [])
-        .filter(message => message.visibility === 'visible' && message.content).slice(0, 5)
-        .map(message => {
-          const suffix = '\n\n' + discussionContentSuffix(circleId, message.parentMessageId);
-          const text = message.parentMessageId && message.content.endsWith(suffix)
-            ? message.content.slice(0, -suffix.length) : message.content;
-          return { heading: message.member_name, text };
-        });
-      if (current.cards.length) showCard(current);
-      else panel = prompt(phase === 'ready' ? 'No visible contributions in the latest discussion page. Trigger to check again.' :
-        'Current Circle discussion is unavailable. Trigger to check again or use the regular Circle view.');
+      if (!ownsRoom(current)) return;
+      if (current.keyboard) { await compose(current, target); return; }
+      if (target === 'new' || target === 'reply') {
+        const parent = current.cards[current.index]?.id;
+        if ((target === 'new' || parent) && current.host.threadStart(target === 'new' ? null : parent)) {
+          current.keyboard = { caps: false, symbols: false };
+          showComposer(current);
+        }
+        return;
+      }
+      if (current.index + 1 < current.cards.length) { current.index++; showDiscussion(current); return; }
+      await loadDiscussion(current);
     } catch {
-      if (room === current && active()) panel = prompt('Circle access could not be checked. Trigger to try again or use the regular Circle view.');
+      if (room === current && active()) void headset.leave('The room stopped. Open it again to check access or use the regular Circle view.');
     } finally { if (current && room === current) current.pending = false; }
   }
   const open = (control, next) => {
@@ -161,7 +242,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       void headset.dispose();
       enter.disabled = exit.disabled = true;
       if (enterSalon) enterSalon.disabled = true;
-      status.textContent = 'Connect a member account to open the immersive room.';
+      status.textContent = interrupted ? interruptedPost : 'Connect a member account to open the immersive room.';
     },
   };
 }

@@ -89,7 +89,7 @@ try {
   const local = await open(ready.origin), path = '/quest/' + circle;
   assert.equal((await local.page.goto(ready.origin + '/quest')).status(), 200);
   await local.page.getByRole('heading', { name: 'Your Circle in Quest Browser' }).waitFor();
-  await local.page.getByText(/open a read-only immersive room/).waitFor();
+  await local.page.getByText(/read recent Circle discussion and write short posts or replies/).waitFor();
   assert.equal((await local.page.goto(ready.origin + '/quest/not-a-circle')).status(), 404);
   stories.push('The built Quest entry explains both modes and invalid Circle links return HTTP 404.');
   const response = await local.page.goto(ready.origin + path);
@@ -98,6 +98,7 @@ try {
   const connect = page => page.getByRole('button', { name: 'Connect signed-in account', exact: true });
   const enter = page => page.getByRole('button', { name: 'Enter immersive room', exact: true });
   await local.page.getByRole('heading', { name: 'Immersive Circle discussion', exact: true }).waitFor();
+  await local.page.getByText(/Point your controller at the buttons to write, review and post/).waitFor();
   assert(await enter(local.page).isDisabled());
   assert.equal(await local.page.getByRole('link', { name: 'Regular Circle view and safety controls', exact: true }).getAttribute('href'), '/circles/' + circle);
   await connect(local.page).click();

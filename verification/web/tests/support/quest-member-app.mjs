@@ -11,10 +11,13 @@ export const SUBJECTS = Object.freeze({ author: '72111111-1111-4111-8111-1111111
 export const TOKENS = Object.freeze({ author: 'NONISSUED_QUEST_COMPOSED_AUTHOR', outsider: 'NONISSUED_QUEST_COMPOSED_OUTSIDER' });
 export { publicProfileAppHashes as questMemberAppHashes, COVERAGE_FIXTURE_LIMITS };
 
-export async function questMemberApp({ sharedSalon = false } = {}) {
+export async function questMemberApp({ sharedSalon = false, writing = false } = {}) {
   const f = await createPublicProfileApp(), app = offlineApp(), calls = [], argumentNames = new Map();
   const requestAccounts = new WeakMap();
   const salonRpc = 'soe_circle_salon_presence';
+  const allowed = ['soe_circle_discussion_read_profiles', 'soe_circle_discussion_thread_profiles'];
+  if (writing) allowed.push('soe_circle_discussion_target', 'soe_circle_discussion_post', 'soe_circle_discussion_receipt_profiles');
+  if (sharedSalon) allowed.push(salonRpc);
   let selected = { actor: 'author', provider: 'supabase' }, closed = false;
   const memberId = actor => actor === 'author' ? f.authorId : f.reviewerId;
   // Explicit synthetic identity authority. SQL independently authorizes the mapped
@@ -31,7 +34,7 @@ export async function questMemberApp({ sharedSalon = false } = {}) {
   async function callRpc(name, args) {
     const call = { name, keys: Object.keys(args).sort(), status: 'pending' }; calls.push(call);
     try {
-      assert.ok(['soe_circle_discussion_read_profiles', 'soe_circle_discussion_thread_profiles'].includes(name) || (sharedSalon && name === salonRpc));
+      assert.ok(allowed.includes(name), 'Unexpected Quest composed RPC: ' + name);
       if (!argumentNames.has(name)) {
         const result = await f.db.query("SELECT proargnames FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace", [name]);
         assert.equal(result.rows.length, 1); argumentNames.set(name, result.rows[0].proargnames);
@@ -47,6 +50,7 @@ export async function questMemberApp({ sharedSalon = false } = {}) {
   }) }));
   try {
     const member = app.load('app/api/auth/member/route.ts'), discussion = app.load('app/api/circles/[circleId]/discussion/route.ts');
+    const preview = writing ? app.load('app/api/circles/[circleId]/discussion/preview/route.ts') : null;
     let salon;
     if (sharedSalon) {
       app.context.AbortSignal = AbortSignal;
@@ -78,6 +82,11 @@ export async function questMemberApp({ sharedSalon = false } = {}) {
     assert.equal(expectedArchiveIds.length, 108);
     return { ...f, calls, replies, expectedArchiveIds, root: f.messageId,
       select(actor = 'author', provider = 'supabase') { assert.ok(['author', 'outsider'].includes(actor)); assert.ok(['supabase', 'wallet'].includes(provider)); selected = { actor, provider }; },
+      async receiptCount() { return (await f.db.query('SELECT count(*)::int AS n FROM circle_discussion_post_receipts')).rows[0].n; },
+      async leave() {
+        const result = await f.db.query('SELECT circle_participation_revision FROM book_cohorts WHERE id=$1', [f.circleId]);
+        return rpc(f.db, 'soe_circle_leave', [f.authorId, f.circleId, result.rows[0].circle_participation_revision, requestId()]);
+      },
       enableSalon(enabled) { app.context.process.env.SOE_SHARED_SALON_ENABLED = enabled ? 'true' : 'false'; },
       async dispatch(path, headers = {}, signal, { body, account } = {}) {
         assert.equal(closed, false);
@@ -89,9 +98,12 @@ export async function questMemberApp({ sharedSalon = false } = {}) {
         if (url.pathname === '/api/auth/member') { assert.equal(url.search, ''); assert.equal(request.headers.get('authorization'), null); return member.GET(request); }
         const salonMatch = /^\/api\/circles\/([^/]+)\/salon-presence$/.exec(url.pathname);
         if (salon && salonMatch) return salon.POST(request, { params: Promise.resolve({ circleId: salonMatch[1] }) });
-        const match = /^\/api\/circles\/([^/]+)\/discussion$/.exec(url.pathname);
+        const match = /^\/api\/circles\/([^/]+)\/discussion(\/preview)?$/.exec(url.pathname);
         assert.ok(match, 'Unexpected Quest composed route');
-        return discussion.GET(request, { params: Promise.resolve({ circleId: match[1] }) });
+        assert.ok(writing || (request.method === 'GET' && !url.searchParams.has('requestId')));
+        const handler = match[2] ? preview : discussion;
+        assert.equal(typeof handler?.[request.method], 'function');
+        return handler[request.method](request, { params: Promise.resolve({ circleId: match[1] }) });
       },
       async close() { if (closed) return; closed = true; await f.close(); },
     };

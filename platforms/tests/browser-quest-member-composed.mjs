@@ -25,6 +25,7 @@ const startedAt = new Date().toISOString(), executablePath = process.env.SOE_BRO
 const priorReceipt = fs.existsSync(output) ? (() => { const bytes = read(output); return { sha256: sha(bytes), receipt: JSON.parse(bytes) }; })() : null;
 let browser, ownedBrowserPid, f, failure = null, bundle, css, sourceHashes = {}, sqlHashes = {}, limits = {}, runtime = {}, latest = null;
 let holdNext = false, held = null;
+let holdPreview = false, dropPost = false, latestPreview, latestReceipt;
 const report = status => ({ version: 1, status, startedAt, finishedAt: new Date().toISOString(), stories, api, pageErrors, consoleErrors, unexpected, routeErrors, retiredRoutes,
   cleanup, runtime, sourceHashes, sqlHashes, bundleSHA256: bundle ? sha(bundle) : null, cssSHA256: css ? sha(css) : null, limits, failure, priorReceipt,
   scope: 'Actual QuestCircle, auth bridge, host, handlers and strict SQL over intercepted HTTPS. Synthetic identity, credentials, delivery and device input. ' +
@@ -46,15 +47,15 @@ try {
   const files = ['platforms/tests/bundle-quest-member-composed.mjs', 'platforms/tests/browser-quest-member-composed.mjs', 'platforms/tests/quest-xr-browser-double.mjs',
     'verification/web/tests/support/quest-member-app.mjs', 'verification/web/tests/support/offline-app.mjs', 'tests/security/fakes.ts',
     'app/api/auth/member/route.ts', 'lib/auth/memberDto.ts', 'lib/auth/provider.ts', 'lib/http/routeError.ts',
-    'app/api/circles/[circleId]/discussion/route.ts', 'lib/circles/thread-server.ts', 'lib/circles/thread.ts', 'lib/circles/moderation-server.ts',
+    'app/api/circles/[circleId]/discussion/route.ts', 'app/api/circles/[circleId]/discussion/preview/route.ts', 'lib/circles/thread-server.ts', 'lib/circles/thread.ts', 'lib/circles/moderation-server.ts',
     'lib/rateLimit.ts'];
   for (const file of files) sourceHashes[file] = sha(read(file));
   for (const [file, digest] of Object.entries(sourceHashes)) assert.equal(sha(read(file)), digest, 'Changed bundle source: ' + file);
   bundle = read(fixture + '/page.js'); css = read(fixture + '/page.css');
-  const module = await import('../../verification/web/tests/support/quest-member-app.mjs');
-  for (const [file, digest] of Object.entries(await module.questMemberAppHashes())) (file.endsWith('.sql') ? sqlHashes : sourceHashes)[file] = digest;
-  limits = module.COVERAGE_FIXTURE_LIMITS; f = await module.questMemberApp();
-  const origin = module.QUEST_ORIGIN;
+  const fixtureApp = await import('../../verification/web/tests/support/quest-member-app.mjs');
+  for (const [file, digest] of Object.entries(await fixtureApp.questMemberAppHashes())) (file.endsWith('.sql') ? sqlHashes : sourceHashes)[file] = digest;
+  limits = fixtureApp.COVERAGE_FIXTURE_LIMITS; f = await fixtureApp.questMemberApp({ writing: Boolean(run) });
+  const origin = fixtureApp.QUEST_ORIGIN;
   browser = await require('playwright').chromium.launch({ headless: true, timeout: 15000, executablePath,
     env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin', HOME: '/Users/christaylor' }, args: ['--disable-background-networking', '--disable-component-update', '--no-first-run',
       '--host-resolver-rules=MAP * ~NOTFOUND', ...(run ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [])] });
@@ -72,14 +73,17 @@ try {
       if (url.pathname === '/') return await route.fulfill({ contentType: 'text/html', body: `<!doctype html><html lang="en" data-circle="${f.circleId}"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/page.css"></head><body style="margin:0;background:#101d1a"><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
       if (url.pathname === '/page.mjs') return await route.fulfill({ contentType: 'text/javascript', body: bundle });
       if (url.pathname === '/page.css') return await route.fulfill({ contentType: 'text/css', body: css });
-      assert.equal(request.method(), 'GET');
+      const method = request.method(), endpoint = `/api/circles/${f.circleId}/discussion`;
+      const isPost = method === 'POST' && url.pathname === endpoint, isPreview = method === 'POST' && url.pathname === endpoint + '/preview';
+      assert.ok(method === 'GET' || run && (isPost || isPreview));
       const headers = await request.allHeaders(); assert.equal(headers.cookie, undefined); assert.equal(headers.referer, undefined);
-      if (url.pathname === '/api/auth/member') assert.equal(headers.authorization, undefined);
-      else { assert.equal(url.pathname, `/api/circles/${f.circleId}/discussion`); assert.ok(Object.values(module.TOKENS).some(value => headers.authorization === 'Bearer ' + value)); }
+      if (url.pathname === '/api/auth/member') { assert.equal(method, 'GET'); assert.equal(headers.authorization, undefined); }
+      else { assert.ok(url.pathname === endpoint || isPreview); assert.ok(Object.values(fixtureApp.TOKENS).some(value => headers.authorization === 'Bearer ' + value)); }
+      if (method === 'POST') assert.equal(headers.origin, origin);
       controller = new AbortController(); controllers.set(request, controller);
-      const entry = { path: url.pathname, queryKeys: [...url.searchParams.keys()].sort(), status: null, delivered: false, kind: null, itemCount: null }; api.push(entry);
+      const entry = { method, path: url.pathname, queryKeys: [...url.searchParams.keys()].sort(), status: null, delivered: false, kind: null, itemCount: null }; api.push(entry);
       const work = (async () => {
-        const response = await f.dispatch(url.pathname + url.search, headers, controller.signal);
+        const response = await f.dispatch(url.pathname + url.search, headers, controller.signal, { body: request.postData() ?? undefined });
         assert.match(response.headers.get('cache-control'), /private.*no-store/); entry.status = response.status;
         const bytes = await response.text(), value = JSON.parse(bytes); entry.kind = value.kind ?? 'member'; entry.itemCount = value.items?.length ?? null;
         if (value.items) {
@@ -91,7 +95,14 @@ try {
             if (['hidden', 'withdrawn'].includes(item.visibility)) assert.equal(item.content, null);
           }
         }
+        if (isPreview && response.status === 200) latestPreview = value;
+        if (isPost && response.status === 200) latestReceipt = value;
+        if (isPost && dropPost) {
+          dropPost = false; entry.droppedAfterHandler = true;
+          await route.abort('failed'); return;
+        }
         if (holdNext && value.items) { holdNext = false; held = gate(); releases.add(held.resolve); await held.promise; releases.delete(held.resolve); }
+        if (holdPreview && isPreview) { holdPreview = false; held = gate(); releases.add(held.resolve); await held.promise; releases.delete(held.resolve); }
         await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: bytes }); entry.delivered = true;
       })();
       pending.add(work); try { await work; } finally { pending.delete(work); controllers.delete(request); }
@@ -183,6 +194,18 @@ try {
     const device = () => page.evaluate(() => window.questXrQa.stats());
     const trigger = () => page.evaluate(() => window.questXrQa.select());
     const see = text => page.waitForFunction(value => window.questXrQa.panel().replace(/\s+/g, ' ').includes(value), text);
+    const labels = () => page.evaluate(() => window.questXrQa.labels());
+    async function capturePanel(name) {
+      const data = await page.evaluate(() => window.questXrQa.image());
+      assert.match(data, /^data:image\/png;base64,/);
+      fs.writeFileSync(evidence + '-' + name + '.png', Buffer.from(data.split(',')[1], 'base64'), { flag: 'wx' });
+    }
+    async function press(label, backwards = false) {
+      await page.waitForFunction(value => window.questXrQa.labels().includes(value), label);
+      await page.evaluate(([value, reversed]) => window.questXrQa.press(value, reversed), [label, backwards]);
+      await settle();
+    }
+    const posts = () => api.filter(entry => entry.method === 'POST' && entry.path.endsWith('/discussion'));
     assert.equal(await enter.isDisabled(), true);
     assert.equal((await device()).requests, 0);
     pass('the unsupported headset state preserves the verified browser archive and never requests device permission');
@@ -226,9 +249,7 @@ try {
     assert.equal(privateCalls(), readBefore + 1);
     assert.equal(await page.locator('#circle-archive-messages').innerText(), '');
     assert.doesNotMatch(await page.evaluate(() => window.questXrQa.panel()), /\/circles\/|In reply to message:/);
-    const panelData = await page.evaluate(() => window.questXrQa.image());
-    assert.match(panelData, /^data:image\/png;base64,/);
-    fs.writeFileSync(evidence + '-panel.png', Buffer.from(panelData.split(',')[1], 'base64'), { flag: 'wx' });
+    await capturePanel('panel');
     assert.ok((await device()).draws > 0);
     assert.deepEqual((await device()).errors, []);
     pass('trusted Enter clears the regular archive. Two controller actions verify the account and read authorized discussion into actual WebGL while the regular window is blurred');
@@ -254,6 +275,7 @@ try {
     await trigger(); await see('Current Circle discussion is unavailable.');
     assert.equal(f.calls.at(-1).status, 'PT403');
     assert.doesNotMatch(await page.evaluate(() => window.questXrQa.panel()), /Synthetic archived contribution|Independent visible reply/);
+    assert.deepEqual(await labels(), []);
     await exit.click(); await page.waitForFunction(() => !document.getElementById('quest-immersive-enter').disabled);
     pass('an otherwise verified nonmember gets actual SQL denial and no private headset content');
 
@@ -302,6 +324,77 @@ try {
     pass('offline and graphics loss both retire the headset; recovery performs no automatic account check or read');
 
     await openRoom(); await checkInRoom(); await trigger(); await see('Independent visible reply remains readable.');
+    const beforeWrite = await f.receiptCount();
+    await press('Write a post'); await see('Write a Circle post');
+    await press('Review'); await see('Choose letters'); // Empty draft has no review action.
+    await press('Caps'); await press('H'); await press('Caps on'); await press('i');
+    await press('Space'); await press('Symbols'); await press('!'); await press('Delete'); await press('?');
+    await capturePanel('keyboard');
+    assert.equal(posts().length, 0);
+    await press('Review'); await see('Review your post');
+    assert.equal(latestPreview.content, 'Hi ?'); await see(latestPreview.content);
+    assert.equal(await f.receiptCount(), beforeWrite);
+    await page.evaluate(() => window.questXrQa.repeat()); await settle();
+    assert.match(await page.evaluate(() => window.questXrQa.panel()), /Review your post/, 'Repeat trigger at the Review position must stay in review');
+    await press('Post', true);
+    await page.evaluate(() => { window.questXrQa.miss(); window.questXrQa.select(); }); await settle();
+    assert.equal(posts().length, 0, 'Repeated Review and invalid poses must never confirm a post');
+    await press('Edit'); await see('Write a Circle post');
+    await press('Delete'); await press('!'); await press('Review'); await see('Review your post');
+    assert.equal(latestPreview.content, 'Hi !');
+    const newPost = latestPreview;
+    await press('Post'); await see('Post confirmed');
+    assert.equal(posts().length, 1); assert.equal(await f.receiptCount(), beforeWrite + 1);
+    assert.equal(latestReceipt.requestId, newPost.requestId); assert.equal(latestReceipt.message.content, newPost.content);
+    const parent = latestReceipt.message.id;
+    pass('the real room keyboard edits a short draft and shows the canonical preview; only a correctly pointed explicit Post saves one new contribution');
+
+    await press('Read recent discussion'); await see('Hi !');
+    await press('Reply'); await see('Reply to ');
+    await press('o'); await press('k'); await press('Review'); await see('Review reply to ');
+    assert.equal(latestPreview.parentMessageId, parent); assert.equal(latestPreview.comment, 'ok');
+    const exact = latestPreview;
+    const panelText = await page.evaluate(() => window.questXrQa.panel());
+    assert.ok(panelText.includes(exact.content.split('\n').map(line => line.match(/.{1,48}/gu)?.join('\n') ?? '').join('\n')));
+    await capturePanel('review');
+    dropPost = true;
+    await press('Post'); await see('Delivery unconfirmed');
+    const reply = latestReceipt.message.id;
+    assert.equal(latestReceipt.message.parentMessageId, parent); assert.equal(latestReceipt.message.content, exact.content);
+    assert.equal(await f.receiptCount(), beforeWrite + 2);
+    const afterLost = api.length;
+    await press('Check delivery'); await see('Post confirmed');
+    assert.equal(posts().length, 2);
+    assert.ok(api.slice(afterLost).some(entry => entry.method === 'GET' && entry.queryKeys.includes('requestId') && entry.status === 200));
+    assert.equal(await f.receiptCount(), beforeWrite + 2);
+    await exit.click(); await check(); await ready(); await page.locator('#circle-archive-open').click();
+    await page.locator(`#circle-archive-messages [data-message-id="${reply}"]`).waitFor();
+    assert.equal(latest.items.find(item => item.id === reply).parentMessageId, parent);
+    assert.equal(latest.items.find(item => item.id === reply).content, exact.content);
+    pass('a headset reply survives a lost response; manual lookup proves the same saved request and a fresh regular-browser archive shows the canonical reply');
+
+    await openRoom(); await checkInRoom(); await trigger(); await see('ok');
+    await press('Write a post'); await press('x');
+    holdPreview = true; held = null; await press('Review');
+    await bounded(async () => { while (!held) await new Promise(resolve => setImmediate(resolve)); });
+    await page.evaluate(() => window.questComposedQa.providerChanged());
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    held.resolve(); await bounded(() => Promise.allSettled([...pending])); await settle();
+    assert.equal(posts().length, 2);
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    pass('changing accounts during a held exact preview closes the headset and clears the draft; the late response cannot render a Post action');
+
+    await rebind(); await openRoom(); await checkInRoom(); await trigger(); await see('ok');
+    await press('Write a post'); await press('x'); await press('Review'); await see('Review your post');
+    await f.leave();
+    await press('Post'); await see('Check the discussion');
+    assert.deepEqual(await labels(), ['Read recent discussion']);
+    assert.equal(posts().at(-1).status, 403);
+    assert.equal(await f.receiptCount(), beforeWrite + 2);
+    await page.evaluate(() => window.questXrQa.visibility('hidden'));
+    assert.equal(await page.evaluate(() => window.questXrQa.panel()), '');
+    assert.match(await page.locator('#quest-immersive-status').textContent(), /An interrupted post may have been saved/);
+    pass('SQL rechecks membership at Post; removal after review blocks the write and headset loss clears the panel with a delivery notice');
   }
 
   const beforeUnmount = api.length; await page.evaluate(() => window.questComposedQa.unmount()); await settle();

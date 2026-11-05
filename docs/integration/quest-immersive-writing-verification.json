@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T23:58:09.722075+00:00",
+  "baseCheckpoint": "c441200e42349b56fbe51126bbde1ad4ce5244be",
+  "status": "LOCAL_QUEST_IMMERSIVE_WRITING_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "physicalHeadsetVerified": false,
+  "liveImmersiveConversationImplemented": false,
+  "composed": {
+    "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion.json",
+    "sha256": "5f58fbaef248990e6a0455793ec7d847989599b01f90c8abacf56d61f881679b",
+    "stories": 20,
+    "handlerRequests": 75,
+    "sourceBindings": 122,
+    "sqlBindings": 30,
+    "syntheticHeadset": {
+      "sessions": 10,
+      "ended": 10,
+      "framesDrawn": 204,
+      "textureUploads": 88,
+      "releasedTextures": 9
+    },
+    "cleanup": {
+      "browser": "closed",
+      "database": "closed"
+    },
+    "bundle": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion-bundle.mjs",
+      "sha256": "626bdc2073729f6e7ee0e539673a7c70e316f1e56a963f96d9f2065b7d6befa7"
+    },
+    "css": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion-bundle.css",
+      "sha256": "5fd1eaf1efc6d140987709158842f96f4e2184353f6c068938f9be742930f839"
+    },
+    "manifest": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion-bundle-sources.json",
+      "sha256": "1c80e696e80993e36861ba3fb5d98d0344036bc97fc70ee452787da428ed4103"
+    },
+    "screenshots": [
+      {
+        "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion-panel.png",
+        "sha256": "799e5b802f0a8de996aec20f6fcf5065d2282f733eaf5329ca48fe557417a290"
+      },
+      {
+        "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion-keyboard.png",
+        "sha256": "44d29a8db9bf81e9236d15419877133b2dfbd3058a6002ec317e96f0861b7838"
+      },
+      {
+        "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion-review.png",
+        "sha256": "ebb0a031c5445520d32afe0522b7244a7cccd98a5f1f99126f7941226d7c5293"
+      },
+      {
+        "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/discussion-320.png",
+        "sha256": "d6410ede6557f7fde7d2950bfd49512c36d45237cafc54d32f58503bf17695ec"
+      }
+    ]
+  },
+  "sharedSalonRegression": {
+    "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/shared-salon.json",
+    "sha256": "b03e9b9718543112317f569d99ee6e163f74c48f922c911e647ec74d7aa7080b",
+    "stories": 8,
+    "cleanup": {
+      "browser": true,
+      "database": true
+    }
+  },
+  "build": {
+    "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/build.json",
+    "sha256": "254d2f019add660987a1ddd1a17d568a56f4a6169ea8d0efaf614d497f769f0e",
+    "sourceFiles": 1055,
+    "offloadedInputsMatchedToLocalGitBlobs": 34,
+    "manifest": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/build-sources.json",
+      "sha256": "9f408b74c548a2e2bff32d0d48899692c7e1328583dbb03064bf5ffd381d5c44"
+    },
+    "log": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/build.log",
+      "sha256": "30c3839b086f91fbfe61a39656bca03cd382c8eba742ac35aaa37fd6c5fd3b9f"
+    },
+    "questTypeCheckExitCode": 0,
+    "scopedLintExitCode": 0
+  },
+  "builtBrowser": {
+    "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/built-browser.json",
+    "sha256": "d54a267fbc327ffdf8dc3c700c76178eb6e599b20e78ac3c70ef39fc50ea1559",
+    "scriptSha256": "2aa3316fcd967ca971f1d59b816e06421ee9bfe0c2f993fc96d7e74ce3e13a82",
+    "stories": 3,
+    "privateRequests": 0,
+    "externalRequests": 0,
+    "closed": true,
+    "screenshot": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/built-quest-320.png",
+      "sha256": "cbf6b48aeb9bffc9e5bae87fec646d3badfc4714a3cb5d2015d26c7ac74266b9"
+    },
+    "server": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/server-stopped.json",
+      "sha256": "abf663aef3fb251ec29baf02efaf863e5bc69922b2b9a1cbea316141eb677050"
+    },
+    "ready": {
+      "path": "verification/web/evidence/quest-immersive-writing-2026-11-05/server-ready.json",
+      "sha256": "5ae26a63e2a183a4dd9de4744d4814be9f270b93f189435fabc0626c3cd9692f"
+    },
+    "portClosed": true,
+    "builtFiles": 2349,
+    "runtimeBindings": 769
+  },
+  "scope": "Local release candidate. Chromium uses simulated controller events and identities. The actual current discussion handlers and strict disposable SQL verify writing and receipts. Physical Quest, live provider sign-in, production data and live meetings remain unverified."
+}

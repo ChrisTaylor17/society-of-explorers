@@ -143,7 +143,7 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       {circleId ? <>
       <section aria-labelledby="quest-immersive-heading">
         <h2 id="quest-immersive-heading">Immersive Circle discussion</h2>
-        <p>Read recent contributions in your headset. Use the controller trigger to check access and move through the previews. Use the regular browser for the full text, live meeting links, posting and message actions.</p>
+        <p>Read recent contributions and write short posts or replies in your headset. Use the trigger to check access. Point your controller at the buttons to write, review and post. Use the regular browser for the full archive, live meeting links and message actions.</p>
         <p>Opening the room clears the regular Circle view. Check your session when you return.</p>
         <p id="quest-immersive-status" role="status">Connect a member account to open the immersive room.</p>
         <button id="quest-immersive-enter" type="button" disabled>Enter immersive room</button>
