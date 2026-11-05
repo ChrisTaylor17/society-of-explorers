@@ -12,7 +12,7 @@ export const {ORIGIN,PROVIDER,PUBLIC_KEY,ACCESS,SUBJECTS,NEW_SUBJECT}=base;
 export const TOKENS=base.TOKENS;
 const BOOKS=['republic', 'meditations', 'genealogy-of-morals', 'apology', 'odyssey', 'divine-comedy', 'hamlet', 'relativity'];
 const ASSETS=BOOKS.flatMap(book=>['manifest.json','reader.html'].map(name=>`content/great-books/${book}/${name}`));
-const SOURCES=['app/api/members/profile/route.ts',...['preflight','apply','rollback'].map(n=>'docs/sql/circle-public-profiles-'+n+'.sql'),'app/api/book-salons/[cohortId]/route.ts','app/api/circles/[circleId]/discussion/route.ts','app/api/circles/[circleId]/discussion/preview/route.ts','app/api/circles/[circleId]/messages/[messageId]/route.ts','app/api/explorer/[id]/route.ts','app/explorer/[id]/page.tsx',...['preflight','apply'].map(n=>'docs/sql/member-profile-'+n+'.sql'),...['preflight','apply','rollback'].map(n=>'docs/sql/member-profile-intent-'+n+'.sql'),'verification/web/tests/support/public-profile-app.mjs','docs/sql/circle-membership-intent-preflight.sql','docs/sql/circle-membership-intent-apply.sql','docs/sql/circle-membership-intent-rollback.sql', 'lib/circles/hosting.ts','app/api/circles/start/route.ts','app/api/circles/route.ts','app/api/great-books/text/[bookId]/route.ts',...ASSETS,
+const SOURCES=['app/api/members/profile/route.ts','app/api/auth/provider/route.ts',...['preflight','apply','rollback'].map(n=>'docs/sql/circle-public-profiles-'+n+'.sql'),'app/api/book-salons/[cohortId]/route.ts','app/api/circles/[circleId]/discussion/route.ts','app/api/circles/[circleId]/discussion/preview/route.ts','app/api/circles/[circleId]/messages/[messageId]/route.ts','app/api/explorer/[id]/route.ts','app/explorer/[id]/page.tsx',...['preflight','apply'].map(n=>'docs/sql/member-profile-'+n+'.sql'),...['preflight','apply','rollback'].map(n=>'docs/sql/member-profile-intent-'+n+'.sql'),'verification/web/tests/support/public-profile-app.mjs','docs/sql/circle-membership-intent-preflight.sql','docs/sql/circle-membership-intent-apply.sql','docs/sql/circle-membership-intent-rollback.sql', 'lib/circles/hosting.ts','app/api/circles/start/route.ts','app/api/circles/route.ts','app/api/great-books/text/[bookId]/route.ts',...ASSETS,
  'lib/circles/membership.ts','lib/circles/membership-server.ts','app/api/auth/member/route.ts','app/api/circles/[circleId]/route.ts',
  ...['membership','rsvp','join','leave','complete'].map(action=>`app/api/circles/[circleId]/${action}/route.ts`)];
 export async function publicProfileAppHashes(){
@@ -73,10 +73,11 @@ export async function createPublicProfileApp(){
    const message=/^\/api\/circles\/([0-9a-f-]+)\/messages\/([0-9a-f-]+)$/.exec(url.pathname);
    const legacy=/^\/api\/book-salons\/([0-9a-f-]+)$/.exec(url.pathname);
    const hosting=url.pathname==='/api/circles/start'||url.pathname==='/api/circles'&&method==='POST';
+   const account=['/api/auth/member','/api/auth/provider'].includes(url.pathname);
    const edition=/^\/api\/great-books\/text\/([^/]+)$/.exec(url.pathname);
     const publicProfile=/^\/api\/explorer\/([0-9a-f-]+)$/.exec(url.pathname);
     const ownerProfile=url.pathname==='/api/members/profile';
-    const owned=Boolean(discussion||message||legacy)||ownerProfile||Boolean(publicProfile)||hosting||Boolean(edition)||url.pathname==='/api/auth/member'||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
+    const owned=Boolean(discussion||message||legacy)||ownerProfile||Boolean(publicProfile)||hosting||Boolean(edition)||account||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
     if(publicProfile){assert.equal(method,'GET');assert.equal(url.search,'');const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
     if(edition){assert(BOOKS.includes(edition[1]));assert.equal(method,'GET');assert.equal(url.search,'');assert.equal(body,undefined);const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
    assert(['GET','POST'].includes(method));const h=new Headers(headers);if(method==='POST'&&!h.has('content-type'))h.set('content-type','application/json');
@@ -85,8 +86,8 @@ export async function createPublicProfileApp(){
    Object.defineProperties(request,{nextUrl:{value:url},cookies:{value:{get:key=>cookies.has(key)?{value:cookies.get(key)}:undefined}}});
    const call={path:url.pathname+url.search,method,request,body:body===undefined?null:typeof body==='string'?body:JSON.stringify(body)};http.push(call);
    const early=beforeHook?await beforeHook(call):null;
-    const file=discussion?'app/api/circles/[circleId]/discussion/'+(discussion[2]?'preview/':'')+'route.ts':message?'app/api/circles/[circleId]/messages/[messageId]/route.ts':legacy?'app/api/book-salons/[cohortId]/route.ts':publicProfile?'app/api/explorer/[id]/route.ts':ownerProfile?'app/api/members/profile/route.ts':hosting?'app'+url.pathname+'/route.ts':edition?'app/api/great-books/text/[bookId]/route.ts':match?'app/api/circles/[circleId]/'+(match[2]?match[2]+'/':'')+'route.ts':'app/api/auth/member/route.ts';
-    const params=discussion?{circleId:discussion[1]}:message?{circleId:message[1],messageId:message[2]}:legacy?{cohortId:legacy[1]}:publicProfile?{id:publicProfile[1]}:ownerProfile?undefined:hosting?undefined:edition?{bookId:edition[1]}:match?{circleId:match[1]}:undefined;
+    const file=discussion?'app/api/circles/[circleId]/discussion/'+(discussion[2]?'preview/':'')+'route.ts':message?'app/api/circles/[circleId]/messages/[messageId]/route.ts':legacy?'app/api/book-salons/[cohortId]/route.ts':publicProfile?'app/api/explorer/[id]/route.ts':edition?'app/api/great-books/text/[bookId]/route.ts':match&&!hosting?'app/api/circles/[circleId]/'+(match[2]?match[2]+'/':'')+'route.ts':'app'+url.pathname+'/route.ts';
+    const params=discussion?{circleId:discussion[1]}:message?{circleId:message[1],messageId:message[2]}:legacy?{cohortId:legacy[1]}:publicProfile?{id:publicProfile[1]}:edition?{bookId:edition[1]}:match&&!hosting?{circleId:match[1]}:undefined;
    const response=early instanceof Response?early:owned?await route(file)[method](request,params?{params:Promise.resolve(params)}:undefined):await f.dispatch(path,{method,headers,body,signal});
    return httpHook?httpHook({...call,response}):response;
   }

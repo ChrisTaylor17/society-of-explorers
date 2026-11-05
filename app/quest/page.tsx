@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import CircleSafetyNav from '../circles/messages/CircleSafetyNav';
 import { body, button, h1, lead, main, page } from '@/lib/circles/ui';
 
@@ -11,7 +12,7 @@ export default function QuestPage() {
     <p style={lead}>Read, reflect and share with your Circle from the regular Meta Quest Browser window.</p>
     <p style={body}>Choose a Circle, load current access, then choose “Open in Quest Browser.” Sign in with the same account you use on the web.</p>
     <p style={body}>On a compatible headset, open a read-only immersive room for recent Circle discussion. Use the regular Circle view for live meeting links, the full discussion archive, source readings and safety controls.</p>
-    <p><Link href="/circles" style={button}>Find a Circle</Link></p>
+    <p><Link href={ONLINE_CIRCLES_HREF} style={button}>Find an online Circle</Link></p>
     <p><Link href="/circles/mine" style={button}>My Circles</Link></p>
     <p><Link href="/quest/contributions" style={button}>My posted messages across Circles</Link></p>
     <p><Link href="/quest/reviews" style={button}>Assigned message reviews</Link></p>

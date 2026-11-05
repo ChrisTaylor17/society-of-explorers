@@ -19,6 +19,7 @@ export type CirclePublicSummary = {
 };
 export type CircleMembershipSummary = { circle: CirclePublicSummary; revision: number; viewer: CircleViewer; ended: boolean; capabilities: CircleCapabilities };
 export type CircleDetail = CircleMembershipSummary & { ready: true; meetings: Array<{ date: string; going: number; my_status: CircleRsvpStatus | null }>; online_url: string | null };
+export type CircleListing = Pick<CirclePublicSummary, 'id' | 'title' | 'description' | 'format_label' | 'meeting_label' | 'next_meeting' | 'host_name'>;
 export type CircleManagement = { kind: 'management'; circle: { id: string; title: string | null; hidden: boolean }; revision: number;
   viewer: CircleViewer; capabilities: { canLeave: boolean; canComplete: boolean } };
 export type MyCircle = (CircleMembershipSummary & { kind: 'circle' }) | CircleManagement;
@@ -45,6 +46,16 @@ export function membershipDay(value: unknown): value is string {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 const nullableText = (value: unknown, max: number): value is string | null => value === null || membershipText(value, max);
+export function parseCircleListing(value: unknown, circleId: string): CircleListing | null {
+  if (!membershipRecord(value) || !isUuid(value.id) || value.id.toLowerCase() !== circleId.toLowerCase()
+    || !membershipText(value.title, 200) || !value.title.trim() || !nullableText(value.description, 2000)
+    || !membershipText(value.format_label, 200) || !membershipText(value.meeting_label, 200)
+    || !membershipText(value.host_name, 40) || value.host_name.includes('@')
+    || (value.next_meeting !== null && !membershipDay(value.next_meeting))) return null;
+  return { id: value.id.toLowerCase(), title: value.title, description: value.description, format_label: value.format_label,
+    meeting_label: value.meeting_label, next_meeting: value.next_meeting, host_name: value.host_name };
+}
+
 function capabilities(value: unknown): CircleCapabilities | null {
   if (!membershipRecord(value) || !['canJoin', 'canLeave', 'canRsvp', 'canComplete', 'canReadConversation'].every(key => typeof value[key] === 'boolean')) return null;
   return { canJoin: value.canJoin as boolean, canLeave: value.canLeave as boolean, canRsvp: value.canRsvp as boolean, canComplete: value.canComplete as boolean, canReadConversation: value.canReadConversation as boolean };

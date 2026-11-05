@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { parsePublicMediaClip, type PublicMediaClip } from '@/lib/clips/contracts';
 import { fetchClipBytes } from '@/lib/clips/client';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import styles from './clips.module.css';
 
 type State = { status: 'idle' | 'loading' | 'error' } | { status: 'ready'; media: string; captions: string };
@@ -60,6 +61,6 @@ function ReviewedClipPlayer({ clip: approved }: { clip: PublicMediaClip }) {
       : <audio className={styles.player} src={state.media} controls preload="none" crossOrigin="anonymous" onError={() => { unload(); setState({ status: 'error' }); }}><track src={state.captions} kind="captions" srcLang={approved.captions.language} label="English captions" />Your browser cannot play this audio. Read the transcript below.</audio>)}
     <details><summary>Read the transcript</summary><p className={styles.transcript}>{approved.transcript}</p></details>
     {approved.sourcePage && !approved.attribution && <a href={approved.sourcePage} target="_blank" rel="noopener noreferrer">Original source and credits</a>}
-    {approved.attribution && <div className={styles.controls}><a href={`/clips#${approved.id}`}>Link to this Reel</a><Link href="/circles" prefetch={false}>Discuss in a Circle</Link></div>}
+    {approved.attribution && <div className={styles.controls}><a href={`/clips#${approved.id}`}>Link to this Reel</a><Link href={ONLINE_CIRCLES_HREF} prefetch={false}>Discuss in an online Circle</Link></div>}
   </article>;
 }

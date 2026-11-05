@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 
 const [prefix, name, ...extra] = process.argv.slice(2);
-assert(!extra.length && /^built-shell-reel-[a-z0-9-]+-$/.test(prefix ?? ''));
+assert(!extra.length && /^built-shell-[a-z0-9-]+-$/.test(prefix ?? ''));
 assert(/^reel-paranal-built-[0-9]+$/.test(name ?? ''));
 assert(process.execArgv.some(arg => arg.endsWith('/deny-build-network.cjs')));
 const evidence = resolve('verification/web/evidence'), folder = resolve(evidence, name);
@@ -58,7 +58,7 @@ try {
   assert.equal(await reel.getByRole('link', { name: 'B. Häußler/ESO', exact: true }).getAttribute('href'), 'https://www.eso.org/public/videos/eso2607d/');
   assert.equal(await reel.getByRole('link', { name: 'CC BY 4.0', exact: true }).getAttribute('href'), 'https://creativecommons.org/licenses/by/4.0/');
   assert.equal(await reel.getByRole('link', { name: 'Link to this Reel' }).getAttribute('href'), '/clips#' + id);
-  assert.equal(await reel.getByRole('link', { name: 'Discuss in a Circle' }).getAttribute('href'), '/circles');
+  assert.equal(await reel.getByRole('link', { name: 'Discuss in an online Circle' }).getAttribute('href'), '/circles?format=online');
   assert.equal(await page.getByRole('heading', { name: 'How a Circle works', exact: true }).count(), 1);
   assert.equal(await reel.locator('video').count(), 0);
   assert.deepEqual(calls, []);

@@ -1,9 +1,12 @@
 'use client';
+import Link from 'next/link';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { track } from '@/lib/analytics/client';
 import { FREE_SIGNUP_PATH } from '@/lib/join/content';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
+import { fetchPulse, type PulseQuestion } from '@/lib/feed/pulseClient';
 import { PhilosophicalSurvey, type PhilosophicalProjection } from '@/components/onboarding/PhilosophicalSurvey';
 import { CollaborationSandbox } from '@/components/workspace/CollaborationSandbox';
 import { usePodSync, type PodSyncBuildContext } from '@/lib/hooks/usePodSync';
@@ -41,11 +44,6 @@ const THINKER_AVATARS: Record<string, string> = {
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string; }
 type NetworkPanel = 'survey' | 'sandbox';
-interface PracticeQuestion {
-  thinker_id?: string | null;
-  question_text?: string | null;
-}
-
 const DEMO_STORAGE_KEY = 'soe_demo_messages';
 const DEMO_LIMIT = 3;
 const HOMEPAGE_PROJECT_ID = '11111111-1111-4111-8111-111111111111';
@@ -63,7 +61,7 @@ function saveDemoMessages(msgs: ChatMessage[]) {
 function countUserMessages(msgs: ChatMessage[]): number { return msgs.filter(m => m.role === 'user').length; }
 
 export default function HomePage() {
-  const [question, setQuestion] = useState<PracticeQuestion | null>(null);
+  const [question, setQuestion] = useState<PulseQuestion | null>(null);
   const [networkPanel, setNetworkPanel] = useState<NetworkPanel>('survey');
   const [surveyProjection, setSurveyProjection] = useState<PhilosophicalProjection | null>(null);
   const podSync = usePodSync<ExplorerGraph, ProjectEscrowMutation>({
@@ -111,12 +109,11 @@ export default function HomePage() {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   }, []);
 
-  // Today's question
+  // Preview the latest published question without creating a new one.
   useEffect(() => {
-    fetch('/api/practice/today')
-      .then(r => r.json())
-      .then((d: { question?: PracticeQuestion }) => { if (d.question) setQuestion(d.question); })
-      .catch(() => {});
+    let current = true;
+    void fetchPulse().then(result => { if (current && result.ok) setQuestion(result.data.todayQuestion); });
+    return () => { current = false; };
   }, []);
 
   // Socrates demo init
@@ -206,29 +203,29 @@ export default function HomePage() {
       <section style={{ minHeight: 'calc(100vh - 56px)', padding: '8rem 2rem 4rem', textAlign: 'center', display: 'flex', alignItems: 'center' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>
-            PROMPT ATLAS
+            SOCIETY OF EXPLORERS
           </div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(40px, 7vw, 72px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.05, marginBottom: '1.5rem', color: parchment }}>
-            Find the prompt that turns an idea into a real offer.
+            Read together. Meet online.
           </h1>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: ivory85, lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 2.5rem' }}>
-            Society of Explorers is pivoting into a privacy-first prompt marketplace and launch workspace. Explore public prompts, follow revenue paths, and build with community signal without giving up your data.
+            Small weekly salons rooted in Christian faith. Read Scripture and the Great Books, make room for prayer, and welcome people who disagree in good faith.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
-            <a href={PROMPT_ATLAS_URL} onClick={() => track('cta_click', { cta: 'hero_prompt_atlas' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
-              OPEN PROMPT ATLAS &rarr;
-            </a>
-            <a href={`${PROMPT_ATLAS_URL}/p/create-a-one-page-business`} onClick={() => track('cta_click', { cta: 'hero_public_prompt' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>
-              VIEW A PUBLIC PROMPT
-            </a>
+            <Link href={ONLINE_CIRCLES_HREF} prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
+              FIND AN ONLINE CIRCLE
+            </Link>
+            <Link href="/clips" prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
+              EXPLORE CLIPS
+            </Link>
           </div>
           <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: muted, lineHeight: 1.8, margin: '1.25rem auto 0', maxWidth: '620px' }}>
-            Public discovery stays aggregate. Your private context stays yours. The goal is real human value, not extraction.
+            Browse public listings. Members get access to their Circle’s private discussion and online meeting link.
           </p>
         </div>
       </section>
 
-      {/* TODAY'S QUESTION PREVIEW */}
+      {/* LATEST PUBLISHED QUESTION */}
       {question && (
         <section style={{ padding: '2rem 2rem 3rem' }}>
           <div style={{ maxWidth: '560px', margin: '0 auto', background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '2rem 1.5rem' }}>
@@ -237,7 +234,7 @@ export default function HomePage() {
                 {tAvatar}
               </div>
               <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: tColor }}>
-                POSED TODAY BY {tName.toUpperCase()}
+                {tName ? `A QUESTION FROM ${tName.toUpperCase()}` : 'LATEST PUBLISHED QUESTION'}
               </span>
             </div>
             <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, textAlign: 'center', margin: 0, marginBottom: '1.75rem' }}>
@@ -245,7 +242,7 @@ export default function HomePage() {
             </p>
             <div style={{ textAlign: 'center' }}>
               <a href="/practice" onClick={() => track('cta_click', { cta: 'daily_question_respond' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>
-                RESPOND TO THIS QUESTION &rarr;
+                OPEN THE DAILY PRACTICE &rarr;
               </a>
             </div>
           </div>
@@ -456,6 +453,7 @@ export default function HomePage() {
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 28px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>Start your practice.</h2>
           <p style={{ fontSize: '15px', color: muted, marginBottom: '1.75rem' }}>Free. One question. Every morning.</p>
           <a href="/practice" onClick={() => track('cta_click', { cta: 'footer_todays_question' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>TODAY&apos;S QUESTION &rarr;</a>
+          <p style={{ fontSize: '15px', color: muted, marginTop: '1.75rem' }}>Explore the separate <a href={PROMPT_ATLAS_URL} style={{ color: gold }} onClick={() => track('cta_click', { cta: 'footer_prompt_atlas' })}>Prompt Atlas workspace</a> or <a href={`${PROMPT_ATLAS_URL}/p/create-a-one-page-business`} style={{ color: gold }} onClick={() => track('cta_click', { cta: 'footer_public_prompt' })}>view a public prompt</a>.</p>
         </div>
       </section>
 

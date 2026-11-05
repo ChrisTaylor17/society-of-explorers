@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { clipCatalog } from '@/lib/clips/catalog';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import ClipPlayer from './ClipPlayer';
 import styles from './clips.module.css';
 export const metadata: Metadata = { title: 'Clips & Passages — Society of Explorers', description: 'Short credited readings and reviewed audio or video for thoughtful conversation.' };
@@ -27,6 +28,6 @@ export default async function ClipsPage() {
       {catalog.media.length === 0 ? <p className={styles.notice}>Reviewed audio and video are not available yet. The text passages above are ready to explore; no unreviewed recording is being substituted.</p>
         : <div className={styles.grid}>{catalog.media.map(clip => <ClipPlayer key={`${clip.id}:${clip.media.sha256}`} clip={clip} />)}</div>}
     </section>
-    <footer><p>Original community media and source excerpts have their own credits. A short clip does not replace its full context.</p><Link href="/great-books">Keep reading</Link> · <Link href="/circles">Find a Circle</Link></footer>
+    <footer><p>Original community media and source excerpts have their own credits. A short clip does not replace its full context.</p><Link href="/great-books">Keep reading</Link> · <Link href={ONLINE_CIRCLES_HREF}>Find an online Circle</Link></footer>
   </main></div>;
 }

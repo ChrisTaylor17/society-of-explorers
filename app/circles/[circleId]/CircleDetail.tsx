@@ -6,6 +6,8 @@ import { formatDay } from '@/lib/circles/schedule';
 import { isUuid } from '@/lib/ids/uuid';
 import { body, button, card, gold, h1, h2, label, lead, parchment, primary, small } from '@/lib/circles/ui';
 import { safePrivateMeetingUrl } from '@/lib/circles/discussion-reader';
+import { circleDetailHref, ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
+import { parseCircleListing, type CircleListing } from '@/lib/circles/membership';
 import ReportButton from '../ReportButton';
 import CircleConversation from './CircleConversation';
 import styles from '../participation.module.css';
@@ -14,12 +16,26 @@ import PublishedProfileLink from '@/components/PublishedProfileLink';
 
 const completionCopy = 'Close to new members and RSVPs; existing members can continue the conversation or leave. Completing a Circle does not delete messages or remove members.';
 
-export default function CircleDetail({ circleId }: { circleId: string }) {
+export default function CircleDetail({ circleId, fromOnline = false }: { circleId: string; fromOnline?: boolean }) {
   if (!isUuid(circleId)) return <><h1 style={h1}>Circle not found</h1><p style={body}>Choose a Circle from the directory or My Circles.</p></>;
-  return <CircleView key={circleId.toLowerCase()} circleId={circleId.toLowerCase()} />;
+  return <CircleView key={circleId.toLowerCase()} circleId={circleId.toLowerCase()} fromOnline={fromOnline} />;
 }
-function CircleView({ circleId }: { circleId: string }) {
+function CircleView({ circleId, fromOnline }: { circleId: string; fromOnline: boolean }) {
   const participation = useCircleParticipation(circleId);
+  const [preview, setPreview] = useState<CircleListing | 'unavailable' | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    const deadline = window.setTimeout(() => {
+      controller.abort();
+      setPreview('unavailable');
+    }, 10_000);
+    fetch(`/api/circles/${circleId}?view=listing`, { credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(value => { if (!controller.signal.aborted) setPreview(parseCircleListing(value, circleId) ?? 'unavailable'); })
+      .catch(() => { if (!controller.signal.aborted) setPreview('unavailable'); })
+      .finally(() => window.clearTimeout(deadline));
+    return () => { controller.abort(); window.clearTimeout(deadline); };
+  }, [circleId]);
   const scopeRef = useRef<HTMLDivElement>(null), statusRef = useRef<HTMLParagraphElement>(null);
   const returnTrigger = useRef<string | null>(null);
   const [cancelFocus, setCancelFocus] = useState(0);
@@ -35,6 +51,8 @@ function CircleView({ circleId }: { circleId: string }) {
   const focusConfirmation = useCallback((element: HTMLHeadingElement | null) => element?.focus({ preventScroll: true }), []);
   const c = detail?.circle;
   const viewer = detail?.viewer;
+  const listing = !detail && !management && preview !== 'unavailable' ? preview : null;
+  const nextPath = encodeURIComponent(circleDetailHref(circleId, fromOnline));
   const meetingUrl = detail && viewer?.is_member && !c?.hidden ? safePrivateMeetingUrl(detail.online_url) : null;
   const confirmLabel = participation.retry ? 'Confirm exact participation retry' : intent?.action === 'join' ? 'Confirm join' : intent?.action === 'leave' ? 'Confirm leave' : intent?.action === 'complete' ? 'Confirm Circle completion' : 'Confirm RSVP';
   return <div ref={scopeRef} className={styles.scope} onClickCapture={event => {
@@ -43,13 +61,19 @@ function CircleView({ circleId }: { circleId: string }) {
     const link = (event.target as HTMLElement).closest('a');
     if (link && (participation.uncertain || busy || participation.phase === 'review' && link.getAttribute('href') !== '/circles/norms')) event.preventDefault();
   }}>
-    <p style={label}><Link href="/circles">Circles</Link> · <Link href="/circles/mine">My Circles</Link></p>
-    <h1 style={h1}>{c?.title || management?.circle.title || (management ? 'Circle membership' : 'Circle details')}</h1>
+    <p style={label}><Link href={fromOnline ? ONLINE_CIRCLES_HREF : '/circles'}>{fromOnline ? 'Online Circles' : 'Circles'}</Link> · <Link href="/circles/mine">My Circles</Link></p>
+    <h1 style={h1}>{c?.title || management?.circle.title || listing?.title || (management ? 'Circle membership' : 'Circle details')}</h1>
+    {listing && <section aria-label="Public Circle preview" className={styles.stack} style={{ ...card, marginBottom: '1rem' }}>
+      {listing.description && <p style={{ ...body, whiteSpace: 'pre-wrap' }}>{listing.description}</p>}
+      <p style={body}>{listing.format_label} · {listing.meeting_label} · hosted by {listing.host_name}</p>
+      <p style={small}>{listing.next_meeting ? `Next meeting · ${formatDay(listing.next_meeting)}, ${listing.next_meeting.slice(0, 4)}` : 'No upcoming meetings are listed.'}</p>
+    </section>}
+    {!detail && !management && !listing && <p role="status" style={small}>{preview === 'unavailable' ? 'The public Circle preview is unavailable.' : 'Loading public Circle preview…'}</p>}
+    <p style={{ ...small, marginBottom: '1rem' }}><Link href={`/login?next=${nextPath}`}>Sign in</Link> · <Link href={`/login?mode=signup&next=${nextPath}`}>Create a free account</Link></p>
     <p ref={statusRef} tabIndex={-1} role="status" aria-live="polite" style={lead}>{notice}</p>
     <div className={styles.row} style={{ marginBottom: '1rem' }}><button type="button" style={button} disabled={disabled || participation.phase === 'review'} onClick={() => load()}>Load current Circle access</button><button id="membership-controls" type="button" style={button} disabled={disabled || participation.phase === 'review'} onClick={() => loadMembership()}>Check membership controls</button>{participation.canRetry && <button type="button" style={button} disabled={disabled} onClick={participation.retryRequest}>Retry exact participation request</button>}</div>
     {participation.uncertain && <><p style={small}>An earlier participation request may still complete. Other changes and links are paused until a fresh check or an exact retry resolves it. Closing this view discards its retry information without cancelling a sent request.</p><button type="button" style={button} disabled={disabled} onClick={participation.close}>Close this Circle view</button></>}
     <p style={small}>If meeting details cannot load, check membership controls to leave or complete a Circle you still belong to or host.</p>
-    <p style={{ ...small, marginBottom: '1rem' }}><Link href={`/login?next=/circles/${circleId}`}>Sign in</Link> · <Link href={`/login?mode=signup&next=/circles/${circleId}`}>Create a free account</Link></p>
     {management && <section aria-label="Your current membership controls" className={styles.stack} style={card}>
       <h2 style={{ ...h2, margin: 0 }}>Membership controls</h2>
       <p style={body}>These controls verify your current membership and hosting role. Full Circle information, meeting dates and video links are unavailable in this view.</p>

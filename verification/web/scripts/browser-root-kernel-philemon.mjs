@@ -109,7 +109,7 @@ try {
   assert.match(await notes.getByRole('link', { name: 'Biblical Unitarian statement of beliefs' }).getAttribute('href'), /^https:\/\/www\.biblicalunitarian\.com\//);
   assert.equal(await page.getByRole('link', { name: 'Read the publisher’s edition' }).getAttribute('href'), edition.publisherUrl);
   assert.equal(await page.getByRole('link', { name: 'Publisher reuse terms' }).getAttribute('href'), edition.rightsUrl);
-  assert.equal(await page.getByRole('link', { name: 'Find a reading Circle', exact: true }).getAttribute('href'), '/circles');
+  assert.equal(await page.getByRole('link', { name: 'Find an online reading Circle', exact: true }).getAttribute('href'), '/circles?format=online');
   stories.push('Study perspectives are outside Scripture and link to their own sources; the page links to the publisher and Circles.');
   await screenshot(page, 'desktop');
   await anchor(page, 'Go to verse 3', 'verse-3');

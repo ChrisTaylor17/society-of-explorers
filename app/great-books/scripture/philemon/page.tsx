@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import { philemonEdition as edition, PHILEMON_COMPARISON, PHILEMON_FURTHER_READING,
   PHILEMON_GREETING, PHILEMON_PERSPECTIVES, PHILEMON_SALON_QUESTIONS } from '@/lib/root-kernel/philemon-study';
 import ReadingNav, { ReadingFooter } from '../../ReadingNav';
@@ -79,7 +80,7 @@ export default function PhilemonStudyPage() {
           ))}
         </ol>
         <nav className={reading.nav} aria-label="Salon next steps">
-          <Link href="/circles">Find a reading Circle</Link>
+          <Link href={ONLINE_CIRCLES_HREF}>Find an online reading Circle</Link>
           <Link href="/circles/host#philemon-salon">Host a Philemon salon</Link>
         </nav>
       </section>

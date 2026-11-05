@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { formatDay } from '@/lib/circles/schedule';
-import { DEFAULT_DISCOVERY_QUERY, discoverySearchParams, parseDiscoveryQuery, type DiscoveryQuery } from '@/lib/circles/discovery';
+import { circleDetailHref, DEFAULT_DISCOVERY_QUERY, discoverySearchParams, parseDiscoveryQuery, type DiscoveryQuery } from '@/lib/circles/discovery';
 import { button, card, fieldLabel, gold, input, ivory85, muted, parchment, primary, small } from '@/lib/circles/ui';
 import { getBook } from '@/lib/books/catalog';
 import { getReadingEdition, READING_EDITIONS, readingEditionLabel, readingSessionLabel, readingStartHref } from '@/lib/circles/reading-program';
@@ -174,26 +174,27 @@ export default function CirclesBrowser() {
             <button type="button" style={button} onClick={() => apply(query)}>First page of results</button>
             {state.result.page.nextCursor && <button type="button" style={button} onClick={() => apply(query, state.result.page.nextCursor)}>Next page of results</button>}
           </nav>
-          {state.result.circles.length === 0 ? <EmptyState filtered={filtered} continuation={request.cursor !== null} startHref={startLink} /> : <ul aria-label="Circles on this page" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>{state.result.circles.map(c => <CircleCard key={c.id} c={c} />)}</ul>}
+          {state.result.circles.length === 0 ? <EmptyState filtered={filtered} continuation={request.cursor !== null} startHref={startLink} /> : <ul aria-label="Circles on this page" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>{state.result.circles.map(c => <CircleCard key={c.id} c={c} fromOnline={query.format === 'online'} />)}</ul>}
         </>}
       </div>
     </div>
   );
 }
 
-function CircleCard({ c }: { c: PublicDiscoveryCircle }) {
+function CircleCard({ c, fromOnline }: { c: PublicDiscoveryCircle; fromOnline: boolean }) {
+  const href = circleDetailHref(c.id, fromOnline);
   const where = c.format === 'online' ? 'Online' : [c.venue_name, c.city, c.region].filter(Boolean).join(', ');
   return (
     <li data-circle-id={c.id} style={{ ...card, overflowWrap: 'anywhere' }}>
       <p style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.12em', color: gold, margin: '0 0 6px' }}>{c.format_label.toUpperCase()} · {c.spots_left > 0 ? `${c.spots_left} SPOTS LEFT` : 'FULL'}</p>
-      <h3 style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', fontWeight: 400, color: parchment, margin: '0 0 6px' }}><Link href={`/circles/${encodeURIComponent(c.id)}`} style={{ color: parchment }}>{c.title}</Link></h3>
+      <h3 style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', fontWeight: 400, color: parchment, margin: '0 0 6px' }}><Link href={href} style={{ color: parchment }}>{c.title}</Link></h3>
       {c.description && <p style={{ ...small, color: ivory85, marginBottom: '8px', whiteSpace: 'pre-wrap' }}>{c.description}</p>}
       <p style={{ fontSize: '17px', color: ivory85, margin: '0 0 4px' }}>{where}</p>
       <p style={{ fontSize: '16px', color: muted, margin: '0 0 4px' }}>{c.phase === 'upcoming' ? 'Upcoming Circle · first meeting' : 'Reading together now · next meeting'} <time dateTime={c.next_meeting}>{formatDay(c.next_meeting)}</time></p>
       <p style={{ fontSize: '16px', color: muted, margin: '0 0 4px' }}>{c.meeting_label} · hosted by {c.host_name}</p>
       {c.reading && <p style={{ fontSize: '16px', color: muted, margin: '0 0 8px' }}>{c.phase === 'upcoming' ? 'First reading' : 'Current reading'} · Week {c.reading.week}: <Link href={`/circles/path/${c.reading.week}?circle=${c.id}`} style={{ color: gold }}>{c.reading.title} — discussion guide</Link></p>}
       {c.reading_program && <ReadingProgramSummary program={c.reading_program} circleId={c.id} compact />}
-      <Link href={`/circles/${encodeURIComponent(c.id)}`} style={{ ...button, marginTop: '8px' }} aria-label={`View circle: ${c.title}`}>View circle</Link>
+      <Link href={href} style={{ ...button, marginTop: '8px' }} aria-label={`View circle: ${c.title}`}>View circle</Link>
     </li>
   );
 }

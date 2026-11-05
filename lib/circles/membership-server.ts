@@ -12,7 +12,7 @@ import { getReading } from './path';
 import { CIRCLE_FORMATS, FORMAT_LABELS, TIMEZONES, VENUE_LABELS, VENUE_TYPES, firstMeeting, formatMeeting, pathWeek, type CircleFormat, type VenueType } from './schedule';
 import { parseCircleCreateMutation, parseCircleCompleteMutation, parseCircleHostingAccess, parseOwnedCircleCreateReceipt, parseOwnedCircleCompleteReceipt } from './hosting';
 import { CIRCLE_MEMBERSHIP_PAGE_SIZE, membershipDay, membershipInteger, membershipRecord, membershipText,
-  parseCircleAttendanceMutation, parseCircleAttendanceReceipt, parseCircleCreateReceipt, parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt, parseCircleStart, parseMyCircles,
+  parseCircleAttendanceMutation, parseCircleAttendanceReceipt, parseCircleCreateReceipt, parseCircleDetail, parseCircleListing, parseCircleManagement, parseCircleMembershipReceipt, parseCircleStart, parseMyCircles,
   type CircleParticipationAction } from './membership';
 
 type Result<T> = { ok: true; value: T } | { ok: false; response: Response };
@@ -104,17 +104,28 @@ function projectSnapshot(value: unknown, detail: boolean): Record<string, unknow
     ...(detail ? { ready: true, meetings: value.meetings, online_url: value.online_url } : {}) };
 }
 
+function projectDetail(value: unknown, circleId: string) {
+  if (!hasPublicProfileReference(value)) return null;
+  const projected = projectSnapshot(value, true);
+  return projected ? parseCircleDetail(projected, circleId) : null;
+}
+
+export async function circleListing(circleId: string): Promise<Response> {
+  if (!isUuid(circleId)) return refuse('Use a valid Circle identifier.', 400);
+  return rpc('soe_circle_detail_profiles', { p_actor: null, p_circle_id: circleId.toLowerCase() }, value => {
+    const detail = projectDetail(value, circleId);
+    if (!detail || detail.viewer.signed_in || detail.circle.hidden) return null;
+    return parseCircleListing(detail.circle, circleId);
+  });
+}
+
 export async function circleDetail(req: NextRequest, circleId: string): Promise<Response> {
   if (!isUuid(circleId)) return refuse('Use a valid Circle identifier.', 400);
   try {
     const actor = await getAuthenticatedMember(req);
     const mismatch = expectedMember(req, actor?.memberId ?? null);
     if (mismatch) return mismatch;
-    return await rpc('soe_circle_detail_profiles', { p_actor: actor?.memberId ?? null, p_circle_id: circleId.toLowerCase() }, value => {
-      if (!hasPublicProfileReference(value)) return null;
-      const projected = projectSnapshot(value, true);
-      return projected ? parseCircleDetail(projected, circleId) : null;
-    });
+    return await rpc('soe_circle_detail_profiles', { p_actor: actor?.memberId ?? null, p_circle_id: circleId.toLowerCase() }, value => projectDetail(value, circleId));
   } catch { return unavailable(); }
 }
 

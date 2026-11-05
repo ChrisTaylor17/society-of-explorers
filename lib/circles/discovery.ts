@@ -5,6 +5,12 @@ import type { PublicCircle } from './server';
 import { getBook } from '@/lib/books/catalog';
 import { getReadingEdition, parseReadingContext, readingSessionLabel } from './reading-program';
 
+export const ONLINE_CIRCLES_HREF = '/circles?format=online';
+
+export function circleDetailHref(circleId: string, fromOnline: boolean): string {
+  return `/circles/${encodeURIComponent(circleId)}${fromOnline ? '?from=online' : ''}`;
+}
+
 export type DiscoveryQuery = {
   q: string;
   city: string;

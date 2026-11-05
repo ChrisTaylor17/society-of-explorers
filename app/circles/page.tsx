@@ -32,7 +32,7 @@ export default async function CirclesPage({ searchParams }: { searchParams?: Pro
       <CircleSafetyNav />
       <main id="main" className={styles.scope} style={{ ...main, paddingTop: '2.5rem' }}>
         <p style={label}>SoE Circles</p>
-        <h1 style={h1}>Read the great books together, near you</h1>
+        <h1 style={h1}>Read together in a weekly salon</h1>
         <p style={lead}>
           A circle is 3 to 12 people who meet once a week, in a public library, café or online, to talk about one short
           reading. Agree a pinned book edition and weekly selections, or follow the twelve-week starter path with its

@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T23:08:26Z",
+  "baseCheckpoint": "0d73ad0991f32c53574e79ae68b7c923efe12dbb",
+  "status": "LOCAL_ONLINE_SALON_PASS_HOSTED_ACCEPTANCE_OPEN",
+  "productionCleared": false,
+  "build": {
+    "id": "zietZFhzCJbYlm0iesnEy",
+    "compiler": "webpack",
+    "sourceFiles": 1054,
+    "sourceSha256": "204a3ba5d4287262424835450846edf4671048e47605033ffbbdddee3d11f8ef",
+    "typeCheckPassed": true,
+    "scopedLintPassed": true
+  },
+  "checks": {
+    "onlineSalonStories": 7,
+    "interceptedSalonRequests": 52,
+    "profileBackend": 26,
+    "philemonStories": 7,
+    "reelStories": 4,
+    "shareCardAndHomepage": 9
+  },
+  "stories": [
+    "The public API discards supplied authority and returns seven listing fields. Hidden and malformed targets are refused.",
+    "Homepage, Philemon study and Reel open the same online and hybrid search in the built site.",
+    "A guest sees the public preview at 320px with no account or meeting request. Sign-in and signup retain the Circle from the preview and navigation.",
+    "The built password sign-in verifies synthetic identity and returns to the same Circle and online directory.",
+    "A verified nonmember reviews the norms and confirms membership before the private link appears.",
+    "The reviewed RSVP is stored in SQL. Leaving removes it and takes the meeting link out of the view.",
+    "A direct hidden Circle link discloses no listing, even after sign-in."
+  ],
+  "cleanup": {
+    "server": "owned-process-stopped",
+    "browser": "closed",
+    "database": "closed"
+  },
+  "scope": "Exact canonical source in a local build mirror. Browser SDK and canonical handlers use synthetic provider responses and one disposable SQL fixture. Signup return links were checked. Hosted identity, delivery, native devices and live meeting attendance remain open.",
+  "baselineIssue": "The older growth check for thinker initials on the reflection feed fails because the expected avatar markup is absent from the baseline page.",
+  "changedProductSourceSha256": {
+    "app/HomePageClient.tsx": "411d58305dd4560a9e712171dc3980bdb22a51e880843bc4d6dda4d213dcb4ee",
+    "app/api/circles/[circleId]/route.ts": "887196e7dafabfa7053f40c6bb64dd57816241bf25ca5110e0e2406f90598c4f",
+    "app/circles/CirclesBrowser.tsx": "12d76d43b0712820cea0e1423afdc7669daf7da78bbe7d7c4924df6e31c585d1",
+    "app/circles/[circleId]/CircleDetail.tsx": "70669f42b7569cec9295d0507a6f175635fc0764ab7e36389c5f50540ddfe487",
+    "app/circles/[circleId]/page.tsx": "78bdb4c9307095aa65a6e0d502f2401d829af1e98668352d56dc8cfb746a3409",
+    "app/circles/messages/CircleSafetyNav.tsx": "df286356e43eb64359397add1661b84d69d75ae48dc6f99aa8a0551f63c4a354",
+    "app/circles/page.tsx": "22acec186f2795f7dab5a379d293fe0a1c311bb5e5fdefc70958ac3e5b484342",
+    "app/clips/ClipPlayer.tsx": "ad748ea731a18aa59b873e35427f5a46525c9b6e3f3784b2b4bb5b7c45e7ab58",
+    "app/clips/page.tsx": "eb2b2c9c3c7b9f794a0c194d971ff199d414c76dd5f7e78791e367c30c038c99",
+    "app/great-books/scripture/philemon/page.tsx": "1bad8ef0fcdbeb91ed75ef1a74547376325e6c4812d0ad5fa02073c3dd4471a9",
+    "app/quest/page.tsx": "d9f1d52dd70aa8007648621ed26189abaec04b229cc20bb5bcb0d2c1fb492272",
+    "lib/circles/discovery.ts": "912555aadd7f54f2749344d2b230195e072fec1f85e74416e608c03fef025b14",
+    "lib/circles/membership-server.ts": "64c8aa16fa23c2ca510133c98eb731c2aa2d30a9acf479dccf7bb1c04048a0de",
+    "lib/circles/membership.ts": "49fb0aadf9682ad81cec158dd1c0dd670059f508261508fb46384b15bc56e9dc",
+    "lib/site/shareCard.ts": "be02b27c389e1e6eadee90f4e107a9f16f140266c9fbca748de58910b950afea"
+  },
+  "localEvidence": {
+    "build": {
+      "path": "verification/web/evidence/built-shell-online-salon-clean-next-build.json",
+      "sha256": "7361f7249bc10db77579b524fb9895c411de95f3b3af708ae697d518369f28ed"
+    },
+    "server": {
+      "path": "verification/web/evidence/built-shell-online-salon-accepted-server.json",
+      "sha256": "7b51bf2cfae0d918c30f2a55e69599a19e868250e02bcdcf54cbc2ce375856f6"
+    },
+    "salonBrowser": {
+      "path": "verification/web/evidence/online-salon-browser-3/browser.json",
+      "sha256": "b923cdd54562779cc8af6e82858299c6b758f53e8c71b2a93e79242ede0064d7"
+    },
+    "philemonBrowser": {
+      "path": "verification/web/evidence/root-kernel-philemon-07/browser.json",
+      "sha256": "82344360c2463898b796256bc9354f21d7f96a7c5c386ce3ea2b604433869a31"
+    },
+    "reelBrowser": {
+      "path": "verification/web/evidence/reel-paranal-built-04/browser.json",
+      "sha256": "6e13b163b50f7038aa4141e246ade137acfe2061a236c00336819793f0d3550f"
+    },
+    "profileBackend": {
+      "path": "verification/web/evidence/online-salon-public-profile-backend.tap",
+      "sha256": "c194161fea2e505432af2104bbf2246563eb02734a51425b4eaaac34b6358136"
+    },
+    "nextRuntimeRecovery": {
+      "path": "verification/web/evidence/built-shell-online-salon-pinned-runtime.json",
+      "sha256": "64630d5c47c0bea6905922694a54f914f8d6c73adb2cc5df37e3f3f80fdf95b1"
+    }
+  }
+}

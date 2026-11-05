@@ -4,15 +4,15 @@
 
 export const SHARE_CARD = {
   eyebrow: 'SOCIETY OF EXPLORERS',
-  title: 'One honest question a day.',
-  subtitle: 'Answer it, read a reflection, and see how other explorers answered. Free to start.',
-  alt: 'Society of Explorers: one honest question a day. Free to start.',
+  title: 'Read together. Meet online.',
+  subtitle: 'Small weekly salons for Scripture, the Great Books, and honest conversation.',
+  alt: 'Society of Explorers. Read together. Meet online.',
   width: 1200,
   height: 630,
 } as const;
 
 export const SITE_DESCRIPTION =
-  'Society of Explorers: a daily question to answer, reflections from Great Thinker guides, and a privacy-first community for deep conversation. Free to start.';
+  'Small weekly salons rooted in Christian faith. Read Scripture and the Great Books, make room for prayer, and welcome people who disagree in good faith.';
 
 // A route that sets its own `openGraph`/`twitter` object replaces the root one,
 // which drops the root opengraph-image. Spread these into such routes so their
