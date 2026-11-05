@@ -50,5 +50,59 @@
       "sourceEndMs": 23955,
       "checkedAt": "2026-11-04T13:38:04.168Z"
     }
+  },
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "night-sky-traffic",
+    "kind": "video",
+    "title": "Who gets the night sky?",
+    "description": "The Archivist looks at actual 2026 footage from Paranal, Chile, and asks how we should weigh satellite internet against a shared night sky. A silent 24-second Reel.",
+    "credit": "B. Häußler/ESO",
+    "source": {
+      "kind": "third-party",
+      "path": "eso2607d-source.mp4",
+      "sha256": "dabaa298df3553da879d17df97cec653b746544386d87347d1a7f9f709a685fc",
+      "bytes": 7378972,
+      "pageUrl": "https://www.eso.org/public/videos/eso2607d/",
+      "mediaUrl": "https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4"
+    },
+    "asset": {
+      "path": "night-sky-traffic.mp4",
+      "sha256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f",
+      "bytes": 3346521,
+      "mime": "video/mp4",
+      "durationMs": 24000,
+      "width": 720,
+      "height": 1280
+    },
+    "captions": {
+      "path": "night-sky-traffic.vtt",
+      "sha256": "1cb633b7dd2b658db6933b92e1b7da836ed8d1cc7dbc3972ce93018a2d9b56cf",
+      "bytes": 535,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "night-sky-traffic-inspection.json",
+      "sha256": "ddc4d70333a9ba4a2ad9c2922e2ef3265a44b926c390b2884da6fd2839a9b938",
+      "bytes": 2347
+    },
+    "review": {
+      "mode": "documentary-rights",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 1600,
+      "sourceEndMs": 25600,
+      "checkedAt": "2026-11-05T20:02:16.646Z"
+    }
   }
 ]

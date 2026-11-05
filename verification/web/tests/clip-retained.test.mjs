@@ -13,3 +13,34 @@ test('actual retained original video crosses catalog gateway HEAD Range and anon
  const client=a.load('lib/clips/client.ts'),signal=new AbortController().signal;const [loaded,subtitles]=await Promise.all([client.fetchClipBytes(clip.media.href,clip.media.sha256,clip.media.bytes,clip.media.mime,signal),client.fetchClipBytes(clip.captions.href,clip.captions.sha256,clip.captions.bytes,'text/vtt',signal)]);
  assert.equal(loaded.byteLength,clip.media.bytes);assert.ok(new TextDecoder().decode(subtitles).startsWith('WEBVTT'));assert.equal(calls.length,2);for(const call of calls){assert.equal(call.options.credentials,'omit');assert.equal(call.options.referrerPolicy,'no-referrer');assert.equal(call.options.redirect,'error');}
 });
+
+test('the retained Paranal Reel returns its linked attribution, bounded media and complete timed text', async () => {
+ const app = offlineApp();
+ const catalog = app.load('app/clips/catalog/route.ts');
+ const response = await catalog.GET(new Request('http://local.invalid/clips/catalog'));
+ const dto = await response.json();
+ const reel = dto.media.find(clip => clip.id === 'night-sky-traffic');
+ assert.ok(reel);
+ assert.equal(reel.sourcePage, 'https://www.eso.org/public/videos/eso2607d/');
+ assert.equal(reel.credit, 'B. Häußler/ESO');
+ assert.equal(reel.attribution.licenseUrl, 'https://creativecommons.org/licenses/by/4.0/');
+ assert.equal(reel.attribution.captionPresentation, 'embedded-text');
+ assert.equal(reel.durationMs, 24000);
+ assert.ok(reel.media.bytes < 4_000_000);
+ for (const hidden of ['eso2607d-source.mp4', 'cdn.eso.org', 'night-sky-traffic-inspection.json', 'sourceStartMs']) {
+  assert.equal(JSON.stringify(dto).includes(hidden), false);
+ }
+ const request = href => new Request('http://local.invalid' + href);
+ const params = { params: Promise.resolve({ clipId: reel.id }) };
+ const media = app.load('app/clips/media/[clipId]/route.ts');
+ const captions = app.load('app/clips/captions/[clipId]/route.ts');
+ const file = await media.GET(request(reel.media.href), params);
+ assert.equal(file.status, 200);
+ const bytes = Buffer.from(await file.arrayBuffer());
+ assert.equal(bytes.length, reel.media.bytes);
+ assert.equal(createHash('sha256').update(bytes).digest('hex'), reel.media.sha256);
+ const text = await (await captions.GET(request(reel.captions.href), params)).text();
+ assert.equal((text.match(/-->/gu) || []).length, 4);
+ assert.match(text, /00:00:24\.000/);
+ assert.match(reel.transcript, /Bring your reason to a\s+Circle\./);
+});

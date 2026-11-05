@@ -1,6 +1,6 @@
 # Clips and passages
 
-Implemented in the canonical release worktree on 2026-11-04. This is local product functionality, not deployment or production clearance.
+Implemented in the canonical release worktree on 2026-11-04. The first licensed Reel was added on 2026-11-05. Verification covers the local release candidate.
 
 ## Working flow
 
@@ -8,7 +8,7 @@ Implemented in the canonical release worktree on 2026-11-04. This is local produ
 
 The catalog also includes **How a Circle works**, a 23.955-second original silent SoE video. The source HTML, MP4, WebVTT and essential inspection receipt live in versioned `content/clips`. Its original text and canvas graphics use no third-party media, audio, music or voice. The receipt records decoded dimensions 720×404, one video track, zero audio tracks, no external assets and inspection of all six authored frames. The public label says “Original SoE content; local automated checks”; it does not claim human approval, actual member footage or a released product.
 
-LibriVox and NASA remain proposals in the [rights audit](content-rights-audit.md), outside the runtime registry and unavailable for playback. No third-party audio/video rights were silently promoted.
+**Who gets the night sky?** uses a credited, silent excerpt of actual Paranal footage. The review covers the exact edit under ESO's CC BY 4.0 terms. Its credit stays on screen, the app links the source and license, and both the transcript and the Circle directory are available. LibriVox and NASA remain proposals outside the runtime registry. [Archivist Reel](paranal-reel.md) · [Rights audit](content-rights-audit.md)
 
 ## Publication and storage gate
 
@@ -28,7 +28,7 @@ The default public context has **unknown territory**, so only WORLDWIDE-reviewed
 
 ## Public boundary and playback
 
-`GET /clips/catalog` accepts no query and returns only whitelisted text/media display DTOs. It never returns proposal counts, review documents, source filesystem paths, original media URLs, reviewer identities, approval flags or inspection details. The client receives credits, review scope, a transcript, and local hash-bound media/caption links.
+`GET /clips/catalog` accepts no query and returns only whitelisted text/media display DTOs. It never returns proposal counts, review documents, source filesystem paths, original media URLs, reviewer identities, approval flags or inspection details. The client receives credits, review scope, a transcript, and local hash-bound media/caption links. The ESO entry also exposes the public source page, exact CC BY 4.0 link and edit notice.
 
 `GET`/`HEAD /clips/media/{id}?sha={digest}` and `/clips/captions/{id}?sha={digest}` repeat the approval/file checks. Unknown or held entries and replaced files return generic unavailable responses. A stale digest returns 409. The endpoints cannot fetch or proxy a URL. They support one strict byte range, open-ended and suffix ranges for seeking, 206/416 semantics, Content-Length and ETag. Responses use no-store, NoSniff, no-referrer and same-origin resource policy. Full-file verification is bounded; this is not a general streaming service.
 
@@ -36,9 +36,9 @@ The React player creates no media element or media request before **Load**. That
 
 ## Verification and remaining checks
 
-[Focused evidence](../../verification/web/evidence/clips-tests.json) records 21 passing cases under a clean environment and startup network guard. These exercise the actual gate, gateway, canonical retained first-party file, hash-verifying client and real React server rendering. They cover held/missing/changed artifacts; source/rights/territory/timing checks; symlink/traversal rejection; captions; HEAD/Range; generic failures; bounded anonymous reads; no automatic media loading; and exact text source links. Synthetic media/rights receipts are isolated test fixtures, not third-party clearance.
+[Current verification](paranal-reel-verification.json) records 23 passing cases under a clean environment and startup network guard. These exercise the actual gate, gateway, canonical retained media, hash-verifying client and React server rendering. They cover held, missing or changed files, source and territory restrictions, rejection of unsafe paths, captions, HEAD and ranges, anonymous reads, explicit loading and exact text-source links. The Paranal cases additionally reject absent credit evidence, changed source identity and a different license. Synthetic media and rights receipts are isolated test fixtures.
 
-The actual retained original passes catalog → media/caption route → anonymous bounded client → SHA256 verification, including HEAD and seek ranges. Its generation receipt separately records real Chromium decoding and six inspected frames. Full canonical build/browser integration, interactive player controls, narrow-screen/keyboard behavior and available-device playback remain release-owner checks; these focused tests do not substitute for them. TypeScript and targeted ESLint passed during implementation.
+The retained introduction passes catalog, media and caption routes, anonymous hash verification, HEAD and seek ranges. Its generation receipt records Chromium decoding and six inspected frames. The current full build also plays the Paranal Reel from Clips in Chromium, with explicit loading, four timed cues and a narrow-screen check. Scoped lint passed. Physical-device playback remains open. [Reel behavior and verification](paranal-reel.md)
 
 Re-run from `verification/web`:
 

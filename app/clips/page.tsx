@@ -7,10 +7,12 @@ export const metadata: Metadata = { title: 'Clips & Passages — Society of Expl
 export const dynamic = 'force-dynamic';
 export default async function ClipsPage() {
   const catalog = await clipCatalog();
+  const reel = catalog.media.find(clip => clip.attribution);
   return <div className={styles.page}><main className={styles.main}>
     <nav className={styles.nav} aria-label="Reading and community"><Link href="/">Society of Explorers</Link><Link href="/great-books">Great Books</Link><Link href="/circles">Circles</Link></nav>
     <h1>Clips &amp; passages</h1>
     <p className={styles.lead}>A short reading or a carefully credited clip can open a thoughtful conversation. Start with the source, make room for questions, and welcome a different point of view.</p>
+    {reel && <p><a href={`#${reel.id}`}>Watch the Reel · {reel.title}</a></p>}
     <section aria-labelledby="text-clips"><h2 id="text-clips">Read a passage</h2>
       <p>These excerpts are resolved from the exact local source editions. Project Gutenberg’s public-domain determinations apply in the United States; other territories have not been assessed here.</p>
       {catalog.texts.length === 0 && <p>The verified passages are unavailable at this check. <Link href="/great-books">Open the library</Link> to choose a source.</p>}

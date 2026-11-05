@@ -1,0 +1,60 @@
+{
+  "title": "Who gets the night sky?",
+  "series": "The Archivist",
+  "fps": 25,
+  "width": 720,
+  "height": 1280,
+  "bitrate": 1180000,
+  "source": {
+    "file": "eso2607d-source.mp4",
+    "sha256": "dabaa298df3553da879d17df97cec653b746544386d87347d1a7f9f709a685fc",
+    "page": "https://www.eso.org/public/videos/eso2607d/",
+    "download": "https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4",
+    "credit": "B. Häußler/ESO",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "policy": "https://www.eso.org/public/outreach/copyright/",
+    "inFrame": 40,
+    "outFrame": 640
+  },
+  "layout": {
+    "background": "#101b1c",
+    "ink": "#f9f1df",
+    "accent": "#e8c77d",
+    "videoRect": [40, 374, 640, 360],
+    "fontTitle": "bold 69px Georgia",
+    "fontBody": "600 35px system-ui",
+    "label": "PARANAL, CHILE  ·  TIME-LAPSE EXCERPT",
+    "modifications": "Trimmed and annotated by Society of Explorers",
+    "audio": "silent"
+  },
+  "scenes": [
+    {
+      "start": 0,
+      "end": 120,
+      "titleLines": ["The night sky", "has traffic."],
+      "bodyLines": ["From five hours at Paranal, Chile.", "Filmed May 19, 2026."],
+      "transcript": "The night sky has traffic. A time-lapse excerpt from Paranal, Chile, filmed May 19, 2026."
+    },
+    {
+      "start": 120,
+      "end": 250,
+      "titleLines": ["A lifeline far", "from a tower."],
+      "bodyLines": ["Satellite internet can connect", "places beyond ground networks."],
+      "transcript": "A lifeline far from a tower. Satellite internet can connect places beyond ground networks."
+    },
+    {
+      "start": 250,
+      "end": 400,
+      "titleLines": ["A cost for", "the telescope."],
+      "bodyLines": ["Bright trails can obscure part", "of a telescope image."],
+      "transcript": "A cost for the telescope. Bright trails can obscure part of a telescope image."
+    },
+    {
+      "start": 400,
+      "end": 600,
+      "titleLines": ["Who gets the", "night sky?"],
+      "bodyLines": ["What brightness limit", "would you set?", "Bring your reason to a Circle."],
+      "transcript": "Who gets the night sky? What brightness limit would you set? Bring your reason to a Circle."
+    }
+  ]
+}

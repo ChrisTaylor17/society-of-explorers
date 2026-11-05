@@ -1,6 +1,7 @@
 export const MAX_CLIP_BYTES = 16 * 1024 * 1024;
 export const MAX_CAPTION_BYTES = 64 * 1024;
 export const MAX_CLIP_DURATION_MS = 120_000;
+export const CC_BY_4_URL = 'https://creativecommons.org/licenses/by/4.0/';
 export type ClipKind = 'audio' | 'video';
 export type PublicMediaClip = {
   id: string; kind: ClipKind; title: string; description: string; credit: string;
@@ -9,6 +10,7 @@ export type PublicMediaClip = {
   media: { href: string; sha256: string; bytes: number; mime: string };
   captions: { href: string; sha256: string; bytes: number; language: string };
   transcript: string;
+  attribution?: { licenseUrl: typeof CC_BY_4_URL; edits: string; captionPresentation: 'embedded-text' };
 };
 export type TextClip = {
   id: string; title: string; quote: string; credit: string; readerHref: string; discussHref: string;
@@ -38,10 +40,17 @@ export function parsePublicMediaClip(value: unknown): PublicMediaClip | null {
     || !isSha256(value.captions.sha256) || !integer(value.captions.bytes, 1, MAX_CAPTION_BYTES)
     || value.captions.href !== clipHref('captions', value.id, value.captions.sha256)
     || typeof value.captions.language !== 'string' || !/^[a-z]{2}(?:-[A-Z]{2})?$/u.test(value.captions.language)
-    || value.sourcePage !== null && (typeof value.sourcePage !== 'string' || !/^https:\/\/[^\s?#@]+\/[A-Za-z0-9_./-]*$/u.test(value.sourcePage))) return null;
+    || value.sourcePage !== null && (typeof value.sourcePage !== 'string' || !/^https:\/\/[^\s?#@]+\/[A-Za-z0-9_./-]*$/u.test(value.sourcePage))
+    || value.attribution !== undefined && (value.kind !== 'video' || !value.sourcePage || !record(value.attribution)
+      || value.attribution.licenseUrl !== CC_BY_4_URL || !plain(value.attribution.edits, 240)
+      || value.attribution.captionPresentation !== 'embedded-text')) return null;
+  const attribution: PublicMediaClip['attribution'] = record(value.attribution) ? {
+    licenseUrl: CC_BY_4_URL, edits: String(value.attribution.edits), captionPresentation: 'embedded-text',
+  } : undefined;
   return { id: value.id, kind: value.kind as ClipKind, title: value.title, description: value.description, credit: value.credit,
     reviewLabel: value.reviewLabel, territoryLabel: value.territoryLabel, checkedAt: value.checkedAt, sourcePage: value.sourcePage as string | null,
     durationMs: value.durationMs, transcript: value.transcript,
     media: { href: value.media.href, sha256: value.media.sha256, bytes: value.media.bytes, mime: String(value.media.mime) },
-    captions: { href: value.captions.href, sha256: value.captions.sha256, bytes: value.captions.bytes, language: value.captions.language } };
+    captions: { href: value.captions.href, sha256: value.captions.sha256, bytes: value.captions.bytes, language: value.captions.language },
+    ...(attribution ? { attribution } : {}) };
 }

@@ -46,3 +46,34 @@ test('video track and NASA silent-derivative requirements bind the private inspe
  f.facts.width=321;await f.inspect();e.inspection=f.entry.inspection;assert.equal(await f.server.verifyClip(e,context,f.root),null);f.facts.width=320;
  e.source.kind='third-party';e.source.pageUrl='https://svs.gsfc.nasa.gov/13326/';e.source.mediaUrl='https://svs.gsfc.nasa.gov/vis/a010000/a013300/a013326/BH_Accretion_Disk_Sim_360_1080.webm';e.review.mode='documentary-rights';Object.assign(f.facts,{sourceStartMs:0,sourceEndMs:1000,sourceDurationMs:1000});f.facts.rights={decision:'approved',sourcePage:e.source.pageUrl,sourceMedia:e.source.mediaUrl,credit:e.credit,checkedAt:e.review.checkedAt,validUntil:null,components:[{kind:'visuals',basis:'public-domain',policyUrl:'https://svs.gsfc.nasa.gov/help/',territories:['WORLDWIDE'],permissions:e.review.permissions}]};await f.inspect();e.inspection=f.entry.inspection;assert.equal(await f.server.verifyClip(e,context,f.root),null);f.facts.checks.push('all-audio-removed');await f.inspect();e.inspection=f.entry.inspection;assert.ok(await f.server.verifyClip(e,context,f.root));f.facts.audioTracks=1;await f.inspect();e.inspection=f.entry.inspection;assert.equal(await f.server.verifyClip(e,context,f.root),null);
 });
+
+test('the ESO clip needs the exact file, full credit and visible-credit evidence before public attribution', async t => {
+ const f = await clipFixture(t), entry = copy(f.entry);
+ entry.kind = 'video';
+ entry.credit = 'B. Häußler/ESO';
+ entry.source = { ...entry.source, kind: 'third-party', pageUrl: 'https://www.eso.org/public/videos/eso2607d/',
+  mediaUrl: 'https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4' };
+ entry.asset = { ...await f.file('fixture-header.mp4', Buffer.from('0000ftypisom0000')), mime: 'video/mp4',
+  durationMs: 1000, width: 720, height: 1280 };
+ entry.review.mode = 'documentary-rights';
+ Object.assign(f.facts, { assetSha256: entry.asset.sha256, audioTracks: 0, videoTracks: 1, width: 720, height: 1280,
+  sourceStartMs: 0, sourceEndMs: 1000, sourceDurationMs: 1000,
+  checks: ['tracks-inspected', 'captions-checked', 'frames-reviewed', 'all-audio-removed', 'visible-source-credit', 'landscape-only', 'embedded-text'] });
+ f.facts.rights = { decision: 'approved', sourcePage: entry.source.pageUrl, sourceMedia: entry.source.mediaUrl,
+  credit: entry.credit, checkedAt: entry.review.checkedAt, validUntil: null, licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  edits: 'Framed and annotated.', components: [{ kind: 'visuals', basis: 'licensed',
+   policyUrl: 'https://www.eso.org/public/outreach/copyright/', territories: ['WORLDWIDE'], permissions: entry.review.permissions }] };
+ const check = async () => { await f.inspect(); return f.server.verifyClip({ ...entry, inspection: f.entry.inspection }, context, f.root); };
+ assert.equal((await check()).public.attribution.captionPresentation, 'embedded-text');
+ f.facts.checks = f.facts.checks.filter(check => check !== 'visible-source-credit');
+ assert.equal(await check(), null);
+ f.facts.checks.push('visible-source-credit');
+ f.facts.rights.licenseUrl = 'https://creativecommons.org/licenses/by-nc/4.0/';
+ assert.equal(await check(), null);
+ f.facts.rights.licenseUrl = 'https://creativecommons.org/licenses/by/4.0/';
+ entry.credit = f.facts.rights.credit = 'ESO';
+ assert.equal(await check(), null);
+ entry.credit = f.facts.rights.credit = 'B. Häußler/ESO';
+ entry.source.mediaUrl = f.facts.rights.sourceMedia = 'https://cdn.eso.org/videos/medium_podcast/eso2607b.mp4';
+ assert.equal(await check(), null);
+});

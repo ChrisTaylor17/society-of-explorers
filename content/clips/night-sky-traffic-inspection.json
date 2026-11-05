@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "assetSha256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f",
+  "sourceSha256": "dabaa298df3553da879d17df97cec653b746544386d87347d1a7f9f709a685fc",
+  "captionsSha256": "1cb633b7dd2b658db6933b92e1b7da836ed8d1cc7dbc3972ce93018a2d9b56cf",
+  "durationMs": 24000,
+  "width": 720,
+  "height": 1280,
+  "audioTracks": 0,
+  "videoTracks": 1,
+  "sourceDurationMs": 27840,
+  "sourceStartMs": 1600,
+  "sourceEndMs": 25600,
+  "checks": [
+    "tracks-inspected",
+    "captions-checked",
+    "frames-reviewed",
+    "all-audio-removed",
+    "visible-source-credit",
+    "landscape-only",
+    "embedded-text"
+  ],
+  "rights": {
+    "decision": "approved",
+    "sourcePage": "https://www.eso.org/public/videos/eso2607d/",
+    "sourceMedia": "https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4",
+    "credit": "B. Häußler/ESO",
+    "checkedAt": "2026-11-05T20:02:16.646Z",
+    "validUntil": null,
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "edits": "Trimmed, framed vertically and annotated with AI-assisted commentary. Source audio omitted.",
+    "components": [
+      {
+        "kind": "visuals",
+        "basis": "licensed",
+        "policyUrl": "https://www.eso.org/public/outreach/copyright/",
+        "permissions": [
+          "display",
+          "excerpt",
+          "reencode",
+          "captions",
+          "commercial"
+        ],
+        "territories": [
+          "WORLDWIDE"
+        ]
+      }
+    ]
+  },
+  "frameReview": {
+    "method": "Local documentary review of 50 source samples at 480 ms intervals and rendered editorial beats.",
+    "sourceTimeRange": "1.600–25.600 seconds, end exclusive",
+    "visuals": "Paranal telescope buildings and night sky. No identifiable person or publisher logo in the reviewed picture. Source frame kept in full.",
+    "changes": "Full-frame placement on a vertical canvas with first-party titles and persistent full credit. The source soundtrack was omitted. No generated scene footage."
+  },
+  "contextSources": [
+    "https://www.eso.org/public/videos/eso2607d/",
+    "https://www.eso.org/public/news/eso2607/",
+    "https://www.itu.int/en/mediacentre/backgrounders/Pages/Non-geostationary-satellite-systems.aspx"
+  ],
+  "reviewScope": "The exact silent editorial derivative and its displayed attribution. Local release candidate."
+}

@@ -4,12 +4,19 @@ import { open, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import registry from './registry.json';
-import { clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, MAX_CLIP_BYTES, MAX_CLIP_DURATION_MS,
+import { CC_BY_4_URL, clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, MAX_CLIP_BYTES, MAX_CLIP_DURATION_MS,
   parsePublicMediaClip, plain, record, type PublicMediaClip } from './contracts';
 
 const SOURCE_LIMIT = 64 * 1024 * 1024;
 const PERMISSIONS = ['display', 'excerpt', 'reencode', 'captions', 'commercial'];
+const PARANAL = {
+  page: 'https://www.eso.org/public/videos/eso2607d/',
+  media: 'https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4',
+  policy: 'https://www.eso.org/public/outreach/copyright/',
+  credit: 'B. Häußler/ESO',
+};
 const SOURCES = new Map([
+  [PARANAL.page, new Set([PARANAL.media])],
   ['https://librivox.org/apology-by-plato/', new Set([
     'https://www.archive.org/download/apology_plato_bn_librivox/apology_01_plato.mp3',
     'https://www.archive.org/download/apology_plato_bn_librivox/apology_02_plato.mp3'])],
@@ -121,6 +128,7 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
       || value.kind === 'audio' && (facts.audioTracks !== 1 || facts.videoTracks !== 0)
       || value.kind === 'video' && (facts.videoTracks !== 1 || facts.width !== value.asset.width || facts.height !== value.asset.height
         || !integer(facts.width, 1, 4096) || !integer(facts.height, 1, 4096) || !checks.includes('frames-reviewed'))) return null;
+    let attribution: PublicMediaClip['attribution'];
     if (firstParty) {
       if (facts.externalAssets !== false || !checks.includes('source-created-locally') || sourceBytes.length > 1_000_000
         || value.review.sourceStartMs !== 0 || value.review.sourceEndMs !== value.asset.durationMs) return null;
@@ -132,12 +140,20 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
         || !Array.isArray(facts.rights.components) || facts.sourceStartMs !== value.review.sourceStartMs
         || facts.sourceEndMs !== value.review.sourceEndMs || !integer(facts.sourceDurationMs, value.review.sourceEndMs, 86_400_000)) return null;
       const required = value.kind === 'audio' ? ['text', 'performance'] : facts.audioTracks === 0 ? ['visuals'] : ['visuals', 'soundtrack', 'performance'];
+      const paranal = value.source.pageUrl === PARANAL.page;
       for (const kind of required) {
         const component = facts.rights.components.find(c => record(c) && c.kind === kind);
-        if (!record(component) || !['public-domain', 'licensed'].includes(String(component.basis)) || !POLICIES.has(String(component.policyUrl))
+        if (!record(component) || !['public-domain', 'licensed'].includes(String(component.basis))
+          || (paranal ? component.policyUrl !== PARANAL.policy || component.basis !== 'licensed' : !POLICIES.has(String(component.policyUrl)))
           || !permissions(component.permissions) || !territories(component.territories, context.territory)) return null;
       }
       if (value.source.pageUrl === 'https://svs.gsfc.nasa.gov/13326/' && (facts.audioTracks !== 0 || !checks.includes('all-audio-removed'))) return null;
+      if (paranal) {
+        if (value.kind !== 'video' || facts.audioTracks !== 0 || value.credit !== PARANAL.credit || asset.bytes > 4_000_000
+          || !['all-audio-removed', 'visible-source-credit', 'landscape-only', 'embedded-text'].every(check => checks.includes(check))
+          || facts.rights.licenseUrl !== CC_BY_4_URL || !plain(facts.rights.edits, 240)) return null;
+        attribution = { licenseUrl: CC_BY_4_URL, edits: facts.rights.edits, captionPresentation: 'embedded-text' };
+      }
     }
     const mediaBytes = await verifiedFile(root, asset), captionBytes = await verifiedFile(root, captions);
     if (!mimeMatches(mediaBytes, String(value.asset.mime))) return null;
@@ -148,7 +164,8 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
       territoryLabel: value.review.territories.includes('WORLDWIDE') ? 'Reviewed scope: worldwide' : `Reviewed scope: ${context.territory}`,
       checkedAt: value.review.checkedAt, sourcePage: firstParty ? null : value.source.pageUrl, durationMs: value.asset.durationMs,
       media: { href: clipHref('media', value.id, asset.sha256), sha256: asset.sha256, bytes: asset.bytes, mime: value.asset.mime },
-      captions: { href: clipHref('captions', value.id, captions.sha256), sha256: captions.sha256, bytes: captions.bytes, language: value.captions.language }, transcript });
+      captions: { href: clipHref('captions', value.id, captions.sha256), sha256: captions.sha256, bytes: captions.bytes, language: value.captions.language },
+      transcript, ...(attribution ? { attribution } : {}) });
     return dto ? { public: dto, bytes: mediaBytes, captions: captionBytes } : null;
   } catch { return null; }
 }

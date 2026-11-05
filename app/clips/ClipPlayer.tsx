@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { parsePublicMediaClip, type PublicMediaClip } from '@/lib/clips/contracts';
 import { fetchClipBytes } from '@/lib/clips/client';
@@ -42,9 +43,12 @@ function ReviewedClipPlayer({ clip: approved }: { clip: PublicMediaClip }) {
       if (generation === lifetime.current) { urls.current.forEach(URL.revokeObjectURL); urls.current = []; setState({ status: 'error' }); }
     } finally { clearTimeout(deadline); if (pending.current === controller) pending.current = null; }
   }
-  return <article className={styles.card} aria-label={approved.title}>
+  return <article id={approved.id} tabIndex={-1} className={styles.card} aria-label={approved.title}>
     <h3>{approved.title}</h3><p>{approved.description}</p>
-    <p className={styles.credit}>{approved.credit}</p>
+    {approved.attribution && approved.sourcePage
+      ? <p className={styles.credit}>Footage by <a href={approved.sourcePage} target="_blank" rel="noopener noreferrer">{approved.credit}</a>
+        {' · '}<a href={approved.attribution.licenseUrl} target="_blank" rel="noopener noreferrer">CC BY 4.0</a>. {approved.attribution.edits}</p>
+      : <p className={styles.credit}>{approved.credit}</p>}
     <p className={styles.help}>{approved.reviewLabel}. {approved.territoryLabel}. About {Math.ceil(approved.durationMs / 1000)} seconds.</p>
     <div className={styles.controls}>
       {state.status !== 'ready' && <button type="button" onClick={load} disabled={state.status === 'loading'}>{state.status === 'loading' ? 'Loading reviewed files…' : state.status === 'error' ? 'Try loading again' : `Load ${approved.kind} and captions`}</button>}
@@ -52,9 +56,10 @@ function ReviewedClipPlayer({ clip: approved }: { clip: PublicMediaClip }) {
     </div>
     <p role="status" aria-live="polite">{state.status === 'idle' ? 'No media has been loaded. Loading uses no account cookies.' : state.status === 'error' ? 'The reviewed files could not be verified. Nothing is playing.' : state.status === 'ready' ? 'Files verified. Use the player controls to start; playback does not start automatically.' : 'Checking the exact media and caption files…'}</p>
     {state.status === 'ready' && (approved.kind === 'video'
-      ? <video className={styles.player} src={state.media} controls preload="none" crossOrigin="anonymous" playsInline onError={() => { unload(); setState({ status: 'error' }); }}><track src={state.captions} kind="captions" srcLang={approved.captions.language} label="English captions" default />Your browser cannot play this video. Read the transcript below.</video>
+      ? <video className={styles.player} src={state.media} controls preload="none" crossOrigin="anonymous" playsInline onError={() => { unload(); setState({ status: 'error' }); }}><track src={state.captions} kind="captions" srcLang={approved.captions.language} label="English captions" default={approved.attribution?.captionPresentation !== 'embedded-text'} />Your browser cannot play this video. Read the transcript below.</video>
       : <audio className={styles.player} src={state.media} controls preload="none" crossOrigin="anonymous" onError={() => { unload(); setState({ status: 'error' }); }}><track src={state.captions} kind="captions" srcLang={approved.captions.language} label="English captions" />Your browser cannot play this audio. Read the transcript below.</audio>)}
     <details><summary>Read the transcript</summary><p className={styles.transcript}>{approved.transcript}</p></details>
-    {approved.sourcePage && <a href={approved.sourcePage} target="_blank" rel="noopener noreferrer">Original source and credits</a>}
+    {approved.sourcePage && !approved.attribution && <a href={approved.sourcePage} target="_blank" rel="noopener noreferrer">Original source and credits</a>}
+    {approved.attribution && <div className={styles.controls}><a href={`/clips#${approved.id}`}>Link to this Reel</a><Link href="/circles" prefetch={false}>Discuss in a Circle</Link></div>}
   </article>;
 }
