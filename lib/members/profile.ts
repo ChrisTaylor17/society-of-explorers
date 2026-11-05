@@ -74,3 +74,18 @@ export function parsePublicMemberProfile(value: unknown): PublicMemberProfile | 
     discipline: value.discipline as string | null, skills: [...skills], project_description: value.project_description as string | null,
     seeking: value.seeking as string | null, philosophy: value.philosophy as string | null };
 }
+
+/** The public HTTP projection has no visibility or revision column. Only the
+ * explicit public endpoint may supply this envelope; callers still bind its ID
+ * to the requested member. This does not infer publication from a raw row. */
+export function parsePublicMemberProfileResponse(value: unknown): PublicMemberProfile | null {
+  if (!record(value) || !exactKeys(value, ['profile']) || !record(value.profile)) return null;
+  const p = value.profile;
+  if (!exactKeys(p, ['id', 'display_name', 'bio', 'discipline', 'skills', 'project_description', 'seeking', 'philosophy']) ||
+      !isProfileMemberId(p.id) || !validField('displayName', p.display_name) || !validSkills(p.skills)) return null;
+  const pairs = [['bio', 'bio'], ['discipline', 'discipline'], ['project_description', 'projectDescription'], ['seeking', 'seeking'], ['philosophy', 'philosophy']] as const;
+  for (const [column, field] of pairs) if (p[column] !== null && !validField(field, p[column])) return null;
+  return { id: p.id.toLowerCase(), display_name: p.display_name as string, bio: p.bio as string | null,
+    discipline: p.discipline as string | null, skills: [...p.skills], project_description: p.project_description as string | null,
+    seeking: p.seeking as string | null, philosophy: p.philosophy as string | null };
+}

@@ -1,38 +1,75 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CircleScreen } from './CircleScreen';
 import { ContributionsScreen } from './ContributionsScreen';
 import { CircleDirectoryScreen } from './CircleDirectoryScreen';
+import { MemberProfileScreen } from './MemberProfileScreen';
+import { createMemberProfile, type MemberProfile } from '../shared/member-profile';
 import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { createMemberAccountSession } from '../shared/account-session';
 
+/** Retained by the owned sign-in screen across temporary member-view unmounts.
+ * It contains no active authority after disconnect/stop; recovery requires new
+ * provider and canonical member checks before a profile can be loaded again. */
+export function createMemberViewConnection(config: ExistingMemberAccountConfig, connectivity?: NativeConnectivityPort) {
+  const { auth, verificationTimeoutMs, ...host } = config;
+  const binding = createVerifiedSupabaseCircleOwner(auth, { timeoutMs: verificationTimeoutMs });
+  const account = createMemberAccountSession({ owner: binding.owner, origin: host.origin, transport: host.transport,
+    timeoutMs: host.timeoutMs, initialOnline: false });
+  let profile: { memberId: string; session: MemberProfile } | null = null, closed = false;
+  const closeProfile = () => { profile?.session.close(); profile = null; };
+  return { config, binding, account, host: { ...host, owner: binding.owner }, connectivity,
+    profile: () => profile,
+    discardOtherProfile(memberId: string) { if (profile && profile.memberId !== memberId) closeProfile(); },
+    openProfile(memberId: string) {
+      if (closed || !host.profileTransport) throw Error('Profile connection unavailable');
+      if (profile?.memberId !== memberId) {
+        closeProfile();
+        profile = { memberId, session: createMemberProfile({ origin: host.origin, memberId, owner: binding.owner,
+          profileTransport: host.profileTransport, publicProfileTransport: host.publicProfileTransport, timeoutMs: host.timeoutMs, initialOnline: false }) };
+      }
+    },
+    disconnect(discardProfile = false) { if (discardProfile) closeProfile(); else profile?.session.disconnect(); account.disconnect(); binding.stop(); },
+    close() { if (closed) return; closed = true; closeProfile(); account.close(); binding.stop(); } };
+}
+export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>;
+
 /** Uses the app's existing verified account. Member setup is deliberate; this
  * screen does not create an auth client, sign in or choose an account. */
-export function MemberCircleScreen({ config, connectivity, onClose }: { config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; onClose(): void }) {
+export function MemberCircleScreen({ config, connectivity, retained, onClose }: {
+  config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection; onClose(): void;
+}) {
   const connection = useMemo(() => {
     try {
-      const { auth, verificationTimeoutMs, ...host } = config;
-      const binding = createVerifiedSupabaseCircleOwner(auth, { timeoutMs: verificationTimeoutMs });
-      const account = createMemberAccountSession({ owner: binding.owner, origin: host.origin, transport: host.transport,
-        timeoutMs: host.timeoutMs, initialOnline: false });
-      return { binding, account, host: { ...host, owner: binding.owner }, connectivity };
+      if (retained) return retained.config === config && retained.connectivity === connectivity ? retained : null;
+      return createMemberViewConnection(config, connectivity);
     } catch { return null; }
-  }, [config, connectivity]);
+  }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'discover' | 'mine' } | null>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'discover' | 'mine' | 'profile' } | null>(null);
+  const [profileNotice, setProfileNotice] = useState('');
+  const [viewEpoch, setViewEpoch] = useState(0);
+  const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const model = snapshot.connection === connection ? snapshot.model : connection?.binding.model();
   const account = accountSnapshot.connection === connection ? accountSnapshot.model : connection?.account.model();
   useLayoutEffect(() => {
-    if (!connection) return;
+    const life = viewLife.current;
+    life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
+    if (!connection) return () => { life.mounted = false; life.enabled = false; ++life.epoch; };
     const binding = connection.binding;
-    const off = binding.subscribe(model => { setSnapshot({ connection, model }); if (model.phase !== 'ready') setEntered(null); });
-    const offAccount = connection.account.subscribe(model => { setAccountSnapshot({ connection, model }); if (!model.canOpenCircle) setEntered(null); });
+    const off = binding.subscribe(model => { setViewEpoch(++life.epoch); setSnapshot({ connection, model }); if (model.phase !== 'ready') setEntered(null); });
+    const offAccount = connection.account.subscribe(model => {
+      setViewEpoch(++life.epoch);
+      if (model.member) connection.discardOtherProfile(model.member.id);
+      setAccountSnapshot({ connection, model }); if (!model.canOpenCircle) setEntered(null);
+    });
     let appActive = false, blurred = false, online = false, mounted = true;
     const sync = () => {
       if (!mounted) return;
       const enabled = appActive && !blurred && online;
+      if (life.enabled !== enabled) { life.enabled = enabled; setViewEpoch(++life.epoch); }
       connection.account.activity(enabled); connection.account.connectivity(online); binding.activity(enabled);
       if (!enabled) setEntered(null);
     };
@@ -47,49 +84,78 @@ export function MemberCircleScreen({ config, connectivity, onClose }: { config: 
     appActive = AppState.currentState === 'active'; sync();
     connection.account.connect();
     void binding.start();
-    return () => { mounted = false; connection.account.disconnect(); binding.stop(); offConnectivity(); offAccount(); off(); change.remove(); blur?.remove(); focus?.remove(); };
-  }, [connection]);
-  const close = () => { connection?.account.close(); connection?.binding.stop(); setEntered(null); onClose(); };
+    return () => {
+      mounted = false; life.mounted = false; life.enabled = false; ++life.epoch;
+      offAccount(); off();
+      connection.disconnect(retained !== connection);
+      offConnectivity(); change.remove(); blur?.remove(); focus?.remove();
+    };
+  }, [connection, retained]);
+  // Retiring a child also retires callbacks retained by that child, even when
+  // the account connection remains available for a later explicit re-entry.
+  useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [connection, entered]);
+  const act = (work: () => void, allowInactive = false) => {
+    const life = viewLife.current;
+    if (life.mounted && life.epoch === viewEpoch && (allowInactive || life.enabled)) work();
+  };
+  const close = () => act(() => { connection?.close(); setEntered(null); onClose(); }, true);
+  const back = () => act(() => setEntered(null), true);
+  const openProfile = () => act(() => {
+    const current = connection?.account.model();
+    if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready' || !connection.host.profileTransport) return;
+    try {
+      connection.openProfile(current.member.id);
+      setProfileNotice(''); setEntered({ connection, destination: 'profile' });
+    } catch { setProfileNotice('Profile editing is unavailable. Check your member account and try again.'); }
+  });
+  const profileConnection = connection?.profile();
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
+    if (entered.destination === 'profile' && profileConnection && profileConnection.memberId === account.member?.id) {
+      return <MemberProfileScreen session={profileConnection.session} connectivity={connection.connectivity}
+        publicAvailable={Boolean(connection.host.publicProfileTransport)} onBack={back} onClose={close}/>;
+    }
     if (entered.destination === 'discover' || entered.destination === 'mine') return <CircleDirectoryScreen config={connection.host} connectivity={connection.connectivity}
-      initialMode={entered.destination} onBack={() => setEntered(null)} onClose={close}/>;
+      initialMode={entered.destination} onBack={back} onClose={close}/>;
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
-      onBack={() => setEntered(null)} onClose={close}/>;
+      onBack={back} onClose={close}/>;
     if (connection.host.circleId) return <CircleScreen config={{ ...connection.host, circleId: connection.host.circleId }} connectivity={connection.connectivity} onClose={close}/>;
   }
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Your member account</Text>
-    <Text style={styles.copy}>Check your member account to find a Circle, return to your groups or review your contributions.</Text>
+    <Text style={styles.copy}>Check your member account to manage your profile, find a Circle, return to your groups or review your contributions.</Text>
     <View accessibilityLiveRegion="polite">
       <Text style={styles.copy}>{model?.phase === 'ready' ? 'Existing sign-in verified. Check your member account to continue.'
         : model?.message ?? 'The existing account connection is unavailable. Return through the signed-in app.'}</Text>
       <Text style={styles.copy}>{account?.message ?? 'No member account has been checked.'}</Text>
     </View>
     <Action label={model?.busy ? 'Checking existing sign-in…' : 'Check existing sign-in'} disabled={!model?.canCheck || account?.busy}
-      onPress={() => { setEntered(null); void connection?.binding.check(); }}/>
+      onPress={() => act(() => { setEntered(null); void connection?.binding.check(); })}/>
     <Action label={account?.phase === 'checking' ? 'Checking my member account…' : 'Check my member account'} disabled={!account?.canCheck}
-      onPress={() => { setEntered(null); void connection?.account.check(); }}/>
+      onPress={() => act(() => { setEntered(null); void connection?.account.check(); })}/>
     {account?.canConfirm || account?.confirmed ? <View style={styles.setup}>
       <Text style={styles.copy}>{account.phase === 'unknown'
         ? 'An earlier setup may have completed. Retry only if you want to check or set up this same member record again.'
         : 'Set up a Society of Explorers member record for this signed-in account. This does not join a Circle or publish a profile.'}</Text>
       <Pressable accessibilityRole="checkbox" accessibilityLabel="I want to set up a member record for this signed-in account"
         accessibilityState={{ checked: Boolean(account.confirmed), disabled: !account.canConfirm }} disabled={!account.canConfirm}
-        onPress={() => connection?.account.confirm(!account.confirmed)} style={[styles.button, !account.canConfirm && styles.disabled]}>
+        onPress={() => act(() => connection?.account.confirm(!account.confirmed))} style={[styles.button, !account.canConfirm && styles.disabled]}>
         <Text style={styles.copy}>{account.confirmed ? '☑ ' : '☐ '}I want to set up a member record for this signed-in account.</Text>
       </Pressable>
       <Action label={account.phase === 'preparing' ? 'Setting up my member account…' : account.phase === 'unknown' ? 'Retry member setup' : 'Set up my member account'} disabled={!account.canPrepare}
-        onPress={() => { setEntered(null); void connection?.account.prepare(); }}/>
+        onPress={() => act(() => { setEntered(null); void connection?.account.prepare(); })}/>
     </View> : null}
+    <Action label="My profile" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.profileTransport} onPress={openProfile}/>
+    {!connection?.host.profileTransport ? <Text style={styles.copy}>Profile editing is unavailable in this connection.</Text> : null}
+    {profileNotice ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{profileNotice}</Text> : null}
     <Action label="Discover Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'discover' }); }}/>
+      onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'discover' }); })}/>
     <Action label="My Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'mine' }); }}/>
+      onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'mine' }); })}/>
     {connection?.host.circleId ? <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); }}/> : null}
+      onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); })}/> : null}
     <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'contributions' }); }}/>
+      onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'contributions' }); })}/>
     <Action label="Close member view" onPress={close}/>
   </ScrollView></SafeAreaView>;
 }

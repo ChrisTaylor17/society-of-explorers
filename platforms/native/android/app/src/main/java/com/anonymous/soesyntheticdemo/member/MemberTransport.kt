@@ -188,6 +188,9 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     require(url.scheme == "https" && origin == config.origin && url.username.isEmpty() && url.password.isEmpty()
       && url.fragment == null && url.toString() == input.url)
     if (url.encodedPath == "/api/great-books/passage") { validatePassageQuery(url.encodedQuery); return }
+    if (Regex("/api/explorer/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").matches(url.encodedPath)) {
+      require(url.encodedQuery == null); return
+    }
     require(url.encodedPath == "/api/circles")
     val order = listOf("book", "edition", "from", "to", "q", "city", "format", "open", "sort", "limit", "cursor")
     val query = linkedMapOf<String, String>()
@@ -249,6 +252,10 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     val participation = Regex("/api/circles/([0-9a-fA-F-]{36})/(join|leave)").matchEntire(url.encodedPath)
     if (url.encodedPath == "/api/auth/member") { require(input.method == "GET" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/auth/ensure-member") { require(input.method == "POST" && url.encodedQuery == null) }
+    else if (url.encodedPath == "/api/members/profile") {
+      require(url.encodedQuery == null)
+      if (input.method == "POST") validateProfileBody(input.body ?: throw IllegalArgumentException())
+    }
     else if (url.encodedPath == "/api/circles/contributions") {
       require(input.method == "GET")
       val query = mutableMapOf<String, String>()
@@ -293,7 +300,57 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
       query["limit"]?.let { require(Regex("[1-9][0-9]*").matches(it) && (it.toIntOrNull() ?: 0) in 1..25) }
     }
     if (input.method == "GET") require(input.body == null)
-    else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= 16384)
+    else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= if (url.encodedPath == "/api/members/profile") 65536 else 16384)
+  }
+  /** Exact full profile CAS envelope. Rebuilding the canonical bytes rejects
+   * duplicate keys, parser coercions, extra fields and alternate encodings. */
+  private fun validateProfileBody(body: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 65536)
+    val value = JSONObject(body)
+    require(value.length() == 3 && value.has("expectedMemberId") && value.has("expectedRevision") && value.has("patch"))
+    val member = value.get("expectedMemberId"); val revision = value.get("expectedRevision")
+    require(member is String && uuid(member) && member == member.lowercase())
+    require(revision is Int || revision is Long)
+    val version = (revision as Number).toLong(); require(version in 0..9007199254740991L)
+    val patch = value.get("patch"); require(patch is JSONObject && patch.length() == 8)
+    val fields = listOf("displayName", "bio", "discipline", "skills", "projectDescription", "seeking", "philosophy", "visibility")
+    require(fields.all { patch.has(it) })
+    val serialized = fields.map { key ->
+      val entry = patch.get(key)
+      val encoded = if (key == "skills") {
+        require(entry is org.json.JSONArray && entry.length() <= 40)
+        (0 until entry.length()).map { index ->
+          val skill = entry.get(index); require(skill is String)
+          profileText(skill, 100, true, true); profileQuote(skill)
+        }.joinToString(",", "[", "]")
+      } else {
+        require(entry is String)
+        if (key == "visibility") require(entry == "private" || entry == "public")
+        else profileText(entry, when (key) { "displayName" -> 200; "discipline" -> 100; "seeking" -> 1000; else -> 2000 }, key == "displayName" || key == "discipline", key == "displayName")
+        profileQuote(entry)
+      }
+      profileQuote(key) + ":" + encoded
+    }.joinToString(",", "{", "}")
+    require(body == "{\"expectedMemberId\":" + profileQuote(member) + ",\"expectedRevision\":" + version + ",\"patch\":" + serialized + "}")
+  }
+  private fun profileText(value: String, maximum: Int, singleLine: Boolean, nonempty: Boolean) {
+    require(value.length <= maximum && (!nonempty || value.isNotEmpty()))
+    // ECMAScript trim characters, matching parseProfileMutation exactly.
+    require(value == value.trim { it in '\u0009'..'\u000d' || it == '\u0020' || it == '\u00a0' || it == '\u1680' || it in '\u2000'..'\u200a' || it == '\u2028' || it == '\u2029' || it == '\u202f' || it == '\u205f' || it == '\u3000' || it == '\ufeff' })
+    for (index in value.indices) {
+      val c = value[index]
+      require(c.code != 127 && (c.code >= 32 || !singleLine && c in listOf('\t', '\n', '\r')))
+      if (c in '\ud800'..'\udbff') require(index + 1 < value.length && value[index + 1] in '\udc00'..'\udfff')
+      if (c in '\udc00'..'\udfff') require(index > 0 && value[index - 1] in '\ud800'..'\udbff')
+    }
+  }
+  private fun profileQuote(value: String): String = buildString {
+    append('"')
+    for (c in value) when (c) {
+      '"' -> append("\\\""); '\\' -> append("\\\\"); '\t' -> append("\\t"); '\n' -> append("\\n"); '\r' -> append("\\r")
+      else -> append(c)
+    }
+    append('"')
   }
   companion object {
     private const val MAX_RESPONSE = 1048576

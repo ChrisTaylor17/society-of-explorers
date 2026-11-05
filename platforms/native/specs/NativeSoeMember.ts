@@ -4,7 +4,7 @@ import { TurboModuleRegistry } from 'react-native';
 export type MemberCapabilities = Readonly<{
   version: number; origin: string; storageKey: string; redirectPolicy: string;
   storagePolicy: string; storageGeneration: string; requestIdPolicy?: string;
-  authPolicy?: string; providerOrigin?: string; publishableKey?: string; publicPolicy?: string; readingPolicy?: string;
+  authPolicy?: string; providerOrigin?: string; publishableKey?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; publicProfilePolicy?: string;
 }>;
 export type MemberRequest = Readonly<{ url: string; method: string; bearer: string; body?: string }>;
 export type AuthRequest = Readonly<{ url: string; method: string; bearer?: string; body?: string }>;

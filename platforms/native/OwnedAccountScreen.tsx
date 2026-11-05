@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
-import { MemberCircleScreen } from './MemberCircleScreen';
+import { MemberCircleScreen, createMemberViewConnection, type MemberViewConnection } from './MemberCircleScreen';
 import type { createOwnedNativeAuth } from './src/auth/owned-auth';
 import { prepareAndroidOwnedAccount } from './src/auth/android-owned-account';
 import type { ExistingMemberAccountConfig } from './src/circles/verified-member-session';
@@ -23,8 +23,11 @@ export function OwnedAccountScreen({ prepare = prepareAndroidOwnedAccount }: { p
   const [notice, setNotice] = useState('Connect to sign in with an existing account or restore a saved sign-in.');
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');
   const [entered, setEntered] = useState<OwnedAccountConnection | null>(null);
+  const [memberProblem, setMemberProblem] = useState('');
+  const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
   const current = useRef<OwnedAccountConnection | null>(null);
+  const memberView = useRef<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const clearFields = () => { setEmail(''); setPassword(''); };
   const m = snapshot?.connection === connection ? snapshot?.model : connection?.controller.model();
 
@@ -43,6 +46,7 @@ export function OwnedAccountScreen({ prepare = prepareAndroidOwnedAccount }: { p
     sync();
     return () => {
       mounted.current = false; active.current = false; ++attempts.current;
+      const oldMember = memberView.current; memberView.current = null; oldMember?.view.close();
       const old = current.current; current.current = null; old?.close();
       change.remove(); blur?.remove(); focus?.remove();
     };
@@ -60,7 +64,10 @@ export function OwnedAccountScreen({ prepare = prepareAndroidOwnedAccount }: { p
       controller.connectivity(state === 'online');
       if (state !== 'online') { clearFields(); setEntered(null); }
     });
-    return () => { offConnectivity(); off(); connection.close(); };
+    return () => {
+      if (memberView.current?.connection === connection) { const oldMember = memberView.current; memberView.current = null; oldMember.view.close(); }
+      offConnectivity(); off(); connection.close();
+    };
   }, [connection]);
 
   async function connect() {
@@ -87,6 +94,8 @@ export function OwnedAccountScreen({ prepare = prepareAndroidOwnedAccount }: { p
   }
   function close() {
     ++attempt.current; setConnecting(false); clearFields(); setEntered(null);
+    const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
+    setMemberContext(null);
     const old = current.current; current.current = null; old?.close(); setConnection(null); setSnapshot(null);
     setNotice('Account view closed. A saved sign-in may remain on this device. Connect to restore it or clear it.');
   }
@@ -100,16 +109,33 @@ export function OwnedAccountScreen({ prepare = prepareAndroidOwnedAccount }: { p
   function clearDevice() {
     const value = current.current;
     if (!value?.controller.model().canClear) return;
-    clearFields(); setEntered(null); void value.controller.clearDeviceSession();
+    clearFields(); setEntered(null);
+    const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
+    setMemberContext(null);
+    void value.controller.clearDeviceSession();
   }
-  if (connection && entered === connection && m?.ready) return <MemberCircleScreen config={connection.config}
-    connectivity={connection.connectivity} onClose={() => setEntered(null)}/>;
+  function enterMember() {
+    if (!connection?.controller.model().ready) return;
+    try {
+      if (memberView.current?.connection !== connection) {
+        memberView.current?.view.close();
+        memberView.current = { connection, view: createMemberViewConnection(connection.config, connection.connectivity) };
+      }
+      clearFields(); setMemberProblem(''); setMemberContext(memberView.current); setEntered(connection);
+    } catch { setMemberProblem('The member account view is unavailable. Close sign-in and connect again.'); }
+  }
+  if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
+    retained={memberContext.view} connectivity={connection.connectivity} onClose={() => {
+      if (current.current !== connection || memberView.current !== memberContext) return;
+      const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberContext(null); setEntered(null);
+    }}/>;
 
   return <SafeAreaView style={styles.screen}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Your account, on this device</Text>
     <Text style={styles.copy}>Read deeply. Share thoughtfully. A Great Books community rooted in Christian and American traditions, open to everyone willing to explore in good faith.</Text>
     <Text accessibilityLiveRegion="polite" style={styles.copy}>{m?.message ?? notice}</Text>
+    {memberProblem ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{memberProblem}</Text> : null}
     {!connection ? <Action label={connecting ? 'Connecting…' : 'Connect my account'} disabled={connecting} onPress={() => void connect()}/> : <>
       <Text style={styles.copy}>Use your existing account email and password. These details are sent to Supabase to sign in.</Text>
       <Text style={styles.label}>Email</Text>
@@ -120,9 +146,7 @@ export function OwnedAccountScreen({ prepare = prepareAndroidOwnedAccount }: { p
         secureTextEntry autoCapitalize="none" autoCorrect={false} autoComplete="current-password" textContentType="password" maxLength={1024} style={styles.input}/>
       <Action label="Sign in" disabled={!m?.canSignIn || !email.trim() || !password} onPress={signIn}/>
       <Action label="Restore saved sign-in" disabled={!m?.canResume} onPress={() => { clearFields(); setEntered(null); void connection.controller.resume(); }}/>
-      <Action label="Continue to my member account" disabled={!m?.ready} onPress={() => {
-        if (connection.controller.model().ready) { clearFields(); setEntered(connection); }
-      }}/>
+      <Action label="Continue to my member account" disabled={!m?.ready} onPress={enterMember}/>
       <Text style={styles.note}>Clearing this device removes its saved sign-in. The online session may remain valid until it expires; your account is kept.</Text>
       <Action label="Clear sign-in from this device" disabled={!m?.canClear} onPress={clearDevice}/>
       <Action label="Close sign-in" onPress={close}/>

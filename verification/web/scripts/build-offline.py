@@ -1,6 +1,10 @@
 from pathlib import Path
-import subprocess,os,json,time,signal,hashlib,sys
+import subprocess,os,json,time,signal,hashlib,sys,re
 ROOT=Path(__file__).resolve().parents[1];APP=ROOT.parents[1]
+prefix_args=[arg.split('=',1)[1] for arg in sys.argv[1:] if arg.startswith('--evidence-prefix=')]
+assert len(prefix_args)<=1, 'Supply at most one evidence prefix'
+prefix=prefix_args[0] if prefix_args else ''
+assert not prefix or re.fullmatch(r'[a-z0-9][a-z0-9-]{0,63}-',prefix), 'Use a bounded filename prefix ending in a hyphen'
 def materialized_bytes(file):
  info=file.stat()
  if info.st_size and not info.st_blocks:
@@ -23,7 +27,7 @@ def source_snapshot():
  return dict(sorted(result.items()))
 
 before=source_snapshot()
-(ROOT/'evidence/build-source-sha256.json').write_text(json.dumps(before,indent=2)+'\n')
+(ROOT/('evidence/'+prefix+'build-source-sha256.json')).write_text(json.dumps(before,indent=2)+'\n')
 assert not any((APP/name).exists() for name in ['.env','.env.local','.env.production','.env.production.local']), 'Runtime dotenv must not enter an offline build'
 env={k:os.environ[k] for k in ['PATH','HOME','USER','SHELL','TMPDIR','LANG','LC_ALL'] if k in os.environ}
 env.update({'CI':'1','NEXT_TELEMETRY_DISABLED':'1','NODE_OPTIONS':'--require '+str(ROOT/'scripts/deny-build-network.cjs'),'NO_COLOR':'1'})
@@ -39,12 +43,12 @@ except subprocess.TimeoutExpired:
  try:output=p.communicate(timeout=5)[0]
  except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);output=p.communicate()[0]
  status='owned_build_timed_out_and_terminated'
-(ROOT/'evidence/next-build.log').write_text(output)
+(ROOT/('evidence/'+prefix+'next-build.log')).write_text(output)
 after=source_snapshot()
 source_changed=before!=after
 if source_changed:status='source_changed_during_build'
 
-report={'argv':args,'cwd':str(APP),'status':status,'exitCode':p.returncode,'seconds':round(time.time()-start,2),'externalNetworkBlocked':True,'providerCredentialsNotPassed':True,'compiler':'webpack' if webpack else 'turbopack','publicBuildConfig':'invalid offline placeholders' if fixture else 'not supplied','privateOrIssuedCredentialsSupplied':False,'deploymentOrServerLaunch':False,'sourceFiles':len(before),'sourceSha256':hashlib.sha256(json.dumps(before,separators=(',',':')).encode()).hexdigest(),'sourceUnchangedDuringBuild':not source_changed,'log':'evidence/next-build.log'}
-(ROOT/'evidence/next-build.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)
+report={'argv':args,'cwd':str(APP),'status':status,'exitCode':p.returncode,'seconds':round(time.time()-start,2),'externalNetworkBlocked':True,'providerCredentialsNotPassed':True,'compiler':'webpack' if webpack else 'turbopack','publicBuildConfig':'invalid offline placeholders' if fixture else 'not supplied','privateOrIssuedCredentialsSupplied':False,'deploymentOrServerLaunch':False,'sourceFiles':len(before),'sourceSha256':hashlib.sha256(json.dumps(before,separators=(',',':')).encode()).hexdigest(),'sourceUnchangedDuringBuild':not source_changed,'log':'evidence/'+prefix+'next-build.log'}
+(ROOT/('evidence/'+prefix+'next-build.json')).write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)
 
 raise SystemExit(0 if status == "completed" and p.returncode == 0 else 1)

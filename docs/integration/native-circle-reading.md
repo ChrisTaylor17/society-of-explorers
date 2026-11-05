@@ -1,6 +1,6 @@
 # Native Circle reading
 
-This source milestone extends `d8e7961ceab1c5d66a41a33c04fd9f2701ca356a`. Production clearance remains false. The canonical checkout is `/Users/christaylor/Documents/Codex/soe-release` on `codex/soe-first-release`.
+This historical source milestone was committed at `a381d1710425d4cc974716700e95b7eb83ed0550`, extending `d8e7961ceab1c5d66a41a33c04fd9f2701ca356a`. Production clearance remains false. The canonical checkout is `/Users/christaylor/Documents/Codex/soe-release` on `codex/soe-first-release`. See the [current profile milestone](native-member-profile.md) for subsequent account-screen changes and current reading browser regression evidence.
 
 The registered app now opens agreed reading from a selected Circle. Each explicit **Read meeting selection** or **Read current selection** rechecks current Circle detail and compares the exact book, edition and inclusive range before opening the reader. A changed delivered plan requires another deliberate selection. Current SQL separately makes reading programs immutable. A nonmember may read a publicly available selection; this grants no membership or discussion authority.
 
@@ -14,7 +14,7 @@ Background, blur, unknown/offline connectivity, account retirement and closure c
 
 ## Verification and limits
 
-The [verification receipt](native-circle-reading-verification.json) binds current source, cached runtimes and local evidence. Controller checks cover all eight metadata editions, inclusive ranges, exact coordinates, tampering, deadlines, unsupported blocks, ownership and lifecycle retirement. Native policy checks exercise the anonymous channel and its composition with existing account/discovery/member paths. Existing directory, platform and actual cached AuthClient regression suites remain separate groups; overlapping Android adapter cases are not unique additional tests.
+The [historical verification receipt](native-circle-reading-verification.json) binds that checkpoint's source, cached runtimes and archived local evidence. Controller checks cover all eight metadata editions, inclusive ranges, exact coordinates, tampering, deadlines, unsupported blocks, ownership and lifecycle retirement. Native policy checks exercise the anonymous channel and its composition with existing account/discovery/member paths. Existing directory, platform and actual cached AuthClient regression suites remain separate groups; overlapping Android adapter cases are not unique additional tests.
 
 The composed browser harness mounts the actual registered App, cached official AuthClient and native JavaScript ports. Canonical bearer/detail/passage handlers, source files and workflow SQL execute locally with disposable PGlite. Passage content is returned by the real resolver, rather than substituted text. Provider delivery, server SDK identity responses, native OS services and React Native primitives remain explicit test doubles. The DOM text adapter preserves line breaks and wraps long URLs; its screenshots do not establish React Native layout or accessibility acceptance.
 
