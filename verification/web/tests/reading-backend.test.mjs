@@ -1,23 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, copyFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, copyFile, rm, symlink, lstat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { offlineApp } from './support/offline-app.mjs';
 
 const source = path.resolve('../..');
+async function materialized(file){const s=await lstat(file);assert(s.isFile()&&!s.isSymbolicLink()&&(!s.size||s.blocks),'Refuse unavailable source '+file);}
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const actor = '11111111-1111-4111-8111-111111111111', other = '22222222-2222-4222-8222-222222222222';
-const files = ['package.json','lib/books/catalog.ts','lib/books/bookmarks.ts','lib/books/editions.ts','lib/http/routeError.ts','tests/security/fakes.ts',
-  'lib/circles/moderation-server.ts','lib/circles/moderation.ts','lib/circles/http.ts','lib/circles/report.ts','lib/circles/server.ts','lib/circles/path.ts','lib/circles/schedule.ts','lib/circles/reading-program.ts','lib/circles/reading-program-editions.json','lib/ids/uuid.ts','lib/rateLimit.ts',
+const files = ['package.json','lib/books/catalog.ts','lib/books/bookmarks.ts','lib/books/reading-progress.ts','lib/books/editions.ts','lib/http/routeError.ts','tests/security/fakes.ts',
+  'lib/circles/moderation-server.ts','lib/circles/moderation.ts','lib/circles/review-coverage.ts','lib/circles/http.ts','lib/circles/report.ts','lib/circles/server.ts','lib/circles/path.ts','lib/circles/schedule.ts','lib/circles/reading-program.ts','lib/circles/reading-program-editions.json','lib/ids/uuid.ts','lib/rateLimit.ts',
   'app/api/great-books/text/[bookId]/route.ts','app/api/great-books/edition/[bookId]/route.ts',
   'app/api/great-books/edition/[bookId]/assets/[...asset]/route.ts','app/api/great-books/edition/[bookId]/download/route.ts','app/api/great-books/progress/route.ts'];
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(tmpdir(), 'soe-reading-backend-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  for (const file of files) { const target = path.join(root,file); await mkdir(path.dirname(target),{recursive:true}); await copyFile(path.join(source,file),target); }
+  for (const file of files) { await materialized(path.join(source,file)); const target = path.join(root,file); await mkdir(path.dirname(target),{recursive:true}); await copyFile(path.join(source,file),target); }
   const directory = path.join(root,'content/great-books/republic'); await mkdir(path.join(directory,'assets/images'),{recursive:true});
   const html = Buffer.from('<!doctype html><html lang="en"><body><h1 id="title" data-reading-index="0">Synthetic Republic</h1><p data-reading-index="1">Offline fixture.</p><footer id="pg-footer">Fixture license notice</footer></body></html>');
   const image = Buffer.from([137,80,78,71,13,10,26,10]); const archive = Buffer.from('PK\x03\x04SYNTHETIC_OFFLINE_ARCHIVE');
@@ -29,12 +30,24 @@ async function fixture(t) {
   const saveManifest = () => writeFile(path.join(directory,'manifest.json'),JSON.stringify(manifest));
   await saveManifest(); await writeFile(path.join(directory,'reader.html'),html); await writeFile(path.join(directory,'original.zip'),archive); await writeFile(path.join(directory,'assets/images/fixture.png'),image);
   const app = offlineApp({root}); let auth=null, adminCalls=0;
+  // This source-integrity fixture checks the HTTP wire only; actual CAS, grants,
+  // contention and tombstones execute in saved-reading-backend.test.mjs.
+  app.fakes.db.rpc = async (name, args) => {
+    assert.equal(name,'soe_reading_progress_update');
+    if(app.fakes.db.networkDown)return {data:null,error:{code:'SYNTHETIC_FAILURE'}};
+    const rows=app.fakes.db.rows('reading_progress');let row=rows.find(x=>x.member_id===args.p_actor&&x.book_id===args.p_book_id);
+    if((row?.progress_revision??0)!==args.p_expected_revision)return{data:null,error:{code:'PT409'}};
+    if(!row){row={member_id:args.p_actor,book_id:args.p_book_id,progress_revision:0};rows.push(row);}
+    Object.assign(row,{section_id:'soe-reading:v1:'+args.p_edition_id+':'+args.p_block_index,paragraph_index:0,completed:args.p_completed,updated_at:new Date().toISOString(),progress_removed:false,progress_revision:row.progress_revision+1});
+    return {data:{...row},error:null};
+  };
   app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>auth}));
   app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>{adminCalls++; return app.fakes.db;}}));
   const call = async (route,{bookId='republic',asset=['images','fixture.png'],body,query='',headers}={}) => {
-    const module = app.load(`app/api/great-books/${route}/route.ts`);
-    const req=app.fakes.makeReq(body,{url:`http://localhost/api/great-books/${route}${query}`,headers:{...(body===undefined?{}:{origin:'http://localhost'}),...headers}});
-    return (body===undefined?module.GET:module.POST)(req,{params:Promise.resolve({bookId,asset})});
+    const handler = app.load(`app/api/great-books/${route}/route.ts`);
+    const req=new Request(`http://localhost/api/great-books/${route}${query}`,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{origin:'http://localhost'}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)})});
+    Object.defineProperties(req,{nextUrl:{value:new URL(req.url)},cookies:{value:{get:()=>undefined}}});
+    return (body===undefined?handler.GET:handler.POST)(req,{params:Promise.resolve({bookId,asset})});
   };
   return {root,directory,manifest,saveManifest,html,image,archive,app,call,setAuth:(value)=>{auth=value;},adminCalls:()=>adminCalls};
 }
@@ -140,22 +153,22 @@ test('private progress refuses unauthenticated/forged actor and old numeric POST
   assert.equal((await f.call('progress',{query:'?bookId=republic'})).status,401);
   assert.equal((await f.call('progress',{body:{bookId:'republic',editionId:f.manifest.editionId,blockIndex:1}})).status,401);
   f.setAuth({memberId:actor});
-  assert.equal((await f.call('progress',{body:{memberId:other,bookId:'republic',editionId:f.manifest.editionId,blockIndex:1}})).status,403);
+  assert.equal((await f.call('progress',{body:{expectedMemberId:other,expectedRevision:0,action:'save',completed:false,bookId:'republic',editionId:f.manifest.editionId,blockIndex:1}})).status,409);
   assert.equal((await f.call('progress',{body:{bookId:'republic',sectionId:'1',paragraphIndex:0}})).status,400);
   assert.equal(f.adminCalls(),0);
 });
 
 test('explicit valid bookmark writes only canonical actor/versioned locator and returns confirmed receipt',async t=>{
   const f=await fixture(t); f.setAuth({memberId:actor});
-  const response=await f.call('progress',{body:{bookId:'republic',editionId:f.manifest.editionId,blockIndex:1,completed:true}});
-  assert.equal(response.status,200); assert.equal((await response.json()).bookmark.status,'current');
+  const response=await f.call('progress',{body:{expectedMemberId:actor,expectedRevision:0,action:'save',bookId:'republic',editionId:f.manifest.editionId,blockIndex:1,completed:true}});
+  assert.equal(response.status,200); assert.equal((await response.json()).progress[0].bookmark.status,'current');
   const row=f.app.fakes.db.rows('reading_progress')[0];
   assert.equal(row.member_id,actor); assert.equal(row.section_id,'soe-reading:v1:pg1497-fixture-v1:1'); assert.equal(row.paragraph_index,0); assert.equal(row.completed,true);
   assert.match(response.headers.get('cache-control'),/no-store/);
 });
 
 test('mismatched edition, invalid book/block/body and unavailable source cannot write a bookmark',async t=>{
-  const f=await fixture(t); f.setAuth({memberId:actor}); const base={bookId:'republic',editionId:f.manifest.editionId,blockIndex:0};
+  const f=await fixture(t); f.setAuth({memberId:actor}); const base={expectedMemberId:actor,expectedRevision:0,action:'save',completed:false,bookId:'republic',editionId:f.manifest.editionId,blockIndex:0};
   for(const [body,status] of [[{...base,editionId:'older-edition'},409],[{...base,blockIndex:2},400],[{...base,blockIndex:-1},400],[{...base,blockIndex:0.5},400],[{...base,bookId:'unknown'},400],[{...base,completed:'yes'},400],[{...base,extra:'x'},400]])assert.equal((await f.call('progress',{body})).status,status);
   await writeFile(path.join(f.directory,'reader.html'),'altered'); assert.equal((await f.call('progress',{body:base})).status,503);
   assert.equal(f.adminCalls(),0);
@@ -163,11 +176,12 @@ test('mismatched edition, invalid book/block/body and unavailable source cannot 
 
 test('GET progress is self-scoped and projects legacy/current/different-edition status without identity fields',async t=>{
   const f=await fixture(t); f.setAuth({memberId:actor});
-  const base={book_id:'republic',paragraph_index:0,completed:false,updated_at:null};
+  const base={book_id:'republic',paragraph_index:0,completed:false,updated_at:null,progress_revision:0,progress_removed:false};
   for(const [section,status] of [['10','legacy'],['soe-reading:v1:old-edition:1','edition_changed'],['soe-reading:v1:pg1497-fixture-v1:1','current'],['soe-reading:v1:pg1497-fixture-v1:99','invalid']]){
     f.app.fakes.resetDb({reading_progress:[{...base,member_id:actor,section_id:section,email:'private@example.invalid'},{...base,member_id:other,section_id:'other-user-secret'}]});
-    const response=await f.call('progress',{query:'?bookId=republic&memberId='+other}); assert.equal(response.status,200);
-    const body=await response.json(); assert.equal(body.progress.length,1); assert.equal(body.progress[0].bookmark.status,status); assert.equal(body.progress[0].section_id,section);
+    assert.equal((await f.call('progress',{query:'?bookId=republic&memberId='+other})).status,400);
+    const response=await f.call('progress',{query:'?bookId=republic'}); assert.equal(response.status,200);
+    const body=await response.json(); assert.equal(body.progress.length,1); assert.equal(body.progress[0].bookmark.status,status); assert.equal(body.progress[0].sectionId,section);
     assert(!JSON.stringify(body).includes('member_id')); assert(!JSON.stringify(body).includes('private@example')); assert(!JSON.stringify(body).includes('other-user-secret'));
     assert.match(response.headers.get('cache-control'),/no-store/);
   }
@@ -175,40 +189,40 @@ test('GET progress is self-scoped and projects legacy/current/different-edition 
 
 test('progress infrastructure failures return generic errors and never a false saved receipt',async t=>{
   const f=await fixture(t); f.setAuth({memberId:actor}); f.app.fakes.db.networkDown={cause:'SYNTHETIC_FAILURE'};
-  for(const opts of [{query:'?bookId=republic'},{body:{bookId:'republic',editionId:f.manifest.editionId,blockIndex:0}}]){
+  for(const opts of [{query:'?bookId=republic'},{body:{expectedMemberId:actor,expectedRevision:0,action:'save',completed:false,bookId:'republic',editionId:f.manifest.editionId,blockIndex:0}}]){
     const response=await f.call('progress',opts); assert.equal(response.status,503); const body=await response.json(); assert(!body.ok); assert(!JSON.stringify(body).includes('SYNTHETIC_FAILURE'));
   }
 });
 
 test('bookmark mutation blocks cross-origin and ambiguous cookie requests while accepting canonical bearer-only calls',async t=>{
   const f=await fixture(t); f.setAuth({memberId:actor});
-  const module=f.app.load('app/api/great-books/progress/route.ts'); const body={bookId:'republic',editionId:f.manifest.editionId,blockIndex:0};
+  const handler=f.app.load('app/api/great-books/progress/route.ts'); const body={expectedMemberId:actor,expectedRevision:0,action:'save',completed:false,bookId:'republic',editionId:f.manifest.editionId,blockIndex:0};
   for(const headers of [{origin:'https://evil.invalid'},{origin:'http://localhost','sec-fetch-site':'cross-site'},{cookie:'synthetic=only'}]){
-    const response=await module.POST(new Request('http://localhost/api/great-books/progress',{method:'POST',headers,body:JSON.stringify(body)}));
+    const response=await handler.POST(new Request('http://localhost/api/great-books/progress',{method:'POST',headers,body:JSON.stringify(body)}));
     assert.equal(response.status,403);
   }
   assert.equal(f.adminCalls(),0);
-  const response=await module.POST(new Request('http://localhost/api/great-books/progress',{method:'POST',headers:{authorization:'Bearer SYNTHETIC_OFFLINE_ONLY'},body:JSON.stringify(body)}));
+  const response=await handler.POST(new Request('http://localhost/api/great-books/progress',{method:'POST',headers:{authorization:'Bearer SYNTHETIC_OFFLINE_ONLY'},body:JSON.stringify(body)}));
   assert.equal(response.status,200);
 });
 
 test('bookmark reader bounds actual streaming UTF-8 bytes before JSON parse or persistence',async t=>{
-  const f=await fixture(t); f.setAuth({memberId:actor}); const module=f.app.load('app/api/great-books/progress/route.ts');
+  const f=await fixture(t); f.setAuth({memberId:actor}); const handler=f.app.load('app/api/great-books/progress/route.ts');
   const bytes=new TextEncoder().encode(JSON.stringify({bookId:'republic',padding:'界'.repeat(5000)}));
   assert(bytes.length>12000);
   const stream=new ReadableStream({start(controller){controller.enqueue(bytes.slice(0,8000));controller.enqueue(bytes.slice(8000));controller.close();}});
   const request=new Request('http://localhost/api/great-books/progress',{method:'POST',headers:{origin:'http://localhost','content-type':'application/json','content-length':'1'},body:stream,duplex:'half'});
-  assert.equal((await module.POST(request)).status,413); assert.equal(f.adminCalls(),0);
+  assert.equal((await handler.POST(request)).status,413); assert.equal(f.adminCalls(),0);
   const oversized=new Request('http://localhost/api/great-books/progress',{method:'POST',headers:{origin:'http://localhost','content-length':'999999'},body:'{}'});
-  assert.equal((await module.POST(oversized)).status,413);
+  assert.equal((await handler.POST(oversized)).status,413);
   const malformed=new Request('http://localhost/api/great-books/progress',{method:'POST',headers:{origin:'http://localhost'},body:'not json'});
-  assert.equal((await module.POST(malformed)).status,400);
+  assert.equal((await handler.POST(malformed)).status,400);
 });
 
 test('identity-provider failures mean unavailable verification, not signed-out or empty progress',async t=>{
   const f=await fixture(t);
   f.app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>{throw Error('SYNTHETIC_PROVIDER_DETAIL');}}));
-  for(const opts of [{query:'?bookId=republic'},{body:{bookId:'republic',editionId:f.manifest.editionId,blockIndex:0}}]){
+  for(const opts of [{query:'?bookId=republic'},{body:{expectedMemberId:actor,expectedRevision:0,action:'save',completed:false,bookId:'republic',editionId:f.manifest.editionId,blockIndex:0}}]){
     const response=await f.call('progress',opts); assert.equal(response.status,503);
     const body=await response.json(); assert(!('progress' in body)); assert(!JSON.stringify(body).includes('SYNTHETIC_PROVIDER_DETAIL'));
   }
@@ -226,7 +240,9 @@ test('all eight pinned editions serve their complete verified HTML, every whitel
   assert.equal(books.length,8);
   for(const book of books){
     const params={params:Promise.resolve({bookId:book.id})}; const request=new Request('http://localhost/api/great-books/text/'+book.id);
+    await materialized(path.join(source,'content/great-books',book.id,'manifest.json'));
     const manifest=JSON.parse(await readFile(path.join(source,'content/great-books',book.id,'manifest.json'),'utf8'));
+    for(const file of ['reader.html','original.zip',...manifest.assets.map(asset=>'assets/'+asset.path)])await materialized(path.join(source,'content/great-books',book.id,file));
     const metadata=await metadataRoute.GET(request,params); assert.equal(metadata.status,200,book.id); const dto=await metadata.json();
     assert.equal(dto.edition.editionId,manifest.editionId); assert.equal(dto.edition.blockCount,manifest.reader.blockCount);
     const html=await htmlRoute.GET(new Request('http://localhost'+dto.edition.documentUrl),params); assert.equal(html.status,200,book.id);

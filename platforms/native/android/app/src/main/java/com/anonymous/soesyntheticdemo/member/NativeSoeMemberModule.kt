@@ -48,6 +48,7 @@ class NativeSoeMemberModule(context: ReactApplicationContext) : NativeSoeMemberS
       putString("readingPolicy", "pinned-passage-v1")
       putString("profilePolicy", "owner-profile-v1")
       putString("publicProfilePolicy", "published-profile-v1")
+      putString("savedReadingPolicy", "owner-reading-v1")
       if (config.providerOrigin.isNotEmpty()) {
         putString("authPolicy", "supabase-password-v1"); putString("providerOrigin", config.providerOrigin); putString("publishableKey", config.publishableKey)
       }

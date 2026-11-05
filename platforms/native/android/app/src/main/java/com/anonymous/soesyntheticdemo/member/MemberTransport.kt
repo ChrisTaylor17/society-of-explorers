@@ -256,6 +256,15 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
       require(url.encodedQuery == null)
       if (input.method == "POST") validateProfileBody(input.body ?: throw IllegalArgumentException())
     }
+    else if (url.encodedPath == "/api/great-books/progress") {
+      if (input.method == "GET") {
+        val query = url.encodedQuery
+        if (query != null) require(query.startsWith("bookId=") && savedReadingBook(query.removePrefix("bookId=")))
+      } else {
+        require(url.encodedQuery == null)
+        validateSavedReadingBody(input.body ?: throw IllegalArgumentException())
+      }
+    }
     else if (url.encodedPath == "/api/circles/contributions") {
       require(input.method == "GET")
       val query = mutableMapOf<String, String>()
@@ -300,7 +309,32 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
       query["limit"]?.let { require(Regex("[1-9][0-9]*").matches(it) && (it.toIntOrNull() ?: 0) in 1..25) }
     }
     if (input.method == "GET") require(input.body == null)
+    else if (url.encodedPath == "/api/great-books/progress") require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= 4096)
     else require(input.body != null && input.body.toByteArray(Charsets.UTF_8).size <= if (url.encodedPath == "/api/members/profile") 65536 else 16384)
+  }
+  private fun savedReadingBook(value: String) = value in setOf("apology", "divine-comedy", "genealogy-of-morals", "hamlet", "meditations", "odyssey", "relativity", "republic")
+  /** Private saved-place CAS wire policy. Shared JS and server contracts also
+   * require the exact current edition pin and its actual block count. */
+  private fun validateSavedReadingBody(body: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 4096)
+    val value = JSONObject(body)
+    val member = value.get("expectedMemberId"); val revision = value.get("expectedRevision")
+    val book = value.get("bookId"); val action = value.get("action")
+    require(member is String && uuid(member) && member == member.lowercase())
+    require(revision is Int || revision is Long)
+    val version = (revision as Number).toLong(); require(version in 0..9007199254740991L)
+    require(book is String && savedReadingBook(book) && (action == "save" || action == "remove"))
+    val prefix = "{\"expectedMemberId\":" + profileQuote(member) + ",\"expectedRevision\":" + version + ",\"bookId\":" + profileQuote(book) + ",\"action\":" + profileQuote(action as String)
+    val canonical = if (action == "save") {
+      require(value.length() == 7)
+      val edition = value.get("editionId"); val block = value.get("blockIndex"); val completed = value.get("completed")
+      require(edition is String && Regex("pg-[1-9][0-9]{0,9}-[a-f0-9]{64}").matches(edition))
+      require(block is Int || block is Long)
+      val position = (block as Number).toLong(); require(position in 0..99999L)
+      require(completed is Boolean)
+      prefix + ",\"editionId\":" + profileQuote(edition) + ",\"blockIndex\":" + position + ",\"completed\":" + completed + "}"
+    } else { require(value.length() == 4); prefix + "}" }
+    require(body == canonical)
   }
   /** Exact full profile CAS envelope. Rebuilding the canonical bytes rejects
    * duplicate keys, parser coercions, extra fields and alternate encodings. */

@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
-import { interpretBookmark, type BookEditionResponse } from '@/lib/books/bookmarks';
+import type { BookEditionResponse } from '@/lib/books/bookmarks';
+import { parseReadingProgressResponse } from '@/lib/books/reading-progress';
+import { memberSessionDto } from '@/lib/auth/memberDto';
+import { circleHeaders } from '@/lib/circles/client';
 import { useReadingAccess } from './useReadingAccess';
 import styles from './reading.module.css';
 
@@ -21,26 +24,47 @@ const DESCRIPTIONS: Record<string, string> = {
 export default function LibraryBrowser({ editions }: { editions: LibraryEdition[] }) {
   const [query, setQuery] = useState(''), [author, setAuthor] = useState('all');
   const [progress, setProgress] = useState<Record<string, string>>({}), [notice, setNotice] = useState('Saved reading places are private. Load them only when you choose.');
-  const clear = useCallback(() => { setProgress({}); setNotice('Private saved-place summaries were cleared. Load them again to check your current account.'); }, []);
-  const { active, busy, run } = useReadingAccess(clear);
+  const lifetime = useRef(0), [epoch, setEpoch] = useState(0);
+  const invalidate = useCallback((render = true) => { lifetime.current++; if (render) setEpoch(lifetime.current); }, []);
+  const [online, setOnline] = useState(true);
+  const clear = useCallback(() => { invalidate(); setProgress({}); setNotice('Private saved-place summaries were cleared. Load them again to check your current account.'); }, [invalidate]);
+  const { active, busy, run, cancel } = useReadingAccess(clear);
+  const stop = useRef(cancel);
+  useEffect(() => { stop.current = cancel; }, [cancel]);
+  useEffect(() => {
+    setEpoch(lifetime.current);
+    const offline = () => { stop.current(); setOnline(false); }, reconnect = () => setOnline(true);
+    if (navigator.onLine === false) offline();
+    window.addEventListener('offline', offline); window.addEventListener('online', reconnect);
+    return () => { invalidate(false); window.removeEventListener('offline', offline); window.removeEventListener('online', reconnect); };
+  }, [invalidate]);
   const byBook = useMemo(() => new Map(editions.map(edition => [edition.bookId, edition])), [editions]);
   const filtered = GREAT_BOOKS.filter(book => (author === 'all' || book.author === author) &&
     `${book.title} ${book.author} ${DESCRIPTIONS[book.id]} ${byBook.get(book.id)?.translators.map(person => person.name).join(' ') || ''}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
 
   function loadProgress() {
-    if (!active || busy) return;
+    if (!active || !online || busy || epoch !== lifetime.current) return;
+    invalidate();
     setProgress({}); setNotice('Loading your saved-place summaries…');
-    void run('/api/great-books/progress', { method: 'GET' }, response => response.json(), value => {
-      if (!value || typeof value !== 'object' || !Array.isArray(value.progress) || value.progress.length > 1000) return setNotice('Saved places could not be understood. No empty history is being assumed.');
+    void run('/api/auth/member', { method: 'GET' }, async (response, signal, current) => {
+      const proof = await response.json(), member = memberSessionDto(proof?.member);
+      if (!current() || !member || !['supabase', 'wallet'].includes(proof?.auth?.provider) || typeof proof.auth.subject !== 'string' || !proof.auth.subject) throw Error('Member check unavailable');
+      const headers = await circleHeaders(); if (!current()) throw Error('Saved-place summaries retired');
+      const result = await fetch('/api/great-books/progress', { headers, credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal });
+      if (!current() || !result.ok) throw Error('Saved-place summaries unavailable');
+      const value = parseReadingProgressResponse(await result.json());
+      if (!current() || !value || value.memberId !== member.id.toLowerCase()) throw Error('Saved-place owner changed');
+      return value;
+    }, value => {
       const next: Record<string, string> = {};
       for (const row of value.progress) {
-        if (!row || typeof row !== 'object' || typeof row.book_id !== 'string') return setNotice('Saved places could not be understood.');
-        const edition = byBook.get(row.book_id); if (!edition) continue;
-        if (next[row.book_id]) return setNotice('Saved places could not be understood.');
-        const bookmark = interpretBookmark(row.section_id, edition.editionId, edition.blockCount);
-        next[row.book_id] = bookmark.status === 'current' ? row.completed === true ? 'This edition marked finished' : 'Saved place in this edition'
-          : bookmark.status === 'legacy' ? 'Earlier bookmark needs a fresh choice'
-          : bookmark.status === 'edition_changed' ? 'Saved place belongs to another edition' : 'Earlier bookmark needs review';
+        if (row.status !== 'saved') continue;
+        const edition = byBook.get(row.bookId), bookmark = row.bookmark;
+        next[row.bookId] = !edition || row.edition.editionId !== edition.editionId || row.edition.blockCount !== edition.blockCount
+          ? 'Saved place needs an available matching source edition'
+          : bookmark?.status === 'current' ? row.completed === true ? 'This edition marked finished' : 'Saved place in this edition'
+          : bookmark?.status === 'legacy' ? 'Earlier bookmark needs a fresh choice'
+          : bookmark?.status === 'edition_changed' ? 'Saved place belongs to another edition' : 'Earlier bookmark needs review';
       }
       setProgress(next); setNotice(Object.keys(next).length ? 'Saved-place summaries loaded. Open a book to load and resume its exact place.' : 'No saved places are available for these editions.');
     }, error => setNotice(error.status === 401 ? 'Sign in to load saved places. Every complete book remains free to read.' : 'Saved places could not be loaded. No empty history is being assumed.'));
@@ -54,7 +78,7 @@ export default function LibraryBrowser({ editions }: { editions: LibraryEdition[
       <p role="status" className={styles.status}>{filtered.length} {filtered.length === 1 ? 'book' : 'books'} match.</p>
     </section>
     <section className={styles.panel} aria-label="Private reading summaries">
-      <p className={styles.status} role="status">{notice}</p><button type="button" className={styles.button} disabled={!active || busy} onClick={loadProgress}>Load my saved-place summaries</button>
+      <p className={styles.status} role="status">{notice}</p><button type="button" className={styles.button} disabled={!active || !online || busy} onClick={loadProgress}>Load my saved-place summaries</button>
     </section>
     <div className={styles.grid} aria-label="Great Books library">
       {filtered.map(book => {

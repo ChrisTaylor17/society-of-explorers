@@ -7,9 +7,10 @@ import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
 import { CircleReadingScreen } from './CircleReadingScreen';
+import type { SavedReading } from '../shared/saved-reading';
 
-export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', onBack, onClose }: {
-  config: CircleDirectoryConfig; connectivity?: NativeConnectivityPort; initialMode?: 'discover' | 'mine'; onBack(): void; onClose(): void;
+export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', savedReading, onBack, onClose }: {
+  config: CircleDirectoryConfig; connectivity?: NativeConnectivityPort; initialMode?: 'discover' | 'mine'; savedReading?: SavedReading; onBack(): void; onClose(): void;
 }) {
   const connection = useMemo(() => {
     try { return { session: createCircleDirectory({ ...config, initialOnline: false }), config, connectivity }; }
@@ -77,7 +78,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     setReading({ connection, context: { ...verified } });
   };
   if (reading && reading.connection === connection && readingConfig && m?.detail && m.connected && m.active && m.online) {
-    return <CircleReadingScreen config={readingConfig} connectivity={connectivity} onClose={close}
+    return <CircleReadingScreen config={readingConfig} connectivity={connectivity} savedReading={savedReading} onClose={close}
       onBack={() => { setReading(null); void session?.refresh(); }}/>;
   }
   if (discussion && discussion.connection === connection && m?.canOpenDiscussion && discussionConfig) {

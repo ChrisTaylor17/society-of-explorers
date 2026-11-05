@@ -4,11 +4,12 @@ import { isUuid } from '../../../../lib/ids/uuid';
 import { discoveryPageSearchParams, parseDiscoveryPageRequest } from '../../../../lib/circles/discovery-page';
 import { passageIndexPin } from '../../../../lib/books/passages';
 import { parseProfileMutation } from '../../../../lib/members/profile';
+import { parseReadingProgressMutation, readingProgressMutationBody, READING_PROGRESS_BODY_MAX_BYTES } from '../../../../lib/books/reading-progress';
 
 /** The native implementation owns the durable storage generation. Every storage
  * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; publicProfilePolicy?: string }>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; publicProfilePolicy?: string; savedReadingPolicy?: string }>;
   newRequestId?(generation: string): Promise<string>;
   begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
@@ -66,7 +67,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
     setItem(name:string,value:string):Promise<void>{const s=slot(name);if(typeof value!=='string'||size(value)>65536)throw fail();return enqueue(async()=>{await bridge.write(s,value,nativeGeneration);if(!current())throw fail();});},
     removeItem(name:string):Promise<void>{const s=slot(name);return enqueue(async()=>{await bridge.remove(s,nativeGeneration);if(!current())throw fail();});},
   };
-  const makeTransport=(channel:'member'|'discovery'|'passage'|'profile'|'publicProfile'):CircleTransport=>async(url,init)=>{
+  const makeTransport=(channel:'member'|'discovery'|'passage'|'profile'|'publicProfile'|'savedReading'):CircleTransport=>async(url,init)=>{
     const publicRead = channel === 'discovery' || channel === 'passage' || channel === 'publicProfile';
     let id:string|undefined;
     let finished=false,cancelled=false;
@@ -129,14 +130,24 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
           profile = Object.keys(patch).length === 8 && init.body === JSON.stringify(ordered);
         }
       }
-      const approvedPath = publicRead ? discovery || passage || publicProfile : channel === 'profile' ? profile : account || contributions || mine || membershipChange
+      const savedBook = u.searchParams.get('bookId');
+      let savedReading = channel === 'savedReading' && u.pathname === '/api/great-books/progress' && init.method === 'GET'
+        && (!hasQuery || savedBook !== null && passageIndexPin(savedBook) !== null && u.search.slice(1) === new URLSearchParams({ bookId: savedBook }).toString());
+      if (channel === 'savedReading' && u.pathname === '/api/great-books/progress' && !hasQuery && init.method === 'POST'
+        && typeof init.body === 'string' && size(init.body) <= READING_PROGRESS_BODY_MAX_BYTES) {
+        const value = parseReadingProgressMutation(JSON.parse(init.body));
+        const savedPin = value && passageIndexPin(value.bookId);
+        if (value && savedPin) savedReading = (value.action === 'remove' || value.editionId === savedPin.editionId && value.blockIndex < savedPin.blockCount)
+          && init.body === readingProgressMutationBody(value);
+      }
+      const approvedPath = publicRead ? discovery || passage || publicProfile : channel === 'profile' ? profile : channel === 'savedReading' ? savedReading : account || contributions || mine || membershipChange
         || Boolean(detail && isUuid(detail[1]) && init.method === 'GET' && !hasQuery) || (legacy ? isUuid(legacy[1]) && !hasQuery
         : discussion ? isUuid(discussion[1]) && (init.method === 'GET' ? query !== null && (!hasQuery || Boolean(u.search)) : init.method === 'POST' && !hasQuery)
         : preview ? isUuid(preview[1]) && init.method === 'POST' && !hasQuery
         : message && isUuid(message[1]) && isUuid(message[2]) && !hasQuery);
       if(!current()||u.href!==url||u.origin!==origin||u.username||u.password||u.href.includes('#')||!approvedPath
         ||(publicRead ? headers.length!==0 : !allowed||!match||match[1].length>16384)
-        ||init.redirect!=='error'||init.credentials!=='omit'||init.cache!=='no-store'||signal.aborted||!['GET','POST'].includes(init.method)||ct.length>1||(init.method==='GET'&&(init.body!==undefined||ct.length!==0))||(init.method==='POST'&&(ct.length!==1||ct[0][1]!=='application/json'||typeof init.body!=='string'||size(init.body)>(channel==='profile'?65536:16384)))) throw fail();
+        ||init.redirect!=='error'||init.credentials!=='omit'||init.cache!=='no-store'||signal.aborted||!['GET','POST'].includes(init.method)||ct.length>1||(init.method==='GET'&&(init.body!==undefined||ct.length!==0))||(init.method==='POST'&&(ct.length!==1||ct[0][1]!=='application/json'||typeof init.body!=='string'||size(init.body)>(channel==='profile'?65536:channel==='savedReading'?READING_PROGRESS_BODY_MAX_BYTES:16384)))) throw fail();
       let rejectAbort: (reason: Error)=>void = () => {};
       const aborted=new Promise<never>((_,reject)=>{rejectAbort=reject;});
       const abort=()=>{cancel();rejectAbort(fail());};
@@ -175,7 +186,8 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
   const passageTransport = caps.readingPolicy === 'pinned-passage-v1' && typeof bridge.sendPublic === 'function' ? makeTransport('passage') : undefined;
   const profileTransport = caps.profilePolicy === 'owner-profile-v1' ? makeTransport('profile') : undefined;
   const publicProfileTransport = caps.publicProfilePolicy === 'published-profile-v1' && typeof bridge.sendPublic === 'function' ? makeTransport('publicProfile') : undefined;
-  return { transport, ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), storage, ...(newRequestId ? { newRequestId } : {}), retireStorage(){retired=true;},
+  const savedReadingTransport = caps.savedReadingPolicy === 'owner-reading-v1' ? makeTransport('savedReading') : undefined;
+  return { transport, ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), storage, ...(newRequestId ? { newRequestId } : {}), retireStorage(){retired=true;},
     onAccountRetired(listener:()=>void) { if(!current()){listener();return ()=>{};}queue.retirements.add(listener);return ()=>{queue.retirements.delete(listener);}; },
     async resetAccountStorage() {
       if(!current())throw fail();

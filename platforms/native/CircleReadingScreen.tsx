@@ -1,35 +1,56 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { createCircleReading, type CircleReadingConfig } from '../shared/circle-reading';
 import { readingSessionLabel } from '../../lib/circles/reading-program';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
+import type { SavedReading } from '../shared/saved-reading';
+import { SavedReadingTools } from './SavedReadingTools';
 
 /** Mounted only by an explicit selection from freshly checked Circle detail. */
-export function CircleReadingScreen({ config, connectivity, onBack, onClose }: {
-  config: CircleReadingConfig; connectivity?: NativeConnectivityPort; onBack(): void; onClose(): void;
+export function CircleReadingScreen({ config, connectivity, savedReading, savedReadingManaged = false, backLabel = 'Back to Circle reading plan', onBack, onClose }: {
+  config: CircleReadingConfig; connectivity?: NativeConnectivityPort; savedReading?: SavedReading; savedReadingManaged?: boolean;
+  backLabel?: string; onBack(): void; onClose(): void;
 }) {
   const connection = useMemo(() => {
     try { return { reader: createCircleReading({ ...config, initialOnline: false }), connectivity }; }
     catch { return null; }
   }, [config, connectivity]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.reader.model() }));
+  const [savedSnapshot, setSavedSnapshot] = useState(() => ({ session: savedReading, model: savedReading?.model() }));
+  const [viewEpoch, setViewEpoch] = useState(0), viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const m = snapshot.connection === connection ? snapshot.model : connection?.reader.model(), reader = connection?.reader;
+  const saved = savedSnapshot.session === savedReading ? savedSnapshot.model : savedReading?.model();
+  useLayoutEffect(() => savedReading?.subscribe(model => setSavedSnapshot({ session: savedReading, model })), [savedReading]);
   useLayoutEffect(() => {
-    if (!connection) return;
-    const { reader } = connection, off = reader.subscribe(model => setSnapshot({ connection, model }));
-    let mounted = true, active = false, blurred = false;
-    const sync = () => { if (mounted) reader.activity(active && !blurred); };
+    const life = viewLife.current; life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
+    if (!connection) return () => { life.mounted = false; life.enabled = false; ++life.epoch; };
+    const { reader } = connection; let phase = reader.model().phase;
+    const off = reader.subscribe(model => {
+      if (phase !== model.phase || !model.connected || !model.active || !model.online) setViewEpoch(++life.epoch);
+      phase = model.phase; setSnapshot({ connection, model });
+    });
+    let mounted = true, active = false, blurred = false, online = false;
+    const sync = () => { if (mounted) {
+      const enabled = active && !blurred && online;
+      if (life.enabled !== enabled) { life.enabled = enabled; setViewEpoch(++life.epoch); }
+      reader.activity(active && !blurred);
+    } };
     reader.activity(false); reader.connectivity(false);
     const change = AppState.addEventListener('change', value => { active = value === 'active'; sync(); });
     const blur = Platform.OS === 'android' ? AppState.addEventListener('blur', () => { blurred = true; sync(); }) : null;
     const focus = Platform.OS === 'android' ? AppState.addEventListener('focus', () => { blurred = false; active = AppState.currentState === 'active'; sync(); }) : null;
     active = AppState.currentState === 'active'; sync();
-    const offConnectivity = observeNativeConnectivity(connection.connectivity, value => { if (mounted) reader.connectivity(value === 'online'); });
+    const offConnectivity = observeNativeConnectivity(connection.connectivity, value => { if (mounted) { online = value === 'online'; sync(); reader.connectivity(online); } });
     active = AppState.currentState === 'active'; sync(); reader.connect();
     void reader.load();
-    return () => { mounted = false; reader.disconnect(); offConnectivity(); off(); change.remove(); blur?.remove(); focus?.remove(); };
+    return () => { mounted = false; life.mounted = false; life.enabled = false; ++life.epoch; off(); reader.disconnect(); offConnectivity(); change.remove(); blur?.remove(); focus?.remove(); };
   }, [connection]);
+  const act = (work: () => void, allowInactive = false) => {
+    const life = viewLife.current;
+    if (life.mounted && life.epoch === viewEpoch && (allowInactive || life.enabled)) work();
+  };
   const passage = m?.passage, edition = passage?.metadata.edition;
+  const canMove = !savedReading || Boolean(saved?.canNavigate);
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS · READING</Text>
     <Text accessibilityRole="header" style={styles.title}>{passage?.metadata.title ?? 'Agreed reading'}</Text>
@@ -43,10 +64,12 @@ export function CircleReadingScreen({ config, connectivity, onBack, onClose }: {
         : passage.reason === 'non_text' ? 'This part of the source is not displayed in the native text reader. The complete web edition retains its images and other content.'
         : 'This source position contains no text in the verified reading index.'} Choose Previous or Next to move deliberately within this selection.</Text>
     </View> : null}
-    <Action label="Previous reading position" disabled={!m?.canPrevious} onPress={() => void reader?.previous()}/>
-    <Action label="Next reading position" disabled={!m?.canNext} onPress={() => void reader?.next()}/>
-    {m?.phase === 'unavailable' ? <Action label="Retry this reading position" disabled={!m.canRetry} onPress={() => void reader?.retry()}/> : null}
-    {m?.phase === 'idle' ? <Action label="Load reading selection" disabled={!m.canLoad} onPress={() => void reader?.load()}/> : null}
+    <Action label="Previous reading position" disabled={!m?.canPrevious || !canMove} onPress={() => act(() => { if (!savedReading || savedReading.model().canNavigate) void reader?.previous(); })}/>
+    <Action label="Next reading position" disabled={!m?.canNext || !canMove} onPress={() => act(() => { if (!savedReading || savedReading.model().canNavigate) void reader?.next(); })}/>
+    {m?.phase === 'unavailable' ? <Action label="Retry this reading position" disabled={!m.canRetry || !canMove} onPress={() => act(() => { if (!savedReading || savedReading.model().canNavigate) void reader?.retry(); })}/> : null}
+    {m?.phase === 'idle' ? <Action label="Load reading selection" disabled={!m.canLoad || !canMove} onPress={() => act(() => { if (!savedReading || savedReading.model().canNavigate) void reader?.load(); })}/> : null}
+    {savedReading ? <SavedReadingTools session={savedReading} connectivity={connectivity} manageLifecycle={!savedReadingManaged}
+      position={passage ? { bookId: passage.reference.bookId, editionId: passage.reference.editionId, blockIndex: passage.reference.blockIndex } : null}/> : null}
     {edition ? <View style={styles.notice}>
       <Text accessibilityRole="header" style={styles.heading}>Source edition and credits</Text>
       <Text selectable style={styles.copy}>{edition.attribution}</Text>
@@ -56,9 +79,9 @@ export function CircleReadingScreen({ config, connectivity, onBack, onClose }: {
       <Text selectable style={styles.note}>{edition.licenseUrl}</Text>
       {edition.editionNotes.map(note => <Text key={note} style={styles.note}>{note}</Text>)}
     </View> : null}
-    <Text style={styles.note}>This reader shows verified text one source position at a time. Tables and nontext content are identified in place. Your reading position is not saved.</Text>
-    <Action label="Back to Circle reading plan" disabled={!m?.canNavigate} onPress={() => { if (reader?.model().canNavigate) { reader.close(); onBack(); } }}/>
-    <Action label="Close member view" onPress={() => { reader?.close(); onClose(); }}/>
+    <Text style={styles.note}>This reader shows verified text one source position at a time. Tables and nontext content are identified in place. {savedReading ? 'Your place changes only after an explicit reviewed save.' : 'Your reading position is not saved in this connection.'}</Text>
+    <Action label={backLabel} disabled={!m?.canNavigate || !canMove} onPress={() => act(() => { if (reader?.model().canNavigate && (!savedReading || savedReading.model().canNavigate)) { reader.close(); onBack(); } }, true)}/>
+    <Action label="Close member view" onPress={() => act(() => { reader?.close(); onClose(); }, true)}/>
   </ScrollView></SafeAreaView>;
 }
 function Action({ label, disabled = false, onPress }: { label: string; disabled?: boolean; onPress(): void }) {

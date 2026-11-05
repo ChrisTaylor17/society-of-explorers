@@ -4,7 +4,7 @@ import metadataSnapshot from './reading-metadata.json';
 import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
 
 export type CircleReadingConfig = { origin: string; owner: CircleOwner; passageTransport?: CircleTransport; context: ReadingContext;
-  timeoutMs?: number; initialOnline?: boolean };
+  timeoutMs?: number; initialOnline?: boolean; initialBlockIndex?: number };
 export type CircleReadingModel = {
   connected: boolean; active: boolean; online: boolean; busy: boolean;
   phase: 'idle' | 'loading' | 'ready' | 'unsupported' | 'unavailable' | 'closed';
@@ -37,8 +37,10 @@ export function createCircleReading(config: CircleReadingConfig) {
     || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000
     || config.initialOnline !== undefined && typeof config.initialOnline !== 'boolean') throw Error('An exact supported reading selection is required');
   const context: ReadingContext = { bookId: program.bookId, editionId: program.editionId, ...program.sessions[0] };
+  const initialBlockIndex = config.initialBlockIndex ?? context.from;
+  if (!Number.isSafeInteger(initialBlockIndex) || initialBlockIndex < context.from || initialBlockIndex > context.to) throw Error('Initial reading position must be within the selected range');
   let attached = false, closed = false, active = true, online = config.initialOnline ?? false, scope: string | null = null;
-  let generation = 0, attachment = 0, blockIndex = context.from, busy = false;
+  let generation = 0, attachment = 0, blockIndex = initialBlockIndex, busy = false;
   let phase: CircleReadingModel['phase'] = 'closed', passage: BookPassage | null = null, offOwner = () => {};
   let message = config.passageTransport ? 'Load this exact reading selection when ready.' : 'Text reading is unavailable in this connection.';
   const listeners = new Set<(model: CircleReadingModel) => void>(), requests = new Set<AbortController>();
@@ -51,7 +53,7 @@ export function createCircleReading(config: CircleReadingConfig) {
   };
   const emit = () => { for (const listener of listeners) { try { listener(model()); } catch { /* Notify independent observers. */ } } };
   function retire(notice: string) {
-    generation++; for (const controller of requests) controller.abort(); passage = null; blockIndex = context.from;
+    generation++; for (const controller of requests) controller.abort(); passage = null; blockIndex = initialBlockIndex;
     busy = false; phase = attached ? 'idle' : 'closed'; message = notice; emit();
   }
   function closeView(notice: string) {

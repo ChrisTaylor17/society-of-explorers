@@ -6,6 +6,7 @@ import { offlineApp } from './support/offline-app.mjs';
 const require = createRequire(path.resolve('../../package.json')), tooling = createRequire(path.resolve('tooling/package.json'));
 const { JSDOM } = tooling('jsdom');
 function deferred() { let resolve; const promise = new Promise(yes => { resolve = yes; }); return { promise, resolve }; }
+const MEMBER = '11111111-1111-4111-8111-111111111111';
 const editionId = `pg-1497-${'a'.repeat(64)}`;
 function metadata(bookId = 'republic') {
   const books = { republic: ['The Republic', 'Plato', '1497'], hamlet: ['Hamlet', 'William Shakespeare', '1524'] };
@@ -29,11 +30,11 @@ async function mount({ view = 'reader', respond, credentials = async () => ({ Au
   const React = require('react'), { createRoot } = require('react-dom/client'), { act } = React;
   if (ownedFrame) { const frame = document.createElement('iframe'); frame.setAttribute('data-reading-frame', 'true'); document.body.append(frame); }
   const app = offlineApp(), requests = [], auth = new Set(), deadlines = [], jumped = [];
-  app.context.window = dom.window; app.context.document = dom.window.document;
+  app.context.window = dom.window; app.context.document = dom.window.document; app.context.navigator = dom.window.navigator;
   app.context.URL.createObjectURL = () => 'blob:offline-audio'; app.context.URL.revokeObjectURL = () => {};
   app.context.setTimeout = (fn, ms) => { if ([15_000, 30_000].includes(ms)) { const item = { fn, ms, cleared: false }; deadlines.push(item); return item; } return setTimeout(fn, ms); };
   app.context.clearTimeout = item => item && typeof item === 'object' && 'cleared' in item ? item.cleared = true : clearTimeout(item);
-  app.context.fetch = (url, options) => { requests.push({ url, options }); return Promise.resolve(respond ? respond(url, options) : Response.json(metadata(url.includes('hamlet') ? 'hamlet' : 'republic'))); };
+  app.context.fetch = (url, options) => { requests.push({ url, options }); return Promise.resolve(url === '/api/auth/member' ? Response.json({member:{id:MEMBER},auth:{provider:'supabase',subject:MEMBER}}) : respond ? respond(url, options) : Response.json(metadata(url.includes('hamlet') ? 'hamlet' : 'republic'))); };
   app.setMock('@/lib/circles/client', () => ({ circleHeaders: credentials }));
   app.setMock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { onAuthStateChange(listener) { auth.add(listener); return { data: { subscription: { unsubscribe() { auth.delete(listener); } } } }; } } }) }));
   app.setMock('./reading.module.css', () => ({ __esModule: true, default: new Proxy({}, { get: (_target, name) => name }) }));
@@ -105,7 +106,7 @@ test('a stale edition document disables saving and retry reloads metadata even w
     assert.equal(a.requests.some(request => request.options.method === 'POST'), false);
     refreshed = true; await a.click('Retry complete edition');
     const fresh = await a.frame(); assert.equal(new URL(fresh.iframe.src).searchParams.get('edition'), nextVersion);
-    assert.equal(a.button('Save this place').disabled, false); assert.equal(a.requests.length, 2);
+    assert.equal(a.button('Save this place').disabled, true); assert.equal(a.button('Load my saved place').disabled, false); assert.equal(a.requests.length, 2);
   } finally { await a.cleanup(); }
   const mismatch = metadata(); mismatch.edition.documentUrl = `/api/great-books/edition/republic?edition=${nextVersion}`;
   const b = await mount({ respond: () => Response.json(mismatch) });
@@ -113,15 +114,22 @@ test('a stale edition document disables saving and retry reloads metadata even w
   finally { await b.cleanup(); }
 });
 
-test('legacy bookmarks are never mapped or auto-posted; explicit save requires a matching versioned receipt', async () => {
+test('legacy bookmarks are never mapped or auto-posted; reviewed save requires a matching revision receipt and readback', async () => {
+  const state = {bookId:'republic',revision:0,status:'saved',sectionId:'3',paragraphIndex:0,completed:false,updatedAt:null,
+    edition:{editionId,blockCount:3},bookmark:{status:'legacy'}};
   let match = false;
-  const a = await mount({ view: 'tools', respond: (_url, init) => init.method === 'GET' ? Response.json({ progress: [{ book_id: 'republic', section_id: '3', completed: false }] }) : Response.json({ ok: true, bookmark: { status: 'current', editionId: match ? editionId : 'wrong-edition', blockIndex: 1 } }) });
+  const a = await mount({ view: 'tools', respond: (_url, init) => {
+    if(init.method === 'POST' && match)Object.assign(state,{revision:1,sectionId:`soe-reading:v1:${editionId}:1`,updatedAt:'2026-11-04T00:00:00.000Z',bookmark:{status:'current',editionId,blockIndex:1}});
+    return Response.json({memberId:MEMBER,progress:[init.method==='POST'&&!match?{...state,revision:1,sectionId:'wrong',bookmark:{status:'invalid'}}:state]});
+  } });
   try {
-    assert.equal(a.requests.length, 0); await a.click('Load my saved place'); assert.match(a.text(), /numeric bookmark cannot be mapped safely/); assert.equal(a.button('Go to saved place'), undefined); assert.equal(a.requests.length, 1);
-    await a.click('Save this place'); assert.match(a.text(), /save could not be confirmed/); assert.equal(a.button('Save this place').disabled, true);
-    const body = JSON.parse(a.requests.at(-1).options.body); assert.deepEqual(body, { bookId: 'republic', editionId, blockIndex: 1, completed: false });
-    await a.click('Load my saved place'); match = true; await a.click('Save this place'); assert.match(a.text(), /place was saved/);
-    await a.click('Go to saved place'); assert.deepEqual(a.jumped, [1]);
+    assert.equal(a.requests.length, 0); await a.click('Load my saved place'); assert.match(a.text(), /numeric bookmark cannot be mapped safely/); assert.equal(a.button('Go to saved place'), undefined);
+    await a.click('Save this place'); assert.equal(a.requests.filter(r=>r.options.method==='POST').length,0); await a.click('Confirm saving this place');
+    assert.match(a.text(), /could not be confirmed/); assert.equal(a.button('Save this place').disabled, true);
+    const body = JSON.parse(a.requests.at(-1).options.body); assert.deepEqual(body, {expectedMemberId:MEMBER,expectedRevision:0,bookId:'republic',action:'save',editionId,blockIndex:1,completed:false});
+    await a.click('Load my saved place'); assert.match(a.text(), /still uncertain/); match = true;
+    await a.click('Review retry of same saved-place change'); await a.click('Confirm saving this place'); assert.match(a.text(), /place was saved/);
+    assert.equal(a.requests.at(-1).options.method,'GET'); await a.click('Go to saved place'); assert.deepEqual(a.jumped, [1]);
   } finally { await a.cleanup(); }
 });
 
@@ -170,7 +178,7 @@ test('descendant iframe focus preserves reading tools while real blur, pagehide 
     Object.defineProperty(a.dom.window.document, 'hasFocus', { value: () => true, configurable: true });
     await a.type('reading-passage', 'A local selection from the book.'); await a.event('blur');
     assert.equal(document.getElementById('reading-passage').value, 'A local selection from the book.');
-    assert.equal(a.button('Use selected passage').disabled, false); assert.equal(a.button('Save this place').disabled, false);
+    assert.equal(a.button('Use selected passage').disabled, false); assert.equal(a.button('Load my saved place').disabled, false); assert.equal(a.button('Save this place').disabled, true);
     await a.event('pagehide'); assert.equal(document.getElementById('reading-passage').value, ''); assert.equal(a.button('Save this place').disabled, true);
     await a.event('focus'); await a.type('reading-question', 'Private question before hiding');
     Object.defineProperty(a.dom.window.document, 'visibilityState', { value: 'hidden', configurable: true });
@@ -242,7 +250,10 @@ test('changing books retires a private annotation, even if the previous provider
 });
 
 test('library uses author/translator discovery, loads progress explicitly and displays no raw bookmark IDs', async () => {
-  const a = await mount({ view: 'library', respond: () => Response.json({ progress: [{ book_id: 'republic', section_id: `soe-reading:v1:${editionId}:1`, completed: false }] }) });
+  const books=offlineApp().load('lib/books/catalog.ts').GREAT_BOOKS;
+  const progress=books.map(book=>({bookId:book.id,revision:0,status:'absent',sectionId:null,paragraphIndex:null,completed:null,updatedAt:null,edition:{editionId,blockCount:3},bookmark:null}));
+  Object.assign(progress.find(row=>row.bookId==='republic'),{status:'saved',sectionId:`soe-reading:v1:${editionId}:1`,paragraphIndex:0,completed:false,bookmark:{status:'current',editionId,blockIndex:1}});
+  const a = await mount({ view: 'library', respond: () => Response.json({memberId:MEMBER,progress}) });
   try {
     assert.equal(a.requests.length, 0); assert.doesNotMatch(a.text(), /RECOMMENDS/); assert.match(a.text(), /Benjamin Jowett/);
     await a.type('library-search', 'Jowett'); assert.equal(document.querySelectorAll('article').length, 1);

@@ -5,6 +5,8 @@ import { ContributionsScreen } from './ContributionsScreen';
 import { CircleDirectoryScreen } from './CircleDirectoryScreen';
 import { MemberProfileScreen } from './MemberProfileScreen';
 import { createMemberProfile, type MemberProfile } from '../shared/member-profile';
+import { createSavedReading, type SavedReading } from '../shared/saved-reading';
+import { SavedReadingScreen } from './SavedReadingScreen';
 import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { createMemberAccountSession } from '../shared/account-session';
@@ -18,10 +20,24 @@ export function createMemberViewConnection(config: ExistingMemberAccountConfig, 
   const account = createMemberAccountSession({ owner: binding.owner, origin: host.origin, transport: host.transport,
     timeoutMs: host.timeoutMs, initialOnline: false });
   let profile: { memberId: string; session: MemberProfile } | null = null, closed = false;
+  let savedReading: { memberId: string; session: SavedReading } | null = null;
   const closeProfile = () => { profile?.session.close(); profile = null; };
+  const closeSavedReading = () => { savedReading?.session.close(); savedReading = null; };
   return { config, binding, account, host: { ...host, owner: binding.owner }, connectivity,
     profile: () => profile,
-    discardOtherProfile(memberId: string) { if (profile && profile.memberId !== memberId) closeProfile(); },
+    savedReading: () => savedReading,
+    discardOtherMemberViews(memberId: string) {
+      if (profile && profile.memberId !== memberId) closeProfile();
+      if (savedReading && savedReading.memberId !== memberId) closeSavedReading();
+    },
+    openSavedReading(memberId: string) {
+      if (closed || !host.savedReadingTransport) throw Error('Saved reading unavailable');
+      if (savedReading?.memberId !== memberId) {
+        closeSavedReading();
+        savedReading = { memberId, session: createSavedReading({ origin: host.origin, memberId, owner: binding.owner,
+          savedReadingTransport: host.savedReadingTransport, timeoutMs: host.timeoutMs, initialOnline: false }) };
+      }
+    },
     openProfile(memberId: string) {
       if (closed || !host.profileTransport) throw Error('Profile connection unavailable');
       if (profile?.memberId !== memberId) {
@@ -30,8 +46,8 @@ export function createMemberViewConnection(config: ExistingMemberAccountConfig, 
           profileTransport: host.profileTransport, publicProfileTransport: host.publicProfileTransport, timeoutMs: host.timeoutMs, initialOnline: false }) };
       }
     },
-    disconnect(discardProfile = false) { if (discardProfile) closeProfile(); else profile?.session.disconnect(); account.disconnect(); binding.stop(); },
-    close() { if (closed) return; closed = true; closeProfile(); account.close(); binding.stop(); } };
+    disconnect(discardProfile = false) { if (discardProfile) { closeProfile(); closeSavedReading(); } else { profile?.session.disconnect(); savedReading?.session.disconnect(); } account.disconnect(); binding.stop(); },
+    close() { if (closed) return; closed = true; closeProfile(); closeSavedReading(); account.close(); binding.stop(); } };
 }
 export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>;
 
@@ -48,7 +64,7 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'discover' | 'mine' | 'profile' } | null>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; destination: 'circle' | 'contributions' | 'discover' | 'mine' | 'profile' | 'saved' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -62,7 +78,7 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
     const off = binding.subscribe(model => { setViewEpoch(++life.epoch); setSnapshot({ connection, model }); if (model.phase !== 'ready') setEntered(null); });
     const offAccount = connection.account.subscribe(model => {
       setViewEpoch(++life.epoch);
-      if (model.member) connection.discardOtherProfile(model.member.id);
+      if (model.member) connection.discardOtherMemberViews(model.member.id);
       setAccountSnapshot({ connection, model }); if (!model.canOpenCircle) setEntered(null);
     });
     let appActive = false, blurred = false, online = false, mounted = true;
@@ -108,14 +124,27 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
       setProfileNotice(''); setEntered({ connection, destination: 'profile' });
     } catch { setProfileNotice('Profile editing is unavailable. Check your member account and try again.'); }
   });
+  const openReadingDestination = (destination: 'saved' | 'discover' | 'mine') => act(() => {
+    const current = connection?.account.model();
+    if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
+    try {
+      if (connection.host.savedReadingTransport) connection.openSavedReading(current.member.id);
+      else if (destination === 'saved') return;
+      setProfileNotice(''); setEntered({ connection, destination });
+    } catch { setProfileNotice('Saved reading is unavailable. Check the member account and try again.'); }
+  });
   const profileConnection = connection?.profile();
+  const savedReadingConnection = connection?.savedReading();
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
+    if (entered.destination === 'saved' && savedReadingConnection && savedReadingConnection.memberId === account.member?.id) {
+      return <SavedReadingScreen session={savedReadingConnection.session} config={connection.host} connectivity={connection.connectivity} onBack={back} onClose={close}/>;
+    }
     if (entered.destination === 'profile' && profileConnection && profileConnection.memberId === account.member?.id) {
       return <MemberProfileScreen session={profileConnection.session} connectivity={connection.connectivity}
         publicAvailable={Boolean(connection.host.publicProfileTransport)} onBack={back} onClose={close}/>;
     }
     if (entered.destination === 'discover' || entered.destination === 'mine') return <CircleDirectoryScreen config={connection.host} connectivity={connection.connectivity}
-      initialMode={entered.destination} onBack={back} onClose={close}/>;
+      initialMode={entered.destination} savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined} onBack={back} onClose={close}/>;
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
       onBack={back} onClose={close}/>;
     if (connection.host.circleId) return <CircleScreen config={{ ...connection.host, circleId: connection.host.circleId }} connectivity={connection.connectivity} onClose={close}/>;
@@ -146,12 +175,13 @@ export function MemberCircleScreen({ config, connectivity, retained, onClose }: 
         onPress={() => act(() => { setEntered(null); void connection?.account.prepare(); })}/>
     </View> : null}
     <Action label="My profile" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.profileTransport} onPress={openProfile}/>
+    <Action label="Saved reading" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.savedReadingTransport} onPress={() => openReadingDestination('saved')}/>
     {!connection?.host.profileTransport ? <Text style={styles.copy}>Profile editing is unavailable in this connection.</Text> : null}
     {profileNotice ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{profileNotice}</Text> : null}
     <Action label="Discover Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'discover' }); })}/>
+      onPress={() => openReadingDestination('discover')}/>
     <Action label="My Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-      onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'mine' }); })}/>
+      onPress={() => openReadingDestination('mine')}/>
     {connection?.host.circleId ? <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); })}/> : null}
     <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}

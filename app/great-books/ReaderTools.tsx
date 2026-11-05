@@ -1,16 +1,13 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { interpretBookmark, type BookEditionResponse } from '@/lib/books/bookmarks';
+import type { BookEditionResponse } from '@/lib/books/bookmarks';
 import { useReadingAccess, type ReadingFailure } from './useReadingAccess';
 import { readAnnotation } from './annotation';
 import styles from './reading.module.css';
-import { readingReturnHref } from '@/lib/circles/reading-program';
+import SavedReadingTools from './SavedReadingTools';
 
 const THINKERS = [['socrates', 'Socrates'], ['plato', 'Plato'], ['aurelius', 'Marcus Aurelius'], ['nietzsche', 'Friedrich Nietzsche'], ['einstein', 'Albert Einstein'], ['jobs', 'Steve Jobs']];
-type Saved = { index: number; completed: boolean } | null;
-const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 function failureText(error: ReadingFailure, tool: string) {
   return error.status === 401 ? `Sign in to ${tool}. Reading the complete text is free and does not require an account.`
     : error.status === 403 ? `This account cannot ${tool}.`
@@ -21,17 +18,13 @@ function failureText(error: ReadingFailure, tool: string) {
 export default function ReaderTools({ edition: metadata, currentIndex, frameReady, jump, select, returnSearch = '' }: {
   edition: BookEditionResponse; currentIndex: number; frameReady: boolean; jump: (index: number) => void; select: () => string; returnSearch?: string;
 }) {
-  const { bookId, edition } = metadata;
-  const [saved, setSaved] = useState<Saved>(null), [progressNotice, setProgressNotice] = useState('Saved places are private. Load or save one only when you choose.');
-  const [finished, setFinished] = useState(false), [uncertain, setUncertain] = useState(false);
+  const { bookId } = metadata;
   const [passage, setPassage] = useState(''), [question, setQuestion] = useState(''), [thinker, setThinker] = useState('socrates');
   const [consent, setConsent] = useState(false), [voiceConsent, setVoiceConsent] = useState(false);
   const [annotation, setAnnotation] = useState(''), [aiNotice, setAiNotice] = useState('No AI request has been made.');
   const [audioUrl, setAudioUrl] = useState<string | null>(null), [audioNotice, setAudioNotice] = useState('No audio has been generated.');
   const audioRef = useRef<HTMLAudioElement>(null);
   const clear = useCallback(() => {
-    setSaved(null); setFinished(false); setUncertain(false);
-    setProgressNotice('Private saved-place information was cleared. Load your saved place to check it again. A save already sent may have completed.');
     setPassage(''); setQuestion(''); setAnnotation(''); setConsent(false); setVoiceConsent(false);
     setAiNotice('Private passages, questions and AI replies were cleared. A generation already sent may still complete at the provider.');
     audioRef.current?.pause(); setAudioUrl(null); setAudioNotice('Audio and its consent were cleared. A generation already sent may have completed.');
@@ -48,38 +41,6 @@ export default function ReaderTools({ edition: metadata, currentIndex, frameRead
     setAudioNotice('No audio is available for this draft.');
   }
 
-  function loadProgress() {
-    if (!active || busy) return;
-    setSaved(null); setProgressNotice('Loading your saved place…');
-    void run(`/api/great-books/progress?bookId=${encodeURIComponent(bookId)}`, { method: 'GET' }, response => response.json(), value => {
-      if (!object(value) || !Array.isArray(value.progress) || value.progress.length > 1) return setProgressNotice('The saved-place reply was not valid. Your current reading place has not changed.');
-      const row: unknown = value.progress[0];
-      if (!row) { setUncertain(false); return setProgressNotice('There is no saved place for this book.'); }
-      if (!object(row) || row.book_id !== bookId) return setProgressNotice('The saved-place reply was not valid. Your current reading place has not changed.');
-      setUncertain(false);
-      const bookmark = interpretBookmark(row.section_id, edition.editionId, edition.blockCount);
-      if (bookmark.status === 'current' && typeof bookmark.blockIndex === 'number') {
-        setSaved({ index: bookmark.blockIndex, completed: row.completed === true }); setFinished(row.completed === true);
-        setProgressNotice(row.completed === true ? 'You marked this edition finished. Your saved place is available below.' : 'Your saved place is available. Choose Go to saved place to move there.');
-      } else if (bookmark.status === 'legacy') setProgressNotice('Your earlier numeric bookmark cannot be mapped safely to this complete edition. Choose a place in this edition and save it explicitly.');
-      else if (bookmark.status === 'edition_changed') setProgressNotice('Your saved place belongs to another edition. It cannot be mapped safely. Choose a place here and save it explicitly.');
-      else setProgressNotice('Your earlier saved place could not be understood. Choose a place in this edition and save it explicitly.');
-    }, error => setProgressNotice(failureText(error, 'load your saved place')));
-  }
-  function saveProgress() {
-    if (!active || busy || !frameReady || uncertain) return;
-    const index = currentIndex;
-    setSaved(null); setProgressNotice('Saving this place…');
-    void run('/api/great-books/progress', { method: 'POST', body: JSON.stringify({ bookId, editionId: edition.editionId, blockIndex: index, completed: finished }) }, response => response.json(), value => {
-      if (!object(value) || value.ok !== true || !object(value.bookmark) || value.bookmark.status !== 'current'
-        || value.bookmark.editionId !== edition.editionId || value.bookmark.blockIndex !== index) { setUncertain(true); return setProgressNotice('The save could not be confirmed. Load your saved place before trying another save.'); }
-      setSaved({ index, completed: finished }); setProgressNotice(finished ? 'Place saved and this edition marked finished.' : 'Your place was saved.');
-    }, error => {
-      setUncertain(error.sent);
-      setProgressNotice(error.sent && ![401, 403, 400, 404, 413, 429].includes(error.status || 0)
-        ? 'The save reply was lost. It may have completed. Load your saved place before trying another save.' : failureText(error, 'save your place'));
-    });
-  }
   function choosePassage() {
     const text = select().trim();
     if (!text) return setAiNotice('Select text in the edition, then choose Use selected passage. You can also type or paste a passage below.');
@@ -104,17 +65,7 @@ export default function ReaderTools({ edition: metadata, currentIndex, frameRead
   }
   const disabled = !active || busy;
   return <>
-    <section className={styles.panel} aria-labelledby="saved-place-title">
-      <h2 id="saved-place-title" className={styles.sectionTitle}>Your saved place</h2>
-      <p className={styles.status} role="status">{progressNotice}</p>
-      <div className={styles.controls}>
-        <button type="button" className={styles.button} disabled={disabled} onClick={loadProgress}>Load my saved place</button>
-        {saved && <button type="button" className={styles.button} disabled={!frameReady} onClick={() => jump(saved.index)}>Go to saved place</button>}
-        <button type="button" className={styles.button} disabled={disabled || !frameReady || uncertain} onClick={saveProgress}>Save this place</button>
-      </div>
-      <label className={styles.check}><input type="checkbox" checked={finished} disabled={disabled} onChange={event => setFinished(event.target.checked)} />Mark this edition finished when I save.</label>
-      <p className={styles.help}><Link className={styles.bookLink} href={`/login?${new URLSearchParams({ next: readingReturnHref(bookId, returnSearch) })}`}>Sign in</Link> or <Link className={styles.bookLink} href={`/login?${new URLSearchParams({ mode: 'signup', next: readingReturnHref(bookId, returnSearch) })}`}>create a free account</Link> to use account-based tools. Reading the complete edition remains free. Your reading place is never saved automatically.</p>
-    </section>
+    <SavedReadingTools key={`${bookId}:${metadata.edition.editionId}`} metadata={metadata} currentIndex={currentIndex} frameReady={frameReady} jump={jump} returnSearch={returnSearch} />
     <details className={`${styles.panel} ${styles.details}`}>
       <summary>Optional AI reading tools</summary>
       <p className={styles.help}>These are fictional AI interpretations inspired by historical figures. They are not the author’s words and can be mistaken. Opening these tools or selecting text does not request generation.</p>
