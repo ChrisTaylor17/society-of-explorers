@@ -4,29 +4,13 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '../tooling/node_modules/@electric-sql/pglite/dist/index.js';
 const ROOT = new URL('../../../', import.meta.url), SQL = {};
 for (const name of ['preflight', 'apply', 'rollback']) SQL[name] = await readFile(new URL(`docs/sql/first-release-core-containment-${name}.sql`, ROOT), 'utf8');
+const baseline = await readFile(new URL('./fixtures/core-containment-synthetic.sql', import.meta.url), 'utf8');
 const TARGETS = ['members', 'reading_progress', 'book_highlights', 'great_books_progress', 'great_books_highlights', 'book_reflections', 'thinker_memory'];
 const M = '11111111-1111-4111-8111-111111111111', U = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const RECEIPT = 'soe_core_containment_v1_state';
 async function fixture(t) {
   const db = new PGlite(); await db.waitReady; t.after(() => db.close());
-  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; CREATE ROLE unrelated_reader;
-    GRANT USAGE ON SCHEMA public TO anon,authenticated,service_role,unrelated_reader;
-    CREATE SCHEMA auth; GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role;
-    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-    CREATE TABLE members(id uuid PRIMARY KEY,supabase_auth_id uuid,wallet_address text UNIQUE,display_name text NOT NULL,email text,stripe_customer_id text,tier text,private_text text);
-    ALTER TABLE members ENABLE ROW LEVEL SECURITY;
-    CREATE POLICY "Members readable by all" ON members FOR SELECT USING(true);
-    CREATE POLICY "Members can insert own record" ON members FOR INSERT WITH CHECK(auth.uid()=supabase_auth_id);
-    CREATE POLICY "Members can update own record" ON members FOR UPDATE USING(auth.uid()=supabase_auth_id);
-    CREATE TABLE unrelated_public_catalog(id integer PRIMARY KEY,label text);
-    GRANT ALL ON unrelated_public_catalog TO anon,authenticated,service_role;
-    INSERT INTO unrelated_public_catalog VALUES(1,'PUBLIC_FIXTURE_CATALOG');
-    CREATE FUNCTION public.fixture_secdef_boundary() RETURNS integer LANGUAGE sql SECURITY DEFINER AS $$SELECT 1$$;
-    GRANT EXECUTE ON FUNCTION public.fixture_secdef_boundary() TO anon,authenticated;`);
-  for (const table of TARGETS.filter(name => name !== 'members')) await db.exec(`CREATE TABLE ${table}(id uuid PRIMARY KEY,member_id uuid,private_text text);`);
-  await db.exec(`GRANT ALL ON ${TARGETS.join(',')} TO anon,authenticated,service_role; GRANT SELECT ON members TO unrelated_reader;`);
-  await db.query('INSERT INTO members VALUES($1,$2,NULL,$3,$4,$5,$6,$7)', [M, U, 'FICTIONAL_READER', 'SYNTHETIC_PRIVATE_EMAIL', 'SYNTHETIC_PRIVATE_BILLING', 'free', 'PRIVATE_SYNTHETIC_TEXT']);
-  for (const table of TARGETS.filter(name => name !== 'members')) await db.query(`INSERT INTO ${table} VALUES($1,$1,$2)`, [M, 'PRIVATE_SYNTHETIC_TEXT']);
+  await db.exec(baseline);
   return db;
 }
 async function run(db, name) { try { return await db.exec(SQL[name]); } catch (error) { await db.exec('ROLLBACK'); throw error; } }

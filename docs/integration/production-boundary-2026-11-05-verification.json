@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T19:00:33.750358+00:00",
+  "status": "BOUNDED_SOURCE_AND_SYNTHETIC_RESTORE_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "vercel": {
+    "alias": "society-of-explorers.vercel.app",
+    "projectId": "prj_WI91SqGtnDGWMkrzVNumvqn8Tx4O",
+    "deploymentId": "dpl_FqmzK79EiKmDcur1of6RFPpbUyFX",
+    "buildId": "1dGZPeMaX3PSu8_pnZDGj",
+    "binding": {
+      "path": "verification/web/evidence/deployed-caller-20261105/route-bindings.json",
+      "sha256": "86484a6eb5e4a71d0e91f9d11984ce66a3df36d2ac938bb0b756eac8ac7677e6"
+    },
+    "tree": {
+      "path": "verification/web/evidence/deployed-caller-20261105/tree.json",
+      "sha256": "030b105a8a35b15265c0c9c23f5aa7da2fd5951a4ee3688a3a26c09526d5e803"
+    },
+    "entries": 5728,
+    "verifiedArtifacts": 23,
+    "routes": {
+      "/api/thinker": {
+        "implementationModule": 653035,
+        "relativeArtifact": ".next/server/app/api/thinker/route.js",
+        "directDependencies": [
+          "[root-of-the-server]__15bjnu5._.js",
+          "[root-of-the-server]__1c4a4_u._.js",
+          "[turbopack]_runtime.js",
+          "_07tanjt._.js",
+          "_1sb6pfh._.js",
+          "_next-internal_server_app_api_thinker_route_actions_0h3u2zn.js",
+          "node_modules_1e-9mkp._.js",
+          "node_modules_@anthropic-ai_sdk_0zc5wzj._.js",
+          "node_modules_@supabase_supabase-js_dist_index_mjs_0u-n9p7._.js",
+          "node_modules_next_05zc8vy._.js",
+          "node_modules_next_dist_esm_build_templates_app-route_1vxx_-7.js"
+        ],
+        "implementationArtifact": "thinker-route-template.js"
+      },
+      "/api/exp/award": {
+        "implementationModule": 133850,
+        "relativeArtifact": ".next/server/app/api/exp/award/route.js",
+        "directDependencies": [
+          "[root-of-the-server]__15bjnu5._.js",
+          "[root-of-the-server]__1rmgkjv._.js",
+          "[turbopack]_runtime.js",
+          "_1sb6pfh._.js",
+          "_next-internal_server_app_api_exp_award_route_actions_0pzj8as.js",
+          "node_modules_1e-9mkp._.js",
+          "node_modules_@supabase_supabase-js_dist_index_mjs_0u-n9p7._.js",
+          "node_modules_next_05zc8vy._.js"
+        ],
+        "implementationArtifact": "award-root.js"
+      }
+    },
+    "observations": {
+      "thinkerCallsIncrementExpWithServiceClient": true,
+      "thinkerAlsoUsesDirectRewardTableOperations": true,
+      "legacyReadingAwardAcceptsRequestAmountAndUsesDirectServiceWrites": true,
+      "compiledPublicProjectMatchesCatalogProject": true
+    }
+  },
+  "supabase": {
+    "catalog": {
+      "path": "verification/web/evidence/deployed-caller-20261105/catalog-refresh.json",
+      "sha256": "769545e6d42c2c7ba08084f7bc476abf42b27dc7356385a178136140caa39788"
+    },
+    "project": "woqvlkeluxkxplpgzdgv",
+    "observedAt": "2026-11-05 18:52:14 UTC",
+    "tables": 8,
+    "rlsDisabled": 6,
+    "rpcDefinitions": [
+      {
+        "args": "p_member_id uuid, p_amount integer, p_reason text",
+        "name": "add_exp",
+        "bodyMd5": "45c3f91859a6c157ddbc6b155e40d524",
+        "anonExecute": true,
+        "serviceExecute": true,
+        "securityDefiner": true,
+        "authenticatedExecute": true
+      },
+      {
+        "args": "member_id_input uuid, amount_input integer",
+        "name": "increment_exp",
+        "bodyMd5": "d18f4bd9730603002d5c779f9843fc1d",
+        "anonExecute": true,
+        "serviceExecute": true,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "args": "member_id_input uuid, amount_input integer",
+        "name": "increment_exp_tokens",
+        "bodyMd5": "8185aee4259a8ede92b7e14b5b7132af",
+        "anonExecute": true,
+        "serviceExecute": true,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      }
+    ],
+    "scheduledBackups": {
+      "plan": "Free",
+      "available": false,
+      "method": "Authenticated project Scheduled Backups page"
+    },
+    "productionRestoreVerified": false
+  },
+  "localRestore": {
+    "path": "verification/web/evidence/native-core-restore-02/receipt.json",
+    "sha256": "a6a9b39076df0d91eb01d03ff72fb80aae031ebe1141d360ce2c592ca8159da3",
+    "version": "postgres (PostgreSQL) 17.11 (Homebrew)",
+    "checks": [
+      "Pre-change archive restored the seven row sets, grants, policies and RLS flags.",
+      "A separate backend caused lock timeout and left no partial grant change or receipt.",
+      "The contained logical archive retained browser denial, service access and the original rows.",
+      "The original receipt reverses in place and refuses the restored copy with new table identities."
+    ],
+    "archives": [
+      {
+        "path": "verification/web/evidence/native-core-restore-02/synthetic-roles.sql",
+        "sha256": "334e9df8d345edef25a80d3079e25d8e507ee581e222a5e5ecabf69148390787"
+      },
+      {
+        "path": "verification/web/evidence/native-core-restore-02/before-containment.pgcustom",
+        "sha256": "b14f287964bd28ee94c1133aa4cfee5cb881a68816daaf646da258af15527eba"
+      },
+      {
+        "path": "verification/web/evidence/native-core-restore-02/after-containment.pgcustom",
+        "sha256": "f4b972553ebadbf0f0130dfcda9f9b765bdfc8aeebc788a9a8f0faf421036d46"
+      }
+    ],
+    "cleanup": {
+      "source": "stopped",
+      "target": "stopped"
+    },
+    "temporaryDirectoryRemoved": true,
+    "corePolicy": {
+      "path": "verification/web/evidence/root-kernel-philemon-03/core-policy.log",
+      "sha256": "50eee780a51c0810df5a6d08b6938d367a9e3d00777ce089fec2d945dac0bcc5",
+      "passed": 14
+    },
+    "harnessDiagnostic": {
+      "path": "verification/web/evidence/native-core-restore-01/receipt.json",
+      "sha256": "4a5c03deaad9ebe719f2686d053b140e25a6bf043fd6e9595e9eaf520ec73f90"
+    }
+  }
+}
