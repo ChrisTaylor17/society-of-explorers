@@ -38,8 +38,7 @@ export async function POST(req: NextRequest, { params }: Context) {
       const state = parseMessageAiConsent(value);
       return state && sameMessageId(state.circleId, circleId) && sameMessageId(state.messageId, messageId)
         && state.allowed === input.allowed && state.contentHash === input.contentHash
-        && state.consentRevision >= input.expectedConsentRevision
-        && state.consentRevision <= input.expectedConsentRevision + 1 ? state : null;
+        && state.consentRevision === input.expectedConsentRevision + 1 ? state : null;
     });
     return result.ok ? privateJson(result.value) : result.response;
   } catch { return messageSafetyUnavailable(); }
