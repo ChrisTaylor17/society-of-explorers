@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReviewAccess } from '@/lib/circles/useReviewAccess';
 import { discussionCommentLimit, discussionHref, discussionSearchParams, parseDiscussionLookup, parseDiscussionPage, parseDiscussionPreview, parseDiscussionReceipt, type DiscussionPage, type DiscussionPostInput, type DiscussionPreview, type DiscussionQuery, type DiscussionReceipt, type ThreadMessage } from '@/lib/circles/thread';
 import MessageActions from '../../messages/MessageActions';
@@ -20,7 +20,11 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
   const [preview, setPreview] = useState<DiscussionPreview | null>(null), [confirmed, setConfirmed] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null), [receipt, setReceipt] = useState<DiscussionReceipt | null>(null);
   const [notice, setNotice] = useState(invalidIntent ? 'This discussion link has invalid, duplicate or unsupported parameters. Open the archive to continue; no message has been assumed.' : 'Load the current discussion to check access. Nothing is loaded or posted automatically.');
-  const sending = useRef(false);
+  const sending = useRef(false), statusRef = useRef<HTMLParagraphElement>(null);
+  const [errorFocus, setErrorFocus] = useState(0);
+  useEffect(() => {
+    if (errorFocus && document.visibilityState === 'visible' && document.hasFocus()) statusRef.current?.focus({ preventScroll: true });
+  }, [errorFocus]);
   const clearReview = useCallback(() => { setPreview(null); setConfirmed(false); }, []);
   const retire = useCallback(() => {
     setPage(null); setTarget(null); setWriting(false); setComment(''); setPreview(null); setConfirmed(false); setPending(null); setReceipt(null); setReadVersion(value => value + 1); sending.current = false;
@@ -34,6 +38,7 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
   const commentLimit = discussionCommentLimit(circleId, target?.id ?? null);
   const focusHeading = useCallback((element: HTMLHeadingElement | null) => { element?.focus({ preventScroll: true }); }, []);
   function unavailable(status?: number) {
+    setErrorFocus(value => value + 1);
     setPage(null); setTarget(null); setWriting(false); setComment(''); clearReview(); setReceipt(null);
     setNotice(status === 401 ? 'Sign in, then load this discussion to check current access.' : status === 403 || status === 404 ? 'This discussion or message is not available for this account. Check your current Circle membership.' : status === 429 ? 'Too many requests. Wait, then load the discussion manually.' : 'The current discussion could not be verified. No empty archive or successful change is being assumed.');
   }
@@ -61,10 +66,11 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
       if (!current || current.circleId !== circleId || current.requestId !== request.requestId || current.comment !== request.comment || current.parentMessageId !== request.parentMessageId) {
         clearReview(); setTarget(null); setWriting(false); setComment(''); setPage(null);
         if (status === 401 || status === 403 || status === 404) return unavailable(status);
+        setErrorFocus(value => value + 1);
         setNotice(status === 409 ? 'The parent changed or is no longer visible. Load the current discussion before choosing a new target. Nothing was posted.' : 'The exact preview could not be verified. Load the current discussion and review again. Nothing was posted.'); return;
       }
       setPreview(current); setConfirmed(false); setTarget(current.parent?.message ?? null); setNotice('Review the complete message. It has not been posted.');
-    }, () => { clearReview(); setNotice('The preview could not be confirmed. Nothing was posted. Prepare a new preview manually.'); });
+    }, () => { clearReview(); setErrorFocus(value => value + 1); setNotice('The preview could not be confirmed. Nothing was posted. Prepare a new preview manually.'); });
   }
   function accept(value: unknown, request: Pending): boolean {
     const current = parseDiscussionReceipt(value);
@@ -118,7 +124,7 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
   }
   return <div className={`${styles.scope} ${styles.stack}`} aria-busy={busy}>
     <nav className={styles.row} aria-label="Discussion navigation"><Link href={`/circles/${circleId}`}>Return to Circle details</Link><Link href="/circles/mine">My Circles</Link><Link href={signInHref}>Sign in or create an account</Link></nav>
-    <p role="status" style={body}>{notice}</p>
+    <p ref={statusRef} tabIndex={-1} role="status" aria-live="polite" style={body}>{notice}</p>
     <div className={styles.row}>
       {!invalidIntent && <button type="button" style={primary} disabled={disabled} onClick={() => load()}>{query.kind === 'thread' ? 'Load current thread' : 'Load current discussion archive'}</button>}
       <button type="button" style={button} disabled={disabled} onClick={() => load({ kind: 'archive', before: null, limit: 25 })}>Open newest archive page</button>

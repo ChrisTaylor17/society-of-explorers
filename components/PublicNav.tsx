@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import Link from 'next/link';
 import { getMemberSession } from '@/lib/auth/getSession';
 import AccountSignOut from '@/components/AccountSignOut';
@@ -30,6 +30,38 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
   const [menuOpen, setMenuOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const mobileMenuId = useId();
+  const mobileMenu = useRef<HTMLDialogElement>(null);
+  const closeMenuButton = useRef<HTMLButtonElement>(null);
+  const brandLink = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const dialog = mobileMenu.current;
+    if (!dialog) return;
+    if (!menuOpen) {
+      if (dialog.open) dialog.close();
+      return;
+    }
+    // A modal dialog keeps covered page controls out of keyboard navigation
+    // and returns focus to the opener when it closes.
+    if (!dialog.open) dialog.showModal();
+    closeMenuButton.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const desktop = window.matchMedia('(min-width: 641px)');
+    const closeOnDesktop = () => {
+      if (desktop.matches) {
+        dialog.close();
+        brandLink.current?.focus({ preventScroll: true });
+      }
+    };
+    desktop.addEventListener('change', closeOnDesktop);
+    closeOnDesktop();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      desktop.removeEventListener('change', closeOnDesktop);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -68,14 +100,14 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
 
   return (
     <>
-      <nav style={{
+      <nav aria-label="Primary navigation" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, padding: '0 2rem', height: '56px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: scrolled ? 'rgba(10,10,10,0.95)' : 'transparent',
         backdropFilter: scrolled ? 'blur(8px)' : 'none',
         borderBottom: scrolled ? `1px solid ${gold}11` : 'none', transition: 'all 0.3s',
       }}>
-        <Link href="/" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
+        <Link ref={brandLink} href="/" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
           SOCIETY OF EXPLORERS
         </Link>
 
@@ -94,19 +126,27 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
           <AccountSignOut available={Boolean(selectedName)} />
         </div>
 
-        <button onClick={() => setMenuOpen(v => !v)} style={{ display: 'none', background: 'none', border: 'none', color: gold, fontSize: '20px', cursor: 'pointer' }} className="show-mobile">
+        <button type="button" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls={mobileMenuId}
+          onClick={() => setMenuOpen(true)} style={{ display: 'none', background: 'none', border: 'none', color: gold, fontSize: '20px', minWidth: '44px', minHeight: '44px', cursor: 'pointer' }} className="show-mobile">
           {menuOpen ? '\u00d7' : '\u2630'}
         </button>
       </nav>
 
-      {menuOpen && (
-        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, bottom: 0, background: 'rgba(10,10,10,0.98)', zIndex: 199, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <dialog ref={mobileMenu} id={mobileMenuId} aria-label="Site navigation" className="soe-public-mobile-dialog"
+        onCancel={event => { event.preventDefault(); setMenuOpen(false); }} onClose={() => setMenuOpen(false)}
+        style={{ position: 'fixed', inset: 0, margin: 0, width: '100%', height: '100dvh', maxWidth: 'none', maxHeight: 'none', boxSizing: 'border-box', border: 0, background: '#0a0a0a', color: parchment, padding: '1.25rem 2rem 2rem', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+          <h2 style={{ fontFamily: 'Cinzel, serif', color: gold, fontSize: '14px', margin: 0 }}>Navigation</h2>
+          <button ref={closeMenuButton} type="button" aria-label="Close navigation" onClick={() => setMenuOpen(false)}
+            style={{ background: 'none', border: `1px solid ${gold}66`, color: gold, fontSize: '24px', minWidth: '44px', minHeight: '44px', cursor: 'pointer' }}>×</button>
+        </div>
+        <nav aria-label="Mobile navigation" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
           <AccountSignOut available={Boolean(selectedName)} />
           {[...visibleLinks, { l: authLabel, h: authHref }].map(lk => (
-            <a key={lk.h + lk.l} href={lk.h} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
+            <a key={lk.h + lk.l} href={lk.h} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', minHeight: '44px', fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}
-        </div>
-      )}
+        </nav>
+      </dialog>
 
       <style>{`
         @media (max-width: 640px) { .hide-mobile { display: none !important; } .show-mobile { display: block !important; } }

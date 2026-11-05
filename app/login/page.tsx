@@ -139,6 +139,10 @@ const serverSearch = () => null;
 export default function LoginPage() {
   const search = useSyncExternalStore(subscribeLocation, browserSearch, serverSearch);
   const [chosenMode, setMode] = useState<Mode | null>(null), [noticeDismissed, setNoticeDismissed] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (chosenMode !== null && document.visibilityState === 'visible' && document.hasFocus()) headingRef.current?.focus({ preventScroll: true });
+  }, [chosenMode]);
   const retireRef = useRef<(() => void) | null>(null), query = new URLSearchParams(search ?? '');
   const mode: Mode = chosenMode ?? (query.get('mode') === 'signup' ? 'signup' : query.get('mode') === 'resend' ? 'resend' : 'signin');
   const nextPath = getSafeNextPath(query.get('next')), ready = search !== null;
@@ -150,7 +154,7 @@ export default function LoginPage() {
     <PublicNav checkSession={false} />
     <main className={styles.main}><section className={styles.card} aria-labelledby="login-title">
       <p className={styles.brand}>Society of Explorers</p>
-      <h1 id="login-title">{mode === 'signup' ? 'Create an account' : mode === 'resend' ? 'Confirm your email' : 'Welcome back'}</h1>
+      <h1 id="login-title" ref={headingRef} tabIndex={-1}>{mode === 'signup' ? 'Create an account' : mode === 'resend' ? 'Confirm your email' : 'Welcome back'}</h1>
       {notice && <p role="status">{notice}</p>}
       {ready ? mode === 'signin' ? <SignIn key="signin" nextPath={nextPath} retireRef={retireRef} /> : <EmailForm key={mode} mode={mode} nextPath={nextPath} retireRef={retireRef} /> : <p role="status">Preparing your account options…</p>}
       <div className={styles.modes} aria-label="Account options">
