@@ -6,6 +6,8 @@ The room shows up to five visible contributions from the first archive page. The
 
 The headset has its own session and uses the regular Circle's account checks, discussion endpoints and current membership rules. If delivery is uncertain, the panel lets a member check the receipt or retry the exact reviewed request. Account changes, headset focus loss, offline events, graphics failure, navigation and exit clear the private panel and draft and stop pending work. After an interrupted send, check the regular discussion before posting again. Use squeeze or the regular page's **Exit** button to leave, then check the member session again to resume in the browser. The full archive, long messages, other scripts, complete source editions, safety controls and live meeting links are in the regular browser. Members who enter through the shared salon pilot can open this discussion while keeping their checked-in seat. Back returns to the salon count. Live conversation uses the browser meeting link. [Shared salon](quest-shared-salon.md)
 
+In the shared salon, the first preview checks for new posts after each successful check-in. Older previews and the composer pause this check. After posting, choose **Read recent discussion** to return to the latest preview. The standalone room refreshes when you choose **Refresh**. [Live discussion verification](quest-live-discussion-verification.json)
+
 ## Reading in the room
 
 Point at **Read selection** from recent discussion or the shared salon. The room checks current membership and loads the upcoming meeting's exact book, edition and assigned range. It supports the pinned Great Books editions and the two starter readings already bound to those editions. For other assignments, the regular Circle shows the reading plan.

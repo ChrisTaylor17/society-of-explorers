@@ -41,7 +41,14 @@ function mount({window:win,document:doc,config},withCircle) {
   try {
     if(withCircle)screen=mountCirclePage({window:win,document:doc,config:{...hostConfig,owner:binding.owner}});
     contributions=mountMemberContributions({window:win,document:doc,config:{...hostConfig,aiConsent,owner:binding.owner},circleHost:screen?.host});
-    if(sharedSalon)browserSalon=mountBrowserSalon(doc,{window:win,...hostConfig,owner:binding.owner,isActive:regularActive});
+    if(sharedSalon)browserSalon=mountBrowserSalon(doc,{
+      window:win,...hostConfig,owner:binding.owner,isActive:regularActive,
+      onPresent() {
+        void screen.host.followLatestArchive(() => regularActive() && browserSalon.present()
+          && !doc.getElementById('circle-archive').contains(doc.activeElement));
+      },
+      onAccessLost() { screen.host.close(); },
+    });
     if(meeting)browserMeeting=mountBrowserMeeting(doc,{window:win,...hostConfig,owner:binding.owner,isActive:regularActive});
     const renderSession=m=>{status.textContent=m.message;button.disabled=m.busy||!m.active;button.textContent=m.busy?'Checking member session…':'Check member session';browserSalon?.render();browserMeeting?.render();};
     off=binding.subscribe(renderSession);

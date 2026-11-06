@@ -6,9 +6,9 @@ const circle='11111111-1111-4111-8111-111111111111',root='22222222-2222-4222-822
 const item=(id=root,extra={})=>({id,member_name:'Fictional Reader',content:'A synthetic human contribution.',created_at:'2026-11-04T10:00:00.123456Z',is_mine:false,visibility:'visible',parentMessageId:null,rootMessageId:id,...extra});
 const page=(extra={})=>({kind:'archive',circleId:circle,items:[item()],nextCursor:null,limit:25,...extra});
 const gate=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
-function fixture(){
+function fixture(newRequestId){
  let scope='nonissued-scope',credentialGate=null,responseGate=null,status=200,body=page();const requests=[],listeners=new Set();
- const config={circleId:circle,origin,owner:{scope:()=>scope,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);},bearer:async()=>{if(credentialGate)await credentialGate.promise;return'NONISSUED_FIXTURE';}},transport:async(url,init)=>{requests.push({url,init});if(responseGate)await responseGate.promise;return{status,url,redirected:false,json:async()=>body};}};
+ const config={circleId:circle,origin,newRequestId,owner:{scope:()=>scope,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);},bearer:async()=>{if(credentialGate)await credentialGate.promise;return'NONISSUED_FIXTURE';}},transport:async(url,init)=>{requests.push({url,init});if(responseGate)await responseGate.promise;return{status,url,redirected:false,json:async()=>body};}};
  const host=createCircleHost(config);host.connect();
  return{host,config,requests,listeners,setBody:x=>body=x,setStatus:x=>status=x,credentials:g=>credentialGate=g,response:g=>responseGate=g,identity(value){scope=value;for(const fn of listeners)fn();}};
 }
@@ -21,7 +21,8 @@ test('member bootstrap accepts only an explicit UUID, HTTPS origin, verifying ex
 test('registered native App offers deliberate owned sign-in and preserves existing-account Circle gating without an implicit provider call',()=>{
  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
  const primitive=tag=>function Primitive(p){return React.createElement(tag,{'aria-label':p.accessibilityLabel},p.children);};
- const rn={SafeAreaView:primitive('main'),ScrollView:primitive('div'),Text:primitive('span'),View:primitive('div'),Pressable:primitive('button'),TextInput:primitive('textarea'),ActivityIndicator:primitive('span'),StyleSheet:{create:x=>x},AppState:{currentState:'active'},Platform:{OS:'android'},TurboModuleRegistry:{get:()=>null}};
+ const rn={SafeAreaView:primitive('main'),ScrollView:primitive('div'),Text:primitive('span'),View:primitive('div'),Pressable:primitive('button'),TextInput:primitive('textarea'),ActivityIndicator:primitive('span'),StyleSheet:{create:x=>x},AppState:{currentState:'active'},Platform:{OS:'android'},TurboModuleRegistry:{get:()=>null},
+  UIManager:{getViewManagerConfig:()=>null},codegenNativeComponent:()=>()=>null};
  const load=sourceLoader({'react-native':rn}),App=load('platforms/native/App.tsx').default;
  let preparations=0;const prepare=async()=>{preparations++;throw Error('SSR must not prepare an account');};
  const empty=renderToStaticMarkup(React.createElement(App,{ownedAccountPrepare:prepare}));assert.match(empty,/Connect my account/);assert.equal(preparations,0);assert.doesNotMatch(empty,/Jules|Ada|Synthetic|fixture|Open member circle|aria-label="Password"/);
@@ -43,6 +44,58 @@ test('thread root tombstone and focus outside the current descendant page use th
  const f=fixture();try{f.setBody({kind:'thread',circleId:circle,limit:25,nextCursor:null,root:item(root,{visibility:'hidden',content:null}),focus:item(child,{rootMessageId:root,parentMessageId:root,content:'Focused reply outside page'}),items:[]});
  await f.host.archiveThread(child);const p=f.host.model().archive.page;assert.equal(p.kind,'thread');assert.equal(p.root.content,null);assert.equal(p.focus.id,child);assert.doesNotMatch(JSON.stringify(p),/PRIVATE/);
  }finally{f.host.disconnect();}
+});
+test('live archive publishes changed pages only and pauses on older pages or a failed access check', async () => {
+ const f = fixture();
+ try {
+  const items = [item(), ...Array.from({ length: 24 }, (_, i) => item(`${String(i + 1).padStart(8, '0')}-aaaa-4aaa-8aaa-aaaaaaaaaaaa`))];
+  const latest = page({ items, nextCursor: items.at(-1).id });
+  f.setBody(latest);
+  await f.host.openArchive();
+  const revision = f.host.model().archive.revision;
+  await f.host.followLatestArchive(() => true);
+  assert.equal(f.host.model().archive.revision, revision);
+  f.setBody({ ...latest, items: [item(root, { visibility: 'hidden', content: null }), ...items.slice(1)] });
+  await f.host.followLatestArchive(() => true);
+  assert.equal(f.host.model().archive.revision, revision + 1);
+  assert.equal(f.host.model().archive.page.items[0].content, null);
+
+  f.setBody(page({ items: [item(other)] }));
+  await f.host.archiveNext();
+  await f.host.followLatestArchive(() => true);
+  assert.equal(f.requests.length, 4);
+  assert.equal(f.host.model().archive.page.items[0].id, other);
+
+  await f.host.openArchive();
+  f.setStatus(403);
+  f.setBody({ error: 'unavailable' });
+  await f.host.followLatestArchive(() => true);
+  assert.equal(f.host.model().archive.page, null);
+  await f.host.followLatestArchive(() => true);
+  assert.equal(f.requests.length, 6);
+  assert.ok(f.requests.every(({ init }) => init.method === 'GET'));
+ } finally { f.host.disconnect(); }
+});
+test('a held live response leaves a newly started draft and its archive page intact', async () => {
+ const f = fixture(async () => other), hold = gate();
+ try {
+  await f.host.openArchive();
+  const revision = f.host.model().archive.revision;
+  f.response(hold);
+  const pending = f.host.followLatestArchive(() => true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.requests.length, 2);
+  await f.host.followLatestArchive(() => true);
+  assert.equal(f.requests.length, 2);
+  assert.equal(f.host.threadStart(null), true);
+  assert.equal(f.host.threadEdit('Keep this draft.'), true);
+  f.setBody(page({ items: [item(other)] }));
+  hold.resolve();
+  await pending;
+  assert.equal(f.host.model().threadWrite.draft, 'Keep this draft.');
+  assert.equal(f.host.model().archive.revision, revision);
+  assert.equal(f.host.model().archive.page.items[0].id, root);
+ } finally { hold.resolve(); f.host.disconnect(); }
 });
 test('scope-mismatched archive, forged visible tombstone body and repeated cursor fail closed',async()=>{
  for(const invalid of [page({circleId:other}),page({items:[item(root,{visibility:'hidden',content:'PRIVATE_RETAINED_BODY'})]}),page({nextCursor:root})]){

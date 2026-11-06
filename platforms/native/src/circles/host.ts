@@ -108,6 +108,12 @@ export function createCircleHost(config: CircleHostConfig) {
     connectivity(value: boolean) { if (!value) abortPending(); online = value; setActivity(); emit(); },
     async refresh() { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); archive.close(); await participation.open(); } },
     async openArchive() { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); participation.retire(); await archive.open(); } },
+    async followLatestArchive(mayFollow: () => boolean) {
+      const expected = scope;
+      if (!expected) return;
+      await archive.followLatest(() => current(expected) && mayFollow() && canNavigate()
+        && !messageSafety.model().open && threadWrite.model().phase === 'locked');
+    },
     archiveSelection: () => archive.currentQuery(),
     async restoreArchive(query: ArchiveQuery) { if (scope && current(scope) && canNavigate()) { messageSafety.retire(); participation.retire(); await archive.restore(query); } },
     archiveNext() { if (!canNavigate()) return Promise.resolve(); messageSafety.retire(); return archive.next(); },

@@ -246,8 +246,12 @@ try {
   pass('An independent regular browser and simulated headset see the same two seats, with one seat per member and no cross-member control');
 
   assert.equal(browserRequests.some(entry => entry.action === 'archive'), false);
+  const regularArchive = regular.locator('#circle-archive-messages');
+  await regular.locator('#circle-archive-open').click();
+  await regularArchive.getByText(/Independent visible reply remains readable/).waitFor();
   const beforeDiscussion = await xr.evaluate(() => window.questXrQa.stats().requests);
   const accountChecks = () => browserRequests.filter(entry => entry.actor === 'outsider' && entry.action === 'account').length;
+  const archiveReads = actor => browserRequests.filter(entry => entry.actor === actor && entry.action === 'archive').length;
   const beforeAccountChecks = accountChecks();
   const receiptsBefore = await f.receiptCount();
   await panel('Read Circle discussion');
@@ -260,18 +264,44 @@ try {
   await panel('1 of 180');
   await press('k');
   await panel('2 of 180');
+  const headsetDraftReads = archiveReads('outsider');
   assert.equal((await heartbeat(xr)).status(), 200);
   await panel('2 of 180');
+  assert.equal(archiveReads('outsider'), headsetDraftReads);
   await press('Review');
   await panel('Review your post');
   assert.equal(await f.receiptCount(), receiptsBefore);
   await press('Post');
   await panel('Post confirmed');
   assert.equal(await f.receiptCount(), receiptsBefore + 1);
-  await regular.locator('#circle-archive-open').click();
-  await regular.locator('#circle-archive-messages').getByText('ok', { exact: true }).waitFor();
+  await heartbeat();
+  await regularArchive.getByText('ok', { exact: true }).waitFor();
   await press('Read recent discussion');
-  await panel('Back to salon');
+  await panel('Live discussion 1 of');
+  const browserPost = 'Browser answer during the shared salon.';
+  await regular.locator('#circle-thread-new').click();
+  const browserDraft = regular.locator('#circle-thread-draft');
+  await browserDraft.fill(browserPost);
+  const browserDraftReads = archiveReads('author');
+  await heartbeat();
+  assert.equal(archiveReads('author'), browserDraftReads);
+  assert.equal(await browserDraft.inputValue(), browserPost);
+  await regular.locator('#circle-thread-review').click();
+  await regular.locator('#circle-thread-preview-content').getByText(browserPost, { exact: true }).waitFor();
+  await regular.locator('#circle-thread-confirm').check();
+  await regular.locator('#circle-thread-post').click();
+  await regular.locator('#circle-thread-saved').waitFor();
+  assert.equal(await f.receiptCount(), receiptsBefore + 2);
+  await heartbeat(xr);
+  await panel(browserPost);
+  pass('The latest discussion follows posts in both directions while members keep their drafts through check-ins');
+
+  await press('Next preview');
+  await panel('Recent discussion 2 of');
+  const headsetOlderReads = archiveReads('outsider');
+  await heartbeat(xr);
+  await panel('Recent discussion 2 of');
+  assert.equal(archiveReads('outsider'), headsetOlderReads);
   await press('Back to salon');
   await panel('2 members checked in, including you.');
   assert.equal(await xr.evaluate(() => window.questXrQa.stats().requests), beforeDiscussion);
@@ -280,7 +310,7 @@ try {
   assert.deepEqual((await f.db.query('SELECT lease_id FROM circle_salon_presence WHERE member_id=$1',
     [f.reviewerId])).rows, [{ lease_id: headsetLease }]);
   assert.equal(await seats(), 2);
-  pass('A headset member reads and posts within the same shared seat while its heartbeat continues, and the regular browser reads the saved post');
+  pass('Reviewing older headset posts pauses discussion updates and returning to the salon retains the same seat');
 
   await press('Read selection');
   await panel('no current selection from a supported edition');
@@ -312,7 +342,7 @@ try {
   assert.equal((await heartbeat(xr)).status(), 404);
   await xr.waitForFunction(() => window.questXrQa.panel() === '' && window.questXrQa.stats().pendingFrames === 0);
   await xr.getByText('Your shared salon check-in ended. Open the room again to check access.', { exact: true }).waitFor();
-  assert.equal(await f.receiptCount(), receiptsBefore + 1);
+  assert.equal(await f.receiptCount(), receiptsBefore + 2);
   pass('Removing the headset member closes the shared discussion on the next heartbeat and clears its private draft');
   await f.db.query('INSERT INTO book_cohort_members(cohort_id,member_id) VALUES($1,$2)', [f.circleId, f.reviewerId]);
   await openXR();
@@ -356,12 +386,15 @@ try {
   await status('You are the only member checked in.');
   pass('Account changes clear the headset and stop polling, and an expired active seat is excluded from the live count');
 
+  await regular.locator('#circle-archive-open').click();
+  await regularArchive.getByText(browserPost, { exact: true }).waitFor();
   await f.db.query('DELETE FROM book_cohort_members WHERE cohort_id=$1 AND member_id=$2', [f.circleId, f.authorId]);
   assert.equal((await f.db.query('SELECT 1 FROM circle_salon_presence WHERE member_id=$1', [f.authorId])).rows.length, 0);
   await heartbeat();
   await status('available to current members');
+  await regularArchive.getByText(browserPost, { exact: true }).waitFor({ state: 'detached' });
   assert.equal((await send('author', { action: 'sync', leaseId: own })).status, 404);
-  pass('Membership removal cascades to the owned seat and refuses a fresh update');
+  pass('Membership removal deletes the browser seat, clears its open private archive and refuses a fresh update');
 
   const meetingStatus = 'The live meeting is unavailable for your current Circle access.';
   const openMeeting = page => page.getByRole('button', { name: 'Open live meeting', exact: true });

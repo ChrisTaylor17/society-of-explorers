@@ -13,7 +13,7 @@ export type ArchiveModel = {
 export function createDiscussionArchive(request: ArchiveRequest, circleId: string) {
   if (!isUuid(circleId)) throw Error('Valid Circle required');
   const circle = circleId.toLowerCase();
-  let generation = 0, selection: ArchiveQuery | null = null;
+  let generation = 0, selection: ArchiveQuery | null = null, following = false;
   let state: ArchiveModel = { open: false, active: true, busy: false, phase: 'closed', page: null, revision: 0, message: 'Open the complete discussion archive to check current access.' };
   const listeners = new Set<(model: ArchiveModel) => void>();
   const model = (): ArchiveModel => JSON.parse(JSON.stringify(state)) as ArchiveModel;
@@ -22,13 +22,16 @@ export function createDiscussionArchive(request: ArchiveRequest, circleId: strin
   function retire(message = 'Private archive cleared. Check current Circle access again.') {
     generation++; selection = null; state = { ...state, revision: state.revision + 1, busy: false, page: null, phase: state.open ? 'paused' : 'closed', message }; emit();
   }
+  function requestPage(query: ArchiveQuery, mayTransmit: () => boolean) {
+    const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : '';
+    return request(`/api/circles/${circle}/discussion${suffix}`, { method: 'GET', cache: 'no-store', redirect: 'error' }, mayTransmit);
+  }
   async function read(query: ArchiveQuery) {
     if (!state.active || state.busy) return;
-    const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : '';
     const g = ++generation; selection = null;
     state = { ...state, revision: state.revision + 1, open: true, busy: true, phase: 'loading', page: null, message: 'Checking current membership and loading discussion.' }; emit();
     try {
-      const reply = await request(`/api/circles/${circle}/discussion${suffix}`, { method: 'GET', cache: 'no-store', redirect: 'error' }, () => current(g));
+      const reply = await requestPage(query, () => current(g));
       if (!current(g)) return;
       const page = reply.http === 200 ? parseDiscussionPage(reply.body, { ...query, circleId: circle }) : null;
       if (!page) {
@@ -39,6 +42,25 @@ export function createDiscussionArchive(request: ArchiveRequest, circleId: strin
       emit();
     } catch { if (current(g)) { state = { ...state, busy: false, phase: 'unavailable', page: null, message: 'Discussion read is unavailable. Try an explicit refresh when ready.' }; emit(); } }
   }
+  async function followLatest(mayFollow: () => boolean) {
+    const query = selection;
+    if (following || state.busy || !state.active || state.phase !== 'ready'
+      || query?.kind !== 'archive' || query.before !== null || !mayFollow()) return;
+    const g = generation;
+    const allowed = () => current(g) && mayFollow();
+    const paused = 'Live discussion paused. Open the archive to check current access again.';
+    following = true;
+    try {
+      const reply = await requestPage(query, allowed);
+      if (!allowed()) return;
+      const page = reply.http === 200 ? parseDiscussionPage(reply.body, { ...query, circleId: circle }) : null;
+      if (!page) { retire(paused); return; }
+      if (JSON.stringify(page) === JSON.stringify(state.page)) return;
+      state = { ...state, page, revision: state.revision + 1 };
+      emit();
+    } catch { if (allowed()) retire(paused); }
+    finally { following = false; }
+  }
   return {
     model,
     currentQuery: (): ArchiveQuery | null => selection ? { ...selection } : null,
@@ -48,6 +70,7 @@ export function createDiscussionArchive(request: ArchiveRequest, circleId: strin
     },
     subscribe(listener: (model: ArchiveModel) => void) { listeners.add(listener); listener(model()); return () => { listeners.delete(listener); }; },
     open: () => read({ kind: 'archive', before: null, limit: 25 }),
+    followLatest,
     thread(messageId: string) { if (!isUuid(messageId)) return Promise.resolve(); return read({ kind: 'thread', messageId: messageId.toLowerCase(), after: null, limit: 25 }); },
     next() {
       const p = state.page;

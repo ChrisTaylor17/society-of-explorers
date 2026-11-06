@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+Members in the shared Quest salon can follow new posts in Quest Browser and the headset room. The latest page checks for changes after each successful check-in. Older posts and drafts stay in place, and a membership refusal clears private discussion. **79 focused tests, 19 shared-salon scenarios, 20 standalone discussion scenarios and three compiled browser checks** passed locally. The pilot switch remains off by default. Live meetings use the browser handoff. Hosted and physical Quest checks remain open. [Verification](docs/integration/quest-live-discussion-verification.json)
+
 Each reviewed Archivist Reel has a public share page with source credits, a transcript and a path to online Circles. The local browser journey followed a shared link through Circle choice, sign-in, reviewed joining and a fresh meeting handoff. The simulated Android and iOS app paths shared the same public address for guests and members. **31 focused tests, 19 Reel browser scenarios, 11 salon scenarios and 41 phone-path scenarios** passed. Hosted previews and physical share sheets remain open. [Verification](docs/integration/reel-share-verification.json)
 
 The restore check now covers used wallet sign-in challenges, revoked sessions and the database functions that enforce them. A synthetic backup missing both wallet tables' rows passed the earlier 17-table check and reopened both replay paths. The 19-table check refused that backup. The complete restore preserved both replay refusals. **36 PostgreSQL rehearsal checks** passed. The initial hosted backup approval and isolated restore remain open. [Verification](docs/integration/wallet-restore-verification.json)

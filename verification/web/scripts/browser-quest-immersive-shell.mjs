@@ -118,6 +118,7 @@ try {
   await secure.page.getByText(/Member sign-in is unavailable for this view/).waitFor();
   assert(await enter(secure.page).isDisabled());
   assert(await meeting(secure.page).isDisabled());
+  assert.equal(await secure.page.locator('#quest-salon-join, #quest-salon-headset').count(), 0);
   assert.equal(await secure.page.evaluate(() => window.xrFixtureCalls), 0);
   assert.equal((await secure.page.goto(secureOrigin + '/quest/contributions')).status(), 200);
   await secure.page.getByRole('heading', { name: 'My Quest Browser contributions' }).waitFor();
@@ -125,7 +126,7 @@ try {
   assert.equal(await meeting(secure.page).count(), 0);
   await secure.page.waitForLoadState('networkidle');
   await secure.context.close();
-  stories.push('Synthetic HTTPS backed by the guarded local build still holds private access. The account-level contributions page has no headset controls.');
+  stories.push('The compiled default keeps both shared salon entry controls off. The contributions page has no headset controls, and private access stays closed under synthetic HTTPS.');
   assert.deepEqual({ privateCalls, external, errors }, { privateCalls: [], external: [], errors: [] });
 } catch (error) { failure = error.stack || String(error); }
 finally {

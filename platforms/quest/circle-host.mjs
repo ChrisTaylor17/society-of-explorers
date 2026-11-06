@@ -624,7 +624,7 @@ function createDiscussionArchive(request, circleId) {
   if (!isUuid(circleId))
     throw Error("Valid Circle required");
   const circle = circleId.toLowerCase();
-  let generation = 0, selection = null;
+  let generation = 0, selection = null, following = false;
   let state = { open: false, active: true, busy: false, phase: "closed", page: null, revision: 0, message: "Open the complete discussion archive to check current access." };
   const listeners = new Set;
   const model = () => JSON.parse(JSON.stringify(state));
@@ -639,16 +639,19 @@ function createDiscussionArchive(request, circleId) {
     state = { ...state, revision: state.revision + 1, busy: false, page: null, phase: state.open ? "paused" : "closed", message };
     emit();
   }
+  function requestPage(query, mayTransmit) {
+    const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : "";
+    return request(`/api/circles/${circle}/discussion${suffix}`, { method: "GET", cache: "no-store", redirect: "error" }, mayTransmit);
+  }
   async function read(query) {
     if (!state.active || state.busy)
       return;
-    const params = discussionSearchParams(query), suffix = params.size ? `?${params}` : "";
     const g = ++generation;
     selection = null;
     state = { ...state, revision: state.revision + 1, open: true, busy: true, phase: "loading", page: null, message: "Checking current membership and loading discussion." };
     emit();
     try {
-      const reply = await request(`/api/circles/${circle}/discussion${suffix}`, { method: "GET", cache: "no-store", redirect: "error" }, () => current(g));
+      const reply = await requestPage(query, () => current(g));
       if (!current(g))
         return;
       const page = reply.http === 200 ? parseDiscussionPage(reply.body, { ...query, circleId: circle }) : null;
@@ -673,6 +676,34 @@ function createDiscussionArchive(request, circleId) {
       }
     }
   }
+  async function followLatest(mayFollow) {
+    const query = selection;
+    if (following || state.busy || !state.active || state.phase !== "ready" || query?.kind !== "archive" || query.before !== null || !mayFollow())
+      return;
+    const g = generation;
+    const allowed = () => current(g) && mayFollow();
+    const paused = "Live discussion paused. Open the archive to check current access again.";
+    following = true;
+    try {
+      const reply = await requestPage(query, allowed);
+      if (!allowed())
+        return;
+      const page = reply.http === 200 ? parseDiscussionPage(reply.body, { ...query, circleId: circle }) : null;
+      if (!page) {
+        retire(paused);
+        return;
+      }
+      if (JSON.stringify(page) === JSON.stringify(state.page))
+        return;
+      state = { ...state, page, revision: state.revision + 1 };
+      emit();
+    } catch {
+      if (allowed())
+        retire(paused);
+    } finally {
+      following = false;
+    }
+  }
   return {
     model,
     currentQuery: () => selection ? { ...selection } : null,
@@ -688,6 +719,7 @@ function createDiscussionArchive(request, circleId) {
       };
     },
     open: () => read({ kind: "archive", before: null, limit: 25 }),
+    followLatest,
     thread(messageId) {
       if (!isUuid(messageId))
         return Promise.resolve();
@@ -1536,6 +1568,12 @@ function createCircleHost(config) {
         participation.retire();
         await archive.open();
       }
+    },
+    async followLatestArchive(mayFollow) {
+      const expected = scope;
+      if (!expected)
+        return;
+      await archive.followLatest(() => current(expected) && mayFollow() && canNavigate() && !messageSafety.model().open && threadWrite.model().phase === "locked");
     },
     archiveSelection: () => archive.currentQuery(),
     async restoreArchive(query) {

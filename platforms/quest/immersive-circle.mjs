@@ -100,7 +100,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
           if (view === 'salon') showSalon(model);
           else if (model.phase !== 'present') {
             void headset.leave('Your shared salon check-in ended. Open the room again to check access.');
-          }
+          } else if (view === 'discussion') void followDiscussion(current);
         },
       });
       current.off = binding.subscribe(model => {
@@ -129,6 +129,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     const model = current.host.model(), card = current.cards[current.index];
     const canWrite = model.threadWrite.canStart;
     const more = current.index + 1 < current.cards.length;
+    const following = current.salon && current.index === 0;
     const actions = [...(canWrite ? [control('new', 'Write a post')] : []),
       ...(card && canWrite ? [control('reply', 'Reply')] : []), control('advance', more ? 'Next preview' : 'Refresh')];
     if (model.archive.phase === 'ready') actions.push(control('reading-open', 'Read selection'));
@@ -140,7 +141,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     const rows = [actions];
     if (card) {
       panel = { heading: card.heading, text: card.text, rows,
-        footer: `Recent discussion ${current.index + 1} of ${current.cards.length}. Trigger for ${more ? 'next preview' : 'a fresh check'}.` };
+        footer: `${following ? 'Live' : 'Recent'} discussion ${current.index + 1} of ${current.cards.length}. Trigger for ${more ? 'next preview' : 'a fresh check'}.` };
     } else if (model.archive.phase === 'ready') {
       panel = { ...prompt('No visible contributions in the latest discussion page. Trigger to check again.'), rows };
     } else {
@@ -148,13 +149,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       if (current.salon) panel.rows = rows;
     }
   }
-  async function loadDiscussion(current) {
-    current.cards = [];
-    current.index = 0;
-    current.keyboard = null;
-    panel = prompt('Checking current Circle access…');
-    await current.host.openArchive();
-    if (!ownsRoom(current)) return;
+  function showLoadedDiscussion(current) {
     const { page } = current.host.model().archive;
     current.cards = (page?.kind === 'archive' ? page.items : [])
       .filter(message => message.visibility === 'visible' && message.content).slice(0, 5)
@@ -165,6 +160,22 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
         return { id: message.id, heading: message.member_name, text };
       });
     showDiscussion(current);
+  }
+  async function loadDiscussion(current) {
+    current.cards = [];
+    current.index = 0;
+    current.keyboard = null;
+    panel = prompt('Checking current Circle access…');
+    await current.host.openArchive();
+    if (ownsRoom(current)) showLoadedDiscussion(current);
+  }
+  async function followDiscussion(current) {
+    const allowed = () => ownsRoom(current) && view === 'discussion' && !current.pending
+      && !current.keyboard && current.index === 0 && current.salon.model().phase === 'present';
+    if (!allowed()) return;
+    const { revision } = current.host.model().archive;
+    await current.host.followLatestArchive(allowed);
+    if (allowed() && current.host.model().archive.revision !== revision) showLoadedDiscussion(current);
   }
   async function openReading(current) {
     const from = view;

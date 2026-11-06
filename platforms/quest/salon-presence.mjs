@@ -3,7 +3,7 @@ const REQUEST_TIMEOUT_MS = 9_000;
 const invitation = 'Join when you are ready to appear in the shared salon count.';
 
 /** One explicitly joined seat, owned by the current account and view. */
-export function createSalonPresence({ window: win, origin, circleId, owner, transport, isActive, onState }) {
+export function createSalonPresence({ window: win, origin, circleId, owner, transport, isActive, onState, onAccessLost }) {
   const endpoint = origin + '/api/circles/' + circleId + '/salon-presence';
   let joined = null, leaving = null, timer, disposed = false;
   let state = { phase: 'idle', message: invitation };
@@ -50,6 +50,7 @@ export function createSalonPresence({ window: win, origin, circleId, owner, tran
       status === 404 ? 'This salon is available to current members of open online and hybrid Circles.' :
       'Your salon check-in ended. Check your session and join again when ready.';
     publish('idle', message);
+    if ([401, 403, 404].includes(status)) onAccessLost?.();
   }
 
   async function sync(seat) {
@@ -115,7 +116,10 @@ export function salonControls(doc) {
 
 export function mountBrowserSalon(doc, options) {
   const [status, join, leave] = salonControls(doc);
-  const salon = createSalonPresence({ ...options, onState: () => render() });
+  const salon = createSalonPresence({ ...options, onState(model) {
+    render();
+    if (model.phase === 'present') options.onPresent?.();
+  } });
   function render() {
     const model = salon.model();
     const message = options.isActive() && options.owner.scope() ? model.message : 'Check your member session to join the shared salon.';
@@ -128,7 +132,7 @@ export function mountBrowserSalon(doc, options) {
   join.addEventListener('click', enter);
   leave.addEventListener('click', exit);
   render();
-  return { render, retire: salon.retire, dispose() {
+  return { render, present: () => salon.model().phase === 'present', retire: salon.retire, dispose() {
     salon.dispose();
     join.removeEventListener('click', enter);
     leave.removeEventListener('click', exit);
