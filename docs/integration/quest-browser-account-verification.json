@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "baseCommit": "9c9fd8a92f8c58acb210e4944baaff7e0ae383da",
+  "verifiedAt": "2026-11-06T09:26:21.448586+00:00",
+  "status": "LOCAL_QUEST_BROWSER_ACCOUNT_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "baseline": "The regular Quest archive returned HTTP 200 after an HttpOnly sign-out marker was installed between a valid member proof and dispatch.",
+  "current": {
+    "status": "PASS",
+    "reads": [
+      {
+        "status": 401,
+        "browserIntent": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "includedMarker": true
+      },
+      {
+        "status": 200,
+        "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "includedMarker": false
+      },
+      {
+        "status": 401,
+        "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "includedMarker": true
+      }
+    ],
+    "rotationBeforeDispatchRefused": true,
+    "staleIntentAndMissingCookiesRefused": true,
+    "nativeBearerAccepted": true,
+    "immersiveWebGl": true,
+    "scope": "Actual Quest UI, request cookies, canonical member resolver, discussion handler and disposable SQL. Identity provider and headset input use synthetic fixtures."
+  },
+  "checks": {
+    "focusedTestsPassed": 158,
+    "focusedGroups": {
+      "quest-intent-root-tests.log": 50,
+      "quest-intent-account-tests.log": 108
+    },
+    "focusedLint": "passed",
+    "webBuild": "passed",
+    "compiledQuestChecks": 3,
+    "discussionScenarios": 20,
+    "sharedSalonScenarios": 18,
+    "authorConsentScenarios": 10,
+    "authorConsentProviderCalls": 0,
+    "sharedBundleByteIdentical": true
+  },
+  "machine": {
+    "xcodeSelection": "/Library/Developer/CommandLineTools",
+    "iPhoneOSSDK": "unavailable",
+    "javaRuntime": "unavailable",
+    "usualAndroidSDK": "absent"
+  },
+  "limits": "HTTPS delivery and provider identity were isolated fixtures. The dedicated archive test used the real member resolver and Circle handler with actual SQL. WebGL ran in Chromium with simulated controller events. Hosted and physical device acceptance remain open.",
+  "verifiedUnchangedTypeDeclarationSha256": "5152c0b8d7aaf7785ff54fb0f320c796883aa0226cb404900eb5291f52458a2d",
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "6a6ed4e534d7f1d1059b78fbd7d7a0e0f4145525ca2f886b1ce1d419e14375f8",
+    "app/api/auth/nonce/route.ts": "8d32fdf57ea59be48536901c33be91760a2ddee765e54a6c12f9b1f024da5aca",
+    "app/quest/[circleId]/QuestCircle.tsx": "2732eb0e8ee102fd0b7454b5196e48bb94d183a8746e845ce60565277a649080",
+    "docs/integration/quest-member-composition.md": "1c876d090020e97782ff58f64067119a9203661ca99f03a5b5431fc51f76568f",
+    "docs/integration/quest-shared-salon.md": "4dd26e4694c38944802cfd30f71e3d935d1bf34f4c425cc62eb410b9ab0b1f15",
+    "lib/auth/browserIntent.ts": "5b6e8a2e2e8ed3850e885ae8f4c0112db226d266fb7ea6a56be4b51a328bc0fe",
+    "lib/getAuthenticatedMember.ts": "f307558acd4710e0b9eeeb7aefa4922bc0c23d892b2d0a08ca55bd1b99647a94",
+    "platforms/tests/browser-quest-account-boundary.mjs": "972167643716e6c38335a60afd7c570d74adc751476c0dc220c976393cceba3d",
+    "platforms/tests/browser-quest-ai-consent.mjs": "212e7fcc99312fb998872ed6bcd88f41162a842f40101035517b71a063dafe6b",
+    "platforms/tests/browser-quest-salon-presence.mjs": "96457806205b730ebf83f166f4f78b777b96fc1fd26569a0d18ed158a6b8ce7f",
+    "verification/web/tests/support/quest-member-app.mjs": "3cc260a1159c3761073f5da88e3afe970cdd566a67e3bd2ac11cdd4552075831"
+  },
+  "proofs": [
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-root-tests.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-root-tests.log",
+      "sha256": "8f5beda7ac9777f7e73045b6d7e5d35ec98f4e229d7ed8bcb39414e49b07eb3f"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-account-tests.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-account-tests.log",
+      "sha256": "ee92d31ef709585dd33425dd29a391276353d95f68fdf64ff111306308a4ff9f"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-lint.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-before.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-before.log",
+      "sha256": "f35dd626e5d35081a8776ad2d68c5000235aa4ea9db090756da66ec95129bfe8"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-browser-final.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-browser-final.log",
+      "sha256": "9997407705ed9c884329958f3a722da5063be77835c7b936c45c23db91fa9334"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-composed.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-composed.log",
+      "sha256": "8847c9e43e536bee9cfbed6ac72e6ad6df2b207d15297259480f9165a563f9da"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-salon.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-salon.log",
+      "sha256": "bc18aa9b69e8cba9ef505e2b8c2058dc5e3ae5bdde37c09286a9a901d498403f"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-intent-consent-final.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-intent-consent-final.log",
+      "sha256": "8ad8f5a32d5bef067fe5bf6087780cb66da93416f345721ed5074682b41fae9f"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-guard-check.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-guard-check.json",
+      "sha256": "4ef53c74baee142ae5888098ee74e5373ea584891d400eb946b5b8ec19ba778a"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-quest-intent-02-next-build.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-quest-intent-02-next-build.json",
+      "sha256": "dcb108b23a02ddb69c477249f2153ee6edee2e0915899e093c2c76b361cb9117"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-quest-intent-02-next-build.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-quest-intent-02-next-build.log",
+      "sha256": "31604fd37b06d89430e98debd20e8f94d9d278ed70ef5931dc820413e244a3fc"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-quest-intent-02-build-source-sha256.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-quest-intent-02-build-source-sha256.json",
+      "sha256": "787fde1208c2b512ad4b811b9ceed3e33eae8e47c3669bfc584408df120397f7"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-quest-intent-02-server.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-quest-intent-02-server.json",
+      "sha256": "40b792f07ebc189d97b46b454d3ae6660aa873cbc098742f92c0c67e792a88b1"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-quest-intent-02-server-ready.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-quest-intent-02-server-ready.json",
+      "sha256": "f4fbeb9fc1a679bcc0da59064d9c231d641277afe56389941f55b389fb2914f0"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-quest-intent-02-server-runtime.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-quest-intent-02-server-runtime.json",
+      "sha256": "b81f3d42e73d19dc44b3a341e15df5ccd4d6603d942bb95dc30a853c57d36214"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/built-shell-quest-intent-02-server.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-quest-intent-02-server.log",
+      "sha256": "183093d48051129c9c5fe1f35f98fa0330f6e7267fb5a46d1e301c04601bfac1"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-member-composed-immersive-intent-after.json",
+      "sourceInVerificationCheckout": "platforms/evidence/quest-member-composed-immersive-intent-after.json",
+      "sha256": "9e52faf328ed5c06215c675fb4c69766e47607366458a8d948b796e7ec7a569b"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-salon-immersive-salon-intent-01.json",
+      "sourceInVerificationCheckout": "platforms/evidence/quest-salon-immersive-salon-intent-01.json",
+      "sha256": "e6cd41923cafae32c0e03ddb6dcc7b4ae0f55a65659e60fbb22f48b30ea1e356"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-ai-consent-browser.json",
+      "sourceInVerificationCheckout": "platforms/evidence/quest-ai-consent-browser.json",
+      "sha256": "4aa5e27696896b03e2c49ec2fc4d43fd91fd3a37f749d93bdd03b847fa677a88"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/shared-build.json",
+      "sourceInVerificationCheckout": "platforms/evidence/shared-build.json",
+      "sha256": "9742f30aba0cf6b6b2ae0303213f43d3478c1fbda1c59d2e0259d8ed8c25a8ef"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-member-composed-fixture-immersive-intent-before-source-manifest.json",
+      "sourceInVerificationCheckout": "platforms/evidence/quest-member-composed-fixture-immersive-intent-before/source-manifest.json",
+      "sha256": "d18b8ffd9f5d547a70d79a4980058cbd9c8cc78a86dfd24bf93f827c368454aa"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-member-composed-fixture-immersive-intent-after-source-manifest.json",
+      "sourceInVerificationCheckout": "platforms/evidence/quest-member-composed-fixture-immersive-intent-after/source-manifest.json",
+      "sha256": "e7acee0df47f5b3a74be3f6fdb62a4f2f2c77f8ff6a552d012332fa556fe40aa"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-immersive-built-201-browser.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-immersive-built-201/browser.json",
+      "sha256": "0e289c33c6c57258a01a3bef8fab298ff88c8b4d84994c2cb3e91a75b1cfef8d"
+    },
+    {
+      "path": "verification/web/evidence/quest-browser-account-2026-11-06/quest-320.png",
+      "sourceInVerificationCheckout": "verification/web/evidence/quest-immersive-built-201/quest-320.png",
+      "sha256": "ed744b492ab284ff1c80c801910b4d5ada164b1206aaefac4b157287103e65fc"
+    }
+  ]
+}

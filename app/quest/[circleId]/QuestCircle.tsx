@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { createQuestMemberAuth } from '@/lib/circles/quest-member-auth';
+import { AUTH_INTENT_HEADER, currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import styles from './quest.module.css';
 
@@ -58,25 +59,40 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       setNotice(circleId ? 'Member sign-in is unavailable for this view. Use the regular Circle view.' : 'Member sign-in is unavailable for this view. Use your regular posted messages page.'); return;
     }
     const generation = ++lifetime.current.generation;
+    const intent = currentBrowserAuthIntent();
+    const current = () => lifetime.current.mounted && lifetime.current.generation === generation &&
+      navigator.onLine !== false && currentBrowserAuthIntent() === intent;
     setPhase('connecting'); setNotice('Connecting your existing account…');
     try {
       const [{ mountExistingMemberCircle, mountExistingMemberContributions, assertContributionsMarkup }, { createClient }] = await Promise.all([
         import('@/platforms/quest/member-circle-page.mjs'), import('@/lib/supabase/client'),
       ]);
       if (!lifetime.current.mounted || lifetime.current.generation !== generation) return;
+      if (!current()) throw Error('Browser account changed');
       assertContributionsMarkup(document, true);
       const origin = window.location.origin;
+      const transport = (url: string, init: RequestInit) => {
+        const target = new URL(url);
+        if (!current() || init.signal?.aborted || target.origin !== origin || target.username || target.password || target.hash) {
+          throw Error('Circle request retired');
+        }
+        const headers = new Headers(init.headers);
+        const authenticated = headers.has('authorization');
+        if (authenticated) headers.set(AUTH_INTENT_HEADER, intent ?? '');
+        return window.fetch(url, { ...init, headers, cache: 'no-store', mode: 'same-origin',
+          credentials: authenticated ? 'same-origin' : 'omit', redirect: 'error', referrerPolicy: 'no-referrer' });
+      };
       const sdk = createClient().auth;
       const verifiedAuth = (active: () => boolean) => createQuestMemberAuth(sdk, { origin,
         request: (url, init) => window.fetch(url, init),
-        isCurrent: () => lifetime.current.mounted && lifetime.current.generation === generation && navigator.onLine !== false && active(),
+        isCurrent: () => current() && active(),
       });
       const memberAuth = verifiedAuth(() => document.visibilityState === 'visible' && document.hasFocus());
       try {
         const view = circleId
-          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, auth: memberAuth.auth, aiConsent: true, sharedSalon, meeting: true,
+          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, transport, auth: memberAuth.auth, aiConsent: true, sharedSalon, meeting: true,
             immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate } } })
-          : mountExistingMemberContributions({ window, document, config: { origin, auth: memberAuth.auth, aiConsent: true } });
+          : mountExistingMemberContributions({ window, document, config: { origin, transport, auth: memberAuth.auth, aiConsent: true } });
         connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
       } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
       setPhase('connected'); setNotice(circleId ? 'Account connection opened. Check the member-session and Circle-access messages below.' : 'Account connection opened. Check the member session, then load your own posted messages when ready.');

@@ -1,5 +1,13 @@
 # Quest member discussion composition
 
+## Current browser account check
+
+The Quest Circle and contributions pages remember the selected sign-in attempt at Connect. Each private request in the browser or immersive room carries that attempt and the same-origin session cookies. The server checks that the attempt still matches and that the bearer belongs to the selected account. A browser sign-out, missing cookie or changed attempt closes access. Public source passages still open without account cookies or a bearer. A host’s meeting opens through the existing browser handoff. [Fetch credentials and request modes](https://fetch.spec.whatwg.org/#concept-request-credentials-mode)
+
+The regression changes the HttpOnly sign-in marker after the member check. The earlier browser request reached discussion SQL and returned the private archive. The replacement returns 401 before a Circle query in the regular browser and simulated headset. A fresh connection loads the archive, and a cookie-free native bearer still authenticates through the same route. The isolated database runs the actual Circle SQL with synthetic members and provider credentials. [Verification](quest-browser-account-verification.json)
+
+## Earlier archive composition
+
 2026-11-04: **8/8 composed Chromium stories PASS**, 27 actual handler GET requests; owned browser and disposable database closed, with zero unexpected requests, page errors, console errors or route errors. The only product correction suppresses the retired flat-conversation status while the archive/thread view is open (`platforms/quest/circle-view.mjs`); the archive status owns that view. Per-page and thread regressions confirm the contradictory status stays empty. This adds database/handler composition to the earlier seven-story Quest component fixture; it does not establish real authentication, a native bridge, immersive XR or headset acceptance.
 
 ## Executed closure

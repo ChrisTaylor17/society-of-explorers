@@ -132,8 +132,14 @@ try {
         assert.ok(method === 'GET' && (memberCheck || detailRead || discussion || passage) ||
           method === 'POST' && (presence || discussion || preview), method + ' ' + url.pathname);
         assert.equal(actual.authorization, memberCheck || passage ? undefined : 'Bearer ' + TOKENS[actor]);
-        if (discussion || preview || passage || (readingCircle && detailRead)) {
-          for (const field of ['cookie', 'referer', 'apikey']) assert.equal(actual[field], undefined, field);
+        if (discussion || preview || passage || detailRead) {
+          for (const field of ['referer', 'apikey']) assert.equal(actual[field], undefined, field);
+        }
+        if (passage) {
+          assert.equal(actual.cookie, undefined);
+          assert.equal(actual['x-soe-auth-intent'], undefined);
+        } else if (readingCircle && detailRead) {
+          assert.match(actual.cookie ?? '', /quest_fixture_cookie=test-only/);
         }
         const body = method === 'POST' ? request.postData() : undefined;
         const input = presence ? JSON.parse(body) : null;

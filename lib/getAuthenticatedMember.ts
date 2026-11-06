@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { AUTH_PROVIDER_COOKIE } from '@/lib/auth/provider';
-import { AUTH_INTENT_COOKIE, AUTH_SELECTION_COOKIE, browserSelectionMatches, parseBrowserIntent, parseBrowserSelection } from '@/lib/auth/browserIntent';
+import { AUTH_INTENT_COOKIE, AUTH_INTENT_HEADER, AUTH_SELECTION_COOKIE, browserSelectionMatches, parseBrowserIntent, parseBrowserSelection } from '@/lib/auth/browserIntent';
 import { isWellFormedUuid, readWalletSession } from '@/lib/auth/walletSession';
 import { walletSessionAccess } from '@/lib/auth/walletSessionStore';
 
@@ -86,6 +86,10 @@ async function resolveMember<Member extends MemberIdentity>(
   const authHeader = req.headers.get('authorization');
   if (authHeader !== null) {
     if (!/^Bearer [^\s]+$/.test(authHeader) || authHeader.length > 16_384) return null;
+    const expectedIntent = req.headers.get(AUTH_INTENT_HEADER);
+    // A bearer sent by a browser-bound view requires the same browser choice
+    // at dispatch. A missing cookie cannot fall through to native bearer auth.
+    if (expectedIntent !== null && (!parseBrowserIntent(expectedIntent) || expectedIntent !== intentValue)) return null;
     const hasBrowserIntent = intentValue !== undefined;
     if (hasBrowserIntent && selected !== 'supabase') return null;
     try {

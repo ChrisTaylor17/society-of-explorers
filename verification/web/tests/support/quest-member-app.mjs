@@ -1,6 +1,7 @@
 // Actual member/discussion handlers over the current strict disposable SQL chain.
 // Only credential verification and the narrow SDK/PostgREST transport are doubled.
 import assert from 'node:assert/strict';
+import { NextRequest } from 'next/server.js';
 import { offlineApp } from './offline-app.mjs';
 import { rpc, requestId, COVERAGE_FIXTURE_LIMITS } from './review-coverage-db.mjs';
 import { createPublicProfileApp, publicProfileAppHashes } from './public-profile-app.mjs';
@@ -12,7 +13,7 @@ export const SUBJECTS = Object.freeze({ author: '72111111-1111-4111-8111-1111111
 export const TOKENS = Object.freeze({ author: 'NONISSUED_QUEST_COMPOSED_AUTHOR', outsider: 'NONISSUED_QUEST_COMPOSED_OUTSIDER' });
 export { publicProfileAppHashes as questMemberAppHashes, COVERAGE_FIXTURE_LIMITS };
 
-export async function questMemberApp({ sharedSalon = false, writing = false, meeting = false, reading = false } = {}) {
+export async function questMemberApp({ sharedSalon = false, writing = false, meeting = false, reading = false, realAuthority = false } = {}) {
   const f = await createPublicProfileApp(), app = offlineApp(), calls = [], argumentNames = new Map();
   const requestAccounts = new WeakMap();
   const salonRpc = 'soe_circle_salon_presence';
@@ -24,7 +25,7 @@ export async function questMemberApp({ sharedSalon = false, writing = false, mee
   const memberId = actor => actor === 'author' ? f.authorId : f.reviewerId;
   // Explicit synthetic identity authority. SQL independently authorizes the mapped
   // member; a real reviewer grant does not confer ordinary Circle membership.
-  app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async req => {
+  if (!realAuthority) app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async req => {
     const bearer = req.headers.get('authorization');
     const account = requestAccounts.get(req) ?? selected;
     const actor = bearer ? Object.keys(TOKENS).find(key => bearer === 'Bearer ' + TOKENS[key]) : account?.actor;
@@ -33,6 +34,20 @@ export async function questMemberApp({ sharedSalon = false, writing = false, mee
     const subject = provider === 'supabase' ? SUBJECTS[actor] : memberId(actor);
     return { memberId: memberId(actor), member: { id: memberId(actor), supabase_auth_id: SUBJECTS[actor], display_name: 'Synthetic own-session name' }, auth: { provider, subject } };
   } }));
+  const members = app.fakes.resetDb({ members: Object.keys(SUBJECTS).map(actor => ({
+    id: memberId(actor), supabase_auth_id: SUBJECTS[actor], display_name: 'Synthetic own-session name',
+  })) });
+  if (realAuthority) {
+    app.setMock('@/lib/supabase/server', () => ({ createClient: async () => ({
+      auth: { getUser: async () => ({ data: { user: { id: SUBJECTS[selected.actor] } }, error: null }) },
+    }) }));
+    app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({
+      auth: { getUser: async token => {
+        const actor = Object.keys(TOKENS).find(key => TOKENS[key] === token);
+        return { data: { user: actor ? { id: SUBJECTS[actor] } : null }, error: null };
+      } },
+    }) }));
+  }
   async function callRpc(name, args) {
     const call = { name, keys: Object.keys(args).sort(), status: 'pending' }; calls.push(call);
     try {
@@ -48,6 +63,7 @@ export async function questMemberApp({ sharedSalon = false, writing = false, mee
     } catch (error) { call.status = error.code ?? 'FIXTURE_ERROR'; return { data: null, error: { code: call.status } }; }
   }
   app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => ({
+    from: members.from.bind(members),
     rpc: (name, args) => name === salonRpc ? { abortSignal(signal) { signal.throwIfAborted(); return callRpc(name, args); } } : callRpc(name, args),
   }) }));
   try {
@@ -97,10 +113,11 @@ export async function questMemberApp({ sharedSalon = false, writing = false, mee
       async dispatch(path, headers = {}, signal, { body, account } = {}) {
         assert.equal(closed, false);
         const url = new URL(path, QUEST_ORIGIN); assert.equal(url.origin, QUEST_ORIGIN);
-        const request = new Request(url, { method: body === undefined ? 'GET' : 'POST', headers, signal, body });
+        const init = { method: body === undefined ? 'GET' : 'POST', headers, signal, body };
+        const request = realAuthority ? new NextRequest(url, init) : new Request(url, init);
         if (account) requestAccounts.set(request, account);
         // Cookie accessor is a NextRequest transport port, never an issued cookie.
-        Object.defineProperty(request, 'cookies', { value: { get: () => undefined } });
+        if (!realAuthority) Object.defineProperty(request, 'cookies', { value: { get: () => undefined } });
         if (url.pathname === '/api/auth/member') { assert.equal(url.search, ''); assert.equal(request.headers.get('authorization'), null); return member.GET(request); }
         if (passage && url.pathname === '/api/great-books/passage') {
           assert.equal(request.method, 'GET');

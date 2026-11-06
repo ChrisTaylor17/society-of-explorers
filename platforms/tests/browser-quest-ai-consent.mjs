@@ -48,7 +48,9 @@ try{
  for(const[n,h]of Object.entries(result.runtimeHashes))assert.equal(sha(read(n)),h,'Stale runtime '+n);
  browser=await require('playwright').chromium.launch({headless:true,executablePath,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
  const context=await browser.newContext({viewport:{width:320,height:850}});
- async function selectCookie(who){f.setCookieActor(who);const intent='71111111-1111-4111-8111-111111111111';await context.addCookies([{name:'soe_auth_provider',value:'supabase'},{name:'soe_auth_intent',value:intent},{name:'soe_auth_selection_v1',value:'v1.'+intent+'.supabase.'+subjects[who]}].map(cookie=>({...cookie,url:origin,secure:true,httpOnly:cookie.name!=='soe_auth_intent',sameSite:'Lax'})));}
+ const intent='71111111-1111-4111-8111-111111111111';
+ let legacyView=false;
+ async function selectCookie(who){f.setCookieActor(who);await context.addCookies([{name:'soe_auth_provider',value:'supabase'},{name:'soe_auth_intent',value:intent},{name:'soe_auth_selection_v1',value:'v1.'+intent+'.supabase.'+subjects[who]}].map(cookie=>({...cookie,url:origin,secure:true,httpOnly:cookie.name!=='soe_auth_intent',sameSite:'Lax'})));}
  await selectCookie('author');page=await context.newPage();page.setDefaultTimeout(7000);
  page.on('pageerror',e=>result.errors.push(e.stack||String(e)));
  await context.route('**/*',route=>{const work=(async()=>{const req=route.request(),url=new URL(req.url());let gate;try{
@@ -56,7 +58,13 @@ try{
   if(url.pathname==='/')return await route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/page.css"><body style="margin:0;background:#101d1a"><div id="root"></div><script>window.questAuth='+JSON.stringify({subjects,tokens})+'</script><script type="module" src="/page.mjs"></script></body></html>'});
   if(url.pathname==='/page.mjs')return await route.fulfill({contentType:'text/javascript',body:bundle});
   if(url.pathname==='/page.css')return await route.fulfill({contentType:'text/css',body:css});
-  const headers=await req.allHeaders();assert.equal(headers.referer,undefined);if(url.pathname==='/api/auth/member'){assert.equal(headers.authorization,undefined);assert.match(headers.cookie??'',/soe_auth_provider=supabase/);}else{assert.equal(headers.cookie,undefined);assert(Object.values(tokens).some(token=>headers.authorization==='Bearer '+token));}
+  const headers=await req.allHeaders();assert.equal(headers.referer,undefined);
+  if(url.pathname==='/api/auth/member'){assert.equal(headers.authorization,undefined);assert.match(headers.cookie??'',/soe_auth_provider=supabase/);}
+  else {
+   assert(Object.values(tokens).some(token=>headers.authorization==='Bearer '+token));
+   if(legacyView){assert.equal(headers.cookie,undefined);assert.equal(headers['x-soe-auth-intent'],undefined);}
+   else {assert.equal(headers['x-soe-auth-intent'],intent);assert.match(headers.cookie??'',/soe_auth_provider=supabase/);}
+  }
   if(req.method()==='POST')assert.equal(headers.origin,origin);
   const entry={method:req.method(),path:url.pathname,request:req.postData(),status:null,held:false};result.http.push(entry);
   if(holdNext&&url.pathname.endsWith('/ai-consent')&&req.method()==='POST'){holdNext=false;let release;const promise=new Promise(resolve=>{release=resolve;});gate={release,done:false,body:req.postData()};held=gate;entry.held=true;await promise;}
@@ -113,8 +121,9 @@ try{
  pass('account replacement disposes old controls and subscriptions; callbacks cannot cross accounts or become valid when the author returns');
  await capture('offline',all);await page.evaluate(()=>window.dispatchEvent(new Event('offline')));await settle();assert.equal(await $('member-contributions-message').innerText(),'');at=result.http.length;await page.evaluate(()=>window.dispatchEvent(new Event('online')));await settle();assert.equal(result.http.length,at);await restore();at=result.http.length;await invoke('offline');await settle();assert.equal(result.http.length,at);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);for(const b of await page.locator('#member-contributions-ai button:visible').all())assert((await b.boundingBox()).height>=44);await page.screenshot({path:path.join(ROOT,'platforms/evidence/quest-ai-consent-320.png'),fullPage:true});
- await page.getByRole('button',{name:'Disconnect contributions view',exact:true}).click();await page.evaluate(()=>window.questAiConsentQa.legacy());await session();await $('member-contributions-refresh').click();await page.locator('[data-contribution-id="'+f.messageId+'"]').getByRole('button').click();await page.waitForFunction(()=>document.getElementById('member-contributions-action-status').textContent.includes('Current message loaded'));assert.equal(await $('member-contributions-ai-check').isDisabled(),true);assert.match(await $('member-contributions-ai-status').innerText(),/unavailable in this connection/);await page.evaluate(()=>window.questAiConsentQa.closeLegacy());
+ await page.getByRole('button',{name:'Disconnect contributions view',exact:true}).click();legacyView=true;await page.evaluate(()=>window.questAiConsentQa.legacy());await session();await $('member-contributions-refresh').click();await page.locator('[data-contribution-id="'+f.messageId+'"]').getByRole('button').click();await page.waitForFunction(()=>document.getElementById('member-contributions-action-status').textContent.includes('Current message loaded'));assert.equal(await $('member-contributions-ai-check').isDisabled(),true);assert.match(await $('member-contributions-ai-status').innerText(),/unavailable in this connection/);await page.evaluate(()=>window.questAiConsentQa.closeLegacy());
  pass('an older default-capability composition retains withdrawal controls but cannot claim AI consent is available');
+ legacyView=false;
  await connect();await session();await select();await check();await capture('unmount',all);at=result.http.length;await page.evaluate(()=>window.questAiConsentQa.unmount());await invoke('unmount');await settle();assert.equal(result.http.length,at);assert.equal((await counts()).subscriptions,0);assert.equal(f.providerCalls.length,0);assert(result.http.every(x=>!x.path.includes('/advice')));result.providerCalls=0;
  pass('offline and unmount retire private controls; 320px layout fits with44px buttons; zero AI-provider/advice calls and all SDK observers disposed');
  assert.deepEqual(result.errors,[]);for(const[n,h]of Object.entries(hashes))assert.equal(sha(read(n)),h,'Source changed '+n);result.status='PASS';
