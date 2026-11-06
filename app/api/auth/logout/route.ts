@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { privateJson } from '@/lib/http/routeError';
 import { authWriteOriginAllowed, readAuthJson } from '@/lib/auth/request';
 import { AUTH_PROVIDER_COOKIE } from '@/lib/auth/provider';
-import { AUTH_SELECTION_COOKIE, AUTH_PKCE_INTENT_COOKIE } from '@/lib/auth/browserIntent';
+import { AUTH_INTENT_COOKIE, AUTH_INTENT_HEADER, AUTH_SELECTION_COOKIE, AUTH_PKCE_INTENT_COOKIE, parseBrowserIntent } from '@/lib/auth/browserIntent';
 import { readWalletSession } from '@/lib/auth/walletSession';
 import { walletSessionAccess } from '@/lib/auth/walletSessionStore';
 
@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
   if (!body || Object.keys(body).sort().join(',') !== 'requestId,scope' || body.scope !== 'browser' ||
       typeof body.requestId !== 'string' || !UUID.test(body.requestId)) {
     return privateJson({ error: 'Invalid browser sign-out request.' }, { status: 400 });
+  }
+  const intent = req.headers.get(AUTH_INTENT_HEADER);
+  if (intent !== null && (!parseBrowserIntent(intent) || req.cookies.get(AUTH_INTENT_COOKIE)?.value !== intent)) {
+    return privateJson({ error: 'Account choice changed.' }, { status: 409 });
   }
   const cookies = req.headers.get('cookie') || '';
   if (cookies.length > 32_768) return privateJson({ error: 'Browser sign-out is unavailable.' }, { status: 400 });

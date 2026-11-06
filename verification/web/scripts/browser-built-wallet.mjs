@@ -20,7 +20,7 @@ const origin = ready.origin;
 assert.match(origin, /^http:\/\/127\.0\.0\.1:\d+$/);
 for (const path of ['app/layout.tsx', 'app/login/page.tsx', 'lib/auth/webAccount.ts',
   'lib/auth/request.ts', 'app/api/auth/nonce/route.ts', 'app/api/auth/siwe/route.ts', 'app/api/auth/member/route.ts',
-  'app/api/auth/logout/route.ts', 'components/AccountSignOut.tsx', 'lib/auth/walletSessionStore.ts', 'proxy.ts']) {
+  'app/api/auth/logout/route.ts', 'app/api/auth/logout/provider/route.ts', 'components/AccountSignOut.tsx', 'lib/auth/walletSessionStore.ts', 'proxy.ts']) {
   assert.equal(createHash('sha256').update(readFileSync(path)).digest('hex'), ready.sourceHashes[path], path);
 }
 const require = createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');
@@ -50,11 +50,14 @@ app.setMock('next/server', () => ({ NextResponse }));
 app.setMock('@/lib/supabase/server', () => ({ createServiceClient: () => db }));
 app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => db }));
 app.setMock('@/lib/auth/walletSessionStore', () => app.load('lib/auth/walletSessionStore.ts'));
+let providerRequests = 0;
+app.context.fetch = () => { providerRequests++; throw Error('Wallet sign-out must not contact an email or Google provider'); };
 const handlers = new Map([
   ['GET /api/auth/nonce', app.load('app/api/auth/nonce/route.ts').GET],
   ['POST /api/auth/siwe', app.load('app/api/auth/siwe/route.ts').POST],
   ['GET /api/auth/member', app.load('app/api/auth/member/route.ts').GET],
   ['POST /api/auth/logout', app.load('app/api/auth/logout/route.ts').POST],
+  ['POST /api/auth/logout/provider', app.load('app/api/auth/logout/provider/route.ts').POST],
 ]);
 const errors = [], requests = [];
 let signatures = 0;
@@ -171,11 +174,12 @@ try {
   await page.reload();
   assert.equal(new URL(page.url()).searchParams.has('walletSignOut'), false);
   assert.equal(await retry.count(), 0);
+  assert.equal(providerRequests, 0);
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
 }
-const receipt = { status: 'PASS', buildId: ready.buildId, signatures, requests,
+const receipt = { status: 'PASS', buildId: ready.buildId, signatures, requests, providerRequests,
   scenarios: ['No injected wallet leaves email sign-in available', 'Injected wallet signs and verifies the numeric loopback origin',
     'HttpOnly session survives reload and the signed challenge is cleared',
     'An unavailable revocation locks private access and a protected reload exposes the retry on the actual login page',

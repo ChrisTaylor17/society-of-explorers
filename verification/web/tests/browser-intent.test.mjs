@@ -221,7 +221,7 @@ test('logout rotates browser intent before its first network dispatch', async t 
   f.context.Event = Event; f.context.window = { isSecureContext: true, crypto: webcrypto, location: { protocol: 'https:' }, localStorage: storage, sessionStorage: storage, dispatchEvent() { events.push('notify'); } };
   f.context.document = { get cookie() { return [...jar].map(([k, v]) => `${k}=${v}`).join('; '); }, set cookie(value) { const [k, v] = value.split(';')[0].split('='); jar.set(k, v); events.push('rotate'); } };
   f.context.fetch = async () => { assert.notEqual(jar.get('soe_auth_intent'), IA); events.push('fetch'); return new Response('{}', { status: 503 }); };
-  const r = await f.load('lib/auth/browserSignOut.ts').signOutBrowser(() => ({ auth: {} }), IA); assert.equal(r.confirmed, false); assert.deepEqual(events.slice(0, 3), ['rotate', 'notify', 'fetch']);
+  const r = await f.load('lib/auth/browserSignOut.ts').signOutBrowser(IA); assert.equal(r.confirmed, false); assert.deepEqual(events.slice(0, 3), ['rotate', 'notify', 'fetch']);
 });
 test.after(() => {
   assert.equal(fixtureCount, closedCount); for (const file of inputs.keys()) read(file);

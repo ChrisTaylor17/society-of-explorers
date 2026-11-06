@@ -30,8 +30,8 @@ const { provisioningHashes } = await import('../tests/support/bearer-member-prov
 const fixtureInputs = { ...await publicProfileAppHashes(), ...await provisioningHashes() };
 for (const name of Object.keys(fixtureInputs)) sources.add(name);
 const roots = [
-  'lib/auth/browserIntent.ts', 'lib/auth/provider.ts', 'lib/getAuthenticatedMember.ts', 'lib/auth/siweNonce.ts', 'lib/auth/browserSignOut.ts', 'lib/auth/callbackSession.ts',
-  'app/api/auth/provider/route.ts', 'app/api/auth/nonce/route.ts', 'app/api/auth/siwe/route.ts', 'app/auth/callback/route.ts', 'app/api/auth/ensure-member/route.ts', 'app/api/auth/logout/route.ts',
+  'lib/auth/browserIntent.ts', 'lib/auth/provider.ts', 'lib/getAuthenticatedMember.ts', 'lib/auth/siweNonce.ts', 'lib/auth/browserSignOut.ts', 'lib/auth/supabaseBrowserLogout.ts', 'lib/auth/sessionClaims.ts', 'lib/auth/callbackSession.ts',
+  'app/api/auth/provider/route.ts', 'app/api/auth/nonce/route.ts', 'app/api/auth/siwe/route.ts', 'app/auth/callback/route.ts', 'app/api/auth/ensure-member/route.ts', 'app/api/auth/logout/route.ts', 'app/api/auth/logout/provider/route.ts',
   'verification/web/tests/browser-intent.test.mjs', 'verification/web/tests/email-recovery-callback.test.mjs', 'verification/web/tests/account-security.test.mjs',
   'verification/web/tests/account-signout.test.mjs', 'verification/web/tests/bearer-member-provisioning.test.mjs', 'tests/security/s1-member-identity.test.ts',
   'tests/security/s3-siwe-nonce.test.ts', 'tests/security/s10-siwe-wallet-session.test.ts', 'tests/security/auth-request.ts',
@@ -56,7 +56,7 @@ const before = sourceHashes(), runtimeBefore = runtimeHashes(), startedAt = new 
 const guard = path.join(root, 'verification/web/scripts/deny-build-network.cjs');
 const groups = [
   { name: 'browser-intent-current', cwd: root, executable: process.execPath, args: ['--require', guard, '--test', 'verification/web/tests/browser-intent.test.mjs', 'verification/web/tests/email-recovery-callback.test.mjs'], tests: 35 },
-  { name: 'browser-intent-existing-account', cwd: web, executable: process.execPath, args: ['--require', guard, '--test', 'tests/account-security.test.mjs', 'tests/account-signout.test.mjs', 'tests/bearer-member-provisioning.test.mjs'], tests: 74 },
+  { name: 'browser-intent-existing-account', cwd: web, executable: process.execPath, args: ['--require', guard, '--test', 'tests/account-security.test.mjs', 'tests/account-signout.test.mjs', 'tests/bearer-member-provisioning.test.mjs'], tests: 80 },
   ...[['s1', 's1-member-identity', 7], ['s3', 's3-siwe-nonce', 6], ['s10', 's10-siwe-wallet-session', 10]].map(([name, file, tests]) => ({ name: 'browser-intent-' + name, cwd: root, executable: bun,
     args: ['test', '--no-env-file', '--no-install', '--preload', guard, '--preload', './verification/web/scripts/browser-intent-bun-guard.ts', 'tests/security/' + file + '.test.ts'], tests, bun: true })),
   { name: 'browser-intent-lint', cwd: root, executable: process.execPath, args: ['--require', guard, 'node_modules/eslint/bin/eslint.js', ...roots.filter(name => !name.startsWith('tests/security/') && !name.endsWith('.cjs') && name !== 'eslint.config.mjs')], tests: null },
@@ -95,8 +95,8 @@ const receipt = { status: checks.every(check => check.ok) && sourceUnchanged && 
     'Supabase verification and transport are synthetic; local PGlite contains disposable fixtures only. The three Bun suites run in separate processes to avoid shared mock contamination.'],
   limits: ['No live account, OAuth grant, wallet extension, email, provider credential, production SQL or deployment was used.',
     'Cookies received from already-dispatched older responses can deny newer access. Their receipts cannot authorize an older identity under the newer browser intent.',
-    'SIWE nonce remains stateless within one intent and lifetime; this proves intent binding, not server-side one-use consumption.',
-    'A sign-out SDK cleanup already dispatched before a newer intent may still remove auth state; later completion cannot claim current logout success or deliberately start another cleanup.',
+    'The wallet challenge consumption suite separately verifies server-side one-use redemption.',
+    'The provider sign-out response carries no cookie writes. A newer choice prevents the old provider response from starting browser cookie cleanup.',
     'These route/controller fixtures do not establish real browser storage, network or deployment acceptance; the separate browser composition proof covers local browser behavior.'] };
 fs.writeFileSync(path.join(web, 'evidence/browser-intent-verification.json'), JSON.stringify(receipt, null, 2) + '\n');
 if (receipt.status !== 'PASS') process.exitCode = 1;

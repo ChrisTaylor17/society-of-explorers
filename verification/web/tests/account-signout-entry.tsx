@@ -5,7 +5,6 @@ import Dashboard from '../../../app/dashboard/page';
 const subject = '11111111-1111-4111-8111-111111111111';
 let cleanupCalls = 0;
 const qa = {
-  cleanupFails: false,
   cleanupCalls: () => cleanupCalls,
   factory() {
     return { auth: {
@@ -17,7 +16,7 @@ const qa = {
       async signOut(options: { scope: string }) {
         if (options.scope !== 'local') throw Error('Unexpected sign-out scope');
         cleanupCalls++;
-        return { error: qa.cleanupFails ? { message: 'Synthetic cleanup failure' } : null };
+        return { error: null };
       },
     } };
   },

@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { signOutBrowser, type BrowserSignOutResult } from '@/lib/auth/browserSignOut';
 
 export default function AccountSignOut({ available = true, resumeWalletSignOut = false }: {
@@ -18,7 +17,7 @@ export default function AccountSignOut({ available = true, resumeWalletSignOut =
     setPhase('working');
     try {
       request.current ??= crypto.randomUUID();
-      const result = await signOutBrowser(createClient, request.current);
+      const result = await signOutBrowser(request.current);
       if (!active.current) return;
       if (result.confirmed) {
         setCompletion(result);
@@ -39,7 +38,8 @@ export default function AccountSignOut({ available = true, resumeWalletSignOut =
         <p role="alert">Sign-out could not be confirmed. Retry before leaving this shared browser.</p>}
       {phase === 'done' && <><p role="status">Signed out of this browser. Other devices may still be signed in.</p>
         {completion?.walletSessionRevoked && <p>This wallet session was revoked.</p>}
-        {completion?.sdkCleanup === 'unconfirmed' && <p>Provider cleanup could not be confirmed. This browser remains blocked from private access.</p>}
+        {completion?.providerSession === 'revoked' && <p>This email or Google session was revoked.</p>}
+        {completion?.providerSession === 'unconfirmed' && <p>Provider session revocation could not be confirmed.</p>}
         <a href="/login" style={{ color: '#c9a84c', minHeight: 44, display: 'inline-block', padding: '12px 0' }}>Sign in again</a></>}
     </div>
   </div>;

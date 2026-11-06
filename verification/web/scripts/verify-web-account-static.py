@@ -11,12 +11,12 @@ ENV = {'PATH': '/opt/homebrew/bin:/usr/bin:/bin', 'HOME': '/Users/christaylor'}
 FILES = [
     'lib/auth/webAccount.ts', 'lib/auth/browserIntent.ts', 'lib/auth/emailSignup.ts',
     'lib/auth/providerSelection.ts', 'lib/auth/provider.ts', 'lib/getAuthenticatedMember.ts',
-    'lib/auth/browserSignOut.ts', 'lib/auth/callbackSession.ts', 'lib/auth/siweNonce.ts',
+    'lib/auth/browserSignOut.ts', 'lib/auth/supabaseBrowserLogout.ts', 'lib/auth/sessionClaims.ts', 'lib/auth/callbackSession.ts', 'lib/auth/siweNonce.ts',
     'app/api/auth/provider/route.ts', 'app/api/auth/nonce/route.ts', 'app/api/auth/siwe/route.ts',
-    'app/api/auth/logout/route.ts', 'app/api/auth/ensure-member/route.ts', 'app/auth/callback/route.ts',
+    'app/api/auth/logout/route.ts', 'app/api/auth/logout/provider/route.ts', 'app/api/auth/ensure-member/route.ts', 'app/auth/callback/route.ts',
     'app/auth/complete/page.tsx', 'app/auth/complete/Completion.tsx',
     'app/auth/confirm/page.tsx', 'app/auth/confirm/Confirmation.tsx',
-    'app/login/page.tsx', 'app/login/login.module.css', 'components/PublicNav.tsx', 'proxy.ts',
+    'app/login/page.tsx', 'app/login/login.module.css', 'components/PublicNav.tsx', 'components/AccountSignOut.tsx', 'proxy.ts',
     'tsconfig.json', 'verification/web/scripts/deny-build-network.cjs',
     'verification/web/scripts/verify-web-account-static.py',
 ]
