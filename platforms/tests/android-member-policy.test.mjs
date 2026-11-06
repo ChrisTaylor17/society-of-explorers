@@ -66,7 +66,11 @@ test('actual typed v2 spec declares native methods/events and nullable module lo
  assert(source.includes('readonly onConnectivityChange: CodegenTypes.EventEmitter'));
  assert.match(source,/TurboModuleRegistry\.get<Spec>\('NativeSoeMember'\)/);assert(!source.includes('getEnforcing'));
  const pkg=JSON.parse(read(native+'package.json'));
-  assert.deepEqual(pkg.codegenConfig,{name:'SoeMemberSpecs',type:'all',jsSrcsDir:'specs',android:{javaPackageName:'com.anonymous.soesyntheticdemo.member'},ios:{modules:{NativeSoeMember:{className:'NativeSoeMemberIOS',unstableRequiresMainQueueSetup:true}},components:{SoeSourceReader:{className:'SoeSourceReaderView'}}}});
+ assert.deepEqual(pkg.codegenConfig,{
+  name:'SoeMemberSpecs',type:'all',jsSrcsDir:'specs',android:{javaPackageName:'com.anonymous.soesyntheticdemo.member'},
+  ios:{modules:{NativeSoeMember:{className:'NativeSoeMemberIOS',unstableRequiresMainQueueSetup:true}},
+   components:{SoeSourceReader:{className:'SoeSourceReaderView'},SoeClipPlayer:{className:'SoeClipPlayerView'}}},
+ });
 });
 test('actual app source registers new-architecture package and only network-state permission (STATIC)',()=>{
  const files=capture(),main=read(android+'app/src/main/java/com/anonymous/soesyntheticdemo/MainApplication.kt'),manifest=read(android+'app/src/main/AndroidManifest.xml');
@@ -92,18 +96,33 @@ test('actual dedicated transport contains epoch/single-use/pre-send/deadline and
  assert(s.indexOf('require(System.nanoTime() < handle.deadline)')<s.indexOf('call.enqueue('));
  assert(!s.includes('OkHttpClientProvider'));assert(!s.includes('.followRedirects(true)'));
 });
-test('actual store reset poisons current epoch before disk work and marker precedes empty ciphertext (STATIC, not Keystore/crash proof)',()=>{
- const {store:s,module}=capture();const start=s.indexOf('@Synchronized fun reset('),end=s.indexOf('private fun key()',start),reset=s.slice(start,end);
- assert(reset.indexOf('record = null')<reset.indexOf('atomicWrite(marker,'));
- assert(reset.indexOf('retirements.toList()')<reset.indexOf('atomicWrite(marker,'));
- assert(reset.indexOf('atomicWrite(marker,')<reset.indexOf('persist(empty)'));
- assert(reset.indexOf('persist(empty)')<reset.indexOf('marker.delete()'));assert(reset.indexOf('require(markerGone())')<reset.indexOf('record = empty'));
+test('store confirms disk writes and closes old access before a reset can acknowledge clear (STATIC)',()=>{
+ const {store:s,module}=capture();
+ function inOrder(source,...steps){
+  let offset=0;
+  for(const step of steps){
+   const index=source.indexOf(step,offset);
+   assert(index>=offset,`Missing or out of order: ${step}`);
+   offset=index+step.length;
+  }
+ }
+ const section=(start,end)=>s.slice(s.indexOf(start),s.indexOf(end,s.indexOf(start)+start.length));
+ inOrder(section('@Synchronized fun reset(','private fun retireRecord'),
+  'retireRecord()', 'atomicWrite(marker,', 'persist(empty)', 'clearResetMarker()', 'record = empty', 'previous to next');
+ inOrder(section('private fun retireRecord','private fun clearResetMarker'),'record = null','retirements.toList()');
+ inOrder(section('private fun clearResetMarker','private fun key'),
+  'marker.delete()', 'check(!marker.baseFile.exists() && !hasPendingWrite(marker))', 'syncDirectory(directory)');
+ inOrder(section('private fun atomicWrite','private fun hasPendingWrite'),
+  'file.startWrite()', 'stream.write(bytes)', 'stream.fd.sync()', 'file.failWrite(stream)',
+  'file.finishWrite(stream)', 'check(!hasPendingWrite(file))', 'check(readBounded(file, bytes.size).contentEquals(bytes))',
+  'syncDirectory(directory)', 'if (record != null) retireRecord()', 'throw error');
+ inOrder(section('private fun syncDirectory','private fun readBounded'),'Os.open(', 'Os.fsync(descriptor)', 'Os.close(descriptor)');
+ inOrder(section('init {','private fun unlocked'), 'marker.baseFile.exists()', 'persist(empty)', 'clearResetMarker()', 'record = empty', 'decode(readBounded(data');
+ inOrder(module.slice(module.indexOf('override fun resetAccountStorage')), 'store.reset(expectedGeneration)', 'putBoolean("cleared", true)');
  for(const required of ['context.noBackupFilesDir','"AndroidKeyStore"','"AES/GCM/NoPadding"','setRandomizedEncryptionRequired(true)',
-  'cipher.updateAAD(config.namespace','@Synchronized fun <T> withGeneration','@Synchronized fun open','file.finishWrite(stream)','file.failWrite(stream)',
+  'cipher.updateAAD(config.namespace','@Synchronized fun <T> withGeneration','@Synchronized fun open',
   'UserManager::class.java)?.isUserUnlocked == true','KeyguardManager::class.java)?.isDeviceLocked == false'])assert(s.includes(required),required);
- const init=s.slice(s.indexOf('init {'),s.indexOf('private fun unlocked'));
- assert(init.indexOf('marker.baseFile.exists()')<init.indexOf('decode(readBounded(data'));
- assert(!s.includes('SharedPreferences'));assert(!s.includes('Log.'));assert(module.includes('putBoolean("cleared", true)'));
+ assert(!s.includes('SharedPreferences'));assert(!s.includes('Log.'));
 });
 test('actual connectivity and module lifecycle source preserves register-before-sample, event and cleanup ordering (STATIC)',()=>{
  const {connectivity:s,module}=capture();

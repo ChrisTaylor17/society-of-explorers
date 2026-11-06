@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.UserManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.system.Os
+import android.system.OsConstants
 import android.util.AtomicFile
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -30,7 +32,10 @@ internal class MemberSecureStore private constructor(private val context: Contex
 
   init {
     unlocked()
-    require(directory.isDirectory || directory.mkdirs())
+    if (!directory.isDirectory) {
+      require(directory.mkdirs() || directory.isDirectory)
+      syncDirectory(context.noBackupFilesDir)
+    }
     data = AtomicFile(File(directory, config.namespace + ".record"))
     marker = AtomicFile(File(directory, config.namespace + ".reset"))
     // A committed, secret-free marker takes precedence over ALL old ciphertext.
@@ -43,8 +48,7 @@ internal class MemberSecureStore private constructor(private val context: Contex
       MemberConfig.generation(previous); MemberConfig.generation(next); require(previous != next)
       val empty = Record(next, mutableMapOf())
       persist(empty)
-      marker.delete()
-      require(markerGone())
+      clearResetMarker()
       record = empty
     } else if (data.baseFile.exists() || File(data.baseFile.path + ".bak").exists()) {
       record = decode(readBounded(data, MAX_RECORD))
@@ -96,16 +100,25 @@ internal class MemberSecureStore private constructor(private val context: Contex
     val next = UUID.randomUUID().toString()
     val pending = JSONObject().put("version", 2).put("previousGeneration", previous).put("generation", next)
     // Poison memory and stop all namespace requests BEFORE any fallible disk work.
-    record = null
-    for (retire in retirements.toList()) { try { retire() } catch (_: Exception) { /* Already fenced. */ } }
+    retireRecord()
     // Once this sync'd atomic marker commits, recovery may only expose EMPTY next.
     atomicWrite(marker, pending.toString().toByteArray(Charsets.UTF_8))
     val empty = Record(next, mutableMapOf())
     persist(empty)
-    marker.delete()
-    require(markerGone())
+    clearResetMarker()
     record = empty
     previous to next
+  }
+
+  private fun retireRecord() {
+    record = null
+    for (retire in retirements.toList()) { try { retire() } catch (_: Exception) { /* Already fenced. */ } }
+  }
+
+  private fun clearResetMarker() {
+    marker.delete()
+    check(!marker.baseFile.exists() && !hasPendingWrite(marker))
+    syncDirectory(directory)
   }
 
   private fun key(): SecretKey {
@@ -149,11 +162,32 @@ internal class MemberSecureStore private constructor(private val context: Contex
     return Record(generation, values)
   }
   private fun atomicWrite(file: AtomicFile, bytes: ByteArray) {
-    var stream: java.io.FileOutputStream? = null
-    try { stream = file.startWrite(); stream.write(bytes); file.finishWrite(stream) }
-    catch (error: Exception) { file.failWrite(stream); throw error }
+    try {
+      val stream = file.startWrite()
+      try {
+        stream.write(bytes)
+        stream.fd.sync()
+      } catch (error: Exception) {
+        file.failWrite(stream)
+        throw error
+      }
+      // AtomicFile can log a failed rename or cleanup and still return normally.
+      file.finishWrite(stream)
+      check(!hasPendingWrite(file))
+      check(readBounded(file, bytes.size).contentEquals(bytes))
+      syncDirectory(directory)
+    } catch (error: Exception) {
+      if (record != null) retireRecord()
+      throw error
+    }
   }
-  private fun markerGone(): Boolean = !marker.baseFile.exists() && !File(marker.baseFile.path + ".bak").exists() && !File(marker.baseFile.path + ".new").exists()
+  private fun hasPendingWrite(file: AtomicFile): Boolean =
+    File(file.baseFile.path + ".bak").exists() || File(file.baseFile.path + ".new").exists()
+
+  private fun syncDirectory(path: File) {
+    val descriptor = Os.open(path.absolutePath, OsConstants.O_RDONLY or OsConstants.O_DIRECTORY, 0)
+    try { Os.fsync(descriptor) } finally { Os.close(descriptor) }
+  }
   private fun readBounded(file: AtomicFile, max: Int): ByteArray = file.openRead().use { input ->
     val output = ByteArrayOutputStream(); val buffer = ByteArray(4096)
     while (true) { val count = input.read(buffer); if (count < 0) break; require(output.size() + count <= max); output.write(buffer, 0, count) }
