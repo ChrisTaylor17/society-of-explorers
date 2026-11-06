@@ -160,7 +160,7 @@ export default function LoginPage() {
       {notice && <p role="status">{notice}</p>}
       {query.get('walletSignOut') === 'pending' && <AccountSignOut available={false} resumeWalletSignOut />}
       {ready ? mode === 'signin' ? <SignIn key="signin" nextPath={nextPath} retireRef={retireRef} /> : <EmailForm key={mode} mode={mode} nextPath={nextPath} retireRef={retireRef} /> : <p role="status">Preparing your account options…</p>}
-      <div className={styles.modes} aria-label="Account options">
+      <div className={styles.modes} role="group" aria-label="Account options">
         {mode !== 'signin' && <button type="button" onClick={() => changeMode('signin')}>Sign in instead</button>}
         {mode !== 'signup' && <button type="button" onClick={() => changeMode('signup')}>Create account</button>}
         {mode !== 'resend' && <button type="button" onClick={() => changeMode('resend')}>Resend confirmation</button>}

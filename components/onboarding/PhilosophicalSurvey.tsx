@@ -184,6 +184,7 @@ export function PhilosophicalSurvey({ onProjectionChange }: PhilosophicalSurveyP
             <button
               key={entry}
               type="button"
+              aria-pressed={entry === archetype}
               onClick={() => updateArchetype(entry)}
               style={{
                 border: `1px solid ${entry === archetype ? gold : `${gold}33`}`,
@@ -211,6 +212,7 @@ export function PhilosophicalSurvey({ onProjectionChange }: PhilosophicalSurveyP
               <button
                 key={skill}
                 type="button"
+                aria-pressed={active}
                 onClick={() => toggleSkill(skill)}
                 style={{
                   border: `1px solid ${active ? '#5eead4' : `${gold}33`}`,
@@ -238,7 +240,7 @@ export function PhilosophicalSurvey({ onProjectionChange }: PhilosophicalSurveyP
           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
           fontSize: '12px',
           color: '#ccfbf1',
-          overflowX: 'auto',
+          overflowWrap: 'anywhere',
         }}
       >
         <span>projection.primary_builder_archetype = {projection.primary_builder_archetype}</span>

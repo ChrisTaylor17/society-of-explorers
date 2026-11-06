@@ -10,7 +10,6 @@
 .nav a,.controls a,.controls button,.main summary { min-height:44px;display:inline-flex;align-items:center; }
 .main summary { cursor:pointer;display:list-item;align-content:center; }
 .controls button { border:1px solid #c9a84c;background:#181818;color:#f5e2ac;font:inherit;padding:.6rem .85rem;cursor:pointer; }
-.controls button:disabled { opacity:.6;cursor:wait; }
 .page :is(a,button,summary,audio,video):focus-visible { outline:3px solid #ffe09a;outline-offset:4px; }
 .grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:1rem; }
 .card { border:1px solid #695b36;background:#111;padding:1.2rem;min-width:0; }

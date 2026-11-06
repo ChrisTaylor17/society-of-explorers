@@ -109,16 +109,21 @@ try {
   assert.deepEqual(calls, []);
   stories.push('A Reel link opens its own credited page and preview title. Clipboard and share-sheet fixtures receive only that public URL and title before any media loads.');
 
-  await reel.getByRole('button', { name: 'Load video and captions' }).press('Enter');
+  const loadClip = reel.getByRole('button', { name: 'Load video and captions' });
+  const unloadClip = reel.getByRole('button', { name: 'Unload clip' });
+  await loadClip.press('Enter');
   const video = reel.locator('video');
   await video.waitFor();
+  assert.equal(await unloadClip.evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Tab');
+  assert.equal(await video.evaluate(el => el === document.activeElement), true);
   await video.scrollIntoViewIfNeeded();
   assert.equal(await video.evaluate(element => element.paused && !element.autoplay && !element.querySelector('track').default), true);
   assert.deepEqual(calls.sort((a, b) => a.path.localeCompare(b.path)), [
     { path: '/clips/captions/' + id, method: 'GET', query: ['sha'], cookie: false, referer: false },
     { path: '/clips/media/' + id, method: 'GET', query: ['sha'], cookie: false, referer: false },
   ]);
-  stories.push('Explicit Load retrieves exactly the pinned local media and timed text without account cookies or referrer, and waits for playback.');
+  stories.push('Keyboard Load keeps focus on the control, then Tab reaches the paused player. The exact media and timed text load without account cookies or referrer.');
 
   playback = await video.evaluate(async (element, { duration, sampleTimes }) => {
     const cueTrack = element.querySelector('track'), text = element.textTracks[0];
@@ -173,12 +178,13 @@ try {
   save('reel-320.png', await page.screenshot());
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   stories.push('The actual derivative plays through at normal speed with silent portrait video and four captions, including all four editorial beats.');
-  await reel.getByRole('button', { name: 'Unload clip' }).click();
+  await unloadClip.press('Enter');
+  assert.equal(await loadClip.evaluate(el => el === document.activeElement), true);
   assert.equal(await video.count(), 0);
   await reel.getByText('Read the transcript', { exact: true }).click();
   await reel.getByText(isopod ? /Bring the question to a\s+Circle/ : lava ? /Bring a question to a\s+Circle/ : /Bring your reason to a\s+Circle/).waitFor();
   assert.equal(calls.length, 2);
-  stories.push('Unload retires the video and leaves the transcript and source links usable.');
+  stories.push('Keyboard Unload retires the video, keeps focus on Load and leaves the transcript and source links usable.');
   await reel.getByRole('link', { name: 'Discuss in an online Circle' }).click();
   await page.waitForURL(origin + '/circles?format=online&reel=' + id);
   await page.getByRole('heading', { name: 'Find a circle', exact: true }).waitFor();
@@ -193,6 +199,31 @@ try {
     assert.equal(calls.length, 2);
     stories.push('Unknown and non-Reel catalog IDs return 404 on the public Reel route.');
   }
+  await page.goto(origin + permalink);
+  const mediaRequest = url => url.origin === origin && url.pathname === '/clips/media/' + id;
+  let releaseMedia;
+  const holdMedia = new Promise(resolve => { releaseMedia = resolve; });
+  await context.route(mediaRequest, async route => {
+    await holdMedia;
+    await route.continue().catch(() => {});
+  });
+  try {
+    const requested = page.waitForRequest(request => mediaRequest(new URL(request.url())));
+    await loadClip.press('Enter');
+    await requested;
+    const cancelClip = reel.getByRole('button', { name: 'Cancel loading', exact: true });
+    assert.equal(await cancelClip.evaluate(el => el === document.activeElement), true);
+    await cancelClip.press('Enter');
+    assert.equal(await loadClip.evaluate(el => el === document.activeElement), true);
+  } finally {
+    releaseMedia();
+    await context.unroute(mediaRequest);
+  }
+  assert.equal(await video.count(), 0);
+  await loadClip.press('Enter');
+  await video.waitFor();
+  assert.equal(await unloadClip.evaluate(el => el === document.activeElement), true);
+  stories.push('Keyboard Cancel keeps focus on Load, retires a held media request and permits a fresh load.');
   await context.close();
   assert.deepEqual(external, []); assert.deepEqual(errors, []);
 } catch (error) { failure = error.stack || String(error); }

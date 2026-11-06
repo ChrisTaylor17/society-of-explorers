@@ -1,0 +1,108 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "cb9bc387f157b7ec83306bbfb311330a6ac2c978",
+  "recordedAt": "2026-11-06T23:06:40.857584+00:00",
+  "buildSourceFiles": 1108,
+  "buildSourceSha256": "baa2e9cf14647826e7a7538a34858c05881263c116f3b36b1f3c7ca0717fe047",
+  "automatedAccessibility": {
+    "viewportCssPixels": 320,
+    "rulesEngine": "axe-core 4.11.1",
+    "rulesBundleSha256": "7dbfabdfc6062936d79c873ddbb5f811a1219fca3928bd8cc9dd81f1e65f4720",
+    "pages": [
+      "/",
+      "/clips",
+      "/clips/watch/new-species",
+      "/circles?format=online&reel=new-species",
+      "/login",
+      "/auth/recovery",
+      "/great-books/scripture/philemon",
+      "/great-books/scripture/luke-good-samaritan",
+      "/account/delete"
+    ],
+    "violations": 0,
+    "manualContrastReview": [
+      "/",
+      "/login",
+      "/great-books/scripture/philemon",
+      "/great-books/scripture/luke-good-samaritan"
+    ]
+  },
+  "chromiumZoom": {
+    "factors": [
+      1,
+      2,
+      4
+    ],
+    "layoutChecks": 16,
+    "stories": [
+      "Sign-in keyboard focus stays visible at 100%.",
+      "Sign-in keyboard focus stays visible at 200%.",
+      "Sign-in keyboard focus stays visible at 400%.",
+      "The first shortcut, signup, return to sign-in and password recovery work at 400% with the return path intact.",
+      "At 400%, the short-screen menu closes with Escape and returns visible focus to its trigger.",
+      "At 400%, the shortcut preserves search, a submitted search and Back focus the results, and the preview preserves the sign-in return path.",
+      "At 400%, the Clips shortcut and Reel link lead to a transcript that opens from the keyboard."
+    ]
+  },
+  "compiledReelStories": [
+    "The built Clips page keeps both formats and opens a keyboard-accessible Reel anchor with source, license and Circle links.",
+    "A Reel link opens its own credited page and preview title. Clipboard and share-sheet fixtures receive only that public URL and title before any media loads.",
+    "Keyboard Load keeps focus on the control, then Tab reaches the paused player. The exact media and timed text load without account cookies or referrer.",
+    "The actual derivative plays through at normal speed with silent portrait video and four captions, including all four editorial beats.",
+    "Keyboard Unload retires the video, keeps focus on Load and leaves the transcript and source links usable.",
+    "The Reel brings its question to the public directory with the online and hybrid filter selected.",
+    "Unknown and non-Reel catalog IDs return 404 on the public Reel route.",
+    "Keyboard Cancel keeps focus on Load, retires a held media request and permits a fresh load."
+  ],
+  "compiledSalonStories": [
+    "The public API discards supplied authority and returns seven listing fields. Hidden and malformed targets are refused.",
+    "The homepage keyboard shortcut reaches online and hybrid search. Philemon and each Reel reach the same directory. Search keeps the Reel question out of the API request.",
+    "A guest sees the public preview at 320px with no account or meeting request. Sign-in and signup retain the Circle from the preview and navigation.",
+    "The built password sign-in verifies synthetic identity and returns to the same Circle and online directory.",
+    "A verified nonmember reviews the norms and confirms membership before the private meeting control appears.",
+    "The verified Circle opens Quest Browser with the same Reel question and a sign-in link back to it.",
+    "A current member opens the archive, edits the Reel question and public link, reviews the exact text, and saves one message only after confirmation.",
+    "The current member opens the fresh link in the same tab without app credentials or a referrer. Back needs a new access check.",
+    "Losing focus during a held meeting check aborts the read and retires the opening action.",
+    "A member removed after loading Circle details cannot open the cached meeting. The current nonmember view is shown.",
+    "The reviewed RSVP is stored in SQL. Leaving removes it and takes the meeting control out of the view.",
+    "Host completion removes the private URL from the API and blocks cached meeting actions while preserving discussion.",
+    "A direct hidden Circle link discloses no listing, even after sign-in.",
+    "A duplicate or unreviewed Reel reference never selects a question or triggers a Circle request."
+  ],
+  "clipRegressions": 16,
+  "scope": "Compiled web build in local Chromium. Synthetic account and database for Circle journeys. Manual screen-reader, contrast review items, real-device testing and hosted release remain pending.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "48cad795b11e7bd40d554a555a3ed861b35942b2037c4bec18b345d98f9acf5e",
+    "app/HomePageClient.tsx": "2f6fa729cd66c481c8b426d1dd6e7bc14d3815ee7723eb4d8d1f68dc5f27f7da",
+    "app/circles/CirclesBrowser.tsx": "361661dba330007e68977bb151ea3587fe3a7deb2e6021341fc3f1aae8296ef7",
+    "app/clips/ClipPlayer.tsx": "659526b5ad8a094726b52e0e20eb73ffba585ced31a3c2d4560aba486e984b2e",
+    "app/clips/clips.module.css": "82a00e10ab2a37d9e0df601bd395d642bd9db6c0801c81b0f664ee91794c5e05",
+    "app/login/page.tsx": "ea29df5ffaeb27508cd8576bbd8cd5c4a85b2068362a59fa7a2ae7c24a9f98ae",
+    "components/onboarding/PhilosophicalSurvey.tsx": "da29bde19d2e31b237e2893d405ef280deb4f8693c50df6455dd5903a032380e",
+    "verification/web/scripts/browser-desktop-zoom.mjs": "0f1d7188ba33a91dd73edfdeafb86b58bce4cfc253226ad0152949c905442984",
+    "verification/web/scripts/browser-online-salon.mjs": "4dbf3b7eacbc363faffb82cf356d9a10f77262aa262d4ec5652da6e7eccda6c3",
+    "verification/web/scripts/browser-paranal-reel.mjs": "d94426f20446b563113902354b8b1a0f4ef14fe1f7b1566cb7502905b4f7840b"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-core-accessibility",
+  "evidenceSha256": {
+    "next-build.json": "834fc77f1cea861d55d1cfdf511963fc600c0627f2b3235e2fd8179d7ca9f355",
+    "next-build.log": "3186758345cd7186bec4226f7e6da7640dbd1c7485983bd2872b45017f0a66e2",
+    "build-source-sha256.json": "7c3f7efa26844481cbb0a9a7ba8d25666272f1b4d52296fedae33e7c96471c9c",
+    "server-ready.json": "2e33d89cdd81abaccaa28832b43b32cb33ae893fb0fcc0d5f6f7c512cc1f7b8a",
+    "server-stopped.json": "77bb033b060c41b1fc2a43e69f96bbd72fc4eae8445b93dfd6efa6b25ab0d5fb",
+    "axe-probe.mjs": "092c08719ef51c1f7f15641a66cc44ff5d6388699d401a5acd8f86a5c48f92b4",
+    "axe-before.json": "8aa4af5a66c19c1a81e85724bff7e4653824182bbfe73d3f3cf2bcfa9f14877a",
+    "axe-after.json": "1c17f364a86ca9b55e4c4d347de53477081710bc11addc9ea37b9fa6f4d9b43a",
+    "desktop-zoom.json": "c6addebc756d260931ecc5411975695e5bf5e9b38c6bb28ff49454fc3b726d0f",
+    "desktop-zoom-old-fixture.json": "f619573592f5cd0992c958972a7f47e4776ffb8de2bb398f49452299d7842dc2",
+    "reel-browser.json": "5b2a343522a7d94d5884b0c5565ebc7cf8b10783fce58dd8c6c5e23684a9d1a5",
+    "reel-320.png": "aa000c7a39cce23f9b5f45b49c1dd47e8442a6c56ed662f95c561586a27bd5c7",
+    "reel-salon-browser.json": "e43fe1a7868d75da5cef346759b3dc0462583509f2e976ecc5000993f48b9f7b",
+    "salon-320.png": "5b66a93844b5690e1e4edfb5a45af6124b14da19010b9ed6b5e35282e7c852e7",
+    "reel-draft-320.png": "52c1bc8c0015dd3297819d25e8b2a8419ea84ed4c2cd4a5ef3ce98927400f484",
+    "clip-regressions.tap": "42edca88b6c228661d028df76708c69fd50ff86d455f117d73d5ea8d9c8ee51b",
+    "eslint.log": "66491f283a04613b99bee3520e86e4bfde0dd579e2562d092366702080e4c2b3"
+  }
+}

@@ -105,7 +105,7 @@ export default function HomePage() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (!window.location.hash) window.scrollTo(0, 0);
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   }, []);
 
@@ -195,10 +195,11 @@ export default function HomePage() {
   const tColor = THINKER_COLORS[tId] || gold;
   const tAvatar = THINKER_AVATARS[tId] || '??';
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <PublicNav />
+  return <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
+    <a href="#main" className="soe-skip-link">Skip to content</a>
+    <PublicNav />
 
+    <main id="main" tabIndex={-1}>
       {/* HERO */}
       <section style={{ minHeight: 'calc(100vh - 56px)', padding: '8rem 2rem 4rem', textAlign: 'center', display: 'flex', alignItems: 'center' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto' }}>
@@ -427,8 +428,8 @@ export default function HomePage() {
                   <input
                     value={input} onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                    disabled={streaming} placeholder="Ask anything..."
-                    style={{ flex: 1, background: '#111', border: `1px solid ${gold}18`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }}
+                    disabled={streaming} aria-label="Your question for Socrates" placeholder="Ask anything..."
+                    style={{ flex: 1, minWidth: 0, background: '#111', border: `1px solid ${gold}18`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, boxSizing: 'border-box' }}
                   />
                   <button onClick={sendMessage} disabled={streaming || !input.trim()}
                     style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', padding: '11px 20px', cursor: streaming || !input.trim() ? 'default' : 'pointer', opacity: streaming || !input.trim() ? 0.75 : 1 }}>
@@ -457,9 +458,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      <PublicFooter />
-    </div>
-  );
+    </main>
+    <PublicFooter />
+  </div>;
 }
 
 function createHomepageExplorerGraph(): ExplorerGraph {

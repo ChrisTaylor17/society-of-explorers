@@ -204,7 +204,16 @@ try {
   await page.getByRole('heading', { name: 'Read together. Meet online.', level: 1 }).waitFor();
   await page.getByText('“How do we read together?”').waitFor();
   assert.equal(await fits(), true);
-  await browse('FIND AN ONLINE CIRCLE', '/');
+  const homeMain = page.getByRole('main');
+  await page.keyboard.press('Tab');
+  assert.equal(await page.getByRole('link', { name: 'Skip to content' }).evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Enter');
+  assert.equal(await homeMain.evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Tab');
+  assert.equal(await homeMain.getByRole('link', { name: 'FIND AN ONLINE CIRCLE' }).evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Enter');
+  await page.waitForURL(origin + onlineHref);
+  await page.getByRole('group', { name: 'Circle search results' }).getByRole('link', { name: title, exact: true }).waitFor();
   await browse('Find an online reading Circle', '/great-books/scripture/philemon');
   for (const [id, title] of [
     ['night-sky-traffic', 'Who gets the night sky?'], ['telescope-first-tilt', 'What did the tilt prove?'],
@@ -223,7 +232,7 @@ try {
   await link(title).waitFor();
   await page.getByText(reelQuestion, { exact: true }).waitFor();
   assert(requests.filter(call => call.path === '/api/circles').every(call => !call.query.includes('reel=')));
-  pass('The homepage and Philemon lead to online and hybrid search. Each Reel brings its own public question, and search preserves that choice outside the API request.');
+  pass('The homepage keyboard shortcut reaches online and hybrid search. Philemon and each Reel reach the same directory. Search keeps the Reel question out of the API request.');
 
   const prePreview = requests.length;
   await link(title).click();

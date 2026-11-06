@@ -176,7 +176,7 @@ export default function CirclesBrowser() {
         <p>Results match this book and exact edition. A Circle may agree different reading ranges; compare its planned weekly readings.</p><Link href={startLink}>Start a Circle with this reading context</Link>
       </div>}
       {search && <p style={{ ...small, marginBottom: '12px' }}><a href={searchLink} style={{ color: gold }}>Link to this results page</a> · Copy the link to share these public filters and page.</p>}
-      <div aria-busy={state.status === 'loading'} aria-label="Circle search results">
+      <div role="group" aria-busy={state.status === 'loading'} aria-label="Circle search results">
         {state.status === 'error' && <button type="button" style={button} onClick={() => apply(query, request.cursor, false)}>Try again</button>}
         {state.status === 'restart' && <button type="button" style={button} onClick={() => apply(query)}>Restart current search</button>}
         {state.status === 'soon' && <div style={{ ...card, borderStyle: 'dashed' }}><p style={{ ...small, color: ivory85, fontSize: '17px' }}>

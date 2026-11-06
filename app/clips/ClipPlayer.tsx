@@ -19,6 +19,13 @@ export default function ClipPlayer({ clip, standalone = false }: { clip: PublicM
 function ReviewedClipPlayer({ clip: approved, standalone }: { clip: PublicMediaClip; standalone: boolean }) {
   const [state, setState] = useState<State>({ status: 'idle' });
   const lifetime = useRef(0), pending = useRef<AbortController | null>(null), urls = useRef<string[]>([]);
+  const canUnload = state.status === 'loading' || state.status === 'ready';
+  const actionLabel = {
+    idle: `Load ${approved.kind} and captions`,
+    loading: 'Cancel loading',
+    ready: 'Unload clip',
+    error: 'Try loading again',
+  }[state.status];
   useEffect(() => () => { lifetime.current += 1; pending.current?.abort(); urls.current.forEach(URL.revokeObjectURL); urls.current = []; }, []);
   function unload() {
     lifetime.current += 1; pending.current?.abort(); pending.current = null;
@@ -56,8 +63,7 @@ function ReviewedClipPlayer({ clip: approved, standalone }: { clip: PublicMediaC
       <a href={approved.attribution.referenceUrl} target="_blank" rel="noopener noreferrer">{reelReferenceLabel(approved.attribution.referenceUrl)}</a></p>}
     <p className={styles.help}>{approved.reviewLabel}. {approved.territoryLabel}. About {Math.ceil(approved.durationMs / 1000)} seconds.</p>
     <div className={styles.controls}>
-      {state.status !== 'ready' && <button type="button" onClick={load} disabled={state.status === 'loading'}>{state.status === 'loading' ? 'Loading reviewed files…' : state.status === 'error' ? 'Try loading again' : `Load ${approved.kind} and captions`}</button>}
-      {state.status !== 'idle' && <button type="button" onClick={unload}>Unload clip</button>}
+      <button type="button" onClick={canUnload ? unload : load}>{actionLabel}</button>
     </div>
     <p role="status" aria-live="polite">{state.status === 'idle' ? 'No media has been loaded. Loading uses no account cookies.' : state.status === 'error' ? 'The reviewed files could not be verified. Nothing is playing.' : state.status === 'ready' ? 'Files verified. Use the player controls to start; playback does not start automatically.' : 'Checking the exact media and caption files…'}</p>
     {state.status === 'ready' && (approved.kind === 'video'

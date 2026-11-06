@@ -37,7 +37,7 @@ let context, fixture, failure;
 try {
   process.chdir(resolve(root, 'verification/web'));
   const { createPublicProfileApp, ORIGIN } = await import('../tests/support/public-profile-app.mjs');
-  fixture = await createPublicProfileApp();
+  fixture = await createPublicProfileApp({ lukeEdition: true });
   const title = 'Philemon keyboard Circle';
   const expectedMemberId = fixture.actors.author;
   const body = await fixture.createBody({
