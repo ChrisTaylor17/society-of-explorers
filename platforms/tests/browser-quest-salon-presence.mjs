@@ -23,6 +23,7 @@ const sources = [
   'platforms/tests/quest-xr-browser-double.mjs', 'verification/web/tests/support/quest-member-app.mjs',
   'verification/web/tests/support/offline-app.mjs', 'verification/web/tests/support/circle-live-db.mjs',
   'app/api/circles/[circleId]/salon-presence/route.ts', 'lib/circles/moderation-server.ts', 'lib/http/routeError.ts',
+  'app/api/circles/[circleId]/route.ts', 'lib/circles/membership-server.ts', 'lib/circles/membership.ts',
   'docs/sql/circle-salon-presence-apply.sql', 'docs/sql/circle-salon-presence-rollback.sql',
 ];
 const hashFile = async name => sha(await readFile(resolve(root, name)));
@@ -49,9 +50,10 @@ let db, browser, failure;
 await writeFile(evidence, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
 try {
   process.chdir(resolve(root, 'verification/web'));
-  const { questMemberApp, QUEST_ORIGIN: origin, TOKENS } = await import('../../verification/web/tests/support/quest-member-app.mjs');
-  const f = db = await questMemberApp({ sharedSalon: true });
+  const { questMemberApp, QUEST_ORIGIN: origin, QUEST_TEST_MEETING: meetingUrl, TOKENS } = await import('../../verification/web/tests/support/quest-member-app.mjs');
+  const f = db = await questMemberApp({ sharedSalon: true, meeting: true });
   const endpoint = '/api/circles/' + f.circleId + '/salon-presence';
+  const detailPath = '/api/circles/' + f.circleId;
   const headers = actor => ({ origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json',
     ...(actor ? { authorization: 'Bearer ' + TOKENS[actor] } : {}) });
   const send = (actor, data, extra = {}) => f.dispatch(endpoint, { ...headers(actor), ...extra }, undefined, { body: JSON.stringify(data) });
@@ -80,7 +82,7 @@ try {
     args: ['--disable-background-networking', '--disable-component-update', '--no-first-run',
       '--host-resolver-rules=MAP * ~NOTFOUND', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   receipt.chromium = browser.version();
-  let holdReserve = null;
+  let holdReserve = null, holdDetail = null, meetingNavigations = 0;
   async function client(actor, headset = false) {
     const context = await browser.newContext({ viewport: { width: 375, height: 844 }, serviceWorkers: 'block' });
     await context.addInitScript(installQuestXrDouble);
@@ -93,6 +95,14 @@ try {
     await context.route('**/*', async route => {
       const task = (async () => {
         const request = route.request(), url = new URL(request.url());
+        if (url.origin !== origin) {
+          assert.equal(url.href, meetingUrl);
+          assert.equal(request.isNavigationRequest(), true);
+          const sent = await request.allHeaders();
+          for (const field of ['referer', 'authorization', 'cookie']) assert.equal(sent[field], undefined);
+          meetingNavigations++;
+          return route.fulfill({ contentType: 'text/html', body: '<title>Synthetic live meeting</title><h1>Synthetic live meeting</h1>' });
+        }
         assert.equal(url.origin, origin);
         if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body:
           `<!doctype html><html lang="en" data-circle="${f.circleId}" data-shared-salon><head><link rel="stylesheet" href="/page.css"></head><body><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
@@ -101,21 +111,29 @@ try {
         const actual = await request.allHeaders();
         const account = { actor, provider: 'supabase' };
         const memberCheck = url.pathname === '/api/auth/member';
+        const detailRead = url.pathname === detailPath;
         assert.equal(url.search, '');
-        assert.equal(memberCheck ? request.method() === 'GET' : url.pathname === endpoint && request.method() === 'POST', true);
+        assert.equal(memberCheck || detailRead ? request.method() === 'GET' : url.pathname === endpoint && request.method() === 'POST', true);
         assert.equal(actual.authorization, memberCheck ? undefined : 'Bearer ' + TOKENS[actor]);
-        const body = memberCheck ? undefined : request.postData();
-        const input = memberCheck ? null : JSON.parse(body);
+        const body = memberCheck || detailRead ? undefined : request.postData();
+        const input = body === undefined ? null : JSON.parse(body);
         if (input) assert.deepEqual(Object.keys(input).sort(), ['action', 'leaseId']);
         const response = await f.dispatch(url.pathname, actual, undefined, { body, account });
         assert.match(response.headers.get('cache-control'), /private.*no-store/);
         const bytes = await response.text(), value = JSON.parse(bytes);
         if (input && response.ok) assert.deepEqual(Object.keys(value).sort(), input.action === 'sync' ? ['count', 'state'] : ['state']);
-        browserRequests.push({ actor, action: input?.action ?? 'account', status: response.status, count: value.count ?? null });
+        browserRequests.push({ actor, action: detailRead ? 'meeting' : input?.action ?? 'account', status: response.status, count: value.count ?? null });
         if (input?.action === 'reserve' && holdReserve) {
           const gate = holdReserve;
           holdReserve = null;
           gate.leaseId = input.leaseId;
+          gate.reached.resolve();
+          await gate.release.promise;
+        }
+        if (detailRead && holdDetail) {
+          const gate = holdDetail;
+          holdDetail = null;
+          assert.equal(value.online_url, meetingUrl);
           gate.reached.resolve();
           await gate.release.promise;
         }
@@ -238,15 +256,79 @@ try {
   assert.equal((await send('author', { action: 'sync', leaseId: own })).status, 404);
   pass('Membership removal cascades to the owned seat and refuses a fresh update');
 
+  const meetingStatus = 'The live meeting is unavailable for your current Circle access.';
+  const openMeeting = page => page.getByRole('button', { name: 'Open live meeting', exact: true });
+  await regular.locator('#member-session-check').click();
+  await openMeeting(regular).click();
+  await regular.getByText(meetingStatus, { exact: true }).waitFor();
+  assert.equal(meetingNavigations, 0);
+  pass('A fresh membership read refuses a live meeting after membership removal');
+
+  const meetingPage = await client('outsider', true);
+  assert.equal(await openMeeting(meetingPage).isDisabled(), true);
+  assert.equal((await meetingPage.content()).includes(meetingUrl), false);
+  const meetingPanel = text => meetingPage.waitForFunction(value => window.questXrQa.panel().replace(/\s+/g, ' ').includes(value), text);
+  const meetingTrigger = () => meetingPage.evaluate(() => window.questXrQa.select());
+  await meetingPage.locator('#quest-salon-headset').click();
+  await meetingPanel('Press the controller trigger to check your signed-in account.');
+  await meetingTrigger();
+  await meetingPanel('Press the trigger to join the shared salon count.');
+  await meetingTrigger();
+  await meetingPanel('Meeting in browser');
+  const checked = browserRequests.filter(request => request.action === 'meeting').length;
+  await meetingPage.evaluate(() => window.questXrQa.press('Meeting in browser'));
+  await meetingPage.waitForFunction(() => window.questXrQa.stats().ends === 1 && window.questXrQa.panel() === '');
+  assert.equal(await openMeeting(meetingPage).isDisabled(), true);
+  assert.equal(browserRequests.filter(request => request.action === 'meeting').length, checked);
+  assert.equal(await seats(), 0);
+  pass('The pointed headset handoff releases its seat and returns to browser controls requiring a fresh account check');
+
+  await meetingPage.locator('#member-session-check').click();
+  const detailGate = { reached: deferred(), release: deferred() };
+  gates.add(detailGate.release);
+  holdDetail = detailGate;
+  await openMeeting(meetingPage).click();
+  await bounded(detailGate.reached.promise, 'Authorized detail response');
+  await meetingPage.evaluate(() => window.questXrQa.focus(false, false));
+  detailGate.release.resolve();
+  await bounded(Promise.allSettled([...activeRoutes]), 'Retired meeting response');
+  gates.delete(detailGate.release);
+  await openMeeting(meetingPage).waitFor();
+  await meetingPage.waitForFunction(() => document.getElementById('quest-meeting-status').textContent.includes('Check your member session'));
+  assert.equal(await openMeeting(meetingPage).isDisabled(), true);
+  assert.equal(meetingNavigations, 0);
+  await meetingPage.evaluate(() => window.questXrQa.focus(false));
+  await meetingPage.evaluate(() => window.questXrQa.focus(true));
+  await meetingPage.locator('#member-session-check').click();
+  await openMeeting(meetingPage).click();
+  await meetingPage.getByRole('heading', { name: 'Synthetic live meeting', exact: true }).waitFor();
+  assert.equal(meetingNavigations, 1);
+  await meetingPage.goBack();
+  const reconnect = meetingPage.getByRole('button', { name: 'Connect signed-in account', exact: true });
+  await reconnect.waitFor();
+  assert.equal(await openMeeting(meetingPage).isDisabled(), true);
+  await reconnect.click();
+  await meetingPage.getByText('Account connection opened. Check the member-session and Circle-access messages below.', { exact: true }).waitFor();
+  await meetingPage.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+  await reconnect.waitFor();
+  pass('Focus loss retires a held link. A fresh check opens the host URL without credentials or referrer and Back requires reconnection');
+
   await f.db.query('UPDATE book_cohorts SET circle_hidden=true WHERE id=$1', [f.circleId]);
   assert.equal((await send('outsider', probe)).status, 404);
   await f.db.query('UPDATE book_cohorts SET circle_hidden=false, status=\'completed\' WHERE id=$1', [f.circleId]);
   assert.equal((await send('outsider', probe)).status, 404);
+  await meetingPage.evaluate(() => window.questComposedQa.actor('outsider'));
+  await reconnect.click();
+  await meetingPage.getByText('Account connection opened. Check the member-session and Circle-access messages below.', { exact: true }).waitFor();
+  await meetingPage.locator('#member-session-check').click();
+  await openMeeting(meetingPage).click();
+  await meetingPage.getByText(meetingStatus, { exact: true }).waitFor();
+  assert.equal(meetingNavigations, 1);
   const membersBefore = (await f.db.query('SELECT count(*)::int AS n FROM book_cohort_members')).rows;
   await runSql(f.db, 'docs/sql/circle-salon-presence-rollback.sql');
   assert.deepEqual((await f.db.query('SELECT count(*)::int AS n FROM book_cohort_members')).rows, membersBefore);
   assert.equal((await send('outsider', probe)).status, 503);
-  pass('Hidden and completed Circles refuse check-in, and the rollback preserves existing membership data');
+  pass('Hidden and completed Circles refuse check-in, a completed Circle refuses meeting handoff, and rollback preserves membership');
   await verifyHashes();
 } catch (error) {
   failure = error;

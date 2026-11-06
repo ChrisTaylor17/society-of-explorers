@@ -22,6 +22,16 @@ function discussionMessageFrom(value) {
     return null;
   return { publicProfileId, id: value.id, member_name: value.member_name, content: value.content, created_at: value.created_at, is_mine: value.is_mine };
 }
+function safePrivateMeetingUrl(value) {
+  if (typeof value !== "string" || value.length > 2048)
+    return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
 function conversationFrom(value, circleId) {
   if (!object(value) || !object(value.cohort) || value.cohort.id !== circleId || value.cohort.book_id !== CIRCLE_BOOK_ID || !text(value.cohort.title, 200) || !Array.isArray(value.messages) || value.messages.length > 100)
     return null;
@@ -2478,5 +2488,6 @@ export {
   createMemberContributions,
   createVerifiedSupabaseCircleOwner,
   discussionContentSuffix,
-  memberCircleConfig
+  memberCircleConfig,
+  safePrivateMeetingUrl
 };

@@ -2,7 +2,11 @@
 
 Open an online or hybrid Circle’s Quest Browser view. Connect the existing email or Google account, then choose **Check member session** and **Join shared salon in this browser**. On a compatible headset, **Enter shared salon in headset** opens a separate panel. The first controller trigger checks the selected account. The second checks current membership and joins the count. Press the trigger again to leave. Squeeze exits the headset room. Leave your browser seat before switching to the headset. Choose **Enter immersive room** for discussion previews.
 
-The same count appears in the regular browser and headset. It includes your own seat. The regular Circle’s member meeting link is the path to live conversation. The shared panel provides presence only.
+The same count appears in the regular browser and headset. It includes your own seat. In the headset salon, point at **Meeting in browser** to release your seat and return to the Circle’s Quest page. Check your member session there and choose **Open live meeting**. The live-meeting control is also available in Quest Browser when the shared count is disabled.
+
+## Live meeting handoff
+
+The browser checks current membership through the same Circle details endpoint used by the regular app. It opens the host’s HTTPS link in the same tab for members of an open online or hybrid Circle. Focus loss, a changed account or leaving the page retires a pending request. The app sends the link to the browser for navigation without app credentials or the Circle page as referrer. Back returns to the Quest page and requires a fresh account connection. The host’s meeting runs in Quest Browser after the immersive room closes. Its behavior on a physical headset remains open. [Handoff verification](quest-meeting-handoff-verification.json)
 
 ## Account and seat lifetime
 

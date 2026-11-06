@@ -1,0 +1,58 @@
+{
+  "status": "local_verified_device_and_hosted_pending",
+  "recordedAt": "2026-11-06T02:09:15+00:00",
+  "startingCommit": "061f67468f30143086852f88192a799065da3f94",
+  "testResults": {
+    "salonAndMeetingStoriesPassed": 11,
+    "immersiveDiscussionStoriesPassed": 20,
+    "discussionHandlerRequests": 75,
+    "builtBrowserStoriesPassed": 3,
+    "scopedLintPassed": true,
+    "build": {
+      "exitCode": 0,
+      "sourceFiles": 1061,
+      "sourceSha256": "e7667f3d035b6b81471707fe2ebc6ddde057d203f6b738e9173762313ee5bd0c"
+    }
+  },
+  "verifiedBehavior": [
+    "The pointed headset action releases its check-in and clears the immersive session. The browser requires a fresh account check before any meeting request.",
+    "The actual Circle details route uses disposable SQL to check current membership. A removed member and a completed Circle cannot open the meeting.",
+    "A held meeting reply is suppressed when the document loses focus before the blur event is delivered. A fresh check navigates the same tab without app credentials or referrer. Back requires reconnecting."
+  ],
+  "scope": "Real Chromium canvas/WebGL with synthetic headset input and accounts, actual Circle handlers, and disposable PostgreSQL. The known meeting destination is fulfilled locally by the browser harness. The standalone production-build smoke uses invalid public configuration and exercises the closed controls.",
+  "initialRunNotes": "Two offloaded React files blocked the first browser bundle. The passing fixture uses package archives verified against the app lockfile. The fixture was reordered after PostgreSQL correctly refused to reopen a completed Circle.",
+  "limits": [
+    "Physical headset input, hosted account verification and a real meeting provider remain open.",
+    "Live conversation opens in Quest Browser after leaving immersion. Immersive audio and video remain open."
+  ],
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "app/quest/[circleId]/QuestCircle.tsx": "1aff7f8a188f72d275dfee433e9bebedbe7f442e7a4ba73e96b2abcced5ba5a7",
+    "platforms/quest/circle-host.mjs": "8277c988fed609d20bf97a59049759889212d865413f1d6e41a65bc000975b73",
+    "platforms/quest/immersive-circle.mjs": "9874051ec6a362f79f5b9144743d4ada9eb73feb8ecec911fec4a85ee059df4f",
+    "platforms/quest/meeting.mjs": "5f654fdfba57b077f003503921e9c9a3fec234a2f19af603bcfa1f3b160c71a8",
+    "platforms/quest/member-circle-page.mjs": "6a19b2d1ec2baa06c4247ce7b3bd21a5575bac24bb8eb4d1f64887bb90b83be6",
+    "platforms/shared/quest-entry.ts": "df83a85637596978071ee10c7f71169821b58ac38a651e2ea39280f7685111e7",
+    "platforms/tests/browser-quest-salon-presence.mjs": "1c5d216fc75df729674f6f3c2db6346b55a474d6f0a538505ec937a7f238831f",
+    "platforms/tests/quest-xr-browser-double.mjs": "93cecca6254727b7e0bf27b31cc9c15892bdcd6fd7c8ef3ef03c00445f945dc8",
+    "verification/web/tests/support/quest-member-app.mjs": "40fc52c9ddae2a8308d724e639b26f5be1a3c39a06ddd0681f036e0a130974a7",
+    "verification/web/scripts/browser-quest-immersive-shell.mjs": "517d7104d7bf46172a339bdb2199bd38bc92263d2885aa75c561169b9bf6f1e7"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/quest-meeting-handoff/browser.json": "69ed3e04d0a5fbf56e07161e836e96e64ae2ad2dfbe6f7c614314dabb56a36d9",
+    "verification/web/evidence/quest-meeting-handoff/built-shell-quest-meeting-final-build-source-sha256.json": "13c72b4537dd6346220c6c77f3756cd9bccd079c891103f2fe3080e323033a0d",
+    "verification/web/evidence/quest-meeting-handoff/built-shell-quest-meeting-final-next-build.json": "5b1d015b5ba9550599bb8e9a177124a2c1cb5fe1f50c65e4c4a234a51b903456",
+    "verification/web/evidence/quest-meeting-handoff/built-shell-quest-meeting-final-server.json": "a148c983844c60277b364b7cd9b38934e3ebfb6484523e22ed4b488961f68cdd",
+    "verification/web/evidence/quest-meeting-handoff/quest-320.png": "585e00f73cfaf128d44c917eab681ab77691e5563b3bb31d3e6f18814624bf3d",
+    "verification/web/evidence/quest-meeting-handoff/quest-meeting-browser-runtime.json": "2a33e809b7472fcb4d8915f018e1c638985251faa85414be5bee3347e5498b19",
+    "verification/web/evidence/quest-meeting-handoff/quest-meeting-lint-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/quest-meeting-handoff/quest-member-composed-immersive-salon-meeting-05.json": "c083fb140d228479be44c9ad19995f2bb4a186cf1e5a3603cf799af9602d66bc",
+    "verification/web/evidence/quest-meeting-handoff/quest-salon-immersive-salon-meeting-05.json": "2e9d6679a469d581eb4b4d21b1fe53de3ad5bfb4eccb7e972ab105df2837dc0e",
+    "verification/web/evidence/quest-meeting-handoff/shared-build.json": "57ec7306d3a5c54514d9e1a3e092776e354960179c3265235a7248f725c28dae",
+    "verification/web/evidence/quest-meeting-handoff/source-manifest.json": "525e78e2aab320a38ac3f2cabf22be9287bb706659e8f3041054c453ef00f0d9"
+  }
+}

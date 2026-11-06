@@ -120,7 +120,7 @@ export function installQuestXrDouble() {
     repeat() { current.fire(); },
     visibility(value) { current.visibilityState = value; current.dispatchEvent(new Event('visibilitychange')); },
     contextLost() { surface?.dispatchEvent(new Event('webglcontextlost', { cancelable: true })); },
-    focus(value) { focused = value; window.dispatchEvent(new Event(value ? 'focus' : 'blur')); },
+    focus(value, notify = true) { focused = value; if (notify) window.dispatchEvent(new Event(value ? 'focus' : 'blur')); },
     online(value) { online = value; window.dispatchEvent(new Event(value ? 'online' : 'offline')); },
     hold() { holdPermission = true; },
     release() { held?.(); held = null; },

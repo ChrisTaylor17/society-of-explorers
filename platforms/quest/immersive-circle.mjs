@@ -20,7 +20,7 @@ export function immersiveControls(doc, sharedSalon) {
 
 /** The headset gets a separate member lifetime. A visible headset may
  * have focus while the regular browser window's private session is paused. */
-export function mountImmersiveCircle({ window: win, document: doc, config, onModeChange }) {
+export function mountImmersiveCircle({ window: win, document: doc, config, onModeChange, onMeetingRequested }) {
   const [status, enter, exit, enterSalon] = immersiveControls(doc, config.sharedSalon);
   const { origin, circleId, transport, immersive, newRequestId } = config;
   const discussion = origin + '/api/circles/' + circleId + '/discussion';
@@ -90,6 +90,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
           const footer = model.phase === 'present' ? 'Trigger to leave the salon. Squeeze to exit the headset room.' :
             model.phase === 'idle' ? 'Trigger to join. Squeeze to exit the headset room.' : 'Squeeze to exit the headset room.';
           panel = prompt(model.message, footer);
+          if (model.phase === 'present' && onMeetingRequested) panel.rows = [[control('meeting', 'Meeting in browser')]];
         },
       });
       current.off = binding.subscribe(model => {
@@ -200,7 +201,13 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       if (!current.scope) { await current.binding.check(); return; }
       current.pending = true;
       if (current.salon) {
-        if (current.salon.model().phase === 'present') await current.salon.leave();
+        if (target === 'meeting') {
+          if (!onMeetingRequested || current.salon.model().phase !== 'present') return;
+          await current.salon.leave();
+          if (!ownsRoom(current)) return;
+          await headset.leave('Check your member session, then open the live meeting in this browser.');
+          if (!disposed && !state.open) onMeetingRequested();
+        } else if (current.salon.model().phase === 'present') await current.salon.leave();
         else await current.salon.join();
         return;
       }

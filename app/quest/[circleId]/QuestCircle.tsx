@@ -28,18 +28,24 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
   useEffect(() => {
     const current = lifetime.current;
     current.mounted = true;
-    const changed = () => {
+    const reconnect = (message: string) => {
       current.generation++; connection.current?.dispose(); connection.current = null;
-      setPhase('closed'); setNotice('Your selected account changed. Connect and check the current account before continuing.');
+      setPhase('closed'); setNotice(message);
+    };
+    const changed = () => reconnect('Your selected account changed. Connect and check the current account before continuing.');
+    const restored = (event: PageTransitionEvent) => {
+      if (event.persisted) reconnect('Connect and check your current account after returning to Quest Browser.');
     };
     const offProvider = subscribeAuthProviderChanges(changed);
     const pause = () => connection.current?.invalidate();
     const visibility = () => { if (document.visibilityState !== 'visible') pause(); };
     window.addEventListener('blur', pause); window.addEventListener('offline', pause); window.addEventListener('pagehide', pause);
+    window.addEventListener('pageshow', restored);
     document.addEventListener('visibilitychange', visibility);
     return () => {
       current.mounted = false; current.generation++; connection.current?.dispose(); connection.current = null; offProvider();
       window.removeEventListener('blur', pause); window.removeEventListener('offline', pause); window.removeEventListener('pagehide', pause);
+      window.removeEventListener('pageshow', restored);
       document.removeEventListener('visibilitychange', visibility);
     };
   }, []);
@@ -68,7 +74,7 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       const memberAuth = verifiedAuth(() => document.visibilityState === 'visible' && document.hasFocus());
       try {
         const view = circleId
-          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, auth: memberAuth.auth, aiConsent: true, sharedSalon,
+          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, auth: memberAuth.auth, aiConsent: true, sharedSalon, meeting: true,
             immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate } } })
           : mountExistingMemberContributions({ window, document, config: { origin, auth: memberAuth.auth, aiConsent: true } });
         connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
@@ -134,10 +140,16 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       </section>
       {circleId && sharedSalon ? <section aria-labelledby="quest-salon-heading">
         <h2 id="quest-salon-heading">Shared salon</h2>
-        <p>Check in to see how many Circle members are here. Other members in this room can see the count. Use the Circle’s meeting link for live conversation.</p>
+        <p>Check in to see how many Circle members are here. Other members in this room can see the count. In the headset salon, choose Meeting in browser to leave the count and return to the live meeting controls.</p>
         <p id="quest-salon-status" role="status">Connect a member account to join the shared salon.</p>
         <button id="quest-salon-join" type="button" disabled>Join shared salon in this browser</button>
         <button id="quest-salon-leave" type="button" disabled>Leave shared salon</button>
+      </section> : null}
+      {circleId ? <section aria-labelledby="quest-meeting-heading">
+        <h2 id="quest-meeting-heading">Live meeting</h2>
+        <p>Open the host’s meeting for a current online or hybrid Circle. It opens in this tab. Use Back to return.</p>
+        <p id="quest-meeting-status" role="status" tabIndex={-1}>Check your member session to open the live meeting.</p>
+        <button id="quest-meeting-open" type="button" disabled>Open live meeting</button>
       </section> : null}
       <div id="member-circle-workspace">
       {circleId ? <>
