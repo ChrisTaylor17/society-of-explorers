@@ -74,7 +74,11 @@ export async function liveRoomFixture() {
   const db = new PGlite();
   try {
     await db.waitReady;
-    for (const file of ['verification/web/tests/fixtures/live-room-synthetic.sql', 'docs/sql/live-room-containment-apply.sql']) {
+    for (const file of [
+      'verification/web/tests/fixtures/live-room-prerequisites-synthetic.sql',
+      'verification/web/tests/fixtures/live-room-synthetic.sql',
+      'docs/sql/live-room-containment-apply.sql',
+    ]) {
       await db.exec(await readFile(new URL(file, root), 'utf8'));
     }
 

@@ -1,6 +1,6 @@
 # Privacy cutover restore check
 
-The first Core and Daily Practice cutover covers 11 tables. The restore check compares their row contents, definitions, ownership, grants and row policies with a reference captured from the export snapshot. It also compares public schema grants and the roles that `anon`, `authenticated` and `service_role` can inherit. Its report names mismatched tables without printing row values, counts, fingerprints or database errors.
+The restore check covers 14 tables across Core, Daily Practice and Live Council. It compares row contents, definitions, ownership, grants and row policies against the export snapshot. Live Council coverage includes meeting links, attendance and transcripts. The check also compares public schema grants and the roles that `anon`, `authenticated` and `service_role` can inherit. Its report names mismatched tables and keeps individual rows, row counts, fingerprints and database errors private.
 
 ## Capture the approved export reference
 
@@ -27,7 +27,9 @@ python3 -B verification/web/scripts/verify-privacy-restore.py \
   --port 55421 --database soe_restore --user restore_owner
 ```
 
-Supply the trusted local `psql` path with `--psql` on a host without the default Homebrew installation. Use an account that can read every row in the scoped tables. `MATCH` compares the 11 tables before applying the privacy drafts. `MISMATCH` identifies drift, and `UNAVAILABLE` means the comparison could not run. Both return a failure status.
+Supply the trusted local `psql` path with `--psql` on a host without the default Homebrew installation. Use an account that can read every row in the scoped tables. The default `MATCH` result covers all 14 tables before applying the privacy drafts. `MISMATCH` identifies drift, and `UNAVAILABLE` means the comparison could not run. Both return a failure status.
+
+To compare an existing 11-table Core and Daily Practice reference, add `--core-practice-only`. To capture that scope, run `\set soe_restore_include_rooms off` in psql before loading the reference query. An 11-table match covers Core and Daily Practice. Use the default 14-table capture and check for the Live Council cutover.
 
 The operator still verifies that the reference came from the named export and the query reached its isolated restoration. Full backup acceptance also covers provider identities, other database objects and credentials, and file storage. Supabase stores object metadata in the database backup. The files need separate recovery evidence. [Supabase backup scope](https://supabase.com/docs/guides/platform/backups)
 
@@ -38,6 +40,6 @@ env -i PATH=/opt/homebrew/bin:/usr/bin:/bin \
   python3 -B verification/web/scripts/test-privacy-restore-check.py
 ```
 
-The rehearsal creates two disposable PostgreSQL clusters and runs a real dump and restore from a shared snapshot. It checks that a later write stays out of the archive, tests row and permission drift, and applies both reviewed privacy drafts to the restored fixture. The PostgreSQL fixture uses `real[]` for embeddings. The separate Practice tests exercise the tracked vector schema. [Verification receipt](privacy-restore-check-verification.json)
+The rehearsal creates two disposable PostgreSQL clusters and runs a real dump and restore from a shared snapshot. It checks later writes to answers and transcripts, detects data and permission drift, and applies the Core, Daily Practice and Live Council drafts to the same restored fixture. Both browser roles lose read access across all 14 tables and the service role retains reads. The service-only Live Council join records attendance after the changes. The PostgreSQL fixture uses `real[]` for embeddings. The separate Practice tests exercise the tracked vector schema. [Verification receipt](privacy-room-restore-verification.json)
 
 The rehearsal also checks that the new Practice save function refuses the old browser grants. After containment it uses separate database sessions to exercise overlapping saves and a forced failure in the final update. [Practice save verification](practice-atomic-save-verification.json)

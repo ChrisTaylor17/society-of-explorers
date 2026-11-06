@@ -186,4 +186,4 @@ The current local fixture includes the publication-aware Circle chain and actual
 
 ## Separate Live Council and room-data gate
 
-The three room tables have a separate containment draft. Review their current grants, dependent views and functions, and uploaded callers. Add the three tables to the approved export and isolated restore scope. Coordinate the draft with the app version that moves Live Council links behind the service-only join function and retires transcript summaries. Retain the access restriction while correcting a failed rollout. [Live Council room privacy](live-room-containment.md)
+The three room tables have a separate containment draft. Review their current grants, dependent views and functions, and uploaded callers. The default 14-table restore check covers these tables in the approved export and isolated restore. Coordinate the draft with the app version that moves Live Council links behind the service-only join function and retires transcript summaries. Retain the access restriction while correcting a failed rollout. [Restore procedure](privacy-restore-check.md) · [Live Council room privacy](live-room-containment.md)

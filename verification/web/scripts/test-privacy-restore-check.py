@@ -23,9 +23,12 @@ CORE_REHEARSAL = SCRIPT.with_name('rehearse-native-core-restore.py')
 REFERENCE = ROOT / 'docs/sql/privacy-restore-reference.sql'
 PRACTICE = ROOT / 'docs/sql/practice-data-containment-apply.sql'
 PRACTICE_SAVE = ROOT / 'docs/sql/practice-response-save-apply.sql'
+LIVE_ROOMS = ROOT / 'docs/sql/live-room-containment-apply.sql'
+ROOM_FIXTURE = ROOT / 'verification/web/tests/fixtures/live-room-synthetic.sql'
 QUESTIONS = ROOT / 'supabase/migrations/20260414_daily_practice.sql'
 REFLECTIONS = ROOT / 'supabase/migrations/20260418_practice_reflections.sql'
 PRIVATE_TEXT = 'PRIVATE_SYNTHETIC_ANSWER'
+PRIVATE_TRANSCRIPT = 'PRIVATE_TRANSCRIPT_FIXTURE'
 
 
 def resident(path):
@@ -69,6 +72,9 @@ def seed(source, database):
       GRANT SELECT(email) ON members TO anon WITH GRANT OPTION;
       GRANT SELECT(response_text) ON question_responses TO authenticated;
       INSERT INTO members(id, display_name) VALUES ('22222222-2222-4222-8222-222222222222', 'Second fixture member');
+      INSERT INTO members(id, display_name) VALUES
+        ('10000000-0000-4000-8000-000000000001', 'Fixture room host'),
+        ('10000000-0000-4000-8000-000000000002', 'Fixture room guest');
       INSERT INTO daily_questions(id, thinker_id, question_text, date)
         VALUES ('33333333-3333-4333-8333-333333333333', 'socrates', 'A synthetic prompt', '2026-11-05');
       INSERT INTO question_responses(id, member_id, question_id, response_text)
@@ -83,15 +89,18 @@ def seed(source, database):
         SELECT md5('synthetic restore row ' || n)::uuid, '11111111-1111-4111-8111-111111111111',
           'SYNTHETIC_READING' FROM generate_series(1, 4097) n;
     """)
+    source.file(database, ROOM_FIXTURE)
 
 
-def verify(reference, target, fixture, **overrides):
+def verify(reference, target, fixture, *, core_practice_only=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
         **overrides,
     }
     argv = [sys.executable, '-B', str(CHECKER)]
+    if core_practice_only:
+        argv.append('--core-practice-only')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={
@@ -100,6 +109,8 @@ def verify(reference, target, fixture, **overrides):
     })
     assert not result.stderr, 'The verifier exposed stderr'
     assert PRIVATE_TEXT not in result.stdout
+    assert PRIVATE_TRANSCRIPT not in result.stdout
+    assert 'https://soe-fixture.daily.co' not in result.stdout
     assert not re.search(r'[0-9a-f]{64}', result.stdout), 'The verifier exposed a fingerprint'
     report = json.loads(result.stdout)
     assert report['productionCleared'] is False
@@ -205,8 +216,8 @@ def exercise(temp, fixture, checker, result):
     source = fixture['Cluster'](temp / 'source', fixture['OWNER'])
     target = fixture['Cluster'](temp / 'target', fixture['RESTORE_ADMIN'])
     source_db, target_db, owner = (fixture[k] for k in ('SOURCE_DB', 'RESTORED_DB', 'OWNER'))
-    read_sql = resident(REFERENCE).decode()
     reference, archive, roles = (temp / name for name in ('reference.json', 'source.pgcustom', 'roles.sql'))
+    legacy_reference = temp / 'core-practice-reference.json'
     checks = result['checks']
     try:
         source.start()
@@ -218,11 +229,18 @@ def exercise(temp, fixture, checker, result):
         checks.append('The reference query refuses to run outside a repeatable-read, read-only snapshot.')
         with export_snapshot(source, fixture) as snapshot:
             transaction = f"{checker['BEGIN']} SET TRANSACTION SNAPSHOT '{snapshot}';"
-            raw = source.query(source_db, transaction + '\n' + read_sql + '\nROLLBACK;')
+            capture = (*source.psql(source_db), '-c', transaction, '-f', REFERENCE, '-c', 'ROLLBACK;')
+            raw = fixture['run']('psql', *capture)
             parsed = checker['decode_reference'](raw.encode())
             assert parsed['tables']['reading_progress']['rows'] == 4098
+            assert all(parsed['tables'][name]['rows'] > 0 for name in checker['ROOM_TABLES'])
             reference.write_text(raw + '\n')
-            source.query(source_db, "UPDATE question_responses SET response_text = 'LATER_SOURCE_WRITE'")
+            legacy = fixture['run']('psql', '-v', 'soe_restore_include_rooms=off', *capture)
+            legacy_reference.write_text(legacy + '\n')
+            source.query(source_db, """
+              UPDATE question_responses SET response_text = 'LATER_SOURCE_WRITE';
+              UPDATE room_transcripts SET content = 'LATER_SOURCE_TRANSCRIPT';
+            """)
             fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
                            '--file', archive, '-d', source_db)
         fixture['run']('pg_dumpall', *source.connection(), '--roles-only', '--no-role-passwords',
@@ -230,32 +248,65 @@ def exercise(temp, fixture, checker, result):
         target.file('postgres', roles)
         target.restore(target_db, archive)
         match = verify(reference, target, fixture)
-        assert match['status'] == 'MATCH' and match['tablesCompared'] == 11 and match['roleAndSchemaAccessMatch']
+        assert match['status'] == 'MATCH' and match['tablesCompared'] == 14 and match['roleAndSchemaAccessMatch']
+        assert match['scope'] == checker['FORMAT']
         assert source.query(source_db, "SELECT count(*) FROM question_responses WHERE response_text = 'LATER_SOURCE_WRITE'") == '1'
+        assert source.query(source_db, "SELECT count(*) FROM room_transcripts WHERE content = 'LATER_SOURCE_TRANSCRIPT'") == '1'
         assert target.query(target_db, f"SELECT count(*) FROM question_responses WHERE response_text = '{PRIVATE_TEXT}'") == '1'
-        checks.append('A real dump and its private reference share an exported snapshot across a later source write. All 11 restored tables match.')
+        assert target.query(target_db, f"SELECT count(*) FROM room_transcripts WHERE content = '{PRIVATE_TRANSCRIPT}'") == '1'
+        checks.append('All 14 restored tables match a reference from the same snapshot despite later source writes to answers and transcripts.')
 
-        target.query(target_db, "UPDATE question_responses SET response_text = 'SYNTHETIC_DRIFT'", owner)
+        legacy_match = verify(legacy_reference, target, fixture, core_practice_only=True)
+        assert legacy_match['status'] == 'MATCH' and legacy_match['tablesCompared'] == 11
+        assert legacy_match['scope'] == checker['CORE_PRACTICE_FORMAT']
+        assert verify(legacy_reference, target, fixture)['check'] == 'private_reference_invalid'
+        assert verify(reference, target, fixture, core_practice_only=True)['check'] == 'private_reference_invalid'
+        partial_reference = temp / 'incomplete-room-reference.json'
+        partial_reference.write_text(json.dumps({**parsed, 'tables': {
+            name: table for name, table in parsed['tables'].items() if name != 'room_transcripts'
+        }}))
+        assert verify(partial_reference, target, fixture)['check'] == 'private_reference_invalid'
+        checks.append('The earlier 11-table reference remains usable in explicit Core and Practice mode. Both wrong-scope formats and a partial room reference are refused.')
+
+        target.query(target_db, """
+          UPDATE question_responses SET response_text = 'SYNTHETIC_DRIFT';
+          UPDATE room_transcripts SET content = 'SYNTHETIC_TRANSCRIPT_DRIFT';
+          UPDATE room_participants SET left_at = joined_at;
+          UPDATE video_rooms SET daily_room_url = 'https://fixture.invalid/changed' WHERE room_name = 'past-fixture';
+        """, owner)
         drift = verify(reference, target, fixture)
-        assert drift['status'] == 'MISMATCH' and drift['rowsDiffer'] == ['question_responses']
+        assert drift['status'] == 'MISMATCH' and drift['rowsDiffer'] == [
+            'question_responses', 'room_participants', 'room_transcripts', 'video_rooms',
+        ]
         assert drift['definitionsDiffer'] == [] and drift['roleAndSchemaAccessMatch']
-        target.query(target_db, f"UPDATE question_responses SET response_text = '{PRIVATE_TEXT}'", owner)
-        checks.append('A replacement answer with the same row count is detected and the receipt names only the affected table.')
+        target.query(target_db, f"""
+          UPDATE question_responses SET response_text = '{PRIVATE_TEXT}';
+          UPDATE room_transcripts SET content = '{PRIVATE_TRANSCRIPT}';
+          UPDATE room_participants SET left_at = NULL;
+          UPDATE video_rooms SET daily_room_url = 'https://soe-fixture.daily.co/past-fixture' WHERE room_name = 'past-fixture';
+        """, owner)
+        checks.append('Same-count changes to an answer, attendance, a transcript and a room link are detected. The receipt names the affected tables.')
 
         target.query(target_db, 'ALTER TABLE daily_questions DISABLE ROW LEVEL SECURITY', owner)
         target.query(target_db, 'REVOKE SELECT(email) ON members FROM anon', owner)
+        target.query(target_db, 'ALTER TABLE room_participants ENABLE ROW LEVEL SECURITY', owner)
+        target.query(target_db, 'REVOKE SELECT ON room_transcripts FROM authenticated', owner)
         target.query(target_db, 'GRANT unrelated_reader TO authenticated')
         drift = verify(reference, target, fixture)
         assert drift['status'] == 'MISMATCH' and drift['rowsDiffer'] == []
-        assert drift['definitionsDiffer'] == ['daily_questions', 'members'] and not drift['roleAndSchemaAccessMatch']
+        assert drift['definitionsDiffer'] == ['daily_questions', 'members', 'room_participants', 'room_transcripts']
+        assert not drift['roleAndSchemaAccessMatch']
         target.query(target_db, 'REVOKE unrelated_reader FROM authenticated')
         target.query(target_db, 'GRANT SELECT(email) ON members TO anon WITH GRANT OPTION', owner)
         target.query(target_db, 'ALTER TABLE daily_questions ENABLE ROW LEVEL SECURITY', owner)
-        checks.append('With all rows intact, the comparison detects changed RLS, a column grant and an inherited role grant.')
+        target.query(target_db, 'ALTER TABLE room_participants DISABLE ROW LEVEL SECURITY', owner)
+        target.query(target_db, 'GRANT SELECT ON room_transcripts TO authenticated', owner)
+        checks.append('With all rows intact, the comparison detects changes to RLS, table and column grants, and an inherited role.')
 
-        target.query(target_db, 'ALTER TABLE question_responses RENAME TO missing_question_responses', owner)
+        target.query(target_db, 'ALTER TABLE room_transcripts RENAME TO missing_room_transcripts', owner)
         assert verify(reference, target, fixture)['check'] == 'local_snapshot_unavailable'
-        target.query(target_db, 'ALTER TABLE missing_question_responses RENAME TO question_responses', owner)
+        assert verify(legacy_reference, target, fixture, core_practice_only=True)['status'] == 'MATCH'
+        target.query(target_db, 'ALTER TABLE missing_room_transcripts RENAME TO room_transcripts', owner)
         reference.chmod(0o644)
         assert verify(reference, target, fixture)['check'] == 'private_reference_invalid'
         reference.chmod(0o600)
@@ -265,7 +316,7 @@ def exercise(temp, fixture, checker, result):
         wrong_version = temp / 'wrong-major.json'
         wrong_version.write_text(json.dumps({**parsed, 'serverMajor': parsed['serverMajor'] + 1}))
         assert verify(wrong_version, target, fixture)['check'] == 'postgres_major'
-        checks.append('A missing table, shared reference, linked socket and different PostgreSQL major each refuse comparison.')
+        checks.append('A missing room table prevents a full comparison. A shared reference, linked socket and different PostgreSQL major also cause failure.')
 
         assert verify(reference, target, fixture)['status'] == 'MATCH'
         target.file(target_db, PRACTICE_SAVE, owner, 'PT409')
@@ -274,6 +325,7 @@ def exercise(temp, fixture, checker, result):
         target.file(target_db, fixture['SQL']['preflight'], owner)
         target.file(target_db, fixture['SQL']['apply'], owner)
         target.file(target_db, PRACTICE, owner)
+        target.file(target_db, LIVE_ROOMS, owner)
         drift = verify(reference, target, fixture)
         assert drift['status'] == 'MISMATCH' and drift['rowsDiffer'] == []
         assert set(drift['definitionsDiffer']) == checker['TABLES'] and drift['roleAndSchemaAccessMatch']
@@ -282,7 +334,14 @@ def exercise(temp, fixture, checker, result):
                 target.query(target_db, f'SET ROLE {role}; SELECT count(*) FROM public.{table}', owner, '42501')
             count = target.query(target_db, f'SET ROLE service_role; SELECT count(*) FROM public.{table}', owner)
             assert count == str(parsed['tables'][table]['rows'])
-        checks.append('The exact Core and Practice changes preserve all restored rows. Both browser roles lose reads and service reads survive on all 11 tables.')
+        checks.append('The Core, Daily Practice and Live Council changes preserve all restored rows. Both browser roles lose reads and service reads survive on all 14 tables.')
+        assert target.query(target_db, """
+          SET ROLE service_role;
+          SELECT public.soe_join_live_council('30000000-0000-4000-8000-000000000001',
+            '10000000-0000-4000-8000-000000000002', 'https://soe-fixture.daily.co/live-fixture');
+        """, owner) == 't'
+        assert target.query(target_db, 'SELECT count(*) FROM room_participants', owner) == '2'
+        checks.append('The installed service join records attendance on the same restored database after all three privacy drafts.')
         exercise_practice_save(target, target_db, fixture, checks)
     finally:
         cleanup = {}
@@ -300,10 +359,10 @@ def main():
     os.umask(0o077)
     result = {'status': 'FAIL', 'scope': 'Synthetic PostgreSQL fixture', 'checks': [],
               'productionRestoreVerified': False, 'fixtureEmbeddingType': 'real[]'}
-    for path in (CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, QUESTIONS, REFLECTIONS):
+    for path in (CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, LIVE_ROOMS, ROOM_FIXTURE, QUESTIONS, REFLECTIONS):
         resident(path)
     fixture, checker = (runpy.run_path(str(path)) for path in (CORE_REHEARSAL, CHECKER))
-    inputs = [SCRIPT, CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, QUESTIONS, REFLECTIONS,
+    inputs = [SCRIPT, CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, LIVE_ROOMS, ROOM_FIXTURE, QUESTIONS, REFLECTIONS,
               fixture['BASELINE'], fixture['SQL']['preflight'], fixture['SQL']['apply']]
     result['sourceHashes'] = {str(path.relative_to(ROOT)): hashlib.sha256(resident(path)).hexdigest() for path in inputs}
     result['postgres'] = fixture['run']('postgres', '--version')

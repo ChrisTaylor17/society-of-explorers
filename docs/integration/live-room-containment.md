@@ -24,6 +24,6 @@ Run `python3 -B scripts/probe-built-release-boundaries.py <prefix>` against the 
 
 ## Before a hosted cutover
 
-Include all three room tables in the approved export and isolated restore. Recheck current permissions, dependent objects and the uploaded legacy route callers. Keep older deployments held while applying the reviewed SQL and the matching app, then verify schema cache, signed-out schedule, verified join, closed-session refusal and browser-role denial. If acceptance fails, keep the member alias held and retain the tighter grants while correcting the release.
+Use the 14-table restore procedure to verify all three room tables from the same approved export as Core and Daily Practice. Recheck current permissions, dependent objects and the uploaded legacy route callers. Keep older deployments held while applying the reviewed SQL and the matching app, then verify schema cache, signed-out schedule, verified join, closed-session refusal and browser-role denial. If acceptance fails, keep the member alias held and retain the tighter grants while correcting the release. [Restore procedure](privacy-restore-check.md)
 
 Verify the owned Daily account and provider-side room admission with synthetic participants. A link issued by an earlier build may still work at Daily, depending on the room's access settings. The app join check governs link delivery and attendance. Provider admission and ejection need their own verification. [Daily room access settings](https://docs.daily.co/guides/configurations-and-settings/setting-up-calls)

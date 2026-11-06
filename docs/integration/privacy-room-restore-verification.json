@@ -1,0 +1,73 @@
+{
+  "status": "local_14_table_restore_and_selected_acceptance_passed_production_hold",
+  "recordedAt": "2026-11-06T03:46:10.791831+00:00",
+  "baseCommit": "838bf80eca5e469fd68a167e5799b240d9a7467d",
+  "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+  "scopes": {
+    "defaultTables": 14,
+    "explicitLegacyTables": 11,
+    "addedRoomTables": [
+      "room_participants",
+      "room_transcripts",
+      "video_rooms"
+    ]
+  },
+  "legacyQueryCompatibility": {
+    "baseQuerySha256": "b9b6689757786e017314dd99e9bb8bb04675a38f0f9fbc9d11cfe75b55fd0958",
+    "identicalReferenceForSameSnapshot": true,
+    "acceptedOnlyInExplicitLegacyMode": true
+  },
+  "testResults": {
+    "combinedRestoreChecksPassed": 13,
+    "roomRestoreChecksPassed": 7,
+    "focusedRegressionTestsPassed": 31,
+    "compiledLiveCouncilBrowserStoriesPassed": 5,
+    "buildId": "WL99sFE9nSYkZou8ibvty"
+  },
+  "combinedRestoreChecks": [
+    "The reference query refuses to run outside a repeatable-read, read-only snapshot.",
+    "All 14 restored tables match a reference from the same snapshot despite later source writes to answers and transcripts.",
+    "The earlier 11-table reference remains usable in explicit Core and Practice mode. Both wrong-scope formats and a partial room reference are refused.",
+    "Same-count changes to an answer, attendance, a transcript and a room link are detected. The receipt names the affected tables.",
+    "With all rows intact, the comparison detects changes to RLS, table and column grants, and an inherited role.",
+    "A missing room table prevents a full comparison. A shared reference, linked socket and different PostgreSQL major also cause failure.",
+    "The save draft refuses a database with the old browser grants and leaves no function behind.",
+    "The Core, Daily Practice and Live Council changes preserve all restored rows. Both browser roles lose reads and service reads survive on all 14 tables.",
+    "The installed service join records attendance on the same restored database after all three privacy drafts.",
+    "The save draft refuses unexpected EXECUTE defaults. Browser and unrelated roles cannot execute it after installation.",
+    "Two independent sessions overlapping on one member preserve one answer ID and one counter increment.",
+    "Two independent authors sharing one prompt both save and the prompt count reflects all four answers.",
+    "An error on the final prompt update rolls back the new answer and member streak in the same transaction."
+  ],
+  "limits": [
+    "Disposable synthetic clusters and member fixtures. Practice embeddings use real[] for this restore rehearsal.",
+    "Browser meetings and member accounts are synthetic. The approved production export and isolated restore, file storage, provider identities and live acceptance are separate gates."
+  ],
+  "productionRestoreVerified": false,
+  "sourceSha256": {
+    "verification/web/scripts/test-privacy-restore-check.py": "3e83d2ca40f7310d1a8046e1a9a1344674e4fe9a7d270b9a98c3ed4247c4d48a",
+    "verification/web/scripts/verify-privacy-restore.py": "1398ccbeda2e8ebb44d8b5870950d2a269463d9eb641da2b9e748796030311af",
+    "verification/web/scripts/rehearse-native-core-restore.py": "62dec9ba2625f81605463089782bb0e2466283f84885bc085355e20a063ea312",
+    "docs/sql/privacy-restore-reference.sql": "f68884c967799c3ad10d68e108d6e710e10f6ec3dc8cbbf3574b19ce272f1704",
+    "docs/sql/practice-data-containment-apply.sql": "0e1c494fb39add6b9e6c656faa32dd4e888f4baedc5468905af6011841b88593",
+    "docs/sql/practice-response-save-apply.sql": "450f26a4a36036808f9551b1ecb380fc5755521c3bd02cc09119e62faa79b142",
+    "docs/sql/live-room-containment-apply.sql": "cba4457ef50664bd0305fed3f265311f35e090a2db22b7930402290613d53711",
+    "verification/web/tests/fixtures/live-room-synthetic.sql": "52d5a8316e34c66ea1c9cbc8ce0841d926eb3aabad9f352b75baf8670aae119b",
+    "supabase/migrations/20260414_daily_practice.sql": "a928960a7db0429aaedcea5f177f7eb6b0f41b475e8c54977ba0b3cbe3be0457",
+    "supabase/migrations/20260418_practice_reflections.sql": "47529879d0d0b39b51722a1e4a69e9f2a3285eb066e21dc404f5153d1fb8deac",
+    "verification/web/tests/fixtures/core-containment-synthetic.sql": "c09a83634f7feb6ea58b02600070dccaaf67d7086949adffc40b44d2b0098433",
+    "docs/sql/first-release-core-containment-preflight.sql": "17db6ff8b73d65de0b3d87fb60fc43a84d84437341a062cb2e195f078a2f34d1",
+    "docs/sql/first-release-core-containment-apply.sql": "b88ffa86bb265f467dbf9fe9d7ba17ce246df8a8d2618db86ade8a6401fb1b1b",
+    "verification/web/scripts/test-live-room-containment.py": "d0e0eb98cdbaaf4a6d097752bf386d98a62f7cbeecaa35ef4046ba0bf169b45b",
+    "verification/web/tests/fixtures/live-room-prerequisites-synthetic.sql": "f02ae3103c0023079d1af57c4f0299c7668848f2bdaca8f6fff6f1ce47680a68",
+    "verification/web/tests/support/live-room-fixture.mjs": "0462c6d88dfccdfe93f4f3680d1935f24209750c03fcc27e76e002944d9636a1"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/privacy-room-restore-2026-11-05/combined-restore-run-01.json": "09f2341cf3dbc97e3e684e2eba5d8dbd84a9415953c7f3115e3f7c18b79d62d1",
+    "verification/web/evidence/privacy-room-restore-2026-11-05/room-restore-run-01.json": "0602e5089b37178a1b6c24a9af09ea2df76d5f1cbcba674efd3e5cba5e94031f",
+    "verification/web/evidence/privacy-room-restore-2026-11-05/legacy-restore-run-02.json": "75e016cc183cfefcaa1a4062169259d55b9d764e62001d1e73aae3ad69e8439d",
+    "verification/web/evidence/privacy-room-restore-2026-11-05/release-privacy-api.tap": "5c9f70efacd97ae0de20c7913720695a97db3b6717568dbbfad12a0ff2b8ac2a",
+    "verification/web/evidence/privacy-room-restore-2026-11-05/built-shell-live-room-04-browser.json": "3c947532c5dbd72f6f8339ebb3ebe793718b042ad3702f0966425a81bff5a4b0",
+    "verification/web/evidence/privacy-room-restore-2026-11-05/built-shell-live-room-04-server.json": "6f71abe828ca32667fc5b9c871e76e32f00e8f5ff20f95b4c290185a9d46d58c"
+  }
+}

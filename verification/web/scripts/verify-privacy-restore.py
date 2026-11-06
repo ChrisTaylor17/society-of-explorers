@@ -12,12 +12,16 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[3]
 REFERENCE_SQL = ROOT / 'docs/sql/privacy-restore-reference.sql'
 DEFAULT_PSQL = Path('/opt/homebrew/opt/postgresql@17/bin/psql')
-FORMAT = 'soe-privacy-restore-v1'
-TABLES = frozenset({
+FORMAT = 'soe-privacy-restore-v2'
+CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
+CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
     'great_books_highlights', 'book_reflections', 'thinker_memory', 'daily_questions',
     'matched_conversations', 'practice_reflections', 'question_responses',
 })
+ROOM_TABLES = frozenset({'video_rooms', 'room_participants', 'room_transcripts'})
+TABLES = CORE_PRACTICE_TABLES | ROOM_TABLES
+TABLES_BY_SCOPE = {FORMAT: TABLES, CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES}
 PRINCIPALS = ['anon', 'authenticated', 'service_role']
 MAX_REFERENCE_BYTES = 16384
 BEGIN = 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;'
@@ -43,16 +47,16 @@ def unique_object(pairs):
     return result
 
 
-def decode_reference(raw):
+def decode_reference(raw, scope=FORMAT):
     if not raw or len(raw) > MAX_REFERENCE_BYTES:
         raise ValueError('Reference size')
     value = json.loads(raw, object_pairs_hook=unique_object)
     if (not isinstance(value, dict)
             or set(value) != {'format', 'serverMajor', 'principals', 'roles', 'tables'}
-            or value['format'] != FORMAT or value['principals'] != PRINCIPALS
+            or value['format'] != scope or value['principals'] != PRINCIPALS
             or type(value['serverMajor']) is not int or value['serverMajor'] < 15
             or not valid_digest(value['roles'])
-            or not isinstance(value['tables'], dict) or set(value['tables']) != TABLES):
+            or not isinstance(value['tables'], dict) or set(value['tables']) != TABLES_BY_SCOPE[scope]):
         raise ValueError('Reference shape')
     for entry in value['tables'].values():
         if (not isinstance(entry, dict) or set(entry) != {'rows', 'data', 'definition'}
@@ -66,7 +70,7 @@ def valid_digest(value):
     return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value) is not None
 
 
-def read_private_reference(path):
+def read_private_reference(path, scope):
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         with os.fdopen(descriptor, 'rb') as stream:
@@ -74,7 +78,7 @@ def read_private_reference(path):
             if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077
                     or not 0 < info.st_size <= MAX_REFERENCE_BYTES or not info.st_blocks):
                 raise ValueError('Owner-only resident file required')
-            return decode_reference(stream.read(MAX_REFERENCE_BYTES + 1))
+            return decode_reference(stream.read(MAX_REFERENCE_BYTES + 1), scope)
     except (OSError, ValueError, RecursionError):
         raise CheckError('private_reference_invalid') from None
 
@@ -108,8 +112,10 @@ def read_target(args):
         raise CheckError('local_psql_required')
     try:
         query = BEGIN + '\n' + LOCAL_ONLY + snapshot_sql() + '\nROLLBACK;'
+        include_rooms = 'on' if args.scope == FORMAT else 'off'
         result = subprocess.run(
-            [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1', '-h', str(args.socket_dir),
+            [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1', '-v', f'soe_restore_include_rooms={include_rooms}',
+             '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
             env={'PATH': '/usr/bin:/bin', 'LC_ALL': 'C', 'PGCLIENTENCODING': 'UTF8',
@@ -118,7 +124,7 @@ def read_target(args):
         )
         if result.returncode != 0:
             raise CheckError('local_snapshot_unavailable')
-        return decode_reference(result.stdout)
+        return decode_reference(result.stdout, args.scope)
     except (OSError, ValueError, RecursionError, subprocess.SubprocessError):
         # PostgreSQL errors can include row values, role details or paths.
         raise CheckError('local_snapshot_unavailable') from None
@@ -129,7 +135,7 @@ def compare(reference, restored):
         return {'status': 'MISMATCH', 'check': 'postgres_major'}
     data_drift = []
     definition_drift = []
-    for table in sorted(TABLES):
+    for table in sorted(reference['tables']):
         expected, actual = reference['tables'][table], restored['tables'][table]
         if expected['rows'] != actual['rows'] or expected['data'] != actual['data']:
             data_drift.append(table)
@@ -138,7 +144,7 @@ def compare(reference, restored):
     role_match = reference['roles'] == restored['roles']
     return {
         'status': 'MATCH' if not data_drift and not definition_drift and role_match else 'MISMATCH',
-        'tablesCompared': len(TABLES),
+        'tablesCompared': len(reference['tables']),
         'rowsDiffer': data_drift,
         'definitionsDiffer': definition_drift,
         'roleAndSchemaAccessMatch': role_match,
@@ -153,16 +159,19 @@ def main():
     parser.add_argument('--database', required=True)
     parser.add_argument('--user', required=True)
     parser.add_argument('--psql', type=Path, default=DEFAULT_PSQL)
+    parser.add_argument('--core-practice-only', dest='scope', action='store_const',
+                        const=CORE_PRACTICE_FORMAT, default=FORMAT,
+                        help='Compare an 11-table Core and Daily Practice reference.')
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535 or not all(
         re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]{0,62}', name) for name in (args.database, args.user)
     ):
         parser.error('Use a local port and literal database and role names.')
     try:
-        report = compare(read_private_reference(args.reference), read_target(args))
+        report = compare(read_private_reference(args.reference, args.scope), read_target(args))
     except CheckError as error:
         report = {'status': 'UNAVAILABLE', 'check': str(error)}
-    print(json.dumps({'scope': FORMAT, **report, 'productionCleared': False}, indent=2))
+    print(json.dumps({'scope': args.scope, **report, 'productionCleared': False}, indent=2))
     return 0 if report['status'] == 'MATCH' else 1
 
 

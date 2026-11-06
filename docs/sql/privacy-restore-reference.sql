@@ -1,5 +1,10 @@
--- Run inside the owner-approved export's repeatable-read, read-only transaction.
+-- Run with psql inside the owner-approved export's repeatable-read, read-only transaction.
 -- The single JSON row is private recovery material.
+\if :{?soe_restore_include_rooms}
+\else
+  \set soe_restore_include_rooms on
+\endif
+
 SET LOCAL search_path = pg_catalog;
 
 DO $guard$
@@ -21,7 +26,11 @@ SET LOCAL statement_timeout = '90s';
 SET LOCAL lock_timeout = '5s';
 
 WITH RECURSIVE relations(name) AS (
-  VALUES ('members'), ('reading_progress'), ('book_highlights'),
+  VALUES
+\if :soe_restore_include_rooms
+    ('video_rooms'), ('room_participants'), ('room_transcripts'),
+\endif
+    ('members'), ('reading_progress'), ('book_highlights'),
     ('great_books_progress'), ('great_books_highlights'), ('book_reflections'), ('thinker_memory'),
     ('daily_questions'), ('matched_conversations'), ('practice_reflections'), ('question_responses')
 ),
@@ -43,6 +52,11 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'matched_conversations', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.matched_conversations t
   UNION ALL SELECT 'practice_reflections', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.practice_reflections t
   UNION ALL SELECT 'question_responses', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.question_responses t
+\if :soe_restore_include_rooms
+  UNION ALL SELECT 'video_rooms', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.video_rooms t
+  UNION ALL SELECT 'room_participants', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.room_participants t
+  UNION ALL SELECT 'room_transcripts', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.room_transcripts t
+\endif
 ),
 numbered AS (
   SELECT name, digest, (row_number() OVER (PARTITION BY name ORDER BY digest) - 1) / 4096 AS batch
@@ -124,7 +138,7 @@ role_evidence AS (
   ) AS definition
 )
 SELECT jsonb_build_object(
-  'format', 'soe-privacy-restore-v1',
+  'format', CASE WHEN :'soe_restore_include_rooms'::boolean THEN 'soe-privacy-restore-v2' ELSE 'soe-privacy-restore-v1' END,
   'serverMajor', current_setting('server_version_num')::integer / 10000,
   'principals', (SELECT jsonb_agg(rolname ORDER BY rolname COLLATE "C") FROM principals),
   'roles', (SELECT encode(sha256(convert_to(definition::text, 'UTF8')), 'hex') FROM role_evidence),

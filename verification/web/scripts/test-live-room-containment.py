@@ -14,6 +14,7 @@ import time
 SCRIPT = Path(__file__).resolve()
 ROOT = SCRIPT.parents[3]
 HELPER = SCRIPT.with_name('rehearse-native-core-restore.py')
+PREREQUISITES = ROOT / 'verification/web/tests/fixtures/live-room-prerequisites-synthetic.sql'
 BASELINE = ROOT / 'verification/web/tests/fixtures/live-room-synthetic.sql'
 APPLY = ROOT / 'docs/sql/live-room-containment-apply.sql'
 ROOM = '30000000-0000-4000-8000-000000000001'
@@ -142,7 +143,8 @@ def verify(cluster, database, checks):
 def main():
     os.umask(0o077)
     tools = runpy.run_path(str(HELPER))
-    source_hashes = {str(file.relative_to(ROOT)): tools['digest'](file) for file in (SCRIPT, HELPER, BASELINE, APPLY)}
+    source_hashes = {str(file.relative_to(ROOT)): tools['digest'](file)
+                     for file in (SCRIPT, HELPER, PREREQUISITES, BASELINE, APPLY)}
     temp = Path(mkdtemp(prefix='soe-live-room-pg-', dir='/private/tmp'))
     cluster = tools['Cluster'](temp / 'cluster', tools['OWNER'])
     checks = []
@@ -151,6 +153,7 @@ def main():
     try:
         cluster.start()
         cluster.query('postgres', 'CREATE DATABASE soe_room_source')
+        cluster.file('soe_room_source', PREREQUISITES)
         cluster.file('soe_room_source', BASELINE)
         archive = temp / 'synthetic.pgcustom'
         cluster.dump('soe_room_source', archive)
