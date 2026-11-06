@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CircleScreen } from './CircleScreen';
 import { ContributionsScreen } from './ContributionsScreen';
+import { BlockedMembersScreen } from './BlockedMembersScreen';
 import { MessageReviewsScreen } from './MessageReviewsScreen';
 import { CircleReviewsScreen } from './CircleReviewsScreen';
 import { CircleDirectoryScreen } from './CircleDirectoryScreen';
@@ -90,7 +91,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
   const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; philemonPreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
-    destination: 'circle' | 'contributions' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' | 'clips' } | null>(null);
+    destination: 'circle' | 'contributions' | 'blocks' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' | 'clips' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -98,6 +99,8 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   const account = accountSnapshot.connection === connection ? accountSnapshot.model : connection?.account.model();
   const memberId = account?.member?.id;
   const directoryConfig = useMemo(() => connection && memberId ? { ...connection.host, memberId } : null, [connection, memberId]);
+  const blocksConfig = useMemo(() => connection?.host.memberBlocksTransport
+    ? { ...connection.host, transport: connection.host.memberBlocksTransport } : null, [connection]);
   const reviewerConfig = useMemo(() => connection?.host.reviewerTransport && connection.host.newRequestId
     ? { ...connection.host, reviewerTransport: connection.host.reviewerTransport, newRequestId: connection.host.newRequestId } : null, [connection]);
   const circleReviewerConfig = useMemo(() => connection?.host.circleReviewerTransport && connection.host.newRequestId
@@ -204,6 +207,8 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
     if ((entered.destination === 'discover' || entered.destination === 'mine') && directoryConfig) return <CircleDirectoryScreen config={directoryConfig} connectivity={connection.connectivity}
       initialMode={entered.destination} initialOnlineFilter={entered.onlinePreset} initialCircle={entered.initialCircle} reel={entered.reel}
       savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined} onBack={back} onClose={close}/>;
+    if (entered.destination === 'blocks' && memberId && blocksConfig) return <BlockedMembersScreen config={blocksConfig} memberId={memberId}
+      connectivity={connection.connectivity} onBack={back} onClose={close}/>;
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
       onBack={back} onClose={close}/>;
     if (entered.destination === 'reviews' && reviewerConfig) return <MessageReviewsScreen config={reviewerConfig} connectivity={connection.connectivity}
@@ -275,6 +280,10 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
       onPress={() => openHosting()}/>
     {connection?.host.circleId ? <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'circle' }); })}/> : null}
+    {blocksConfig ? <Action label="Blocked members" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
+      onPress={() => act(() => {
+        if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'blocks' });
+      })}/> : null}
     <Action label="View my contributions" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => act(() => { if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'contributions' }); })}/>
     <Action label="Check assigned message reviews" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !reviewerConfig}

@@ -59,6 +59,7 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
       putString("publicPolicy", "circle-discovery-v1")
       putString("readingPolicy", "pinned-passage-v1")
       putString("profilePolicy", "owner-profile-v1")
+      putString("memberBlocksPolicy", "owner-member-blocks-v1")
       putString("publicProfilePolicy", "published-profile-v1")
       putString("savedReadingPolicy", "owner-reading-v1")
       putString("attendancePolicy", "circle-rsvp-v1")

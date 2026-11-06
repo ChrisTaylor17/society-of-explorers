@@ -1,6 +1,7 @@
 import { isUuid } from '@/lib/ids/uuid'
 
 export const DIRECT_MESSAGE_OWNER_HEADER = 'x-soe-expected-member'
+export const MEMBER_BLOCKS_PATH = '/api/members/blocks'
 export const DIRECT_MESSAGE_ACK_LIMIT = 100
 export const DIRECT_MESSAGE_BLOCK_PAGE_LIMIT = 25
 
@@ -25,6 +26,8 @@ export type DirectMessageBlock = { blockId: string; revision: number; label: str
 export type DirectMessageBlockPage = { items: DirectMessageBlock[]; nextCursor: string | null }
 export type DirectMessageBlockChange = { requestId: string; expectedRevision: number } &
   ({ blocked: true; peerId: string } | { blocked: false; blockId: string })
+
+export type MemberUnblockInput = { expectedMemberId: string; blockId: string; expectedRevision: number; requestId: string }
 
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
 const revision = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
@@ -76,4 +79,16 @@ export function parseDirectMessageBlockReceipt(value: unknown, input: DirectMess
       || value.revision !== input.expectedRevision + 1 || !isUuid(value.blockId)
       || !input.blocked && value.blockId !== input.blockId) return null
   return { requestId: input.requestId, blockId: value.blockId, blockedByMe: input.blocked, revision: input.expectedRevision + 1 }
+}
+
+export function parseMemberUnblockInput(value: unknown): MemberUnblockInput | null {
+  if (!record(value) || Object.keys(value).length !== 4 || !isUuid(value.expectedMemberId)
+    || !isUuid(value.blockId) || !revision(value.expectedRevision) || value.expectedRevision === 0
+    || value.expectedRevision === Number.MAX_SAFE_INTEGER || !isUuid(value.requestId)) return null
+  return { expectedMemberId: value.expectedMemberId.toLowerCase(), blockId: value.blockId.toLowerCase(),
+    expectedRevision: value.expectedRevision, requestId: value.requestId.toLowerCase() }
+}
+
+export function parseMemberBlockPage(value: unknown, expectedMemberId: string): DirectMessageBlockPage | null {
+  return record(value) && value.memberId === expectedMemberId ? parseDirectMessageBlockPage(value) : null
 }

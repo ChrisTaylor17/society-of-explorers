@@ -78,7 +78,7 @@ export function createMessageSafety(request: CircleSessionRequest, circleId: str
     if (exact.input.action === 'block') {
       if (!parseMessageBlockReceipt(value, exact.input, circle, id)) return false;
       state = null; receipt = null; pending = null; busy = false; phase = 'confirmed';
-      message = 'Member blocked. Open the current discussion to continue. Manage your blocks under Members → Chat → Blocked members on the web.';
+      message = 'Member blocked. Open the current discussion to continue. Manage your blocks in Blocked members.';
       return true;
     }
     const parsed = parseMessageActionReceipt(value);

@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+Members can review and remove their own blocks from the phone member menu and regular Quest Browser. The list requires a current account check and clears on backgrounding, account changes or entering VR. A lost reply can be retried with the same request. The web build, signed Quest Browser, simulated iPhone and Android screens, and Swift request policy passed local checks. Hosted rollout, installed phone builds and headset testing remain open. [Verification](docs/integration/member-block-management-verification.json)
+
 Members can block an author from a checked Circle post on the web, in the phone source and in Quest Browser. The shared block hides posts and stops direct replies and messages in both directions. Other members’ replies and assigned review evidence remain available. A separate PostgreSQL connection waited for the block and then refused the old reply. The 66-table restore requires the new safety routines. Hosted rollout, installed phone builds and headset testing remain open. [Verification](docs/integration/circle-member-blocking-verification.json)
 
 Members can now block direct messages in both directions and manage their own blocks. The database refuses a send waiting behind a block, hides the existing conversation and excludes it from unread counts. The web checks covered a delayed reply and the owner’s unblock flow at phone width. The new 66-table restore scope catches missing blocks. Hosted rollout and installed device checks remain open. [Verification](docs/integration/direct-message-blocking-verification.json)

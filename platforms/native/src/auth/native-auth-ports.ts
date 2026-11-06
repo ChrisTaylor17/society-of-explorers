@@ -220,6 +220,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
   const circleReviewerTransport = ports.circleReviewerTransport ? wrapTransport(ports.circleReviewerTransport) : undefined;
   const publicTransport = ports.publicTransport ? wrapTransport(ports.publicTransport) : undefined;
   const passageTransport = ports.passageTransport ? wrapTransport(ports.passageTransport) : undefined;
+  const memberBlocksTransport = ports.memberBlocksTransport ? wrapTransport(ports.memberBlocksTransport) : undefined;
   const profileTransport = ports.profileTransport ? wrapTransport(ports.profileTransport) : undefined;
   const publicProfileTransport = ports.publicProfileTransport ? wrapTransport(ports.publicProfileTransport) : undefined;
   const attendanceTransport = ports.attendanceTransport ? wrapTransport(ports.attendanceTransport) : undefined;
@@ -232,7 +233,7 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
       if (resetStarted) throw unavailable(); resetStarted = true; retire();
       try { await ports.resetAccountStorage(); } finally { offRetirement(); ports.retireStorage(); }
     },
-    member: { origin, transport, aiConsent: ports.aiConsent, ...(reviewerTransport ? { reviewerTransport } : {}), ...(circleReviewerTransport ? { circleReviewerTransport } : {}), ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
+    member: { origin, transport, aiConsent: ports.aiConsent, ...(reviewerTransport ? { reviewerTransport } : {}), ...(circleReviewerTransport ? { circleReviewerTransport } : {}), ...(hostingTransport ? { hostingTransport } : {}), ...(editionTransport ? { editionTransport } : {}), ...(attendanceTransport ? { attendanceTransport } : {}), ...(savedReadingTransport ? { savedReadingTransport } : {}), ...(profileTransport ? { profileTransport } : {}), ...(memberBlocksTransport ? { memberBlocksTransport } : {}), ...(publicProfileTransport ? { publicProfileTransport } : {}), ...(publicTransport ? { publicTransport } : {}), ...(passageTransport ? { passageTransport } : {}), ...(ports.newRequestId ? { newRequestId: async () => { assertOpen(); const id = await ports.newRequestId!(); assertOpen(); return id; } } : {}) },
   };
 }
 export type NativeAuthPorts = Awaited<ReturnType<typeof createNativeAuthPorts>>;

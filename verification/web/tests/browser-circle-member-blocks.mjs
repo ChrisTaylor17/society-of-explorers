@@ -11,7 +11,7 @@ import { installQuestXrDouble } from '../../../platforms/tests/quest-xr-browser-
 const ROOT = resolve('../..');
 const files = name => resolve(ROOT, name);
 const evidence = 'verification/web/evidence/';
-const prefix = evidence + 'built-shell-circle-blocks-final-browser-';
+const prefix = evidence + 'built-shell-member-block-manager-final-browser-';
 const resultPath = files(prefix + 'stories.json');
 const readyPath = files(prefix + 'server-ready.json');
 const read = path => {
@@ -30,7 +30,7 @@ const exec = promisify(execFile);
 const guard = files('verification/web/scripts/built-shell-network-guard.cjs');
 const report = { status: 'RUNNING', buildId: ready.buildId, readySha256: hash(readyBytes),
   stories: [], faults: [], blockedOrigins: [], calls: [], sourceHashes: {}, cleanup: {} };
-let app, browser, loseNext = false;
+let app, browser, loseNext = false, loseNextUnblock = false;
 const save = () => writeFileSync(resultPath, JSON.stringify(report, null, 2) + '\n');
 const button = (page, label) => page.getByRole('button', { name: label, exact: true });
 async function shell(request, url) {
@@ -70,14 +70,17 @@ async function open(path) {
     try {
       if (url.origin !== app.ORIGIN) { report.blockedOrigins.push(url.origin); await route.abort(); return; }
       if (!url.pathname.startsWith('/api/')) { await route.fulfill(await shell(request, url)); return; }
-      assert(/^\/api\/(?:auth\/(?:member|provider)|book-salons\/[a-f0-9-]+|circles\/[a-f0-9-]+(?:\/(?:discussion(?:\/preview)?|messages\/[a-f0-9-]+))?)$/.test(url.pathname), url.pathname);
+      assert(/^\/api\/(?:auth\/(?:member|provider)|members\/blocks|book-salons\/[a-f0-9-]+|circles\/[a-f0-9-]+(?:\/(?:discussion(?:\/preview)?|messages\/[a-f0-9-]+))?)$/.test(url.pathname), url.pathname);
       const method = request.method(), body = request.postData() ?? undefined;
       const response = await app.dispatch(url.pathname + url.search, { method, headers: await request.allHeaders(), body });
       const block = method === 'POST' && body !== undefined && JSON.parse(body).action === 'block';
-      report.calls.push({ method, path: url.pathname, status: response.status, block });
-      if (block && loseNext) {
+      const unblock = method === 'POST' && url.pathname === '/api/members/blocks';
+      report.calls.push({ method, path: url.pathname, status: response.status, block,
+        ...(unblock ? { unblockBodySha256: hash(body) } : {}) });
+      if (block && loseNext || unblock && loseNextUnblock) {
         assert.equal(response.status, 200);
-        loseNext = false;
+        if (block) loseNext = false;
+        else loseNextUnblock = false;
         await route.abort('failed');
         return;
       }
@@ -120,6 +123,8 @@ try {
     'docs/sql/wallet-session-revocation-apply.sql', 'app/circles/[circleId]/discussion/DiscussionBrowser.tsx',
     'app/circles/messages/MessageActions.tsx', 'app/quest/[circleId]/QuestCircle.tsx', 'platforms/quest/circle-host.mjs',
     'platforms/quest/circle-view.mjs', 'lib/circles/message-moderation.ts',
+    'platforms/quest/member-blocks-view.mjs', 'platforms/shared/member-blocks.ts', 'app/api/members/blocks/route.ts',
+    'lib/members/direct-message.ts', 'lib/members/direct-message-server.ts',
   ]) {
     report.sourceHashes[name] = hash(read(files(name)));
     if (ready.sourceHashes[name]) assert.equal(report.sourceHashes[name], ready.sourceHashes[name], name);
@@ -186,8 +191,14 @@ try {
   await quest.page.screenshot({ path: files(prefix + 'quest-320.png') });
   const seePanel = value => quest.page.waitForFunction(text => window.questXrQa.panel().replace(/\s+/g, ' ').includes(text), value);
   const trigger = () => quest.page.evaluate(() => window.questXrQa.select());
+  const loadBlocks = button(quest.page, 'Load blocked members');
+  const reviewUnblock = quest.page.getByRole('button', { name: /^Review unblock for / });
+  await loadBlocks.click();
+  await reviewUnblock.waitFor();
+  assert.equal(await reviewUnblock.count(), 1);
   await quest.page.locator('#quest-immersive-enter').click();
   await seePanel('Press the controller trigger to check your signed-in account.');
+  assert.equal(await reviewUnblock.count(), 0, 'A private block list must clear on entering the room');
   await trigger();
   await seePanel('Press the trigger to check Circle access and load recent discussion.');
   await trigger();
@@ -198,6 +209,39 @@ try {
   assert.deepEqual(panel.errors, []);
   await quest.page.locator('#quest-immersive-exit').click();
   report.stories.push('The compiled Quest room renders the independent reply in simulated WebXR after the same member block.');
+  await quest.page.locator('#member-session-check').click();
+  assert.equal(await reviewUnblock.count(), 0);
+  await loadBlocks.click();
+  await reviewUnblock.waitFor();
+  await quest.page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  assert.equal(await reviewUnblock.count(), 0);
+  assert(await loadBlocks.isDisabled());
+  await quest.page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await quest.page.locator('#member-session-check').click();
+  await loadBlocks.click();
+  await reviewUnblock.waitFor();
+  await reviewUnblock.click();
+  await quest.page.getByRole('heading', { name: 'Review unblock', exact: true }).waitFor();
+  assert(await app.ownedBlock());
+  await quest.page.screenshot({ path: files(prefix + 'review-320.png') });
+  report.stories.push('The signed-in Quest list requires a fresh manual load after immersive mode and browser inactivity. The checked row opens the exact unblock review.');
+
+  loseNextUnblock = true;
+  await button(quest.page, 'Unblock this member').click();
+  await contains(quest.page, 'Unblock unconfirmed. You can retry this exact request or clear the view.');
+  assert.equal(loseNextUnblock, false);
+  assert.equal(await app.ownedBlock(), null);
+  assert.equal(await reviewUnblock.count(), 0);
+  await button(quest.page, 'Retry exact unblock').click();
+  await contains(quest.page, 'Unblocked. Load your current list to continue.');
+  const unblocks = report.calls.filter(call => call.unblockBodySha256);
+  assert.equal(unblocks.length, 2);
+  assert(unblocks.every(call => call.status === 200 && call.unblockBodySha256 === unblocks[0].unblockBodySha256));
+  await loadBlocks.click();
+  await contains(quest.page, 'There are no blocks on this page.');
+  await questArchive.click();
+  await contains(quest.page, text.target);
+  report.stories.push('Quest Browser retries the unchanged unblock after the committed reply is lost. The refreshed list is empty and the current Circle post is visible again.');
   await quest.context.close();
   assert.deepEqual(report.faults, []);
   assert.equal(report.calls.filter(call => call.block && call.status === 200).length, 3);

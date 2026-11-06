@@ -15,6 +15,7 @@ export default function QuestPage() {
     <p><Link href={ONLINE_CIRCLES_HREF} style={button}>Find an online Circle</Link></p>
     <p><Link href="/circles/mine" style={button}>My Circles</Link></p>
     <p><Link href="/quest/contributions" style={button}>My posted messages across Circles</Link></p>
+    <p><Link href="/quest/contributions#member-blocks" style={button}>Blocked members</Link></p>
     <p><Link href="/quest/reviews" style={button}>Assigned message reviews</Link></p>
   </main></div>;
 }

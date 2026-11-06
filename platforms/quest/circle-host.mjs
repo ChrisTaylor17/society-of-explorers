@@ -184,10 +184,10 @@ function createCircleDiscussionComposer(gateway, circleId) {
         listeners.delete(listener);
       };
     },
-    access(ready, revision3) {
+    access(ready, revision4) {
       if (disposed) return;
-      if (!Number.isSafeInteger(revision3) || revision3 < readRevision || ready && revision3 === 0) ready = false;
-      else readRevision = revision3;
+      if (!Number.isSafeInteger(revision4) || revision4 < readRevision || ready && revision4 === 0) ready = false;
+      else readRevision = revision4;
       if (!ready && state.ready) {
         if (!pending && state.phase === "confirmed") {
           generation++;
@@ -678,7 +678,7 @@ function createThreadWriter(request, circleId, newRequestId) {
   if (!isUuid(circleId)) throw Error("Valid Circle required");
   const circle = circleId.toLowerCase(), endpoint = `/api/circles/${circle}/discussion`;
   const available = typeof newRequestId === "function";
-  let generation = 0, active = true, revision3 = -1, page = null;
+  let generation = 0, active = true, revision4 = -1, page = null;
   let phase = "locked", busy = false, draft = "", target = null;
   let preview = null, confirmed = false, pending = null, receipt = null;
   let message = available ? "Load the current archive or thread before writing." : "Discussion writing is not connected on this device. Use the member web discussion.";
@@ -725,7 +725,7 @@ function createThreadWriter(request, circleId, newRequestId) {
     phase = "locked";
     if (!keepPage) {
       page = null;
-      revision3 = -1;
+      revision4 = -1;
     }
     message = notice;
     emit();
@@ -786,10 +786,10 @@ function createThreadWriter(request, circleId, newRequestId) {
         clear("Current discussion access could not be verified.");
         return;
       }
-      if (revision3 === nextRevision && Boolean(page) === Boolean(next)) return;
-      if (nextRevision < revision3) return;
+      if (revision4 === nextRevision && Boolean(page) === Boolean(next)) return;
+      if (nextRevision < revision4) return;
       page = next ? copy2(next) : null;
-      revision3 = nextRevision;
+      revision4 = nextRevision;
       if (pending || phase === "confirmed" && !next) {
         emit();
         return;
@@ -951,7 +951,7 @@ var REPORT_LABELS = {
 // lib/circles/message-moderation.ts
 var MESSAGE_SAFETY_LIMIT = 25;
 var MESSAGE_BLOCK_CONFIRMATION = "I checked this message and will choose an action below.";
-var MESSAGE_BLOCK_PRIVACY = "Blocking hides this member\u2019s Circle posts and stops direct messages and direct replies between you. Manage your blocks under Members \u2192 Chat \u2192 Blocked members on the web.";
+var MESSAGE_BLOCK_PRIVACY = "Blocking hides this member\u2019s Circle posts and stops direct messages and direct replies between you. Manage your blocks in Blocked members.";
 var record3 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 var integer = (value) => Number.isSafeInteger(value) && value >= 0;
 var plain2 = (value, min, max) => typeof value === "string" && value.length <= max && value.trim().length >= min && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value);
@@ -1161,7 +1161,7 @@ function createMessageSafety(request, circleId, newRequestId) {
       pending = null;
       busy = false;
       phase = "confirmed";
-      message = "Member blocked. Open the current discussion to continue. Manage your blocks under Members \u2192 Chat \u2192 Blocked members on the web.";
+      message = "Member blocked. Open the current discussion to continue. Manage your blocks in Blocked members.";
       return true;
     }
     const parsed = parseMessageActionReceipt(value);
@@ -2395,6 +2395,259 @@ function createMemberContributions(config) {
   };
 }
 
+// lib/members/direct-message.ts
+var DIRECT_MESSAGE_OWNER_HEADER = "x-soe-expected-member";
+var MEMBER_BLOCKS_PATH = "/api/members/blocks";
+var DIRECT_MESSAGE_BLOCK_PAGE_LIMIT = 25;
+var record6 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var revision3 = (value) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+function parseDirectMessageBlockPage(value) {
+  if (!record6(value) || !Array.isArray(value.items) || value.items.length > DIRECT_MESSAGE_BLOCK_PAGE_LIMIT || !(value.nextCursor === null || isUuid(value.nextCursor))) return null;
+  const items = [];
+  for (const item of value.items) {
+    if (!record6(item) || !isUuid(item.blockId) || !revision3(item.revision) || item.revision === 0 || typeof item.label !== "string" || !item.label.trim() || Array.from(item.label).length > 200 || typeof item.changedAt !== "string" || !Number.isFinite(Date.parse(item.changedAt))) return null;
+    items.push({ blockId: item.blockId, revision: item.revision, label: item.label, changedAt: item.changedAt });
+  }
+  if (value.nextCursor !== null && (items.length !== DIRECT_MESSAGE_BLOCK_PAGE_LIMIT || items.at(-1)?.blockId !== value.nextCursor)) return null;
+  return { items, nextCursor: value.nextCursor };
+}
+function parseDirectMessageBlockReceipt(value, input) {
+  if (!record6(value) || value.requestId !== input.requestId || value.blockedByMe !== input.blocked || value.revision !== input.expectedRevision + 1 || !isUuid(value.blockId) || !input.blocked && value.blockId !== input.blockId) return null;
+  return { requestId: input.requestId, blockId: value.blockId, blockedByMe: input.blocked, revision: input.expectedRevision + 1 };
+}
+function parseMemberUnblockInput(value) {
+  if (!record6(value) || Object.keys(value).length !== 4 || !isUuid(value.expectedMemberId) || !isUuid(value.blockId) || !revision3(value.expectedRevision) || value.expectedRevision === 0 || value.expectedRevision === Number.MAX_SAFE_INTEGER || !isUuid(value.requestId)) return null;
+  return {
+    expectedMemberId: value.expectedMemberId.toLowerCase(),
+    blockId: value.blockId.toLowerCase(),
+    expectedRevision: value.expectedRevision,
+    requestId: value.requestId.toLowerCase()
+  };
+}
+function parseMemberBlockPage(value, expectedMemberId) {
+  return record6(value) && value.memberId === expectedMemberId ? parseDirectMessageBlockPage(value) : null;
+}
+
+// platforms/shared/member-blocks.ts
+var startMessage = "Load your private list to review the blocks you set.";
+function createMemberBlocks(config) {
+  const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15e3;
+  if (!hasCircleAuthority(config.owner) || typeof config.transport !== "function" || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 6e4 || config.memberId !== void 0 && !isUuid(config.memberId) || config.initialOnline !== void 0 && typeof config.initialOnline !== "boolean" || config.newRequestId !== void 0 && typeof config.newRequestId !== "function") throw Error("Verified member connection required");
+  let attached = false, active = true, online = config.initialOnline ?? false, busy = false;
+  let scope = null, checkedMember = null, generation = 0;
+  let page = null, review = null;
+  let pending = null, operation = null;
+  let message = startMessage, offOwner = () => {
+  };
+  const listeners = /* @__PURE__ */ new Set();
+  const usable = () => attached && active && online && scope !== null && config.owner.scope() === scope;
+  const model = () => {
+    const available = usable(), ready = available && !busy;
+    return {
+      active,
+      connected: attached && scope !== null,
+      online,
+      busy,
+      page: available && page ? { items: page.items.map((item) => ({ ...item })), nextCursor: page.nextCursor } : null,
+      review: available && review ? { ...review } : null,
+      message,
+      canLoad: ready && pending === null,
+      canNext: ready && pending === null && review === null && Boolean(page?.nextCursor),
+      canReview: ready && pending === null && review === null && Boolean(config.newRequestId && page?.items.length),
+      canUnblock: ready && Boolean(review && config.newRequestId),
+      canRetry: ready && pending !== null
+    };
+  };
+  const emit = () => {
+    for (const listener of listeners) {
+      try {
+        listener(model());
+      } catch {
+      }
+    }
+  };
+  function clearPage() {
+    page = null;
+    review = null;
+    checkedMember = null;
+  }
+  function retire(notice) {
+    generation++;
+    operation?.abort();
+    operation = null;
+    busy = false;
+    pending = null;
+    clearPage();
+    message = notice;
+    emit();
+  }
+  async function execute(work, failure) {
+    const expected = scope;
+    if (!usable() || !expected || busy) return;
+    const g = ++generation, abort = new AbortController();
+    operation = abort;
+    busy = true;
+    emit();
+    const stillOwned = () => g === generation && usable() && scope === expected;
+    const current = () => stillOwned() && !abort.signal.aborted;
+    let timer;
+    const deadline = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        abort.abort();
+        reject(Error("Member request timed out"));
+      }, timeout);
+    });
+    try {
+      await Promise.race([deadline, (async () => {
+        const headers = await circleAuthorizationHeaders(config.owner, expected);
+        const proof = headers?.[DIRECT_MESSAGE_OWNER_HEADER];
+        const memberId = config.memberId?.toLowerCase() ?? proof;
+        if (!current() || !headers || !isUuid(memberId) || proof && proof !== memberId) throw Error("Member proof unavailable");
+        await work({ memberId, current, async request(path, method, body) {
+          if (!current()) throw Error("Member request retired");
+          const url = origin + path;
+          const result = await config.transport(url, {
+            method,
+            body,
+            cache: "no-store",
+            redirect: "error",
+            credentials: "omit",
+            headers: { ...headers, ...method === "POST" ? { "Content-Type": "application/json" } : {} },
+            signal: abort.signal
+          });
+          if (!current() || result.redirected || result.url !== url) throw Error("Member reply unavailable");
+          const value = await result.json();
+          if (!current()) throw Error("Member request retired");
+          return { status: result.status, value };
+        } });
+      })()]);
+    } catch {
+      if (stillOwned()) failure();
+    } finally {
+      clearTimeout(timer);
+      if (stillOwned()) {
+        operation = null;
+        busy = false;
+        emit();
+      }
+    }
+  }
+  async function load(after) {
+    if (!model().canLoad) return;
+    clearPage();
+    message = "Checking your blocked members\u2026";
+    await execute(async ({ memberId, current, request }) => {
+      const path = after ? MEMBER_BLOCKS_PATH + "?after=" + after : MEMBER_BLOCKS_PATH;
+      const reply = await request(path, "GET");
+      if (!current()) return;
+      const result = reply.status === 200 ? parseMemberBlockPage(reply.value, memberId) : null;
+      if (!result || result.items.some((item, index) => item.blockId !== item.blockId.toLowerCase() || after !== null && item.blockId <= after || index > 0 && item.blockId <= result.items[index - 1].blockId)) throw Error("Member list unavailable");
+      page = result;
+      checkedMember = memberId;
+      message = result.items.length ? "Your current blocks are ready to review." : "There are no blocks on this page.";
+    }, () => {
+      message = "The blocked-members list could not be verified. Check your account and load it again.";
+    });
+  }
+  async function change() {
+    const chosen = review, member = checkedMember, key = config.newRequestId;
+    let input = pending, transmitted = false;
+    if (input ? !model().canRetry : !model().canUnblock || !chosen || !member || !key) return;
+    clearPage();
+    message = "Checking and sending the reviewed unblock\u2026";
+    await execute(async ({ memberId, current, request }) => {
+      if (!input && chosen && member && key) input = parseMemberUnblockInput({
+        expectedMemberId: member,
+        blockId: chosen.blockId,
+        expectedRevision: chosen.revision,
+        requestId: await key()
+      });
+      if (!input || memberId !== input.expectedMemberId || !current()) throw Error("Unblock review unavailable");
+      transmitted = true;
+      const reply = await request(MEMBER_BLOCKS_PATH, "POST", JSON.stringify(input));
+      if (!current()) return;
+      if (reply.status === 200 && parseDirectMessageBlockReceipt(reply.value, { ...input, blocked: false })) {
+        pending = null;
+        message = "Unblocked. Load your current list to continue.";
+      } else if ([400, 401, 403, 404, 409, 413, 415, 429].includes(reply.status)) {
+        pending = null;
+        message = "The block could not be confirmed. Load the current list before deciding again.";
+      } else throw Error("Unblock receipt unavailable");
+    }, () => {
+      pending = transmitted ? input : pending;
+      message = pending ? "Unblock unconfirmed. You can retry this exact request or clear the view." : "The unblock could not be prepared. Load the current list before deciding again.";
+    });
+  }
+  return {
+    model,
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(model());
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    connect() {
+      if (attached) return;
+      attached = true;
+      scope = config.owner.scope();
+      offOwner = config.owner.subscribe(() => {
+        scope = config.owner.scope();
+        retire("Account access changed. Load your own blocks again when ready.");
+      });
+      emit();
+    },
+    disconnect() {
+      attached = false;
+      scope = null;
+      offOwner();
+      offOwner = () => {
+      };
+      retire(startMessage);
+    },
+    activity(value) {
+      if (active === value) return;
+      active = value;
+      if (!active) retire("Private blocks and review cleared while inactive.");
+      else emit();
+    },
+    connectivity(value) {
+      if (online === value) return;
+      online = value;
+      if (!online) retire("Private blocks and review cleared. Connect and load them again.");
+      else emit();
+    },
+    close() {
+      retire(startMessage);
+    },
+    load() {
+      return load(null);
+    },
+    next() {
+      return model().canNext && page?.nextCursor ? load(page.nextCursor) : Promise.resolve();
+    },
+    review(blockId, revision4) {
+      if (!model().canReview || !page) return;
+      const selected = page.items.find((item) => item.blockId === blockId && item.revision === revision4);
+      if (!selected) return;
+      review = selected;
+      emit();
+    },
+    cancelReview() {
+      if (!busy && review) {
+        review = null;
+        emit();
+      }
+    },
+    unblock() {
+      return model().canUnblock ? change() : Promise.resolve();
+    },
+    retry() {
+      return model().canRetry ? change() : Promise.resolve();
+    }
+  };
+}
+
 // lib/books/catalog.ts
 var GREAT_BOOKS = [
   {
@@ -2481,22 +2734,22 @@ function getBook(bookId) {
 
 // lib/books/bookmarks.ts
 var isEditionId = (v) => typeof v === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(v);
-var record6 = (v) => Boolean(v && typeof v === "object" && !Array.isArray(v));
+var record7 = (v) => Boolean(v && typeof v === "object" && !Array.isArray(v));
 var text2 = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(v);
 var texts = (v, max) => Array.isArray(v) && v.length <= 100 && v.every((x) => text2(x, max));
 function parseBookEditionResponse(value) {
-  if (!record6(value) || typeof value.bookId !== "string") return null;
+  if (!record7(value) || typeof value.bookId !== "string") return null;
   const book = getBook(value.bookId);
-  if (!book || value.title !== book.title || value.author !== book.author || !record6(value.edition)) return null;
+  if (!book || value.title !== book.title || value.author !== book.author || !record7(value.edition)) return null;
   const e = value.edition;
-  if (!isEditionId(e.editionId) || e.documentUrl !== `/api/great-books/edition/${book.id}?edition=${e.editionId}` || e.downloadUrl !== `/api/great-books/edition/${book.id}/download?edition=${e.editionId}` || e.sourceCatalogUrl !== `https://www.gutenberg.org/ebooks/${book.gutenberg_id}` || !text2(e.sourceArchiveUrl, 500) || !text2(e.sourceTitle, 1e3) || !text2(e.sourceAuthor, 500) || !text2(e.attribution, 4e3) || e.licenseUrl !== "https://www.gutenberg.org/policy/license.html" || !text2(e.licenseNotice, 4e3) || !texts(e.editors, 300) || !texts(e.illustrators, 300) || !texts(e.editionNotes, 3e3) || !Array.isArray(e.translators) || e.translators.length > 30 || !e.translators.every((t) => record6(t) && text2(t.name, 300) && text2(t.appliesTo, 1e3)) || !record6(e.rights) || e.rights.jurisdiction !== "US" || e.rights.status !== "public-domain" || e.rights.authority !== "Project Gutenberg" || e.rights.outsideUS !== "not-assessed" || !text2(e.rights.reviewedAt, 50) || !Number.isSafeInteger(e.blockCount) || Number(e.blockCount) < 1 || Number(e.blockCount) > 1e5 || !Array.isArray(e.contents) || e.contents.length > 5e3) return null;
+  if (!isEditionId(e.editionId) || e.documentUrl !== `/api/great-books/edition/${book.id}?edition=${e.editionId}` || e.downloadUrl !== `/api/great-books/edition/${book.id}/download?edition=${e.editionId}` || e.sourceCatalogUrl !== `https://www.gutenberg.org/ebooks/${book.gutenberg_id}` || !text2(e.sourceArchiveUrl, 500) || !text2(e.sourceTitle, 1e3) || !text2(e.sourceAuthor, 500) || !text2(e.attribution, 4e3) || e.licenseUrl !== "https://www.gutenberg.org/policy/license.html" || !text2(e.licenseNotice, 4e3) || !texts(e.editors, 300) || !texts(e.illustrators, 300) || !texts(e.editionNotes, 3e3) || !Array.isArray(e.translators) || e.translators.length > 30 || !e.translators.every((t) => record7(t) && text2(t.name, 300) && text2(t.appliesTo, 1e3)) || !record7(e.rights) || e.rights.jurisdiction !== "US" || e.rights.status !== "public-domain" || e.rights.authority !== "Project Gutenberg" || e.rights.outsideUS !== "not-assessed" || !text2(e.rights.reviewedAt, 50) || !Number.isSafeInteger(e.blockCount) || Number(e.blockCount) < 1 || Number(e.blockCount) > 1e5 || !Array.isArray(e.contents) || e.contents.length > 5e3) return null;
   try {
     const u = new URL(e.sourceArchiveUrl);
     if (u.href !== `https://www.gutenberg.org/cache/epub/${book.gutenberg_id}/pg${book.gutenberg_id}-h.zip`) return null;
   } catch {
     return null;
   }
-  if (!e.contents.every((c) => record6(c) && text2(c.id, 200) && /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(c.id) && text2(c.label, 1e3) && Number.isInteger(c.level) && Number(c.level) >= 1 && Number(c.level) <= 6 && (c.readingIndex === null || Number.isSafeInteger(c.readingIndex) && Number(c.readingIndex) >= 0 && Number(c.readingIndex) < Number(e.blockCount)))) return null;
+  if (!e.contents.every((c) => record7(c) && text2(c.id, 200) && /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(c.id) && text2(c.label, 1e3) && Number.isInteger(c.level) && Number(c.level) >= 1 && Number(c.level) <= 6 && (c.readingIndex === null || Number.isSafeInteger(c.readingIndex) && Number(c.readingIndex) >= 0 && Number(c.readingIndex) < Number(e.blockCount)))) return null;
   if (new Set(e.contents.map((c) => c.id)).size !== e.contents.length) return null;
   return {
     bookId: book.id,
@@ -4587,19 +4840,19 @@ var READING_EDITIONS = [
   ...reading_program_editions_default,
   { ...PHILEMON_EDITION_METADATA.edition, bookId: PHILEMON_READING.bookId }
 ];
-var record7 = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+var record8 = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 var exact2 = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.hasOwn(v, k));
 var position = (v) => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
 function getReadingEdition(bookId, editionId) {
   return READING_EDITIONS.find((e) => e.bookId === bookId && (editionId === void 0 || e.editionId === editionId));
 }
 function parseReadingProgram(value) {
-  if (!record7(value) || !exact2(value, ["version", "bookId", "editionId", "sessions"]) || value.version !== 1 || typeof value.bookId !== "string" || typeof value.editionId !== "string" || !Array.isArray(value.sessions) || value.sessions.length < 1 || value.sessions.length > READING_PROGRAM_MAX_SESSIONS) return null;
+  if (!record8(value) || !exact2(value, ["version", "bookId", "editionId", "sessions"]) || value.version !== 1 || typeof value.bookId !== "string" || typeof value.editionId !== "string" || !Array.isArray(value.sessions) || value.sessions.length < 1 || value.sessions.length > READING_PROGRAM_MAX_SESSIONS) return null;
   const edition = getReadingEdition(value.bookId, value.editionId);
   if (!edition) return null;
   const sessions = [];
   for (const s of value.sessions) {
-    if (!record7(s) || !exact2(s, ["from", "to"]) || !position(s.from) || !position(s.to) || s.from > s.to || s.to >= edition.blockCount) return null;
+    if (!record8(s) || !exact2(s, ["from", "to"]) || !position(s.from) || !position(s.to) || s.from > s.to || s.to >= edition.blockCount) return null;
     sessions.push({ from: s.from, to: s.to });
   }
   return { version: 1, bookId: value.bookId, editionId: value.editionId, sessions };
@@ -4697,7 +4950,7 @@ var passage_indexes_default = [
 // lib/books/passages.ts
 var PASSAGE_QUOTE_LIMIT = 600;
 var PASSAGE_MESSAGE_LIMIT = 2e3;
-var record8 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var record9 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 var plain3 = (value, max) => typeof value === "string" && value.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value);
 var integer2 = (value, max = 1e5) => Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) <= max;
 var pins = passage_indexes_default;
@@ -4706,7 +4959,7 @@ function passageIndexPin(bookId) {
   return pin ? { ...pin } : null;
 }
 function parsePassageReference(value) {
-  if (!record8(value) || Object.keys(value).sort().join(",") !== "blockIndex,bookId,editionId,end,start,version" || value.version !== 1 || typeof value.bookId !== "string" || !getBook(value.bookId) || !passageIndexPin(value.bookId) || !isEditionId(value.editionId) || !integer2(value.blockIndex)) return null;
+  if (!record9(value) || Object.keys(value).sort().join(",") !== "blockIndex,bookId,editionId,end,start,version" || value.version !== 1 || typeof value.bookId !== "string" || !getBook(value.bookId) || !passageIndexPin(value.bookId) || !isEditionId(value.editionId) || !integer2(value.blockIndex)) return null;
   const linked = value.start === null && value.end === null;
   if (!linked && (!integer2(value.start) || !integer2(value.end) || value.end <= value.start || value.end - value.start > PASSAGE_QUOTE_LIMIT)) return null;
   return { version: 1, bookId: value.bookId, editionId: value.editionId, blockIndex: value.blockIndex, start: value.start, end: value.end };
@@ -4735,7 +4988,7 @@ Reading block ${source.reference.blockIndex + 1}.
 ${passageReaderHref(source.reference)}`;
 }
 function parseBookPassage(value) {
-  if (!record8(value)) return null;
+  if (!record9(value)) return null;
   const reference = parsePassageReference(value.reference), metadata = parseBookEditionResponse(value.metadata);
   if (!reference || !metadata) return null;
   const pin = passageIndexPin(reference.bookId);
@@ -5315,6 +5568,7 @@ export {
   circleAuthorizationHeaders,
   createCircleHost,
   createCircleReading,
+  createMemberBlocks,
   createMemberContributions,
   createVerifiedSupabaseCircleOwner,
   discussionContentSuffix,

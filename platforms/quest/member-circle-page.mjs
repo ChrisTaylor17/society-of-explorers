@@ -4,6 +4,7 @@ import {assertContributionsMarkup,mountMemberContributions} from './member-contr
 import {immersiveControls,mountImmersiveCircle} from './immersive-circle.mjs';
 import {mountBrowserSalon,salonControls} from './salon-presence.mjs';
 import {mountBrowserMeeting} from './meeting.mjs';
+import {mountMemberBlocks} from './member-blocks-view.mjs';
 export {assertContributionsMarkup};
 /** The authenticated application supplies its existing client. Account checks
  * start only on a deliberate action in the regular window or headset room. */
@@ -33,17 +34,18 @@ function mount({window:win,document:doc,config},withCircle) {
   if(!approved)throw Error('Member Circle configuration unavailable');
   const {auth,browserBinding:ownedBrowser,verificationTimeoutMs,...hostConfig}=approved;
   const binding=ownedBrowser??createVerifiedSupabaseCircleOwner(auth,{timeoutMs:verificationTimeoutMs});
-  let visible=doc.visibilityState==='visible',focused=doc.hasFocus(),online=win.navigator.onLine!==false,disposed=false,started=false,screen=null,contributions=null,off=()=>{},room=null,immersiveOpen=false,browserSalon=null,browserMeeting=null;
+  let visible=doc.visibilityState==='visible',focused=doc.hasFocus(),online=win.navigator.onLine!==false,disposed=false,started=false,screen=null,contributions=null,blocks=null,off=()=>{},room=null,immersiveOpen=false,browserSalon=null,browserMeeting=null;
   const regularActive=()=>!disposed&&visible&&focused&&online&&!immersiveOpen;
   const handlers=[];
   const dispose=()=>{
     if(disposed)return;disposed=true;
-    for(const stop of [()=>room?.dispose(),()=>browserSalon?.dispose(),()=>browserMeeting?.dispose(),()=>binding.stop(),()=>contributions?.dispose(),()=>screen?.dispose(),()=>off(),...handlers]){try{stop();}catch{/* Finish every independent retirement step. */}}
+    for(const stop of [()=>room?.dispose(),()=>browserSalon?.dispose(),()=>browserMeeting?.dispose(),()=>binding.stop(),()=>contributions?.dispose(),()=>blocks?.dispose(),()=>screen?.dispose(),()=>off(),...handlers]){try{stop();}catch{/* Finish every independent retirement step. */}}
     handlers.length=0;
   };
   try {
     if(withCircle)screen=mountCirclePage({window:win,document:doc,config:{...hostConfig,owner:binding.owner},reelStarter});
     contributions=mountMemberContributions({window:win,document:doc,config:{...hostConfig,aiConsent,owner:binding.owner},circleHost:screen?.host});
+    blocks=mountMemberBlocks({document:doc,config:{...hostConfig,owner:binding.owner}});
     if(sharedSalon)browserSalon=mountBrowserSalon(doc,{
       window:win,...hostConfig,owner:binding.owner,isActive:regularActive,
       onPresent() {
@@ -59,6 +61,7 @@ function mount({window:win,document:doc,config},withCircle) {
     const activity=()=>{
       if(disposed)return;
       if(!regularActive()){browserSalon?.retire();browserMeeting?.retire();}
+      blocks?.activity(regularActive(),online);
       binding.activity(regularActive());
       renderSession(binding.model());
     };

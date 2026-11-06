@@ -6,7 +6,7 @@ import { REVIEW_REPORT_COUNT_MAX } from './review-coverage';
 export const MESSAGE_SAFETY_LIMIT = 25;
 export const MESSAGE_BLOCK_CONFIRMATION = 'I checked this message and will choose an action below.';
 export const MESSAGE_BLOCK_UNCONFIRMED = 'Block unconfirmed. Check Members → Chat → Blocked members before deciding again.';
-export const MESSAGE_BLOCK_PRIVACY = 'Blocking hides this member’s Circle posts and stops direct messages and direct replies between you. Manage your blocks under Members → Chat → Blocked members on the web.';
+export const MESSAGE_BLOCK_PRIVACY = 'Blocking hides this member’s Circle posts and stops direct messages and direct replies between you. Manage your blocks in Blocked members.';
 export type MessageVisibility = 'visible' | 'hidden' | 'withdrawn';
 export type MessageDecisionReason = 'safety' | 'harassment' | 'spam' | 'misleading' | 'inappropriate' | 'no_violation' | 'insufficient_evidence' | 'resolved';
 export type MessageExplanation = { id: string; action: 'hide' | 'restore'; reason: MessageDecisionReason; summary: string; created_at: string };

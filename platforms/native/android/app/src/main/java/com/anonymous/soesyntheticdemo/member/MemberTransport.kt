@@ -474,6 +474,18 @@ internal class MemberTransport(
       require(url.encodedQuery == null)
       if (input.method == "POST") validateProfileBody(input.body ?: throw IllegalArgumentException())
     }
+    else if (url.encodedPath == "/api/members/blocks") {
+      val query = url.encodedQuery
+      if (input.method == "GET") {
+        if (query != null) {
+          val after = query.removePrefix("after=")
+          require(query == "after=" + after && uuid(after) && after == after.lowercase())
+        }
+      } else {
+        require(query == null)
+        validateUnblockBody(input.body ?: throw IllegalArgumentException())
+      }
+    }
     else if (url.encodedPath == "/api/great-books/progress") {
       if (input.method == "GET") {
         val query = url.encodedQuery
@@ -575,6 +587,24 @@ internal class MemberTransport(
     val leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
     val days = when (month) { 2 -> if (leap) 29 else 28; 4, 6, 9, 11 -> 30; else -> 31 }
     return day in 1..days
+  }
+  private fun validateUnblockBody(body: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 256)
+    val value = JSONObject(body)
+    val fields = listOf("expectedMemberId", "blockId", "expectedRevision", "requestId")
+    require(value.keys().asSequence().toSet() == fields.toSet())
+    val ids = listOf("expectedMemberId", "blockId", "requestId").map { key ->
+      val id = value.get(key)
+      require(id is String && uuid(id) && id == id.lowercase())
+      id
+    }
+    val revision = value.get("expectedRevision")
+    require(revision is Int || revision is Long)
+    val version = (revision as Number).toLong()
+    require(version in 1..9007199254740990L)
+    val canonical = "{\"expectedMemberId\":" + profileQuote(ids[0]) + ",\"blockId\":" + profileQuote(ids[1]) +
+      ",\"expectedRevision\":" + version + ",\"requestId\":" + profileQuote(ids[2]) + "}"
+    require(body == canonical)
   }
   private fun validateCompletionBody(body: String) {
     require(body.toByteArray(Charsets.UTF_8).size <= 160)

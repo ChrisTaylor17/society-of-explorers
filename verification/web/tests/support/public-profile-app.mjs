@@ -60,7 +60,9 @@ export async function createPublicProfileApp({memberBlocks=false}={}){
   }}));
   const columns=new Set(['id','supabase_auth_id','display_name','email','bio','discipline','skills','project_description','seeking','philosophy','exp_tokens','tier','coherence_data','total_responses','wallet_address','profile_visibility','profile_revision']);
   const rpcNames=new Set(['soe_circle_detail_profiles','soe_circle_messages_read_profiles','soe_circle_discussion_read_profiles','soe_circle_discussion_thread_profiles','soe_circle_discussion_receipt_profiles','soe_circle_message_state_profiles','soe_circle_discussion_target','soe_circle_discussion_post','soe_circle_messages_post','soe_circle_message_action','soe_member_profile_update','soe_circle_start','soe_circle_create','soe_circle_detail','soe_circle_membership_state','soe_circle_join','soe_circle_leave','soe_circle_rsvp','soe_circle_complete']),argumentsByName=new Map();
-  if(memberBlocks)rpcNames.add('soe_circle_message_block');
+  if(memberBlocks) {
+    for (const name of ['soe_circle_message_block','soe_direct_message_blocks','soe_direct_message_set_block']) rpcNames.add(name);
+  }
   app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({
     from(table){assert(['members','book_cohorts'].includes(table));let projection;const filters=[];
      const query={select(value){assert(table==='members'?value.split(',').every(v=>columns.has(v.trim())):value==='id,book_id,title,description,max_members,start_date,thinker_id,status,created_at');projection=value;return query;},
@@ -104,7 +106,8 @@ export async function createPublicProfileApp({memberBlocks=false}={}){
    const edition=/^\/api\/great-books\/text\/([^/]+)$/.exec(url.pathname);
     const publicProfile=/^\/api\/explorer\/([0-9a-f-]+)$/.exec(url.pathname);
     const ownerProfile=url.pathname==='/api/members/profile';
-    const owned=Boolean(discussion||message||legacy)||ownerProfile||Boolean(publicProfile)||hosting||Boolean(edition)||account||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
+    const ownerBlocks=memberBlocks&&url.pathname==='/api/members/blocks';
+    const owned=Boolean(discussion||message||legacy)||ownerProfile||ownerBlocks||Boolean(publicProfile)||hosting||Boolean(edition)||account||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
     if(publicProfile){assert.equal(method,'GET');assert.equal(url.search,'');const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
     if(edition){assert(BOOKS.includes(edition[1])||edition[1]==='philemon');assert.equal(method,'GET');assert.equal(url.search,'');assert.equal(body,undefined);const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
    assert(['GET','POST'].includes(method));const h=new Headers(headers);if(method==='POST'&&!h.has('content-type'))h.set('content-type','application/json');
@@ -113,7 +116,7 @@ export async function createPublicProfileApp({memberBlocks=false}={}){
    Object.defineProperties(request,{nextUrl:{value:url},cookies:{value:{get:key=>cookies.has(key)?{value:cookies.get(key)}:undefined}}});
    const call={path:url.pathname+url.search,method,request,body:body===undefined?null:typeof body==='string'?body:JSON.stringify(body)};http.push(call);
    const early=beforeHook?await beforeHook(call):null;
-    const file=discussion?'app/api/circles/[circleId]/discussion/'+(discussion[2]?'preview/':'')+'route.ts':message?'app/api/circles/[circleId]/messages/[messageId]/route.ts':legacy?'app/api/book-salons/[cohortId]/route.ts':publicProfile?'app/api/explorer/[id]/route.ts':edition?'app/api/great-books/text/[bookId]/route.ts':match&&!hosting?'app/api/circles/[circleId]/'+(match[2]?match[2]+'/':'')+'route.ts':'app'+url.pathname+'/route.ts';
+    const file=ownerBlocks?'app/api/members/blocks/route.ts':discussion?'app/api/circles/[circleId]/discussion/'+(discussion[2]?'preview/':'')+'route.ts':message?'app/api/circles/[circleId]/messages/[messageId]/route.ts':legacy?'app/api/book-salons/[cohortId]/route.ts':publicProfile?'app/api/explorer/[id]/route.ts':edition?'app/api/great-books/text/[bookId]/route.ts':match&&!hosting?'app/api/circles/[circleId]/'+(match[2]?match[2]+'/':'')+'route.ts':'app'+url.pathname+'/route.ts';
     const params=discussion?{circleId:discussion[1]}:message?{circleId:message[1],messageId:message[2]}:legacy?{cohortId:legacy[1]}:publicProfile?{id:publicProfile[1]}:edition?{bookId:edition[1]}:match&&!hosting?{circleId:match[1]}:undefined;
    const response=early instanceof Response?early:owned?await route(file)[method](request,params?{params:Promise.resolve(params)}:undefined):await f.dispatch(path,{method,headers,body,signal});
    return httpHook?httpHook({...call,response}):response;

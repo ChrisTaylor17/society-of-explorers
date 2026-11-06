@@ -98,6 +98,19 @@ internal struct SoeMemberRequestPolicy: Sendable {
         else if path == "/api/auth/ensure-member" { try check(!get && query == nil) }
         else if path == "/api/circles" { try check(!get && query == nil); try creation(try body(i, maximum: 12000)) }
         else if path == "/api/members/profile" { try check(query == nil); if !get { try profile(try body(i, maximum: 65536)) } }
+        else if path == "/api/members/blocks" {
+            if get {
+                if let query { try check(query.hasPrefix("after=") && uuid(String(query.dropFirst(6)))) }
+            } else {
+                try check(query == nil)
+                let raw = try body(i, maximum: 256)
+                let fields = ["expectedMemberId", "blockId", "expectedRevision", "requestId"]
+                let o = try object(raw, keys: fields)
+                try check(uuid(try string(o, "expectedMemberId")) && uuid(try string(o, "blockId")) && uuid(try string(o, "requestId")))
+                _ = try integer(o, "expectedRevision", minimum: 1, maximum: 9007199254740990)
+                try canonical(raw, o, order: fields)
+            }
+        }
         else if path == "/api/great-books/progress" {
             if get { if let query { try check(query.hasPrefix("bookId=") && books.contains(String(query.dropFirst(7)))) } }
             else { try check(query == nil); try savedReading(try body(i, maximum: 4096)) }

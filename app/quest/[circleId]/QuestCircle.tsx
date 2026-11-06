@@ -136,6 +136,23 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
     <div data-quest-member-view>
       {circleId ? <h2 id="circle-title">A conversation worth having.</h2> : null}
       <section aria-label="Member session"><p id="member-session-status" role="status">Member session is not connected.</p><button id="member-session-check" type="button" disabled>Check member session</button></section>
+      <section id="member-blocks" aria-labelledby="member-blocks-heading">
+        <h2 id="member-blocks-heading">Blocked members</h2>
+        <p>Your blocks apply to Circle discussions and direct messages. Only you can remove a block you set.</p>
+        <p id="member-blocks-status" role="status">Check your member account, then load your blocked members.</p>
+        <button id="member-blocks-load" type="button" disabled>Load blocked members</button>
+        <div id="member-blocks-items" />
+        <button id="member-blocks-next" type="button" disabled hidden>Next blocked members</button>
+        <section id="member-blocks-review" aria-labelledby="member-blocks-review-heading" hidden>
+          <h3 id="member-blocks-review-heading" tabIndex={-1}>Review unblock</h3>
+          <p id="member-blocks-person" />
+          <p>Removing your block restores contact if this member has no active block on you.</p>
+          <button id="member-blocks-unblock" type="button" disabled>Unblock this member</button>
+          <button id="member-blocks-cancel" type="button">Cancel unblock review</button>
+        </section>
+        <button id="member-blocks-retry" type="button" disabled hidden>Retry exact unblock</button>
+        <button id="member-blocks-clear" type="button" disabled>Clear blocked members view</button>
+      </section>
       <button id="member-contributions-open" type="button" disabled>My posted messages</button>
       <section id="member-contributions" aria-labelledby="member-contributions-heading" hidden>
         <h2 id="member-contributions-heading" tabIndex={-1}>My posted messages</h2>
