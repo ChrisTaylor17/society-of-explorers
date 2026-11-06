@@ -5,12 +5,14 @@ import { formatDay } from '../../lib/circles/schedule';
 import { createPublicCircleDirectory, type CircleDirectoryModel, type PublicCircleChoice } from '../shared/circle-directory';
 import { prepareInstalledPublicCircles, type PublicCircleDiscoveryConnection } from './src/circles/installed-member';
 import { observeNativeConnectivity } from './src/circles/native-connectivity';
+import { REEL_QUESTIONS, type ReelDiscussionId } from '../../lib/clips/salon';
 
 type Directory = ReturnType<typeof createPublicCircleDirectory>;
 type ViewState = { directory: Directory; model: CircleDirectoryModel };
 
-export function PublicCirclesScreen({ prepare = prepareInstalledPublicCircles, onBack, onChoose }: {
-  prepare?: () => Promise<PublicCircleDiscoveryConnection>; onBack(): void; onChoose(circle: PublicCircleChoice): void;
+export function PublicCirclesScreen({ prepare = prepareInstalledPublicCircles, reel, onBack, onChoose }: {
+  prepare?: () => Promise<PublicCircleDiscoveryConnection>; reel?: ReelDiscussionId;
+  onBack(): void; onChoose(circle: PublicCircleChoice): void;
 }) {
   const [view, setView] = useState<ViewState | null>(null);
   const [failed, setFailed] = useState(false);
@@ -57,6 +59,10 @@ export function PublicCirclesScreen({ prepare = prepareInstalledPublicCircles, o
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Online Circles</Text>
     <Text style={styles.copy}>Find a small weekly salon for Scripture, Great Books and honest conversation.</Text>
+    {reel && <View style={styles.card}>
+      <Text accessibilityRole="header" style={styles.heading}>Question from the Reel</Text>
+      <Text style={styles.copy}>{REEL_QUESTIONS[reel]}</Text>
+    </View>}
     <Text accessibilityLiveRegion="polite" style={styles.copy}>{notice}</Text>
     <Action label="Load online Circles" disabled={failed || !model?.canSearch} onPress={() => act(directory => {
       const request = defaultDiscoveryPageRequest();

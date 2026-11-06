@@ -3,17 +3,22 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReviewAccess } from '@/lib/circles/useReviewAccess';
+import { circleDetailHref } from '@/lib/circles/discovery';
 import { discussionCommentLimit, discussionHref, discussionSearchParams, parseDiscussionLookup, parseDiscussionPage, parseDiscussionPreview, parseDiscussionReceipt, type DiscussionPage, type DiscussionPostInput, type DiscussionPreview, type DiscussionQuery, type DiscussionReceipt, type ThreadMessage } from '@/lib/circles/thread';
 import MessageActions from '../../messages/MessageActions';
 import type { MessageSafetyState } from '@/lib/circles/message-moderation';
 import { body, button, card, fieldLabel, h2, input, primary, small } from '@/lib/circles/ui';
 import styles from './discussion.module.css';
+import { reelHref } from '@/lib/clips/contracts';
+import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
 
 type ReadQuery = Exclude<DiscussionQuery, { kind: 'receipt' }>;
 type Pending = { body: string; request: DiscussionPostInput; content: string; rootMessageId: string | null };
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
-export default function DiscussionBrowser({ circleId, messageId, invalidIntent = false }: { circleId: string; messageId: string | null; invalidIntent?: boolean }) {
+export default function DiscussionBrowser({ circleId, messageId, invalidIntent = false, reel }: {
+  circleId: string; messageId: string | null; invalidIntent?: boolean; reel?: ReelDiscussionId;
+}) {
   const [page, setPage] = useState<DiscussionPage | null>(null), [readVersion, setReadVersion] = useState(0);
   const [query, setQuery] = useState<ReadQuery>(messageId ? { kind: 'thread', messageId, after: null, limit: 25 } : { kind: 'archive', before: null, limit: 25 });
   const [target, setTarget] = useState<ThreadMessage | null>(null), [writing, setWriting] = useState(false), [comment, setComment] = useState('');
@@ -33,7 +38,7 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
   const { active, busy, perform } = useReviewAccess(retire);
   const disabled = !active || busy || Boolean(pending);
   const endpoint = `/api/circles/${circleId}/discussion`;
-  const returnHref = discussionHref(circleId, query.kind === 'thread' ? query.messageId : null);
+  const returnHref = withReelDiscussion(discussionHref(circleId, query.kind === 'thread' ? query.messageId : null), reel);
   const signInHref = `/login?next=${encodeURIComponent(returnHref)}`;
   const commentLimit = discussionCommentLimit(circleId, target?.id ?? null);
   const focusHeading = useCallback((element: HTMLHeadingElement | null) => { element?.focus({ preventScroll: true }); }, []);
@@ -52,9 +57,9 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
       setPage(current); setNotice(current.kind === 'archive' ? current.items.length ? 'Current archive page loaded, newest messages first. Older pages replace this page.' : 'No messages were returned on this archive page. You can start a conversation.' : 'Current thread loaded. Root and selected message are shown separately; reply pages contain this root’s descendants in chronological order.');
     }, () => unavailable());
   }
-  function selectTarget(message: ThreadMessage | null) {
+  function selectTarget(message: ThreadMessage | null, initialComment = '') {
     if (disabled || !page || message && message.visibility !== 'visible') return;
-    setTarget(message); setWriting(true); setComment(''); clearReview(); setReceipt(null);
+    setTarget(message); setWriting(true); setComment(initialComment); clearReview(); setReceipt(null);
     setNotice(message ? 'Reply target selected. Write your own comment; the preview checks the parent again. No parent quotation is copied into your reply.' : 'Write a new message for this Circle, then review its server preview.');
   }
   function review() {
@@ -123,7 +128,13 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
     </div>;
   }
   return <div className={`${styles.scope} ${styles.stack}`} aria-busy={busy}>
-    <nav className={styles.row} aria-label="Discussion navigation"><Link href={`/circles/${circleId}`}>Return to Circle details</Link><Link href="/circles/mine">My Circles</Link><Link href={signInHref}>Sign in or create an account</Link></nav>
+    <nav className={styles.row} aria-label="Discussion navigation"><Link href={withReelDiscussion(circleDetailHref(circleId, Boolean(reel)), reel)}>Return to Circle details</Link><Link href="/circles/mine">My Circles</Link><Link href={signInHref}>Sign in or create an account</Link></nav>
+    {reel && <section aria-label="Question from the Reel" style={card}>
+      <p style={body}>{REEL_QUESTIONS[reel]}</p>
+      <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
+      {page?.kind === 'archive' && <div><button type="button" style={button} disabled={disabled || writing}
+        onClick={() => selectTarget(null, reelDiscussionDraft(reel, window.location.origin))}>Use Reel question in a draft</button></div>}
+    </section>}
     <p ref={statusRef} tabIndex={-1} role="status" aria-live="polite" style={body}>{notice}</p>
     <div className={styles.row}>
       {!invalidIntent && <button type="button" style={primary} disabled={disabled} onClick={() => load()}>{query.kind === 'thread' ? 'Load current thread' : 'Load current discussion archive'}</button>}

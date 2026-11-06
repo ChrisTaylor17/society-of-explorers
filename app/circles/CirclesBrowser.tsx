@@ -9,6 +9,8 @@ import { getReadingEdition, READING_EDITIONS, readingEditionLabel, readingSessio
 import ReadingProgramSummary from './ReadingProgramSummary';
 import styles from './reading-program.module.css';
 import { defaultDiscoveryPageRequest, discoveryPageSearchParams, isDiscoveryRestart, parseDiscoveryPage, parseDiscoveryPageRequest, type DiscoveryPageReply, type DiscoveryPageRequest, type PublicDiscoveryCircle } from '@/lib/circles/discovery-page';
+import { reelHref } from '@/lib/clips/contracts';
+import { REEL_QUESTIONS, reelDiscussionId, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'invalid' } | { status: 'soon' } | { status: 'restart' } | { status: 'ok'; result: DiscoveryPageReply };
 const NAVIGATION_EVENT = 'soe-public-discovery-navigation';
@@ -34,6 +36,7 @@ export default function CirclesBrowser() {
   const [draft, setDraft] = useState<DiscoveryQuery>({ ...DEFAULT_DISCOVERY_QUERY });
   const [search, setSearch] = useState<{ request: DiscoveryPageRequest; attempt: number } | null>(null);
   const [state, setState] = useState<State>({ status: 'loading' });
+  const [reel, setReel] = useState<ReelDiscussionId>();
   const generation = useRef(0);
   const pending = useRef<AbortController | null>(null);
   const focusResults = useRef(false);
@@ -48,7 +51,11 @@ export default function CirclesBrowser() {
       generation.current += 1;
       focusResults.current = Boolean(event);
       pending.current?.abort();
-      const params = new URLSearchParams(currentSearch), parsed = parseDiscoveryPageRequest(params);
+      const params = new URLSearchParams(currentSearch), values = params.getAll('reel');
+      const selectedReel = values.length === 1 ? reelDiscussionId(values[0]) : undefined;
+      if (selectedReel) params.delete('reel');
+      setReel(selectedReel);
+      const parsed = parseDiscoveryPageRequest(params);
       setDraft(parseDiscoveryQuery(params));
       if (!parsed.ok) { setState({ status: 'invalid' }); setSearch(null); return; }
       setState({ status: 'loading' });
@@ -99,7 +106,7 @@ export default function CirclesBrowser() {
     pending.current?.abort();
     try {
       const request = { query: parseDiscoveryQuery(discoverySearchParams(query)), limit: search?.request.limit ?? 25, cursor };
-      const params = discoveryPageSearchParams(request), next = `/circles${params.size ? `?${params}` : ''}`;
+      const params = discoveryPageSearchParams(request), next = withReelDiscussion(`/circles${params.size ? `?${params}` : ''}`, reel);
       if (updateHistory && next !== `${window.location.pathname}${window.location.search}`) window.history.pushState(null, '', next);
       if (updateHistory) window.dispatchEvent(new Event(NAVIGATION_EVENT));
       else { setDraft(request.query); setState({ status: 'loading' }); setSearch(previous => ({ request, attempt: (previous?.attempt ?? 0) + 1 })); }
@@ -109,7 +116,7 @@ export default function CirclesBrowser() {
   const request = search?.request ?? defaultDiscoveryPageRequest(), query = request.query;
   const filtered = Boolean(query.q || query.city || query.format || query.open || query.book);
   const queryString = discoveryPageSearchParams(request).toString();
-  const searchLink = `/circles${queryString ? `?${queryString}` : ''}`;
+  const searchLink = withReelDiscussion(`/circles${queryString ? `?${queryString}` : ''}`, reel);
   const edition = query.book && query.edition ? getReadingEdition(query.book, query.edition) : undefined;
   const selected = edition ? query.from !== undefined && query.to !== undefined ? { from: query.from, to: query.to } : { from: 0, to: edition.blockCount - 1 } : null;
   const startLink = edition && selected ? readingStartHref({ bookId: edition.bookId, editionId: edition.editionId, ...selected }) : '/circles/start';
@@ -122,6 +129,10 @@ export default function CirclesBrowser() {
 
   return (
     <div className={styles.scope}>
+      {reel && <section aria-label="Question from the Reel" style={{ ...card, marginBottom: '1rem' }}>
+        <p style={small}>{REEL_QUESTIONS[reel]}</p>
+        <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
+      </section>}
       <form onSubmit={e => { e.preventDefault(); apply(draft); }} role="search" aria-label="Find a circle"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '12px', alignItems: 'end', margin: '0 0 1.25rem' }}>
         <div style={{ gridColumn: '1 / -1' }}>
@@ -179,15 +190,15 @@ export default function CirclesBrowser() {
             <button type="button" style={button} onClick={() => apply(query)}>First page of results</button>
             {state.result.page.nextCursor && <button type="button" style={button} onClick={() => apply(query, state.result.page.nextCursor)}>Next page of results</button>}
           </nav>
-          {state.result.circles.length === 0 ? <EmptyState filtered={filtered} continuation={request.cursor !== null} startHref={startLink} /> : <ul aria-label="Circles on this page" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>{state.result.circles.map(c => <CircleCard key={c.id} c={c} fromOnline={query.format === 'online'} />)}</ul>}
+          {state.result.circles.length === 0 ? <EmptyState filtered={filtered} continuation={request.cursor !== null} startHref={startLink} /> : <ul aria-label="Circles on this page" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>{state.result.circles.map(c => <CircleCard key={c.id} c={c} fromOnline={query.format === 'online'} reel={reel} />)}</ul>}
         </>}
       </div>
     </div>
   );
 }
 
-function CircleCard({ c, fromOnline }: { c: PublicDiscoveryCircle; fromOnline: boolean }) {
-  const href = circleDetailHref(c.id, fromOnline);
+function CircleCard({ c, fromOnline, reel }: { c: PublicDiscoveryCircle; fromOnline: boolean; reel?: ReelDiscussionId }) {
+  const href = withReelDiscussion(circleDetailHref(c.id, fromOnline), reel);
   const where = c.format === 'online' ? 'Online' : [c.venue_name, c.city, c.region].filter(Boolean).join(', ');
   return (
     <li data-circle-id={c.id} style={{ ...card, overflowWrap: 'anywhere' }}>

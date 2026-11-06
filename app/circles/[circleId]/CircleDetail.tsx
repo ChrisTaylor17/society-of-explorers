@@ -12,14 +12,15 @@ import CircleConversation from './CircleConversation';
 import styles from '../participation.module.css';
 import ReadingProgramSummary from '../ReadingProgramSummary';
 import PublishedProfileLink from '@/components/PublishedProfileLink';
+import { withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
 
 const completionCopy = 'Close to new members and RSVPs; existing members can continue the conversation or leave. Completing a Circle does not delete messages or remove members.';
 
-export default function CircleDetail({ circleId, fromOnline = false }: { circleId: string; fromOnline?: boolean }) {
+export default function CircleDetail({ circleId, fromOnline = false, reel }: { circleId: string; fromOnline?: boolean; reel?: ReelDiscussionId }) {
   if (!isUuid(circleId)) return <><h1 style={h1}>Circle not found</h1><p style={body}>Choose a Circle from the directory or My Circles.</p></>;
-  return <CircleView key={circleId.toLowerCase()} circleId={circleId.toLowerCase()} fromOnline={fromOnline} />;
+  return <CircleView key={circleId.toLowerCase()} circleId={circleId.toLowerCase()} fromOnline={fromOnline} reel={reel} />;
 }
-function CircleView({ circleId, fromOnline }: { circleId: string; fromOnline: boolean }) {
+function CircleView({ circleId, fromOnline, reel }: { circleId: string; fromOnline: boolean; reel?: ReelDiscussionId }) {
   const participation = useCircleParticipation(circleId);
   const [preview, setPreview] = useState<CircleListing | 'unavailable' | null>(null);
   useEffect(() => {
@@ -51,7 +52,7 @@ function CircleView({ circleId, fromOnline }: { circleId: string; fromOnline: bo
   const c = detail?.circle;
   const viewer = detail?.viewer;
   const listing = !detail && !management && preview !== 'unavailable' ? preview : null;
-  const nextPath = encodeURIComponent(circleDetailHref(circleId, fromOnline));
+  const nextPath = encodeURIComponent(withReelDiscussion(circleDetailHref(circleId, fromOnline), reel));
   const confirmLabel = participation.retry ? 'Confirm exact participation retry' : intent?.action === 'join' ? 'Confirm join' : intent?.action === 'leave' ? 'Confirm leave' : intent?.action === 'complete' ? 'Confirm Circle completion' : 'Confirm RSVP';
   return <div ref={scopeRef} className={styles.scope} onClickCapture={event => {
     const trigger = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-participation-trigger]');
@@ -59,7 +60,7 @@ function CircleView({ circleId, fromOnline }: { circleId: string; fromOnline: bo
     const link = (event.target as HTMLElement).closest('a');
     if (link && (participation.uncertain || busy || participation.phase === 'review' && link.getAttribute('href') !== '/circles/norms')) event.preventDefault();
   }}>
-    <p style={label}><Link href={fromOnline ? ONLINE_CIRCLES_HREF : '/circles'}>{fromOnline ? 'Online Circles' : 'Circles'}</Link> · <Link href="/circles/mine">My Circles</Link></p>
+    <p style={label}><Link href={withReelDiscussion(fromOnline ? ONLINE_CIRCLES_HREF : '/circles', reel)}>{fromOnline ? 'Online Circles' : 'Circles'}</Link> · <Link href="/circles/mine">My Circles</Link></p>
     <h1 style={h1}>{c?.title || management?.circle.title || listing?.title || (management ? 'Circle membership' : 'Circle details')}</h1>
     {listing && <section aria-label="Public Circle preview" className={styles.stack} style={{ ...card, marginBottom: '1rem' }}>
       {listing.description && <p style={{ ...body, whiteSpace: 'pre-wrap' }}>{listing.description}</p>}
@@ -120,7 +121,7 @@ function CircleView({ circleId, fromOnline }: { circleId: string; fromOnline: bo
         {detail.capabilities.canRsvp && <div className={styles.row} style={{ marginTop: '12px' }}><button type="button" style={meeting.my_status === 'going' ? primary : button} disabled={actionDisabled} aria-label={`Going on ${formatDay(meeting.date)}`} aria-pressed={meeting.my_status === 'going'} data-participation-trigger={`rsvp:${meeting.date}:going`} onClick={() => load({ action: 'rsvp', date: meeting.date, status: 'going' })}>Going</button><button type="button" style={button} disabled={actionDisabled} aria-label={`Cannot make it on ${formatDay(meeting.date)}`} aria-pressed={meeting.my_status === 'not_going'} data-participation-trigger={`rsvp:${meeting.date}:not_going`} onClick={() => load({ action: 'rsvp', date: meeting.date, status: 'not_going' })}>Can’t make it</button></div>}
       </li>)}</ul>
       {c.reading_program && <ReadingProgramSummary program={c.reading_program} circleId={c.id} />}
-      {detail.capabilities.canReadConversation && <><p style={body}><Link href={`/circles/${c.id}/discussion`} prefetch={false}>Open discussion archive and replies</Link></p><p style={body}><Link href={`/quest/${c.id}`} prefetch={false}>Open in Quest Browser</Link></p><p style={body}><Link href={`/circles/passages?circle=${c.id}`}>Discuss a verified source passage</Link></p><CircleConversation key={`${c.id}:${epoch}`} circleId={c.id} active={active && !participation.uncertain && participation.phase !== 'review'} accessEpoch={epoch} /></>}
+      {detail.capabilities.canReadConversation && <><p style={body}><Link href={withReelDiscussion(`/circles/${c.id}/discussion`, reel)} prefetch={false}>{reel ? 'Open discussion with the Reel question' : 'Open discussion archive and replies'}</Link></p><p style={body}><Link href={`/quest/${c.id}`} prefetch={false}>Open in Quest Browser</Link></p><p style={body}><Link href={`/circles/passages?circle=${c.id}`}>Discuss a verified source passage</Link></p><CircleConversation key={`${c.id}:${epoch}`} circleId={c.id} active={active && !participation.uncertain && participation.phase !== 'review'} accessEpoch={epoch} /></>}
       {!c.hidden && <div style={{ marginTop: '2.5rem', borderTop: `1px solid ${gold}22`, paddingTop: '1.25rem' }}><ReportButton circleId={c.id} /></div>}
     </>}
   </div>;

@@ -9,6 +9,7 @@ import type { createNativeEmailAuth } from './src/auth/email-auth';
 import { NativeEmailAccountForm } from './NativeEmailAccountForm';
 import { PhilemonStudyScreen } from './PhilemonStudyScreen';
 import { ClipsScreen } from './ClipsScreen';
+import { REEL_QUESTIONS, type ReelDiscussionId } from '../../lib/clips/salon';
 import { PublicCirclesScreen } from './PublicCirclesScreen';
 import type { PublicCircleChoice } from '../shared/circle-directory';
 import type { PublicCircleDiscoveryConnection } from './src/circles/installed-member';
@@ -39,8 +40,8 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   const [memberProblem, setMemberProblem] = useState('');
   const [studyOpen, setStudyOpen] = useState(false);
   const [clipsOpen, setClipsOpen] = useState(false);
-  const [publicCirclesOpen, setPublicCirclesOpen] = useState(false);
-  const [circleChoice, setCircleChoice] = useState<PublicCircleChoice | null>(null);
+  const [publicCircles, setPublicCircles] = useState<{ reel?: ReelDiscussionId } | null>(null);
+  const [circleChoice, setCircleChoice] = useState<(PublicCircleChoice & { reel?: ReelDiscussionId }) | null>(null);
   const [philemonHosting, setPhilemonHosting] = useState(false);
   const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
@@ -202,19 +203,20 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     invalidate(); setClipsOpen(false);
     if (read) setStudyOpen(true);
   }
-  function openPublicCircles() {
-    if (!validView() || !active.current || current.current || preparing.current || publicCirclesOpen) return;
-    invalidate(); setPublicCirclesOpen(true);
+  function openPublicCircles(reel?: ReelDiscussionId) {
+    if (!validView() || !active.current || current.current || preparing.current || publicCircles) return;
+    invalidate(); setPublicCircles({ reel });
   }
   function closePublicCircles(choice?: PublicCircleChoice) {
-    if (!validView() || !publicCirclesOpen || current.current || choice && !active.current) return;
-    invalidate(); setPublicCirclesOpen(false);
-    if (choice) { setClipsOpen(false); setStudyOpen(false); setPhilemonHosting(false); setCircleChoice(choice); }
+    if (!validView() || !publicCircles || current.current || choice && !active.current) return;
+    invalidate(); setPublicCircles(null);
+    if (choice) { setClipsOpen(false); setStudyOpen(false); setPhilemonHosting(false); setCircleChoice({ ...choice, reel: publicCircles.reel }); }
   }
-  if (publicCirclesOpen) return <PublicCirclesScreen prepare={publicCirclesPrepare} onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
+  if (publicCircles) return <PublicCirclesScreen prepare={publicCirclesPrepare} reel={publicCircles.reel}
+    onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
   if (clipsOpen) return <ClipsScreen onBack={() => closeClips(false)} onRead={() => closeClips(true)}
     onBrowse={openPublicCircles} preparePublicCircles={publicCirclesPrepare}/>;
-  if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)} onBrowse={openPublicCircles}/>;
+  if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)} onBrowse={() => openPublicCircles()}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
     retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} circleChoice={circleChoice ?? undefined} onClose={() => {
       if (current.current !== connection || memberView.current !== memberContext) return;
@@ -226,12 +228,13 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     <Text accessibilityRole="header" style={styles.title}>Your account, on this device</Text>
     <Text style={styles.copy}>Read deeply. Share thoughtfully. A Great Books community rooted in Christian and American traditions, open to everyone willing to explore in good faith.</Text>
     {!connection ? <>
-      <Action label="Find an online Circle" disabled={connecting} onPress={openPublicCircles}/>
+      <Action label="Find an online Circle" disabled={connecting} onPress={() => openPublicCircles()}/>
       <Action label="Explore Clips" disabled={connecting} onPress={openClips}/>
       <Action label="Read Philemon" disabled={connecting} onPress={openStudy}/>
     </> : null}
     {circleChoice ? <>
       <Text style={styles.note}>Sign in to continue with {circleChoice.title}.</Text>
+      {circleChoice.reel && <Text style={styles.note}>{REEL_QUESTIONS[circleChoice.reel]}</Text>}
       <Action label="Clear selected Circle" onPress={() => {
         if (!validView()) return;
         invalidate(); setCircleChoice(null);

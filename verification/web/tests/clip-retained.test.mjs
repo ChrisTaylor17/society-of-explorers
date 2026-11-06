@@ -59,6 +59,24 @@ test('direct Reel metadata uses the configured application host and verified pub
 const ccBy = 'https://creativecommons.org/licenses/by/4.0/';
 const pexels = 'https://www.pexels.com/terms-of-service/';
 const report = 'https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55';
+test('only the retained Archivist Reels supply a local discussion question and public source link', async () => {
+ const app = offlineApp();
+ const { approvedReel } = app.load('lib/clips/server.ts');
+ const { REEL_QUESTIONS, reelDiscussionId, withReelDiscussion, reelDiscussionDraft } = app.load('lib/clips/salon.ts');
+ const native = app.load('platforms/native/clip-catalog.json');
+ assert.deepEqual(Object.keys(REEL_QUESTIONS), ['night-sky-traffic', 'telescope-first-tilt', 'which-height']);
+ for (const [id, question] of Object.entries(REEL_QUESTIONS)) {
+  assert.equal(reelDiscussionId(id), id);
+  assert.equal((await approvedReel(id)).id, id);
+  assert.ok(native.videos.some(clip => clip.id === id && clip.attribution));
+  assert.equal(withReelDiscussion('/circles?format=online', id), '/circles?format=online&reel=' + id);
+  assert.equal(reelDiscussionDraft(id, 'https://public-app.example.test'), question + '\n\nhttps://public-app.example.test/clips/watch/' + id);
+ }
+ for (const value of ['how-a-circle-works', 'missing', '__proto__', 'constructor', ['which-height', 'night-sky-traffic']]) {
+  assert.equal(reelDiscussionId(value), undefined);
+ }
+});
+
 for (const [id, page, credit, seconds, license = ccBy, referenceUrl] of [
  ['night-sky-traffic', 'https://www.eso.org/public/videos/eso2607d/', 'B. Häußler/ESO', 24],
  ['telescope-first-tilt', 'https://www.eso.org/public/videos/potw2643a/', 'ESO/Cimolai/Apical/G. Vecchia', 20],

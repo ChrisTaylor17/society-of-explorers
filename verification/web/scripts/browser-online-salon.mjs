@@ -23,6 +23,7 @@ read('verification/web/scripts/browser-online-salon.mjs');
 assert.equal(ready.status, 'READY');
 for (const path of ['app/HomePageClient.tsx', 'app/circles/CirclesBrowser.tsx', 'app/circles/[circleId]/CircleDetail.tsx', 'app/circles/messages/CircleSafetyNav.tsx',
   'app/circles/[circleId]/page.tsx', 'app/clips/ClipPlayer.tsx', 'app/clips/watch/[clipId]/page.tsx',
+  'app/circles/[circleId]/discussion/page.tsx', 'app/circles/[circleId]/discussion/DiscussionBrowser.tsx', 'lib/clips/salon.ts',
   'app/great-books/scripture/philemon/page.tsx', 'app/login/page.tsx',
   'lib/circles/useCircleParticipation.ts', 'lib/circles/membership.ts', 'lib/circles/membership-server.ts']) {
   read(path);
@@ -34,6 +35,9 @@ const providerOrigin = 'https://offline.invalid';
 const publicKey = 'OFFLINE_PUBLIC_BUILD_PLACEHOLDER_NOT_A_CREDENTIAL';
 const email = 'synthetic-salon@example.invalid', password = 'SYNTHETIC_SALON_PASSWORD', refresh = 'NONISSUED_SALON_REFRESH';
 const onlineHref = '/circles?format=online';
+const reelId = 'which-height';
+const reelQuestion = 'How would you report both heights so a reader can tell what each number measures and where it was measured from?';
+const reelQuery = '&reel=' + reelId;
 const require = createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');
 const executablePath = '/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
 read(executablePath);
@@ -82,7 +86,7 @@ try {
     assert.equal(token, access);
     return { data: { user }, error: null };
   } } }) }));
-  const detailPath = `/circles/${circleId}?from=online`, apiPath = `/api/circles/${circleId}`;
+  const detailPath = `/circles/${circleId}?from=online` + reelQuery, apiPath = `/api/circles/${circleId}`;
   const listing = (id, headers) => fixture.dispatch(`/api/circles/${id}?view=listing`, { headers });
   const sqlStart = fixture.sql.length;
   const injected = await listing(circleId, { authorization: 'Bearer ' + access, cookie: 'soe_auth_provider=supabase', 'x-soe-expected-member': member });
@@ -136,7 +140,7 @@ try {
           assert.equal(method, 'GET');
           response = Response.json({ todayQuestion: { question_text: 'How do we read together?', thinker_id: 'socrates', date: '2026-11-04' } });
         } else {
-          assert(/^\/api\/(?:auth\/(?:member|provider)|circles(?:\/[a-f0-9-]+(?:\/(?:join|rsvp|leave))?)?)$/.test(url.pathname), url.pathname);
+          assert(/^\/api\/(?:auth\/(?:member|provider)|circles(?:\/[a-f0-9-]+(?:\/(?:join|rsvp|leave|discussion(?:\/preview)?))?)?)$/.test(url.pathname), url.pathname);
           if (headers.origin) { assert.equal(headers.origin, origin); headers.origin = ORIGIN; }
           if (url.pathname === '/api/auth/provider') {
             const cookie = /(?:^|;\s*)sb-offline-auth-token=([^;]+)/.exec(headers.cookie ?? '');
@@ -181,14 +185,15 @@ try {
   const saved = () => page.getByText('Request confirmed. Current state is shown below; an earlier receipt does not override later changes.', { exact: true }).waitFor();
   const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   const go = async path => assert.equal((await page.goto(origin + path)).status(), 200);
-  const browse = async (name, path, clipTitle) => {
+  const browse = async (name, path, clipTitle, id) => {
     await go(path);
     const target = clipTitle
       ? page.getByLabel(clipTitle, { exact: true }).getByRole('link', { name, exact: true })
       : link(name);
-    assert.equal(await target.getAttribute('href'), onlineHref);
+    const destination = id ? onlineHref + '&reel=' + id : onlineHref;
+    assert.equal(await target.getAttribute('href'), destination);
     await target.click();
-    await page.waitForURL(origin + onlineHref);
+    await page.waitForURL(origin + destination);
     await link(title).waitFor();
   };
   await go('/');
@@ -201,12 +206,19 @@ try {
     ['night-sky-traffic', 'Who gets the night sky?'], ['telescope-first-tilt', 'What did the tilt prove?'],
     ['which-height', 'Which height are we measuring?'],
   ]) {
-    await browse('Discuss in an online Circle', '/clips/watch/' + id, title);
+    await browse('Discuss in an online Circle', '/clips/watch/' + id, title, id);
+    assert.equal(await page.getByRole('region', { name: 'Question from the Reel' }).getByRole('link').getAttribute('href'), '/clips/watch/' + id);
   }
   await link(hybridTitle).waitFor();
   assert.equal(await link('Local-only salon').count(), 0);
   assert.equal(await link('Hidden salon').count(), 0);
-  pass('The homepage, Philemon study and each shared Reel link lead to the same online and hybrid search. The guest continues from the last Reel.');
+  await page.getByLabel('Reading, topic or circle name').fill('Philemon');
+  await button('Search').click();
+  await page.waitForURL(url => url.searchParams.get('q') === 'Philemon' && url.searchParams.get('reel') === reelId);
+  await link(title).waitFor();
+  await page.getByText(reelQuestion, { exact: true }).waitFor();
+  assert(requests.filter(call => call.path === '/api/circles').every(call => !call.query.includes('reel=')));
+  pass('The homepage and Philemon lead to online and hybrid search. Each Reel brings its own public question, and search preserves that choice outside the API request.');
 
   const prePreview = requests.length;
   await link(title).click();
@@ -231,7 +243,7 @@ try {
   await page.waitForURL(origin + detailPath);
   await preview.waitFor();
   assert.equal(await meetingButton.count(), 0);
-  assert.equal(await link('Online Circles').getAttribute('href'), onlineHref);
+  assert.equal(await link('Online Circles').getAttribute('href'), onlineHref + reelQuery);
   assert((await context.cookies()).some(cookie => cookie.name === 'soe_auth_selection_v1' && cookie.httpOnly));
   assert(requests.some(call => call.path === '/api/auth/provider' && call.status === 200));
   pass('The built password sign-in verifies synthetic identity and returns to the same Circle and online directory.');
@@ -249,6 +261,39 @@ try {
   assert.equal(await page.locator('a[href*="private-meeting-do-not-expose"]').count(), 0);
   assert.equal(await fits(), true);
   pass('A verified nonmember reviews the norms and confirms membership before the private meeting control appears.');
+
+  await link('Open discussion with the Reel question').click();
+  await page.waitForURL(origin + `/circles/${circleId}/discussion?reel=${reelId}`);
+  await page.getByText(reelQuestion, { exact: true }).waitFor();
+  assert.equal(await button('Use Reel question in a draft').count(), 0);
+  const discussionPath = apiPath + '/discussion';
+  const posts = () => requests.filter(call => call.path === discussionPath && call.method === 'POST').length;
+  const beforePost = posts();
+  await button('Load current discussion archive').click();
+  await button('Use Reel question in a draft').click();
+  const draft = page.getByLabel('Your discussion comment');
+  const expectedDraft = reelQuestion + '\n\n' + origin + '/clips/watch/' + reelId;
+  assert.equal(await draft.inputValue(), expectedDraft);
+  assert.equal(await fits(), true);
+  await page.screenshot({ path: resolve(output, 'reel-draft-320.png'), fullPage: true });
+  assert.equal(await button('Use Reel question in a draft').isDisabled(), true);
+  const edited = 'My first thought is to name the reference point.\n\n' + expectedDraft;
+  await draft.fill(edited);
+  await button('Prepare discussion preview').click();
+  await page.getByRole('region', { name: 'Review discussion message' }).getByText(edited, { exact: true }).waitFor();
+  assert.equal(await button('Post reviewed discussion message').isDisabled(), true);
+  assert.equal(posts(), beforePost);
+  await page.getByRole('checkbox', { name: /I reviewed this exact message/ }).check();
+  await button('Post reviewed discussion message').click();
+  await page.getByText('Posting confirmed. Open the saved message to check its current thread.', { exact: true }).waitFor();
+  assert.equal(posts(), beforePost + 1);
+  assert.deepEqual((await fixture.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1 AND member_id=$2',
+    [circleId, member])).rows, [{ content: edited }]);
+  await link('Return to Circle details').click();
+  await page.waitForURL(origin + detailPath);
+  await button('Load current Circle access').click();
+  await meetingButton.waitFor();
+  pass('A current member opens the archive, edits the Reel question and public link, reviews the exact text, and saves one message only after confirmation.');
 
   let since = requests.length;
   await meetingButton.click();
@@ -337,7 +382,7 @@ try {
   checkFreshDetail(since);
   assert.equal(meetingNavigations, 1);
   assert.equal(await meetingButton.count(), 0);
-  await link('Open discussion archive and replies').waitFor();
+  await link('Open discussion with the Reel question').waitFor();
   const ended = await fixture.dispatch(apiPath, { headers: { authorization: 'Bearer ' + access, 'x-soe-expected-member': member } });
   assert.equal(ended.status, 200);
   const endedDetail = await ended.json();
@@ -352,6 +397,17 @@ try {
   assert(requests.filter(call => call.path.endsWith('/feed/pulse')).length > 0);
   assert.deepEqual(errors, []);
   pass('A direct hidden Circle link discloses no listing, even after sign-in.');
+  const duplicateAt = requests.length;
+  await go(onlineHref + reelQuery + '&reel=night-sky-traffic');
+  await page.getByText(/This search link or its book/).waitFor();
+  assert.equal(await page.getByRole('region', { name: 'Question from the Reel' }).count(), 0);
+  await go(`/circles/${circleId}/discussion?reel=unreviewed-or-forged`);
+  await button('Open newest archive page').waitFor();
+  assert.equal(await button('Load current discussion archive').count(), 0);
+  assert.equal(await page.getByRole('region', { name: 'Question from the Reel' }).count(), 0);
+  assert.equal(await button('Use Reel question in a draft').count(), 0);
+  assert(!requests.slice(duplicateAt).some(call => call.path.startsWith('/api/circles')));
+  pass('A duplicate or unreviewed Reel reference never selects a question or triggers a Circle request.');
   for (const [name, expected] of Object.entries(sourceHashes)) assert.equal(createHash('sha256').update(read(name)).digest('hex'), expected, name);
 } catch (error) {
   failure = redact(error.stack || error);

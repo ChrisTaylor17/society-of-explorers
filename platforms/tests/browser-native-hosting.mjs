@@ -134,6 +134,8 @@ try{
    await show();
    const onlineTitle='Philemon online salon',hybridTitle='Scripture hybrid salon',localTitle='Local-only reading salon';
    const meeting='https://meeting.example.test/synthetic-salon';
+   const reelQuestion='How would you report both heights so a reader can tell what each number measures and where it was measured from?';
+   const discussReel='Discuss Which height are we measuring? in a Circle';
    const seed=async(who,title,format)=>{
      const expectedMemberId=fixture.actors[who];
      const body=await fixture.createBody({expectedMemberId,title,description:'A synthetic public listing.',format,
@@ -157,9 +159,13 @@ try{
    await button('Back from online Circles').click();await button('Read the full Philemon study').click();
    await button('Find an online reading Circle').click();await enabled('Load online Circles');await invoke(staleChoice);
    assert.equal(await button('Clear selected Circle').count(),0);
+   await button('Back from online Circles').click();await button('Back to account').click();
+   await button('Explore Clips').click();await button(discussReel).click();await enabled('Load online Circles');
+   await p.getByText(reelQuestion,{exact:true}).waitFor();
    await button('Load online Circles').click();await enabled(guestButton);
    await button(guestButton).click();await enabled('Connect my account');
    assert((await text()).includes('Sign in to continue with '+onlineTitle));
+   await p.getByText(reelQuestion,{exact:true}).waitFor();
    assert.equal((await state()).stats.prepared,0);assert.equal((await state()).stats.reads,0);
    pass('signed-out Clips and Philemon reach online and hybrid listings through the anonymous policy without an account client or a saved-session read; retiring the public screen prevents an old selection');
 
@@ -174,6 +180,32 @@ try{
    assert.equal(await button('Open online meeting').count(),0);
    await button('Confirm join').click();await enabled('Open online meeting');
    pass('the selected public Circle survives sign-in and opens only after current member verification; the meeting stays closed through join review');
+
+   await p.getByText(reelQuestion,{exact:true}).waitFor();
+   await button('Open discussion').click();await enabled('Open complete discussion archive');
+   assert.equal(await button('Use Reel question in a draft').count(),0);
+   const posts=()=>http.filter(row=>row.path===path+'/discussion'&&row.method==='POST').length;
+   const beforePost=posts();
+   await button('Open complete discussion archive').click();await enabled('Use Reel question in a draft');
+   const oldStarter=await retain('Use Reel question in a draft');
+   await button('Use Reel question in a draft').click();
+   const draft=field('Your discussion comment');
+   const expected=reelQuestion+'\n\n'+ORIGIN+'/clips/watch/which-height';
+   assert.equal(await draft.inputValue(),expected);
+   const edited='I would name the reference point for each measurement.\n\n'+expected;
+   await draft.fill(edited);await invoke(oldStarter);
+   assert.equal(await draft.inputValue(),edited);
+   await button('Prepare discussion preview').click();
+   const reviewed=p.getByRole('checkbox',{name:'I reviewed this exact message and target, and want to post it to this Circle'});
+   await reviewed.waitFor();
+   assert(await button('Post reviewed discussion message').isDisabled());assert.equal(posts(),beforePost);
+   await p.getByText(edited,{exact:true}).waitFor();
+   await reviewed.click();await button('Post reviewed discussion message').click();await enabled('Open saved discussion message');
+   assert.equal(posts(),beforePost+1);
+   assert.deepEqual((await fixture.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1 AND member_id=$2',
+    [chosen,fixture.authorId])).rows,[{content:edited}]);
+   await button('Back to Circle').click();await enabled('Open online meeting');
+   pass('the Reel question survives guest discovery and sign-in, cannot overwrite an active draft, and saves the edited text exactly once after review');
 
    const openings=()=>p.evaluate(()=>[...window.nativeQa.openedMeetings]);
    const firstOpenAt=http.length;

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { reelDiscussionId, withReelDiscussion } from '@/lib/clips/salon';
 import { useEffect, useRef, useState } from 'react';
 import { PEXELS_LICENSE_URL, parsePublicMediaClip, reelHref, type PublicMediaClip } from '@/lib/clips/contracts';
 import { fetchClipBytes } from '@/lib/clips/client';
@@ -90,7 +91,7 @@ function ReelLinks({ clip, standalone }: { clip: PublicMediaClip; standalone: bo
     <div className={styles.controls}>
       {!standalone && <Link href={href} prefetch={false}>Link to this Reel</Link>}
       <button type="button" onClick={() => void share()}>Share Reel</button>
-      <Link href={ONLINE_CIRCLES_HREF} prefetch={false}>Discuss in an online Circle</Link>
+      <Link href={withReelDiscussion(ONLINE_CIRCLES_HREF, reelDiscussionId(clip.id))} prefetch={false}>Discuss in an online Circle</Link>
     </div>
     {notice && <p role="status">{notice}</p>}
   </>;

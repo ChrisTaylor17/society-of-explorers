@@ -16,7 +16,9 @@ The catalog also includes **How a Circle works**, a 23.955-second original silen
 
 ## Sharing a Reel
 
-Each Archivist Reel has a public page at `/clips/watch/{id}` with its own preview title and description. **Share Reel** opens the browser share chooser where available or copies the page address. The link opens the credited Reel and transcript for guests. Video and captions still load only after an explicit choice. **Discuss in an online Circle** opens the online and hybrid directory. The shared page rechecks the current review, credits and file pins each time it opens. [Web Share API](https://w3c.github.io/web-share/) · [Sharing verification](reel-share-verification.json)
+Each Archivist Reel has a public page at `/clips/watch/{id}` with its own preview title and description. **Share Reel** opens the browser share chooser where available or copies the page address. The link opens the credited Reel and transcript for guests. Video and captions load after an explicit choice. The shared page rechecks the current review, credits and file pins each time it opens. [Web Share API](https://w3c.github.io/web-share/) · [Sharing verification](reel-share-verification.json)
+
+**Discuss in an online Circle** brings that Reel’s question into the online and hybrid directory. Searches, Circle selection and account sign-in preserve the public question. After checking membership, choose **Open discussion with the Reel question**, load the archive, and choose **Use Reel question in a draft**. The editable draft contains the question and the public Reel link. The existing preview and confirmation still govern what is posted. [Verification](reel-discussion-verification.json)
 
 ## Publication and storage gate
 

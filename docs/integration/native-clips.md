@@ -8,6 +8,8 @@ Choose **Explore Clips** before connecting an account or from the verified membe
 
 Tap **Share** on an Archivist Reel to open the phone's share sheet with its title and public page address. Guests and signed-in members share the same address on the app's configured website. If the share sheet fails to open, the app shows the address for copying. The share sheet decides the destination after the user chooses it. [React Native Share](https://reactnative.dev/docs/share) · [Sharing verification](reel-share-verification.json)
 
+Each Archivist Reel also offers a discussion action. It opens online Circle discovery with that Reel’s question, and the selected Circle and question carry through sign-in within the current app session. Once the Circle and its archive verify current access, **Use Reel question in a draft** adds the public question and Reel link to the editable composer. The member can write their own response before reviewing and confirming the exact post. [Verification](reel-discussion-verification.json)
+
 ## Local verification
 
 The registered App passed 26 Android-path and nine iOS-path browser stories. Each included five Clips stories with simulated native events and actual Chromium decoding. Across the two runs both packaged videos completed at normal speed. The runs verified pause, replay, switching, background retirement, stale events, the reading handoff and member navigation. Two 320px playback screens were inspected. Mac AVFoundation decoded six frames and confirmed each file has one video track and zero audio tracks. The 26 clip checks and 36 native source policy checks passed. The registered-app TypeScript check and scoped lint passed. [Verification receipt](native-clips-verification.json)

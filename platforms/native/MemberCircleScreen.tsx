@@ -16,6 +16,7 @@ import { observeNativeConnectivity, type NativeConnectivityPort } from './src/ci
 import { createMemberAccountSession } from '../shared/account-session';
 import { PhilemonStudyScreen } from './PhilemonStudyScreen';
 import { ClipsScreen } from './ClipsScreen';
+import type { ReelDiscussionId } from '../../lib/clips/salon';
 import type { PublicCircleChoice } from '../shared/circle-directory';
 
 /** Retained by the owned sign-in screen across temporary member-view unmounts.
@@ -76,7 +77,7 @@ export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>
  * screen does not create an auth client, sign in or choose an account. */
 export function MemberCircleScreen({ config, connectivity, retained, philemonHosting = false, circleChoice, onClose }: {
   config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection;
-  philemonHosting?: boolean; circleChoice?: PublicCircleChoice; onClose(): void;
+  philemonHosting?: boolean; circleChoice?: PublicCircleChoice & { reel?: ReelDiscussionId }; onClose(): void;
 }) {
   const connection = useMemo(() => {
     try {
@@ -86,7 +87,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; initialCircle?: PublicCircleChoice;
+  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
     destination: 'circle' | 'contributions' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' | 'clips' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
@@ -153,7 +154,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
       setProfileNotice(''); setEntered({ connection, destination: 'profile' });
     } catch { setProfileNotice('Profile editing is unavailable. Check your member account and try again.'); }
   });
-  const openReadingDestination = (destination: 'saved' | 'discover' | 'mine', options?: { onlinePreset?: boolean; initialCircle?: PublicCircleChoice }) => act(() => {
+  const openReadingDestination = (destination: 'saved' | 'discover' | 'mine', options?: { onlinePreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId }) => act(() => {
     const current = connection?.account.model();
     if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
     try {
@@ -175,7 +176,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
     if (entered.destination === 'clips') return <ClipsScreen onBack={back} appOrigin={connection.host.origin}
       onRead={() => act(() => setEntered({ connection, destination: 'philemon' }))}
-      onBrowse={() => openReadingDestination('discover', { onlinePreset: true })}/>;
+      onBrowse={reel => openReadingDestination('discover', { onlinePreset: true, reel })}/>;
     if (entered.destination === 'philemon') {
       return <PhilemonStudyScreen onBack={back} onHost={hostingAvailable ? () => openHosting(true) : undefined}
         onBrowse={() => openReadingDestination('discover', { onlinePreset: true })}/>;
@@ -192,7 +193,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
         publicAvailable={Boolean(connection.host.publicProfileTransport)} onBack={back} onClose={close}/>;
     }
     if ((entered.destination === 'discover' || entered.destination === 'mine') && directoryConfig) return <CircleDirectoryScreen config={directoryConfig} connectivity={connection.connectivity}
-      initialMode={entered.destination} initialOnlineFilter={entered.onlinePreset} initialCircle={entered.initialCircle}
+      initialMode={entered.destination} initialOnlineFilter={entered.onlinePreset} initialCircle={entered.initialCircle} reel={entered.reel}
       savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined} onBack={back} onClose={close}/>;
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
       onBack={back} onClose={close}/>;
@@ -218,7 +219,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
     {circleChoice ? <>
       <Text style={styles.copy}>Selected Circle · {circleChoice.title}</Text>
       <Action label="Open selected Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-        onPress={() => openReadingDestination('discover', { onlinePreset: true, initialCircle: circleChoice })}/>
+        onPress={() => openReadingDestination('discover', { onlinePreset: true, initialCircle: circleChoice, reel: circleChoice.reel })}/>
     </> : null}
     {account?.canConfirm || account?.confirmed ? <View style={styles.setup}>
       <Text style={styles.copy}>{account.phase === 'unknown'

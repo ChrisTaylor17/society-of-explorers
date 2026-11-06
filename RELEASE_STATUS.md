@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The three Archivist Reels carry their questions into online Circle discovery and through sign-in. After a Circle confirms access, a member can add the question and public Reel link to an editable draft. The built web app and both simulated phone paths saved one edited post each after review and confirmation. **29 clip checks, 13 web salon scenarios, seven playback scenarios, 33 Android-path and 16 iOS-path scenarios** passed locally. Hosted and physical-device acceptance remain open. [Verification](docs/integration/reel-discussion-verification.json)
+
 The initial backup check now verifies existing Circle listings, memberships and posts in the same snapshot as accounts and private app data. The older 17-table check passed a synthetic archive with all three Circle row sets omitted. The 20-table check detected them, and the 22-table check also covered both wallet stores after migration. **43 PostgreSQL rehearsal checks** passed. The approved hosted backup and isolated restore remain open. [Verification](docs/integration/circle-restore-verification.json)
 
 Members in the shared Quest salon can follow new posts in Quest Browser and the headset room. The latest page checks for changes after each successful check-in. Older posts and drafts stay in place, and a membership refusal clears private discussion. **79 focused tests, 19 shared-salon scenarios, 20 standalone discussion scenarios and three compiled browser checks** passed locally. The pilot switch remains off by default. Live meetings use the browser handoff. Hosted and physical Quest checks remain open. [Verification](docs/integration/quest-live-discussion-verification.json)

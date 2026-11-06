@@ -81,7 +81,7 @@ try {
   const permalink = '/clips/watch/' + id;
   const direct = reel.getByRole('link', { name: 'Link to this Reel' });
   assert.equal(await direct.getAttribute('href'), permalink);
-  assert.equal(await reel.getByRole('link', { name: 'Discuss in an online Circle' }).getAttribute('href'), '/circles?format=online');
+  assert.equal(await reel.getByRole('link', { name: 'Discuss in an online Circle' }).getAttribute('href'), '/circles?format=online&reel=' + id);
   assert.equal(await page.getByRole('heading', { name: 'How a Circle works', exact: true }).count(), 1);
   assert.equal(await reel.locator('video').count(), 0);
   assert.deepEqual(calls, []);
@@ -175,11 +175,12 @@ try {
   assert.equal(calls.length, 2);
   stories.push('Unload retires the video and leaves the transcript and source links usable.');
   await reel.getByRole('link', { name: 'Discuss in an online Circle' }).click();
-  await page.waitForURL(origin + '/circles?format=online');
+  await page.waitForURL(origin + '/circles?format=online&reel=' + id);
   await page.getByRole('heading', { name: 'Find a circle', exact: true }).waitFor();
   await page.waitForFunction(() => document.getElementById('circle-format')?.value === 'online');
   assert.equal(calls.length, 2);
-  stories.push('The Reel opens the public directory with the online and hybrid filter selected.');
+  await page.getByRole('region', { name: 'Question from the Reel' }).waitFor();
+  stories.push('The Reel brings its question to the public directory with the online and hybrid filter selected.');
   if (!elt && !lava) {
     for (const id of ['not-an-approved-reel', 'how-a-circle-works']) {
       assert.equal((await page.goto(origin + '/clips/watch/' + id)).status(), 404);

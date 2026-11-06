@@ -1,6 +1,7 @@
 import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
 import { reelHref } from '../../lib/clips/contracts';
+import { REEL_QUESTIONS, reelDiscussionId, type ReelDiscussionId } from '../../lib/clips/salon';
 import { philemonEdition } from '../../lib/root-kernel/philemon-study';
 import { approvedOrigin } from './src/circles/host';
 import { prepareInstalledPublicCircles, type PublicCircleDiscoveryConnection } from './src/circles/installed-member';
@@ -19,7 +20,7 @@ function playerAvailable() {
 }
 
 export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublicCircles = prepareInstalledPublicCircles }: {
-  onBack(): void; onRead(): void; onBrowse?: () => void; appOrigin?: string;
+  onBack(): void; onRead(): void; onBrowse?: (reel?: ReelDiscussionId) => void; appOrigin?: string;
   preparePublicCircles?: () => Promise<PublicCircleDiscoveryConnection>;
 }) {
   const current = useRef<Playback | null>(null);
@@ -100,6 +101,7 @@ export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublic
       <Text accessibilityRole="header" style={styles.heading}>Video clips</Text>
       {!available ? <Text style={styles.note}>This build can open the transcripts. Video playback needs the installed clip player.</Text> : null}
       {catalog.videos.map(clip => {
+        const reel = clip.attribution ? reelDiscussionId(clip.id) : undefined;
         const playing = playback?.id === clip.id ? playback : null;
         const action = playing?.phase === 'ended' ? 'Replay' : playing?.playing ? 'Pause' : 'Play';
         return <View key={clip.id} style={styles.card}>
@@ -132,6 +134,10 @@ export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublic
           </> : null}
           <Text accessibilityRole="header" style={styles.note}>Transcript</Text>
           <Text selectable style={styles.copy}>{clip.transcript}</Text>
+          {reel && onBrowse && <>
+            <Text style={styles.note}>{REEL_QUESTIONS[reel]}</Text>
+            <Action label={`Discuss ${clip.title} in a Circle`} disabled={!active} onPress={() => onBrowse(reel)}/>
+          </>}
         </View>;
       })}
       <Text accessibilityRole="header" style={styles.heading}>Reading clip</Text>
@@ -142,7 +148,7 @@ export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublic
         <Text selectable style={styles.address}>{philemonEdition.publisherUrl}</Text>
         <Action label="Read the full Philemon study" onPress={onRead}/>
       </View>
-      {onBrowse ? <Action label="Find an online Circle" onPress={onBrowse}/> : null}
+      {onBrowse ? <Action label="Find an online Circle" onPress={() => onBrowse()}/> : null}
     </ScrollView>
     <View style={styles.footer}><Action label="Back to account" onPress={onBack}/></View>
   </SafeAreaView>;
