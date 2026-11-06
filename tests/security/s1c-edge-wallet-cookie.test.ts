@@ -1,8 +1,8 @@
-// S1c: the four edge-runtime routes parse the Cookie header themselves. They must
-// accept only an HMAC-verified soe_wallet_id session (production's Web Crypto
-// verifier in lib/auth/walletSession.ts), never a bare member UUID.
+// These edge routes use the selected account and verify the signed wallet
+// session through the same authority as other member routes.
 import { test, expect, beforeEach, describe } from 'bun:test';
 import { installMocks, resetDb, makeReq, drain, ADA, JULES, walletCookie } from './fakes';
+import { selectedCookies } from './auth-request';
 
 installMocks();
 const SECRET = 'z'.repeat(48); // synthetic test-only value
@@ -12,34 +12,26 @@ const members = () => ({ members: [
   { id: JULES, display_name: 'Jules Example', tier: 'member', exp_tokens: 1 },
 ] });
 
-// pod/sync and friends may look members up over PostgREST; serve that offline.
-function memberFetch() {
-  (globalThis as any).fetch = async (u: any) => {
-    const url = String(u);
-    if (url.includes('/rest/v1/members')) {
-      const id = decodeURIComponent(url).match(/id=eq\.([0-9a-f-]{36})/)?.[1];
-      const { db } = await import('./fakes');
-      return new Response(JSON.stringify(db.rows('members').filter(m => m.id === id)), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
-    throw new Error('network access attempted in offline test: ' + url);
-  };
-}
+beforeEach(() => { resetDb(members()); process.env.NEXTAUTH_SECRET = SECRET; delete process.env.WALLET_SESSION_SECRET; });
 
-beforeEach(() => { resetDb(members()); process.env.NEXTAUTH_SECRET = SECRET; delete process.env.WALLET_SESSION_SECRET; memberFetch(); });
+const walletRequest = (value: string, memberId: string) => makeReq({}, {
+  cookies: { ...selectedCookies('wallet', memberId), soe_wallet_id: value },
+  headers: { origin: 'http://localhost' },
+});
 
 const ROUTES = ['match', 'projects/create', 'projects/invite', 'movement/pod/sync'];
 describe('raw soe_wallet_id cookie is not identity on edge routes', () => {
   for (const r of ROUTES) {
     test(`${r}: soe_wallet_id=JULES alone -> 401`, async () => {
       const m = await import(`../../app/api/${r}/route.ts`);
-      const res: Response = await m.POST(makeReq({}, { headers: { cookie: `soe_wallet_id=${JULES}` } }));
+      const res: Response = await m.POST(walletRequest(JULES, JULES));
       await drain(res);
       expect(res.status).toBe(401);
     });
     test(`${r}: forged signature -> 401`, async () => {
       const m = await import(`../../app/api/${r}/route.ts`);
       const forged = (await walletCookie(ADA)).replace(ADA, JULES);
-      const res: Response = await m.POST(makeReq({}, { headers: { cookie: `soe_wallet_id=${encodeURIComponent(forged)}` } }));
+      const res: Response = await m.POST(walletRequest(forged, JULES));
       await drain(res);
       expect(res.status).toBe(401);
     });
@@ -62,14 +54,12 @@ describe('the shared Web Crypto verifier works for edge routes', () => {
     process.env.NEXTAUTH_SECRET = 'p'.repeat(48);
     expect(await verifyWalletSessionValue(good)).toBeNull();
   });
-  // projects/invite is excluded in the security-only release: its UUID check is left as in production
-  // (rejects every real id, so it never authenticates anyone). The raw/forged-cookie 401 checks above still cover it.
-  for (const r of ['match']) {
-    test(`${r}: a signed session passes authentication (not 401)`, async () => {
+  for (const r of ROUTES) {
+    test(`${r}: a signed selected session reaches payload validation`, async () => {
       const m = await import(`../../app/api/${r}/route.ts`);
-      const res: Response = await m.POST(makeReq({}, { headers: { cookie: `soe_wallet_id=${encodeURIComponent(await walletCookie(ADA))}` } }));
+      const res: Response = await m.POST(walletRequest(await walletCookie(ADA), ADA));
       await drain(res);
-      expect(res.status).not.toBe(401);
+      expect(res.status).toBe(400);
     });
   }
 });

@@ -119,7 +119,8 @@ const checks = [
   {
     name: 'pod sync route authenticates, uses private JSON, and disables event-stream caching',
     ok:
-      files['app/api/movement/pod/sync/route.ts'].includes('authenticateMember') &&
+      files['app/api/movement/pod/sync/route.ts'].includes('getAuthenticatedEdgeMember(req)') &&
+      files['app/api/movement/pod/sync/route.ts'].includes('memberWriteOriginAllowed(req)') &&
       files['app/api/movement/pod/sync/route.ts'].includes('privateJson(result.body') &&
       files['app/api/movement/pod/sync/route.ts'].includes('privateJson(normalized.body') &&
       files['app/api/movement/pod/sync/route.ts'].includes("'x-sync-audit-id': audit.auditId") &&
@@ -167,7 +168,9 @@ const checks = [
     ok:
       routeFiles
         .filter((file) => file.source.includes('getAuthenticatedMember'))
-        .every((file) => beforeNext(file.source, 'getAuthenticatedMember(req)', 'getSupabaseAdmin') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'getPodStats') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildPodExportManifest') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildPodPayload') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildPodSealReceipt') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildSovereigntyPassport') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildManifest') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'createAnthropicClient()') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'fetch(')),
+        .every((file) => beforeNext(file.source, 'getAuthenticatedMember(req)', 'getSupabaseAdmin') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'getPodStats') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildPodExportManifest') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildPodPayload') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildPodSealReceipt') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildSovereigntyPassport') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'buildManifest') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'createAnthropicClient()') || beforeNext(file.source, 'getAuthenticatedMember(req)', 'fetch(')
+          || (beforeNext(file.source, 'getAuthenticatedEdgeMember(req)', 'parseAndVerifyEnvelope(req)')
+            && beforeNext(file.source, 'getAuthenticatedEdgeMember(req)', 'callSyncRpc('))),
   },
   {
     name: 'manager routes require Movement access before generation or database writes',

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
+import { getAuthenticatedEdgeMember } from '@/lib/getAuthenticatedMember';
+import { memberWriteOriginAllowed } from '@/lib/auth/request';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
@@ -7,7 +8,6 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 export const preferredRegion = 'global';
 
-const MEMBER_SELECT = 'id,tier,supabase_auth_id,wallet_address';
 const MAX_CANDIDATES = 100;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -52,18 +52,6 @@ interface MatchReport {
   };
 }
 
-interface EdgeMember {
-  id: string;
-  tier: string | null;
-  supabase_auth_id: string | null;
-  wallet_address: string | null;
-}
-
-interface SupabaseEnv {
-  url: string;
-  anonKey: string;
-}
-
 interface MatchAuditContext {
   auditId: string;
   startedAtMs: number;
@@ -78,8 +66,10 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const env = getSupabasePublicEnv();
-    const auth = await authenticateMember(req, env);
+    if (!memberWriteOriginAllowed(req)) {
+      return jsonWithAudit({ audit_id: audit.auditId, error: 'Request refused.' }, audit.auditId, 403);
+    }
+    const auth = await getAuthenticatedEdgeMember(req);
     if (!auth) {
       auditLog(audit, 'auth_rejected', 'warn', { http_status: 401 });
       return jsonWithAudit({ audit_id: audit.auditId, error: 'Unauthorized' }, audit.auditId, 401);
@@ -438,72 +428,12 @@ function parseEpistemicVectors(
   };
 }
 
-async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<EdgeMember | null> {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice('Bearer '.length).trim();
-    const user = await getSupabaseUser(env, token);
-    if (user?.id) {
-      const member = await lookupMember('supabase_auth_id', user.id);
-      if (member) return member;
-    }
-  }
-
-  const walletId = await verifyWalletSessionValue(parseCookies(req.headers.get('cookie')).get('soe_wallet_id'));
-  if (walletId && UUID_PATTERN.test(walletId)) {
-    return lookupMember('id', walletId);
-  }
-
-  return null;
-}
-
-async function getSupabaseUser(env: SupabaseEnv, token: string): Promise<{ id: string } | null> {
-  const res = await fetch(`${env.url}/auth/v1/user`, {
-    headers: {
-      apikey: env.anonKey,
-      authorization: `Bearer ${token}`,
-    },
-    cache: 'no-store',
-  });
-
-  if (res.status === 401) return null;
-  if (!res.ok) throw new Error(`Supabase auth lookup failed with HTTP ${res.status}.`);
-
-  const body: unknown = await res.json();
-  return isRecord(body) && typeof body.id === 'string' ? { id: body.id } : null;
-}
-
-async function lookupMember(field: 'id' | 'supabase_auth_id', value: string): Promise<EdgeMember | null> {
-  const supabase = getSupabaseAdmin();
-
-  const { data, error } = await supabase
-    .from('members')
-    .select(MEMBER_SELECT)
-    .eq(field, value)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error('Member lookup failed');
-  return data ? (data as EdgeMember) : null;
-}
-
 async function safeRequestJson(req: NextRequest): Promise<unknown> {
   try {
     return await req.json();
   } catch {
     return null;
   }
-}
-
-function getSupabasePublicEnv(): SupabaseEnv {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error('Supabase public environment is not configured.');
-  }
-
-  return { url, anonKey };
 }
 
 function jsonWithAudit(body: Record<string, unknown>, auditId: string, status: number) {
@@ -566,24 +496,6 @@ function round4(value: number): number {
 
 function normalizeSkill(skill: string): string {
   return skill.trim().toLowerCase();
-}
-
-function parseCookies(header: string | null): Map<string, string> {
-  const cookies = new Map<string, string>();
-  if (!header) return cookies;
-
-  for (const segment of header.split(';')) {
-    const [rawKey, ...rawValue] = segment.trim().split('=');
-    if (!rawKey || rawValue.length === 0) continue;
-
-    try {
-      cookies.set(rawKey, decodeURIComponent(rawValue.join('=')));
-    } catch {
-      cookies.set(rawKey, rawValue.join('='));
-    }
-  }
-
-  return cookies;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

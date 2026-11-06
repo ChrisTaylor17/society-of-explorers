@@ -8,6 +8,7 @@ import { AUTH_INTENT_COOKIE, AUTH_SELECTION_COOKIE, browserSelectionMatches, par
 import { isWellFormedUuid, verifyWalletSessionValue } from '@/lib/auth/walletSession';
 
 const MEMBER_SELECT = 'id, display_name, email, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens, tier, coherence_data, total_responses, supabase_auth_id, wallet_address';
+const EDGE_MEMBER_SELECT = 'id,tier,supabase_auth_id,wallet_address';
 
 export interface AuthenticatedMember {
   id: string;
@@ -26,20 +27,30 @@ export interface AuthenticatedMember {
   wallet_address: string | null;
 }
 
-async function getMemberByColumn(
+type MemberIdentity = Pick<AuthenticatedMember, 'id' | 'supabase_auth_id'>;
+type EdgeMember = MemberIdentity & { tier: string | null; wallet_address: string | null };
+type MemberSession<Member> = {
+  memberId: string;
+  member: Member;
+  auth: { provider: 'supabase' | 'wallet'; subject: string };
+};
+
+async function getMemberByColumn<Member extends MemberIdentity>(
   column: 'supabase_auth_id' | 'id',
   value: string,
-): Promise<AuthenticatedMember | null> {
-  const { data: member, error } = await getSupabaseAdmin()
+  projection: string,
+): Promise<Member | null> {
+  const { data, error } = await getSupabaseAdmin()
     .from('members')
-    .select(MEMBER_SELECT)
+    .select(projection)
     .eq(column, value)
     .single();
 
+  const member = data as MemberIdentity | null;
   if (error || !member || typeof member.id !== 'string' || !isWellFormedUuid(member.id)) return null;
   const owner = member[column];
   if (typeof owner !== 'string' || owner.toLowerCase() !== value.toLowerCase()) return null;
-  return member as AuthenticatedMember;
+  return member as Member;
 }
 
 /**
@@ -50,11 +61,21 @@ async function getMemberByColumn(
  *
  * Returns the member row or null if unauthenticated.
  */
-export async function getAuthenticatedMember(
-  req: NextRequest,
-): Promise<{ memberId: string; member: AuthenticatedMember; auth: { provider: 'supabase' | 'wallet'; subject: string } } | null> {
+export function getAuthenticatedMember(req: NextRequest): Promise<MemberSession<AuthenticatedMember> | null> {
+  return resolveMember<AuthenticatedMember>(req, MEMBER_SELECT, true);
+}
+
+/** These writers accept wallet sessions and exact bearers, with a narrow member projection. */
+export async function getAuthenticatedEdgeMember(req: NextRequest): Promise<EdgeMember | null> {
+  return (await resolveMember<EdgeMember>(req, EDGE_MEMBER_SELECT, false))?.member ?? null;
+}
+
+async function resolveMember<Member extends MemberIdentity>(
+  req: NextRequest, projection: string, allowSupabaseCookie: boolean,
+): Promise<MemberSession<Member> | null> {
   // A browser logout marker also refuses retained SDK bearer tokens.
-  if (req.cookies.get(AUTH_PROVIDER_COOKIE)?.value === 'signed_out') return null;
+  const selected = req.cookies.get(AUTH_PROVIDER_COOKIE)?.value;
+  if (selected === 'signed_out') return null;
   const intentValue = req.cookies.get(AUTH_INTENT_COOKIE)?.value;
   const receiptValue = req.cookies.get(AUTH_SELECTION_COOKIE)?.value;
   const matches = (provider: 'supabase' | 'wallet', subject: string) => browserSelectionMatches(intentValue, receiptValue, provider, subject);
@@ -64,6 +85,8 @@ export async function getAuthenticatedMember(
   const authHeader = req.headers.get('authorization');
   if (authHeader !== null) {
     if (!/^Bearer [^\s]+$/.test(authHeader) || authHeader.length > 16_384) return null;
+    const hasBrowserIntent = intentValue !== undefined;
+    if (hasBrowserIntent && selected !== 'supabase') return null;
     try {
       const token = authHeader.slice(7);
       const { createClient: createTokenClient } = await import('@supabase/supabase-js');
@@ -73,13 +96,12 @@ export async function getAuthenticatedMember(
         { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
       );
       const { data: { user }, error } = await supabaseAuth.auth.getUser(token);
-      if (error || !user || (intentValue !== undefined && (req.cookies.get(AUTH_PROVIDER_COOKIE)?.value !== 'supabase' || !matches('supabase', user.id)))) return null;
-      const member = await getMemberByColumn('supabase_auth_id', user.id);
+      if (error || !user || (hasBrowserIntent && !matches('supabase', user.id))) return null;
+      const member = await getMemberByColumn<Member>('supabase_auth_id', user.id, projection);
       return member ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
     } catch { return null; }
   }
 
-  const selected = req.cookies.get(AUTH_PROVIDER_COOKIE)?.value;
   const intent = parseBrowserIntent(intentValue), receipt = parseBrowserSelection(receiptValue);
   // Legacy cookie-only sessions require a deliberate new sign-in. There is no
   // ambient wallet/Supabase fallback across a missing or mismatched receipt.
@@ -87,17 +109,18 @@ export async function getAuthenticatedMember(
   const walletIdentity = async () => {
     const walletId = await verifyWalletSessionValue(req.cookies.get('soe_wallet_id')?.value);
     if (!walletId || !matches('wallet', walletId)) return null;
-    const member = await getMemberByColumn('id', walletId);
+    const member = await getMemberByColumn<Member>('id', walletId, projection);
     return member ? { memberId: member.id, member, auth: { provider: 'wallet' as const, subject: member.id } } : null;
   };
   if (selected === 'wallet') return walletIdentity();
+  if (!allowSupabaseCookie) return null;
 
   try {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (user) {
       if (error || !matches('supabase', user.id)) return null;
-      const member = await getMemberByColumn('supabase_auth_id', user.id);
+      const member = await getMemberByColumn<Member>('supabase_auth_id', user.id, projection);
       return member ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
     }
   } catch { return null; }

@@ -12,18 +12,17 @@ import {
   isRecord,
   stableStringify,
 } from '@/lib/movement/podSync';
-import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
+import { getAuthenticatedEdgeMember } from '@/lib/getAuthenticatedMember';
+import { memberWriteOriginAllowed } from '@/lib/auth/request';
 import { privateJson } from '@/lib/http/routeError';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 export const preferredRegion = 'global';
 
-const MEMBER_SELECT = 'id,tier,supabase_auth_id,wallet_address';
 const DEVICE_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FORBIDDEN_METADATA_KEYS = new Set([
   'wallet_signature',
   'raw_wallet_signature',
@@ -35,16 +34,8 @@ const FORBIDDEN_METADATA_KEYS = new Set([
   'recovery_phrase',
 ]);
 
-interface EdgeMember {
-  id: string;
-  tier: string | null;
-  supabase_auth_id: string | null;
-  wallet_address: string | null;
-}
-
 interface SupabaseEnv {
   url: string;
-  anonKey: string | null;
   serviceRoleKey: string;
 }
 
@@ -133,7 +124,6 @@ interface SyncAuditContext {
 
 function createAuditContext(req: NextRequest): SyncAuditContext {
   const url = new URL(req.url);
-  const cookies = parseCookies(req.headers.get('cookie'));
   const contentLength = req.headers.get('content-length');
 
   return {
@@ -147,7 +137,7 @@ function createAuditContext(req: NextRequest): SyncAuditContext {
       content_length: contentLength ? Number(contentLength) : null,
       user_agent: req.headers.get('user-agent'),
       bearer_present: req.headers.get('authorization')?.startsWith('Bearer ') || false,
-      wallet_cookie_present: cookies.has('soe_wallet_id'),
+      wallet_cookie_present: Boolean(req.cookies.get('soe_wallet_id')),
     },
     timings: {},
   };
@@ -218,6 +208,12 @@ export async function POST(req: NextRequest) {
   const audit = createAuditContext(req);
   auditLog(audit, 'request_received', 'info');
 
+  if (!memberWriteOriginAllowed(req)) {
+    return privateJson({ ok: false, audit_id: audit.auditId, error: 'Request refused.' }, {
+      status: 403,
+      headers: { 'x-sync-audit-id': audit.auditId },
+    });
+  }
   if (audit.stream) {
     return streamSyncResponse(req, audit);
   }
@@ -252,12 +248,8 @@ async function runSync(
 ): Promise<{ status: number; body: SyncResponseBody }> {
   await emit('received', { route: '/api/movement/pod/sync' });
 
-  const envStartedAt = performance.now();
-  const env = getSupabaseEnv();
-  markAuditTiming(audit, 'env_ms', envStartedAt);
-
   const authStartedAt = performance.now();
-  const auth = await authenticateMember(req, env);
+  const auth = await getAuthenticatedEdgeMember(req);
   markAuditTiming(audit, 'auth_ms', authStartedAt);
   if (!auth) throw new SyncHttpError(401, 'Unauthorized');
 
@@ -266,6 +258,10 @@ async function runSync(
     tier_present: Boolean(auth.tier),
   });
   await emit('authenticated', { authenticated: true, tier_present: Boolean(auth.tier) });
+
+  const envStartedAt = performance.now();
+  const env = getSupabaseEnv();
+  markAuditTiming(audit, 'env_ms', envStartedAt);
 
   const parseStartedAt = performance.now();
   const prepared = await parseAndVerifyEnvelope(req);
@@ -640,76 +636,12 @@ function bytesToHex(bytes: Uint8Array): string {
 function getSupabaseEnv(): SupabaseEnv {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || null;
 
   if (!url || !serviceRoleKey) {
     throw new SyncHttpError(500, 'Supabase environment is not configured');
   }
 
-  return { url, anonKey, serviceRoleKey };
-}
-
-async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<EdgeMember | null> {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    if (!env.anonKey) throw new SyncHttpError(500, 'Supabase anonymous key is not configured');
-
-    const token = authHeader.slice('Bearer '.length).trim();
-    const user = await getSupabaseUser(env, token);
-    if (user?.id) {
-      const member = await lookupMember(env, 'supabase_auth_id', user.id);
-      if (member) return member;
-    }
-  }
-
-  const walletId = await verifyWalletSessionValue(parseCookies(req.headers.get('cookie')).get('soe_wallet_id'));
-  if (walletId && UUID_PATTERN.test(walletId)) {
-    const member = await lookupMember(env, 'id', walletId);
-    if (member) return member;
-  }
-
-  return null;
-}
-
-async function getSupabaseUser(env: SupabaseEnv, token: string): Promise<{ id: string } | null> {
-  const res = await fetch(`${env.url}/auth/v1/user`, {
-    headers: {
-      apikey: env.anonKey!,
-      authorization: `Bearer ${token}`,
-    },
-    cache: 'no-store',
-  });
-
-  if (res.status === 401) return null;
-  if (!res.ok) {
-    throw new SyncHttpError(res.status, 'Supabase auth lookup failed', await safeJson(res));
-  }
-
-  const body = await res.json();
-  return isRecord(body) && typeof body.id === 'string' ? { id: body.id } : null;
-}
-
-async function lookupMember(
-  env: SupabaseEnv,
-  field: 'id' | 'supabase_auth_id',
-  value: string,
-): Promise<EdgeMember | null> {
-  const url = new URL(`${env.url}/rest/v1/members`);
-  url.searchParams.set('select', MEMBER_SELECT);
-  url.searchParams.set(field, `eq.${value}`);
-  url.searchParams.set('limit', '1');
-
-  const res = await fetch(url, {
-    headers: serviceHeaders(env),
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    throw new SyncHttpError(res.status, 'Member lookup failed', await safeJson(res));
-  }
-
-  const rows = await res.json();
-  return Array.isArray(rows) && rows.length > 0 ? (rows[0] as EdgeMember) : null;
+  return { url, serviceRoleKey };
 }
 
 async function callSyncRpc(
@@ -822,24 +754,6 @@ async function safeJson(res: Response): Promise<unknown> {
   } catch {
     return text;
   }
-}
-
-function parseCookies(header: string | null): Map<string, string> {
-  const cookies = new Map<string, string>();
-  if (!header) return cookies;
-
-  for (const segment of header.split(';')) {
-    const [rawKey, ...rawValue] = segment.trim().split('=');
-    if (!rawKey || rawValue.length === 0) continue;
-
-    try {
-      cookies.set(rawKey, decodeURIComponent(rawValue.join('=')));
-    } catch {
-      cookies.set(rawKey, rawValue.join('='));
-    }
-  }
-
-  return cookies;
 }
 
 function wantsEventStream(req: NextRequest): boolean {

@@ -4,7 +4,8 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   getDefaultLiveBaseChainId,
 } from '@/lib/blockchain/liveBaseProfile';
-import { verifyWalletSessionValue } from '@/lib/auth/walletSession';
+import { getAuthenticatedEdgeMember } from '@/lib/getAuthenticatedMember';
+import { memberWriteOriginAllowed } from '@/lib/auth/request';
 import { privateJson } from '@/lib/http/routeError';
 import type {
   ActiveCollaboration,
@@ -26,7 +27,6 @@ const SUPPORTED_CHAIN_IDS = new Set([1, 10, BASE_MAINNET_CHAIN_ID, BASE_SEPOLIA_
 
 interface SupabaseEnv {
   url: string;
-  anonKey: string;
   serviceRoleKey: string;
 }
 
@@ -61,8 +61,10 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const env = getSupabaseEnv();
-    const auth = await authenticateMember(req, env);
+    if (!memberWriteOriginAllowed(req)) {
+      return jsonWithAudit({ audit_id: audit.auditId, error: 'Request refused.' }, audit.auditId, 403);
+    }
+    const auth = await getAuthenticatedEdgeMember(req);
     if (!auth) {
       auditLog(audit, 'auth_rejected', 'warn', { http_status: 401 });
       return jsonWithAudit({ audit_id: audit.auditId, error: 'Unauthorized' }, audit.auditId, 401);
@@ -92,6 +94,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const env = getSupabaseEnv();
     const members = await lookupMembers(env, [request.creator_member_id, request.partner_member_id]);
     if (members.length !== 2) {
       auditLog(audit, 'member_lookup_failed', 'warn', {
@@ -303,59 +306,6 @@ function normalizeMilestones(value: Array<Partial<MilestoneDefinition>> | undefi
   }));
 }
 
-async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<EdgeMember | null> {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice('Bearer '.length).trim();
-    const user = await getSupabaseUser(env, token);
-    if (user?.id) {
-      const member = await lookupMember(env, 'supabase_auth_id', user.id);
-      if (member) return member;
-    }
-  }
-
-  const walletId = await verifyWalletSessionValue(parseCookies(req.headers.get('cookie')).get('soe_wallet_id'));
-  if (walletId && UUID_PATTERN.test(walletId)) {
-    return lookupMember(env, 'id', walletId);
-  }
-
-  return null;
-}
-
-async function getSupabaseUser(env: SupabaseEnv, token: string): Promise<{ id: string } | null> {
-  const res = await fetch(`${env.url}/auth/v1/user`, {
-    headers: {
-      apikey: env.anonKey,
-      authorization: `Bearer ${token}`,
-    },
-    cache: 'no-store',
-  });
-
-  if (res.status === 401) return null;
-  if (!res.ok) throw new Error(`Supabase auth lookup failed with HTTP ${res.status}.`);
-
-  const body: unknown = await res.json();
-  return isRecord(body) && typeof body.id === 'string' ? { id: body.id } : null;
-}
-
-async function lookupMember(
-  env: SupabaseEnv,
-  field: 'id' | 'supabase_auth_id',
-  value: string,
-): Promise<EdgeMember | null> {
-  const supabase = await createServiceSupabase(env);
-
-  const { data, error } = await supabase
-    .from('members')
-    .select(MEMBER_SELECT)
-    .eq(field, value)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error('Member lookup failed.');
-  return data ? (data as EdgeMember) : null;
-}
-
 async function lookupMembers(env: SupabaseEnv, memberIds: string[]): Promise<EdgeMember[]> {
   const supabase = await createServiceSupabase(env);
 
@@ -380,14 +330,13 @@ async function createServiceSupabase(env: SupabaseEnv) {
 
 function getSupabaseEnv(): SupabaseEnv {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !anonKey || !serviceRoleKey) {
+  if (!url || !serviceRoleKey) {
     throw new Error('Supabase environment is not configured.');
   }
 
-  return { url, anonKey, serviceRoleKey };
+  return { url, serviceRoleKey };
 }
 
 function jsonWithAudit(body: Record<string, unknown>, auditId: string, status: number) {
@@ -436,24 +385,6 @@ function boundedString(value: unknown, fallback: string, maxLength: number): str
 
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
-}
-
-function parseCookies(header: string | null): Map<string, string> {
-  const cookies = new Map<string, string>();
-  if (!header) return cookies;
-
-  for (const segment of header.split(';')) {
-    const [rawKey, ...rawValue] = segment.trim().split('=');
-    if (!rawKey || rawValue.length === 0) continue;
-
-    try {
-      cookies.set(rawKey, decodeURIComponent(rawValue.join('=')));
-    } catch {
-      cookies.set(rawKey, rawValue.join('='));
-    }
-  }
-
-  return cookies;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,4 +1,5 @@
 import 'server-only';
+import type { NextRequest } from 'next/server';
 
 export function requestOrigin(url: Pick<URL, 'origin' | 'hostname' | 'port' | 'protocol'>, headers: Headers): string {
   // NextRequest rewrites loopback literals to localhost. Use the actual HTTP
@@ -16,6 +17,13 @@ export function authWriteOriginAllowed(req: Request): boolean {
   const origin = req.headers.get('origin');
   if (!origin) return true;
   try { return new URL(origin).origin === requestOrigin(new URL(req.url), req.headers); } catch { return false; }
+}
+
+export function memberWriteOriginAllowed(req: NextRequest): boolean {
+  return authWriteOriginAllowed(req) && (
+    req.headers.has('authorization') || !req.cookies.get('soe_wallet_id') ||
+    req.headers.has('origin') || req.headers.get('sec-fetch-site') === 'same-origin'
+  );
 }
 
 export async function readAuthJson(req: Request): Promise<Record<string, unknown> | null> {

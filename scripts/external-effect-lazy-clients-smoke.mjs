@@ -473,7 +473,8 @@ const checks = [
     name: 'project collaboration scaffold is auth-derived, private, lazy, and redacted in audit logs',
     ok:
       lacksModuleScopeClients(routes.projectsCreate) &&
-      routes.projectsCreate.includes('verifyWalletSessionValue') &&
+      routes.projectsCreate.includes('getAuthenticatedEdgeMember(req)') &&
+      precedes(routes.projectsCreate, 'memberWriteOriginAllowed(req)', 'getAuthenticatedEdgeMember(req)') &&
       routes.projectsCreate.includes('privateJson') &&
       routes.projectsCreate.includes('createServiceSupabase(env)') &&
       routes.projectsCreate.includes("await import('@supabase/supabase-js')") &&
@@ -481,9 +482,8 @@ const checks = [
       routes.projectsCreate.includes('project_scaffolded: Boolean(audit.projectId)') &&
       routes.projectsCreate.includes('participant_reference_count: 2') &&
       routes.projectsCreate.includes('multisig_configured: multisigConfig.multisig_address !== ZERO_ADDRESS') &&
-      routes.projectsCreate.includes("throw new Error('Member lookup failed.')") &&
       routes.projectsCreate.includes("throw new Error('Project member lookup failed.')") &&
-      routes.projectsCreate.indexOf('authenticateMember(req, env)') <
+      routes.projectsCreate.indexOf('getAuthenticatedEdgeMember(req)') <
         routes.projectsCreate.indexOf('parseCreateProjectRequest(req)') &&
       routes.projectsCreate.indexOf('parseCreateProjectRequest(req)') < routes.projectsCreate.indexOf('lookupMembers(') &&
       !routes.projectsCreate.includes('NextResponse') &&
@@ -1793,11 +1793,11 @@ const checks = [
           source.includes('getSupabaseAdmin()') &&
           source.includes('privateJson'),
       ) &&
-      routes.match.includes('getSupabasePublicEnv()') &&
-      routes.match.includes('authenticateMember(req, env)') &&
+      routes.match.includes('getAuthenticatedEdgeMember(req)') &&
+      precedes(routes.match, 'memberWriteOriginAllowed(req)', 'getAuthenticatedEdgeMember(req)') &&
       routes.match.includes('source_member_authenticated: Boolean(audit.sourceMemberId)') &&
       routes.match.includes('candidate_query_failed') &&
-      routes.match.indexOf('authenticateMember(req, env)') < routes.match.indexOf('parseProjectionBody(body)') &&
+      routes.match.indexOf('getAuthenticatedEdgeMember(req)') < routes.match.indexOf('parseProjectionBody(body)') &&
       routes.match.indexOf('parseProjectionBody(body)') < routes.match.lastIndexOf('getSupabaseAdmin()') &&
       routes.match.indexOf('sourceProjection.value.member_id !== auth.id') <
         routes.match.lastIndexOf('getSupabaseAdmin()') &&
