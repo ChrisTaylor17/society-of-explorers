@@ -48,6 +48,8 @@ Of the 29 RLS-disabled findings, Stage 1 addresses six private tables (plus alre
 
 Advisories identify configurations to review; they do not establish whether records were read or changed. The relevant primary guidance distinguishes [row policies](https://supabase.com/docs/guides/database/postgres/row-level-security), [column privileges](https://supabase.com/docs/guides/database/postgres/column-level-security), and [function execution/security modes](https://supabase.com/docs/guides/database/functions).
 
+The November 5 room audit separately confirmed full browser grants on `video_rooms`, `room_participants` and `room_transcripts`. The local release candidate has a separate SQL draft and a verified member join path. Production permissions and Daily admission still require acceptance. [Live Council room privacy](live-room-containment.md)
+
 ## Available local remedies and remaining gates
 
 The concrete unapplied containment/preflight/rollback is described in [production-migration-plan.md](production-migration-plan.md), with **14/14 actual local PostgreSQL cases passing**. It removes raw table and column access to exactly seven private core tables while retaining service access and existing policies; if service access relied solely on PUBLIC, it aborts without changing the baseline. It deliberately breaks any legacy caller that reads/writes those tables directly as anon/authenticated; that impact must be reviewed before approval. It does not invent public-profile consent, provision an owner/reviewer, merge accounts, repair data or fix all 29 findings.

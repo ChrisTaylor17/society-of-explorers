@@ -1,0 +1,90 @@
+{
+  "status": "local_room_boundary_verified_full_build_and_hosted_pending",
+  "recordedAt": "2026-11-06T02:52:26.893790+00:00",
+  "startingCommit": "dc006c3acaee23fe1a8ad039ac4c4843513181d0",
+  "productionCatalog": {
+    "scope": "Bounded read-only pg_catalog metadata. No room rows, provider links or transcripts selected.",
+    "tables": [
+      "room_participants",
+      "room_transcripts",
+      "video_rooms"
+    ],
+    "browserPrivilegesPerRolePerTable": 8,
+    "rowLevelSecurityEnabled": false,
+    "localEvidence": "verification/web/evidence/live-room-catalog-2026-11-05.json",
+    "sha256": "20cfdb8aed3e0b02132dc7423b54d3c31e0dffdcc005c83b62ada7f01d15dde4"
+  },
+  "testResults": {
+    "postgresVersion": "postgres (PostgreSQL) 17.11 (Homebrew)",
+    "postgresRehearsalChecks": [
+      "A logical restore reproduced the vulnerable grants and synthetic rows.",
+      "A late service-grant refusal rolled back earlier table changes.",
+      "The draft refused a two-hop browser-readable view.",
+      "Both browser roles lost table, column and function access; service access, rows and unrelated reads remained.",
+      "A duplicate application refused and left the committed boundary intact.",
+      "The service join refused a stale URL, kept repeated attendance stable and reopened a prior leave.",
+      "An independent join waited for the closing transaction and returned no attendance after it committed."
+    ],
+    "routeChecksPassed": 7,
+    "chromiumComponentStories": [
+      "The mobile schedule displayed the past event without summaries, links or a meeting frame.",
+      "A signed-out keyboard join received a refusal and opened sign-in with the Live Council return path.",
+      "A verified member\u2019s keyboard join reached the SQL attendance write and loaded the intercepted meeting without app credentials or referrer.",
+      "A restored browser page removed the prior meeting and required another deliberate join.",
+      "A delayed join response did not reopen the meeting after an account change."
+    ],
+    "chromiumBundleSha256": "3d86ab94ee8b30b47fa900379818c373f2c5bd8ccbb7a3b5e448da20430406eb",
+    "scopedLintPassed": true,
+    "scopedTypeScriptPassed": true,
+    "unchangedLegacySmokeFailures": 10,
+    "fullWebBuild": {
+      "status": "blocked_on_offloaded_dependencies",
+      "sourceFiles": 1061,
+      "sourceSha256": "c1121b94ec450ca2a7b6648be6bb6d973eb112034f7bc2ecb700ac5be153ae5f",
+      "exitCode": 1
+    }
+  },
+  "scope": "Browser component uses explicit Next navigation and account adapters. Actual handlers and the Supabase SDK connect to disposable PostgreSQL. The Daily destination is intercepted in Chromium.",
+  "limits": [
+    "The native PostgreSQL restore used synthetic rows and representative defaults. An approved isolated restore of the real tables is still required.",
+    "The hosted migration, PostgREST schema cache and Daily admission and ejection remain unverified.",
+    "The full web build stopped on offloaded shared inputs even after bounded restoration of exact packages into isolated scratch. The built-browser mode is pending.",
+    "The comparison of the legacy lazy-client smoke retained the same ten baseline failures. The updated Live Council checks passed.",
+    "An initial checksum pass read canonical files before checking their local allocation. It was stopped when it stalled. Some files may have materialized. The final check read only verified resident scratch inputs and the selected resident canonical leaves."
+  ],
+  "productionMutation": false,
+  "providerCalls": false,
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "app/api/live/route.ts": "7056e59c5f657f0b97c7a3dfa0c2819566aee20e110fd6db2ef00d25e5edcf8f",
+    "app/api/live/[sessionId]/route.ts": "22ca4c33f5c47814e7f67e82d37ec08359b885dbd9278bf823937b5a1e743870",
+    "app/api/rooms/route.ts": "76db1284a6ba865023dc963be86e10ca1cf54f9420ca74a5942c628042d2f3dc",
+    "app/live/page.tsx": "afd4a45b2037640e230bf9ebed0f30368936fb7e5b2a40b0fb9a45cf6925820d",
+    "lib/live/scheduler.ts": "59d053217664d262582f8ab71de5fc22114b0414d6963ec78bd49c351bee085f",
+    "docs/sql/live-room-containment-apply.sql": "cba4457ef50664bd0305fed3f265311f35e090a2db22b7930402290613d53711",
+    "scripts/external-effect-lazy-clients-smoke.mjs": "d9c5ba27e2beaaf74d3e89ad59be4653e53d2588b37d7939878da1ba4589b9f7",
+    "verification/web/tests/fixtures/live-room-synthetic.sql": "ab777d61d71136c5b061288d0964d019b736f815fdaf09eb0f2110f8f3f0dc0b",
+    "verification/web/tests/support/live-room-fixture.mjs": "41bf377f2d87f2a8cbb23a29c1c0e25bb67cb6657c6bc875bd20a9e49ee920d2",
+    "verification/web/tests/live-room-boundary.test.mjs": "c90cba06527696cba0003636cdc275569571fc2eee1c5dd5bcfee62fea1bc3db",
+    "verification/web/scripts/test-live-room-containment.py": "037cd0b7d485ece6ec6c69ccfc773b5b1e96ef6df507991d7af4454415d94022",
+    "verification/web/scripts/browser-live-room.mjs": "176e5494e136d2a298ecc7f47056aee63cef48088b6ba445c8a2e4197a5f9c4c"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/live-room-boundary/built-shell-live-room-23-build-source-sha256.json": "5372b109a50da173d041f7f4c68e931e426c12ac029dc7092e5403b3e32805e0",
+    "verification/web/evidence/live-room-boundary/built-shell-live-room-23-next-build.json": "474273f608bef11d853e09def3946ecf089167cb44ff066a65494ba47934348c",
+    "verification/web/evidence/live-room-boundary/built-shell-live-room-23-next-build.log": "8380cc9d7c746753bae0f7b9b3ffe18cdfacb894a499e50ecf203a82687f0ec4",
+    "verification/web/evidence/live-room-boundary/live-room-api-04.tap": "747d1d7c213a2125d22ec2ca01adb38a4f8bfa651342e2b76355321975f9b543",
+    "verification/web/evidence/live-room-boundary/live-room-component-01-browser.json": "424e9de2287ef6fccab0e55c65757ea3467d0feff133306c4b21f3b098b0176a",
+    "verification/web/evidence/live-room-boundary/live-room-legacy-smoke-baseline.log": "6d1acddce489077a2411195a402937441308c4726d825ddf88f926b7c3253427",
+    "verification/web/evidence/live-room-boundary/live-room-legacy-smoke-final.log": "5c9220e4b67c2e67b3f3580a74539d7abf5e0402a7fa96bfed3c42ca12c0c265",
+    "verification/web/evidence/live-room-boundary/live-room-lint-02.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/live-room-boundary/live-room-types-02.log": "70b5c5c7525b7de1e038a885a0a11d3fdea851cab9cfdc21798a5a0f95d14086",
+    "verification/web/evidence/live-room-boundary/postgres-01.json": "23d7036923099a708ad61703a993c8757270485ed87c689b41b734dca330485f",
+    "verification/web/evidence/live-room-boundary/scoped-types-config.json": "4d25c443c4c5e81bec735e88b6ab360f6062690a5be2f186b5e11cfe306167b6",
+    "verification/web/evidence/live-room-boundary/scratch-resident-inputs.cjs": "9d45198175e7edcd60d09153a1fe84ced4b5c964d9417b54f10ee71ee615a2ea"
+  }
+}

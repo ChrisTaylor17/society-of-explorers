@@ -777,18 +777,20 @@ const checks = [
       routes.live.includes('select(LIVE_SESSION_SELECT)') &&
       routes.live.indexOf('Unknown action') < routes.live.indexOf('getMovementAccess(req)') &&
       routes.live.indexOf('getMovementAccess(req)') < routes.live.indexOf('createLiveSession()') &&
-      routes.live.indexOf("action === 'create_next'") < routes.live.indexOf("action === 'go_live'") &&
+      routes.live.indexOf('access.canManage') < routes.live.indexOf("action === 'create_next'") &&
       routes.liveSession.includes('privateJson') &&
       routes.liveSession.includes('UUID_RE') &&
       routes.liveSession.includes('getAuthenticatedMember(req)') &&
       routes.liveSession.includes('getMovementAccess(req)') &&
       routes.liveSession.includes('access.canManage') &&
-      routes.liveSession.includes('member_id: auth.memberId') &&
+      routes.liveSession.includes('p_member: auth.memberId') &&
       routes.liveSession.includes("body: JSON.stringify({ action: 'join'") === false &&
       routes.liveSession.includes('body.memberId') === false &&
       routes.liveSession.indexOf('Unknown action') < routes.liveSession.indexOf("action === 'join'") &&
       routes.liveSession.indexOf('getAuthenticatedMember(req)') < routes.liveSession.indexOf('getSupabaseAdmin()') &&
-      routes.liveSession.indexOf("action === 'summarize'") < routes.liveSession.lastIndexOf('generateSessionSummary(sessionId)') &&
+      routes.liveSession.indexOf('liveCouncilRoomUrl(room.daily_room_url') < routes.liveSession.indexOf("rpc('soe_join_live_council'") &&
+      routes.liveSession.includes('Live Council transcript summaries are unavailable') &&
+      !routes.liveSession.includes('generateSessionSummary') &&
       pages.live.includes('getSupabaseAccessToken') &&
       pages.live.includes('Authorization: `Bearer ${accessToken}`') &&
       pages.live.includes("cache: 'no-store'") &&
@@ -824,6 +826,7 @@ const checks = [
       routes.rooms.lastIndexOf('getAuthenticatedMember(req)') < routes.rooms.lastIndexOf('getSupabaseAdmin()') &&
       routes.roomDetail.includes('getAuthenticatedMember(req)') &&
       routes.roomDetail.includes('Cannot update another member room state') &&
+      routes.rooms.includes("or('room_type.is.null,room_type.neq.live_session')") &&
       routes.roomDetail.includes('requireRoomOwner') &&
       routes.roomDetail.includes('member_id: auth.memberId') &&
       routes.roomDetail.includes('Failed to save transcript') &&
@@ -2592,14 +2595,15 @@ const checks = [
       ),
   },
   {
-    name: 'community, governance, live, and matching helpers use lazy provider clients',
+    name: 'community, governance, live, and matching helpers use lazy clients and Live Council omits AI',
     ok:
       [helpers.community, helpers.governance, helpers.liveScheduler, helpers.matching].every(lacksModuleScopeClients) &&
       [helpers.community, helpers.governance, helpers.liveScheduler, helpers.matching].every((source) =>
         source.includes('getSupabaseAdmin()'),
       ) &&
-      helpers.liveScheduler.includes('createAnthropicClient()') &&
-      helpers.liveScheduler.includes("resolveClaudeModel('content'"),
+      helpers.liveScheduler.includes('process.env.DAILY_API_KEY') &&
+      !helpers.liveScheduler.includes('createAnthropicClient') &&
+      !helpers.liveScheduler.includes('room_transcripts'),
   },
   {
     name: 'wallet and token disbursement helpers use lazy Supabase admin clients',

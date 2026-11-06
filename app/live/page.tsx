@@ -1,30 +1,23 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
+import { safePrivateMeetingUrl } from '@/lib/circles/discussion-reader';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-type LiveSessionSummary = {
-  title?: string;
-  summary?: string;
-  question_of_the_week?: string;
-};
-
 type LiveSession = {
   id: string;
   title: string;
-  daily_room_url?: string | null;
   scheduled_for?: string | null;
   started_at?: string | null;
   is_live?: boolean | null;
-  metadata?: {
-    summary?: LiveSessionSummary | null;
-  } | null;
 };
 
 type LivePayload = {
@@ -33,14 +26,6 @@ type LivePayload = {
   nextSessionDate?: string | null;
   calendarLinks?: { google: string; ics: string } | null;
 };
-
-async function liveHeaders(json = false): Promise<Record<string, string>> {
-  const accessToken = await getSupabaseAccessToken();
-  return {
-    ...(json ? { 'Content-Type': 'application/json' } : {}),
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-  };
-}
 
 function formatSessionDate(session: LiveSession) {
   const dateValue = session.scheduled_for || session.started_at;
@@ -73,49 +58,97 @@ export default function LivePage() {
   const [past, setPast] = useState<LiveSession[]>([]);
   const [nextDate, setNextDate] = useState<string | null>(null);
   const [calLinks, setCalLinks] = useState<{ google: string; ics: string } | null>(null);
-  const [isLive, setIsLive] = useState(false);
   const [dailyUrl, setDailyUrl] = useState<string | null>(null);
-  const [memberId, setMemberId] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const activeJoin = useRef<AbortController | null>(null);
   const countdown = useCountdown(nextDate);
 
-  const loadLive = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/live', {
-        cache: 'no-store',
-        headers: await liveHeaders(),
-      });
-      const data = (await res.json()) as LivePayload;
-      setUpcoming(data.upcoming || null);
-      setPast(data.past || []);
-      setNextDate(data.nextSessionDate || null);
-      setCalLinks(data.calendarLinks || null);
-      if (data.upcoming?.is_live) {
-        setIsLive(true);
-        setDailyUrl(data.upcoming.daily_room_url || null);
-      }
-    } catch {}
-    setLoading(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadLive() {
+      try {
+        const res = await fetch('/api/live', {
+          cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal,
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as LivePayload;
+        if (controller.signal.aborted) return;
+        setUpcoming(data.upcoming ?? null);
+        setPast(data.past ?? []);
+        setNextDate(data.nextSessionDate ?? null);
+        setCalLinks(data.calendarLinks ?? null);
+      } catch {}
+      finally { if (!controller.signal.aborted) setLoading(false); }
+    }
+    void loadLive();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    getMemberSession().then(s => { if (s?.member?.id) setMemberId(s.member.id); }).catch(() => {});
-    void Promise.resolve().then(() => loadLive());
-  }, [loadLive]);
+    const retire = () => {
+      activeJoin.current?.abort();
+      activeJoin.current = null;
+      setDailyUrl(null);
+      setJoining(false);
+      setJoinError(false);
+    };
+    const restore = (event: PageTransitionEvent) => { if (event.persisted) retire(); };
+    const unsubscribe = subscribeAuthProviderChanges(retire);
+    window.addEventListener('pagehide', retire);
+    window.addEventListener('pageshow', restore);
+    window.addEventListener('offline', retire);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('pagehide', retire);
+      window.removeEventListener('pageshow', restore);
+      window.removeEventListener('offline', retire);
+      activeJoin.current?.abort();
+      activeJoin.current = null;
+    };
+  }, []);
 
   async function joinSession() {
-    if (!upcoming?.id) return;
-    if (!memberId) { window.location.assign('/login'); return; }
-
-    const res = await fetch(`/api/live/${upcoming.id}`, {
-      method: 'POST',
-      cache: 'no-store',
-      headers: await liveHeaders(true),
-      body: JSON.stringify({ action: 'join' }),
-    });
-    const data = (await res.json()) as { dailyUrl?: string | null };
-    if (data.dailyUrl) setDailyUrl(data.dailyUrl);
+    if (!upcoming?.is_live || activeJoin.current) return;
+    const controller = new AbortController();
+    const intent = currentBrowserAuthIntent();
+    const isCurrent = () => activeJoin.current === controller && currentBrowserAuthIntent() === intent;
+    activeJoin.current = controller;
+    setJoinError(false);
+    setJoining(true);
+    const timeout = setTimeout(() => controller.abort(), 12_000);
+    try {
+      const accessToken = await getSupabaseAccessToken();
+      if (!isCurrent()) return;
+      const res = await fetch(`/api/live/${upcoming.id}`, {
+        method: 'POST', cache: 'no-store', credentials: 'same-origin', redirect: 'error',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ action: 'join' }),
+        signal: controller.signal,
+      });
+      if (!isCurrent()) return;
+      if (res.status === 401) {
+        window.location.assign('/login?next=%2Flive');
+        return;
+      }
+      if (!res.ok) throw new Error('Room unavailable');
+      const data = await res.json() as { success?: boolean; dailyUrl?: string };
+      const url = data.success === true ? safePrivateMeetingUrl(data.dailyUrl) : null;
+      if (!url || !navigator.onLine || controller.signal.aborted) throw new Error('Room unavailable');
+      if (isCurrent()) setDailyUrl(url);
+    } catch {
+      if (isCurrent()) setJoinError(true);
+    } finally {
+      clearTimeout(timeout);
+      if (activeJoin.current === controller) {
+        activeJoin.current = null;
+        setJoining(false);
+      }
+    }
   }
 
   const boxStyle: React.CSSProperties = {
@@ -144,15 +177,16 @@ export default function LivePage() {
             <div style={{ minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: muted, opacity: 0.5 }}>LOADING</span>
             </div>
-          ) : isLive ? (
+          ) : upcoming?.is_live ? (
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#DC143C', animation: 'pulse 1.5s infinite' }} />
                 <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: '#DC143C' }}>LIVE NOW</span>
               </div>
               {!dailyUrl ? (
-                <button onClick={joinSession} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '52px', padding: '0 36px', cursor: 'pointer', borderRadius: 0, display: 'block', margin: '0 auto' }}>JOIN SESSION</button>
+                <button onClick={joinSession} disabled={joining} style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '52px', padding: '0 36px', cursor: 'pointer', borderRadius: 0, display: 'block', margin: '0 auto' }}>{joining ? 'CHECKING ACCESS' : 'JOIN SESSION'}</button>
               ) : null}
+              {joinError && <p role="status">Couldn’t open the live room. Try again.</p>}
             </div>
           ) : nextDate ? (
             <div>
@@ -189,7 +223,7 @@ export default function LivePage() {
       {dailyUrl && (
         <section style={{ padding: '0 2rem 3rem' }}>
           <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-            <iframe title="Society of Explorers Live Council" src={dailyUrl} style={{ width: '100%', height: '500px', border: `1px solid rgba(201,168,76,0.15)` }}
+            <iframe title="Society of Explorers Live Council" src={dailyUrl} referrerPolicy="no-referrer" style={{ width: '100%', height: '500px', border: `1px solid rgba(201,168,76,0.15)` }}
               allow="camera; microphone; fullscreen; display-capture" />
           </div>
         </section>
@@ -200,18 +234,13 @@ export default function LivePage() {
         <section style={{ padding: '2rem' }}>
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1.5rem', textAlign: 'center' }}>PAST SESSIONS</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1px', background: `${gold}10` }}>
-              {past.map(s => {
-                const summary = s.metadata?.summary;
-                return (
-                    <div key={s.id} style={{ background: '#0d0d0d', padding: '1.5rem', border: `1px solid rgba(201,168,76,0.1)` }}>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, marginBottom: '0.5rem' }}>{summary?.title || s.title}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1px', background: `${gold}10` }}>
+              {past.map(s => (
+                  <div key={s.id} style={{ background: '#0d0d0d', padding: '1.5rem', border: `1px solid rgba(201,168,76,0.1)` }}>
+                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, marginBottom: '0.5rem' }}>{s.title}</div>
                     <div style={{ fontSize: '12px', color: muted, marginBottom: '0.75rem' }}>{formatSessionDate(s)}</div>
-                    {summary?.summary && <p style={{ fontSize: '14px', color: ivory85, lineHeight: 1.6, marginBottom: '0.75rem' }}>{summary.summary}</p>}
-                    {summary?.question_of_the_week && <p style={{ fontSize: '14px', color: gold, fontStyle: 'italic' }}>&ldquo;{summary.question_of_the_week}&rdquo;</p>}
                   </div>
-                );
-              })}
+              ))}
             </div>
           </div>
         </section>

@@ -6,6 +6,8 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const THINKER_IDS = new Set(['socrates', 'plato', 'aurelius', 'nietzsche', 'einstein', 'jobs']);
 const ROOM_TYPES = new Set(['open', 'project', 'council', 'salon']);
+const ROOM_LIST_FIELDS =
+  'id,community_id,created_by,room_name,daily_room_url,title,room_type,project_id,council_session_id,active_thinkers,is_live,max_participants,started_at,ended_at,created_at,scheduled_for';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 
@@ -102,9 +104,10 @@ export async function GET(req: NextRequest) {
   const communityRow = community as CommunityRow;
   const { data: rooms, error: roomsError } = await supabase
     .from('video_rooms')
-    .select('*')
+    .select(ROOM_LIST_FIELDS)
     .eq('community_id', communityRow.id)
     .eq('is_live', true)
+    .or('room_type.is.null,room_type.neq.live_session')
     .order('started_at', { ascending: false });
 
   if (roomsError) return privateJson({ error: 'Failed to load rooms' }, { status: 500 });
