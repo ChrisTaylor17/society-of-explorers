@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { reelDiscussionId, withReelDiscussion } from '@/lib/clips/salon';
 import { useEffect, useRef, useState } from 'react';
-import { PEXELS_LICENSE_URL, parsePublicMediaClip, reelHref, type PublicMediaClip } from '@/lib/clips/contracts';
+import { parsePublicMediaClip, reelHref, reelLicenseLabel, reelReferenceLabel, type PublicMediaClip } from '@/lib/clips/contracts';
 import { fetchClipBytes } from '@/lib/clips/client';
 import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import styles from './clips.module.css';
@@ -50,10 +50,10 @@ function ReviewedClipPlayer({ clip: approved, standalone }: { clip: PublicMediaC
     {approved.attribution && approved.sourcePage
       ? <p className={styles.credit}>Footage by <a href={approved.sourcePage} target="_blank" rel="noopener noreferrer">{approved.credit}</a>
         {' · '}<a href={approved.attribution.licenseUrl} target="_blank" rel="noopener noreferrer">
-          {approved.attribution.licenseUrl === PEXELS_LICENSE_URL ? 'Pexels License' : 'CC BY 4.0'}</a>. {approved.attribution.edits}</p>
+          {reelLicenseLabel(approved.attribution.licenseUrl)}</a>. {approved.attribution.edits}</p>
       : <p className={styles.credit}>{approved.credit}</p>}
     {approved.attribution?.referenceUrl && <p className={styles.credit}>
-      <a href={approved.attribution.referenceUrl} target="_blank" rel="noopener noreferrer">Read the USGS eruption report</a></p>}
+      <a href={approved.attribution.referenceUrl} target="_blank" rel="noopener noreferrer">{reelReferenceLabel(approved.attribution.referenceUrl)}</a></p>}
     <p className={styles.help}>{approved.reviewLabel}. {approved.territoryLabel}. About {Math.ceil(approved.durationMs / 1000)} seconds.</p>
     <div className={styles.controls}>
       {state.status !== 'ready' && <button type="button" onClick={load} disabled={state.status === 'loading'}>{state.status === 'loading' ? 'Loading reviewed files…' : state.status === 'error' ? 'Try loading again' : `Load ${approved.kind} and captions`}</button>}

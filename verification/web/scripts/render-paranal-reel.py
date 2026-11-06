@@ -53,12 +53,16 @@ def render(run, clip):
     filename = edit['source']['file']
     if not re.fullmatch(r'[a-z0-9-]+\.(?:mp4|m4v)', filename):
         raise ValueError('The edit must use a local publisher file')
-    source = (EVIDENCE / 'source-media' if clip == 'which-height' else CONTENT) / filename
+    source = (EVIDENCE / 'source-media' if clip in {'which-height', 'new-species'} else CONTENT) / filename
     if sha256(read(source)).hexdigest() != edit['source']['sha256']:
         raise ValueError('The publisher file differs from the reviewed original')
     if (edit['width'], edit['height'], edit['fps']) != (720, 1280, 25) or edit['layout']['audio'] != 'silent' or not 800_000 <= edit['bitrate'] <= 1_300_000:
         raise ValueError('Unsupported render geometry or audio plan')
     source_fps = edit['source'].get('fps', edit['fps'])
+    ntsc = edit['source'].get('ntsc', False)
+    if type(ntsc) is not bool or (ntsc and source_fps != 30):
+        raise ValueError('Unsupported NTSC timebase')
+    source_clock = 1001 if ntsc else 1000
     first_presentation_frame = edit['source'].get('firstPresentationFrame', 0)
     if source_fps not in (25, 30) or type(first_presentation_frame) is not int or not 0 <= first_presentation_frame <= source_fps:
         raise ValueError('Unsupported original frame rate or presentation start')
@@ -95,7 +99,7 @@ def render(run, clip):
             or [sample['bytes'] for sample in result['samples']] != [sample['bytes'] for sample in original_output['samples']]):
         raise ValueError('The encoded MP4 does not match the rendered samples')
     timing = json.loads(read(destination / 'render-timing.json'))
-    source_times = [round((first_presentation_frame + i * source_fps // edit['fps']) * 1_000_000 / source_fps)
+    source_times = [round((first_presentation_frame + i * source_fps // edit['fps']) * 1000 * source_clock / source_fps)
                     for i in range(edit['source']['inFrame'], edit['source']['outFrame'])]
     if timing['sourceTimes'] != source_times:
         raise ValueError('The decoded source time mapping changed')
@@ -123,8 +127,8 @@ def render(run, clip):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('run')
-    parser.add_argument('--clip', choices=['night-sky-traffic', 'telescope-first-tilt', 'which-height'], default='night-sky-traffic')
+    parser.add_argument('--clip', choices=['night-sky-traffic', 'telescope-first-tilt', 'which-height', 'new-species'], default='night-sky-traffic')
     args = parser.parse_args()
-    if not re.fullmatch(r'reel-(?:paranal|elt|lava)-[a-z0-9-]{1,24}', args.run):
+    if not re.fullmatch(r'reel-(?:paranal|elt|lava|isopod)-[a-z0-9-]{1,24}', args.run):
         parser.error('Choose a fresh Archivist evidence run name')
     render(args.run, args.clip)

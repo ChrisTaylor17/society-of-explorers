@@ -212,5 +212,59 @@
       "sourceEndMs": 20067,
       "checkedAt": "2026-11-06T05:31:25.142Z"
     }
+  },
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "new-species",
+    "kind": "video",
+    "title": "Is it a new species?",
+    "description": "The Archivist examines an isopod filmed off American Samoa and connects the question of evidence to NOAA’s separate November trial off Hawaiʻi. A silent 20-second Reel.",
+    "credit": "NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration",
+    "source": {
+      "kind": "third-party",
+      "path": "noaa-ex2606-dive11-isopod-source.mp4",
+      "sha256": "2dc4150cbafc97acb7dc9520daa69da9387e744b3d6bc80a55f0bbab3750698c",
+      "bytes": 28243653,
+      "pageUrl": "https://oceanexplorer.noaa.gov/dive-11-ex2606/",
+      "mediaUrl": "https://oceanexplorer.noaa.gov/wp-content/uploads/2026/10/ex2606-dive11-isopod_HD.mp4"
+    },
+    "asset": {
+      "path": "new-species.mp4",
+      "sha256": "71b6c3ce2460f63eb68273fe430d7ba5297bd2bb47d80ae15723d6a74c46a75a",
+      "bytes": 2820835,
+      "mime": "video/mp4",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280
+    },
+    "captions": {
+      "path": "new-species.vtt",
+      "sha256": "488a3bbeaed512da01f36c31428c68fd19498b021bc8755390a58107d57ad4fe",
+      "bytes": 567,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "new-species-inspection.json",
+      "sha256": "a864f59ed495ba0140b3c2f9f8927e30a0f69c48f1e9995042af614b09821f7d",
+      "bytes": 2805
+    },
+    "review": {
+      "mode": "documentary-rights",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 12012,
+      "sourceEndMs": 32012,
+      "checkedAt": "2026-11-06T22:36:24.202Z"
+    }
   }
 ]

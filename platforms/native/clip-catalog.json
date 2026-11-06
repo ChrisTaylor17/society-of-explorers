@@ -89,6 +89,30 @@
       "captionsFile": "which-height.vtt",
       "captionsSHA256": "070c629ae14d38e6c167455f8ac78f9351bbd389c17a341989bd42a17d742138",
       "captionsBytes": 541
+    },
+    {
+      "id": "new-species",
+      "resource": "soe_new_species",
+      "title": "Is it a new species?",
+      "description": "The Archivist examines an isopod filmed off American Samoa and connects the question of evidence to NOAA’s separate November trial off Hawaiʻi. A silent 20-second Reel.",
+      "credit": "NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration",
+      "sourcePage": "https://oceanexplorer.noaa.gov/dive-11-ex2606/",
+      "attribution": {
+        "licenseUrl": "https://oceanexplorer.noaa.gov/faqs/",
+        "edits": "Trimmed and framed with original educational commentary. September archive footage is labeled throughout. The November trial is a separate reference.",
+        "captionPresentation": "embedded-text",
+        "referenceUrl": "https://oceanexplorer.noaa.gov/expedition/ex2701/"
+      },
+      "transcript": "September 10, 2026, American Samoa. A dive\nteam filmed an isopod moving over the\nseafloor. NOAA says it may be a new species.\n\nWatch how it moves. What can you tell from a\nvideo?\n\nIn a separate November 2026 trial off\nHawaiʻi, NOAA is testing untethered robots\nfor mapping and collecting samples.\n\nWhat would you compare before calling it a\nnew species? Bring the question to a Circle.",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "new-species.mp4",
+      "mediaSHA256": "71b6c3ce2460f63eb68273fe430d7ba5297bd2bb47d80ae15723d6a74c46a75a",
+      "mediaBytes": 2820835,
+      "captionsFile": "new-species.vtt",
+      "captionsSHA256": "488a3bbeaed512da01f36c31428c68fd19498b021bc8755390a58107d57ad4fe",
+      "captionsBytes": 567
     }
   ]
 }

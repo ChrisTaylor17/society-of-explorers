@@ -23,7 +23,7 @@ async function workspace(t) {
 test('phone credit, transcript, rights and file pins match the verified web clips', async () => {
   const { approvedMedia } = offlineApp().load('lib/clips/server.ts');
   const approved = await approvedMedia();
-  assert.deepEqual(catalog.videos.map(clip => clip.id), ['how-a-circle-works', 'night-sky-traffic', 'telescope-first-tilt', 'which-height']);
+  assert.deepEqual(catalog.videos.map(clip => clip.id), ['how-a-circle-works', 'night-sky-traffic', 'telescope-first-tilt', 'which-height', 'new-species']);
   for (const clip of catalog.videos) {
     const web = approved.find(item => item.id === clip.id);
     assert(web);
@@ -35,12 +35,12 @@ test('phone credit, transcript, rights and file pins match the verified web clip
   }
 });
 
-test('the shared packaging step copies exactly the four pinned derivatives and can safely rerun', async t => {
+test('the shared packaging step copies exactly the five pinned derivatives and can safely rerun', async t => {
   const dest = join(await workspace(t), 'resources');
   const pack = load(join(root, packager));
   for (let attempt = 0; attempt < 2; attempt++) {
     pack(dest);
-    assert.deepEqual((await readdir(dest)).sort(), ['soe_circle_intro.mp4', 'soe_elt_tilt.mp4', 'soe_night_sky.mp4', 'soe_which_height.mp4']);
+    assert.deepEqual((await readdir(dest)).sort(), ['soe_circle_intro.mp4', 'soe_elt_tilt.mp4', 'soe_new_species.mp4', 'soe_night_sky.mp4', 'soe_which_height.mp4']);
     for (const clip of catalog.videos) assert.equal(hash(await readFile(join(dest, clip.resource + '.mp4'))), clip.mediaSHA256);
   }
   const extra = join(dest, 'unreviewed.mp4');

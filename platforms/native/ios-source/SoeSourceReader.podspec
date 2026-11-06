@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.frameworks = 'WebKit', 'AVFoundation'
   s.resource_bundles = {
     'SoeSourceReaderPins' => ['generated/source-reader-catalog.json'],
-    'SoeClipAssets' => ['generated/clips/soe_circle_intro.mp4', 'generated/clips/soe_night_sky.mp4', 'generated/clips/soe_elt_tilt.mp4', 'generated/clips/soe_which_height.mp4']
+    'SoeClipAssets' => ['generated/clips/soe_circle_intro.mp4', 'generated/clips/soe_night_sky.mp4', 'generated/clips/soe_elt_tilt.mp4', 'generated/clips/soe_which_height.mp4', 'generated/clips/soe_new_species.mp4']
   }
   install_modules_dependencies(s)
 end

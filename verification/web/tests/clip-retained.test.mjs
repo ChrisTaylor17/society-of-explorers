@@ -65,7 +65,7 @@ test('only the retained Archivist Reels supply a local discussion question and p
  const { REEL_QUESTIONS, reelDiscussionId, withReelDiscussion, reelDiscussionDraft } = app.load('lib/clips/salon.ts');
  const { ROOM_POST_LIMIT, roomReviewText } = await import('../../../platforms/quest/room-composer.mjs');
  const native = app.load('platforms/native/clip-catalog.json');
- assert.deepEqual(Object.keys(REEL_QUESTIONS), ['night-sky-traffic', 'telescope-first-tilt', 'which-height']);
+ assert.deepEqual(Object.keys(REEL_QUESTIONS), ['night-sky-traffic', 'telescope-first-tilt', 'which-height', 'new-species']);
  for (const [id, question] of Object.entries(REEL_QUESTIONS)) {
   assert.equal(reelDiscussionId(id), id);
   assert.equal((await approvedReel(id)).id, id);
@@ -87,6 +87,8 @@ for (const [id, page, credit, seconds, license = ccBy, referenceUrl] of [
  ['night-sky-traffic', 'https://www.eso.org/public/videos/eso2607d/', 'B. Häußler/ESO', 24],
  ['telescope-first-tilt', 'https://www.eso.org/public/videos/potw2643a/', 'ESO/Cimolai/Apical/G. Vecchia', 20],
  ['which-height', 'https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/', 'James Lee via Pexels', 20, pexels, report],
+ ['new-species', 'https://oceanexplorer.noaa.gov/dive-11-ex2606/', 'NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration', 20,
+   'https://oceanexplorer.noaa.gov/faqs/', 'https://oceanexplorer.noaa.gov/expedition/ex2701/'],
 ]) test(`the retained ${id} Reel returns linked attribution, bounded media and complete timed text`, async () => {
  const app = offlineApp();
  const catalog = app.load('app/clips/catalog/route.ts');
@@ -101,7 +103,7 @@ for (const [id, page, credit, seconds, license = ccBy, referenceUrl] of [
  assert.equal(reel.attribution.captionPresentation, 'embedded-text');
  assert.equal(reel.durationMs, seconds * 1000);
  assert.ok(reel.media.bytes < 4_000_000);
- for (const hidden of ['eso2607d-source.mp4', 'potw2643a-source.m4v', 'cdn.eso.org', 'videos.pexels.com', 'pexels-33378632-source.mp4', '-inspection.json', 'sourceStartMs']) {
+ for (const hidden of ['eso2607d-source.mp4', 'potw2643a-source.m4v', 'cdn.eso.org', 'videos.pexels.com', 'pexels-33378632-source.mp4', 'noaa-ex2606-dive11-isopod-source.mp4', '-inspection.json', 'sourceStartMs']) {
   assert.equal(JSON.stringify(dto).includes(hidden), false);
  }
  const request = href => new Request('http://local.invalid' + href);
@@ -118,10 +120,17 @@ for (const [id, page, credit, seconds, license = ccBy, referenceUrl] of [
  assert.ok(text.includes(`00:00:${seconds}.000`));
  if (referenceUrl) {
   const transcript = reel.transcript.replace(/\s+/gu, ' ');
-  assert.match(transcript, /Archive footage of Kīlauea/);
-  assert.match(transcript, /25,000 feet above sea level/);
-  assert.match(transcript, /just over 700 feet/);
-  assert.match(transcript, /Bring a question to a Circle/);
+  if (id === 'which-height') {
+   assert.match(transcript, /Archive footage of Kīlauea/);
+   assert.match(transcript, /25,000 feet above sea level/);
+   assert.match(transcript, /just over 700 feet/);
+   assert.match(transcript, /Bring a question to a Circle/);
+  } else {
+   assert.match(transcript, /September 10, 2026, American Samoa/);
+   assert.match(transcript, /may be a new species/);
+   assert.match(transcript, /separate November 2026 trial off Hawaiʻi/);
+   assert.match(transcript, /Bring the question to a Circle/);
+  }
   const { parsePublicMediaClip } = app.load('lib/clips/contracts.ts');
   assert.equal(parsePublicMediaClip({ ...reel, attribution: { ...reel.attribution, referenceUrl: undefined } }), null);
   assert.equal(parsePublicMediaClip({ ...reel, attribution: { ...reel.attribution, referenceUrl: 'https://other.invalid/report' } }), null);

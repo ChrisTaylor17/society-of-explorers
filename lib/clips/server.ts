@@ -5,16 +5,16 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { byteRange } from '@/lib/http/byteRange';
 import registry from './registry.json';
-import { CC_BY_4_URL, KILAUEA_REPORT_URL, PEXELS_LICENSE_URL, clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, MAX_CLIP_BYTES, MAX_CLIP_DURATION_MS,
-  parsePublicMediaClip, plain, record, type PublicMediaClip } from './contracts';
+import { CC_BY_4_URL, KILAUEA_REPORT_URL, NOAA_REUSE_URL, NOAA_TRIAL_URL, PEXELS_LICENSE_URL, clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, MAX_CLIP_BYTES, MAX_CLIP_DURATION_MS,
+  parsePublicMediaClip, plain, record, type PublicMediaClip, type ReelReferenceUrl, type ReviewedVideoLicense } from './contracts';
 
 const SOURCE_LIMIT = 64 * 1024 * 1024;
 const PERMISSIONS = ['display', 'excerpt', 'reencode', 'captions', 'commercial'];
 const ESO_POLICY = 'https://www.eso.org/public/outreach/copyright/';
 const LICENSED_REELS = new Map<string, {
   media: string; credit: string; policyUrl: string;
-  licenseUrl: typeof CC_BY_4_URL | typeof PEXELS_LICENSE_URL;
-  visualChecks: string[]; referenceUrl?: typeof KILAUEA_REPORT_URL; archiveSource?: FilePin;
+  licenseUrl: ReviewedVideoLicense;
+  visualChecks: string[]; referenceUrl?: ReelReferenceUrl; archiveSource?: FilePin; basis?: 'public-domain';
 }>([
   ['https://www.eso.org/public/videos/eso2607d/', {
     media: 'https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4',
@@ -41,6 +41,20 @@ const LICENSED_REELS = new Map<string, {
       path: 'pexels-33378632-source.mp4',
       sha256: 'a0aee5ab007afc52b6d859c6c9880d9dbf0c49340f7acafb87d9e62f4a6f57f6',
       bytes: 34828800,
+    },
+  }],
+  ['https://oceanexplorer.noaa.gov/dive-11-ex2606/', {
+    media: 'https://oceanexplorer.noaa.gov/wp-content/uploads/2026/10/ex2606-dive11-isopod_HD.mp4',
+    credit: 'NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration',
+    policyUrl: NOAA_REUSE_URL,
+    licenseUrl: NOAA_REUSE_URL,
+    basis: 'public-domain',
+    visualChecks: ['no-logo-or-identifiable-person', 'archive-footage-labeled', 'original-educational-commentary'],
+    referenceUrl: NOAA_TRIAL_URL,
+    archiveSource: {
+      path: 'noaa-ex2606-dive11-isopod-source.mp4',
+      sha256: '2dc4150cbafc97acb7dc9520daa69da9387e744b3d6bc80a55f0bbab3750698c',
+      bytes: 28243653,
     },
   }],
 ]);
@@ -177,7 +191,7 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
       for (const kind of required) {
         const component = facts.rights.components.find(c => record(c) && c.kind === kind);
         if (!record(component) || !['public-domain', 'licensed'].includes(String(component.basis))
-          || (reel ? component.policyUrl !== reel.policyUrl || component.basis !== 'licensed' : !POLICIES.has(String(component.policyUrl)))
+          || (reel ? component.policyUrl !== reel.policyUrl || component.basis !== (reel.basis ?? 'licensed') : !POLICIES.has(String(component.policyUrl)))
           || !permissions(component.permissions) || !territories(component.territories, context.territory)) return null;
       }
       if (value.source.pageUrl === 'https://svs.gsfc.nasa.gov/13326/' && (facts.audioTracks !== 0 || !checks.includes('all-audio-removed'))) return null;

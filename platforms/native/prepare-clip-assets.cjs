@@ -11,6 +11,7 @@ const selections = new Map([
   ['night-sky-traffic', 'soe_night_sky'],
   ['telescope-first-tilt', 'soe_elt_tilt'],
   ['which-height', 'soe_which_height'],
+  ['new-species', 'soe_new_species'],
 ]);
 
 function resident(file, maximum) {

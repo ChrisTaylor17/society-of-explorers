@@ -47,11 +47,12 @@ try {
     const firstPresentationFrame = edit.source.firstPresentationFrame ?? 0;
     const sourceTime = index => {
       const frame = firstPresentationFrame + Math.floor((edit.source.inFrame + index) * sourceFps / edit.fps);
-      return Math.round(frame * 1_000_000 / sourceFps);
+      return Math.round(frame * 1000 * (edit.source.ntsc ? 1001 : 1000) / sourceFps);
     };
     const license = new Map([
       ['https://www.pexels.com/terms-of-service/', 'Pexels License'],
       ['https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0'],
+      ['https://oceanexplorer.noaa.gov/faqs/', 'NOAA reuse terms'],
     ]).get(edit.source.license);
     if (!license) throw Error('Unknown editorial license');
     const canvas = new OffscreenCanvas(width, height), ctx = canvas.getContext('2d', { alpha: false });
@@ -78,8 +79,11 @@ try {
       rule(vx - 2, vy - 2, vw + 4, vh + 4, '#8c7952');
       const creditY = layout.creditY ?? 781;
       const [bodyX, bodyY] = layout.bodyAt ?? [53, 909];
-      text(edit.source.credit, 53, creditY, '700 30px system-ui', layout.ink);
-      text(license + '  ·  ' + layout.modifications, 53, creditY + 39, '500 21px system-ui', '#d9cdb6');
+      const credits = edit.source.creditLines ?? [edit.source.credit];
+      if (credits.join(', ') !== edit.source.credit) throw Error('Source credit was altered');
+      credits.forEach((line, i) => text(line, 53, creditY + 31 * i,
+        credits.length === 1 ? '700 30px system-ui' : '600 22px system-ui', layout.ink));
+      text(license + '  ·  ' + layout.modifications, 53, creditY + 39 + 31 * (credits.length - 1), '500 21px system-ui', '#d9cdb6');
       scene.bodyLines.forEach((line, i) => text(line, bodyX, bodyY + i * 47, layout.fontBody, layout.ink));
       rule(53, 1061, 614, 1, '#77674a');
       text('SOCIETY OF EXPLORERS', 53, 1109, '700 25px system-ui', layout.accent);

@@ -4,7 +4,22 @@ export const MAX_CLIP_DURATION_MS = 120_000;
 export const CC_BY_4_URL = 'https://creativecommons.org/licenses/by/4.0/';
 export const PEXELS_LICENSE_URL = 'https://www.pexels.com/terms-of-service/';
 export const KILAUEA_REPORT_URL = 'https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55';
-type ReviewedVideoLicense = typeof CC_BY_4_URL | typeof PEXELS_LICENSE_URL;
+export const NOAA_REUSE_URL = 'https://oceanexplorer.noaa.gov/faqs/';
+export const NOAA_TRIAL_URL = 'https://oceanexplorer.noaa.gov/expedition/ex2701/';
+const REEL_LICENSES = {
+  [CC_BY_4_URL]: 'CC BY 4.0',
+  [PEXELS_LICENSE_URL]: 'Pexels License',
+  [NOAA_REUSE_URL]: 'NOAA reuse terms',
+} as const;
+const REEL_REFERENCES = {
+  [KILAUEA_REPORT_URL]: 'Read the USGS eruption report',
+  [NOAA_TRIAL_URL]: 'Read the NOAA November trial plan',
+} as const;
+export type ReviewedVideoLicense = keyof typeof REEL_LICENSES;
+export type ReelReferenceUrl = keyof typeof REEL_REFERENCES;
+export const reelLicenseLabel = (license: ReviewedVideoLicense) => REEL_LICENSES[license];
+export const reelReferenceLabel = (url: string): string | undefined => Object.hasOwn(REEL_REFERENCES, url)
+  ? REEL_REFERENCES[url as ReelReferenceUrl] : undefined;
 export type ClipKind = 'audio' | 'video';
 export type PublicMediaClip = {
   id: string; kind: ClipKind; title: string; description: string; credit: string;
@@ -14,7 +29,7 @@ export type PublicMediaClip = {
   captions: { href: string; sha256: string; bytes: number; language: string };
   transcript: string;
   attribution?: { licenseUrl: ReviewedVideoLicense; edits: string; captionPresentation: 'embedded-text';
-    referenceUrl?: typeof KILAUEA_REPORT_URL };
+    referenceUrl?: ReelReferenceUrl };
 };
 export type TextClip = {
   id: string; title: string; quote: string; credit: string; readerHref: string; discussHref: string;
@@ -51,10 +66,12 @@ export function parsePublicMediaClip(value: unknown): PublicMediaClip | null {
     const review = value.attribution;
     if (value.kind !== 'video' || !value.sourcePage || !record(review) || !plain(review.edits, 240)
       || review.captionPresentation !== 'embedded-text'
-      || (review.licenseUrl !== CC_BY_4_URL && review.licenseUrl !== PEXELS_LICENSE_URL)
-      || review.referenceUrl !== (review.licenseUrl === PEXELS_LICENSE_URL ? KILAUEA_REPORT_URL : undefined)) return null;
+      || (review.licenseUrl !== CC_BY_4_URL && review.licenseUrl !== PEXELS_LICENSE_URL && review.licenseUrl !== NOAA_REUSE_URL)) return null;
+    const referenceUrl = review.licenseUrl === PEXELS_LICENSE_URL ? KILAUEA_REPORT_URL
+      : review.licenseUrl === NOAA_REUSE_URL ? NOAA_TRIAL_URL : undefined;
+    if (review.referenceUrl !== referenceUrl) return null;
     attribution = { licenseUrl: review.licenseUrl, edits: review.edits, captionPresentation: 'embedded-text',
-      ...(review.licenseUrl === PEXELS_LICENSE_URL ? { referenceUrl: KILAUEA_REPORT_URL } : {}) };
+      ...(referenceUrl ? { referenceUrl } : {}) };
   }
   return { id: value.id, kind: value.kind as ClipKind, title: value.title, description: value.description, credit: value.credit,
     reviewLabel: value.reviewLabel, territoryLabel: value.territoryLabel, checkedAt: value.checkedAt, sourcePage: value.sourcePage as string | null,

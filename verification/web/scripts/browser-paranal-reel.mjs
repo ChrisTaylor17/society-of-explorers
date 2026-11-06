@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 
 const [prefix, name, ...extra] = process.argv.slice(2);
 assert(!extra.length && /^built-shell-[a-z0-9-]+-$/.test(prefix ?? ''));
-assert(/^reel-(?:paranal|elt|lava)-built-[0-9]+$/.test(name ?? ''));
+assert(/^reel-(?:paranal|elt|lava|isopod)-built-[0-9]+$/.test(name ?? ''));
 assert(process.execArgv.some(arg => arg.endsWith('/deny-build-network.cjs')));
 const evidence = resolve('verification/web/evidence'), folder = resolve(evidence, name);
 const resident = path => {
@@ -24,12 +24,13 @@ const require = createRequire(resident('/Users/christaylor/.npm/_npx/420ff84f119
 const executablePath = resident('/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing');
 const elt = name.startsWith('reel-elt-');
 const lava = name.startsWith('reel-lava-');
-const title = lava ? 'Which height are we measuring?' : elt ? 'What did the tilt prove?' : 'Who gets the night sky?';
-const id = lava ? 'which-height' : elt ? 'telescope-first-tilt' : 'night-sky-traffic';
-const credit = lava ? 'James Lee via Pexels' : elt ? 'ESO/Cimolai/Apical/G. Vecchia' : 'B. Häußler/ESO';
-const source = lava ? 'https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/'
+const isopod = name.startsWith('reel-isopod-');
+const title = isopod ? 'Is it a new species?' : lava ? 'Which height are we measuring?' : elt ? 'What did the tilt prove?' : 'Who gets the night sky?';
+const id = isopod ? 'new-species' : lava ? 'which-height' : elt ? 'telescope-first-tilt' : 'night-sky-traffic';
+const credit = isopod ? 'NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration' : lava ? 'James Lee via Pexels' : elt ? 'ESO/Cimolai/Apical/G. Vecchia' : 'B. Häußler/ESO';
+const source = isopod ? 'https://oceanexplorer.noaa.gov/dive-11-ex2606/' : lava ? 'https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/'
   : elt ? 'https://www.eso.org/public/videos/potw2643a/' : 'https://www.eso.org/public/videos/eso2607d/';
-const duration = elt || lava ? 20 : 24;
+const duration = elt || lava || isopod ? 20 : 24;
 const sampleTimes = duration === 20 ? [0, 4.8, 10, 15.2, 19.8] : [0, 4.8, 10, 16, 23.8];
 const calls = [], external = [], errors = [], stories = [], snapshots = [];
 let browser, closed = false, playback = null, failure = null;
@@ -71,12 +72,16 @@ try {
   await page.waitForURL(origin + '/clips#' + id);
   assert.equal(await page.evaluate(() => document.activeElement.id), id);
   assert.equal(await reel.getByRole('link', { name: credit, exact: true }).getAttribute('href'), source);
-  assert.equal(await reel.getByRole('link', { name: lava ? 'Pexels License' : 'CC BY 4.0', exact: true }).getAttribute('href'),
-    lava ? 'https://www.pexels.com/terms-of-service/' : 'https://creativecommons.org/licenses/by/4.0/');
+  assert.equal(await reel.getByRole('link', { name: isopod ? 'NOAA reuse terms' : lava ? 'Pexels License' : 'CC BY 4.0', exact: true }).getAttribute('href'),
+    isopod ? 'https://oceanexplorer.noaa.gov/faqs/' : lava ? 'https://www.pexels.com/terms-of-service/' : 'https://creativecommons.org/licenses/by/4.0/');
   if (lava) {
     const report = reel.getByRole('link', { name: 'Read the USGS eruption report', exact: true });
     assert.equal(await report.getAttribute('href'),
       'https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55');
+  }
+  if (isopod) {
+    const report = reel.getByRole('link', { name: 'Read the NOAA November trial plan', exact: true });
+    assert.equal(await report.getAttribute('href'), 'https://oceanexplorer.noaa.gov/expedition/ex2701/');
   }
   const permalink = '/clips/watch/' + id;
   const direct = reel.getByRole('link', { name: 'Link to this Reel' });
@@ -171,7 +176,7 @@ try {
   await reel.getByRole('button', { name: 'Unload clip' }).click();
   assert.equal(await video.count(), 0);
   await reel.getByText('Read the transcript', { exact: true }).click();
-  await reel.getByText(lava ? /Bring a question to a\s+Circle/ : /Bring your reason to a\s+Circle/).waitFor();
+  await reel.getByText(isopod ? /Bring the question to a\s+Circle/ : lava ? /Bring a question to a\s+Circle/ : /Bring your reason to a\s+Circle/).waitFor();
   assert.equal(calls.length, 2);
   stories.push('Unload retires the video and leaves the transcript and source links usable.');
   await reel.getByRole('link', { name: 'Discuss in an online Circle' }).click();

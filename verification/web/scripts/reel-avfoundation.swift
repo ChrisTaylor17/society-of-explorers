@@ -37,7 +37,8 @@ enum ReelError: Error { case unsupportedAsset, invalidSamples, io, badArguments 
         let transform = try await track.load(.preferredTransform)
         let rate = try await track.load(.nominalFrameRate)
         let audio = try await asset.loadTracks(withMediaType: .audio)
-        guard descriptions.count == 1, transform.isIdentity, [25, 30].contains(rate),
+        let supportedRate = [25, 30].contains(rate) || abs(rate - 30_000 / 1_001) < 0.0001
+        guard descriptions.count == 1, transform.isIdentity, supportedRate,
               CMFormatDescriptionGetMediaSubType(descriptions[0]) == kCMVideoCodecType_H264,
               let atoms = (CMFormatDescriptionGetExtensions(descriptions[0]) as NSDictionary?)?["SampleDescriptionExtensionAtoms"] as? [String: Data],
               let avc = atoms["avcC"] else { throw ReelError.unsupportedAsset }
@@ -65,7 +66,7 @@ enum ReelError: Error { case unsupportedAsset, invalidSamples, io, badArguments 
                 duration: microseconds(CMSampleBufferGetDuration(sample)), key: !nonSync, bytes: bytes))
         }
         guard reader.status == .completed, samples.first?.key == true else { throw reader.error ?? ReelError.io }
-        return .init(width: Int(size.width), height: Int(size.height), fps: Int(rate),
+        return .init(width: Int(size.width), height: Int(size.height), fps: Int(rate.rounded()),
             durationMs: Int(microseconds(duration) / 1000), audioTracks: audio.count, avc: avc, samples: samples)
     }
 

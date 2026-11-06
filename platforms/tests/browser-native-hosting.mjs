@@ -10,10 +10,11 @@ const inviteMode=run?.startsWith('salon-invite-');
 const lukeMode=run?.startsWith('luke-study-');
 const clipMode=run?.startsWith('clips-');
 const shareMode=run?.startsWith('clips-share-');
-const salonMode=run?.startsWith('clips-salon-');
+const salonMode=run?.startsWith('clips-salon-')||run?.startsWith('clips-isopod-');
 const linkMode=run?.startsWith('clips-salon-links-');
 const eltMode=run?.startsWith('clips-elt-');
 const lavaMode=run?.startsWith('clips-lava-');
+const isopodMode=run?.startsWith('clips-isopod-');
 if(run)fs.mkdirSync(path.join(ROOT,output));
 const file=output+(run?'/browser.json':'/native-hosting-browser.json'),sha=b=>createHash('sha256').update(b).digest('hex');
 const fixtureDir='verification/web/evidence/native-hosting-fixture'+(run?'-'+run:'');
@@ -35,7 +36,7 @@ try{
  const executablePath='/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';runtime(executablePath);
  bundle=read(fixtureDir+'/page.js');sourceHashes={...JSON.parse(read(fixtureDir+'/source-manifest.json')).sourceHashes,...await hostingAppHashes(),'platforms/tests/browser-native-hosting.mjs':sha(read('platforms/tests/browser-native-hosting.mjs'))};
  for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Rebundle changed source '+n);
- fixture=await createCircleHostingApp({lukeEdition: Boolean(lukeMode)});
+ fixture=await createCircleHostingApp({lukeEdition: Boolean(lukeMode || isopodMode)});
  browser=await require('playwright').chromium.launch({headless:true,timeout:15000,executablePath,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
  const context=await browser.newContext({viewport:{width:320,height:850},serviceWorkers:'block'});page=await context.newPage();const p=page;p.setDefaultTimeout(6500);
  const clips=clipMode?JSON.parse(read('platforms/native/clip-catalog.json')).videos:[];
@@ -100,7 +101,7 @@ try{
  async function waitHeld(){await bounded(async()=>{while(!heldPost)await new Promise(r=>setTimeout(r,10));});}
  async function releaseHeld(){const gate=heldPost;if(!gate)return;gate.release();await bounded(async()=>{while(!gate.done)await new Promise(r=>setTimeout(r,10));});heldPost=null;await settle();return gate;}
  async function show({fresh=true,hosting=true,who='author'}={}){
-  await releaseHeld();await p.evaluate(()=>window.nativeQa.unmount());await settle();if(fresh){await fixture.close();fixture=await createCircleHostingApp({lukeEdition: Boolean(lukeMode)});}
+  await releaseHeld();await p.evaluate(()=>window.nativeQa.unmount());await settle();if(fresh){await fixture.close();fixture=await createCircleHostingApp({lukeEdition: Boolean(lukeMode || isopodMode)});}
   fixture.transformHttp(null);fixture.beforeHttp(null);actor=who;mismatch=false;denied=false;holdNextPost=false;
   await p.evaluate(hosting=>{window.nativeQa.hostingAvailable(hosting);window.nativeQa.show();},hosting);await enabled('Connect my account');
  }
@@ -295,8 +296,11 @@ try{
    await show();
    const onlineTitle='Philemon online salon',hybridTitle='Scripture hybrid salon',localTitle='Local-only reading salon';
    const meeting='https://meeting.example.test/synthetic-salon';
-   const reelQuestion='How would you report both heights so a reader can tell what each number measures and where it was measured from?';
-   const discussReel='Discuss Which height are we measuring? in a Circle';
+   const reelId = isopodMode ? 'new-species' : 'which-height';
+   const reelTitle = isopodMode ? 'Is it a new species?' : 'Which height are we measuring?';
+   const reelQuestion = isopodMode ? 'What would you compare before calling it a new species?'
+     : 'How would you report both heights so a reader can tell what each number measures and where it was measured from?';
+   const discussReel = 'Discuss ' + reelTitle + ' in a Circle';
    const seed=async(who,title,format)=>{
      const expectedMemberId=fixture.actors[who];
      const body=await fixture.createBody({expectedMemberId,title,description:'A synthetic public listing.',format,
@@ -321,14 +325,14 @@ try{
    await button('Find an online reading Circle').click();await enabled('Load online Circles');await invoke(staleChoice);
    assert.equal(await button('Clear selected Circle').count(),0);
    await button('Back from online Circles').click();await button('Back to account').click();
-   if (linkMode) {
+   if (linkMode || isopodMode) {
      const before = http.length;
-     const link = ORIGIN + '/clips/watch/which-height';
+     const link = ORIGIN + '/clips/watch/' + reelId;
      await p.evaluate(link => window.nativeQa.show('offline', false, link, 'inactive'), link);
      await p.getByText('Shared Reel', { exact: true }).waitFor();
-     assert(await button('Play Which height are we measuring?').isDisabled());
+     assert(await button('Play '+reelTitle).isDisabled());
      await p.evaluate(() => { window.nativeQa.activity('change', 'active'); window.nativeQa.network('online'); });
-     await enabled('Play Which height are we measuring?');
+     await enabled('Play '+reelTitle);
      assert.equal(await button('Play Who gets the night sky?').count(), 0);
      assert.equal(await button('Connect my account').count(), 0);
      assert.equal(await p.locator('video').count(), 0);
@@ -370,7 +374,7 @@ try{
    const oldStarter=await retain('Use Reel question in a draft');
    await button('Use Reel question in a draft').click();
    const draft=field('Your discussion comment');
-   const expected=reelQuestion+'\n\n'+ORIGIN+'/clips/watch/which-height';
+   const expected=reelQuestion+'\n\n'+ORIGIN+'/clips/watch/'+reelId;
    assert.equal(await draft.inputValue(),expected);
    const edited='I would name the reference point for each measurement.\n\n'+expected;
    await draft.fill(edited);await invoke(oldStarter);
@@ -438,7 +442,7 @@ try{
  }
  if(clipMode){
    const video=p.locator('video');
-   const first=lavaMode?clips.find(clip=>clip.id==='which-height')
+   const first=isopodMode?clips.find(clip=>clip.id==='new-species'):lavaMode?clips.find(clip=>clip.id==='which-height')
      :eltMode?clips.find(clip=>clip.id==='telescope-first-tilt'):platform==='android'?clips[1]:clips[0];
    const second=platform==='android'?clips[0]:clips[1];
    assert(first && second && first.id!==second.id);
@@ -463,6 +467,10 @@ try{
    if(lavaMode){
      assert(publicCopy.includes('https://www.pexels.com/terms-of-service/'));
      assert(publicCopy.includes('USGS eruption report · https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55'));
+   }
+   if (isopodMode) {
+     assert(publicCopy.includes('https://oceanexplorer.noaa.gov/faqs/'));
+     assert(publicCopy.includes('Read the NOAA November trial plan · https://oceanexplorer.noaa.gov/expedition/ex2701/'));
    }
    pass('signed-out offline Clips shows exact transcripts, Philemon and the Reel credit before any player, account or media request');
 

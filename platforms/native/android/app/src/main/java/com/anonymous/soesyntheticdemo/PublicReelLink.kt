@@ -12,5 +12,5 @@ internal fun publicAppLink(value: String?, origin: String): String? {
   val prefix = "${origin}/clips/watch/"
   if (!secure.startsWith(prefix)) return null
   val slug = secure.removePrefix(prefix)
-  return if (slug == "night-sky-traffic" || slug == "telescope-first-tilt" || slug == "which-height") secure else null
+  return if (slug == "night-sky-traffic" || slug == "telescope-first-tilt" || slug == "which-height" || slug == "new-species") secure else null
 }

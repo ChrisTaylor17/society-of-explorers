@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 
 const [prefix, run, ...extra] = process.argv.slice(2);
-assert(!extra.length && /^built-shell-online-salon(?:-[a-z0-9]+)*-$/.test(prefix ?? ''));
+assert(!extra.length && /^built-shell-(?:online-salon|new-species)(?:-[a-z0-9]+)*-$/.test(prefix ?? ''));
 assert(/^online-salon-browser-\d+$/.test(run ?? ''));
 assert(process.execArgv.some(arg => arg.endsWith('/deny-build-network.cjs')));
 const root = process.cwd(), evidence = resolve(root, 'verification/web/evidence');
@@ -31,12 +31,15 @@ for (const path of ['app/HomePageClient.tsx', 'app/circles/CirclesBrowser.tsx', 
 }
 const origin = ready.origin;
 assert.match(origin, /^http:\/\/127\.0\.0\.1:\d+$/);
-const providerOrigin = 'https://offline.invalid';
-const publicKey = 'OFFLINE_PUBLIC_BUILD_PLACEHOLDER_NOT_A_CREDENTIAL';
+const memberFixture = ready.publicBuildConfig === 'nonissued member browser fixture';
+const providerOrigin = memberFixture ? 'https://synthetic-member-provider.test' : 'https://offline.invalid';
+const publicKey = memberFixture ? 'NONISSUED_MEMBER_BROWSER_FIXTURE' : 'OFFLINE_PUBLIC_BUILD_PLACEHOLDER_NOT_A_CREDENTIAL';
 const email = 'synthetic-salon@example.invalid', password = 'SYNTHETIC_SALON_PASSWORD', refresh = 'NONISSUED_SALON_REFRESH';
 const onlineHref = '/circles?format=online';
-const reelId = 'which-height';
-const reelQuestion = 'How would you report both heights so a reader can tell what each number measures and where it was measured from?';
+const newSpecies = prefix.startsWith('built-shell-new-species-');
+const reelId = newSpecies ? 'new-species' : 'which-height';
+const reelQuestion = newSpecies ? 'What would you compare before calling it a new species?'
+  : 'How would you report both heights so a reader can tell what each number measures and where it was measured from?';
 const reelQuery = '&reel=' + reelId;
 const require = createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');
 const executablePath = '/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
@@ -51,7 +54,7 @@ try {
   process.chdir(resolve(root, 'verification/web'));
   read('verification/web/tests/support/public-profile-app.mjs');
   const { createPublicProfileApp, publicProfileAppHashes, SUBJECTS, ORIGIN } = await import('../tests/support/public-profile-app.mjs');
-  fixture = await createPublicProfileApp();
+  fixture = await createPublicProfileApp({ lukeEdition: true });
   Object.assign(sourceHashes, await publicProfileAppHashes());
   const title = 'Philemon online salon', hybridTitle = 'Great Books hybrid salon';
   const meeting = 'https://fixture.invalid/private-meeting-do-not-expose';
@@ -143,8 +146,9 @@ try {
           assert(/^\/api\/(?:auth\/(?:member|provider)|circles(?:\/[a-f0-9-]+(?:\/(?:join|rsvp|leave|discussion(?:\/preview)?))?)?)$/.test(url.pathname), url.pathname);
           if (headers.origin) { assert.equal(headers.origin, origin); headers.origin = ORIGIN; }
           if (url.pathname === '/api/auth/provider') {
-            const cookie = /(?:^|;\s*)sb-offline-auth-token=([^;]+)/.exec(headers.cookie ?? '');
-            const stored = decodeURIComponent(cookie?.[1] ?? '');
+            const name = 'sb-' + new URL(providerOrigin).hostname.split('.')[0] + '-auth-token=';
+            const cookie = (headers.cookie ?? '').split(/;\s*/u).find(part => part.startsWith(name));
+            const stored = decodeURIComponent(cookie?.slice(name.length) ?? '');
             assert(stored.startsWith('base64-') && JSON.parse(Buffer.from(stored.slice(7), 'base64url')).access_token === access, 'Synthetic browser session reached selection');
             fixture.setCookieActor('outsider');
           }
@@ -205,6 +209,7 @@ try {
   for (const [id, title] of [
     ['night-sky-traffic', 'Who gets the night sky?'], ['telescope-first-tilt', 'What did the tilt prove?'],
     ['which-height', 'Which height are we measuring?'],
+    ...(newSpecies ? [['new-species', 'Is it a new species?']] : []),
   ]) {
     await browse('Discuss in an online Circle', '/clips/watch/' + id, title, id);
     assert.equal(await page.getByRole('region', { name: 'Question from the Reel' }).getByRole('link').getAttribute('href'), '/clips/watch/' + id);

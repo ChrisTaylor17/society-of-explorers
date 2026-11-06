@@ -34,7 +34,8 @@ test('the configured HTTPS origin serves only public app and certificate identit
   assert.equal(ios.status, 200);assert.match(ios.headers.get('content-type'), /^application\/json/);
   assert.deepEqual(await ios.json(), { applinks: { details: [{
     appIDs: [appId], components: [
-      { '/': '/clips/watch/night-sky-traffic' }, { '/': '/clips/watch/telescope-first-tilt' }, { '/': '/clips/watch/which-height' },
+      { '/': '/clips/watch/night-sky-traffic' }, { '/': '/clips/watch/telescope-first-tilt' }, { '/': '/clips/watch/which-height' }, { '/': '/clips/watch/new-species' },
+      { '/': '/circles/invite/*' },
     ],
   }] } });
   const other = get(android);

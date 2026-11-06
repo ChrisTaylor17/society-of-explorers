@@ -1,6 +1,6 @@
 import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
-import { reelHref } from '../../lib/clips/contracts';
+import { reelHref, reelReferenceLabel } from '../../lib/clips/contracts';
 import { REEL_QUESTIONS, reelDiscussionId, type ReelDiscussionId } from '../../lib/clips/salon';
 import { philemonEdition } from '../../lib/root-kernel/philemon-study';
 import { approvedOrigin } from './src/circles/host';
@@ -128,7 +128,7 @@ export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, reel, prepare
             <Text selectable style={styles.address}>{clip.sourcePage}</Text>
             <Text selectable style={styles.address}>{clip.attribution.licenseUrl}</Text>
             {clip.attribution.referenceUrl && <Text selectable style={styles.address}>
-              USGS eruption report · {clip.attribution.referenceUrl}</Text>}
+              {reelReferenceLabel(clip.attribution.referenceUrl)} · {clip.attribution.referenceUrl}</Text>}
             <Action label={`Share ${clip.title}`} disabled={!active} onPress={() => void share(clip.id, clip.title)}/>
             {shareFallback?.id === clip.id && <>
               <Text accessibilityLiveRegion="polite" style={styles.note}>

@@ -17,7 +17,7 @@ test('the configured association keeps existing Reel paths and adds only the sal
   assert.equal(iosResult.status, 200);
   assert.deepEqual(await iosResult.json(), { applinks: { details: [{ appIDs: [appleId], components: [
     { '/': '/clips/watch/night-sky-traffic' }, { '/': '/clips/watch/telescope-first-tilt' },
-    { '/': '/clips/watch/which-height' }, { '/': '/circles/invite/*' },
+    { '/': '/clips/watch/which-height' }, { '/': '/clips/watch/new-species' }, { '/': '/circles/invite/*' },
   ] }] } });
   const androidResult = android(new Request(origin + '/.well-known/assetlinks.json'));
   assert.equal(androidResult.status, 200);

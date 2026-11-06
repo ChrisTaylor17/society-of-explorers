@@ -20,6 +20,6 @@ enum SoePublicReelLink {
         let prefix = origin + "/clips/watch/"
         guard value.hasPrefix(prefix) else { return false }
         let slug = value.dropFirst(prefix.count)
-        return slug == "night-sky-traffic" || slug == "telescope-first-tilt" || slug == "which-height"
+        return slug == "night-sky-traffic" || slug == "telescope-first-tilt" || slug == "which-height" || slug == "new-species"
     }
 }

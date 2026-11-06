@@ -12,6 +12,7 @@ struct SalonInvitationPolicyCheck {
         let enabled = SoePublicReelLink.allows(URL(string: invitation)!, info: info)
         precondition(enabled)
         precondition(SoePublicReelLink.allows(URL(string: origin + "/clips/watch/which-height")!, info: info))
+        precondition(SoePublicReelLink.allows(URL(string: origin + "/clips/watch/new-species")!, info: info))
         precondition(!SoePublicReelLink.allows(URL(string: invitation)!, info: ["SoeMemberOrigin": origin]))
         let badLinks = [invitation + "/", invitation + "?next=/private", invitation + "#note",
                         invitation.replacingOccurrences(of: "aaaa", with: "AAAA"),
@@ -45,6 +46,6 @@ struct SalonInvitationPolicyCheck {
                 preconditionFailure("An invalid invitation operation was accepted")
             } catch SoeMemberRequestPolicyError.rejected {}
         }
-        print("Swift salon invitations passed two accepted links, \(badLinks.count + 1) rejected links, one anonymous GET, and \(badRequests.count) refused requests.")
+        print("Swift salon invitations passed three accepted links, \(badLinks.count + 1) rejected links, one anonymous GET, and \(badRequests.count) refused requests.")
     }
 }
