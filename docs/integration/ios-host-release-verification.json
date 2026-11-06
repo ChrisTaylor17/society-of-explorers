@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T06:33:33.342633+00:00",
+  "baseCommit": "2dc1a8c46bcaa016943d87addeb677867be5d351",
+  "status": "LOCAL_IOS_HOST_PREFLIGHT_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "scope": "Mac synthetic execution and Catalyst compiler checks using UIKit, pinned Expo scene sources and declaration fixtures for remaining dependencies. Configuration mod execution uses the published Expo template and an explicit mod registrar fixture.",
+  "expoVersion": "58.0.12",
+  "expoSourceCommit": "1fe7733a076cc7448f2728a764436307fe440cfa",
+  "originalGeneratedHost": "The unchanged template and previous SoE transform leave ExpoReactNativeFactoryProvider unisolated. The strict Swift 5 check warned and warnings-as-errors refused it.",
+  "verified": {
+    "macSuites": 7,
+    "macScenarios": 98,
+    "requestPolicyAssertions": 560,
+    "interfaceChecks": 208,
+    "hostConfigurationTests": 10,
+    "catalystTarget": "arm64-apple-ios16.4-macabi",
+    "catalystUIKitInterfaceSha256": "6f467be770474e7f62fc868fc11693107c46a84dc09ffa0e4edc44799e2627c2",
+    "memberSwift6ModuleEmitted": true,
+    "patchedTemplateStrictSwiftVersions": [
+      5,
+      6
+    ],
+    "reappliesToEarlierGeneratedHost": true,
+    "packagedClips": [
+      {
+        "resource": "soe_circle_intro",
+        "sha256": "1b1e4331aeb76c5401d9f5f43a709108c5c3330959f2c33b36cca6a63e132155"
+      },
+      {
+        "resource": "soe_night_sky",
+        "sha256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f"
+      },
+      {
+        "resource": "soe_elt_tilt",
+        "sha256": "d059aeff2f36723ec3a3e843a16f6d4413564620a480374b79e88e2e84361168"
+      },
+      {
+        "resource": "soe_which_height",
+        "sha256": "1815e08a3e5fea79db76e76c77a3d22c3559b0c6ac91123091daebb6093fd2a7"
+      }
+    ],
+    "packagedReaderCatalogSha256": "44882616e9975f0a0199f0b16b978babfac02f86d309c9078f32499b3d3870b3"
+  },
+  "pending": "Expo CLI project generation, actual React Native Codegen and Objective-C++ build, iOS simulator and phone, installed links, Keychain and provider acceptance.",
+  "sourceHashes": {
+    "platforms/native/plugins/with-soe-ios-host.cjs": "2557a115991e9f1a388ec5c6671d36f24f7dac3c2c175fb0e445bf2797a64b3a",
+    "verification/native-ios/host-config.test.mjs": "cf8285cf95bd9c323ace3cbc76697f5058311ba062f40fe9d8ecd8db632e5e2e",
+    "verification/native-ios/member-adapter-source-test.py": "6b804d96e757031fc593cb57456af43b7e122bf6d63de0ab58e0dea8e78ea894"
+  },
+  "upstreamSources": {
+    "ExpoAppDelegate.swift": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/packages/expo/ios/Expo/ExpoAppDelegate.swift",
+      "sha256": "a97bc658ce4e33b1738ff84b29f4f22a6d8d62dffc08302e24897937964f1b3c"
+    },
+    "ExpoAppSceneDelegate.swift": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/packages/expo/ios/Expo/ExpoAppSceneDelegate.swift",
+      "sha256": "a39cfa10500282124e09a96e1ef9c61dfd8c2ac9ef69f3e2bbde959e75074eb6"
+    },
+    "ExpoReactNativeFactoryProvider.swift": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/packages/expo/ios/Expo/ExpoReactNativeFactoryProvider.swift",
+      "sha256": "c1b77ea0532adfbf9c4c2afd744735aca02fbabd29e46c603da5f9c6b3ba5dcf"
+    },
+    "SceneEventForwarder.swift": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/packages/expo/ios/Expo/SceneEventForwarder.swift",
+      "sha256": "5a9049dfdc30b7bfd2b878bc18a01534328c2e9fbffc288fdc07280defc4da11"
+    },
+    "Template-AppDelegate.swift": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/templates/expo-template-bare-minimum/ios/HelloWorld/AppDelegate.swift",
+      "sha256": "a32411bd8ba43cd99b7580adaac49d0d7c6d469ce79b14721379dafac4b13b91"
+    },
+    "Template-SceneDelegate.swift": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/templates/expo-template-bare-minimum/ios/HelloWorld/SceneDelegate.swift",
+      "sha256": "61429e238705597529eb503571ff28b33ae8c2d00fef8726693b1f29b8d2939a"
+    },
+    "Template-Info.plist": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/templates/expo-template-bare-minimum/ios/HelloWorld/Info.plist",
+      "sha256": "23bd73ad04da79c8641887f68a11ba7c27d55f61fcbfd3d276a5627d94050b89"
+    },
+    "Template-project.pbxproj": {
+      "url": "https://raw.githubusercontent.com/expo/expo/1fe7733a076cc7448f2728a764436307fe440cfa/templates/expo-template-bare-minimum/ios/HelloWorld.xcodeproj/project.pbxproj",
+      "sha256": "f6eed93f64de44b00c841b565232cdfd24c7922943ddc9eb859ac740f178edaa"
+    },
+    "RCTReactNativeFactory.h": {
+      "url": "https://raw.githubusercontent.com/facebook/react-native/v0.88.0/packages/react-native/Libraries/AppDelegate/RCTReactNativeFactory.h",
+      "sha256": "3f21e960596cfe1f49e3f4eb73e3b34420ea47a2c59eaf22694fd3825f82ecbd"
+    }
+  },
+  "evidence": {
+    "mac-swift.json": {
+      "path": "verification/web/evidence/ios-host-release/mac-swift.json",
+      "bytes": 11912,
+      "sha256": "de5965e201cb988d3ef8bbc60ce16d889011e088238191b1b9eb95c95cc9a2f9"
+    },
+    "mac-suite.log": {
+      "path": "verification/web/evidence/ios-host-release/mac-suite.log",
+      "bytes": 8489,
+      "sha256": "9b8213d7718515b3027b92b62b5bd5fa005389a2723e901bb041a4cb094a476d"
+    },
+    "swift-header.h": {
+      "path": "verification/web/evidence/ios-host-release/swift-header.h",
+      "bytes": 17121,
+      "sha256": "7d9596c0ad03b294cd5a5e59219f9816609d19465d1c42daa9a11191dddfdc1c"
+    },
+    "source-abi.json": {
+      "path": "verification/web/evidence/ios-host-release/source-abi.json",
+      "bytes": 26166,
+      "sha256": "3ee7589deefa3b623875bc22529622a992a91b08f3bc9ffc4d1967f4d9b35f45"
+    },
+    "host-config.tap": {
+      "path": "verification/web/evidence/ios-host-release/host-config.tap",
+      "bytes": 2535,
+      "sha256": "55aec2e6622ca1914e72c1a7f520f4885619652432dfa795c93b45802ed706ca"
+    },
+    "template-mods.json": {
+      "path": "verification/web/evidence/ios-host-release/template-mods.json",
+      "bytes": 681,
+      "sha256": "8c5370a3e5193d289bb8a95e43434816fb5898243c5c1ff4214c6e4e4b01fbcb"
+    },
+    "catalyst-final.log": {
+      "path": "verification/web/evidence/ios-host-release/catalyst-final.log",
+      "bytes": 118,
+      "sha256": "45bbbc759d91259811e68d4cf10f519462c273cb035683714ea8c103de756d98"
+    },
+    "generated-app-delegate.swift": {
+      "path": "verification/web/evidence/ios-host-release/generated-app-delegate.swift",
+      "bytes": 1473,
+      "sha256": "360aac8d926ca1f85f4199af59ab8bd053e8283bbf99def3d9554e81f81b28a6"
+    },
+    "original-conformance-warning.log": {
+      "path": "verification/web/evidence/ios-host-release/original-conformance-warning.log",
+      "bytes": 1454,
+      "sha256": "52e544ca9dd2633c37f1b0e0149cd2987d22f783bfecb704d1ced3922d206f1a"
+    },
+    "compiler-inputs/typecheck-release-final.sh": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/typecheck-release-final.sh",
+      "bytes": 1656,
+      "sha256": "dff0e4e1c8508fce3c2437f69946d749283355075e1b3dc8abc1ffb125d8a43f"
+    },
+    "compiler-inputs/network-deny.sb": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/network-deny.sb",
+      "bytes": 44,
+      "sha256": "5c358b8d847211333e7ba22df82d84f796b5f30a41a2682209a949d783adbd08"
+    },
+    "compiler-inputs/template-mods.cjs": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/template-mods.cjs",
+      "bytes": 3375,
+      "sha256": "abbfa9a16c38ce12d4e132a31b6429cd7418c259a996d93c9828082d00dfbb58"
+    },
+    "compiler-inputs/React.swift": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/React.swift",
+      "bytes": 1231,
+      "sha256": "51c1634bf0d499c4999b875663315537d5e13ae3ac30d78f20e004fb2ec96dcf"
+    },
+    "compiler-inputs/ExpoModulesCore.swift": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/ExpoModulesCore.swift",
+      "bytes": 24,
+      "sha256": "d11fcb957b1d2c6a268064d7a517efca6c344b92956ffc829216333d994f9a92"
+    },
+    "compiler-inputs/ExpoAppDelegate.swift": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/ExpoAppDelegate.swift",
+      "bytes": 1583,
+      "sha256": "82875ce7484d51778ebefd018c91fbf7b88db0c74bf97150634532e1aae94581"
+    },
+    "compiler-inputs/ExpoFactories.swift": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/ExpoFactories.swift",
+      "bytes": 239,
+      "sha256": "70788f2bca4770507e7769e9ebf23fafc14dce0584ea20e5413f7271b4ee9182"
+    },
+    "compiler-inputs/ReactAppDependencyProvider.swift": {
+      "path": "verification/web/evidence/ios-host-release/compiler-inputs/ReactAppDependencyProvider.swift",
+      "bytes": 70,
+      "sha256": "feae6ee94a60221ae6e6e82efeaca49d82009f7558e791d9f2975beedd5424b4"
+    }
+  }
+}

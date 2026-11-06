@@ -8,8 +8,9 @@ const sceneClass = 'SoeMemberSceneDelegate';
 const callbackType = 'org.soe.member.email';
 const sceneRole = 'UIWindowSceneSessionRoleApplication';
 const defaultScene = '$(PRODUCT_MODULE_NAME).SceneDelegate';
-const delegateDeclaration = /^class AppDelegate: (?:ExpoAppDelegate|SoeMemberAppDelegate), ExpoReactNativeFactoryProvider \{$/gm;
-const ownedDelegate = 'class AppDelegate: SoeMemberAppDelegate, ExpoReactNativeFactoryProvider {';
+const delegateDeclaration = /^class AppDelegate: (?:ExpoAppDelegate|SoeMemberAppDelegate), (?:@MainActor )?ExpoReactNativeFactoryProvider \{$/gm;
+// Expo reads the window and factory from its UIKit scene on the main actor.
+const ownedDelegate = 'class AppDelegate: SoeMemberAppDelegate, @MainActor ExpoReactNativeFactoryProvider {';
 const expoImport = /^(?:internal )?import Expo$/m;
 
 function patchAppDelegate(source) {

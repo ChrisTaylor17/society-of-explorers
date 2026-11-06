@@ -80,7 +80,7 @@ test('missing, multiple, or drifted scene configurations stop prebuild', () => {
   }
 });
 
-test('the SDK 58 app delegate patch is deterministic and rejects an app-delegate React start', () => {
+test('the SDK 58 app delegate patch binds the factory to the main actor and updates older generated hosts', () => {
   const source = `internal import Expo
 import React
 class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
@@ -91,8 +91,9 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
 `;
   const output = patchAppDelegate(source.replaceAll('\n', '\r\n'));
   assert.match(output, /^import SoeMember$/m);
-  assert.match(output, /AppDelegate: SoeMemberAppDelegate, ExpoReactNativeFactoryProvider/);
+  assert.match(output, /AppDelegate: SoeMemberAppDelegate, @MainActor ExpoReactNativeFactoryProvider/);
   assert.equal(patchAppDelegate(output), output);
+  assert.equal(patchAppDelegate(output.replace(', @MainActor ExpoReactNativeFactoryProvider', ', ExpoReactNativeFactoryProvider')), output);
   assert.throws(() => patchAppDelegate(source.replace('return super', 'factory.startReactNative()\nreturn super')));
   assert.throws(() => patchAppDelegate(source + '\nfunc application(_ app: UIApplication, open url: URL) {}'));
   assert.throws(() => patchAppDelegate(source.replace('ExpoAppDelegate', 'OtherAppDelegate')));

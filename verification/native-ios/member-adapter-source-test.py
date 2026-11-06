@@ -14,9 +14,13 @@ FILES = [
     'platforms/native/ios-member/NativeSoeMemberIOS.h',
     'platforms/native/ios-member/NativeSoeMemberIOS.mm',
     'platforms/native/ios-member/SoeMemberBridge.swift',
-    'platforms/native/node_modules/react-native/package.json',
+    'platforms/native/package-lock.json',
     'verification/native-ios/member-adapter-source-test.py',
     'platforms/native/ios-member/SoeMemberIOSHost.swift',
+    'platforms/native/specs/SoeSourceReaderNativeComponent.ts',
+    'platforms/native/specs/SoeClipPlayerNativeComponent.ts',
+    'platforms/native/ios-source/SoeSourceReaderView.mm',
+    'platforms/native/ios-source/SoeClipPlayerView.mm',
 ]
 PRIMARY_SOURCES = [
     'https://reactnative.dev/docs/the-new-architecture/using-codegen',
@@ -83,6 +87,7 @@ def main():
     try:
         receipt['codegenEntrypointMetadataOnly'] = []
         for relative in [
+            'platforms/native/node_modules/react-native/package.json',
             'platforms/native/node_modules/@react-native/codegen/package.json',
             'platforms/native/node_modules/@react-native/codegen/lib/generators/modules/GenerateModuleObjCpp/index.js',
             'platforms/native/node_modules/@react-native/codegen/lib/cli/combine/combine-js-to-schema-cli.js',
@@ -101,16 +106,28 @@ def main():
             values[path], sources[path] = read(path)
         package = json.loads(values[FILES[0]])
         spec, header, adapter, swift = [values[path] for path in FILES[1:5]]
-        check('Local package and cached React Native version are exactly 0.88.0',
+        locked = json.loads(values[FILES[5]])['packages']
+        check('The app and lockfile target React Native and Codegen 0.88.0',
               package['dependencies']['react-native'] == '0.88.0'
-              and json.loads(values[FILES[5]])['version'] == '0.88.0')
+              and locked['node_modules/react-native']['version'] == '0.88.0'
+              and locked['node_modules/@react-native/codegen']['version'] == '0.88.0')
         config = package['codegenConfig']
         check('Combined Codegen library and specs directory retained',
               config['name'] == 'SoeMemberSpecs' and config['type'] == 'all' and config['jsSrcsDir'] == 'specs')
-        check('RN 0.88 module and reader registration are exact and independent', config['ios'] == {
+        check('RN 0.88 module, reader and clip player registrations are exact and independent', config['ios'] == {
             'modules': {'NativeSoeMember': {'className': 'NativeSoeMemberIOS', 'unstableRequiresMainQueueSetup': True}},
-            'components': {'SoeSourceReader': {'className': 'SoeSourceReaderView'}},
+            'components': {
+                'SoeSourceReader': {'className': 'SoeSourceReaderView'},
+                'SoeClipPlayer': {'className': 'SoeClipPlayerView'},
+            },
         })
+        for name in ('SoeSourceReader', 'SoeClipPlayer'):
+            component = values[f'platforms/native/specs/{name}NativeComponent.ts']
+            implementation = values[f'platforms/native/ios-source/{name}View.mm']
+            check(name + ' registers the pinned Fabric descriptor and native view',
+                  f"codegenNativeComponent<NativeProps>('{name}')" in component
+                  and f'@implementation {name}View' in implementation
+                  and f'concreteComponentDescriptorProvider<{name}ComponentDescriptor>()' in implementation)
         check('Generated protocol/event base plus both lifecycle protocols declared',
               'NativeSoeMemberSpecBase <NativeSoeMemberSpec, RCTInitializing, RCTInvalidating>' in header)
         check('Generated header and Swift compatibility header imports have no stand-in fallback',
