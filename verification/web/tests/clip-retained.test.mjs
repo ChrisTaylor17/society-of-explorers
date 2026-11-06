@@ -26,6 +26,36 @@ test('the stock archive stays outside clip storage and only its exact source pin
  }
 });
 
+test('a direct Reel lookup reuses the current media review and refuses missing, held and ambiguous IDs', async () => {
+ const app = offlineApp();
+ const { approvedReel } = app.load('lib/clips/server.ts');
+ const entry = app.load('lib/clips/registry.json').find(item => item.id === 'night-sky-traffic');
+ assert.equal((await approvedReel(entry.id)).title, 'Who gets the night sky?');
+ for (const id of ['not-a-reviewed-reel', 'how-a-circle-works', '../night-sky-traffic']) assert.equal(await approvedReel(id), null);
+ assert.equal(await approvedReel(entry.id, [entry, entry]), null);
+ assert.equal(await approvedReel(entry.id, [{ ...entry, status: 'held' }]), null);
+ assert.equal(await approvedReel(entry.id, [{ ...entry, asset: { ...entry.asset, sha256: '0'.repeat(64) } }]), null);
+});
+
+test('direct Reel metadata uses the configured application host and verified public copy', async () => {
+ const app = offlineApp();
+ app.context.process.env.VERCEL_PROJECT_PRODUCTION_URL = 'public-app.example.test';
+ app.setMock('next/navigation', () => ({ notFound() { throw Error('Fixture 404'); } }));
+ app.setMock('next/link', () => ({ default: () => null }));
+ app.setMock('../../ClipPlayer', () => ({ default: () => null }));
+ app.setMock('../../clips.module.css', () => ({}));
+ const page = app.load('app/clips/watch/[clipId]/page.tsx');
+ const params = clipId => ({ params: Promise.resolve({ clipId }) });
+ const meta = await page.generateMetadata(params('night-sky-traffic'));
+ assert.equal(meta.title, 'Who gets the night sky?');
+ assert.equal(meta.openGraph.title, meta.title);
+ assert.equal(meta.openGraph.url, 'https://public-app.example.test/clips/watch/night-sky-traffic');
+ assert.equal(meta.alternates.canonical, meta.openGraph.url);
+ assert.equal(meta.openGraph.images[0].url, 'https://public-app.example.test/opengraph-image');
+ assert.equal((await page.generateMetadata(params('missing'))).robots.index, false);
+ await assert.rejects(() => page.default(params('missing')), /Fixture 404/);
+});
+
 const ccBy = 'https://creativecommons.org/licenses/by/4.0/';
 const pexels = 'https://www.pexels.com/terms-of-service/';
 const report = 'https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55';

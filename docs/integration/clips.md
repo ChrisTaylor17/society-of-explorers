@@ -14,6 +14,10 @@ The catalog also includes **How a Circle works**, a 23.955-second original silen
 
 **Which height are we measuring?** uses labeled Kīlauea archive footage to illustrate two measurements in the USGS report on the October 17, 2026 eruption. The finished edit, timed text and provenance are bundled. The original stock stays in the excluded review archive. [Third Archivist Reel](which-height-reel.md)
 
+## Sharing a Reel
+
+Each Archivist Reel has a public page at `/clips/watch/{id}` with its own preview title and description. **Share Reel** opens the browser share chooser where available or copies the page address. The link opens the credited Reel and transcript for guests. Video and captions still load only after an explicit choice. **Discuss in an online Circle** opens the online and hybrid directory. The shared page rechecks the current review, credits and file pins each time it opens. [Web Share API](https://w3c.github.io/web-share/) · [Sharing verification](reel-share-verification.json)
+
 ## Publication and storage gate
 
 `lib/clips/registry.json` is a maintainer-controlled private registry. Entries need explicit `status: catalog-approved` and `publishable: true`, but those flags alone are insufficient. The reusable verifier also requires:

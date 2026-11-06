@@ -173,7 +173,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   const hostingConnection = connection?.hosting();
   const hostingAvailable = Boolean(connection?.host.hostingTransport && connection.host.newRequestId);
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
-    if (entered.destination === 'clips') return <ClipsScreen onBack={back}
+    if (entered.destination === 'clips') return <ClipsScreen onBack={back} appOrigin={connection.host.origin}
       onRead={() => act(() => setEntered({ connection, destination: 'philemon' }))}
       onBrowse={() => openReadingDestination('discover', { onlinePreset: true })}/>;
     if (entered.destination === 'philemon') {

@@ -14,6 +14,8 @@ type Disk={generation:string;slots:Map<string,string>;resetUnknown:boolean};
 type CapturedCallback=(value?:string)=>unknown;
 const latestCallbacks=new Map<string,CapturedCallback>(),retainedCallbacks=new Map<string,CapturedCallback>();
 const openedMeetings:string[]=[];
+const reelShares: { title: string; message: string }[] = [];
+let shareUnavailable = false;
 let savedEnabled=true,readingEnabled=true,attendanceEnabled=true,hostingEnabled=true;
 let sequence=0,epoch=0,online:Network='online',disk:Disk={generation:uuid(),slots:new Map(),resetUnknown:false},held:Gate|null=null;
 let prepared=0,reads=0,writes=0,resets=0,cancels=0,handles=0,connectionsClosed=0,preparationHeld=false;
@@ -53,6 +55,12 @@ function createBridge(store:Disk){
 }
 const qa={appState,requests,platform:new URL(window.location.href).searchParams.get('platform')==='ios'?'ios':'android',
  openedMeetings,recordMeeting(url:string){openedMeetings.push(url);},
+ reelShares, shareUnavailable(value: boolean) { shareUnavailable = value; },
+ recordShare(content: { title: string; message: string }) {
+   if (shareUnavailable) throw Error('Synthetic share sheet unavailable');
+   reelShares.push(content);
+   return { action: 'dismissedAction' };
+ },
  capture(kind:string,label:string|undefined,callback:CapturedCallback){if(label&&typeof callback==='function')latestCallbacks.set(kind+':'+label,callback);},
  retainCallback(kind:string,label:string){const callback=latestCallbacks.get(kind+':'+label);if(!callback)throw Error('No real native callback for '+kind+':'+label);const id=uuid();retainedCallbacks.set(id,callback);return id;},
  invokeCallback(id:string,value?:string){const callback=retainedCallbacks.get(id);if(!callback)throw Error('Captured callback unavailable');return callback(value);},
@@ -66,7 +74,7 @@ const qa={appState,requests,platform:new URL(window.location.href).searchParams.
   held?.release();held=null;heldDelivery?.release();heldDelivery=null;heldPreparation?.release();heldPreparation=null;preparationHeld=false;online=network;appState.currentState='active';requests.length=0;prepared=0;reads=0;writes=0;resets=0;cancels=0;connectionsClosed=0;
   if(!preserve)disk={generation:uuid(),slots:new Map(),resetUnknown:false};
   const bridge=createBridge(disk);
-  openedMeetings.length=0;
+  openedMeetings.length=0; reelShares.length=0; shareUnavailable=false;
   const installed={...bridge,async capabilities(){return{...await bridge.capabilities(),authPolicy:undefined,providerOrigin:undefined,publishableKey:undefined};},
     getConnectivitySnapshot:connectivity.snapshot,
     onConnectivityChange(listener:(state:Network)=>void){return{remove:connectivity.subscribe(listener)};}} as unknown as Spec;

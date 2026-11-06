@@ -29,6 +29,7 @@ export const plain = (value: unknown, max: number): value is string => typeof va
   && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value)
   && !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value);
 export const clipHref = (kind: 'media' | 'captions', id: string, sha: string): string => `/clips/${kind}/${id}?sha=${sha}`;
+export const reelHref = (id: string): string => `/clips/watch/${encodeURIComponent(id)}`;
 const mimes = new Set(['audio/wav', 'audio/mpeg', 'audio/ogg', 'video/webm', 'video/mp4']);
 
 /** Only the bounded local gateway can become a media source, never caller URLs. */

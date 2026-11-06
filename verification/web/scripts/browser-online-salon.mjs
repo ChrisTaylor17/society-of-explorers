@@ -22,7 +22,8 @@ const ready = JSON.parse(read(`verification/web/evidence/${prefix}server-ready.j
 read('verification/web/scripts/browser-online-salon.mjs');
 assert.equal(ready.status, 'READY');
 for (const path of ['app/HomePageClient.tsx', 'app/circles/CirclesBrowser.tsx', 'app/circles/[circleId]/CircleDetail.tsx', 'app/circles/messages/CircleSafetyNav.tsx',
-  'app/circles/[circleId]/page.tsx', 'app/clips/ClipPlayer.tsx', 'app/great-books/scripture/philemon/page.tsx', 'app/login/page.tsx',
+  'app/circles/[circleId]/page.tsx', 'app/clips/ClipPlayer.tsx', 'app/clips/watch/[clipId]/page.tsx',
+  'app/great-books/scripture/philemon/page.tsx', 'app/login/page.tsx',
   'lib/circles/useCircleParticipation.ts', 'lib/circles/membership.ts', 'lib/circles/membership-server.ts']) {
   read(path);
   assert.equal(sourceHashes[path], ready.sourceHashes[path], path);
@@ -196,13 +197,16 @@ try {
   assert.equal(await fits(), true);
   await browse('FIND AN ONLINE CIRCLE', '/');
   await browse('Find an online reading Circle', '/great-books/scripture/philemon');
-  for (const reel of ['Who gets the night sky?', 'What did the tilt prove?']) {
-    await browse('Discuss in an online Circle', '/clips', reel);
+  for (const [id, title] of [
+    ['night-sky-traffic', 'Who gets the night sky?'], ['telescope-first-tilt', 'What did the tilt prove?'],
+    ['which-height', 'Which height are we measuring?'],
+  ]) {
+    await browse('Discuss in an online Circle', '/clips/watch/' + id, title);
   }
   await link(hybridTitle).waitFor();
   assert.equal(await link('Local-only salon').count(), 0);
   assert.equal(await link('Hidden salon').count(), 0);
-  pass('Homepage, Philemon study and both Reels open the same online and hybrid search in the built site.');
+  pass('The homepage, Philemon study and each shared Reel link lead to the same online and hybrid search. The guest continues from the last Reel.');
 
   const prePreview = requests.length;
   await link(title).click();

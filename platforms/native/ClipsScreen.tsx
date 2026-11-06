@@ -1,6 +1,9 @@
 import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, UIManager, View } from 'react-native';
+import { reelHref } from '../../lib/clips/contracts';
 import { philemonEdition } from '../../lib/root-kernel/philemon-study';
+import { approvedOrigin } from './src/circles/host';
+import { prepareInstalledPublicCircles, type PublicCircleDiscoveryConnection } from './src/circles/installed-member';
 import catalog from './clip-catalog.json';
 import type { ClipState } from './specs/SoeClipPlayerNativeComponent';
 
@@ -15,12 +18,17 @@ function playerAvailable() {
   catch { return false; }
 }
 
-export function ClipsScreen({ onBack, onRead, onBrowse }: { onBack(): void; onRead(): void; onBrowse?: () => void }) {
+export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublicCircles = prepareInstalledPublicCircles }: {
+  onBack(): void; onRead(): void; onBrowse?: () => void; appOrigin?: string;
+  preparePublicCircles?: () => Promise<PublicCircleDiscoveryConnection>;
+}) {
   const current = useRef<Playback | null>(null);
   const foreground = useRef(false);
   const [playback, setPlayback] = useState<Playback | null>(null);
   const [active, setActive] = useState(false);
   const [available] = useState(playerAvailable);
+  const shareRequest = useRef<symbol | null>(null);
+  const [shareFallback, setShareFallback] = useState<{ id: string; url?: string } | null>(null);
   function update(value: Playback | null) {
     current.current = value;
     setPlayback(value);
@@ -30,7 +38,7 @@ export function ClipsScreen({ onBack, onRead, onBrowse }: { onBack(): void; onRe
     const sync = () => {
       const ready = AppState.currentState === 'active' && !blurred;
       foreground.current = ready;
-      if (!ready) update(null);
+      if (!ready) { update(null); shareRequest.current = null; }
       setActive(ready);
     };
     const change = AppState.addEventListener('change', sync);
@@ -40,6 +48,7 @@ export function ClipsScreen({ onBack, onRead, onBrowse }: { onBack(): void; onRe
     return () => {
       foreground.current = false;
       current.current = null;
+      shareRequest.current = null;
       change.remove(); blur?.remove(); focus?.remove();
     };
   }, []);
@@ -58,6 +67,29 @@ export function ClipsScreen({ onBack, onRead, onBrowse }: { onBack(): void; onRe
     if (!foreground.current || !clip || state.requestKey !== clip.key || !Object.hasOwn(status, state.phase)) return;
     const phase = state.phase as Playback['phase'];
     update({ ...clip, phase, playing: clip.playing && phase !== 'ended' && phase !== 'unavailable' });
+  }
+  async function share(id: string, title: string) {
+    if (!foreground.current || shareRequest.current) return;
+    const request = Symbol();
+    shareRequest.current = request;
+    setShareFallback(null);
+    const isCurrent = () => foreground.current && shareRequest.current === request;
+    let url: string | undefined;
+    try {
+      let origin = appOrigin;
+      if (!origin) {
+        const publicSite = await preparePublicCircles();
+        try { origin = publicSite.origin; }
+        finally { publicSite.close(); }
+      }
+      url = approvedOrigin(origin) + reelHref(id);
+      const { Share } = await import('react-native');
+      if (isCurrent()) await Share.share({ title, message: `${title}\n${url}` });
+    } catch {
+      if (isCurrent()) setShareFallback({ id, url });
+    } finally {
+      if (shareRequest.current === request) shareRequest.current = null;
+    }
   }
 
   return <SafeAreaView style={styles.screen}>
@@ -90,6 +122,13 @@ export function ClipsScreen({ onBack, onRead, onBrowse }: { onBack(): void; onRe
             <Text selectable style={styles.address}>{clip.attribution.licenseUrl}</Text>
             {clip.attribution.referenceUrl && <Text selectable style={styles.address}>
               USGS eruption report · {clip.attribution.referenceUrl}</Text>}
+            <Action label={`Share ${clip.title}`} disabled={!active} onPress={() => void share(clip.id, clip.title)}/>
+            {shareFallback?.id === clip.id && <>
+              <Text accessibilityLiveRegion="polite" style={styles.note}>
+                {shareFallback.url ? 'Copy this Reel link.' : 'Sharing needs a configured Society of Explorers website.'}
+              </Text>
+              {shareFallback.url && <Text selectable style={styles.address}>{shareFallback.url}</Text>}
+            </>}
           </> : null}
           <Text accessibilityRole="header" style={styles.note}>Transcript</Text>
           <Text selectable style={styles.copy}>{clip.transcript}</Text>

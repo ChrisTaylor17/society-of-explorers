@@ -45,6 +45,13 @@ try {
       '--disable-accelerated-video-decode', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'] });
   const context = await browser.newContext({ viewport: { width: 320, height: 850 }, serviceWorkers: 'block', acceptDownloads: false });
   await context.addCookies([{ name: 'soe_test_account_cookie', value: 'SYNTHETIC_REEL_VERIFICATION', url: origin }]);
+  await context.addInitScript(() => {
+    const shares = [], copies = [];
+    let native = false;
+    Object.defineProperty(navigator, 'share', { get: () => native ? async payload => { shares.push(payload); } : undefined });
+    Object.defineProperty(navigator, 'clipboard', { value: { async writeText(url) { copies.push(url); } } });
+    window.reelShareQa = { shares, copies, useShare() { native = true; } };
+  });
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.origin !== origin) { external.push(url.origin + url.pathname); await route.abort(); return; }
@@ -71,12 +78,31 @@ try {
     assert.equal(await report.getAttribute('href'),
       'https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55');
   }
-  assert.equal(await reel.getByRole('link', { name: 'Link to this Reel' }).getAttribute('href'), '/clips#' + id);
+  const permalink = '/clips/watch/' + id;
+  const direct = reel.getByRole('link', { name: 'Link to this Reel' });
+  assert.equal(await direct.getAttribute('href'), permalink);
   assert.equal(await reel.getByRole('link', { name: 'Discuss in an online Circle' }).getAttribute('href'), '/circles?format=online');
   assert.equal(await page.getByRole('heading', { name: 'How a Circle works', exact: true }).count(), 1);
   assert.equal(await reel.locator('video').count(), 0);
   assert.deepEqual(calls, []);
   stories.push('The built Clips page keeps both formats and opens a keyboard-accessible Reel anchor with source, license and Circle links.');
+
+  await reel.getByRole('button', { name: 'Share Reel' }).click();
+  await reel.getByText('Reel link copied.', { exact: true }).waitFor();
+  assert.deepEqual(await page.evaluate(() => window.reelShareQa.copies), [origin + permalink]);
+  await direct.press('Enter');
+  await page.waitForURL(origin + permalink);
+  await page.getByRole('heading', { level: 1, name: title, exact: true }).waitFor();
+  await page.waitForFunction(value => document.querySelector('meta[property="og:title"]')?.content === value, title);
+  assert.equal(await reel.getByRole('link', { name: credit, exact: true }).getAttribute('href'), source);
+  assert.equal(await reel.locator('video').count(), 0);
+  assert.deepEqual(calls, []);
+  await page.evaluate(() => window.reelShareQa.useShare());
+  await reel.getByRole('button', { name: 'Share Reel' }).click();
+  await page.waitForFunction(() => window.reelShareQa.shares.length === 1);
+  assert.deepEqual(await page.evaluate(() => window.reelShareQa.shares), [{ title, url: origin + permalink }]);
+  assert.deepEqual(calls, []);
+  stories.push('A Reel link opens its own credited page and preview title. Clipboard and share-sheet fixtures receive only that public URL and title before any media loads.');
 
   await reel.getByRole('button', { name: 'Load video and captions' }).press('Enter');
   const video = reel.locator('video');
@@ -147,8 +173,21 @@ try {
   await reel.getByText('Read the transcript', { exact: true }).click();
   await reel.getByText(lava ? /Bring a question to a\s+Circle/ : /Bring your reason to a\s+Circle/).waitFor();
   assert.equal(calls.length, 2);
-  await context.close();
   stories.push('Unload retires the video and leaves the transcript and source links usable.');
+  await reel.getByRole('link', { name: 'Discuss in an online Circle' }).click();
+  await page.waitForURL(origin + '/circles?format=online');
+  await page.getByRole('heading', { name: 'Find a circle', exact: true }).waitFor();
+  await page.waitForFunction(() => document.getElementById('circle-format')?.value === 'online');
+  assert.equal(calls.length, 2);
+  stories.push('The Reel opens the public directory with the online and hybrid filter selected.');
+  if (!elt && !lava) {
+    for (const id of ['not-an-approved-reel', 'how-a-circle-works']) {
+      assert.equal((await page.goto(origin + '/clips/watch/' + id)).status(), 404);
+    }
+    assert.equal(calls.length, 2);
+    stories.push('Unknown and non-Reel catalog IDs return 404 on the public Reel route.');
+  }
+  await context.close();
   assert.deepEqual(external, []); assert.deepEqual(errors, []);
 } catch (error) { failure = error.stack || String(error); }
 finally {

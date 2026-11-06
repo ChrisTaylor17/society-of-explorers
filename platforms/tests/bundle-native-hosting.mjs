@@ -41,6 +41,7 @@ ${clips ? "import { NativeClipPlayerDouble } from './platforms/tests/native-clip
 export const UIManager={getViewManagerConfig:name=>name==='SoeClipPlayer'&&window.nativeClipQa?.available?{}:null},codegenNativeComponent=name=>name==='SoeClipPlayer'?NativeClipPlayerDouble:()=>null;
 export const StyleSheet={create:x=>x},Platform={get OS(){return window.nativeQa?.platform??'android';}},TurboModuleRegistry={get:()=>null};
 export const Linking={openURL:async url=>window.nativeQa.recordMeeting(url)};
+export const Share={share:async content=>window.nativeQa.recordShare(content)};
 export const AppState={get currentState(){return window.nativeQa?.appState.currentState??'active';},addEventListener(name,fn){return window.nativeQa.appState.addEventListener(name,fn);}};`;
 const result=await Bun.build({entrypoints:['platforms/tests/native-hosting-entry.tsx'],outdir:output,target:'browser',format:'esm',naming:'page.[ext]',define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'native-primitives-explicit-double',setup(build){
  // Native node_modules is an older linked runtime with offloaded files. Use

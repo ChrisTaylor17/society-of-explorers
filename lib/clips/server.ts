@@ -214,6 +214,15 @@ export async function approvedMedia(entries: unknown = registry, context: Contex
   }
   return output;
 }
+async function verifyRegisteredClip(id: string, entries: unknown, root?: string): Promise<VerifiedClip | null> {
+  if (!isClipId(id) || !Array.isArray(entries) || entries.length > 12) return null;
+  const selected = entries.filter(entry => record(entry) && entry.id === id);
+  return selected.length === 1 ? verifyClip(selected[0], { territory: null }, root) : null;
+}
+export async function approvedReel(id: string, entries: unknown = registry, root?: string): Promise<PublicMediaClip | null> {
+  const clip = await verifyRegisteredClip(id, entries, root);
+  return clip?.public.attribution ? clip.public : null;
+}
 export function clipHeaders(mime: string): Headers {
   return new Headers({ 'Content-Type': mime, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Cross-Origin-Resource-Policy': 'same-origin' });
@@ -231,10 +240,7 @@ export async function clipResource(request: Request, id: string, kind: 'media' |
   const fail = (status: number) => new Response(request.method === 'HEAD' ? null : 'The reviewed clip is unavailable.', { status, headers });
   const query = new URL(request.url).searchParams;
   if (!isClipId(id) || Array.from(query.keys()).some(k => k !== 'sha') || query.getAll('sha').length !== 1 || !isSha256(query.get('sha'))) return fail(400);
-  if (!Array.isArray(entries) || entries.length > 12) return fail(404);
-  const selected = entries.filter(e => record(e) && e.id === id);
-  if (selected.length !== 1) return fail(404);
-  const clip = await verifyClip(selected[0], { territory: null }, root);
+  const clip = await verifyRegisteredClip(id, entries, root);
   if (!clip) return fail(404);
   const pin = kind === 'media' ? clip.public.media : clip.public.captions, bytes = kind === 'media' ? clip.bytes : clip.captions;
   if (query.get('sha') !== pin.sha256) return fail(409);

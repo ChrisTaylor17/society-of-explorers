@@ -7,6 +7,7 @@ const [run,platform='android',...extra]=process.argv.slice(2);
 assert(!extra.length&&(run===undefined||/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run))&&['android','ios'].includes(platform));
 const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hosting-browser-'+run+'-'+platform:'');
 const clipMode=run?.startsWith('clips-');
+const shareMode=run?.startsWith('clips-share-');
 const salonMode=run?.startsWith('clips-salon-');
 const eltMode=run?.startsWith('clips-elt-');
 const lavaMode=run?.startsWith('clips-lava-');
@@ -228,6 +229,30 @@ try{
    }
    pass('signed-out offline Clips shows exact transcripts, Philemon and the Reel credit before any player, account or media request');
 
+   const shareClip = clips.find(clip => clip.attribution);
+   const shareLabel = 'Share ' + shareClip.title;
+   const shareUrl = ORIGIN + '/clips/watch/' + shareClip.id;
+   const payload = { title: shareClip.title, message: shareClip.title + '\n' + shareUrl };
+   const shares = () => p.evaluate(() => window.nativeQa.reelShares);
+   let staleShare;
+   if (shareMode) {
+     assert.deepEqual(await shares(), []);
+     const beforeShare = (await state()).stats;
+     await button(shareLabel).click();
+     await p.waitForFunction(() => window.nativeQa.reelShares.length === 1);
+     assert.deepEqual(await shares(), [payload]);
+     const afterShare = (await state()).stats;
+     for (const key of ['prepared', 'reads', 'writes', 'handles']) assert.equal(afterShare[key], beforeShare[key]);
+     assert.equal(http.length, originalHttp);
+     assert.deepEqual(mediaHttp, []);
+     await p.evaluate(() => window.nativeQa.shareUnavailable(true));
+     await button(shareLabel).click();
+     await p.getByText(shareUrl, { exact: true }).waitFor();
+     await p.evaluate(() => window.nativeQa.shareUnavailable(false));
+     staleShare = await retain(shareLabel);
+     pass('an explicit guest tap passes only the public Reel link and title to the share sheet, with a copyable link if it fails');
+   }
+
    await play(first);await playing(first);
    assert.equal(await video.count(),1);
    const firstKey=await video.getAttribute('data-request-key');
@@ -258,6 +283,11 @@ try{
    await play(second);await playing(second);
    const closedKey=await video.getAttribute('data-request-key');
    await button('Back to account').click();await enabled('Connect my account');
+   if (shareMode) {
+     await invoke(staleShare);
+     assert.deepEqual(await shares(), [payload]);
+     pass('a retired Clips screen cannot open the share sheet through an old control');
+   }
    const afterClose=mediaHttp.length;
    await open();await button('Back to account').waitFor();
    await p.evaluate(key=>window.nativeClipQa.callbacks.get(key)('playing'),closedKey);
@@ -277,6 +307,13 @@ try{
    await signIn();await account();
    const signedInAt=http.length,mediaAt=mediaHttp.length;
    await open();await button('Find an online Circle').waitFor();
+   if (shareMode) {
+     await button(shareLabel).click();
+     await p.waitForFunction(() => window.nativeQa.reelShares.length === 2);
+     assert.deepEqual(await shares(), [payload, payload]);
+     assert.equal(http.length, signedInAt);
+     pass('a verified member shares the same guest-readable URL without including member information');
+   }
    await button('Find an online Circle').click();await button('Search Circles').waitFor();await settle();
    assert.equal(await radio('Online').getAttribute('aria-checked'),'true');
    assert.equal(await video.count(),0);assert.equal(http.length,signedInAt);assert.equal(mediaHttp.length,mediaAt);

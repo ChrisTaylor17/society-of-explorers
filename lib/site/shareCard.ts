@@ -23,9 +23,12 @@ export const SHARE_IMAGE_PATH = '/opengraph-image';
 // different Vercel project, so a relative image path resolves to a 404 there.
 // On Vercel, point the image at this project's own production host instead;
 // locally and in tests the relative path is kept.
-export function shareImageUrl(env: Record<string, string | undefined> = process.env): string {
+export function shareOrigin(env: Record<string, string | undefined> = process.env): string | null {
   const host = (env.VERCEL_PROJECT_PRODUCTION_URL || '').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
-  return /^[a-z0-9.-]+$/i.test(host) ? `https://${host}${SHARE_IMAGE_PATH}` : SHARE_IMAGE_PATH;
+  return /^[a-z0-9.-]+$/i.test(host) ? `https://${host}` : null;
+}
+export function shareImageUrl(env: Record<string, string | undefined> = process.env): string {
+  return (shareOrigin(env) ?? '') + SHARE_IMAGE_PATH;
 }
 const SHARE_IMAGE_URL = shareImageUrl();
 export const SHARE_OG_IMAGES = [

@@ -6,6 +6,7 @@ declare module 'react-native' {
   export const ActivityIndicator: import('react').ComponentType<{ [name: string]: unknown }>;
   export const UIManager: { getViewManagerConfig(name: string): object | null };
   export const Linking: { openURL(url: string): Promise<void> };
+  export const Share: { share(content: { message: string; title?: string }): Promise<{ action: string }> };
   export function codegenNativeComponent<T>(name: string): HostComponent<T>;
   export namespace CodegenTypes {
     export type Int32 = number;

@@ -212,7 +212,8 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     if (choice) { setClipsOpen(false); setStudyOpen(false); setPhilemonHosting(false); setCircleChoice(choice); }
   }
   if (publicCirclesOpen) return <PublicCirclesScreen prepare={publicCirclesPrepare} onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
-  if (clipsOpen) return <ClipsScreen onBack={() => closeClips(false)} onRead={() => closeClips(true)} onBrowse={openPublicCircles}/>;
+  if (clipsOpen) return <ClipsScreen onBack={() => closeClips(false)} onRead={() => closeClips(true)}
+    onBrowse={openPublicCircles} preparePublicCircles={publicCirclesPrepare}/>;
   if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)} onBrowse={openPublicCircles}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
     retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} circleChoice={circleChoice ?? undefined} onClose={() => {

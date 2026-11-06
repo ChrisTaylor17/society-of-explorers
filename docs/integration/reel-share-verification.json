@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "baseCommit": "72d1a0bb2947724f091ad1e7a6c15e5093e570bd",
+  "verifiedAt": "2026-11-06T09:52:21.079008+00:00",
+  "status": "LOCAL_REEL_SHARE_AND_SALON_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "publicRoutes": [
+    "/clips/watch/night-sky-traffic",
+    "/clips/watch/telescope-first-tilt",
+    "/clips/watch/which-height"
+  ],
+  "checks": {
+    "focusedPassed": 31,
+    "reelBrowserScenarios": 19,
+    "onlineSalonScenarios": 11,
+    "onlineSalonHttpRequests": 107,
+    "simulatedAndroidScenarios": 29,
+    "simulatedIosScenarios": 12,
+    "localWebBuild": "passed",
+    "registeredAppTypecheckWithNativeDeclarations": "passed",
+    "scopedLint": "passed",
+    "reviewedFilesInDeploymentTrace": true
+  },
+  "scope": "The built public pages play the actual reviewed MP4s. Browser share and phone share-sheet dispatch use local doubles. The salon journey uses the built pages, current handlers and disposable Circle SQL with a synthetic identity.",
+  "limits": "Hosted link previews, installed Android and iOS builds and physical share sheets remain open.",
+  "verifiedUnchangedTypeDeclarationSha256": "5152c0b8d7aaf7785ff54fb0f320c796883aa0226cb404900eb5291f52458a2d",
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "065028a39d71dfe10d95edbd0f122c5decd1df0358e621942ee3badc9b309245",
+    "app/clips/ClipPlayer.tsx": "8ac7480335fa40fcc871e7780a66cb7b56e53660bd80430de84bf6f0e2de68b9",
+    "app/clips/watch/[clipId]/page.tsx": "adba88bdb974071d755d687dbaf9893d3da78b016c4121e737e7bca55914cf7e",
+    "docs/integration/clips.md": "028c7345e04136ffaaaa48a36e54b7764f73244bd6adc4182bc045b603f4501e",
+    "docs/integration/native-clips.md": "842330ef9459fdaf3c9c324e1f042053b83b345550f28504117a95186454bd7f",
+    "lib/clips/contracts.ts": "a3f6d83245a216922ce628de282fe6d1bb0611c4a41b39273552a36753aa066a",
+    "lib/clips/server.ts": "5186c7b7389460ee24fc542c10b3448cc9cada896ac15bcd47f85992973e7eba",
+    "lib/site/shareCard.ts": "a0f02e89dec8051b1fdf0df51b205e3348a12cfabedfab9536879c0124ceb1af",
+    "platforms/native/ClipsScreen.tsx": "0fb8c904ada89cf16bc4f03d0da79a5b4cbd59e3d8e78b01da0344c94ab7246c",
+    "platforms/native/MemberCircleScreen.tsx": "3b5cf26ec1ac23c5cf5f10609f38210dfca686e7400381c197083b733986690d",
+    "platforms/native/OwnedAccountScreen.tsx": "df3cd3bd15868a10d7dc26da0dd8a33d010d882acd625d40eee197157539ebef",
+    "platforms/tests/browser-native-hosting.mjs": "f45535a4c499ab03686c221bbf087fba3e5a3be6aa05808a09ff354ad827ebb2",
+    "platforms/tests/bundle-native-hosting.mjs": "5c6bab86bed24440ad29b6eb26943cf2d925228412a0a8456eb611cfd4226397",
+    "platforms/tests/native-hosting-entry.tsx": "1b9566be94653b4f113d8cfa59828cc6d1fa7f06961bd5ad2400f721ae7f9500",
+    "platforms/tests/native-installed-account-types.d.ts": "b9b7b04dd1e0f35425277e5802c657582c35641a5419d3f915f7711dd4dc6967",
+    "verification/web/scripts/browser-online-salon.mjs": "0b172c3541a541cd3ff8c2cb5e611ce21b1bc11dc66785bcb39c312c8b3169f9",
+    "verification/web/scripts/browser-paranal-reel.mjs": "60092ef8decb4e6777a23ecff69e1f16f54644590afda0ac23359bab8cf13f72",
+    "verification/web/tests/clip-retained.test.mjs": "f354e75fbfda04341b3561d13e3f59d3b865bfe0646c8bf1e7b35c168d07878e"
+  },
+  "proofs": [
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-share-tests.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-share-tests.log",
+      "sha256": "f58102d87c8549d593987cefd92e559defb4d73410b188b04109c3a0e7fbd7e0"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-share-lint.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-share-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-share-native-types.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-share-native-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-share-trace.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-share-trace.json",
+      "sha256": "4991bea6294a7c534a2d9ea6307ba6cffa5952f5bbd5ca7df0dac7233b594db9"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-share-native-android.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-share-native-android.log",
+      "sha256": "0341841c8e3c70a565c4c61078d5d6eb8397161c9190b416ec7c2075690c51e9"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-share-native-ios.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-share-native-ios.log",
+      "sha256": "a61f25b431b5593d60654f3a50e5cc50d8a6d013e5b2c14160d4ba185fe79274"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-guard-check.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-guard-check.json",
+      "sha256": "bde24e09fab31882c85e3784eb939eeae0f875c0938adf7e9dadf1d01e7fc784"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-reel-share-01-next-build.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-reel-share-01-next-build.json",
+      "sha256": "7b14392b0779b18e127c11ad2f0d9fc591bd19b80b35b8853b378c6fe0eaf372"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-reel-share-01-next-build.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-reel-share-01-next-build.log",
+      "sha256": "8b7a15c9a73a79af640deac862cdbfbfdd2038f4342fc9952be56c590d0e5f55"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-reel-share-01-build-source-sha256.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-reel-share-01-build-source-sha256.json",
+      "sha256": "02a54e10f3ab866024f05bdfd699ea10c5d39f3c9b9ab296c6da48ff230096e4"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-reel-share-01-server.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-reel-share-01-server.json",
+      "sha256": "9881d68086946c6042e1226598f4cdb951d353b38a496a7105f2ae623691bf6b"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-reel-share-01-server-ready.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-reel-share-01-server-ready.json",
+      "sha256": "d5b66277804b65e8906f2f32c6b447d699d4b951be43f968b3e10529d083153c"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-reel-share-01-server-runtime.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-reel-share-01-server-runtime.json",
+      "sha256": "47352ee72675912eaec23fb2a938e66bf0e9eef5fe6072783cbc7925998eb119"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-reel-share-01-server.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-reel-share-01-server.log",
+      "sha256": "f5b5faaf1243fcb93ca782b68753a8e7ec7f7636efccc6c8b158060f4e7c2ff7"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-online-salon-reel-share-01-server.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-online-salon-reel-share-01-server.json",
+      "sha256": "3ec145391bfa2a23d76d4867a863a30dcbfed8fd99014e663bbfce47ec2c250f"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-online-salon-reel-share-01-server-ready.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-online-salon-reel-share-01-server-ready.json",
+      "sha256": "7347490a385422ae77c53fecf88c142da3d7d0a4ed1062cf0df2383f8baca287"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-online-salon-reel-share-01-server-runtime.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-online-salon-reel-share-01-server-runtime.json",
+      "sha256": "3c816702a3a8daed758223a6ca93b29543220ff8dc50d5da8b8c1c7baa3728fa"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/built-shell-online-salon-reel-share-01-server.log",
+      "sourceInVerificationCheckout": "verification/web/evidence/built-shell-online-salon-reel-share-01-server.log",
+      "sha256": "58e2da09c70ca4e682d0c18e5d126bba2670dad6fd144a2442cf72a1656cc4ef"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-paranal-built-501-browser.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-paranal-built-501/browser.json",
+      "sha256": "3e9bc45d7cc58da88bcc872dbaaafd48c4731c8e16a40855b4044e5e0c3390f1"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-elt-built-501-browser.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-elt-built-501/browser.json",
+      "sha256": "2f9a85f2c18aa90a04f45de4daacb0506a6b0bb4b4c9a3367aae845e4efbf97a"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-lava-built-501-browser.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-lava-built-501/browser.json",
+      "sha256": "aa7d05b1cf1465d257368aedcd896cb63640d62cf6ba61f753be64634d1699a2"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/online-salon-browser-501-browser.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/online-salon-browser-501/browser.json",
+      "sha256": "719706c1d096f0bd27c498858653a49d59632b7596edc0ad012609ab0a9f2e2c"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/native-hosting-browser-clips-share-01-android-browser.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/native-hosting-browser-clips-share-01-android/browser.json",
+      "sha256": "52e205f45438d79df0786c983752e7dc02043fbe83eadded9b96abbea6115e82"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/native-hosting-browser-clips-share-01-ios-browser.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/native-hosting-browser-clips-share-01-ios/browser.json",
+      "sha256": "f70641054940a169d895de5c934b14ddb66107ffb0ce6c04fc1d2845528a11a1"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/native-hosting-fixture-clips-share-01-source-manifest.json",
+      "sourceInVerificationCheckout": "verification/web/evidence/native-hosting-fixture-clips-share-01/source-manifest.json",
+      "sha256": "0be1f2f08d4385de0edfff021e80a6a6265c1d94c9c5c7883db0dec6fcf0c8ff"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-paranal-built-501-reel-320.png",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-paranal-built-501/reel-320.png",
+      "sha256": "3a0c0dfdd2aeeef8d584be9b42d7403e26646d6258e5a5fbd3108134db682751"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-elt-built-501-reel-320.png",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-elt-built-501/reel-320.png",
+      "sha256": "b1d516b07f55de0643b6eaea77ac8dc3f0676794d4c9fc0907cea8912c466447"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/reel-lava-built-501-reel-320.png",
+      "sourceInVerificationCheckout": "verification/web/evidence/reel-lava-built-501/reel-320.png",
+      "sha256": "13c4eb1d1a6f8873c4941ec609d87f4f03cf61dcd829956c9144fe8406899123"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/native-hosting-browser-clips-share-01-android-clips-playing-320.png",
+      "sourceInVerificationCheckout": "verification/web/evidence/native-hosting-browser-clips-share-01-android/clips-playing-320.png",
+      "sha256": "224d557fe7a7a72f382dea2d47a88fab824270f2d5082807a4f302ffe477b951"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/native-hosting-browser-clips-share-01-ios-clips-playing-320.png",
+      "sourceInVerificationCheckout": "verification/web/evidence/native-hosting-browser-clips-share-01-ios/clips-playing-320.png",
+      "sha256": "ca851aa8d045c2e04f7f49a9aa0742d9d06b3fe56d10408faadc886ddb73c103"
+    },
+    {
+      "path": "verification/web/evidence/reel-share-2026-11-06/online-salon-browser-501-guest-320.png",
+      "sourceInVerificationCheckout": "verification/web/evidence/online-salon-browser-501/guest-320.png",
+      "sha256": "4d648c761798897bca586908a778bb7e9b7cc13a63b42d4b01644ba172c5d1f8"
+    }
+  ]
+}
