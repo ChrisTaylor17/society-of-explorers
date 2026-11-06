@@ -73,8 +73,8 @@ export async function execute(f,path,phase='apply'){
  try{const result=await f.db.exec(text);entry.outcome='committed';return result;}
  catch(error){await f.db.exec('ROLLBACK');entry.outcome='refused';entry.code=error.code??null;entry.message=error.message;throw error;}
 }
-export async function createFullChainDb(label,{recordedEventGrants=false,recordedReadingBaseline=false}={}){
- const db=await live.createLiveDb();evidence.databasesCreated++;let closed=false;
+export async function createFullChainDb(label,{recordedEventGrants=false,recordedReadingBaseline=false,db:fixtureDb}={}){
+ const db=await live.createLiveDb({db:fixtureDb});evidence.databasesCreated++;let closed=false;
  const f={db,label,async close(){if(closed)return;await db.close();closed=true;evidence.databasesClosed++;}};
  try{
   // All fixture schema preparation occurs before the first reviewed migration.

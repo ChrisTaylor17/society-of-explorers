@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T06:01:39.968059+00:00",
+  "baseCommit": "f32b3cefd7341be2842f22ba9da42f05355c2397",
+  "status": "LOCAL_NATIVE_POSTGRESQL_CIRCLE_CUTOVER_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "productionRestoreVerified": false,
+  "scope": "Synthetic captured-state fixture, restored to a second database in a disposable PostgreSQL 17 cluster reachable only through its private Unix socket. Checks use actual service and browser role privileges and independent local SQL sessions.",
+  "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+  "sourceBaseline": "Dated zero-policy saved-reading and broad EXP/Circle grants from reviewed catalog projections with synthetic members and content.",
+  "rehearsal": {
+    "path": "verification/web/evidence/native-circle-cutover-03/receipt.json",
+    "sha256": "12d2622a001b2a98e39e03f7d6040f468c6c3ee580f3f0834dd4f585e48454e2",
+    "bytes": 12286,
+    "migrationFiles": 41,
+    "preservedOriginalTables": 12,
+    "concurrentCases": [
+      {
+        "name": "Concurrent exact create commits one listing and replays one receipt",
+        "waitEvent": "advisory"
+      },
+      {
+        "name": "Competing last-seat joins preserve capacity and create one new receipt",
+        "waitEvent": "transactionid"
+      },
+      {
+        "name": "A new same-value join advances revision and blocks a stale leave",
+        "waitEvent": "advisory"
+      },
+      {
+        "name": "Rolled-back RSVP leaves the waiting response eligible and no orphan receipt",
+        "waitEvent": "advisory"
+      },
+      {
+        "name": "Detail waiting on leave returns without the private meeting URL or RSVP",
+        "waitEvent": "transactionid"
+      }
+    ],
+    "checksPassed": 8,
+    "serverStopped": true,
+    "temporaryDirectoryRemoved": true
+  },
+  "existingComposedRegression": {
+    "path": "verification/web/evidence/native-circle-cutover-03/full-chain-regression.tap",
+    "sha256": "f08faccb7ef11f5f3a5a1a94a509a53bc61f3ac17de95e1ef63ee0f84c55dee7",
+    "bytes": 60706,
+    "scenariosPassed": 4,
+    "databasesClosed": 4,
+    "providerCalls": 0
+  },
+  "sourceHashes": {
+    "verification/web/scripts/test-native-circle-cutover.py": "e62ce70afc4a2cd08271cacf2a3ad119f88ad31afb60339597f3dbfde13b0997",
+    "verification/web/tests/support/circle-live-db.mjs": "9163443f71ec1cd4a9ae45f8c7f407372ad9d0818bc3954aab9e9d8e3bfcd28b",
+    "verification/web/tests/support/export-native-cutover-fixture.mjs": "6de060d65658dd6ced1dfb2d494d01f785fd43f7778e4822879e2d0fdfe819d5",
+    "verification/web/tests/support/full-chain-migration-db.mjs": "712c07291ed4b83f549d1efaf325f1256102b2439e44c11ed4f308d59e13d4f5"
+  },
+  "limits": "This run used the staged full-chain SQL list and separate connections. Practice and Live Council remain covered by their own restore evidence. Hosted Data API/schema cache, the production archive, account providers and physical devices still need acceptance."
+}

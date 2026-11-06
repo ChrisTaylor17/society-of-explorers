@@ -26,4 +26,15 @@ Creation and completion now require canonical lowercase `expectedMemberId` in th
 
 Creation retains actor/request idempotency, not listing deduplication. The same key replays one Circle; a different key intentionally creates another Circle within current quotas. A current hosting count or absent My Circles row cannot prove an older in-flight create will not commit. Ordinary UI retirement must retain private uncertain identity while clearing displayed private state; terminal abandonment must disclose that a sent request may still finish. Nothing retries automatically. Host completion remains an explicit reviewed operation and does not delete contributions or remove continuing members' discussion access.
 
-Current local tests execute canonical identity resolution, actual HTTP handlers, the real current materialized editions and the actual SQL chain. They cover owner switches including signed wallet cookies, old-body refusal, loss/exact replay, refused retries, quotas, owner-aware receipts, the two fixed no-op races, historical compatibility, raw barrier continuity and disable/reapply. PGlite serializes one connection, so HTTP overlap plus real CAS rejection is established, not independent PostgreSQL-session lock scheduling, hosted schema-cache acceptance, provider credentials or device operation. No production SQL or deployment was performed.
+The composed HTTP tests run canonical identity resolution, route handlers, materialized editions and the current SQL chain on one PGlite connection. They cover account switches, old-body refusal, exact replay, quotas, historical compatibility, the raw RSVP write restriction and disable/reapply.
+
+## PostgreSQL cutover rehearsal
+
+PostgreSQL 17 restored the synthetic fixture and applied the 41 files in the staged migration chain for the dated zero-policy reading baseline. The original columns and rows matched before and after the chain across 12 tables. Five competing requests waited on an observed PostgreSQL lock. Exact creation retry returned the original listing, one request took the last seat, an explicit same-value join fenced an older leave, and an RSVP rollback left no receipt. A Circle detail read that waited on leave returned without the private link or the departed member’s RSVP. The database also denied browser-role access and direct service writes to RSVP rows. [Verification record](native-circle-cutover-verification.json)
+
+Run from a materialized checkout with the cached fixture runtime and local PostgreSQL 17. The script starts an isolated database on a private Unix socket and removes the fixture after shutdown. The production restore, hosted Data API and physical device checks remain open. [Supabase Data API security](https://supabase.com/docs/guides/api/securing-your-api)
+
+```sh
+mkdir -p verification/web/evidence
+python3 -B verification/web/scripts/test-native-circle-cutover.py circle-cutover-local
+```

@@ -56,8 +56,7 @@ export async function readLiveFixtureCatalog(db) {
   return metadata;
 }
 
-export async function createLiveDb({ seed = true } = {}) {
-  const db = new PGlite();
+export async function createLiveDb({ seed = true, db = new PGlite() } = {}) {
   await db.waitReady;
   try {
     await db.exec(`CREATE ROLE postgres NOLOGIN SUPERUSER;
