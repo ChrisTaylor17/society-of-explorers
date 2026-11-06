@@ -12,12 +12,14 @@ The catalog also includes **How a Circle works**, a 23.955-second original silen
 
 **What did the tilt prove?** adds actual footage of ESO’s first telescope tilt test from October 2026. It has its own source and visual review. The silent 20-second edit links its license and ends with a question for a Circle. [Second Archivist Reel](elt-reel.md)
 
+**Which height are we measuring?** uses labeled Kīlauea archive footage to illustrate two measurements in the USGS report on the October 17, 2026 eruption. The finished edit, timed text and provenance are bundled. The original stock stays in the excluded review archive. [Third Archivist Reel](which-height-reel.md)
+
 ## Publication and storage gate
 
 `lib/clips/registry.json` is a maintainer-controlled private registry. Entries need explicit `status: catalog-approved` and `publishable: true`, but those flags alone are insufficient. The reusable verifier also requires:
 
 - Strict identifiers, bounded fields and separate source, final asset, caption and inspection file pins; every pin names a relative file with exact bytes and SHA256.
-- Real-path containment under `content/clips`, no symlink escape, regular files opened without following a leaf symlink, bounded reads and actual content-hash comparison. The source limit is 64MiB; the final clip is at most 16MiB and 120 seconds; caption/inspection files are at most 64KiB.
+- Real-path containment under `content/clips`, regular files opened without following a leaf symlink, bounded reads and content-hash comparison. The source limit is 64MiB. The final clip is at most 16MiB and 120 seconds. Caption and inspection files are at most 64KiB. For the Kīlauea Reel, the renderer verifies the original in the local archive and the app matches its exact provenance pin while verifying the bundled files.
 - Exact artifact identities in the pinned inspection, reviewed duration, required track configuration, video dimensions and frame-check evidence. MIME is allowlisted and checked against file signatures. A signature is not codec-decoding proof: the creation/inspection pipeline and browser checks supply that evidence.
 - Valid WebVTT with ordered, bounded cues covering the clip, no executable markup, and a transcript derived from the same caption bytes.
 - Explicit review mode, check date, source timing, territorial scope and display/excerpt/reencode/caption/commercial permissions. Future-dated checks, unknown territory and malformed records fail closed. Duplicate IDs expose no ambiguous entry.

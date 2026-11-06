@@ -10,6 +10,7 @@ const selections = new Map([
   ['how-a-circle-works', 'soe_circle_intro'],
   ['night-sky-traffic', 'soe_night_sky'],
   ['telescope-first-tilt', 'soe_elt_tilt'],
+  ['which-height', 'soe_which_height'],
 ]);
 
 function resident(file, maximum) {
@@ -49,7 +50,8 @@ function packageClipAssets(destination) {
     const rights = inspection.rights;
     if (inspection.audioTracks !== 0 || (entry.source.kind === 'first-party' ? clip.sourcePage !== null || clip.attribution !== null
         : !rights || clip.sourcePage !== entry.source.pageUrl || clip.attribution?.licenseUrl !== rights.licenseUrl
-          || clip.attribution?.edits !== rights.edits || clip.attribution?.captionPresentation !== 'embedded-text')) {
+          || clip.attribution?.edits !== rights.edits || clip.attribution?.referenceUrl !== rights.referenceUrl
+          || clip.attribution?.captionPresentation !== 'embedded-text')) {
       throw Error('SoE clip attribution is incomplete');
     }
     const captions = pinned(clip.captionsFile, clip.captionsBytes, clip.captionsSHA256, 65536).toString('utf8');

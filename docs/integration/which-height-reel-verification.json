@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T05:47:45.656151+00:00",
+  "baseCheckpoint": "e34d902b3ee89e6b5e8ecbd858016e3d7ea9629b",
+  "status": "LOCAL_THIRD_ARCHIVIST_REEL_PASS_PRODUCTION_HOLD",
+  "scope": "Built web release candidate and React Native browser simulations with real media playback. The Drive connector verified owner-only storage metadata. Installed phone playback and hosted production release remain open.",
+  "productionCleared": false,
+  "physicalPhoneVerified": false,
+  "review": {
+    "inspection": {
+      "path": "content/clips/which-height-inspection.json",
+      "sha256": "2b1fcc2743734cd8a046a68004e5ea5491df5cefed0352eb3b36b06866824b27",
+      "bytes": 2618
+    },
+    "source": {
+      "path": "verification/web/evidence/source-media/pexels-33378632-source.mp4",
+      "sha256": "a0aee5ab007afc52b6d859c6c9880d9dbf0c49340f7acafb87d9e62f4a6f57f6",
+      "bytes": 34828800
+    },
+    "video": {
+      "path": "content/clips/which-height.mp4",
+      "sha256": "1815e08a3e5fea79db76e76c77a3d22c3559b0c6ac91123091daebb6093fd2a7",
+      "bytes": 1804485
+    },
+    "captions": {
+      "path": "content/clips/which-height.vtt",
+      "sha256": "070c629ae14d38e6c167455f8ac78f9351bbd389c17a341989bd42a17d742138",
+      "bytes": 541
+    },
+    "actualSourceStartMicroseconds": 66667,
+    "outputFrames": 500,
+    "sampledSourceFrames": 42,
+    "reviewedPortraitFrames": 5,
+    "originalRender": {
+      "path": "verification/web/evidence/reel-lava-review-02/render.json",
+      "sha256": "857a413ed78f77485602dc5dd047ba8574d9218558b17c62e3325996cf4664d2",
+      "bytes": 1452
+    },
+    "originalSourceTiming": {
+      "path": "verification/web/evidence/reel-lava-review-02/render-timing.json",
+      "sha256": "1c46497f4a2177feea174e434814f7a2fcb97d14fe05398b5639a812d324e281",
+      "bytes": 7053
+    },
+    "repeatRender": {
+      "path": "verification/web/evidence/reel-lava-review-04/render.json",
+      "sha256": "3b8e4e22d8788c821d63a1e1e3dde1da50efa7d26e9b912add56ba78e024c7fe",
+      "bytes": 1478
+    },
+    "sameCaptionAndPreviewBytesOnRepeat": true,
+    "sameMP4BytesOnRepeat": false,
+    "contactSheet": {
+      "path": "verification/web/evidence/reel-lava-review-02/decoded-source-contact.png",
+      "sha256": "20a17fe6e547f16ce6ad47189540ffa2cd975c0b1b673c667a504ae1afdde693",
+      "bytes": 747521
+    }
+  },
+  "checks": {
+    "clipChecks": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/clip-checks.tap",
+      "sha256": "cf4b91733e44303c19bfb37b3c8839c022fd7fe5bdc46cb17ee4e79c9028691d",
+      "bytes": 7489,
+      "passed": 29
+    },
+    "compiledAPIChecks": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/compiled-boundaries.json",
+      "sha256": "78877bbb8fbb6e0d458e24a77cc2f88dcee0e86905d7d5a06d2656018ce18fd2",
+      "bytes": 2701,
+      "passed": 14
+    },
+    "scopedLintExitCode": 0,
+    "podspecSyntaxExitCode": 0
+  },
+  "build": {
+    "path": "verification/web/evidence/checkpoint-lava-reel/build.json",
+    "sha256": "8189cb81eca3954a8713ebbfaa9a10986c615740b6693c9f4307c6482d86051a",
+    "bytes": 657,
+    "id": "DmXVBOmdfCbCjACjoyYqn",
+    "sourceFiles": 1063,
+    "inputManifest": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/build-sources.json",
+      "sha256": "8a6bcfb50568c57f6166b6063c245083b3ec2f6f2d828c6e3da3b7dec1c24432",
+      "bytes": 129588
+    },
+    "stockExcluded": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/stock-exclusion.json",
+      "sha256": "98c92b90da3795aee55ec4e271af5ae2cfddca2437c7f89b6059a0973d63d4c2",
+      "bytes": 787
+    },
+    "serverStopped": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/server-stopped.json",
+      "sha256": "0c25718c4bf66129dceceb54b1be30b33ba221955b7caea0a66a95453587f9c1",
+      "bytes": 692702
+    },
+    "portClosed": true
+  },
+  "web": {
+    "path": "verification/web/evidence/checkpoint-lava-reel/web.json",
+    "sha256": "170516f0f0396f5b4dd1550313e833d3556e7c536462eaa7ef458711cd954c4f",
+    "bytes": 3019,
+    "stories": 4,
+    "playbackSeconds": 20,
+    "screenshot": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/web-320.png",
+      "sha256": "a2c86f1eada1b6dcc57298dccc5929aa855617b97d650a28c3881896f07e403a",
+      "bytes": 305818
+    }
+  },
+  "phone": {
+    "android": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/android-phone.json",
+      "sha256": "e6e40e8a7790909e3f676cd742ee97d6ee67b7b09ac8e4fc71e83d98db5b8756",
+      "bytes": 133094,
+      "stories": 26,
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-lava-reel/android-phone-320.png",
+        "sha256": "80beadf7da3add0e4387a5def6c5c6cdab4bcb8dfab3c1ebd4e17449ddeaac29",
+        "bytes": 92846
+      },
+      "cleanup": {
+        "browser": "closed",
+        "database": "closed"
+      }
+    },
+    "ios": {
+      "path": "verification/web/evidence/checkpoint-lava-reel/ios-phone.json",
+      "sha256": "c80392ee41d413f329387f07ae29ed7313b6cba52ed449e6dde7e4eea84c9b9b",
+      "bytes": 36051,
+      "stories": 9,
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-lava-reel/ios-phone-320.png",
+        "sha256": "80beadf7da3add0e4387a5def6c5c6cdab4bcb8dfab3c1ebd4e17449ddeaac29",
+        "bytes": 92846
+      },
+      "cleanup": {
+        "browser": "closed",
+        "database": "closed"
+      }
+    }
+  },
+  "phoneBundleManifest": {
+    "path": "verification/web/evidence/checkpoint-lava-reel/phone-bundle-sources.json",
+    "sha256": "f7e1d7b2d9da4cf313f2c39414ea00e86cdd9af4430f3169b9f1fc62ee77ae00",
+    "bytes": 14703
+  },
+  "drive": {
+    "path": "verification/web/evidence/reel-lava-review-02/drive-archive.json",
+    "sha256": "ac9bcd49f3a5a60d6ceafdc41d2e8d8865bb1d5d5932ca64e8379c34bcabb815",
+    "bytes": 1769,
+    "privateFilesVerified": 3
+  },
+  "corrections": [
+    "The initial renderer assumed the original started at timestamp zero. An explicit 66,667 microsecond source start fixed the decoded frame check.",
+    "The first full browser run used the previous Reel’s closing transcript phrase. The exact Kīlauea phrase passed on rerun.",
+    "The initial Next trace included the source stock file. The final local build excludes it and three direct requests returned 404."
+  ],
+  "sourceBindings": {
+    "app/clips/ClipPlayer.tsx": "08145de001bd5eaa392aa818013147cd08ef87b4de54bad1a319de31e7c36e32",
+    "content/clips/which-height-edit.json": "d7f57898ef7385fe098bc6530c37954dc35bd0f9957a1b2ff396217c9630a8a1",
+    "content/clips/which-height-inspection.json": "2b1fcc2743734cd8a046a68004e5ea5491df5cefed0352eb3b36b06866824b27",
+    "content/clips/which-height.mp4": "1815e08a3e5fea79db76e76c77a3d22c3559b0c6ac91123091daebb6093fd2a7",
+    "content/clips/which-height.vtt": "070c629ae14d38e6c167455f8ac78f9351bbd389c17a341989bd42a17d742138",
+    "lib/clips/contracts.ts": "1d5dc7385fe9526371b21ef7959317d2c5bb80b31366769d8bc317ad8476b433",
+    "lib/clips/registry.json": "9a8b6aaed7254f34b47a97138e2d5601381b82b097376d68e6c8ffb67ab37267",
+    "lib/clips/server.ts": "8d94d7f2f60c20d5f2bf2bb68663c4f69555b7161fe9b95f31fd10e75eb227ea",
+    "platforms/native/ClipsScreen.tsx": "d1f06c0e89e295e7b39de411466ccc36d24cb908a761abfccaf6ad82b54526b9",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/reader/ClipPlayerManager.kt": "530f762027291a430b89549a3f81f57967f3b21bc7a6c1b92c769d15e873073e",
+    "platforms/native/clip-catalog.json": "72a9d148c04633a694dea89f8d0f35f8dbd41a85d68e54bddd3e6a6d11274a4e",
+    "platforms/native/ios-source/SoeClipPlayerView.mm": "bf5be1f52f6acc06222c96875d9d058c7dc0f75d95a72fac88a004a672c3b449",
+    "platforms/native/ios-source/SoeSourceReader.podspec": "ba8dd85662b0b7820e75b319a7d385202895fd98958b5b4a8432efce4a36e2af",
+    "platforms/native/prepare-clip-assets.cjs": "fe196b77d2eb59c6641a2f38b8a89f01572d0649b72c69ef8907104d616f69f7",
+    "platforms/tests/browser-native-hosting.mjs": "4324fea805a6f3a98389aad2d2492cdabbd0c75a538fce004441486d05d42a52",
+    "verification/web/scripts/browser-paranal-reel.mjs": "9d436bfe206127c7786b5d88cf3070c78899103cb160158002f5887c7e3cac3e",
+    "verification/web/scripts/reel-avfoundation.swift": "39a3fbf9c01a2a086010a8472fa7a1b3e010d6e1ed6cb2661698f5f9b901c6e1",
+    "verification/web/scripts/reel-render-browser.mjs": "f43b0d8a17d9327ae2fffde3d6be951211aff057e1a7930a7c215ecdf997fbff",
+    "verification/web/scripts/render-paranal-reel.py": "32decbc93795ec2dcd08889963aa172ca50770562b56a03ff2f418ff06876f17",
+    "verification/web/tests/clip-retained.test.mjs": "ee020f4636b95af920b21d5cff3704871ed02bdd9704d0f7041b348b4b0b3cad",
+    "verification/web/tests/native-clip-assets.test.mjs": "6fecb17ebdc610b907412b04c8661c2f0a60c35de016fe057a1c1b2fbbf48fb7"
+  }
+}

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {existsSync} from 'node:fs';
 import {offlineApp} from './support/offline-app.mjs';
 test('actual retained original video crosses catalog gateway HEAD Range and anonymous hash-verifying client',async()=>{
  const a=offlineApp(),catalog=a.load('app/clips/catalog/route.ts'),media=a.load('app/clips/media/[clipId]/route.ts'),captions=a.load('app/clips/captions/[clipId]/route.ts');
@@ -14,9 +15,24 @@ test('actual retained original video crosses catalog gateway HEAD Range and anon
  assert.equal(loaded.byteLength,clip.media.bytes);assert.ok(new TextDecoder().decode(subtitles).startsWith('WEBVTT'));assert.equal(calls.length,2);for(const call of calls){assert.equal(call.options.credentials,'omit');assert.equal(call.options.referrerPolicy,'no-referrer');assert.equal(call.options.redirect,'error');}
 });
 
-for (const [id, page, credit, seconds] of [
+test('the stock archive stays outside clip storage and only its exact source pin passes review', async () => {
+ const app = offlineApp();
+ const entry = app.load('lib/clips/registry.json').find(item => item.id === 'which-height');
+ const { verifyClip } = app.load('lib/clips/server.ts');
+ assert.equal(existsSync(new URL(`../../../content/clips/${entry.source.path}`, import.meta.url)), false);
+ assert.ok(await verifyClip(entry, { territory: null }));
+ for (const change of [{ path: 'other-source.mp4' }, { bytes: entry.source.bytes - 1 }, { sha256: '0'.repeat(64) }]) {
+  assert.equal(await verifyClip({ ...entry, source: { ...entry.source, ...change } }, { territory: null }), null);
+ }
+});
+
+const ccBy = 'https://creativecommons.org/licenses/by/4.0/';
+const pexels = 'https://www.pexels.com/terms-of-service/';
+const report = 'https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55';
+for (const [id, page, credit, seconds, license = ccBy, referenceUrl] of [
  ['night-sky-traffic', 'https://www.eso.org/public/videos/eso2607d/', 'B. Häußler/ESO', 24],
  ['telescope-first-tilt', 'https://www.eso.org/public/videos/potw2643a/', 'ESO/Cimolai/Apical/G. Vecchia', 20],
+ ['which-height', 'https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/', 'James Lee via Pexels', 20, pexels, report],
 ]) test(`the retained ${id} Reel returns linked attribution, bounded media and complete timed text`, async () => {
  const app = offlineApp();
  const catalog = app.load('app/clips/catalog/route.ts');
@@ -26,11 +42,12 @@ for (const [id, page, credit, seconds] of [
  assert.ok(reel);
  assert.equal(reel.sourcePage, page);
  assert.equal(reel.credit, credit);
- assert.equal(reel.attribution.licenseUrl, 'https://creativecommons.org/licenses/by/4.0/');
+ assert.equal(reel.attribution.licenseUrl, license);
+ assert.equal(reel.attribution.referenceUrl, referenceUrl);
  assert.equal(reel.attribution.captionPresentation, 'embedded-text');
  assert.equal(reel.durationMs, seconds * 1000);
  assert.ok(reel.media.bytes < 4_000_000);
- for (const hidden of ['eso2607d-source.mp4', 'potw2643a-source.m4v', 'cdn.eso.org', '-inspection.json', 'sourceStartMs']) {
+ for (const hidden of ['eso2607d-source.mp4', 'potw2643a-source.m4v', 'cdn.eso.org', 'videos.pexels.com', 'pexels-33378632-source.mp4', '-inspection.json', 'sourceStartMs']) {
   assert.equal(JSON.stringify(dto).includes(hidden), false);
  }
  const request = href => new Request('http://local.invalid' + href);
@@ -45,5 +62,14 @@ for (const [id, page, credit, seconds] of [
  const text = await (await captions.GET(request(reel.captions.href), params)).text();
  assert.equal((text.match(/-->/gu) || []).length, 4);
  assert.ok(text.includes(`00:00:${seconds}.000`));
- assert.match(reel.transcript, /Bring your reason to a\s+Circle\./);
+ if (referenceUrl) {
+  const transcript = reel.transcript.replace(/\s+/gu, ' ');
+  assert.match(transcript, /Archive footage of Kīlauea/);
+  assert.match(transcript, /25,000 feet above sea level/);
+  assert.match(transcript, /just over 700 feet/);
+  assert.match(transcript, /Bring a question to a Circle/);
+  const { parsePublicMediaClip } = app.load('lib/clips/contracts.ts');
+  assert.equal(parsePublicMediaClip({ ...reel, attribution: { ...reel.attribution, referenceUrl: undefined } }), null);
+  assert.equal(parsePublicMediaClip({ ...reel, attribution: { ...reel.attribution, referenceUrl: 'https://other.invalid/report' } }), null);
+ } else assert.match(reel.transcript, /Bring your reason to a\s+Circle\./);
 });

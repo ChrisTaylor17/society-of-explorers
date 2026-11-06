@@ -56,6 +56,7 @@ internal class ClipPlayerView(private val react: ThemedReactContext) : FrameLayo
       "how-a-circle-works" -> R.raw.soe_circle_intro
       "night-sky-traffic" -> R.raw.soe_night_sky
       "telescope-first-tilt" -> R.raw.soe_elt_tilt
+      "which-height" -> R.raw.soe_which_height
       else -> null
     }
     attemptedKey = requestKey

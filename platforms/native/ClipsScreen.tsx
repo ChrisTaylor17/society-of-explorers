@@ -88,6 +88,8 @@ export function ClipsScreen({ onBack, onRead, onBrowse }: { onBack(): void; onRe
             <Text style={styles.note}>{clip.attribution.edits}</Text>
             <Text selectable style={styles.address}>{clip.sourcePage}</Text>
             <Text selectable style={styles.address}>{clip.attribution.licenseUrl}</Text>
+            {clip.attribution.referenceUrl && <Text selectable style={styles.address}>
+              USGS eruption report · {clip.attribution.referenceUrl}</Text>}
           </> : null}
           <Text accessibilityRole="header" style={styles.note}>Transcript</Text>
           <Text selectable style={styles.copy}>{clip.transcript}</Text>

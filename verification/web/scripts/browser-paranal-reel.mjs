@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 
 const [prefix, name, ...extra] = process.argv.slice(2);
 assert(!extra.length && /^built-shell-[a-z0-9-]+-$/.test(prefix ?? ''));
-assert(/^reel-(?:paranal|elt)-built-[0-9]+$/.test(name ?? ''));
+assert(/^reel-(?:paranal|elt|lava)-built-[0-9]+$/.test(name ?? ''));
 assert(process.execArgv.some(arg => arg.endsWith('/deny-build-network.cjs')));
 const evidence = resolve('verification/web/evidence'), folder = resolve(evidence, name);
 const resident = path => {
@@ -23,12 +23,14 @@ const origin = ready.origin;
 const require = createRequire(resident('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json'));
 const executablePath = resident('/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing');
 const elt = name.startsWith('reel-elt-');
-const title = elt ? 'What did the tilt prove?' : 'Who gets the night sky?';
-const id = elt ? 'telescope-first-tilt' : 'night-sky-traffic';
-const credit = elt ? 'ESO/Cimolai/Apical/G. Vecchia' : 'B. Häußler/ESO';
-const source = elt ? 'https://www.eso.org/public/videos/potw2643a/' : 'https://www.eso.org/public/videos/eso2607d/';
-const duration = elt ? 20 : 24;
-const sampleTimes = elt ? [0, 4.8, 10, 15.2, 19.8] : [0, 4.8, 10, 16, 23.8];
+const lava = name.startsWith('reel-lava-');
+const title = lava ? 'Which height are we measuring?' : elt ? 'What did the tilt prove?' : 'Who gets the night sky?';
+const id = lava ? 'which-height' : elt ? 'telescope-first-tilt' : 'night-sky-traffic';
+const credit = lava ? 'James Lee via Pexels' : elt ? 'ESO/Cimolai/Apical/G. Vecchia' : 'B. Häußler/ESO';
+const source = lava ? 'https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/'
+  : elt ? 'https://www.eso.org/public/videos/potw2643a/' : 'https://www.eso.org/public/videos/eso2607d/';
+const duration = elt || lava ? 20 : 24;
+const sampleTimes = duration === 20 ? [0, 4.8, 10, 15.2, 19.8] : [0, 4.8, 10, 16, 23.8];
 const calls = [], external = [], errors = [], stories = [], snapshots = [];
 let browser, closed = false, playback = null, failure = null;
 function save(name, bytes) {
@@ -62,7 +64,13 @@ try {
   await page.waitForURL(origin + '/clips#' + id);
   assert.equal(await page.evaluate(() => document.activeElement.id), id);
   assert.equal(await reel.getByRole('link', { name: credit, exact: true }).getAttribute('href'), source);
-  assert.equal(await reel.getByRole('link', { name: 'CC BY 4.0', exact: true }).getAttribute('href'), 'https://creativecommons.org/licenses/by/4.0/');
+  assert.equal(await reel.getByRole('link', { name: lava ? 'Pexels License' : 'CC BY 4.0', exact: true }).getAttribute('href'),
+    lava ? 'https://www.pexels.com/terms-of-service/' : 'https://creativecommons.org/licenses/by/4.0/');
+  if (lava) {
+    const report = reel.getByRole('link', { name: 'Read the USGS eruption report', exact: true });
+    assert.equal(await report.getAttribute('href'),
+      'https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55');
+  }
   assert.equal(await reel.getByRole('link', { name: 'Link to this Reel' }).getAttribute('href'), '/clips#' + id);
   assert.equal(await reel.getByRole('link', { name: 'Discuss in an online Circle' }).getAttribute('href'), '/circles?format=online');
   assert.equal(await page.getByRole('heading', { name: 'How a Circle works', exact: true }).count(), 1);
@@ -137,7 +145,7 @@ try {
   await reel.getByRole('button', { name: 'Unload clip' }).click();
   assert.equal(await video.count(), 0);
   await reel.getByText('Read the transcript', { exact: true }).click();
-  await reel.getByText(/Bring your reason to a\s+Circle/).waitFor();
+  await reel.getByText(lava ? /Bring a question to a\s+Circle/ : /Bring your reason to a\s+Circle/).waitFor();
   assert.equal(calls.length, 2);
   await context.close();
   stories.push('Unload retires the video and leaves the transcript and source links usable.');

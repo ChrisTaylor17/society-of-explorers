@@ -37,7 +37,7 @@ enum ReelError: Error { case unsupportedAsset, invalidSamples, io, badArguments 
         let transform = try await track.load(.preferredTransform)
         let rate = try await track.load(.nominalFrameRate)
         let audio = try await asset.loadTracks(withMediaType: .audio)
-        guard descriptions.count == 1, transform.isIdentity, rate == 25,
+        guard descriptions.count == 1, transform.isIdentity, [25, 30].contains(rate),
               CMFormatDescriptionGetMediaSubType(descriptions[0]) == kCMVideoCodecType_H264,
               let atoms = (CMFormatDescriptionGetExtensions(descriptions[0]) as NSDictionary?)?["SampleDescriptionExtensionAtoms"] as? [String: Data],
               let avc = atoms["avcC"] else { throw ReelError.unsupportedAsset }

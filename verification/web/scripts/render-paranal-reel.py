@@ -53,11 +53,15 @@ def render(run, clip):
     filename = edit['source']['file']
     if not re.fullmatch(r'[a-z0-9-]+\.(?:mp4|m4v)', filename):
         raise ValueError('The edit must use a local publisher file')
-    source = CONTENT / filename
+    source = (EVIDENCE / 'source-media' if clip == 'which-height' else CONTENT) / filename
     if sha256(read(source)).hexdigest() != edit['source']['sha256']:
         raise ValueError('The publisher file differs from the reviewed original')
     if (edit['width'], edit['height'], edit['fps']) != (720, 1280, 25) or edit['layout']['audio'] != 'silent' or not 800_000 <= edit['bitrate'] <= 1_300_000:
         raise ValueError('Unsupported render geometry or audio plan')
+    source_fps = edit['source'].get('fps', edit['fps'])
+    first_presentation_frame = edit['source'].get('firstPresentationFrame', 0)
+    if source_fps not in (25, 30) or type(first_presentation_frame) is not int or not 0 <= first_presentation_frame <= source_fps:
+        raise ValueError('Unsupported original frame rate or presentation start')
     captions = caption_text(edit)
     renderer = TOOLS / 'reel-render-browser.mjs'
     av_source = TOOLS / 'reel-avfoundation.swift'
@@ -91,20 +95,23 @@ def render(run, clip):
             or [sample['bytes'] for sample in result['samples']] != [sample['bytes'] for sample in original_output['samples']]):
         raise ValueError('The encoded MP4 does not match the rendered samples')
     timing = json.loads(read(destination / 'render-timing.json'))
-    if timing['sourceTimes'] != [i * 40_000 for i in range(edit['source']['inFrame'], edit['source']['outFrame'])]:
+    source_times = [round((first_presentation_frame + i * source_fps // edit['fps']) * 1_000_000 / source_fps)
+                    for i in range(edit['source']['inFrame'], edit['source']['outFrame'])]
+    if timing['sourceTimes'] != source_times:
         raise ValueError('The decoded source time mapping changed')
     vtt = destination / f'{clip}.vtt'
     vtt.write_text(captions, encoding='utf-8')
     for name, digest in pins.items():
         if sha256(read(ROOT / name)).hexdigest() != digest:
             raise ValueError(f'Render input changed during editing: {name}')
+    source_start_ms = round(source_times[0] / 1000)
     report = {
         'status': 'RENDERED', 'inputs': pins, 'browser': timing['chromium'],
         'source': {key: source_packets[key] for key in ('width', 'height', 'fps', 'durationMs', 'audioTracks')},
         'asset': {key: result[key] for key in ('width', 'height', 'fps', 'durationMs', 'audioTracks')},
         'decodedSourceFrames': len(timing['sourceTimes']), 'outputFrames': len(result['samples']),
-        'sourceStartMs': edit['source']['inFrame'] * 1000 // edit['fps'],
-        'sourceEndMs': edit['source']['outFrame'] * 1000 // edit['fps'],
+        'sourceStartMs': source_start_ms,
+        'sourceEndMs': source_start_ms + duration,
         'outputSha256': sha256(read(asset, 4_000_000)).hexdigest(),
         'captionSha256': sha256(read(vtt)).hexdigest(),
         'sourceColor': timing['sourceColor'], 'codec': timing['encoder'],
@@ -116,8 +123,8 @@ def render(run, clip):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('run')
-    parser.add_argument('--clip', choices=['night-sky-traffic', 'telescope-first-tilt'], default='night-sky-traffic')
+    parser.add_argument('--clip', choices=['night-sky-traffic', 'telescope-first-tilt', 'which-height'], default='night-sky-traffic')
     args = parser.parse_args()
-    if not re.fullmatch(r'reel-(?:paranal|elt)-[a-z0-9-]{1,24}', args.run):
+    if not re.fullmatch(r'reel-(?:paranal|elt|lava)-[a-z0-9-]{1,24}', args.run):
         parser.error('Choose a fresh Archivist evidence run name')
     render(args.run, args.clip)

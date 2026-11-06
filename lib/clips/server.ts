@@ -4,26 +4,47 @@ import { open, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import registry from './registry.json';
-import { CC_BY_4_URL, clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, MAX_CLIP_BYTES, MAX_CLIP_DURATION_MS,
+import { CC_BY_4_URL, KILAUEA_REPORT_URL, PEXELS_LICENSE_URL, clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, MAX_CLIP_BYTES, MAX_CLIP_DURATION_MS,
   parsePublicMediaClip, plain, record, type PublicMediaClip } from './contracts';
 
 const SOURCE_LIMIT = 64 * 1024 * 1024;
 const PERMISSIONS = ['display', 'excerpt', 'reencode', 'captions', 'commercial'];
 const ESO_POLICY = 'https://www.eso.org/public/outreach/copyright/';
-const ESO_REELS = new Map([
+const LICENSED_REELS = new Map<string, {
+  media: string; credit: string; policyUrl: string;
+  licenseUrl: typeof CC_BY_4_URL | typeof PEXELS_LICENSE_URL;
+  visualChecks: string[]; referenceUrl?: typeof KILAUEA_REPORT_URL; archiveSource?: FilePin;
+}>([
   ['https://www.eso.org/public/videos/eso2607d/', {
     media: 'https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4',
     credit: 'B. Häußler/ESO',
-    visualCheck: 'landscape-only',
+    policyUrl: ESO_POLICY,
+    licenseUrl: CC_BY_4_URL,
+    visualChecks: ['landscape-only'],
   }],
   ['https://www.eso.org/public/videos/potw2643a/', {
     media: 'https://cdn.eso.org/videos/hd_and_apple/potw2643a.m4v',
     credit: 'ESO/Cimolai/Apical/G. Vecchia',
-    visualCheck: 'no-identifiable-person-or-eso-logo',
+    policyUrl: ESO_POLICY,
+    licenseUrl: CC_BY_4_URL,
+    visualChecks: ['no-identifiable-person-or-eso-logo'],
+  }],
+  ['https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/', {
+    media: 'https://videos.pexels.com/video-files/33378632/14210577_2160_3840_30fps.mp4',
+    credit: 'James Lee via Pexels',
+    policyUrl: PEXELS_LICENSE_URL,
+    licenseUrl: PEXELS_LICENSE_URL,
+    visualChecks: ['landscape-only', 'archive-footage-labeled', 'original-educational-commentary'],
+    referenceUrl: KILAUEA_REPORT_URL,
+    archiveSource: {
+      path: 'pexels-33378632-source.mp4',
+      sha256: 'a0aee5ab007afc52b6d859c6c9880d9dbf0c49340f7acafb87d9e62f4a6f57f6',
+      bytes: 34828800,
+    },
   }],
 ]);
 const SOURCES = new Map([
-  ...Array.from(ESO_REELS, ([page, reel]): [string, Set<string>] => [page, new Set([reel.media])]),
+  ...Array.from(LICENSED_REELS, ([page, reel]): [string, Set<string>] => [page, new Set([reel.media])]),
   ['https://librivox.org/apology-by-plato/', new Set([
     'https://www.archive.org/download/apology_plato_bn_librivox/apology_01_plato.mp3',
     'https://www.archive.org/download/apology_plato_bn_librivox/apology_02_plato.mp3'])],
@@ -124,7 +145,12 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
     const firstParty = value.source.kind === 'first-party';
     if (firstParty ? value.review.mode !== 'automated-first-party' : value.source.kind !== 'third-party' || value.review.mode !== 'documentary-rights'
       || typeof value.source.pageUrl !== 'string' || typeof value.source.mediaUrl !== 'string' || !SOURCES.get(value.source.pageUrl)?.has(value.source.mediaUrl)) return null;
-    const sourceBytes = await verifiedFile(root, source), inspectionBytes = await verifiedFile(root, inspection);
+    const reel = firstParty ? undefined : LICENSED_REELS.get(String(value.source.pageUrl));
+    const archived = reel?.archiveSource;
+    if (archived) {
+      if (source.path !== archived.path || source.sha256 !== archived.sha256 || source.bytes !== archived.bytes) return null;
+    } else await verifiedFile(root, source);
+    const inspectionBytes = await verifiedFile(root, inspection);
     const facts: unknown = JSON.parse(decode(inspectionBytes));
     if (!record(facts) || facts.version !== 1 || facts.assetSha256 !== asset.sha256 || facts.sourceSha256 !== source.sha256
       || facts.captionsSha256 !== captions.sha256 || facts.durationMs !== value.asset.durationMs
@@ -137,7 +163,7 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
         || !integer(facts.width, 1, 4096) || !integer(facts.height, 1, 4096) || !checks.includes('frames-reviewed'))) return null;
     let attribution: PublicMediaClip['attribution'];
     if (firstParty) {
-      if (facts.externalAssets !== false || !checks.includes('source-created-locally') || sourceBytes.length > 1_000_000
+      if (facts.externalAssets !== false || !checks.includes('source-created-locally') || source.bytes > 1_000_000
         || value.review.sourceStartMs !== 0 || value.review.sourceEndMs !== value.asset.durationMs) return null;
     } else {
       if (!record(facts.rights) || facts.rights.decision !== 'approved' || facts.rights.sourcePage !== value.source.pageUrl
@@ -147,19 +173,20 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
         || !Array.isArray(facts.rights.components) || facts.sourceStartMs !== value.review.sourceStartMs
         || facts.sourceEndMs !== value.review.sourceEndMs || !integer(facts.sourceDurationMs, value.review.sourceEndMs, 86_400_000)) return null;
       const required = value.kind === 'audio' ? ['text', 'performance'] : facts.audioTracks === 0 ? ['visuals'] : ['visuals', 'soundtrack', 'performance'];
-      const eso = typeof value.source.pageUrl === 'string' ? ESO_REELS.get(value.source.pageUrl) : undefined;
       for (const kind of required) {
         const component = facts.rights.components.find(c => record(c) && c.kind === kind);
         if (!record(component) || !['public-domain', 'licensed'].includes(String(component.basis))
-          || (eso ? component.policyUrl !== ESO_POLICY || component.basis !== 'licensed' : !POLICIES.has(String(component.policyUrl)))
+          || (reel ? component.policyUrl !== reel.policyUrl || component.basis !== 'licensed' : !POLICIES.has(String(component.policyUrl)))
           || !permissions(component.permissions) || !territories(component.territories, context.territory)) return null;
       }
       if (value.source.pageUrl === 'https://svs.gsfc.nasa.gov/13326/' && (facts.audioTracks !== 0 || !checks.includes('all-audio-removed'))) return null;
-      if (eso) {
-        if (value.kind !== 'video' || facts.audioTracks !== 0 || value.credit !== eso.credit || asset.bytes > 4_000_000
-          || !['all-audio-removed', 'visible-source-credit', eso.visualCheck, 'embedded-text'].every(check => checks.includes(check))
-          || facts.rights.licenseUrl !== CC_BY_4_URL || !plain(facts.rights.edits, 240)) return null;
-        attribution = { licenseUrl: CC_BY_4_URL, edits: facts.rights.edits, captionPresentation: 'embedded-text' };
+      if (reel) {
+        if (value.kind !== 'video' || facts.audioTracks !== 0 || value.credit !== reel.credit || asset.bytes > 4_000_000
+          || !['all-audio-removed', 'visible-source-credit', 'embedded-text', ...reel.visualChecks].every(check => checks.includes(check))
+          || facts.rights.licenseUrl !== reel.licenseUrl || facts.rights.referenceUrl !== reel.referenceUrl
+          || !plain(facts.rights.edits, 240)) return null;
+        attribution = { licenseUrl: reel.licenseUrl, edits: facts.rights.edits, captionPresentation: 'embedded-text',
+          ...(reel.referenceUrl ? { referenceUrl: reel.referenceUrl } : {}) };
       }
     }
     const mediaBytes = await verifiedFile(root, asset), captionBytes = await verifiedFile(root, captions);

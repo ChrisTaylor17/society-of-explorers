@@ -40,10 +40,20 @@ try {
     const step = 1_000_000 / edit.fps;
     const { width, height, layout, scenes } = edit;
     const [vx, vy, vw, vh] = layout.videoRect;
-    const first = edit.source.inFrame * step, last = edit.source.outFrame * step;
+    const sourceFps = edit.source.fps ?? edit.fps;
     const audioMatches = edit.source.audioTracks === undefined ? source.audioTracks > 0 : source.audioTracks === edit.source.audioTracks;
-    if (source.width * vh !== source.height * vw || source.fps !== edit.fps || !audioMatches) throw Error('Unexpected original footage');
-    const count = (last - first) / step;
+    if (source.width * vh !== source.height * vw || source.fps !== sourceFps || !audioMatches) throw Error('Unexpected original footage');
+    const count = edit.source.outFrame - edit.source.inFrame;
+    const firstPresentationFrame = edit.source.firstPresentationFrame ?? 0;
+    const sourceTime = index => {
+      const frame = firstPresentationFrame + Math.floor((edit.source.inFrame + index) * sourceFps / edit.fps);
+      return Math.round(frame * 1_000_000 / sourceFps);
+    };
+    const license = new Map([
+      ['https://www.pexels.com/terms-of-service/', 'Pexels License'],
+      ['https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0'],
+    ]).get(edit.source.license);
+    if (!license) throw Error('Unknown editorial license');
     const canvas = new OffscreenCanvas(width, height), ctx = canvas.getContext('2d', { alpha: false });
     const overlays = scenes.map((scene, index) => {
       const layer = new OffscreenCanvas(width, height), c = layer.getContext('2d', { alpha: false });
@@ -66,9 +76,11 @@ try {
       scene.titleLines.forEach((line, i) => text(line, 53, 205 + i * 77, layout.fontTitle, layout.ink));
       text(layout.label, 53, 350, '600 23px system-ui', layout.accent);
       rule(vx - 2, vy - 2, vw + 4, vh + 4, '#8c7952');
-      text(edit.source.credit, 53, 781, '700 30px system-ui', layout.ink);
-      text('CC BY 4.0  ·  ' + layout.modifications, 53, 820, '500 21px system-ui', '#d9cdb6');
-      scene.bodyLines.forEach((line, i) => text(line, 53, 909 + i * 47, layout.fontBody, layout.ink));
+      const creditY = layout.creditY ?? 781;
+      const [bodyX, bodyY] = layout.bodyAt ?? [53, 909];
+      text(edit.source.credit, 53, creditY, '700 30px system-ui', layout.ink);
+      text(license + '  ·  ' + layout.modifications, 53, creditY + 39, '500 21px system-ui', '#d9cdb6');
+      scene.bodyLines.forEach((line, i) => text(line, bodyX, bodyY + i * 47, layout.fontBody, layout.ink));
       rule(53, 1061, 614, 1, '#77674a');
       text('SOCIETY OF EXPLORERS', 53, 1109, '700 25px system-ui', layout.accent);
       scenes.forEach((_, i) => rule(542 + i * 33, 1096, 24, 5, i === index ? layout.accent : '#445253'));
@@ -99,9 +111,11 @@ try {
     const decoder = new VideoDecoder({
       output(frame) {
         try {
-          if (frame.timestamp < first || frame.timestamp >= last || error) return;
           const n = sourceTimes.length;
-          if (frame.timestamp !== first + n * step || n >= count) throw Error('Decoded source frame changed at index ' + n);
+          if (n >= count || error || frame.timestamp < sourceTime(0)) return;
+          const expected = sourceTime(n);
+          if (sourceFps > edit.fps && frame.timestamp < expected) return;
+          if (frame.timestamp !== expected) throw Error('Decoded source frame changed at index ' + n);
           sourceTimes.push(frame.timestamp);
           color ??= frame.colorSpace.toJSON();
           const scene = scenes.findIndex(cue => n >= cue.start && n < cue.end);
@@ -110,7 +124,8 @@ try {
           ctx.drawImage(frame, vx, vy, vw, vh);
           if (n % 12 === 0) {
             const i = n / 12, x = (i % 6) * 224, y = Math.floor(i / 6) * 143;
-            sheet.drawImage(frame, x, y, 216, 121.5);
+            const sampleWidth = 121.5 * vw / vh;
+            sheet.drawImage(frame, x + (216 - sampleWidth) / 2, y, sampleWidth, 121.5);
             sheet.fillStyle = layout.ink; sheet.font = '13px monospace';
             sheet.fillText((frame.timestamp / 1_000_000).toFixed(2) + ' s source', x, y + 138);
           }

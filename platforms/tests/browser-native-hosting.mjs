@@ -9,6 +9,7 @@ const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hostin
 const clipMode=run?.startsWith('clips-');
 const salonMode=run?.startsWith('clips-salon-');
 const eltMode=run?.startsWith('clips-elt-');
+const lavaMode=run?.startsWith('clips-lava-');
 if(run)fs.mkdirSync(path.join(ROOT,output));
 const file=output+(run?'/browser.json':'/native-hosting-browser.json'),sha=b=>createHash('sha256').update(b).digest('hex');
 const fixtureDir='verification/web/evidence/native-hosting-fixture'+(run?'-'+run:'');
@@ -199,7 +200,8 @@ try{
  }
  if(clipMode){
    const video=p.locator('video');
-   const first=eltMode?clips.find(clip=>clip.id==='telescope-first-tilt'):platform==='android'?clips[1]:clips[0];
+   const first=lavaMode?clips.find(clip=>clip.id==='which-height')
+     :eltMode?clips.find(clip=>clip.id==='telescope-first-tilt'):platform==='android'?clips[1]:clips[0];
    const second=platform==='android'?clips[0]:clips[1];
    assert(first && second && first.id!==second.id);
    const open=()=>button('Explore Clips').click();
@@ -220,6 +222,10 @@ try{
    const publicCopy=normalise(await text());
    for(const clip of clips){assert(publicCopy.includes(clip.credit));assert(publicCopy.includes(normalise(clip.transcript)));}
    assert(publicCopy.includes(edition.paragraphs[0][2].text)&&publicCopy.includes('https://creativecommons.org/licenses/by/4.0/'));
+   if(lavaMode){
+     assert(publicCopy.includes('https://www.pexels.com/terms-of-service/'));
+     assert(publicCopy.includes('USGS eruption report · https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55'));
+   }
    pass('signed-out offline Clips shows exact transcripts, Philemon and the Reel credit before any player, account or media request');
 
    await play(first);await playing(first);

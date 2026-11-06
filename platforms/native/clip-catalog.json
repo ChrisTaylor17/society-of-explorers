@@ -65,6 +65,30 @@
       "captionsFile": "telescope-first-tilt.vtt",
       "captionsSHA256": "5d697474a0b6dbc543b9b29397498d6d840e812afaafe22eeba376e0a6e27d36",
       "captionsBytes": 506
+    },
+    {
+      "id": "which-height",
+      "resource": "soe_which_height",
+      "title": "Which height are we measuring?",
+      "description": "The Archivist uses archive footage of Kīlauea to explain two measurements from the October 17, 2026 eruption. A silent 20-second Reel.",
+      "credit": "James Lee via Pexels",
+      "sourcePage": "https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/",
+      "attribution": {
+        "licenseUrl": "https://www.pexels.com/terms-of-service/",
+        "edits": "Trimmed and framed with original, AI-assisted educational commentary. Archive footage is labeled throughout.",
+        "captionPresentation": "embedded-text",
+        "referenceUrl": "https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55"
+      },
+      "transcript": "Archive footage of Kīlauea. 25,000 feet?\nWhat went up? USGS reported two heights for\nthe eruption on October 17, 2026.\n\nThe plume rose to about 25,000 feet above\nsea level.\n\nThe lava fountain at the north vent peaked\nat just over 700 feet by 5 a.m. local time.\n\nAsk what they measured. Which feature? Where\ndid they measure from? Bring a question to a\nCircle.",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "which-height.mp4",
+      "mediaSHA256": "1815e08a3e5fea79db76e76c77a3d22c3559b0c6ac91123091daebb6093fd2a7",
+      "mediaBytes": 1804485,
+      "captionsFile": "which-height.vtt",
+      "captionsSHA256": "070c629ae14d38e6c167455f8ac78f9351bbd389c17a341989bd42a17d742138",
+      "captionsBytes": 541
     }
   ]
 }
