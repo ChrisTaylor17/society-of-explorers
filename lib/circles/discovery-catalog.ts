@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
-import { getBook } from '@/lib/books/catalog';
 import { CIRCLE_PATH } from './path';
-import { READING_EDITIONS } from './reading-program';
+import { getReadingWork, READING_EDITIONS } from './reading-program';
 import type { DiscoveryQuery } from './discovery';
 
 /** Metadata only: derive from the unchanged authoritative public reading sources. */
@@ -9,7 +8,7 @@ export const DISCOVERY_SEARCH_CATALOG = {
   version: 1,
   starter: CIRCLE_PATH.map(({ week, title, author, selection }) => ({ week, title, author, selection })),
   editions: READING_EDITIONS.map(edition => {
-    const book = getBook(edition.bookId);
+    const book = getReadingWork(edition.bookId);
     if (!book) throw Error('Discovery book metadata unavailable');
     return { bookId: edition.bookId, editionId: edition.editionId, blockCount: edition.blockCount,
       title: book.title, author: book.author, sourceTitle: edition.sourceTitle,

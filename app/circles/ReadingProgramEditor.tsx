@@ -1,14 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { getBook } from '@/lib/books/catalog';
-import { parseBookEditionResponse, type BookEditionResponse } from '@/lib/books/bookmarks';
-import { getReadingEdition, matchesReadingEdition, parseReadingProgram, READING_EDITIONS, READING_PROGRAM_MAX_SESSIONS, readingReaderHref, readingSessionLabel, type ReadingContext, type ReadingProgram } from '@/lib/circles/reading-program';
+import { parseCircleReadingEditionResponse, type CircleReadingEditionResponse, getReadingWork, getReadingEdition, matchesReadingEdition, parseReadingProgram, READING_EDITIONS, READING_PROGRAM_MAX_SESSIONS, readingReaderHref, readingSessionLabel, type ReadingContext, type ReadingProgram } from '@/lib/circles/reading-program';
+import { isPhilemonReading, PHILEMON_RIGHTS, PHILEMON_WORK } from '@/lib/root-kernel/philemon-edition';
 import { body, button, card, fieldLabel, h2, input, small } from '@/lib/circles/ui';
 import styles from './reading-program.module.css';
 
-export type ReadingProgramDraft = { custom: boolean; program: ReadingProgram | null; metadata: BookEditionResponse | null };
-export const emptyReadingProgramDraft = (): ReadingProgramDraft => ({ custom: false, program: null, metadata: null });
+export type ReadingProgramDraft = { custom: boolean; program: ReadingProgram | null; metadata: CircleReadingEditionResponse | null };
+export const emptyReadingProgramDraft = (custom = false): ReadingProgramDraft => ({ custom, program: null, metadata: null });
 type Row = { from: string; to: string };
 const rowsFor = (program: ReadingProgram): Row[] => program.sessions.map(session => ({ from: String(session.from + 1), to: String(session.to + 1) }));
 
@@ -36,7 +35,7 @@ export default function ReadingProgramEditor({ value, context = null, disabled, 
     if (!context || disabled) return;
     choose(true, context.bookId); setHint(context); setNotice('Reader selection chosen as the first weekly reading. Load the pinned edition to verify it before use.');
   }
-  function publish(nextRows: Row[], current: BookEditionResponse) {
+  function publish(nextRows: Row[], current: CircleReadingEditionResponse) {
     setRows(nextRows);
     const validNumbers = nextRows.every(row => /^[1-9]\d*$/.test(row.from) && /^[1-9]\d*$/.test(row.to));
     const program = validNumbers ? parseReadingProgram({ version: 1, bookId: current.bookId, editionId: current.edition.editionId, sessions: nextRows.map(row => ({ from: Number(row.from) - 1, to: Number(row.to) - 1 })) }) : null;
@@ -56,7 +55,7 @@ export default function ReadingProgramEditor({ value, context = null, disabled, 
         new Promise<never>((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('Edition verification timed out')); }, 15_000); }),
       ]);
       if (!current()) return;
-      const verified = parseBookEditionResponse(response);
+      const verified = parseCircleReadingEditionResponse(response);
       if (!verified || !matchesReadingEdition(verified, pinned)) throw new Error('Pinned edition changed');
       const selected = hint && hint.bookId === selectedBook && hint.editionId === verified.edition.editionId
         ? parseReadingProgram({ version: 1, bookId: hint.bookId, editionId: hint.editionId, sessions: [{ from: hint.from, to: hint.to }] })
@@ -73,15 +72,16 @@ export default function ReadingProgramEditor({ value, context = null, disabled, 
     <h2 id="reading-plan-heading" style={{ ...h2, marginTop: '.5rem' }}>Agreed reading plan</h2>
     <label htmlFor="circle-reading-plan" style={fieldLabel}>Reading plan</label>
     <select id="circle-reading-plan" style={input} value={value.custom ? 'book' : 'starter'} disabled={disabled || busy} onChange={event => choose(event.target.value === 'book')}><option value="starter">Existing twelve-week starter path</option><option value="book">Choose a pinned book edition and weekly readings</option></select>
-    {context && <button type="button" style={button} disabled={disabled || busy} onClick={useContext}>Use the reader selection as the first reading</button>}
+    {context && !isPhilemonReading(context) && <button type="button" style={button} disabled={disabled || busy} onClick={useContext}>Use the reader selection as the first reading</button>}
     <p role="status" aria-live="polite" style={small}>{notice}</p>
     {value.custom && <>
       <label htmlFor="circle-reading-book" style={fieldLabel}>Book and pinned source edition</label>
-      <select id="circle-reading-book" style={input} value={selectedBook} disabled={disabled || busy} onChange={event => choose(true, event.target.value)}>{READING_EDITIONS.map(edition => <option key={edition.bookId} value={edition.bookId}>{getBook(edition.bookId)?.title} — {getBook(edition.bookId)?.author}</option>)}</select>
+      <select id="circle-reading-book" style={input} value={selectedBook} disabled={disabled || busy} onChange={event => choose(true, event.target.value)}>{READING_EDITIONS.map(edition => <option key={edition.bookId} value={edition.bookId}>{getReadingWork(edition.bookId)?.title} — {getReadingWork(edition.bookId)?.author}</option>)}</select>
       <button type="button" style={button} disabled={disabled || busy} onClick={() => void load()}>{busy ? 'Verifying edition…' : 'Load and verify selected edition'}</button>
       {metadata && <>
         <p style={body}>{metadata.edition.attribution}</p>
-        <p style={small}>US public-domain assessment by Project Gutenberg. Rights outside the US have not been assessed; check local law. <a href={metadata.edition.sourceCatalogUrl}>Edition source and credits</a>.</p>
+        <p style={small}>{metadata.bookId === PHILEMON_WORK.id ? PHILEMON_RIGHTS : 'US public-domain assessment by Project Gutenberg. Rights outside the US have not been assessed; check local law.'}{' '}
+          <a href={metadata.edition.sourceCatalogUrl}>Edition source and credits</a>.</p>
         <p style={small}>Choose 1 to 12 weekly readings. Selections may omit parts of the edition or revisit earlier readings. Reading positions are stable places in this edition, not invented chapters. The plan cannot be changed after the Circle is created.</p>
         <ol className={styles.list}>{rows.map((row, index) => <li key={index} style={card} className={styles.stack}>
           <h3 style={fieldLabel}>Week {index + 1}</h3>

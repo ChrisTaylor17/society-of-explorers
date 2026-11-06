@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { privateJson } from '@/lib/http/routeError';
 import { isUuid } from '@/lib/ids/uuid';
 import { rateLimit } from '@/lib/rateLimit';
-import { readBookEdition } from '@/lib/books/editions';
+import { readCircleReadingEdition } from '@/lib/circles/reading-edition-server';
 import { matchesReadingEdition, parseReadingProgram } from './reading-program';
 import { circleWriteOrigin, readCircleReviewJson } from './moderation-server';
 import { getReading } from './path';
@@ -201,7 +201,7 @@ export async function circleCreate(req: NextRequest): Promise<Response> {
     const budget = rateLimit(`circle-participation:${actor.memberId}`, 120, 60 * 60 * 1000);
     if (!budget.ok) return refuse('Too many requests. Try again later.', 429);
     if (listing.readingProgram) {
-      const metadata = await readBookEdition(listing.readingProgram.bookId);
+      const metadata = await readCircleReadingEdition(listing.readingProgram.bookId);
       if (!metadata || !matchesReadingEdition(metadata, listing.readingProgram)) return refuse('The selected source edition changed. Refresh the reading selection before starting a Circle.', 409);
     }
     return await rpc('soe_circle_create', { p_actor: actor.memberId, p_request_id: requestId, p_input: listing }, value => {

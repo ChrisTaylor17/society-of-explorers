@@ -79,7 +79,7 @@ export async function createPublicProfileApp(){
     const ownerProfile=url.pathname==='/api/members/profile';
     const owned=Boolean(discussion||message||legacy)||ownerProfile||Boolean(publicProfile)||hosting||Boolean(edition)||account||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
     if(publicProfile){assert.equal(method,'GET');assert.equal(url.search,'');const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
-    if(edition){assert(BOOKS.includes(edition[1]));assert.equal(method,'GET');assert.equal(url.search,'');assert.equal(body,undefined);const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
+    if(edition){assert(BOOKS.includes(edition[1])||edition[1]==='philemon');assert.equal(method,'GET');assert.equal(url.search,'');assert.equal(body,undefined);const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
    assert(['GET','POST'].includes(method));const h=new Headers(headers);if(method==='POST'&&!h.has('content-type'))h.set('content-type','application/json');
    const request=new Request(url,{method,headers:h,signal,...(body===undefined?{}:{body:typeof body==='string'?body:JSON.stringify(body)})});
    const cookies=new Map((h.get('cookie')??'').split(';').map(x=>x.trim().split('=')));

@@ -9,3 +9,4 @@ export { safePrivateMeetingUrl } from '../native/src/circles/discussion-reader';
 export { createCircleReading } from './circle-reading';
 export { parseCircleDetail } from '../../lib/circles/membership';
 export { starterReadingContext } from '../../lib/circles/reading-program';
+export { isPhilemonReading, philemonReadingText, PHILEMON_EDITION_METADATA } from '../../lib/root-kernel/philemon-edition';

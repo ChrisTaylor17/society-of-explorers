@@ -1,4 +1,4 @@
-export { default as philemonEdition } from '../../content/root-kernel/philemon.web-classic.json';
+export { philemonEdition } from './philemon-edition';
 
 export const PHILEMON_GREETING = 'Paul names the Father and Jesus together in one blessing. The greeting distinguishes them and leaves their relationship to be explored in other passages.';
 export const PHILEMON_PERSPECTIVES = [

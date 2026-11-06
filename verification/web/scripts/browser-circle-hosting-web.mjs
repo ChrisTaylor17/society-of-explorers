@@ -85,7 +85,9 @@ try{
  const host=(await fixture.db.query('SELECT member_id FROM book_cohort_members WHERE cohort_id=$1',[created])).rows;assert.deepEqual(host.map(x=>x.member_id),[fixture.authorId]);
  pass('starter creation freshly checks canonical actor and owner-bound hosting access at review and confirm, requires explicit checkbox confirmation, creates one host/member atomically and exposes the Circle only after owned receipt plus current detail');
 
- await show({onlinePreset:true});await load();
+ const scripture=JSON.parse(read('content/root-kernel/philemon.web-classic.json'));
+ const philemon={bookId:'philemon',editionId:'web-classic-'+sha(JSON.stringify(scripture)),from:0,to:0};
+ await show({onlinePreset:true,context:philemon});await load();
  assert.equal(await p.getByRole('radio',{name:'Online',exact:true}).isChecked(),true);
  assert.equal(await p.getByLabel('Venue name',{exact:true}).count(),0);
  const meeting='https://meeting.example.test/private-room';
@@ -93,18 +95,32 @@ try{
  await meetingField.fill(meeting);await button('Clear Circle draft').click();
  assert.equal(await meetingField.inputValue(),'');
  assert.equal(await p.getByRole('radio',{name:'Online',exact:true}).isChecked(),true);
+ assert.equal(await p.getByLabel('Reading plan',{exact:true}).inputValue(),'book');
+ assert.equal(await p.getByLabel('Book and pinned source edition',{exact:true}).inputValue(),'philemon');
+ await button('Load and verify selected edition').click();
+ await p.getByRole('link',{name:'Check this reading: Complete source edition',exact:true}).waitFor();
+ assert.equal(http.at(-1).path,'/api/great-books/text/philemon');
+ assert.equal(http.at(-1).expectedMember,null);
+ assert.equal(http.at(-1).status,200);
  await fill({title:'Philemon remote salon',format:'online'});await review();
  assert.equal(await button('Confirm and list my Circle').isDisabled(),true);
+ assert.equal(await p.getByRole('link',{name:'Week 1: Complete source edition',exact:true}).getAttribute('href'),'/great-books/scripture/philemon#scripture');
+ assert.match(await text(),/World English Bible publisher/);
  await confirm();await createdLink().waitFor();
  const remoteId=await createdId(),remotePath='/api/circles/'+remoteId,remotePayload=JSON.parse(posts().at(-1).body);
  assert.equal(remotePayload.format,'online');assert.equal(remotePayload.onlineUrl,meeting);assert.equal(remotePayload.venueName,null);
+ const {bookId,editionId,from,to}=philemon;
+ assert.deepEqual(remotePayload.readingProgram,{version:1,bookId,editionId,sessions:[{from,to}]});
  const readerHeaders={Authorization:'Bearer '+TOKENS.other};
  async function remoteDetail(headers) {
   const response=await fixture.dispatch(remotePath,{headers});
   assert.equal(response.status,200);assert.match(response.headers.get('cache-control'),/private.*no-store/);
   return response.json();
  }
- assert(!JSON.stringify(await remoteDetail()).includes(meeting));
+ const remotePublic=await remoteDetail();
+ assert(!JSON.stringify(remotePublic).includes(meeting));
+ assert.deepEqual(remotePublic.circle.reading_program,remotePayload.readingProgram);
+ assert.equal(remotePublic.circle.program_length,1);
  let reader=await remoteDetail(readerHeaders);assert(!JSON.stringify(reader).includes(meeting));
  async function remoteMembership(action,expectedRevision) {
   const response=await fixture.dispatch(remotePath+'/'+action,{method:'POST',headers:readerHeaders,body:{requestId:crypto.randomUUID(),expectedRevision}});
@@ -114,7 +130,7 @@ try{
  reader=await remoteDetail(readerHeaders);assert.equal(reader.online_url,meeting);
  await remoteMembership('leave',reader.revision);
  assert(!JSON.stringify(await remoteDetail(readerHeaders)).includes(meeting));
- pass('the online preset clears a private draft, requires deliberate creation, and limits the meeting link to a currently joined participant');
+ pass('the Philemon preset survives draft clearing, verifies and saves the exact complete letter, and the meeting link appears only while the reader is joined');
 
  await show();await load();await fill({format:'hybrid'});await p.getByLabel('Reading plan',{exact:true}).selectOption('book');await p.getByLabel('Book and pinned source edition',{exact:true}).selectOption('hamlet');const metadataAt=http.length;
  await button('Load and verify selected edition').click();await p.getByLabel('Week 1 begins at reading position',{exact:true}).waitFor();assert.equal(http.length,metadataAt+1);assert.equal(http.at(-1).path,'/api/great-books/text/hamlet');assert.equal(http.at(-1).expectedMember,null);

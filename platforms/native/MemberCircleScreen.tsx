@@ -88,7 +88,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
+  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; philemonPreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
     destination: 'circle' | 'contributions' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' | 'clips' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
@@ -164,10 +164,10 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
       setProfileNotice(''); setEntered({ connection, destination, ...options });
     } catch { setProfileNotice('Saved reading is unavailable. Check the member account and try again.'); }
   });
-  const openHosting = (onlinePreset = false) => act(() => {
+  const openHosting = (philemonPreset = false) => act(() => {
     const current = connection?.account.model();
     if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
-    try { connection.openHosting(current.member.id); setProfileNotice(''); setEntered({ connection, destination: 'hosting', onlinePreset }); }
+    try { connection.openHosting(current.member.id); setProfileNotice(''); setEntered({ connection, destination: 'hosting', philemonPreset }); }
     catch { setProfileNotice('Circle hosting is unavailable. Check your member account and try again.'); }
   });
   const profileConnection = connection?.profile();
@@ -183,7 +183,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
         onBrowse={() => openReadingDestination('discover', { onlinePreset: true })}/>;
     }
     if (entered.destination === 'hosting' && hostingConnection && hostingConnection.memberId === account.member?.id) {
-      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity} onlinePreset={entered.onlinePreset}
+      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity} philemonPreset={entered.philemonPreset}
         onBack={back} onMyCircles={() => openReadingDestination('mine')} onClose={close}/>;
     }
     if (entered.destination === 'saved' && savedReadingConnection && savedReadingConnection.memberId === account.member?.id) {

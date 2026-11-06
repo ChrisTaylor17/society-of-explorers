@@ -4,6 +4,7 @@ import { parseDiscussionQuery } from '../../../../lib/circles/thread';
 import { isUuid } from '../../../../lib/ids/uuid';
 import { discoveryPageSearchParams, parseDiscoveryPageRequest } from '../../../../lib/circles/discovery-page';
 import { passageIndexPin } from '../../../../lib/books/passages';
+import { getReadingEdition } from '../../../../lib/circles/reading-program';
 import { parseCircleAttendanceMutation, circleAttendanceMutationBody, CIRCLE_ATTENDANCE_BODY_MAX_BYTES } from '../../../../lib/circles/membership';
 import { parseCircleCreateMutation, circleCreateMutationBody, parseCircleCompleteMutation, circleCompleteMutationBody,
   CIRCLE_CREATE_BODY_MAX_BYTES, CIRCLE_COMPLETE_BODY_MAX_BYTES } from '../../../../lib/circles/hosting';
@@ -163,7 +164,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
         attendance = value !== null && init.body === circleAttendanceMutationBody(value);
       }
       const metadataBook = /^\/api\/great-books\/text\/([a-z-]+)$/.exec(u.pathname);
-      const edition = channel === 'edition' && init.method === 'GET' && !hasQuery && Boolean(metadataBook && passageIndexPin(metadataBook[1]));
+      const edition = channel === 'edition' && init.method === 'GET' && !hasQuery && Boolean(metadataBook && getReadingEdition(metadataBook[1]));
       let hosting = channel === 'hosting' && !hasQuery && init.method === 'GET' && u.pathname === '/api/circles/start';
       if (channel === 'hosting' && !hasQuery && init.method === 'POST' && typeof init.body === 'string') {
         if (u.pathname === '/api/circles' && size(init.body) <= CIRCLE_CREATE_BODY_MAX_BYTES) {

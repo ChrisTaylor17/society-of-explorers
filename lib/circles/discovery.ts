@@ -2,8 +2,7 @@
 // Search only the public projection: meeting links and private member data never
 // enter this helper or its shareable URL parameters.
 import type { PublicCircle } from './server';
-import { getBook } from '@/lib/books/catalog';
-import { getReadingEdition, parseReadingContext, readingSessionLabel } from './reading-program';
+import { getReadingWork, getReadingEdition, parseReadingContext, readingSessionLabel } from './reading-program';
 
 export const ONLINE_CIRCLES_HREF = '/circles?format=online';
 
@@ -108,7 +107,7 @@ export function discoverCircles(circles: PublicCircle[], query: DiscoveryQuery):
     if (query.open && circle.spots_left <= 0) return false;
     if (!termsMatch(`${circle.city || ''} ${circle.region || ''}`, query.city)) return false;
     const reading = circle.reading;
-    const book = program ? getBook(program.bookId) : undefined;
+    const book = program ? getReadingWork(program.bookId) : undefined;
     const edition = program ? getReadingEdition(program.bookId, program.editionId) : undefined;
     const session = program?.sessions[circle.week - 1];
     return termsMatch([

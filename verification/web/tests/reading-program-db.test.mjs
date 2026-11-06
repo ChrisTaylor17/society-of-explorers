@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { createDb, IDS, rpc, asRole, requestId, creationInput, createCircle, participate, detail, program, EDITIONS, readingSql } from './support/reading-program-db.mjs';
 import { createDb as messageDb, messageAction, messageDecide } from './support/message-db.mjs';
 
@@ -22,11 +23,19 @@ async function corruptFixture(db, id, sql, values) {
   finally { await db.exec('ALTER TABLE book_cohorts ENABLE TRIGGER circle_reading_program_fixed'); }
 }
 
-test('SQL pins exactly all eight locally reviewed manifest edition IDs and real reading block bounds', async t => {
+test('SQL pins all eight Gutenberg editions and the complete Philemon study with exact reading bounds', async t => {
   const db = await fixture(t);
   const rows = await asRole(db, 'service_role', async tx => (await tx.query('SELECT * FROM public._soe_circle_reading_editions() ORDER BY book_id')).rows);
-  const expected = EDITIONS.map(e => ({ book_id: e.bookId, edition_id: e.editionId, block_count: e.blockCount })).sort((a, b) => a.book_id.localeCompare(b.book_id));
-  assert.equal(rows.length, 8); assert.deepEqual(rows, expected);
+  const source = JSON.parse(await readFile(new URL('../../../content/root-kernel/philemon.web-classic.json', import.meta.url), 'utf8'));
+  const sha = createHash('sha256').update(JSON.stringify(source)).digest('hex');
+  const philemon = { bookId: 'philemon', editionId: 'web-classic-' + sha, blockCount: 1 };
+  const expected = [...EDITIONS, philemon].map(e => ({ book_id: e.bookId, edition_id: e.editionId, block_count: e.blockCount })).sort((a, b) => a.book_id.localeCompare(b.book_id));
+  assert.deepEqual(rows, expected);
+  const { bookId, editionId } = philemon;
+  const fullLetter = { version: 1, bookId, editionId, sessions: [{ from: 0, to: 0 }] };
+  assert.equal(await valid(db, fullLetter), true);
+  assert.equal(await valid(db, { ...fullLetter, sessions: [{ from: 0, to: 1 }] }), false);
+  assert.equal(await valid(db, { ...fullLetter, editionId: EDITIONS[0].editionId }), false);
   for (const item of EDITIONS) {
     const manifest = JSON.parse(await readFile(new URL(`../../../content/great-books/${item.bookId}/manifest.json`, import.meta.url), 'utf8'));
     assert.equal(item.editionId, manifest.editionId); assert.equal(item.blockCount, manifest.reader.blockCount);

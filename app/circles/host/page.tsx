@@ -4,6 +4,8 @@ import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { WEEKLY_LOOP } from '@/lib/circles/path';
 import { body, button, card, gold, h1, h2, label, lead, main, page, parchment, primary, small } from '@/lib/circles/ui';
+import { readingStartHref } from '@/lib/circles/reading-program';
+import { PHILEMON_READING, PHILEMON_STUDY_HREF } from '@/lib/root-kernel/philemon-edition';
 import { PHILEMON_AGENDA, PHILEMON_VIDEO_ROOM } from '@/lib/root-kernel/philemon-study';
 
 export const metadata: Metadata = {
@@ -49,7 +51,7 @@ export default function CircleHostPage() {
           <h2 id="philemon-salon" tabIndex={-1} style={{ ...h2, marginTop: 0, scrollMarginTop: '6rem' }}>Host a Philemon salon online</h2>
           <p style={body}>
             Try one 45-minute conversation with four to six readers. Share the{' '}
-            <Link href="/great-books/scripture/philemon" style={{ color: gold }}>Root Kernel Philemon study</Link>.
+            <Link href={PHILEMON_STUDY_HREF} style={{ color: gold }}>Root Kernel Philemon study</Link>.
             Ask everyone to read the letter ahead of time and bring a question about the greeting or Paul&rsquo;s appeal for Onesimus.
           </p>
           <p style={body}>{PHILEMON_VIDEO_ROOM}</p>
@@ -58,8 +60,8 @@ export default function CircleHostPage() {
               <li key={title} style={{ marginBottom: '0.5rem' }}><strong>{title}</strong> · {minutes} min. {detail}</li>
             ))}
           </ol>
-          <p style={body}>If the group wants to keep meeting, choose a weekly time and list an online Circle.</p>
-          <Link href="/circles/start?format=online" style={primary}>Start a weekly online Circle</Link>
+          <p style={body}>To list your salon, choose a time and verify the complete letter as its first reading.</p>
+          <Link href={readingStartHref(PHILEMON_READING) + "&format=online"} style={primary}>Start a weekly online Circle</Link>
         </section>
 
         <h2 style={h2}>Before the first meeting</h2>

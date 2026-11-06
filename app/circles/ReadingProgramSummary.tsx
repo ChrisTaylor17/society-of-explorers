@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { getBook } from '@/lib/books/catalog';
-import { getReadingEdition, readingEditionLabel, readingReaderHref, readingSessionLabel, type ReadingProgram } from '@/lib/circles/reading-program';
+import { getReadingWork, getReadingEdition, readingEditionLabel, readingReaderHref, readingSessionLabel, type ReadingProgram } from '@/lib/circles/reading-program';
+import { PHILEMON_RIGHTS, PHILEMON_WORK } from '@/lib/root-kernel/philemon-edition';
 import { body, h2, small } from '@/lib/circles/ui';
 import styles from './reading-program.module.css';
 
 export default function ReadingProgramSummary({ program, circleId, compact = false, proposal = false }: { program: ReadingProgram; circleId?: string; compact?: boolean; proposal?: boolean }) {
-  const book = getBook(program.bookId), edition = getReadingEdition(program.bookId, program.editionId);
+  const book = getReadingWork(program.bookId), edition = getReadingEdition(program.bookId, program.editionId);
   if (!book || !edition) return <p style={small}>The agreed reading edition could not be verified.</p>;
   const Heading = compact ? 'h4' : 'h2';
   const readings = <ol className={styles.list}>{program.sessions.map((session, index) => <li key={`${index}:${session.from}:${session.to}`}>
@@ -16,10 +16,12 @@ export default function ReadingProgramSummary({ program, circleId, compact = fal
     <p style={small}>Pinned source edition: {readingEditionLabel(program)}</p>
     {edition.editors.length > 0 && <p style={small}>Edited by {edition.editors.join(', ')}.</p>}
     {edition.illustrators.length > 0 && <p style={small}>Illustrated by {edition.illustrators.join(', ')}.</p>}
-    <p style={small}>US public-domain assessment: Project Gutenberg. Rights outside the US have not been assessed; check local law.</p>
+    <p style={small}>{program.bookId === PHILEMON_WORK.id ? PHILEMON_RIGHTS
+      : 'US public-domain assessment: Project Gutenberg. Rights outside the US have not been assessed; check local law.'}</p>
     {compact ? <details><summary>Agreed weekly readings ({program.sessions.length})</summary>{readings}</details> : <>
       <p style={{ ...body, marginTop: '.75rem' }}>{proposal ? `You are proposing these ${program.sessions.length} weekly selections. Confirming will fix this plan when the Circle is created.` : `The host agreed these ${program.sessions.length} weekly selections when creating this Circle.`} They may revisit or omit parts of the edition. The reading plan cannot be changed after creation.</p>{readings}
-      <p style={small}>Reading positions identify stable places in this exact edition. Links open the complete free source with the agreed selection indicated.</p>
+      <p style={small}>{program.bookId === PHILEMON_WORK.id ? 'Open the complete letter, publisher footnotes and questions for your salon.'
+        : 'Reading positions identify stable places in this exact edition. Links open the complete free source with the agreed selection indicated.'}</p>
     </>}
   </section>;
 }

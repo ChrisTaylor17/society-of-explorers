@@ -396,7 +396,10 @@ internal class MemberTransport(
       && url.fragment == null && url.toString() == input.url)
     if (url.encodedPath == "/api/great-books/passage") { validatePassageQuery(url.encodedQuery); return }
     val edition = Regex("/api/great-books/text/([a-z-]+)").matchEntire(url.encodedPath)
-    if (edition != null) { require(url.encodedQuery == null && savedReadingBook(edition.groupValues[1])); return }
+    if (edition != null) {
+      val book = edition.groupValues[1]
+      require(url.encodedQuery == null && (savedReadingBook(book) || book == "philemon")); return
+    }
     if (Regex("/api/explorer/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").matches(url.encodedPath)) {
       require(url.encodedQuery == null); return
     }
@@ -422,11 +425,11 @@ internal class MemberTransport(
     query["limit"]?.let { require(Regex("[1-9][0-9]*").matches(it) && (it.toIntOrNull() ?: 0) in 1..24) }
     query["cursor"]?.let { require(Regex("[A-Za-z0-9_-]{1,4096}").matches(it)) }
     if (listOf("book", "edition", "from", "to").any { it in query }) {
-      require(query["book"]?.let { Regex("[a-z0-9][a-z0-9-]{0,159}").matches(it) } == true)
-      require(query["edition"]?.let { Regex("pg-[1-9][0-9]{0,9}-[a-f0-9]{64}").matches(it) } == true)
+      val book = query["book"].orEmpty()
+      require(Regex("[a-z0-9][a-z0-9-]{0,159}").matches(book) && readingEdition(book, query["edition"].orEmpty()))
       if ("from" in query || "to" in query) {
         for (key in listOf("from", "to")) require(query[key]?.let { Regex("0|[1-9][0-9]{0,5}").matches(it) } == true)
-        require(query["from"]!!.toInt() <= query["to"]!!.toInt())
+        require(query["from"]!!.toInt() <= query["to"]!!.toInt() && (book != "philemon" || query["to"] == "0"))
       }
     }
   }
@@ -623,18 +626,21 @@ internal class MemberTransport(
       require(program.keys().asSequence().toSet() == setOf("version", "bookId", "editionId", "sessions"))
       val version = program.get("version"); require(version is Int && version == 1)
       val book = program.get("bookId"); val edition = program.get("editionId"); val sessions = program.get("sessions")
-      require(book is String && savedReadingBook(book) && edition is String && Regex("pg-[1-9][0-9]{0,9}-[a-f0-9]{64}").matches(edition))
+      require(book is String && (savedReadingBook(book) || book == "philemon") && edition is String && readingEdition(book, edition))
       require(sessions is JSONArray && sessions.length() in 1..12)
       val rows = (0 until sessions.length()).joinToString(",", "[", "]") { index ->
         val row = sessions.get(index); require(row is JSONObject && row.keys().asSequence().toSet() == setOf("from", "to"))
         val from = row.get("from"); val to = row.get("to"); require((from is Int || from is Long) && (to is Int || to is Long))
-        val beginning = (from as Number).toLong(); val end = (to as Number).toLong(); require(beginning in 0..99999L && end in beginning..99999L)
+        val beginning = (from as Number).toLong(); val end = (to as Number).toLong(); require(beginning in 0..99999L && end in beginning..99999L && (book != "philemon" || end == 0L))
         "{\"from\":" + beginning + ",\"to\":" + end + "}"
       }
       canonical += ",\"readingProgram\":{\"version\":1,\"bookId\":" + quote(book) + ",\"editionId\":" + quote(edition) + ",\"sessions\":" + rows + "}"
     }
     require(body == canonical + "}")
   }
+  private fun readingEdition(book: String, edition: String) =
+    if (book == "philemon") edition == PHILEMON_EDITION else Regex("pg-[1-9][0-9]{0,9}-[a-f0-9]{64}").matches(edition)
+
   private fun savedReadingBook(value: String) = value in setOf("apology", "divine-comedy", "genealogy-of-morals", "hamlet", "meditations", "odyssey", "relativity", "republic")
   /** Private saved-place CAS wire policy. Shared JS and server contracts also
    * require the exact current edition pin and its actual block count. */
@@ -710,6 +716,7 @@ internal class MemberTransport(
     append('"')
   }
   companion object {
+    private const val PHILEMON_EDITION = "web-classic-b2bc6316f4217a8c97637d44786a4cd6b9b9a83b88cd4880b5aacdf67cae4e19"
     private const val MAX_RESPONSE = 1048576
     private fun uuid(value: String) = MemberConfig.UUID_PATTERN.matches(value.lowercase())
     fun publicInput(value: ReadableMap): PublicInput {

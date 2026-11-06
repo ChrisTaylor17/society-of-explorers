@@ -64,7 +64,7 @@ BEGIN
  OR NOT(p_catalog ?& ARRAY['version','starter','editions']) OR p_catalog-ARRAY['version','starter','editions']<>'{}'
  OR p_catalog->'version' IS DISTINCT FROM '1'::jsonb
  OR jsonb_typeof(p_catalog->'starter') IS DISTINCT FROM 'array' OR jsonb_array_length(p_catalog->'starter')<>12
- OR jsonb_typeof(p_catalog->'editions') IS DISTINCT FROM 'array' OR jsonb_array_length(p_catalog->'editions')<>8 THEN RETURN false;END IF;
+ OR jsonb_typeof(p_catalog->'editions') IS DISTINCT FROM 'array' OR jsonb_array_length(p_catalog->'editions')<>(SELECT count(*) FROM public._soe_circle_reading_editions()) THEN RETURN false;END IF;
  FOR entry IN SELECT value FROM jsonb_array_elements(p_catalog->'starter') LOOP
   IF jsonb_typeof(entry) IS DISTINCT FROM 'object' OR NOT(entry ?& ARRAY['week','title','author','selection'])
   OR entry-ARRAY['week','title','author','selection']<>'{}' OR jsonb_typeof(entry->'week') IS DISTINCT FROM 'number' THEN RETURN false;END IF;

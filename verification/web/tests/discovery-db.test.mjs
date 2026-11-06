@@ -89,6 +89,19 @@ test('book and current session searches use the trusted exact catalog without in
  const wrong=CATALOG.editions[1];assert.equal((await search(db,{q:query({book:wrong.bookId,edition:wrong.editionId})})).items.length,0);
 });
 
+test('Philemon Circles can be found by exact edition and text even when the listing title omits it', async t => {
+ const db = await fixture(t);
+ await hideOriginal(db);
+ const { bookId, editionId } = CATALOG.editions.find(edition => edition.bookId === 'philemon');
+ const readingProgram = { version: 1, bookId, editionId, sessions: [{ from: 0, to: 0 }] };
+ const id = await seed(db, { title: 'Weekly reading conversation', program: readingProgram });
+ await seed(db, { id: circleId(2), title: 'Same night reading group' });
+ const found = await search(db, { q: query({ book: bookId, edition: editionId, terms: ['philemon', 'complete'] }) });
+ assert.deepEqual(found.items.map(item => item.circle.id), [id]);
+ assert.equal(found.items[0].programLength, 1);
+ await rejects(() => search(db, { q: query({ book: bookId, edition: CATALOG.editions[0].editionId }) }), 'PT400');
+});
+
 test('open-seat filtering uses exact current perCircle membership counts and no private roster',async t=>{
  const db=await fixture(t);await hideOriginal(db);const a=await seed(db,{id:circleId(1),max:3}),b=await seed(db,{id:circleId(2),max:3});
  await db.query('INSERT INTO book_cohort_members(cohort_id,member_id) VALUES($1,$2),($1,$3),($1,$4),($5,$2)',[a,IDS.author,IDS.reader,IDS.reporter2,b]);

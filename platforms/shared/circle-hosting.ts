@@ -1,5 +1,4 @@
-import { parseBookEditionResponse, type BookEditionResponse } from '../../lib/books/bookmarks';
-import { getReadingEdition, matchesReadingEdition } from '../../lib/circles/reading-program';
+import { parseCircleReadingEditionResponse, type CircleReadingEditionResponse, getReadingEdition, matchesReadingEdition } from '../../lib/circles/reading-program';
 import { validateCircleInput, type CircleInput } from '../../lib/circles/schedule';
 import { parseCircleDetail } from '../../lib/circles/membership';
 import { parseCircleCreateMutation, circleCreateMutationBody, parseCircleHostingAccess, parseOwnedCircleCreateReceipt,
@@ -14,7 +13,7 @@ export type CircleHostingConfig = { origin: string; memberId: string; owner: Ver
 export type CircleHostingModel = {
   connected: boolean; active: boolean; online: boolean; busy: boolean;
   phase: 'idle' | 'checking' | 'editing' | 'loading-edition' | 'review' | 'sending' | 'unknown' | 'created' | 'unavailable' | 'closed';
-  eligibility: Omit<CircleHostingAccess, 'memberId'> | null; edition: BookEditionResponse | null;
+  eligibility: Omit<CircleHostingAccess, 'memberId'> | null; edition: CircleReadingEditionResponse | null;
   review: CircleInput | null; confirmed: boolean; retryReview: boolean; created: { circleId: string; current: boolean } | null;
   message: string; canCheck: boolean; canEdit: boolean; canLoadEdition: boolean; canReview: boolean;
   canConfirm: boolean; canCancel: boolean; canRetry: boolean; canCheckCreated: boolean; canStartAnother: boolean; canNavigate: boolean;
@@ -44,7 +43,7 @@ export function createCircleHosting(config: CircleHostingConfig) {
   let attached = false, closed = false, active = true, online = config.initialOnline ?? false, scope: string | null = null;
   let generation = 0, attachment = 0, busy = false, boundSubject: string | null = null, offOwner = () => {};
   let phase: CircleHostingModel['phase'] = 'closed', eligibility: CircleHostingModel['eligibility'] = null;
-  let edition: BookEditionResponse | null = null, review: CircleInput | null = null, confirmed = false, retryReview = false;
+  let edition: CircleReadingEditionResponse | null = null, review: CircleInput | null = null, confirmed = false, retryReview = false;
   let pending: Pending | null = null, known: Created | null = null, created: CircleHostingModel['created'] = null;
   let message = 'Check hosting access before preparing your free Circle.';
   const listeners = new Set<(model: CircleHostingModel) => void>(), requests = new Set<AbortController>();
@@ -127,7 +126,7 @@ export function createCircleHosting(config: CircleHostingConfig) {
       if (!config.editionTransport) throw Error('Edition connection unavailable');
       const result = await request('/api/great-books/text/' + id, 'GET', config.editionTransport, undefined, true);
       if (!current()) throw Error('Hosting lifetime ended');
-      const parsed = result.status === 200 ? parseBookEditionResponse(result.body) : null, pin = getReadingEdition(id);
+      const parsed = result.status === 200 ? parseCircleReadingEditionResponse(result.body) : null, pin = getReadingEdition(id);
       if (!parsed || !pin || !matchesReadingEdition(parsed, pin)) throw Error('Edition unverified');
       return parsed;
     };

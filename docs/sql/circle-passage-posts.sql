@@ -57,7 +57,8 @@ BEGIN
   OR jsonb_typeof(p_reference->'editionId') IS DISTINCT FROM 'string'
   OR jsonb_typeof(p_reference->'blockIndex') IS DISTINCT FROM 'number' THEN RETURN false; END IF;
  SELECT e.block_count INTO blocks FROM public._soe_circle_reading_editions() e
-  WHERE e.book_id=p_reference->>'bookId' AND e.edition_id=p_reference->>'editionId';
+  -- The separate Scripture study has no generic passage index.
+ WHERE e.book_id=p_reference->>'bookId' AND e.edition_id=p_reference->>'editionId' AND e.book_id<>'philemon';
  IF NOT FOUND THEN RETURN false; END IF;
  block_index:=(p_reference->>'blockIndex')::numeric;
  IF block_index<>trunc(block_index) OR block_index<0 OR block_index>=blocks THEN RETURN false; END IF;

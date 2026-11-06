@@ -10,7 +10,9 @@ const sections = [
 ] as const;
 const noteVerses = new Set(philemonEdition.footnotes.map(note => note.verse));
 
-export function PhilemonStudyScreen({ onBack, onHost, onBrowse }: { onBack(): void; onHost?: () => void; onBrowse?: () => void }) {
+export function PhilemonStudyScreen({ onBack, onHost, onBrowse, onClose, backLabel = 'Back to account' }: {
+  onBack(): void; onHost?: () => void; onBrowse?: () => void; onClose?: () => void; backLabel?: string;
+}) {
   const [section, setSection] = useState<(typeof sections)[number]['id']>('letter');
 
   return <SafeAreaView style={styles.screen}>
@@ -75,7 +77,7 @@ export function PhilemonStudyScreen({ onBack, onHost, onBrowse }: { onBack(): vo
             <Text style={styles.copy}>{detail}</Text>
           </View>
         ))}
-        <Text style={styles.copy}>If the group wants to keep meeting, choose a weekly time and list an online Circle.</Text>
+        <Text style={styles.copy}>To list your salon, choose a time and verify the complete letter as its first reading.</Text>
         {onHost ? <Pressable accessibilityRole="button" accessibilityLabel="Prepare a weekly online Circle" onPress={onHost} style={styles.button}>
           <Text style={styles.buttonText}>Prepare a weekly online Circle</Text>
         </Pressable> : <Text style={styles.note}>Circle hosting is unavailable in this connection.</Text>}
@@ -85,9 +87,12 @@ export function PhilemonStudyScreen({ onBack, onHost, onBrowse }: { onBack(): vo
       </Pressable> : null}
     </ScrollView>
     <View style={styles.footer}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back to account" onPress={onBack} style={styles.button}>
-        <Text style={styles.buttonText}>Back to account</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={backLabel} onPress={onBack} style={styles.button}>
+        <Text style={styles.buttonText}>{backLabel}</Text>
       </Pressable>
+      {onClose ? <Pressable accessibilityRole="button" onPress={onClose} style={styles.button}>
+        <Text style={styles.buttonText}>Close member view</Text>
+      </Pressable> : null}
     </View>
   </SafeAreaView>;
 }

@@ -447,9 +447,20 @@ try{
  assert.equal(await radio('Online').getAttribute('aria-checked'),'true');
  assert.equal(await field('Private meeting link (HTTPS)').inputValue(),'');
  assert.equal(await field('Public venue name').count(),0);
+ const editionAt=http.length;
+ assert.equal(await radio('Choose a book and weekly selections').getAttribute('aria-checked'),'true');
+ assert.equal(await radio('Paul’s Letter to Philemon').getAttribute('aria-checked'),'true');
+ await button('Load source edition').click();
+ await field('Week 1 first reading position').waitFor();
+ const editionCall=http.slice(editionAt).find(row=>row.kind==='public');
+ assert.equal(editionCall.path,'/api/great-books/text/philemon');
+ assert.equal(editionCall.status,200);
+ assert.equal(await field('Week 1 last reading position').inputValue(),'1');
  await fill({name:'Philemon native salon',format:'Online',selectFormat:false});
  const reviewAt=posts().length;
  await review();
+ assert.match(await text(),/World English Bible publisher/);
+ assert.doesNotMatch(await text(),/Project Gutenberg edition/);
  assert.equal(posts().length,reviewAt);
  assert.equal(await button('Confirm and list Circle').isDisabled(),true);
  await confirm();await enabled('New Circle draft');
@@ -459,12 +470,27 @@ try{
  const posted=JSON.parse(posts().at(-1).body);
  assert.equal(posted.format,'online');
  assert.equal(posted.expectedMemberId,fixture.authorId);
+ assert.deepEqual(posted.readingProgram,{version:1,bookId:'philemon',editionId:editionCall.response.edition.editionId,sessions:[{from:0,to:0}]});
+ assert.deepEqual(hosted.circle_reading_program,posted.readingProgram);
  const anonymous=await fixture.dispatch('/api/circles/'+hosted.id);
  const owned=await fixture.dispatch('/api/circles/'+hosted.id,{headers:{authorization:'Bearer '+ACCESS.author}});
  assert.equal(anonymous.status,200);assert.equal(owned.status,200);
  assert.doesNotMatch(await anonymous.text(),/private-host-room/);
  assert.match(await owned.text(),/private-host-room/);
- pass('the Philemon guide carries Online through explicit sign-in, current member proof and hosting eligibility. Review and confirmation create one fixture Circle whose private link is visible to the host');
+ await mine('Philemon native salon');
+ const readAt=http.length;
+ await button('Read meeting 1 selection').click();
+ await button('Compare readings').waitFor();
+ assert.match(await text(),/Scripture · Philemon 1|Publisher footnotes/);
+ assert.match(await text(),/Grace to you and peace from God our Father and the Lord Jesus Christ/);
+ assert.match(await text(),/Verse 10/);
+ assert.equal(http.slice(readAt).some(row=>row.path==='/api/circles/'+hosted.id&&row.status===200),true);
+ assert.equal(http.slice(readAt).some(row=>row.kind==='public'),false);
+ await button('Compare readings').click();
+ assert.match(await text(),/Biblical Unitarian reading/);
+ await button('Back to Circle reading plan').click();
+ await enabled('Check current Circle');
+ pass('the Philemon guide carries Online and the exact edition through sign-in, verification and reviewed creation. Circle detail opens the complete bundled letter and study notes after a fresh check');
 
  await show();
  await chooseOnline();
@@ -493,7 +519,8 @@ try{
  await check();await field('Circle name').waitFor();
  assert.equal(await radio('Online').getAttribute('aria-checked'),'true');
  assert.equal(await field('Private meeting link (HTTPS)').inputValue(),'');
- pass('clearing the signed-out choice keeps ordinary hosting in person. A verified member can choose Online from the guide, and a failed owner check clears the private draft while preserving only the public format');
+ assert.equal(await radio('Paul’s Letter to Philemon').getAttribute('aria-checked'),'true');
+ pass('ordinary hosting starts in person. A failed owner check clears the private draft while retaining the public Online and Philemon presets');
 
  if(platform==='android'){
  await show();const beforeConnect=http.length;await settle();assert.equal(http.length,beforeConnect);await signIn();await account();const beforeEntry=http.length;await enter();await settle();assert.equal(http.length,beforeEntry);assert.equal(await field('Circle name').count(),0);await check();await fill();const beforeReview=posts().length;await review();assert.equal(posts().length,beforeReview);assert.equal(await button('Confirm and list Circle').isDisabled(),true);assert.match(await text(),/First meeting:/);assert.match(await text(),/Shared 12-week starter/);await screenshot('native-hosting-review-320.png',true);await confirm();let circleId=await created();assert(!String(await text()).includes('Active Circles at your last hosting check'));assert(!String(await text()).includes('Active Circles you host:'));assert(circleId);assert.equal((await fixture.hosted()).length,1);assert.equal(await fixture.isMember(circleId),true);assert.equal(JSON.parse(posts().at(-1).body).expectedMemberId,fixture.authorId);assert.equal(http.at(-1).path,'/api/circles/'+circleId);

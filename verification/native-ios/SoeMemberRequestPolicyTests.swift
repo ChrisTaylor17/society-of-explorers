@@ -18,6 +18,7 @@ func runSoeMemberRequestPolicyTests() throws {
     let key = "sb_publishable_" + String(repeating: "A", count: 24), token = "SYNTHETIC.token-not-issued"
     let a = "11111111-1111-4111-8111-111111111111", b = "22222222-2222-4222-8222-222222222222", c = "abcdefab-cdef-4abc-8def-abcdefabcdef"
     let hash = String(repeating: "a", count: 64), edition = "pg-1656-" + String(repeating: "a", count: 64)
+    let philemonEdition = "web-classic-b2bc6316f4217a8c97637d44786a4cd6b9b9a83b88cd4880b5aacdf67cae4e19"
     let policy = try SoeMemberRequestPolicy(memberOrigin: origin, providerOrigin: provider, publishableKey: key)
     let noAuth = try SoeMemberRequestPolicy(memberOrigin: origin, providerOrigin: nil, publishableKey: nil)
     func input(_ lane: SoeMemberLane, _ path: String, _ method: String = "GET", _ body: String? = nil, bearer: String? = nil) -> SoeMemberWireInput {
@@ -100,6 +101,13 @@ func runSoeMemberRequestPolicyTests() throws {
     try accepts(.member, "/api/circles", "POST", creation)
     let program = ",\"readingProgram\":{\"version\":1,\"bookId\":\"apology\",\"editionId\":\"\(edition)\",\"sessions\":[{\"from\":0,\"to\":10}]}"
     try accepts(.member, "/api/circles", "POST", String(creation.dropLast()) + program + "}")
+    let philemonProgram = program.replacingOccurrences(of: "apology", with: "philemon")
+        .replacingOccurrences(of: edition, with: philemonEdition).replacingOccurrences(of: "\"to\":10", with: "\"to\":0")
+    let philemonCreation = String(creation.dropLast()) + philemonProgram + "}"
+    try accepts(.member, "/api/circles", "POST", philemonCreation)
+    try denies(.member, "/api/circles", "POST", philemonCreation.replacingOccurrences(of: philemonEdition, with: edition))
+    try denies(.member, "/api/circles", "POST", philemonCreation.replacingOccurrences(of: "\"to\":0", with: "\"to\":1"))
+    try denies(.member, "/api/great-books/progress", "POST", saved.replacingOccurrences(of: "apology", with: "philemon"))
     try denies(.member, "/api/circles", "POST", creation.replacingOccurrences(of: "A Circle", with: "A  Circle"))
     try denies(.member, "/api/circles", "POST", creation.replacingOccurrences(of: "\"maxMembers\":8", with: "\"maxMembers\":13"))
     func meeting(_ url: String) -> String { creation.replacingOccurrences(of: "in_person", with: "hybrid").replacingOccurrences(of: "\"onlineUrl\":null", with: "\"onlineUrl\":\"" + url + "\"") }
@@ -165,6 +173,14 @@ func runSoeMemberRequestPolicyTests() throws {
 
     for path in ["/api/circles", "/api/circles?q=Caf%C3%A9+reading&city=New+York&format=in_person&open=1&sort=title&limit=24&cursor=abc_X-1", "/api/circles?book=apology&edition=" + edition + "&from=0&to=10", "/api/great-books/passage?book=apology&edition=" + edition + "&block=100000", "/api/great-books/text/apology", "/api/explorer/" + c] { try accepts(.publicRead, path) }
     for path in ["/api/circles?", "/api/circles?q=two%20words", "/api/circles?q=%c3%a9", "/api/circles?q=%FF", "/api/circles?q=two++words", "/api/circles?q=two%09words", "/api/circles?city=Boston&q=read", "/api/circles?q=one&q=two", "/api/circles?open=true", "/api/circles?sort=next", "/api/circles?format=hybrid", "/api/circles?limit=25", "/api/circles?book=apology", "/api/circles?book=apology&edition=" + edition + "&from=10&to=9", "/api/great-books/passage?edition=" + edition + "&book=apology&block=0", "/api/great-books/passage?book=apology&edition=" + edition + "&block=100001", "/api/great-books/text/unknown", "/api/explorer/" + c.uppercased(), "/api/members/profile"] { try denies(.publicRead, path) }
+    try accepts(.publicRead, "/api/great-books/text/philemon")
+    try denies(.publicRead, "/api/great-books/text/philemon", bearer: token)
+    let philemonDiscovery = "/api/circles?book=philemon&edition=" + philemonEdition
+    try accepts(.publicRead, philemonDiscovery)
+    try accepts(.publicRead, philemonDiscovery + "&from=0&to=0")
+    try denies(.publicRead, philemonDiscovery + "&from=0&to=1")
+    try denies(.publicRead, "/api/circles?book=philemon&edition=" + edition)
+    try denies(.publicRead, "/api/great-books/passage?book=philemon&edition=" + philemonEdition + "&block=0")
     try denies(.publicRead, "/api/circles", bearer: token)
     try denies(.publicRead, "/api/circles", "GET", "")
     try denies(.publicRead, "/api/circles", "POST", "{}")

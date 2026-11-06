@@ -1,4 +1,5 @@
-import { createCircleReading, parseCircleDetail, starterReadingContext } from './circle-host.mjs';
+import { createCircleReading, isPhilemonReading, parseCircleDetail, philemonReadingText,
+  PHILEMON_EDITION_METADATA, starterReadingContext } from './circle-host.mjs';
 import { ROOM_TEXT_COLUMNS } from './room-composer.mjs';
 
 const DEADLINE_MS = 9000;
@@ -76,20 +77,19 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
   }
 
   function show() {
-    const model = reader.model();
-    const edition = model.passage.metadata.edition;
+    const model = reader?.model();
+    const edition = model?.passage.metadata.edition ?? PHILEMON_EDITION_METADATA.edition;
     const reading = creditPage === null;
     const position = reading ? page : creditPage;
     const currentPages = reading ? pages : credits;
-    const previous = position > 0 ? 'Previous page' : reading && model.canPrevious ? 'Previous block' : null;
-    const next = position + 1 < currentPages.length ? 'Next page' : reading && model.canNext ? 'Next block' : null;
+    const previous = position > 0 ? 'Previous page' : reading && model?.canPrevious ? 'Previous block' : null;
+    const next = position + 1 < currentPages.length ? 'Next page' : reading && model?.canNext ? 'Next block' : null;
+    const blockLabel = model ? `Block ${model.blockIndex - model.context.from + 1} of ${model.context.to - model.context.from + 1}` : 'Philemon 1';
     onPanel({ label, heading: reading ? edition.sourceTitle : 'Source edition and rights',
       readingLines: currentPages[position],
       rows: [[previous && control('reading-previous', previous), control('reading-credits', reading ? 'Source info' : 'Back to text'),
         next && control('reading-next', next), back]],
-      footer: reading
-        ? `Block ${model.blockIndex - model.context.from + 1} of ${model.context.to - model.context.from + 1} · Page ${position + 1} of ${currentPages.length} · ${footer}`
-        : `Source info · Page ${position + 1} of ${currentPages.length} · ${footer}` });
+      footer: `${reading ? blockLabel : 'Source info'} · Page ${position + 1} of ${currentPages.length} · ${footer}` });
   }
 
   async function load(move = 'load') {
@@ -101,6 +101,14 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
       if (!selection) {
         clear();
         notice('Circle reading unavailable', 'There is no current selection from a supported edition. See the regular Circle for its reading plan.', backRow);
+        return;
+      }
+      if (isPhilemonReading(selection)) {
+        clear();
+        const edition = PHILEMON_EDITION_METADATA.edition;
+        pages = roomReadingPages(philemonReadingText());
+        credits = roomReadingPages([edition.attribution, edition.licenseNotice, edition.sourceCatalogUrl, edition.licenseUrl].join('\n\n'));
+        show();
         return;
       }
       if (reader) {
@@ -149,7 +157,7 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
         if (!step) return;
         if (creditPage !== null) creditPage = Math.max(0, Math.min(credits.length - 1, creditPage + step));
         else if (page + step >= 0 && page + step < pages.length) page += step;
-        else if (step === 1 ? reader.model().canNext : reader.model().canPrevious) {
+        else if (reader && (step === 1 ? reader.model().canNext : reader.model().canPrevious)) {
           await load(step === 1 ? 'next' : 'previous');
           return;
         }

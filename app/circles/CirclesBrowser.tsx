@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDay } from '@/lib/circles/schedule';
 import { circleDetailHref, DEFAULT_DISCOVERY_QUERY, discoverySearchParams, parseDiscoveryQuery, type DiscoveryQuery } from '@/lib/circles/discovery';
 import { button, card, fieldLabel, gold, input, ivory85, muted, parchment, primary, small } from '@/lib/circles/ui';
-import { getBook } from '@/lib/books/catalog';
-import { getReadingEdition, READING_EDITIONS, readingEditionLabel, readingSessionLabel, readingStartHref } from '@/lib/circles/reading-program';
+import { getReadingWork, getReadingEdition, READING_EDITIONS, readingEditionLabel, readingSessionLabel, readingStartHref } from '@/lib/circles/reading-program';
 import ReadingProgramSummary from './ReadingProgramSummary';
 import styles from './reading-program.module.css';
 import { defaultDiscoveryPageRequest, discoveryPageSearchParams, isDiscoveryRestart, parseDiscoveryPage, parseDiscoveryPageRequest, type DiscoveryPageReply, type DiscoveryPageRequest, type PublicDiscoveryCircle } from '@/lib/circles/discovery-page';
@@ -145,7 +144,7 @@ export default function CirclesBrowser() {
           <select id="circle-book" name="book" style={input} value={draft.book || ''} onChange={event => {
             const pinned = getReadingEdition(event.target.value);
             setDraft({ ...draft, book: pinned?.bookId, edition: pinned?.editionId, from: undefined, to: undefined, invalidContext: false });
-          }}><option value="">All reading plans</option>{READING_EDITIONS.map(pinned => <option key={pinned.bookId} value={pinned.bookId}>{getBook(pinned.bookId)?.title} — {getBook(pinned.bookId)?.author}</option>)}</select>
+          }}><option value="">All reading plans</option>{READING_EDITIONS.map(pinned => <option key={pinned.bookId} value={pinned.bookId}>{getReadingWork(pinned.bookId)?.title} — {getReadingWork(pinned.bookId)?.author}</option>)}</select>
         </div>
         <div>
           <label htmlFor="circle-city" style={fieldLabel}>City or region</label>

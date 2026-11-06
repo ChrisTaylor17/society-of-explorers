@@ -31,6 +31,7 @@ const sources = [
   'app/api/great-books/passage/route.ts', 'lib/books/passage-source.ts',
   'content/great-books/apology/passages.json', 'content/great-books/apology/reader.html',
   'content/great-books/apology/manifest.json', 'platforms/shared/circle-reading.ts', 'platforms/shared/reading-metadata.json',
+  'content/root-kernel/philemon.web-classic.json', 'lib/root-kernel/philemon-edition.ts', 'docs/sql/circle-reading-programs.sql',
 ];
 const hashFile = async name => sha(await readFile(resolve(root, name)));
 for (const name of sources) sourceHashes[name] = await hashFile(name);
@@ -598,6 +599,44 @@ try {
   gates.delete(passageGate.release);
   assert.equal(await standalone.evaluate(() => window.questXrQa.panel()), '');
   pass('A verified source response released after headset focus loss cannot repopulate the cleared panel');
+
+  const scripture = JSON.parse(await readFile(resolve(root, 'content/root-kernel/philemon.web-classic.json')));
+  const scriptureProgram = { version: 1, bookId: 'philemon', editionId: 'web-classic-' + sha(JSON.stringify(scripture)),
+    sessions: [{ from: 0, to: 0 }] };
+  const { circleId: scriptureCircle } = await rpc(f.db, 'soe_circle_create', [f.reviewerId, randomUUID(), await creationInput(f.db, {
+    title: 'A synthetic Philemon salon', format: 'online', venueType: 'online', venueName: null, city: null, region: null,
+    onlineUrl: meetingUrl, readingProgram: scriptureProgram,
+  })]);
+  const scripturePage = await client('outsider', true, { circleId: scriptureCircle, salon: false });
+  await scripturePage.locator('#quest-immersive-enter').click();
+  await readingPanel(scripturePage, 'check your signed-in account');
+  await readingTrigger(scripturePage);
+  await readingPanel(scripturePage, 'load recent discussion');
+  await readingTrigger(scripturePage);
+  await readingPanel(scripturePage, 'Read selection');
+  const scriptureRequestStart = readRequests().length;
+  await readingPress(scripturePage, 'Read selection');
+  await readingPanel(scripturePage, 'Philemon 1 · Page 1');
+  const currentFrame = () => scripturePage.evaluate(() => window.questXrQa.panel());
+  const first = await currentFrame();
+  const pageCount = Number(/Page 1 of (\d+)/u.exec(first)?.[1]);
+  assert.ok(pageCount > 1);
+  const frames = [first];
+  for (let page = 2; page <= pageCount; page++) {
+    await readingPress(scripturePage, 'Next page');
+    await readingPanel(scripturePage, `Philemon 1 · Page ${page} of ${pageCount}`);
+    frames.push(await currentFrame());
+  }
+  assert.match(frames[0], /Paul, a prisoner of Christ Jesus/u);
+  assert.match(frames.join('\n'), /Publisher footnotes/u);
+  assert.match(frames.at(-1), /Verse 10/u);
+  await readingPress(scripturePage, 'Source info');
+  await readingPanel(scripturePage, 'World English Bible publisher dedicates');
+  assert.equal(readRequests().slice(scriptureRequestStart).filter(request => request.action === 'reading-detail').length, 1);
+  assert.equal(readRequests().slice(scriptureRequestStart).some(request => request.action === 'passage'), false);
+  await readingPress(scripturePage, 'Back to discussion');
+  await readingPanel(scripturePage, 'Read selection');
+  pass('The headset checks the current Philemon Circle, pages through the bundled letter and publisher footnotes, and returns to discussion without a source request');
 
   await f.db.query('UPDATE book_cohorts SET circle_hidden=true WHERE id=$1', [f.circleId]);
   assert.equal((await send('outsider', probe)).status, 404);

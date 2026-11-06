@@ -2599,6 +2599,232 @@ function getBook(bookId) {
   return GREAT_BOOKS.find((b) => b.id === bookId);
 }
 
+// lib/books/bookmarks.ts
+var isEditionId = (v) => typeof v === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(v);
+var record6 = (v) => Boolean(v && typeof v === "object" && !Array.isArray(v));
+var text2 = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(v);
+var texts = (v, max) => Array.isArray(v) && v.length <= 100 && v.every((x) => text2(x, max));
+function parseBookEditionResponse(value) {
+  if (!record6(value) || typeof value.bookId !== "string")
+    return null;
+  const book = getBook(value.bookId);
+  if (!book || value.title !== book.title || value.author !== book.author || !record6(value.edition))
+    return null;
+  const e = value.edition;
+  if (!isEditionId(e.editionId) || e.documentUrl !== `/api/great-books/edition/${book.id}?edition=${e.editionId}` || e.downloadUrl !== `/api/great-books/edition/${book.id}/download?edition=${e.editionId}` || e.sourceCatalogUrl !== `https://www.gutenberg.org/ebooks/${book.gutenberg_id}` || !text2(e.sourceArchiveUrl, 500) || !text2(e.sourceTitle, 1000) || !text2(e.sourceAuthor, 500) || !text2(e.attribution, 4000) || e.licenseUrl !== "https://www.gutenberg.org/policy/license.html" || !text2(e.licenseNotice, 4000) || !texts(e.editors, 300) || !texts(e.illustrators, 300) || !texts(e.editionNotes, 3000) || !Array.isArray(e.translators) || e.translators.length > 30 || !e.translators.every((t) => record6(t) && text2(t.name, 300) && text2(t.appliesTo, 1000)) || !record6(e.rights) || e.rights.jurisdiction !== "US" || e.rights.status !== "public-domain" || e.rights.authority !== "Project Gutenberg" || e.rights.outsideUS !== "not-assessed" || !text2(e.rights.reviewedAt, 50) || !Number.isSafeInteger(e.blockCount) || Number(e.blockCount) < 1 || Number(e.blockCount) > 1e5 || !Array.isArray(e.contents) || e.contents.length > 5000)
+    return null;
+  try {
+    const u = new URL(e.sourceArchiveUrl);
+    if (u.href !== `https://www.gutenberg.org/cache/epub/${book.gutenberg_id}/pg${book.gutenberg_id}-h.zip`)
+      return null;
+  } catch {
+    return null;
+  }
+  if (!e.contents.every((c) => record6(c) && text2(c.id, 200) && /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(c.id) && text2(c.label, 1000) && Number.isInteger(c.level) && Number(c.level) >= 1 && Number(c.level) <= 6 && (c.readingIndex === null || Number.isSafeInteger(c.readingIndex) && Number(c.readingIndex) >= 0 && Number(c.readingIndex) < Number(e.blockCount))))
+    return null;
+  if (new Set(e.contents.map((c) => c.id)).size !== e.contents.length)
+    return null;
+  return {
+    bookId: book.id,
+    title: book.title,
+    author: book.author,
+    edition: {
+      editionId: e.editionId,
+      documentUrl: e.documentUrl,
+      downloadUrl: e.downloadUrl,
+      sourceCatalogUrl: e.sourceCatalogUrl,
+      sourceArchiveUrl: e.sourceArchiveUrl,
+      sourceTitle: e.sourceTitle,
+      sourceAuthor: e.sourceAuthor,
+      attribution: e.attribution,
+      translators: e.translators.map((t) => ({ name: t.name, appliesTo: t.appliesTo })),
+      editors: [...e.editors],
+      illustrators: [...e.illustrators],
+      licenseUrl: e.licenseUrl,
+      licenseNotice: e.licenseNotice,
+      editionNotes: [...e.editionNotes],
+      rights: { jurisdiction: "US", status: "public-domain", authority: "Project Gutenberg", outsideUS: "not-assessed", reviewedAt: e.rights.reviewedAt },
+      blockCount: Number(e.blockCount),
+      contents: e.contents.map((c) => ({ id: c.id, label: c.label, level: c.level, readingIndex: c.readingIndex }))
+    }
+  };
+}
+// content/root-kernel/philemon.web-classic.json
+var philemon_web_classic_default = {
+  edition: "World English Bible Classic",
+  editionId: "eng-web",
+  title: "Paul’s Letter to Philemon",
+  chapter: 1,
+  publisherUrl: "https://ebible.org/eng-web/PHM01.htm",
+  rightsUrl: "https://ebible.org/eng-web/webfaq.htm",
+  sourceMemberSha256: "9c9148cf45eee6558410a74f58804de3793eb5d26c394e291634a47fb9b50a47",
+  paragraphs: [
+    [
+      {
+        verse: 1,
+        text: "Paul, a prisoner of Christ Jesus, and Timothy our brother, to Philemon, our beloved fellow worker,"
+      },
+      {
+        verse: 2,
+        text: "to the beloved Apphia, to Archippus our fellow soldier, and to the assembly in your house:"
+      },
+      {
+        verse: 3,
+        text: "Grace to you and peace from God our Father and the Lord Jesus Christ."
+      }
+    ],
+    [
+      {
+        verse: 4,
+        text: "I thank my God always, making mention of you in my prayers,"
+      },
+      {
+        verse: 5,
+        text: "hearing of your love and of the faith which you have toward the Lord Jesus and toward all the saints,"
+      },
+      {
+        verse: 6,
+        text: "that the fellowship of your faith may become effective in the knowledge of every good thing which is in us in Christ Jesus."
+      },
+      {
+        verse: 7,
+        text: "For we have much joy and comfort in your love, because the hearts of the saints have been refreshed through you, brother."
+      }
+    ],
+    [
+      {
+        verse: 8,
+        text: "Therefore though I have all boldness in Christ to command you that which is appropriate,"
+      },
+      {
+        verse: 9,
+        text: "yet for love’s sake I rather appeal to you, being such a one as Paul, the aged, but also a prisoner of Jesus Christ."
+      },
+      {
+        verse: 10,
+        text: "I appeal to you for my child Onesimus, whom I have become the father of in my chains,"
+      },
+      {
+        verse: 11,
+        text: "who once was useless to you, but now is useful to you and to me."
+      },
+      {
+        verse: 12,
+        text: "I am sending him back. Therefore receive him, that is, my own heart,"
+      },
+      {
+        verse: 13,
+        text: "whom I desired to keep with me, that on your behalf he might serve me in my chains for the Good News."
+      },
+      {
+        verse: 14,
+        text: "But I was willing to do nothing without your consent, that your goodness would not be as of necessity, but of free will."
+      },
+      {
+        verse: 15,
+        text: "For perhaps he was therefore separated from you for a while that you would have him forever,"
+      },
+      {
+        verse: 16,
+        text: "no longer as a slave, but more than a slave, a beloved brother—especially to me, but how much rather to you, both in the flesh and in the Lord."
+      }
+    ],
+    [
+      {
+        verse: 17,
+        text: "If then you count me a partner, receive him as you would receive me."
+      },
+      {
+        verse: 18,
+        text: "But if he has wronged you at all or owes you anything, put that to my account."
+      },
+      {
+        verse: 19,
+        text: "I, Paul, write this with my own hand: I will repay it (not to mention to you that you owe to me even your own self besides)."
+      },
+      {
+        verse: 20,
+        text: "Yes, brother, let me have joy from you in the Lord. Refresh my heart in the Lord."
+      }
+    ],
+    [
+      {
+        verse: 21,
+        text: "Having confidence in your obedience, I write to you, knowing that you will do even beyond what I say."
+      }
+    ],
+    [
+      {
+        verse: 22,
+        text: "Also, prepare a guest room for me, for I hope that through your prayers I will be restored to you."
+      }
+    ],
+    [
+      {
+        verse: 23,
+        text: "Epaphras, my fellow prisoner in Christ Jesus, greets you,"
+      },
+      {
+        verse: 24,
+        text: "as do Mark, Aristarchus, Demas, and Luke, my fellow workers."
+      }
+    ],
+    [
+      {
+        verse: 25,
+        text: "The grace of our Lord Jesus Christ be with your spirit. Amen."
+      }
+    ]
+  ],
+  footnotes: [
+    {
+      verse: 1,
+      text: "“Christ” means “Anointed One”."
+    },
+    {
+      verse: 10,
+      text: "Onesimus means “useful”."
+    }
+  ]
+};
+
+// lib/root-kernel/philemon-edition.ts
+var PHILEMON_SOURCE_SHA256 = "b2bc6316f4217a8c97637d44786a4cd6b9b9a83b88cd4880b5aacdf67cae4e19";
+var PHILEMON_READING = { bookId: "philemon", editionId: `web-classic-${PHILEMON_SOURCE_SHA256}`, from: 0, to: 0 };
+var PHILEMON_WORK = { id: PHILEMON_READING.bookId, title: philemon_web_classic_default.title, author: "Paul" };
+var PHILEMON_RIGHTS = "The World English Bible publisher dedicates this translation to the public domain.";
+var PHILEMON_EDITION_METADATA = {
+  bookId: PHILEMON_WORK.id,
+  title: PHILEMON_WORK.title,
+  author: PHILEMON_WORK.author,
+  sourceSha256: PHILEMON_SOURCE_SHA256,
+  edition: {
+    editionId: PHILEMON_READING.editionId,
+    sourceTitle: philemon_web_classic_default.title,
+    sourceCatalogUrl: philemon_web_classic_default.publisherUrl,
+    licenseUrl: philemon_web_classic_default.rightsUrl,
+    attribution: `${philemon_web_classic_default.title} · ${philemon_web_classic_default.edition}`,
+    licenseNotice: PHILEMON_RIGHTS,
+    translators: [],
+    editors: [],
+    illustrators: [],
+    editionNotes: ["Complete letter with both publisher footnotes."],
+    blockCount: 1,
+    contents: [{ id: "scripture", label: "Philemon 1", level: 2, readingIndex: 0 }]
+  }
+};
+function isPhilemonReading(selection) {
+  return selection?.bookId === PHILEMON_READING.bookId && selection.editionId === PHILEMON_READING.editionId && selection.from === PHILEMON_READING.from && selection.to === PHILEMON_READING.to;
+}
+function philemonReadingText() {
+  const notes = new Map(philemon_web_classic_default.footnotes.map((note) => [note.verse, note.text]));
+  const paragraphs = philemon_web_classic_default.paragraphs.map((paragraph) => paragraph.map(({ verse, text }) => `${verse}${notes.has(verse) ? "*" : ""} ${text}`).join(" "));
+  const footnotes = philemon_web_classic_default.footnotes.map(({ verse, text }) => `Verse ${verse} · ${text}`);
+  return [...paragraphs, "Publisher footnotes", ...footnotes].join(`
+
+`);
+}
+
 // lib/circles/reading-program-editions.json
 var reading_program_editions_default = [
   {
@@ -4484,22 +4710,25 @@ var reading_program_editions_default = [
 
 // lib/circles/reading-program.ts
 var READING_PROGRAM_MAX_SESSIONS = 12;
-var READING_EDITIONS = reading_program_editions_default;
-var record6 = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+var READING_EDITIONS = [
+  ...reading_program_editions_default,
+  { ...PHILEMON_EDITION_METADATA.edition, bookId: PHILEMON_READING.bookId }
+];
+var record7 = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 var exact2 = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.hasOwn(v, k));
 var position = (v) => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
 function getReadingEdition(bookId, editionId) {
   return READING_EDITIONS.find((e) => e.bookId === bookId && (editionId === undefined || e.editionId === editionId));
 }
 function parseReadingProgram(value) {
-  if (!record6(value) || !exact2(value, ["version", "bookId", "editionId", "sessions"]) || value.version !== 1 || typeof value.bookId !== "string" || typeof value.editionId !== "string" || !Array.isArray(value.sessions) || value.sessions.length < 1 || value.sessions.length > READING_PROGRAM_MAX_SESSIONS)
+  if (!record7(value) || !exact2(value, ["version", "bookId", "editionId", "sessions"]) || value.version !== 1 || typeof value.bookId !== "string" || typeof value.editionId !== "string" || !Array.isArray(value.sessions) || value.sessions.length < 1 || value.sessions.length > READING_PROGRAM_MAX_SESSIONS)
     return null;
   const edition = getReadingEdition(value.bookId, value.editionId);
   if (!edition)
     return null;
   const sessions = [];
   for (const s of value.sessions) {
-    if (!record6(s) || !exact2(s, ["from", "to"]) || !position(s.from) || !position(s.to) || s.from > s.to || s.to >= edition.blockCount)
+    if (!record7(s) || !exact2(s, ["from", "to"]) || !position(s.from) || !position(s.to) || s.from > s.to || s.to >= edition.blockCount)
       return null;
     sessions.push({ from: s.from, to: s.to });
   }
@@ -4596,57 +4825,6 @@ var passage_indexes_default = [
     indexBytes: 1439793
   }
 ];
-
-// lib/books/bookmarks.ts
-var isEditionId = (v) => typeof v === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(v);
-var record7 = (v) => Boolean(v && typeof v === "object" && !Array.isArray(v));
-var text2 = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(v);
-var texts = (v, max) => Array.isArray(v) && v.length <= 100 && v.every((x) => text2(x, max));
-function parseBookEditionResponse(value) {
-  if (!record7(value) || typeof value.bookId !== "string")
-    return null;
-  const book = getBook(value.bookId);
-  if (!book || value.title !== book.title || value.author !== book.author || !record7(value.edition))
-    return null;
-  const e = value.edition;
-  if (!isEditionId(e.editionId) || e.documentUrl !== `/api/great-books/edition/${book.id}?edition=${e.editionId}` || e.downloadUrl !== `/api/great-books/edition/${book.id}/download?edition=${e.editionId}` || e.sourceCatalogUrl !== `https://www.gutenberg.org/ebooks/${book.gutenberg_id}` || !text2(e.sourceArchiveUrl, 500) || !text2(e.sourceTitle, 1000) || !text2(e.sourceAuthor, 500) || !text2(e.attribution, 4000) || e.licenseUrl !== "https://www.gutenberg.org/policy/license.html" || !text2(e.licenseNotice, 4000) || !texts(e.editors, 300) || !texts(e.illustrators, 300) || !texts(e.editionNotes, 3000) || !Array.isArray(e.translators) || e.translators.length > 30 || !e.translators.every((t) => record7(t) && text2(t.name, 300) && text2(t.appliesTo, 1000)) || !record7(e.rights) || e.rights.jurisdiction !== "US" || e.rights.status !== "public-domain" || e.rights.authority !== "Project Gutenberg" || e.rights.outsideUS !== "not-assessed" || !text2(e.rights.reviewedAt, 50) || !Number.isSafeInteger(e.blockCount) || Number(e.blockCount) < 1 || Number(e.blockCount) > 1e5 || !Array.isArray(e.contents) || e.contents.length > 5000)
-    return null;
-  try {
-    const u = new URL(e.sourceArchiveUrl);
-    if (u.href !== `https://www.gutenberg.org/cache/epub/${book.gutenberg_id}/pg${book.gutenberg_id}-h.zip`)
-      return null;
-  } catch {
-    return null;
-  }
-  if (!e.contents.every((c) => record7(c) && text2(c.id, 200) && /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(c.id) && text2(c.label, 1000) && Number.isInteger(c.level) && Number(c.level) >= 1 && Number(c.level) <= 6 && (c.readingIndex === null || Number.isSafeInteger(c.readingIndex) && Number(c.readingIndex) >= 0 && Number(c.readingIndex) < Number(e.blockCount))))
-    return null;
-  if (new Set(e.contents.map((c) => c.id)).size !== e.contents.length)
-    return null;
-  return {
-    bookId: book.id,
-    title: book.title,
-    author: book.author,
-    edition: {
-      editionId: e.editionId,
-      documentUrl: e.documentUrl,
-      downloadUrl: e.downloadUrl,
-      sourceCatalogUrl: e.sourceCatalogUrl,
-      sourceArchiveUrl: e.sourceArchiveUrl,
-      sourceTitle: e.sourceTitle,
-      sourceAuthor: e.sourceAuthor,
-      attribution: e.attribution,
-      translators: e.translators.map((t) => ({ name: t.name, appliesTo: t.appliesTo })),
-      editors: [...e.editors],
-      illustrators: [...e.illustrators],
-      licenseUrl: e.licenseUrl,
-      licenseNotice: e.licenseNotice,
-      editionNotes: [...e.editionNotes],
-      rights: { jurisdiction: "US", status: "public-domain", authority: "Project Gutenberg", outsideUS: "not-assessed", reviewedAt: e.rights.reviewedAt },
-      blockCount: Number(e.blockCount),
-      contents: e.contents.map((c) => ({ id: c.id, label: c.label, level: c.level, readingIndex: c.readingIndex }))
-    }
-  };
-}
 
 // lib/books/passages.ts
 var PASSAGE_QUOTE_LIMIT = 600;
@@ -5298,14 +5476,17 @@ export {
   MESSAGE_AI_POLICY_HREF,
   MESSAGE_REPORT_OPTIONS,
   MESSAGE_WITHDRAWAL_PRIVACY,
+  PHILEMON_EDITION_METADATA,
   approvedOrigin,
   createCircleHost,
   createCircleReading,
   createMemberContributions,
   createVerifiedSupabaseCircleOwner,
   discussionContentSuffix,
+  isPhilemonReading,
   memberCircleConfig,
   parseCircleDetail,
+  philemonReadingText,
   safePrivateMeetingUrl,
   starterReadingContext
 };

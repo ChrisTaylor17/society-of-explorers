@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { memberSessionDto } from '@/lib/auth/memberDto';
 import { createClient } from '@/lib/supabase/client';
-import type { BookEditionResponse } from '@/lib/books/bookmarks';
+import type { CircleReadingEditionResponse } from './reading-program';
 import { bindCircleAccess } from './browser-access';
 import { circleHeaders } from '@/lib/circles/client';
 import { circleCreateMutationBody, parseCircleCreateMutation, parseCircleHostingAccess, parseOwnedCircleCreateReceipt,
@@ -11,9 +11,9 @@ import { circleCreateMutationBody, parseCircleCreateMutation, parseCircleHosting
 import { parseCircleDetail } from './membership';
 import type { CircleInput } from './schedule';
 
-type Pending = { request: CircleCreateMutation; body: string; edition: BookEditionResponse | null; sent: boolean };
+type Pending = { request: CircleCreateMutation; body: string; edition: CircleReadingEditionResponse | null; sent: boolean };
 type View = { active: boolean; phase: 'idle' | 'loading' | 'editing' | 'review' | 'sending' | 'unknown' | 'created';
-  access: CircleHostingAccess | null; preview: CircleCreateMutation | null; edition: BookEditionResponse | null;
+  access: CircleHostingAccess | null; preview: CircleCreateMutation | null; edition: CircleReadingEditionResponse | null;
   confirmed: boolean; retry: boolean; created: string | null; notice: string };
 const initial = (): View => ({ active: true, phase: 'idle', access: null, preview: null, edition: null,
   confirmed: false, retry: false, created: null,
@@ -58,7 +58,7 @@ export function useCircleHosting(clearPrivateDraft: () => void) {
   }, []);
   const epoch = core.epoch;
   const valid = () => core.mounted && core.observing && core.active && !core.busy && core.epoch === epoch;
-  async function run(prepared: CircleInput | null = null, edition: BookEditionResponse | null = null, confirm = false) {
+  async function run(prepared: CircleInput | null = null, edition: CircleReadingEditionResponse | null = null, confirm = false) {
     if (!valid() || prepared && (core.view.phase !== 'editing' || core.pending?.sent)) return;
     const pending = confirm ? core.pending : null, earlierUnknown = pending?.sent === true;
     if (confirm && (!pending || core.view.phase !== 'review' || !core.view.confirmed)) return;
@@ -142,7 +142,7 @@ export function useCircleHosting(clearPrivateDraft: () => void) {
     clearDraft: () => { if (valid() && core.view.phase === 'editing') { clear.current(); publish({ notice: 'Draft cleared. Enter your details before reviewing again.' }); } },
     invalid: (notice: string) => { if (valid() && core.view.phase === 'editing') publish({ notice }); },
     load: () => { if (valid() && !['review', 'created'].includes(core.view.phase)) void run(); },
-    review: (prepared: CircleInput, edition: BookEditionResponse | null) => { if (valid()) void run(prepared, edition); },
+    review: (prepared: CircleInput, edition: CircleReadingEditionResponse | null) => { if (valid()) void run(prepared, edition); },
     confirm: () => { if (valid()) void run(null, null, true); },
     check: (confirmed: boolean) => { if (valid() && core.view.phase === 'review') publish({ confirmed }); },
     retryRequest: () => { if (valid() && core.view.phase === 'unknown' && core.view.access && core.pending?.sent && core.owner === core.pending.request.expectedMemberId) {

@@ -1,14 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { offlineApp } from './support/offline-app.mjs';
 
 const app = offlineApp(), tools = app.load('lib/circles/reading-program.ts');
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('every program pin and heading is backed by the complete, unchanged local edition', async () => {
-  assert.equal(tools.READING_EDITIONS.length, 8);
-  for (const edition of tools.READING_EDITIONS) {
+test('every Gutenberg program pin and heading is backed by the complete, unchanged local edition', async () => {
+  const books = tools.READING_EDITIONS.filter(edition => edition.bookId !== 'philemon');
+  assert.equal(books.length, 8);
+  for (const edition of books) {
     const manifest = JSON.parse(fs.readFileSync(`../../content/great-books/${edition.bookId}/manifest.json`, 'utf8'));
     assert.equal(edition.editionId, manifest.editionId);
     assert.equal(edition.blockCount, manifest.reader.blockCount);
@@ -26,6 +28,25 @@ test('every program pin and heading is backed by the complete, unchanged local e
       assert.ok(html.includes(`data-reading-index="${heading.readingIndex}"`), String(heading.readingIndex));
     }
   }
+});
+
+test('the Philemon plan binds the complete study and exact edition, with no generic book progress or passage routes', async () => {
+  const root = app.load('lib/root-kernel/philemon-edition.ts');
+  const source = JSON.parse(fs.readFileSync('../../content/root-kernel/philemon.web-classic.json', 'utf8'));
+  const sha = createHash('sha256').update(JSON.stringify(source)).digest('hex');
+  const metadata = await app.load('lib/circles/reading-edition-server.ts').readCircleReadingEdition('philemon');
+  const { from, to, bookId, editionId } = root.PHILEMON_READING;
+  assert.equal(editionId, 'web-classic-' + sha);
+  assert.equal(metadata.sourceSha256, sha);
+  assert.equal(tools.matchesReadingEdition(metadata, { bookId, editionId }), true);
+  assert.deepEqual(plain(tools.parseCircleReadingEditionResponse(plain(metadata))), plain(metadata));
+  assert.equal(tools.parseCircleReadingEditionResponse({ ...metadata, sourceSha256: '0'.repeat(64) }), null);
+  assert.equal(tools.parseCircleReadingEditionResponse({ ...metadata, edition: { ...metadata.edition, blockCount: 2 } }), null);
+  assert.deepEqual(plain(tools.parseReadingContext(tools.readingContextParams(root.PHILEMON_READING)).context), plain(root.PHILEMON_READING));
+  assert.equal(tools.readingReaderHref({ bookId, editionId }, { from, to }), '/great-books/scripture/philemon#scripture');
+  assert.equal(tools.parseReadingProgram({ version: 1, bookId, editionId, sessions: [{ from, to: 1 }] }), null);
+  assert.equal(app.load('lib/books/catalog.ts').getBook(bookId), undefined);
+  assert.equal(app.load('lib/books/passages.ts').passageIndexPin(bookId), null);
 });
 
 test('a forged edition, range, authority field or oversized plan never becomes a reading program', () => {

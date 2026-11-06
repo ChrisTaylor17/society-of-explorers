@@ -7,6 +7,7 @@ import { formatDay } from '../../lib/circles/schedule';
 import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
+import { isPhilemonReading, PHILEMON_READING } from '../../lib/root-kernel/philemon-edition';
 import { PublicProfileScreen } from './PublicProfileScreen';
 import { CircleCommunityNorms } from './CircleCommunityNorms';
 import { sourceReaderAvailable } from './SourceReader';
@@ -113,7 +114,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
   };
   const openReading = async (context: ReadingContext, sessionIndex: number | null) => {
     const before = session?.model(), owner = config.owner.scope();
-    if (!connection || !session || !config.passageTransport || !owner || before?.phase !== 'ready' || !before.detail || !before.canNavigate) return;
+    if (!connection || !session || (!config.passageTransport && !isPhilemonReading(context)) || !owner || before?.phase !== 'ready' || !before.detail || !before.canNavigate) return;
     const attempt = ++readingLifetime.current.generation, circleId = before.selected;
     setReadingNotice('');
     await session.refresh();
@@ -297,7 +298,7 @@ function AgreedReading({ circle, available, disabled, onRead }: {
       <Text style={styles.copy}>{readingEditionLabel(program)}</Text>
       {program.sessions.map((session, index) => <View key={index} style={styles.list}>
         <Text style={styles.note}>Meeting {index + 1}{circle.week === index + 1 ? ' · Current selection' : ''}: {readingSessionLabel(program, session)}</Text>
-        {available ? <Action label={`Read meeting ${index + 1} selection`} disabled={disabled}
+        {available || program.bookId === PHILEMON_READING.bookId ? <Action label={`Read meeting ${index + 1} selection`} disabled={disabled}
           onPress={() => onRead({ bookId: program.bookId, editionId: program.editionId, ...session }, index)}/> : null}
       </View>)}
     </> : circle.reading ? <>
@@ -306,7 +307,8 @@ function AgreedReading({ circle, available, disabled, onRead }: {
       {starter ? <><Text style={styles.note}>{readingEditionLabel(starter)}</Text><Text style={styles.note}>{readingSessionLabel(starter, starter)}</Text>
         {available ? <Action label="Read current selection" disabled={disabled} onPress={() => onRead(starter, null)}/> : null}</> : null}
     </> : <Text style={styles.copy}>No current reading selection.</Text>}
-    <Text style={styles.note}>{available ? sourceReaderAvailable()
+    <Text style={styles.note}>{program?.bookId === PHILEMON_READING.bookId ? 'Open the complete letter, publisher footnotes and questions for your salon.'
+      : available ? sourceReaderAvailable()
       ? 'Open a selection in the complete source edition, including illustrations, tables and notes. Your saved place changes only after you review and confirm a save.'
       : 'Open a selection to read its verified text. Tables and nontext content are identified in place; the native reader does not reproduce the complete source layout.'
       : 'The reading schedule is shown here. Reading text is unavailable in this connection.'}</Text>
