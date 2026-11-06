@@ -104,7 +104,10 @@ export function readingReaderHref(program: Pick<ReadingProgram, 'bookId' | 'edit
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(circleId)) throw new Error('Invalid Circle identifier');
     params.set('circle', circleId.toLowerCase());
   }
-  if (isPhilemonReading({ ...program, ...session })) return `${PHILEMON_STUDY_HREF}#scripture`;
+  if (isPhilemonReading({ ...program, ...session })) {
+    const circle = params.get('circle');
+    return `${PHILEMON_STUDY_HREF}${circle ? `?circle=${circle}` : ''}#scripture`;
+  }
   return `/great-books/${encodeURIComponent(program.bookId)}?${params}`;
 }
 

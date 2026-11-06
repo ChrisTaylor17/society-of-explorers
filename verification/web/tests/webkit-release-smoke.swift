@@ -9,6 +9,8 @@ private struct Fixture: Decodable {
     let memberId: String
     let circleId: String
     let walletAddress: String
+    let parentComment: String
+    let replyComment: String
 }
 
 private struct CheckFailure: Error, CustomStringConvertible {
@@ -197,22 +199,14 @@ private struct Run {
         try await browser.action("document.querySelector('a[href=\"#login-title\"]').click();")
         try await browser.expect("location.hash === '#login-title' && document.activeElement.id === 'login-title'",
                                  "Sign-in shortcut failed to focus its target")
-        let click = "label => Array.from(document.querySelectorAll('button')).find(button => button.textContent === label).click()"
+        let click = "label => Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === label).click()"
+        let follow = "label => Array.from(document.querySelectorAll('main a')).find(link => link.textContent.trim() === label).click()"
         try await browser.action("(\(click))('Create account');")
         try await browser.expect("document.activeElement.id === 'login-title' && document.activeElement.textContent === 'Create an account'",
                                  "Account creation heading did not receive focus")
         try await browser.action("(\(click))('Sign in instead');")
         try await browser.expect("document.getElementById('login-password')?.disabled === false", "Sign-in did not return")
         stories.append("The sign-in shortcut and account mode switches focus their headings in WebKit.")
-
-        try await browser.action("(\(click))('Connect wallet');")
-        try await browser.expect("location.pathname === '/manifesto'", "Wallet sign-in did not reach the requested page")
-        guard try await browser.memberIsVerified(fixture.memberId) else { throw CheckFailure("Wallet member proof failed") }
-        try await browser.load("/manifesto")
-        guard try await browser.memberIsVerified(fixture.memberId), browser.acceptedCertificate else {
-            throw CheckFailure("Verified session did not survive reload with the pinned test certificate")
-        }
-        stories.append("The built login uses the actual nonce and signature handlers over HTTPS and retains the HttpOnly wallet session on reload.")
 
         try await browser.load("/circles?format=online")
         try await browser.expect("document.querySelector('a[aria-label=\"View circle: Philemon WebKit Circle\"]')",
@@ -232,6 +226,101 @@ private struct Run {
         try await browser.expect("!new URL(location.href).searchParams.has('q') && document.activeElement.textContent === 'Current results page'",
                                  "Back did not restore the previous search")
         stories.append("The Circle shortcut preserves the directory, and a submitted search and Back focus their results.")
+
+        let detailPath = "/circles/\(fixture.circleId)"
+        try await browser.action("document.querySelector('a[aria-label=\"View circle: Philemon WebKit Circle\"]').click();")
+        try await browser.expect("location.pathname === '\(detailPath)' && document.querySelector('[aria-label=\"Public Circle preview\"]')",
+                                 "The guest did not reach the public Circle preview")
+        try await browser.expect("!document.body.innerText.includes('Open the online meeting') && !document.body.innerText.includes('Open discussion archive and replies')",
+                                 "The guest preview showed a private control")
+        try await browser.action("(\(follow))('Sign in');")
+        try await browser.expect("location.pathname === '/login' && new URLSearchParams(location.search).get('next') === '\(detailPath)?from=online' && document.getElementById('login-password')?.disabled === false",
+                                 "Sign-in lost the selected online Circle")
+        try await browser.action("(\(click))('Connect wallet');")
+        try await browser.expect("location.pathname === '\(detailPath)' && new URLSearchParams(location.search).get('from') === 'online'",
+                                 "Wallet sign-in did not return to the exact Circle")
+        guard try await browser.memberIsVerified(fixture.memberId) else { throw CheckFailure("Wallet member proof failed") }
+        try await browser.load(detailPath + "?from=online")
+        guard try await browser.memberIsVerified(fixture.memberId), browser.acceptedCertificate else {
+            throw CheckFailure("Verified session did not survive reload with the pinned test certificate")
+        }
+        stories.append("The public listing signs in through the actual wallet handlers and returns to the same Circle. Its HttpOnly session survives reload over pinned HTTPS.")
+
+        let button = "label => Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === label)"
+        try await browser.expect("(\(button))('Load current Circle access')?.disabled === false", "Circle access control did not load")
+        try await browser.action("(\(click))('Load current Circle access');")
+        try await browser.expect("(\(button))('Join this Circle')?.disabled === false", "The signed-in visitor cannot review joining")
+        try await browser.action("(\(click))('Join this Circle');")
+        try await browser.expect("(\(button))('Confirm join')?.disabled === true && !(\(button))('Open the online meeting')",
+                                 "Join confirmation bypassed review or exposed the meeting")
+        try await browser.action("Array.from(document.querySelectorAll('label')).find(label => label.textContent.includes('I read the community norms')).querySelector('input').click();")
+        try await browser.expect("(\(button))('Confirm join')?.disabled === false", "The checked review did not enable joining")
+        try await browser.action("(\(click))('Confirm join');")
+        try await browser.expect("(\(button))('Open the online meeting')?.disabled === false && document.querySelector('[aria-label=\"Agreed reading program\"] a')",
+                                 "The current member did not get the assigned reading and meeting control")
+        stories.append("The member joins only after the norms review and then receives the Circle’s assigned reading and meeting control.")
+
+        try await browser.action("document.querySelector('[aria-label=\"Agreed reading program\"] a').click();")
+        try await browser.expect("location.pathname === '/great-books/scripture/philemon' && location.hash === '#scripture' && new URLSearchParams(location.search).get('circle') === '\(fixture.circleId)' && document.querySelectorAll('[data-verse-text]').length === 25 && document.querySelectorAll('[data-publisher-footnote]').length === 2",
+                                 "The assigned letter lost its Circle or edition content")
+        try await browser.expect("document.querySelector('a[href=\"\(detailPath)\"]')?.textContent === 'Return to Circle details'",
+                                 "The exact Circle return link was missing")
+        _ = try await browser.zoom(4)
+        try await browser.action("(\(follow))('Return to Circle details');")
+        try await browser.expect("location.pathname === '\(detailPath)' && (\(button))('Load current Circle access')?.disabled === false && !(\(button))('Open the online meeting')",
+                                 "Returning from Scripture reopened an old private view")
+        try await browser.action("(\(click))('Load current Circle access');")
+        try await browser.expect("(\(button))('Open the online meeting')?.disabled === false", "Returning member access could not be verified")
+        stories.append("The assigned Philemon letter keeps all 25 verses and both footnotes and returns to the exact Circle for a fresh access check.")
+
+        try await browser.action("(\(follow))('Open discussion archive and replies');")
+        try await browser.expect("(\(button))('Load current discussion archive')?.disabled === false", "The current discussion control was missing")
+        try await browser.action("(\(click))('Load current discussion archive');")
+        try await browser.expect("document.querySelector('[aria-label=\"Discussion archive page\"]')?.textContent.includes('\(fixture.parentComment)')",
+                                 "The existing parent did not load in the discussion archive")
+        try await browser.action("(\(click))('Reply to this message');")
+        _ = try await browser.view.callAsyncJavaScript("""
+            const field = document.querySelector('[aria-label="Write your message"] textarea');
+            Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(field, comment);
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            """, arguments: ["comment": fixture.replyComment], in: nil, contentWorld: .page)
+        try await browser.expect("(\(button))('Prepare discussion preview')?.disabled === false", "The entered reply did not become reviewable")
+        try await browser.action("(\(click))('Prepare discussion preview');")
+        try await browser.expect("(\(button))('Post reviewed discussion message')?.disabled === true && document.querySelector('[aria-label=\"Current reply parent\"]')?.textContent.includes('\(fixture.parentComment)') && document.querySelector('[aria-label=\"Review discussion message\"]')?.textContent.includes('\(fixture.replyComment)')",
+                                 "The review lost the exact reply or parent")
+        try await browser.action("document.querySelector('[aria-label=\"Review discussion message\"] input[type=checkbox]').click();")
+        try await browser.action("(\(click))('Post reviewed discussion message');")
+        try await browser.expect("document.querySelector('[aria-label=\"Confirmed discussion post\"]')", "The reviewed reply did not confirm")
+        try await browser.action("(\(follow))('Open saved discussion message');")
+        try await browser.expect("(\(button))('Load current thread')?.disabled === false", "The saved thread did not open")
+        try await browser.action("(\(click))('Load current thread');")
+        try await browser.expect("document.querySelector('[aria-label=\"Current discussion thread\"]')?.textContent.includes('\(fixture.replyComment)')",
+                                 "The saved reply could not be read back from its thread")
+        stories.append("The current member reviews the exact reply and its parent, posts it, and reads it back from the saved thread.")
+
+        let signedOut = try await browser.view.callAsyncJavaScript("""
+            const response = await fetch('/api/auth/logout', {
+              method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store',
+              body:JSON.stringify({requestId:crypto.randomUUID(),scope:'browser'})
+            });
+            const body = await response.json();
+            const member = await fetch('/api/auth/member', {cache:'no-store'});
+            return response.ok && body.remoteRevocation === 'wallet_session_revoked' && member.status === 401;
+            """, arguments: [:], in: nil, contentWorld: .page) as? Bool
+        guard signedOut == true else { throw CheckFailure("The wallet session did not close") }
+        let initialControlDisabled = try await browser.view.callAsyncJavaScript("""
+            const response = await fetch(path, {cache:'no-store'});
+            const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+            const load = Array.from(page.querySelectorAll('button')).find(button => button.textContent.trim() === 'Load current discussion archive');
+            return response.ok && load?.disabled === true;
+            """, arguments: ["path": detailPath + "/discussion"], in: nil, contentWorld: .page) as? Bool
+        guard initialControlDisabled == true else { throw CheckFailure("The unhydrated discussion accepts an access click") }
+        try await browser.load(detailPath + "/discussion")
+        try await browser.expect("(\(button))('Load current discussion archive')?.disabled === false", "The signed-out archive control did not become ready")
+        try await browser.action("(\(click))('Load current discussion archive');")
+        try await browser.expect("document.body.innerText.includes('Sign in, then load this discussion to check current access.') && !document.querySelector('[aria-label=\"Discussion archive page\"]') && !document.body.innerText.includes('\(fixture.replyComment)')",
+                                 "The signed-out browser recovered a private thread")
+        stories.append("The browser sign-out endpoint revokes the wallet session. The reloaded archive waits for access controls to initialize, then refuses the signed-out visitor.")
 
         try await browser.load("/clips")
         try await browser.action("document.querySelector('a[href=\"#clips-title\"]').click();")

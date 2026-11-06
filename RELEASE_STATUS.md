@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+Members can now open their assigned Philemon study and return to the exact Circle for a fresh access check. Discussion controls wait for browser account checks to initialize. A local macOS WebKit run followed the guest listing through wallet sign-in, reviewed joining, reading, a saved reply and sign-out. Chromium separately checked the public study, online Circle journey and private reviewer views. Hosted and physical-device acceptance remain open. [Verification](docs/integration/philemon-circle-return-verification.json)
+
 The pre-cutover restore check now covers 24 tables, including Waddle and the archived Twiddle tables. The 64-table release check also verifies Waddle publication consent. Both flagged incomplete archives accepted by the older checks. A separate audio rehearsal caught missing files despite intact Storage catalog rows, as well as altered bytes and a public target bucket. The hosted export and independent Storage readback still await approval. [Recovery verification](docs/integration/voice-archive-restore-verification.json)
 
 Waddle playback now uses an app address that checks recorded publication consent and streams only the author's WebM from private storage. The restore rehearsal verified the old and new file paths, byte ranges and the refusal after consent withdrawal. Chromium decoded a synthetic recording through the published player. The hosted bucket is still public and awaits the approved backup and cutover. [Playback verification](docs/integration/waddle-private-audio-verification.json)

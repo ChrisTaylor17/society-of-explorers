@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import { philemonEdition as edition, PHILEMON_COMPARISON, PHILEMON_FURTHER_READING,
   PHILEMON_GREETING, PHILEMON_PERSPECTIVES, PHILEMON_SALON_QUESTIONS } from '@/lib/root-kernel/philemon-study';
 import ReadingNav, { ReadingFooter } from '../../ReadingNav';
+import CircleReturnLink from './CircleReturnLink';
 import reading from '../../reading.module.css';
 import study from './study.module.css';
 
@@ -33,6 +35,7 @@ export default function PhilemonStudyPage() {
       <div className={study.columns}>
         <article className={study.scripture} aria-labelledby="scripture">
           <h2 className={reading.sectionTitle} id="scripture">Scripture · Philemon 1</h2>
+          <Suspense fallback={null}><CircleReturnLink /></Suspense>
           <p className={reading.help}>{edition.edition} · Complete letter</p>
           {edition.paragraphs.map(paragraph => <p className={study.paragraph} key={paragraph[0].verse}>
             {paragraph.map(({ verse, text }, index) => {

@@ -125,8 +125,22 @@ try {
   assert.equal(body.width, 320);
   assert(body.scroll <= body.width && body.studyTop > body.scriptureBottom);
   await screenshot(mobile.page, 'mobile');
+  const back = mobile.page.getByRole('link', { name: 'Return to Circle details', exact: true });
+  assert.equal(await back.count(), 0);
+  const circleId = 'a1111111-1111-4111-8111-111111111111';
+  assert.equal((await mobile.page.goto(`${origin}${routePath}?circle=${circleId.toUpperCase()}#scripture`)).status(), 200);
+  await back.waitFor();
+  assert.equal(await back.getAttribute('href'), `/circles/${circleId}`);
+  assert((await back.boundingBox()).height >= 44);
+  await screenshot(mobile.page, 'circle-return-mobile');
+  for (const query of [`circle=${circleId}&circle=${circleId}`, 'circle=https%3A%2F%2Ffixture.invalid']) {
+    assert.equal((await mobile.page.goto(`${origin}${routePath}?${query}#scripture`, { waitUntil: 'networkidle' })).status(), 200);
+    assert.equal(await back.count(), 0);
+    await scripture(mobile.page);
+  }
   await mobile.ctx.close();
   stories.push('At 320 pixels the full reading and notes fit in reading order without side scrolling.');
+  stories.push('A single valid Circle gives the exact internal return link. Repeated or external-looking parameters leave the public study available.');
 
   const scriptless = await pageFor(420, false);
   assert.equal((await scriptless.page.goto(origin + routePath)).status(), 200);

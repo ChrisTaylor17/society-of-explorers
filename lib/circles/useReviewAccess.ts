@@ -10,11 +10,11 @@ export type ReviewResult = { status: number; body: unknown };
 /** A browser lifetime for private review data. Resuming permits a manual read;
  * it never replays a request or restores cleared private data. */
 export function useReviewAccess(onRetire: () => void) {
-  const [active, setActive] = useState(true);
+  const [active, setActive] = useState(false);
   const [busy, setBusy] = useState(false);
   const retired = useRef(onRetire);
   retired.current = onRetire;
-  const access = useRef({ mounted: false, active: true, observing: false, generation: 0, busy: false, controller: null as AbortController | null });
+  const access = useRef({ mounted: false, active: false, observing: false, generation: 0, busy: false, controller: null as AbortController | null });
 
   const retire = useCallback((inactive = false) => {
     const lifetime = access.current;
@@ -24,7 +24,6 @@ export function useReviewAccess(onRetire: () => void) {
     lifetime.busy = false;
     lifetime.controller?.abort();
     lifetime.controller = null;
-    setActive(lifetime.active);
     setBusy(false);
     retired.current();
   }, []);
@@ -57,6 +56,7 @@ export function useReviewAccess(onRetire: () => void) {
       onIdentity: () => retire(),
       onActive: resume,
     });
+    setActive(lifetime.active && lifetime.observing);
     window.addEventListener('offline', offline);
     window.addEventListener('online', resume);
     return () => {

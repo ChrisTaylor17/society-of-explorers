@@ -44,6 +44,9 @@ test('the Philemon plan binds the complete study and exact edition, with no gene
   assert.equal(tools.parseCircleReadingEditionResponse({ ...metadata, edition: { ...metadata.edition, blockCount: 2 } }), null);
   assert.deepEqual(plain(tools.parseReadingContext(tools.readingContextParams(root.PHILEMON_READING)).context), plain(root.PHILEMON_READING));
   assert.equal(tools.readingReaderHref({ bookId, editionId }, { from, to }), '/great-books/scripture/philemon#scripture');
+  const circle = '11111111-1111-4111-8111-111111111111';
+  assert.equal(tools.readingReaderHref({ bookId, editionId }, { from, to }, circle),
+    `/great-books/scripture/philemon?circle=${circle}#scripture`);
   assert.equal(tools.parseReadingProgram({ version: 1, bookId, editionId, sessions: [{ from, to: 1 }] }), null);
   assert.equal(app.load('lib/books/catalog.ts').getBook(bookId), undefined);
   assert.equal(app.load('lib/books/passages.ts').passageIndexPin(bookId), null);

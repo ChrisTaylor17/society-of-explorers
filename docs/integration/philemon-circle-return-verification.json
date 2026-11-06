@@ -1,0 +1,81 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T17:50:06.232119+00:00",
+  "parentCommit": "17f85bf0044de9e1cfa03119365fdc18d6913bb0",
+  "productionCleared": false,
+  "results": {
+    "webBuild": {
+      "inputs": 1089,
+      "sourceDigest": "91a932209ed4b98f30aef62988d839ee473275117d5d90259d2476b60e4ff2eb",
+      "studyStaticallyRendered": true
+    },
+    "readingTests": 7,
+    "portableReadingChecks": 36,
+    "lint": "passed",
+    "chromium": {
+      "studyScenarios": 8,
+      "circleScenarios": 14,
+      "circleRequests": 132,
+      "reviewerPrivacyScenarios": 9
+    },
+    "macOSWebKit": {
+      "scenarios": [
+        "The built sign-in, recovery, online directory and Clips pages reflow at 100%, 200% and 400%.",
+        "The sign-in shortcut and account mode switches focus their headings in WebKit.",
+        "The Circle shortcut preserves the directory, and a submitted search and Back focus their results.",
+        "The public listing signs in through the actual wallet handlers and returns to the same Circle. Its HttpOnly session survives reload over pinned HTTPS.",
+        "The member joins only after the norms review and then receives the Circle\u2019s assigned reading and meeting control.",
+        "The assigned Philemon letter keeps all 25 verses and both footnotes and returns to the exact Circle for a fresh access check.",
+        "The current member reviews the exact reply and its parent, posts it, and reads it back from the saved thread.",
+        "The browser sign-out endpoint revokes the wallet session. The reloaded archive waits for access controls to initialize, then refuses the signed-out visitor.",
+        "The Clips shortcut and the credited Reel transcript open in WebKit.",
+        "Both credited Reels load with captions and play at normal speed after an explicit play action."
+      ],
+      "zoomLayouts": 12,
+      "walletChallengeConsumptions": 1,
+      "confirmedJoins": 1,
+      "savedReplyAndParentReadback": true,
+      "copiedWalletReplayStatus": 401,
+      "sessionRevocations": 1,
+      "unhydratedDiscussionControlDisabled": true
+    }
+  },
+  "regression": "The old assignment address dropped the Circle ID. The fixed page preserves the exact public ID and leaves private access to the destination. A fresh discussion could accept a click before its access lifecycle initialized. The controls now begin disabled.",
+  "scope": "Built web pages in Chromium and macOS WKWebView with disposable SQL, synthetic account/provider/meeting destinations and a locally pinned HTTPS certificate. Browser listeners closed. Safari app, hosted credentials, installed phone apps and physical Quest are separate acceptance.",
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "971859430b437b7b74625394fb6d0d9e7241ac2aed23753d7fe4bc750e5ca4a8",
+    "app/great-books/scripture/philemon/CircleReturnLink.tsx": "56ca0372fc1fc8c8c99935abadc1af5ff901efc3368c2af1e1dc0a16af19a0e6",
+    "app/great-books/scripture/philemon/page.tsx": "09e183a13917f84a073f58c8b854bfd27dc310fc2d34efe2ed80f296dd645e44",
+    "content/root-kernel/philemon.web-classic.json": "13fa48b22414dba11a2cf659699b1bc9ea7beda0f6996911bd24f6ab91c0934a",
+    "docs/integration/philemon-remote-salon.md": "c445cfe57a87ad7b7dc61d066d4002aa5efb53259e973fd4a49c9b27985dd25f",
+    "docs/sql/wallet-challenge-consumption-apply.sql": "db000a67d4fea1bec6033dc95cb240c4e596315a9fa5fc2d2a020c4ee7e73659",
+    "docs/sql/wallet-session-revocation-apply.sql": "26285e26051cd4fb8323201949a23f523a8d264138fbe7c0f9020157342ddd6e",
+    "lib/circles/reading-program.ts": "4036a02e308002d531d2f1c5e4d0a321828b133e0b46d05cd7a03e8abae99598",
+    "lib/circles/useReviewAccess.ts": "47fa8cbe74304670e1e8baa15e8c479d58d1391d131eb0b9021c716e359823a2",
+    "verification/web/scripts/browser-root-kernel-philemon.mjs": "b8193bca45478249328821d1ef1eec919edc71c168b968a88c0faf697079fe53",
+    "verification/web/scripts/webkit-release-fixture.mjs": "956fa691694b493e60a89a74a551a5255fc5a920c090758582f5727b07f1dadf",
+    "verification/web/tests/reading-context.test.mjs": "f560d097ff5c4d2bfde3cf212499681dfec2f5b933ee00cf8eb3d069ce971111",
+    "verification/web/tests/webkit-release-smoke.swift": "5a700826d8102e63cc46e9140a6546422eba06e74446395b5bafb7df40778b2c"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-philemon-circle-return",
+  "evidenceSha256": {
+    "built-shell-philemon-circle-review-next-build.json": "a3535b135e161eec447d7a2ad89918a63a5c9fe170e370613e2d87449a309c52",
+    "built-shell-philemon-circle-review-next-build.log": "5d81c1e30c634adda5d3720a03834fee02b757670d6cef1211c35eb3117383ea",
+    "built-shell-philemon-circle-review-build-source-sha256.json": "ef7e7c51d72a1db5459294410adb95a21d5f765f35088e543370a776f91cddcd",
+    "built-shell-online-salon-review-server.json": "facfcb02d09eb50ac111728d272edae936df6fe2886714fe863805eb90318c10",
+    "built-shell-online-salon-review-server-runtime.json": "8b025845232e777815c4543c5f9491bf1f053d5365ae167723cae36a2ddea2c2",
+    "built-shell-online-salon-review-server.log": "9a0c49002c7b72c05ede111b67f990fe0785ad755c3fe21e633aba9d4adfd15f",
+    "philemon-webkit-6-swift.json": "1c98d49b8a2a282e25e7ac0336ab6c879b50cf00e6d7a12b1a724cb95d94fe11",
+    "philemon-webkit-6-server.json": "647d6712f80ec563e951a29f8b83a9998517398273337197b72f62ec1f65bcf3",
+    "philemon-webkit-6-runtime.json": "26918137fc5593fe386432f0758e38073c107f6cb9ca5b1ac4689fe2bffa65c9",
+    "philemon-webkit-6-cleanup.json": "5125da0d1e9afa3a0c74fd0d789947fc3f354866602717924777731583435f16",
+    "chromium-study.json": "690b339864e93f046ff64c91ea8fc288dbe6955a4c1ecabbfe01d894eefb8087",
+    "chromium-salon.json": "9793647c8a42ca9adc1ca2f8248e4b807dc90fcc703e7d8d57c41f23c6cbeab8",
+    "circle-return-mobile.png": "c42f469d12240bf6a2651c1828507edd05ea039eb0abc7945717f4d7f821945b",
+    "philemon-circle-review-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "chromium-review.json": "bc90bb27ee8db822791a454444331b3ac7d20d1366cf178c032c135e9b7211d0",
+    "philemon-circle-return-before.tap": "fb1f787fee1dd4bc83a1d24168d017a3a1368e47b381139674436eaff8006df0",
+    "philemon-circle-return-after.tap": "1501eb6c7943d93f0065e3a062595f29061a78c794b92840c550daafaf361742",
+    "philemon-circle-return-platform-reading.tap": "6604292f529b57cddcfe27e95b53ee79a70541303e5aec64eefffb8f703859bc"
+  }
+}
