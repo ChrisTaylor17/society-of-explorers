@@ -1,6 +1,8 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
+import { isUuid } from '@/lib/ids/uuid';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 type PracticeRespondBody = {
@@ -8,127 +10,53 @@ type PracticeRespondBody = {
   responseText?: unknown;
 };
 
-function getTodayET(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-}
-
-function trimmedText(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
+const unavailable = () => privateJson({ error: 'Could not confirm the saved answer.' }, { status: 503 });
 
 export async function POST(req: NextRequest) {
-  let body: unknown;
-
-  try {
-    body = await req.json();
-  } catch {
-    return privateJson({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
+  const refused = circleWriteOrigin(req);
+  if (refused) return refused;
+  const parsed = await readCircleReviewJson(req, req.signal);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.value;
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return privateJson({ error: 'Invalid answer' }, { status: 400 });
   }
   const input = body as PracticeRespondBody;
-  const questionId = trimmedText(input.questionId);
-  const responseText = trimmedText(input.responseText);
+  const questionId = typeof input.questionId === 'string' ? input.questionId.trim() : '';
+  const responseText = typeof input.responseText === 'string' ? input.responseText.trim() : '';
 
-  if (!questionId || !responseText) {
-    return privateJson({ error: 'questionId and responseText required' }, { status: 400 });
+  if (!isUuid(questionId) || !responseText || !responseText.isWellFormed() || responseText.includes('\0')) {
+    return privateJson({ error: 'Use a valid question and answer.' }, { status: 400 });
   }
-
   if (responseText.length > 280) {
-    return privateJson({ error: 'Response must be 280 characters or less' }, { status: 400 });
+    return privateJson({ error: 'Response must be 280 characters or less.' }, { status: 400 });
   }
 
-  const auth = await getAuthenticatedMember(req);
-  if (!auth) {
-    return privateJson({ error: 'Authentication required' }, { status: 401 });
+  try {
+    const auth = await getAuthenticatedMember(req);
+    if (!auth || !isUuid(auth.memberId)) return privateJson({ error: 'Authentication required.' }, { status: 401 });
+    const expectedOwner = req.headers.get('x-soe-practice-owner');
+    if (expectedOwner !== null && expectedOwner !== auth.memberId) {
+      return privateJson({ error: 'The Practice account changed.' }, { status: 409 });
+    }
+
+    const { data, error } = await getSupabaseAdmin().rpc('soe_practice_response_save', {
+      p_actor: auth.memberId, p_question_id: questionId, p_response_text: responseText,
+    });
+    if (error?.code === 'PT403') return privateJson({ error: 'Practice account unavailable.' }, { status: 401 });
+    if (error?.code === 'PT404') return privateJson({ error: 'Practice question unavailable.' }, { status: 404 });
+    if (error?.code === 'PT400') return privateJson({ error: 'Use a valid question and answer.' }, { status: 400 });
+    const saved = data?.response;
+    if (error || !isUuid(saved?.id) || saved.response_text !== responseText
+      || (saved.created_at !== null && typeof saved.created_at !== 'string')
+      || ![data.streak, data.longest, data.total].every(Number.isSafeInteger)) return unavailable();
+
+    return privateJson({
+      success: true, responseId: saved.id,
+      response: { id: saved.id, response_text: saved.response_text, created_at: saved.created_at },
+      streak: data.streak, longest: data.longest, total: data.total,
+    });
+  } catch {
+    return unavailable();
   }
-  const expectedOwner = req.headers.get('x-soe-practice-owner');
-  if (expectedOwner !== null && expectedOwner !== auth.memberId) {
-    return privateJson({ error: 'The Practice account changed.' }, { status: 409 });
-  }
-
-  const supabase = getSupabaseAdmin();
-  const { data: existingResponse, error: existingError } = await supabase
-    .from('question_responses')
-    .select('id')
-    .eq('member_id', auth.memberId)
-    .eq('question_id', questionId)
-    .maybeSingle();
-  if (existingError) return privateJson({ error: 'Could not verify the saved answer' }, { status: 503 });
-  const isFirstResponseForQuestion = !existingResponse;
-
-  const { data: upserted, error: responseError } = await supabase
-    .from('question_responses')
-    .upsert(
-      {
-        member_id: auth.memberId,
-        question_id: questionId,
-        response_text: responseText,
-      },
-      { onConflict: 'member_id,question_id' },
-    )
-    .select('id, response_text, created_at')
-    .single();
-
-  if (responseError || !upserted) {
-    return privateJson({ error: 'Failed to save response' }, { status: 500 });
-  }
-
-  const responseId = upserted.id;
-  const today = getTodayET();
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('current_streak, longest_streak, last_practice_date, total_responses')
-    .eq('id', auth.memberId)
-    .single();
-
-  if (memberError || !member) {
-    return privateJson({ error: 'Failed to load member streak' }, { status: 500 });
-  }
-
-  let streak = member.current_streak || 0;
-  const lastDate = member.last_practice_date;
-
-  if (lastDate !== today) {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-    streak = lastDate === yesterdayStr ? streak + 1 : 1;
-  }
-
-  const longest = Math.max(streak, member.longest_streak || 0);
-  const total = (member.total_responses || 0) + (isFirstResponseForQuestion ? 1 : 0);
-
-  const { data: updated, error: updateError } = await supabase
-    .from('members')
-    .update({
-      current_streak: streak,
-      longest_streak: longest,
-      last_practice_date: today,
-      total_responses: total,
-    })
-    .eq('id', auth.memberId)
-    .select('current_streak, longest_streak, total_responses, last_practice_date')
-    .single();
-
-  if (updateError) {
-    return privateJson({ error: 'Failed to update streak' }, { status: 500 });
-  }
-
-  const { count } = await supabase
-    .from('question_responses')
-    .select('*', { count: 'exact', head: true })
-    .eq('question_id', questionId);
-  await supabase.from('daily_questions').update({ engagement_score: count || 0 }).eq('id', questionId);
-
-  return privateJson({
-    success: true,
-    responseId,
-    response: { id: responseId, response_text: upserted.response_text, created_at: upserted.created_at },
-    streak: updated?.current_streak ?? streak,
-    longest: updated?.longest_streak ?? longest,
-    total: updated?.total_responses ?? total,
-  });
 }

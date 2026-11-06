@@ -13,6 +13,7 @@ import signal
 import subprocess
 import sys
 from tempfile import mkdtemp
+import time
 
 
 SCRIPT = Path(__file__).resolve()
@@ -21,6 +22,7 @@ CHECKER = SCRIPT.with_name('verify-privacy-restore.py')
 CORE_REHEARSAL = SCRIPT.with_name('rehearse-native-core-restore.py')
 REFERENCE = ROOT / 'docs/sql/privacy-restore-reference.sql'
 PRACTICE = ROOT / 'docs/sql/practice-data-containment-apply.sql'
+PRACTICE_SAVE = ROOT / 'docs/sql/practice-response-save-apply.sql'
 QUESTIONS = ROOT / 'supabase/migrations/20260414_daily_practice.sql'
 REFLECTIONS = ROOT / 'supabase/migrations/20260418_practice_reflections.sql'
 PRIVATE_TEXT = 'PRIVATE_SYNTHETIC_ANSWER'
@@ -105,6 +107,100 @@ def verify(reference, target, fixture, **overrides):
     return report
 
 
+def overlap_saves(target, database, fixture, first_sql, second_sql):
+    command = [str(fixture['BIN'] / 'psql'), *map(str, target.psql(database, fixture['OWNER']))]
+    env = fixture['ENV']
+    with subprocess.Popen(command, env={**env, 'PGAPPNAME': 'soe_practice_first'}, text=True,
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as first:
+        try:
+            first.stdin.write('BEGIN; SET LOCAL ROLE service_role; ' + first_sql + '\n')
+            first.stdin.flush()
+            assert select.select([first.stdout], [], [], 5)[0], 'The first Practice save did not return'
+            first_result = json.loads(first.stdout.readline())
+            with subprocess.Popen([*command, '-c', 'SET ROLE service_role; ' + second_sql],
+                                  env={**env, 'PGAPPNAME': 'soe_practice_second'}, text=True,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE) as second:
+                try:
+                    deadline = time.monotonic() + 1.5
+                    while second.poll() is None and time.monotonic() < deadline:
+                        blocked = target.query(database, """
+                          SELECT EXISTS (
+                            SELECT 1 FROM pg_stat_activity waiter JOIN pg_stat_activity holder
+                              ON holder.pid = ANY(pg_blocking_pids(waiter.pid))
+                            WHERE waiter.datname=current_database() AND holder.datname=current_database()
+                              AND waiter.application_name='soe_practice_second'
+                              AND holder.application_name='soe_practice_first'
+                          )
+                        """)
+                        if blocked == 't':
+                            break
+                        time.sleep(0.03)
+                    else:
+                        raise AssertionError('The second save did not wait for the first transaction')
+                    first.stdin.write('COMMIT;\n')
+                    first.stdin.close()
+                    output, errors = second.communicate(timeout=5)
+                    assert second.returncode == 0, errors
+                    assert first.wait(timeout=5) == 0, first.stderr.read()
+                    return first_result, json.loads(output)
+                finally:
+                    if second.poll() is None:
+                        second.kill()
+                        second.wait(timeout=5)
+        finally:
+            if not first.stdin.closed:
+                first.stdin.close()
+            if first.poll() is None:
+                first.kill()
+                first.wait(timeout=5)
+
+
+def exercise_practice_save(target, database, fixture, checks):
+    owner = fixture['OWNER']
+    function = "'public.soe_practice_response_save(uuid,uuid,text)'"
+    missing = f'SELECT to_regprocedure({function}) IS NULL'
+    target.query(database, 'ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO unrelated_reader', owner)
+    target.file(database, PRACTICE_SAVE, owner, 'PT409')
+    assert target.query(database, missing, owner) == 't'
+    target.query(database, 'ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM unrelated_reader', owner)
+    target.file(database, PRACTICE_SAVE, owner)
+    question = '33333333-3333-4333-8333-333333333333'
+    same, other, next_member, fails = (f'50000000-0000-4000-8000-00000000000{n}' for n in range(1, 5))
+    target.query(database, f"""
+      INSERT INTO members(id, display_name) VALUES ('{same}', 'First fixture author'),
+        ('{other}', 'Second fixture author'), ('{next_member}', 'Third fixture author'), ('{fails}', 'Fault fixture author');
+      UPDATE members SET current_streak=2,longest_streak=5,total_responses=7,
+        last_practice_date=(statement_timestamp() AT TIME ZONE 'America/New_York')::date - 1 WHERE id='{same}';
+    """, owner)
+
+    def save(actor, answer):
+        return f"SELECT public.soe_practice_response_save('{actor}', '{question}', '{answer}');"
+
+    for role in ('anon', 'authenticated', 'unrelated_reader'):
+        target.query(database, f'SET ROLE {role}; ' + save(same, 'DENIED'), owner, '42501')
+    checks.append('The save draft refuses unexpected EXECUTE defaults. Browser and unrelated roles cannot execute it after installation.')
+
+    first, second = overlap_saves(target, database, fixture, save(same, 'FIRST'), save(same, 'SECOND'))
+    assert first['response']['id'] == second['response']['id']
+    assert first['response']['created_at'] == second['response']['created_at']
+    assert first['total'] == second['total'] == 8
+    assert first['streak'] == second['streak'] == 3 and first['longest'] == second['longest'] == 5
+    assert target.query(database, f"SELECT response_text FROM question_responses WHERE member_id='{same}'", owner) == 'SECOND'
+    checks.append('Two independent sessions overlapping on one member preserve one answer ID and one counter increment.')
+
+    first, second = overlap_saves(target, database, fixture, save(other, 'THIRD'), save(next_member, 'FOURTH'))
+    assert first['response']['id'] != second['response']['id'] and first['total'] == second['total'] == 1
+    assert target.query(database, f"SELECT engagement_score FROM daily_questions WHERE id='{question}'", owner) == '4'
+    checks.append('Two independent authors sharing one prompt both save and the prompt count reflects all four answers.')
+
+    target.query(database, 'ALTER TABLE daily_questions ADD CONSTRAINT synthetic_score_fault CHECK (engagement_score <= 4)', owner)
+    target.query(database, 'SET ROLE service_role; ' + save(fails, 'ROLLED_BACK'), owner, '23514')
+    assert target.query(database, f"SELECT count(*) FROM question_responses WHERE member_id='{fails}'", owner) == '0'
+    assert target.query(database, f"SELECT total_responses=0 AND last_practice_date IS NULL FROM members WHERE id='{fails}'", owner) == 't'
+    assert target.query(database, f"SELECT engagement_score FROM daily_questions WHERE id='{question}'", owner) == '4'
+    checks.append('An error on the final prompt update rolls back the new answer and member streak in the same transaction.')
+
+
 def exercise(temp, fixture, checker, result):
     source = fixture['Cluster'](temp / 'source', fixture['OWNER'])
     target = fixture['Cluster'](temp / 'target', fixture['RESTORE_ADMIN'])
@@ -172,6 +268,9 @@ def exercise(temp, fixture, checker, result):
         checks.append('A missing table, shared reference, linked socket and different PostgreSQL major each refuse comparison.')
 
         assert verify(reference, target, fixture)['status'] == 'MATCH'
+        target.file(target_db, PRACTICE_SAVE, owner, 'PT409')
+        assert target.query(target_db, "SELECT to_regprocedure('public.soe_practice_response_save(uuid,uuid,text)') IS NULL", owner) == 't'
+        checks.append('The save draft refuses a database with the old browser grants and leaves no function behind.')
         target.file(target_db, fixture['SQL']['preflight'], owner)
         target.file(target_db, fixture['SQL']['apply'], owner)
         target.file(target_db, PRACTICE, owner)
@@ -184,6 +283,7 @@ def exercise(temp, fixture, checker, result):
             count = target.query(target_db, f'SET ROLE service_role; SELECT count(*) FROM public.{table}', owner)
             assert count == str(parsed['tables'][table]['rows'])
         checks.append('The exact Core and Practice changes preserve all restored rows. Both browser roles lose reads and service reads survive on all 11 tables.')
+        exercise_practice_save(target, target_db, fixture, checks)
     finally:
         cleanup = {}
         for label, cluster in (('source', source), ('target', target)):
@@ -200,10 +300,10 @@ def main():
     os.umask(0o077)
     result = {'status': 'FAIL', 'scope': 'Synthetic PostgreSQL fixture', 'checks': [],
               'productionRestoreVerified': False, 'fixtureEmbeddingType': 'real[]'}
-    for path in (CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, QUESTIONS, REFLECTIONS):
+    for path in (CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, QUESTIONS, REFLECTIONS):
         resident(path)
     fixture, checker = (runpy.run_path(str(path)) for path in (CORE_REHEARSAL, CHECKER))
-    inputs = [SCRIPT, CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, QUESTIONS, REFLECTIONS,
+    inputs = [SCRIPT, CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, QUESTIONS, REFLECTIONS,
               fixture['BASELINE'], fixture['SQL']['preflight'], fixture['SQL']['apply']]
     result['sourceHashes'] = {str(path.relative_to(ROOT)): hashlib.sha256(resident(path)).hexdigest() for path in inputs}
     result['postgres'] = fixture['run']('postgres', '--version')

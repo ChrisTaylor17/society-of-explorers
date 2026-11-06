@@ -39,3 +39,5 @@ env -i PATH=/opt/homebrew/bin:/usr/bin:/bin \
 ```
 
 The rehearsal creates two disposable PostgreSQL clusters and runs a real dump and restore from a shared snapshot. It checks that a later write stays out of the archive, tests row and permission drift, and applies both reviewed privacy drafts to the restored fixture. The PostgreSQL fixture uses `real[]` for embeddings. The separate Practice tests exercise the tracked vector schema. [Verification receipt](privacy-restore-check-verification.json)
+
+The rehearsal also checks that the new Practice save function refuses the old browser grants. After containment it uses separate database sessions to exercise overlapping saves and a forced failure in the final update. [Practice save verification](practice-atomic-save-verification.json)

@@ -11,6 +11,7 @@ const root = new URL('../../../../', import.meta.url);
 const read = name => readFile(new URL(name, root), 'utf8');
 const { createClient } = createRequire(new URL('package.json', root))('@supabase/supabase-js');
 export const applySql = await read('docs/sql/practice-data-containment-apply.sql');
+const saveSql = await read('docs/sql/practice-response-save-apply.sql');
 const base = await read('supabase/migrations/20260414_daily_practice.sql');
 const reflections = await read('supabase/migrations/20260418_practice_reflections.sql');
 
@@ -107,13 +108,29 @@ function sqlRequest(request) {
 export async function practiceHttp(onClose, preparedDb) {
   const db = preparedDb ?? await practiceDb(onClose);
   await db.exec(applySql);
+  await db.exec(saveSql);
   await db.exec('SET ROLE service_role');
   const calls = [], failures = [];
   const api = createClient('https://practice.invalid', 'synthetic-service-token', {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: { fetch: async (input, init) => {
       const request = new Request(input, init);
-      assert.equal(new URL(request.url).origin, 'https://practice.invalid');
+      const url = new URL(request.url);
+      assert.equal(url.origin, 'https://practice.invalid');
+      if (url.pathname === '/rest/v1/rpc/soe_practice_response_save') {
+        assert.equal(request.method, 'POST');
+        const payload = await request.json();
+        assert.deepEqual(Object.keys(payload).sort(), ['p_actor', 'p_question_id', 'p_response_text']);
+        calls.push({ rpc: 'soe_practice_response_save', method: 'POST' });
+        try {
+          const { rows } = await db.query('SELECT public.soe_practice_response_save($1,$2,$3) AS saved',
+            [payload.p_actor, payload.p_question_id, payload.p_response_text]);
+          return Response.json(rows[0].saved);
+        } catch (error) {
+          failures.push({ rpc: 'soe_practice_response_save', code: error.code });
+          return Response.json({ code: error.code, message: 'PRIVATE_FIXTURE_ERROR' }, { status: 400 });
+        }
+      }
       const { table, params, bind, query, select, fields, where, ordered, capped } = sqlRequest(request);
       const method = request.method;
       calls.push({ table, method, select, query: Object.fromEntries(query) });
@@ -137,12 +154,8 @@ export async function practiceHttp(onClose, preparedDb) {
         sql += ' RETURNING ' + fields;
       } else assert.equal(method, 'GET');
       try {
-        const { rows, fields: returned } = await db.query(sql, params);
-        for (const field of returned.filter(field => field.dataTypeID === 1082)) {
-          for (const row of rows) {
-            if (row[field.name] instanceof Date) row[field.name] = row[field.name].toISOString().slice(0, 10);
-          }
-        }
+        const result = await db.query('WITH result AS (' + sql + ') SELECT to_jsonb(result) AS data FROM result', params);
+        const rows = result.rows.map(row => row.data);
         const object = request.headers.get('accept') === 'application/vnd.pgrst.object+json';
         if (object && rows.length !== 1) {
           return Response.json({ code: 'PGRST116', message: 'Synthetic cardinality error' }, { status: 406 });

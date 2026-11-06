@@ -73,7 +73,7 @@ interface Question {
 interface MyResponse {
   id: string;
   response_text: string;
-  created_at: string;
+  created_at: string | null;
 }
 interface Streak {
   current_streak: number;
@@ -236,7 +236,7 @@ export default function PracticePage() {
       }
       if (!res.ok || !data?.success || typeof data.responseId !== 'string' ||
         data.response?.id !== data.responseId || data.response.response_text !== responseText ||
-        typeof data.response.created_at !== 'string') {
+        (data.response.created_at !== null && typeof data.response.created_at !== 'string')) {
         setSubmitError(submitErrorMessage(res.status));
         setPhase('composing');
         return;
@@ -429,7 +429,7 @@ export default function PracticePage() {
                       opacity: 0.7,
                     }}
                   >
-                    YOUR RESPONSE · {formatTimeOfDay(myResponse.created_at)}
+                    YOUR RESPONSE{myResponse.created_at && ` · ${formatTimeOfDay(myResponse.created_at)}`}
                   </div>
                   <blockquote
                     style={{

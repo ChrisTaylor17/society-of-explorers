@@ -174,6 +174,32 @@ try {
   await main.getByText('LATE_OWNER_RECEIPT', { exact: true }).waitFor();
   stories.push('An account-change event retired a late save response. A fresh author load confirmed the already committed entry.');
 
+  const faultAuthor = '10000000-0000-4000-8000-000000000005';
+  await fixture.db.exec('RESET ROLE');
+  try {
+    await fixture.db.query("INSERT INTO members(id, display_name) VALUES ($1,'Synthetic failure fixture')", [faultAuthor]);
+    await fixture.db.exec('ALTER TABLE daily_questions ADD CONSTRAINT synthetic_score_fault CHECK (engagement_score < 0) NOT VALID');
+  } finally {
+    await fixture.db.exec('SET ROLE service_role');
+  }
+  currentActor = faultAuthor;
+  await page.reload();
+  await composer.fill('UNCOMMITTED_ANSWER');
+  await main.getByRole('button', { name: 'Save answer' }).click();
+  await main.getByText('We could not confirm your answer. Check your connection and try again.', { exact: true }).waitFor();
+  assert.equal(calls.filter(x => x.path === '/api/practice/respond').at(-1).status, 503);
+  assert.equal(await composer.inputValue(), 'UNCOMMITTED_ANSWER');
+  assert.deepEqual(fixture.failures.splice(0), [{ rpc: 'soe_practice_response_save', code: '23514' }]);
+  await page.reload();
+  await composer.waitFor();
+  assert.equal(await composer.inputValue(), '');
+  const rolledBack = (await fixture.db.query(
+    'SELECT total_responses, last_practice_date, (SELECT count(*)::int FROM question_responses WHERE member_id=$1) AS answers FROM members WHERE id=$1',
+    [faultAuthor],
+  )).rows[0];
+  assert.deepEqual(rolledBack, { total_responses: 0, last_practice_date: null, answers: 0 });
+  stories.push('A failed prompt update kept the unsaved draft in view and left no answer or streak after reload.');
+
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(requestErrors, []);
   assert.deepEqual(external, []);

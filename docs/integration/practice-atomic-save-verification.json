@@ -1,0 +1,64 @@
+{
+  "status": "local_verified_production_hold",
+  "recordedAt": "2026-11-06T01:46:04+00:00",
+  "startingCommit": "643173e413fcd42a719185292049b499d1bb4d05",
+  "testResults": {
+    "apiAndPrivacyChecksPassed": 15,
+    "nativePostgresRestoreAndSaveChecksPassed": 11,
+    "builtBrowserStoriesPassed": 7,
+    "focusedTypecheckPassed": true,
+    "scopedLintPassed": true,
+    "build": {
+      "exitCode": 0,
+      "sourceFiles": 1060,
+      "sourceSha256": "bd39ab1b7a4121a8bc5773fa8c7341d79e374023a128cd3e54adfaf92916d6bc"
+    },
+    "broaderSourceGuard": {
+      "practiceChecksPass": true,
+      "sameBaselineFailures": 10
+    }
+  },
+  "scope": "PostgreSQL 17.11 restored synthetic rows for the 11 Core and Practice tables. Separate connections prove overlapping saves and rollback. The built Chromium run composes the current app, actual handlers, the Supabase SDK and disposable SQL with synthetic identities and transport.",
+  "verifiedBehavior": [
+    "The old handler accepted a synthetic cross-origin save from a signed-in actor. The current handler rejects it before storage access.",
+    "Only the service path can call the function. Unsafe browser grants or unexpected function grants abort installation.",
+    "Overlapping submissions preserve one answer and one increment per author and prompt. The final prompt count includes both writers.",
+    "A failed prompt update rolls back the answer and member streak. The built app keeps the draft visible, and reload confirms nothing was saved."
+  ],
+  "initialRunNote": "The initial full build compiled and timed out during type checking. The guarded warm build and browser run passed.",
+  "limits": [
+    "Production restore, app cutover, hosted Data API function discovery and live account verification remain pending.",
+    "The native restore fixture uses real[] for embeddings. The composed PGlite fixture uses the tracked vector schema."
+  ],
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "app/api/practice/respond/route.ts": "91e84f8a2c82dfb6962a4db589f2621b243cbe6030e82ac92ef396d4d95fbe02",
+    "app/practice/page.tsx": "fb08acd382592ed79a50cd363d7bc69662c89d5daf0e342bf338d81b118aeafe",
+    "docs/sql/practice-response-save-apply.sql": "450f26a4a36036808f9551b1ecb380fc5755521c3bd02cc09119e62faa79b142",
+    "scripts/external-effect-lazy-clients-smoke.mjs": "a2518b4b0515e4643b16491e71fd27e3dd9218ac9093babe6a0da8a5d7d7d904",
+    "verification/web/scripts/browser-practice-privacy.mjs": "af70bdebd3aadfbe716729aeab082e871ffa6de30730cc5cba99da8fc7356af9",
+    "verification/web/scripts/test-privacy-restore-check.py": "d45abd0f76424f5af3e5ade7b3738162e1dc4cf74c271eb50ae8c09805426984",
+    "verification/web/tests/practice-privacy-api.test.mjs": "5905907cd4ccf55c601acf22bbd7d5c8df5ec539bbb758db2e5c60a28dd2d4d4",
+    "verification/web/tests/support/practice-privacy-fixture.mjs": "62a8040d6e9e79a8ded9f95722e52eed52f0b03adcb6fbd14e34c9c59e09455c"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/practice-atomic-save/browser.json": "cb301cb662f829e7f7dee080ca44729bb1cc4a0ea8c77097c65b29df556571e4",
+    "verification/web/evidence/practice-atomic-save/built-shell-practice-privacy-03-next-build.json": "40ef5a9e100a7fa6f4edbd61f56d4a9451da93149f08f1fb7947b63d1d96d7dc",
+    "verification/web/evidence/practice-atomic-save/built-shell-practice-privacy-04-build-source-sha256.json": "c1b91bed9ea1287c3f82a49a9efbc41aea70de596326615cc65b7af379e00615",
+    "verification/web/evidence/practice-atomic-save/built-shell-practice-privacy-04-next-build.json": "6cc1948f1e5dd6c8e052947ca40f876673ac358d2129e053bcc0b901a0e04d68",
+    "verification/web/evidence/practice-atomic-save/built-shell-practice-privacy-04-server.json": "b005b80efbba5536c135c492a27277cd6a66fe4e73009e6a564fa9f9d0846965",
+    "verification/web/evidence/practice-atomic-save/feed-320.png": "e98f79f0a80dc4a6bb6647e52d9aaaab6422669724cfade8f25c8c371f9e2e53",
+    "verification/web/evidence/practice-atomic-save/practice-320.png": "c1f4284c303371bdd0eb709b0115d121f8b73b35d3c037490fc0db3db60d4909",
+    "verification/web/evidence/practice-atomic-save/practice-atomic-save-api-confirmed.tap": "c69081b5aeddacddd91c5bbd6698319bd3593926ede4d2b03c5eee5ca0d96d18",
+    "verification/web/evidence/practice-atomic-save/practice-atomic-save-lazy-base.log": "6d1acddce489077a2411195a402937441308c4726d825ddf88f926b7c3253427",
+    "verification/web/evidence/practice-atomic-save/practice-atomic-save-lazy.log": "6d1acddce489077a2411195a402937441308c4726d825ddf88f926b7c3253427",
+    "verification/web/evidence/practice-atomic-save/practice-atomic-save-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/practice-atomic-save/practice-atomic-save-postgres.json": "93d75164d2c5154e2430850c92df82d91fa36b7611334bc1285f4a16f8a38dc3",
+    "verification/web/evidence/practice-atomic-save/practice-atomic-save-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/practice-atomic-save/practice-baseline-origin.json": "b183abfe2310253c0978ea5a9e2d40d474af22ec6883396b223c07de74792c7d"
+  }
+}

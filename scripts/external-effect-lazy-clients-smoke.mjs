@@ -866,9 +866,12 @@ const checks = [
         routes.practiceMyToday.indexOf("from('question_responses')") &&
       routes.practiceMyToday.includes(".eq('member_id', memberId)") &&
       routes.practiceRespond.includes('privateJson') &&
-      routes.practiceRespond.includes('member_id: auth.memberId') &&
-      routes.practiceRespond.includes(".eq('member_id', auth.memberId)") &&
-      routes.practiceRespond.indexOf('questionId and responseText required') <
+      routes.practiceRespond.includes('p_actor: auth.memberId') &&
+      routes.practiceRespond.includes(".rpc('soe_practice_response_save'") &&
+      !routes.practiceRespond.includes('.from(') &&
+      routes.practiceRespond.includes('circleWriteOrigin(req)') &&
+      routes.practiceRespond.includes('!isUuid(questionId)') &&
+      routes.practiceRespond.indexOf('!isUuid(questionId)') <
         routes.practiceRespond.indexOf('getAuthenticatedMember(req)') &&
       routes.practiceRespond.indexOf('getAuthenticatedMember(req)') <
         routes.practiceRespond.indexOf('getSupabaseAdmin()') &&

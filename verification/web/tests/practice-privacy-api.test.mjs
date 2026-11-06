@@ -12,10 +12,11 @@ async function fixture(t) {
   return f;
 }
 function request(path, options = {}) {
-  const { method = 'GET', body, owner, raw } = options;
+  const { method = 'GET', body, owner, raw, origin = 'https://soe.invalid', contentType = 'application/json' } = options;
   return new Request('https://soe.invalid' + path, {
     method,
-    headers: { 'content-type': 'application/json', ...(owner ? { 'x-soe-practice-owner': owner } : {}) },
+    headers: { 'content-type': contentType, ...(method === 'POST' ? { origin } : {}),
+      ...(owner ? { 'x-soe-practice-owner': owner } : {}) },
     ...(method === 'POST' ? { body: raw ?? JSON.stringify(body) } : {}),
   });
 }
@@ -159,10 +160,18 @@ test('a missing daily row uses the local question bank without triggering a prov
   assert.equal(f.calls.filter(call => call.method === 'POST').length, 1);
 });
 
-test('malformed input, absent auth and stale owner intent make zero storage calls', async t => {
+test('cross-origin, malformed, oversized, signed-out and stale-owner saves make zero storage calls', async t => {
   const f = await fixture(t), route = load(f, '/practice/respond');
   await json(await route.POST(request('/practice/respond', { method: 'POST', body: null })), 400);
   const body = { questionId: Q, responseText: 'Synthetic save' };
+  f.setActor(C);
+  await json(await route.POST(request('/practice/respond', {
+    method: 'POST', body, origin: 'https://other.invalid', contentType: 'text/plain',
+  })), 403);
+  f.setActor(null);
+  await json(await route.POST(request('/practice/respond', { method: 'POST', body: { ...body, questionId: 'not-an-id' } })), 400);
+  await json(await route.POST(request('/practice/respond', { method: 'POST', body: { ...body, responseText: '\ud800' } })), 400);
+  await json(await route.POST(request('/practice/respond', { method: 'POST', raw: ' '.repeat(65_536) })), 413);
   await json(await route.POST(request('/practice/respond', { method: 'POST', body })), 401);
   f.setActor(C);
   await json(await route.POST(request('/practice/respond', { method: 'POST', body, owner: A })), 409);
@@ -178,6 +187,7 @@ test('saving returns an exact owner-bound receipt and stays idempotent across a 
   const first = await json(await attempt());
   const second = await json(await attempt());
   assert.deepEqual(first, second);
+  assert.deepEqual(f.calls, Array.from({ length: 2 }, () => ({ rpc: 'soe_practice_response_save', method: 'POST' })));
   assert.equal(first.total, 1);
   assert.equal(first.response.response_text, 'SYNTHETIC_C_SAVED');
   const own = await json(await load(f, '/practice/my-today').GET(request('/practice/my-today')));
@@ -187,6 +197,25 @@ test('saving returns an exact owner-bound receipt and stays idempotent across a 
   const other = await json(await load(f, '/practice/my-today').GET(request('/practice/my-today')));
   assert.equal(other.myResponse.response_text, 'OWNER_A_ANSWER');
   assert.equal(f.providers(), 0);
+});
+
+test('an edit preserves a legacy missing timestamp, and an absent save function fails closed', async t => {
+  const f = await fixture(t);
+  f.setActor(A);
+  await f.db.query('UPDATE question_responses SET created_at=NULL WHERE id=$1', [RA]);
+  const save = load(f, '/practice/respond');
+  const attempt = responseText => save.POST(request('/practice/respond', {
+    method: 'POST', owner: A, body: { questionId: Q, responseText },
+  }));
+  const receipt = await json(await attempt('LEGACY_TIMESTAMP_EDIT'));
+  assert.deepEqual(receipt.response, { id: RA, response_text: 'LEGACY_TIMESTAMP_EDIT', created_at: null });
+  assert.equal(receipt.total, 0);
+  await f.db.exec('RESET ROLE; DROP FUNCTION public.soe_practice_response_save(uuid,uuid,text); SET ROLE service_role;');
+  const refusal = await json(await attempt('UNAVAILABLE_FUNCTION_WRITE'), 503);
+  assert.deepEqual(refusal, { error: 'Could not confirm the saved answer.' });
+  assert.deepEqual(f.failures.splice(0), [{ rpc: 'soe_practice_response_save', code: '42883' }]);
+  const own = await json(await load(f, '/practice/my-today').GET(request('/practice/my-today')));
+  assert.deepEqual(own.myResponse, receipt.response);
 });
 
 test('legacy automatic AI reflection is paused before any provider or storage operation', async t => {

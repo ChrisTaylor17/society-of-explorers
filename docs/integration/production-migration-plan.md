@@ -6,6 +6,8 @@ The November 5 review binds the current Vercel alias to the uploaded Thinker and
 
 Daily Practice has a separate four-table privacy draft. Include those tables in the production restore review and pair its SQL with retirement of the legacy public answer routes. The live route audit identified one signed-out member entry and verified Vercel sign-in on the other three aliases and all 40 generated deployment URLs. The branded exhibition site holds member entry separately. Keep the public member alias under maintenance while changing the database and replacing the old service-backed readers. Recheck old tabs across a full page reload, since the published Feed client rejects the prompt-only response. [Practice scope](practice-privacy.md) · [Route audit and combined rehearsal](production-route-closure-2026-11-05.md)
 
+After Core and Practice containment, review and install `docs/sql/practice-response-save-apply.sql` before routing traffic to the replacement app. Confirm service-only execution through the hosted Data API and test a saved answer across reload. The restored synthetic fixture verified the ordering, concurrent saves and full rollback on a late database error. [Verification](practice-atomic-save-verification.json)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.
