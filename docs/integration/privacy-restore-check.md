@@ -89,6 +89,18 @@ Add `--include-circle-release-state` to the isolated verifier command. This 42-t
 
 Use the reference from the same snapshot as the archive. Keep member traffic closed and Circle AI disabled while reconciling membership changes, moderation actions, consent revocations and allowance debits that happened after that snapshot. In the isolated restore, verify that an authorized member can open the private meeting, a removed member is refused, hidden text stays hidden and an earlier consent revision cannot re-enable AI. Reopen only after the separate hosted acceptance checks.
 
+## Verify a backup after the coordinated first release
+
+After the Circle release, both wallet migrations, atomic Practice save and Live Council containment, set this flag in the same read-only export transaction.
+
+```sql
+\set soe_restore_include_first_release_state on
+```
+
+Add `--include-first-release-state` to the isolated verifier command. Use the new reference format from the same snapshot as the archive. It compares the same 42 tables, plus the Practice save and Live Council join routine definitions, owners, grants and role memberships. A difference reports `releaseServiceRoutinesMatch: false`. A missing routine stops verification. Existing Circle-only references use `--include-circle-release-state`.
+
+On the isolated restore, exercise a Practice answer save and a Live Council join as the service role. Check that both browser roles are refused and that Realtime still excludes direct messages. A matching reference establishes snapshot parity. The expected access probes establish the release boundary. [Combined rehearsal](first-release-restore-verification.json)
+
 ## Local rehearsal
 
 ```sh
@@ -108,7 +120,7 @@ The same rehearsal applies both wallet migrations to the contained restore, then
 
 The Circle rehearsal showed that the 17-table check could pass an archive with every Circle row omitted. The 20-table check flags all three omissions and accepts the complete archive from the same snapshot. The 22-table check also covers missing wallet rows after both wallet migrations. [Circle restore verification](circle-restore-verification.json)
 
-The post-release rehearsal uses the ordered Circle SQL and both wallet migrations in PostgreSQL 17. The 22-table check matched an archive that omitted rows from all 20 new Circle tables. The 42-table check detected every omission and accepted the complete archive. The restored routines preserved meeting access, exact RSVP and review retries, hidden messages, revoked consent and the spent AI attempt. [Verification](circle-release-restore-verification.json)
+The coordinated rehearsal restores a 20-table pre-cutover snapshot and role export in a second PostgreSQL 17 cluster. It applies 48 reviewed SQL files to that copy and checks the original columns of every tracked table. It then restores the populated release archive and verifies 42 tables and the three routine groups. Practice saves, Live Council joins, Auth links, private direct messages, wallet replay refusals, moderation and the Philemon reading plan all survive. The older Circle check passes with a changed Practice grant or Live Council security mode. The first-release check flags both and refuses a missing routine. [Combined rehearsal](first-release-restore-verification.json) · [Earlier Circle proof](circle-release-restore-verification.json)
 
 ```sh
 env -i PATH=/opt/homebrew/bin:/usr/bin:/bin \

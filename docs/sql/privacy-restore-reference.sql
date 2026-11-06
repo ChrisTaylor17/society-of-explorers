@@ -24,6 +24,13 @@
 \else
   \set soe_restore_include_circle_release_state off
 \endif
+\if :{?soe_restore_include_first_release_state}
+\else
+  \set soe_restore_include_first_release_state off
+\endif
+\if :soe_restore_include_first_release_state
+  \set soe_restore_include_circle_release_state on
+\endif
 \if :soe_restore_include_circle_release_state
   \set soe_restore_include_circles on
   \set soe_restore_include_wallet_state on
@@ -233,6 +240,16 @@ circle_routines AS (
   WHERE n.nspname = 'public' AND p.prokind = 'f' AND p.proname ~ '^_?soe_circle_'
 ),
 \endif
+\if :soe_restore_include_first_release_state
+release_service_routines AS (
+  SELECT p.oid, p.proname, p.proowner, p.proacl
+  FROM pg_proc p
+  WHERE p.prokind = 'f' AND p.oid IN (
+    to_regprocedure('public.soe_practice_response_save(uuid,uuid,text)'),
+    to_regprocedure('public.soe_join_live_council(uuid,uuid,text)')
+  )
+),
+\endif
 acl_sources(kind, object, column_no, permissions) AS (
   SELECT 'relation', oid, 0, coalesce(relacl, acldefault('r', relowner)) FROM scoped
   UNION ALL
@@ -247,6 +264,10 @@ acl_sources(kind, object, column_no, permissions) AS (
 \if :soe_restore_include_circle_release_state
   UNION ALL
   SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM circle_routines
+\endif
+\if :soe_restore_include_first_release_state
+  UNION ALL
+  SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM release_service_routines
 \endif
 ),
 acl_entries AS (
@@ -277,6 +298,15 @@ circle_routine_evidence AS (
     obj_description(p.oid, 'pg_proc'), a.entries
   ) ORDER BY p.proname COLLATE "C", p.arguments COLLATE "C")::text, 'UTF8')), 'hex') AS digest
   FROM circle_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
+),
+\endif
+\if :soe_restore_include_first_release_state
+release_service_routine_evidence AS (
+  -- A missing or differently typed routine leaves no valid release digest.
+  SELECT CASE WHEN count(*) = 2 THEN encode(sha256(convert_to(jsonb_agg(jsonb_build_array(
+    p.proname, pg_get_userbyid(p.proowner), pg_get_functiondef(p.oid), a.entries
+  ) ORDER BY p.proname COLLATE "C")::text, 'UTF8')), 'hex') END AS digest
+  FROM release_service_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
 ),
 \endif
 table_evidence AS (
@@ -344,6 +374,9 @@ role_roots(oid) AS (
     WHERE evidence_name IN ('book_cohorts', 'book_cohort_members', 'seminar_messages') OR relname ~ '^circle_'
   UNION SELECT proowner FROM circle_routines
 \endif
+\if :soe_restore_include_first_release_state
+  UNION SELECT proowner FROM release_service_routines
+\endif
 ),
 role_tree(oid) AS (
   SELECT oid FROM role_roots
@@ -375,6 +408,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_first_release_state'::boolean THEN 'soe-privacy-restore-v10'
     WHEN :'soe_restore_include_circle_release_state'::boolean THEN 'soe-privacy-restore-v9'
     WHEN :'soe_restore_include_circles'::boolean AND :'soe_restore_include_wallet_state'::boolean THEN 'soe-privacy-restore-v8'
     WHEN :'soe_restore_include_circles'::boolean THEN 'soe-privacy-restore-v7'
@@ -399,5 +433,8 @@ SELECT jsonb_build_object(
 \endif
 \if :soe_restore_include_circle_release_state
   || jsonb_build_object('circleRoutines', (SELECT digest FROM circle_routine_evidence))
+\endif
+\if :soe_restore_include_first_release_state
+  || jsonb_build_object('releaseServiceRoutines', (SELECT digest FROM release_service_routine_evidence))
 \endif
 ;

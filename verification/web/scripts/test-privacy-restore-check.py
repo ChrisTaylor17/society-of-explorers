@@ -79,18 +79,18 @@ def export_snapshot(source, fixture, *, database=None, user=None):
                 raise
 
 
-def seed(source, database):
-    source.file(database, QUESTIONS)
+def seed_practice_rooms_and_auth(execute):
+    execute(resident(QUESTIONS).decode())
     sql = resident(REFLECTIONS).decode()
     extension = 'CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;'
     assert sql.count(extension) == sql.count('vector(1536)') == 1
-    source.query(database, sql.replace(extension, '').replace('vector(1536)', 'real[]'))
-    source.query(database, f"""
+    execute(sql.replace(extension, '').replace('vector(1536)', 'real[]'))
+    execute(f"""
       GRANT ALL ON daily_questions, matched_conversations, practice_reflections, question_responses
         TO anon, authenticated, service_role;
-      GRANT SELECT(email) ON members TO anon WITH GRANT OPTION;
       GRANT SELECT(response_text) ON question_responses TO authenticated;
-      INSERT INTO members(id, display_name) VALUES ('22222222-2222-4222-8222-222222222222', 'Second fixture member');
+      INSERT INTO members(id, display_name) VALUES ('22222222-2222-4222-8222-222222222222', 'Second fixture member')
+        ON CONFLICT (id) DO NOTHING;
       INSERT INTO members(id, display_name) VALUES
         ('10000000-0000-4000-8000-000000000001', 'Fixture room host'),
         ('10000000-0000-4000-8000-000000000002', 'Fixture room guest');
@@ -104,12 +104,9 @@ def seed(source, database):
                 'socrates', 'SYNTHETIC_REFLECTION');
       INSERT INTO matched_conversations(member_a, member_b, thinker_id)
         VALUES ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', 'socrates');
-      INSERT INTO reading_progress(id, member_id, private_text)
-        SELECT md5('synthetic restore row ' || n)::uuid, '11111111-1111-4111-8111-111111111111',
-          'SYNTHETIC_READING' FROM generate_series(1, 4097) n;
     """)
-    source.file(database, ROOM_FIXTURE)
-    source.query(database, f"""
+    execute(resident(ROOM_FIXTURE).decode())
+    execute(f"""
       CREATE ROLE supabase_auth_admin;
       ALTER SCHEMA auth OWNER TO supabase_auth_admin;
       CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, encrypted_password text);
@@ -126,6 +123,16 @@ def seed(source, database):
         ('{SECOND_AUTH_SUBJECT}', 'second-account@fixture.invalid', NULL);
       INSERT INTO auth.identities VALUES
         ('a1a1a1a1-1111-4111-8111-111111111111', '{AUTH_SUBJECT}', 'google', '{IDENTITY_MARKER}');
+    """)
+
+
+def seed(source, database):
+    seed_practice_rooms_and_auth(lambda sql: source.query(database, sql))
+    source.query(database, """
+      GRANT SELECT(email) ON members TO anon WITH GRANT OPTION;
+      INSERT INTO reading_progress(id, member_id, private_text)
+        SELECT md5('synthetic restore row ' || n)::uuid, '11111111-1111-4111-8111-111111111111',
+          'SYNTHETIC_READING' FROM generate_series(1, 4097) n;
     """)
 
 
@@ -153,7 +160,7 @@ def seed_circles(source, database):
 
 
 def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, include_direct=False,
-           include_wallet=False, include_circles=False, include_circle_release=False, **overrides):
+           include_wallet=False, include_circles=False, include_circle_release=False, include_first_release=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
@@ -172,6 +179,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
         argv.append('--include-circles')
     if include_circle_release:
         argv.append('--include-circle-release-state')
+    if include_first_release:
+        argv.append('--include-first-release-state')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={
