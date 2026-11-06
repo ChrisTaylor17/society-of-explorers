@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict';
+import { createClient } from '@supabase/supabase-js';
 import { offlineApp } from './offline-app.mjs';
-import { createMessageAiAllowanceDb, activateAllowance, IDS, rpc, CONTENT,
+import { createMessageAiAllowanceDb, activateAllowance, asRole, IDS, rpc, CONTENT,
  ALLOWANCE_SOURCE_HASHES as MESSAGE_AI_SOURCE_HASHES, ALLOWANCE_FIXTURE_LIMITS as MESSAGE_AI_FIXTURE_LIMITS } from './message-ai-allowance-db.mjs';
 export { IDS, CONTENT, MESSAGE_AI_SOURCE_HASHES, MESSAGE_AI_FIXTURE_LIMITS };
 
@@ -11,8 +13,25 @@ export async function messageAiApp({fixture,allowance={globalLimit:50,reviewerLi
  let actor=f.authorId,available=true,provider=async()=>({observations:[],counterevidence:[{excerpt:'without a personal attack',note:'The message distinguishes an idea from a person.'}],questions:['What surrounding context should the human reviewer check?']});
  let rpcReply=async(name,args,result)=>result;
  const names=new Map();
+ const rest=createClient('https://message-ai-fixture.test','synthetic-fixture-key',{
+  auth:{autoRefreshToken:false,persistSession:false},
+  global:{fetch:async(input,options)=>{
+   const url=new URL(input);
+   assert.equal(url.origin,'https://message-ai-fixture.test');
+   assert.equal(url.pathname,'/rest/v1/circle_message_reply_links');
+   assert.equal(options.method,'GET');
+   assert.equal(url.searchParams.get('select'),'parent_message_id');
+   assert.equal(url.searchParams.get('message_id'),`eq.${f.messageId}`);
+   assert.equal(url.searchParams.get('cohort_id'),`eq.${f.circleId}`);
+   assert.equal(options.signal?.aborted,false);
+   const {rows}=await asRole(f.db,'service_role',tx=>tx.query(
+    'SELECT parent_message_id FROM public.circle_message_reply_links WHERE message_id=$1 AND cohort_id=$2',
+    [f.messageId,f.circleId]));
+   return Response.json(rows);
+  }},
+ });
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>actor?{memberId:actor}:null}));
- app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({rpc:async(name,args)=>{
+ app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({from:rest.from.bind(rest),rpc:async(name,args)=>{
   calls.push({name,args:structuredClone(args)});
   try {
    if(!/^soe_circle_[a-z_]+$/.test(name))throw Error('Unexpected RPC');

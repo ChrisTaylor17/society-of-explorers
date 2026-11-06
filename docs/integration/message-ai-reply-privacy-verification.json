@@ -1,0 +1,62 @@
+{
+  "status": "verified_locally",
+  "recordedAt": "2026-11-06T01:06:15+00:00",
+  "startingCommit": "fe79728de7068e8c27878cd3dd80365bdc308f07",
+  "testResults": {
+    "apiAndDatabasePassed": 66,
+    "sdkAdapterPassed": 14,
+    "regressionReproducedOnPriorRoute": true,
+    "scopedLintPassed": true,
+    "build": {
+      "exitCode": 0,
+      "sourceFiles": 1060,
+      "sourceSha256": "0b3bd79034f9ffbd076c82c87bd8839c6fc260e75b2551eb21530f23c26719fc"
+    },
+    "browser": {
+      "status": "PASS",
+      "policyStatus": 200,
+      "updatedDisclosureVisible": true,
+      "disabledAdviceStatus": 503,
+      "privateNoStore": true,
+      "externalBrowserRequests": 0,
+      "pageErrors": 0
+    }
+  },
+  "verifiedBehavior": [
+    "A keyed reply in disposable SQL retains its stored text and consent hash. Advice receives the author’s comment without the app-added footer.",
+    "An authored look-alike in a standalone post remains in the input. A quote of the stripped footer is rejected for an actual reply.",
+    "A failed service-role lookup stops advice before sending or reserving a request."
+  ],
+  "testSetup": "The current profile and consent SQL chain runs with synthetic actors and messages. The installed Supabase SDK sends the scoped lookup to an intercepted transport backed by the fixture service role. The provider adapter uses an intercepted fetch and a lockfile-verified Anthropic SDK archive. The local built app uses invalid public placeholders.",
+  "initialRunNotes": "Older fixtures needed current browser selection and the profile-aware SQL chain. The cold build timed out during type checking. The guarded warm run finished successfully. Next normalizes the local origin to localhost, which the passing Chromium run uses.",
+  "limits": [
+    "Live model behavior, provider terms and production Data API acceptance remain open.",
+    "AI advice is disabled by default. Verification used synthetic data and local fixtures."
+  ],
+  "originalCheckout": {
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "statusEntries": 681,
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts": "bb1f9956cc0d8b3336f2edd5dae7e8b4149491747fda3121834c4b9bbe2aa9cb",
+    "app/circles/message-ai-policy/page.tsx": "7fdb05d422e5a9bc71067181e7110a3cdcb3debabb6deace1587e8c8daf42d0b",
+    "verification/web/tests/message-ai-consent-api.test.mjs": "cbcf8df124f908637bbba169aa724c66bf3bfc637e1245cfea8eaac823b36093",
+    "verification/web/tests/message-ai-integration.test.mjs": "caf33f7a72799adc71300bf9861e30c2b6ea2b0529a64ff3c5a9964ea6f61055",
+    "verification/web/tests/support/message-ai-app.mjs": "6738bc11a44e038bbb4b13c6b674358261c2be8a147ab216152aff7e7852e736",
+    "verification/web/tests/message-ai-provider.test.mjs": "56c3d54a30b7a6a925b17a22f2284adaaaf8c7207077482c46ec1cdf5434e4de",
+    "docs/sql/circle-discussion-threads.sql": "8eb030c83a04e60af5873220e663d456d5fb99fd5afb08173669caf0db216643",
+    "package-lock.json": "f9935e7292481084f9595df655ffc02a22984f8cd0fc36bdedface39ac9db38d"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/message-ai-reply-privacy/built-shell-ai-reply-privacy-hostname-server.json": "9a325df2147e2e245fba1d68457c9bb4b92e615c280660a95ca34c968794cb8e",
+    "verification/web/evidence/message-ai-reply-privacy/built-shell-ai-reply-privacy-next-build.json": "3054e125e33222c5ed4fab19517f2c753f59ef5c98d3fb91ae5d8b30d98ea5f2",
+    "verification/web/evidence/message-ai-reply-privacy/built-shell-ai-reply-privacy-warm-build-source-sha256.json": "c1565d434938d26f1f9328fc6663f01c0c51911a0c248014dd54c886f6a0f8a3",
+    "verification/web/evidence/message-ai-reply-privacy/built-shell-ai-reply-privacy-warm-next-build.json": "180ebe4a3c427fe372ad9438356288832e35315f767cb767c748b3ffab36ab36",
+    "verification/web/evidence/message-ai-reply-privacy/built-shell-ai-reply-privacy-warm-next-build.log": "0b8486ceb6f2d1d81d1cda028de56fc4382992327d1969f11ddacc610c933736",
+    "verification/web/evidence/message-ai-reply-privacy/message-ai-reply-privacy-baseline.log": "1db35aa7062d8a1bf2e60e3161e588d681a1cc44fbaa350b1e30f879b7ef132a",
+    "verification/web/evidence/message-ai-reply-privacy/message-ai-reply-privacy-browser-localhost.json": "88147b116d54c9611308e34fc9f75cd323037ecf25a4097348bde6e487507a29",
+    "verification/web/evidence/message-ai-reply-privacy/message-ai-reply-privacy-confirmed.log": "464fc9d4905d1397519cee2e2e17ca54f9c40b1f06b24639091b22f94424da2b",
+    "verification/web/evidence/message-ai-reply-privacy/message-ai-reply-privacy-sdk.log": "506936834650123a901ce425362bdce59cad4f659beffdbbdc7b89975d071b42"
+  }
+}

@@ -8,6 +8,7 @@ import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderatio
 import { parseMessageAdvice, parseMessageAdviceInput, parseMessageAdviceSnapshot, type MessageAdviceSnapshot } from '@/lib/circles/message-ai';
 import { providerAvailable, requestMessageAdvice } from '@/lib/circles/message-ai-provider';
 import { messageAiSendDeadline } from '@/lib/circles/message-ai-allowance';
+import { discussionContentSuffix, discussionMessageHint } from '@/lib/circles/thread';
 
 type Context = { params: Promise<{ circleId: string; messageId: string }> };
 const unavailable = () => privateJson({ error: 'AI advice is unavailable. Human review remains available.' }, { status: 503 });
@@ -61,6 +62,23 @@ export async function POST(req: NextRequest, { params }: Context) {
       const limit = rateLimit(key, maximum, 60 * 60 * 1000);
       if (!limit.ok) return privateJson({ error: 'AI advice is temporarily limited. Continue human review.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfterS) } });
     }
+    let messageText = before.content;
+    const hint = discussionMessageHint(messageText);
+    if (hint?.circleId === before.circleId) {
+      const footer = `\n\n${discussionContentSuffix(hint.circleId, hint.messageId)}`;
+      if (messageText.endsWith(footer)) {
+        // An author can type a look-alike footer. The immutable link identifies
+        // the footer added by the app when it stored this reply.
+        const { data: link, error } = await admin.from('circle_message_reply_links').select('parent_message_id')
+          .eq('message_id', before.messageId).eq('cohort_id', before.circleId).abortSignal(controller.signal).maybeSingle();
+        if (error || !current()) return unavailable();
+        if (link !== null) {
+          if (link.parent_message_id !== hint.messageId) return unavailable();
+          messageText = messageText.slice(0, -footer.length);
+          if (!messageText.trim()) return unavailable();
+        }
+      }
+    }
     if (!current()) return unavailable();
     const attemptId = crypto.randomUUID();
     const reservationStarted = Date.now();
@@ -80,9 +98,9 @@ export async function POST(req: NextRequest, { params }: Context) {
     if (reservedUntil === null || !current()) return unavailable();
     // Never retry or refund a debit, even when its reply or the provider result
     // is lost. Reusing the same attempt cannot obtain another send authority.
-    const output = await requestMessageAdvice(before.content, controller.signal, Math.min(deadlineAt, reservedUntil));
+    const output = await requestMessageAdvice(messageText, controller.signal, Math.min(deadlineAt, reservedUntil));
     if (!current()) return unavailable();
-    const advice = parseMessageAdvice(output, before.content);
+    const advice = parseMessageAdvice(output, messageText);
     if (!advice) return unavailable();
     const freshActor = await getAuthenticatedMember(req);
     if (!current()) return unavailable();

@@ -4,20 +4,22 @@ import { offlineApp } from './support/offline-app.mjs';
 
 const CIRCLE='33333333-3333-4333-8333-333333333333',MESSAGE='55555555-5555-4555-8555-555555555555',OTHER='77777777-7777-4777-8777-777777777777';
 const ORIGIN='https://offline.invalid',PATH=`/api/circles/${CIRCLE}/messages/${MESSAGE}/ai-consent`,POLICY='anthropic-message-review-v1',HASH='a'.repeat(64);
+const SUBJECT='11111111-1111-4111-8111-111111111111',INTENT='22222222-2222-4222-8222-222222222222';
 const context=(circleId=CIRCLE,messageId=MESSAGE)=>({params:Promise.resolve({circleId,messageId})});
 const state=(extra={})=>({circleId:CIRCLE,messageId:MESSAGE,allowed:false,consentRevision:0,policy:POLICY,contentHash:HASH,messageRevision:2,canEnable:true,...extra});
 const input=(extra={})=>({expectedConsentRevision:0,contentHash:HASH,policy:POLICY,allowed:true,...extra});
 const plain=value=>JSON.parse(JSON.stringify(value));
 function fixture(){
  const app=offlineApp(),{ADA,JULES}=app.fakes;
- app.setUser({id:'fictional-author',user_metadata:{memberId:JULES,role:'admin'}});
- const db=app.fakes.resetDb({members:[{id:ADA,supabase_auth_id:'fictional-author',display_name:'Synthetic Author'},{id:JULES,display_name:'Other synthetic author'}]});
+ app.setUser({id:SUBJECT,user_metadata:{memberId:JULES,role:'admin'}});
+ const db=app.fakes.resetDb({members:[{id:ADA,supabase_auth_id:SUBJECT,display_name:'Synthetic Author'},{id:JULES,display_name:'Other synthetic author'}]});
  const calls=[];let providerImports=0;const f={app,ADA,JULES,calls,reply:()=>({data:state(),error:null})};
  db.rpc=async(name,args)=>{calls.push({name,args:plain(args)});return f.reply(name,args);};
  app.setMock('@/lib/ai/anthropic',()=>{providerImports++;throw Error('Consent settings cannot invoke a provider');});
  f.route=app.load('app/api/circles/[circleId]/messages/[messageId]/ai-consent/route.ts');
  f.parser=app.load('lib/circles/message-ai-consent.ts');
- f.request=(body=undefined,headers={origin:ORIGIN},path=PATH)=>app.fakes.makeReq(body,{url:ORIGIN+path,headers});
+ f.request=(body=undefined,headers={origin:ORIGIN},path=PATH)=>app.fakes.makeReq(body,{url:ORIGIN+path,headers,
+  cookies:{soe_auth_provider:'supabase',soe_auth_intent:INTENT,soe_auth_selection_v1:`v1.${INTENT}.supabase.${SUBJECT}`}});
  f.providers=()=>providerImports;
  return f;
 }
