@@ -1,0 +1,11 @@
+# Direct-message privacy
+
+The Members page now loads the conversation through the verified server route. Opening a thread reads only its two participants’ messages. A separate same-origin request marks the exact loaded incoming message IDs read. It checks both the signed-in recipient and the selected sender before updating the rows. The page includes its expected account on every request, retires old thread replies on selection changes, and clears private content when the server refuses the session. [Request forgery guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
+
+While a conversation is visible, the page refreshes through the member route every ten seconds. The prepared Thinker questions go into the member’s draft. Only Send posts the draft as an ordinary message to the selected conversation. The browser tests used two signed synthetic wallet participants, the actual route, the pinned Supabase client, and a disposable PostgreSQL fixture. [Verification report](direct-message-privacy-verification.json)
+
+## Hosted database gate
+
+Read-only catalog checks on November 6 found that `public.direct_messages` grants the `anon` and `authenticated` roles table SELECT, INSERT, UPDATE and DELETE, including SELECT on message content. Row-level security is enabled. One permissive ALL policy applies to PUBLIC with unconditional read and write predicates, so the two participant policies cannot restrict it. The table also belongs to the Realtime publication. The inspection used only catalog metadata. [Supabase Data API access controls](https://supabase.com/docs/guides/api/securing-your-api) · [Realtime publication and row policies](https://supabase.com/docs/guides/realtime/postgres-changes)
+
+Keep member traffic on hold. Add the direct-message table to the approved export and isolated restore comparison, then rehearse a targeted service-only cutover. The coordinated replacement must preserve existing conversations and prove direct browser database denial alongside authorized sending and reading. Review the Realtime publication and dependent views and functions as part of that change. The current report records local app verification and the observed hosted policy. [Production migration plan](production-migration-plan.md)

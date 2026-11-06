@@ -184,6 +184,10 @@ Three exact, owned, service-only fixed-search-path definers preserve the origina
 
 The current local fixture includes the publication-aware Circle chain and actual Contributions/consent handlers, plus focused SQL/ACL/rollback checks and separate web browser proof. It does not establish independent-session PostgreSQL contention, production restoration, hosted schema-cache or provider acceptance. This scope repairs web consent ordering/recovery only; native/Quest author and reviewer parity are unchanged. See [exact contract and acceptance boundaries](circle-message-consent-intent.md) and `consent-intent-backend.json`/`consent-intent-browser.json`. No live SQL, provider call or deployment was performed.
 
+## Separate direct-message gate
+
+The November 6 catalog shows table-level browser SELECT, INSERT, UPDATE and DELETE on `public.direct_messages`, an unconditional PUBLIC policy, and an active Realtime publication entry. The local Members page now reads and writes through a verified server route. Add direct messages to the owner-approved export and restore comparison before a targeted containment rehearsal. Include browser-role denial, retained service access, message read and send acceptance, and the Realtime cutover in the approval scope. [Direct-message privacy and proof](direct-message-privacy.md)
+
 ## Separate Live Council and room-data gate
 
 The three room tables have a separate containment draft. Review their current grants, dependent views and functions, and uploaded callers. The default 14-table restore check covers these tables in the approved export and isolated restore. Coordinate the draft with the app version that moves Live Council links behind the service-only join function and retires transcript summaries. Retain the access restriction while correcting a failed rollout. [Restore procedure](privacy-restore-check.md) · [Live Council room privacy](live-room-containment.md)

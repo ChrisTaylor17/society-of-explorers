@@ -1,12 +1,11 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession'
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice'
+import { DIRECT_MESSAGE_ACK_LIMIT, DIRECT_MESSAGE_OWNER_HEADER, type DirectMessage } from '@/lib/members/direct-message'
 import PublishedProfileLink from '@/components/PublishedProfileLink'
 
 interface Member {
@@ -61,27 +60,10 @@ function avatarLetter(m: Member): string {
   return name.charAt(0).toUpperCase()
 }
 
-interface DM {
-  id: string
-  created_at: string
-  sender_id: string
-  recipient_id: string
-  content: string
-  read: boolean
-  sender?: Member
-  is_thinker?: boolean
-  thinker_id?: string
-}
-
-type DirectMessageRecord = Omit<DM, 'sender'> & {
-  sender?: MemberRecord | null
-}
-
-function normalizeDirectMessage(message: DirectMessageRecord): DM {
-  return {
-    ...message,
-    sender: message.sender ? normalizeMember(message.sender) : undefined,
-  }
+type ChatScope = {
+  peerId: string
+  readRevision: number
+  sending: boolean
 }
 
 async function getAuthHeaders(includeContentType = false): Promise<HeadersInit> {
@@ -93,12 +75,12 @@ async function getAuthHeaders(includeContentType = false): Promise<HeadersInit> 
 }
 
 const THINKERS = [
-  { id: 'socrates',  name: 'Socrates',        symbol: 'Σ' },
-  { id: 'nietzsche', name: 'Nietzsche',        symbol: 'N' },
-  { id: 'aurelius',  name: 'Marcus Aurelius',  symbol: 'M' },
-  { id: 'einstein',  name: 'Einstein',         symbol: 'E' },
-  { id: 'jobs',      name: 'Steve Jobs',       symbol: 'J' },
-  { id: 'plato',     name: 'Plato',            symbol: 'Π' },
+  { id: 'socrates', name: 'Socrates', symbol: 'Σ', question: 'What would count as good evidence for each of our views?' },
+  { id: 'nietzsche', name: 'Nietzsche', symbol: 'N', question: 'Which of our assumptions comes from habit?' },
+  { id: 'aurelius', name: 'Marcus Aurelius', symbol: 'M', question: 'Which part of this situation can we act on?' },
+  { id: 'einstein', name: 'Einstein', symbol: 'E', question: 'What simple example could we use to test the idea?' },
+  { id: 'jobs', name: 'Steve Jobs', symbol: 'J', question: 'What could we remove and still solve the problem that matters?' },
+  { id: 'plato', name: 'Plato', symbol: 'Π', question: 'What would a fair rule look like from both sides?' },
 ]
 
 const gold = '#c9a84c'
@@ -111,11 +93,10 @@ const ivory = '#e8e0d0'
 const muted = '#7a7060'
 
 export default function MembersPage() {
-  const reward = useThinkerRewards()
   const [members, setMembers] = useState<Member[]>([])
   const [currentMember, setCurrentMember] = useState<Member | null>(null)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
-  const [messages, setMessages] = useState<DM[]>([])
+  const [messages, setMessages] = useState<DirectMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile'>('directory')
@@ -125,23 +106,26 @@ export default function MembersPage() {
   const [matchResult, setMatchResult] = useState('')
   const [matchLoading, setMatchLoading] = useState(false)
   const [showThinkerPicker, setShowThinkerPicker] = useState(false)
-  const [thinkerLoading, setThinkerLoading] = useState(false)
+  const [sendStatus, setSendStatus] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
   const [recording, setRecording] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const authorityEpoch = useRef(0)
+  const chatScope = useRef<ChatScope | null>(null)
   const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
   const currentMemberId = currentMember?.id ?? null
   const selectedMemberId = selectedMember?.id ?? null
 
   useEffect(() => {
-    const invalidate = () => { authorityEpoch.current++ }
+    const invalidate = () => {
+      authorityEpoch.current++
+      chatScope.current = null
+    }
     const stop = subscribeAuthProviderChanges(() => {
       invalidate()
       setRetired(true); setCurrentMember(null); setSelectedMember(null); setMembers([]); setMessages([])
-      setInput(''); setMatchQuery(''); setMatchResult(''); setUnreadCount(0)
+      setInput(''); setSendStatus(''); setMatchQuery(''); setMatchResult(''); setUnreadCount(0)
     })
     return () => { invalidate(); stop() }
   }, [])
@@ -184,8 +168,12 @@ export default function MembersPage() {
     if (!currentMemberId) return
     let cancelled = false
 
-    getAuthHeaders()
-      .then(headers => fetch('/api/message', { headers, cache: 'no-store' }))
+    getAuthHeaders().then(headers => {
+      if (cancelled) throw new Error('retired')
+      const scoped = new Headers(headers)
+      scoped.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
+      return fetch('/api/message', { headers: scoped, cache: 'no-store' })
+    })
       .then(async res => {
         if (!res.ok) throw new Error(await res.text())
         return res.json() as Promise<{ unreadCount?: number }>
@@ -201,125 +189,96 @@ export default function MembersPage() {
   }, [currentMemberId, messages])
 
   const loadMessages = useCallback(async () => {
-    if (!selectedMemberId || !currentMemberId) return
+    const scope = chatScope.current
+    if (!scope || scope.peerId !== selectedMemberId || !currentMemberId) return
     const generation = authorityEpoch.current
-    const headers = await getAuthHeaders()
-    if (generation !== authorityEpoch.current) return
-    const res = await fetch(`/api/message?peerId=${encodeURIComponent(selectedMemberId)}`, {
-      headers,
-      cache: 'no-store',
-    })
-    if (!res.ok) {
-      console.error('loadMessages failed:', await res.text())
-      return
-    }
-    const data = await res.json() as { messages?: DirectMessageRecord[] }
-    if (generation !== authorityEpoch.current) return
-    setMessages((data.messages ?? []).map(normalizeDirectMessage))
+    const revision = ++scope.readRevision
+    const current = () => generation === authorityEpoch.current && chatScope.current === scope &&
+      revision === scope.readRevision && document.visibilityState === 'visible'
+    if (!current()) return
+
+    try {
+      const headers = new Headers(await getAuthHeaders())
+      if (!current()) return
+      headers.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
+      const signal = AbortSignal.timeout(8_000)
+      const res = await fetch(`/api/message?peerId=${encodeURIComponent(scope.peerId)}`, {
+        headers, cache: 'no-store', signal,
+      })
+      if (!current()) return
+      if (!res.ok) {
+        if ([401, 403, 404].includes(res.status)) setMessages([])
+        return
+      }
+      const data = await res.json() as { messages?: DirectMessage[] }
+      if (!current() || !Array.isArray(data.messages)) return
+
+      const ids = data.messages.filter(message => message.read === false &&
+        message.sender_id === scope.peerId && message.recipient_id === currentMemberId).map(message => message.id)
+      headers.set('Content-Type', 'application/json')
+      for (let index = 0; index < ids.length; index += DIRECT_MESSAGE_ACK_LIMIT) {
+        if (!current()) return
+        const reply = await fetch('/api/message', {
+          method: 'PATCH', headers, signal,
+          body: JSON.stringify({ peerId: scope.peerId, messageIds: ids.slice(index, index + DIRECT_MESSAGE_ACK_LIMIT) }),
+        }).catch(() => null)
+        if (reply?.status === 401 || reply?.status === 403) {
+          if (current()) setMessages([])
+          return
+        }
+        if (!reply?.ok) break
+      }
+      if (current()) setMessages(data.messages)
+    } catch { /* The current conversation will refresh on its next check. */ }
   }, [currentMemberId, selectedMemberId])
 
   useEffect(() => {
-    if (!selectedMemberId || !currentMemberId) return
-    const initialLoadId = window.setTimeout(() => void loadMessages(), 0)
-    const ch = supabase.channel(`dm-${currentMemberId}-${selectedMemberId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, () => void loadMessages())
-      .subscribe()
+    if (view !== 'chat' || !selectedMemberId || !currentMemberId) return
+    const refresh = () => void loadMessages()
+    const first = window.setTimeout(refresh, 0)
+    const interval = window.setInterval(refresh, 10_000)
+    document.addEventListener('visibilitychange', refresh)
     return () => {
-      window.clearTimeout(initialLoadId)
-      supabase.removeChannel(ch)
+      window.clearTimeout(first)
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', refresh)
     }
-  }, [currentMemberId, selectedMemberId, loadMessages, supabase])
+  }, [currentMemberId, selectedMemberId, loadMessages, view])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function sendMessage(text?: string) {
-    const msg = (text ?? input).trim()
-    if (!msg || !selectedMember || !currentMember || sending) return
+  async function sendMessage() {
+    const msg = input.trim()
+    const scope = chatScope.current
+    if (!msg || !scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.sending) return
     const generation = authorityEpoch.current
-    setInput(''); setSending(true)
-    const headers = await getAuthHeaders(true)
-    if (generation !== authorityEpoch.current) return
-    const res = await fetch('/api/message', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ recipientId: selectedMember.id, content: msg })
-    })
-    if (generation !== authorityEpoch.current) return
-    if (!res.ok) console.error('sendMessage failed:', await res.text())
-    setSending(false)
-    await loadMessages()
-    inputRef.current?.focus()
-  }
-
-  async function inviteThinker(thinkerId: string) {
-    const generation = authorityEpoch.current
-    setShowThinkerPicker(false)
-    const thinker = THINKERS.find(t => t.id === thinkerId)
-    if (!thinker || !selectedMember || !currentMember) return
-    setThinkerLoading(true)
-    const requestId = reward.begin(thinker.name)
-    if (!requestId) { setThinkerLoading(false); return }
+    const current = () => generation === authorityEpoch.current && chatScope.current === scope
+    scope.sending = true
+    setSending(true)
+    setSendStatus('')
     try {
-
-    const recentMessages = messages.slice(-6).map(m => {
-      const name = m.sender_id === currentMember.id ? currentMember.display_name : selectedMember.display_name
-      return `${name}: ${m.content}`
-    }).join('\n')
-
-    const headers = await getAuthHeaders(true)
-    if (generation !== authorityEpoch.current) return
-    const res = await fetch('/api/thinker', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        requestId,
-        thinkerId,
-        message: `You have been invited into a private conversation between ${currentMember.display_name} and ${selectedMember.display_name}. Here are the recent messages:\n\n${recentMessages}\n\nRespond as ${thinker.name} — in character, direct, under 100 words. Address both people.`,
-        history: [],
-      }),
-    })
-
-    let fullResponse = ''
-    const reader = res.body!.getReader()
-    const dec = new TextDecoder()
-    let buf = ''
-    while (true) {
-      const { done, value } = await reader.read()
-      if (generation !== authorityEpoch.current) { await reader.cancel(); return }
-      if (done) break
-      buf += dec.decode(value, { stream: true })
-      const lines = buf.split('\n')
-      buf = lines.pop() ?? ''
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const payload = line.slice(6).trim()
-        if (payload === '[DONE]') continue
-        try {
-          const evt = JSON.parse(payload)
-          if (evt.reward) reward.observe(requestId, evt.reward)
-          if (evt.delta) fullResponse += evt.delta
-          if (evt.text) fullResponse += evt.text
-        } catch {}
+      const headers = new Headers(await getAuthHeaders(true))
+      if (!current()) return
+      headers.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
+      const res = await fetch('/api/message', {
+        method: 'POST', headers, signal: AbortSignal.timeout(8_000),
+        body: JSON.stringify({ recipientId: scope.peerId, content: msg }),
+      })
+      if (!current()) return
+      if (!res.ok) throw new Error('Message not confirmed')
+      setInput(draft => draft.trim() === msg ? '' : draft)
+      await loadMessages()
+    } catch {
+      if (current()) setSendStatus('Delivery could not be confirmed. Check the conversation before sending again.')
+    } finally {
+      scope.sending = false
+      if (current()) {
+        setSending(false)
+        inputRef.current?.focus()
       }
     }
-
-    if (fullResponse) {
-      const headers = await getAuthHeaders(true)
-      if (generation !== authorityEpoch.current) return
-      await fetch('/api/message', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          recipientId: selectedMember.id,
-          content: `${thinker.symbol} ${thinker.name.toUpperCase()} SPEAKS: ${fullResponse.replace(/^\[?\w[\w-]*\]?:\s*/i, '')}`
-        })
-      })
-      if (generation !== authorityEpoch.current) return
-      await loadMessages()
-    }
-    } finally { reward.finish(requestId); setThinkerLoading(false) }
   }
 
   async function findMatch() {
@@ -342,10 +301,25 @@ export default function MembersPage() {
     setMatchLoading(false)
   }
 
+  function focusChat(peerId: string | null) {
+    if ((chatScope.current?.peerId ?? null) === peerId) return
+    chatScope.current = peerId ? { peerId, readRevision: 0, sending: false } : null
+    setMessages([])
+    setInput('')
+    setSending(false)
+    setSendStatus('')
+    setShowThinkerPicker(false)
+  }
+
+  function changeView(next: typeof view) {
+    focusChat(next === 'chat' ? selectedMemberId : null)
+    setView(next)
+  }
+
   function openChat(member: Member) {
+    focusChat(member.id)
     setSelectedMember(member)
     setView('chat')
-    setMessages([])
   }
 
   function formatTime(ts: string) {
@@ -357,14 +331,13 @@ export default function MembersPage() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: bg, fontFamily: 'Cormorant Garamond, serif', color: ivory, overflow: 'hidden' }}>
-      <ThinkerRewardNotice reward={reward} />
 
       {/* TOPBAR */}
       <div style={{ height: '52px', background: bgCard, borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.25em', color: gold }}>SOCIETY OF EXPLORERS</div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {(['directory', 'chat', 'match', 'profile'] as const).map(v => (
-            <button key={v} onClick={() => setView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
+            <button key={v} onClick={() => changeView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
               {v === 'chat' && unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#c05050', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif' }}>{unreadCount}</span>
               )}
@@ -464,17 +437,24 @@ export default function MembersPage() {
                       <div style={{ position: 'relative' }}>
                         <button
                           onClick={() => setShowThinkerPicker(v => !v)}
-                          disabled={thinkerLoading}
+                          disabled={sending}
+                          aria-expanded={showThinkerPicker}
                           style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, background: 'rgba(201,168,76,0.08)', border: `1px solid ${goldBorder}`, padding: '6px 14px', cursor: 'pointer' }}
                         >
-                          {thinkerLoading ? 'THINKING...' : '⬡ INVITE A THINKER'}
+                          ⬡ CHOOSE A THINKER QUESTION
                         </button>
                         {showThinkerPicker && (
                           <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: bgElevated, border: `1px solid ${goldBorder}`, zIndex: 100, minWidth: '180px' }}>
+                            <p style={{ padding: '0 10px', fontSize: '13px', color: muted }}>Add a prepared question to your draft.</p>
                             {THINKERS.map(t => (
                               <button
                                 key={t.id}
-                                onClick={() => inviteThinker(t.id)}
+                                aria-label={`Add ${t.name}-inspired question to draft`}
+                                onClick={() => {
+                                  setInput(draft => draft.trim() ? `${draft.trim()} ${t.question}` : t.question)
+                                  setShowThinkerPicker(false)
+                                  inputRef.current?.focus()
+                                }}
                                 style={{ display: 'block', width: '100%', padding: '10px 16px', textAlign: 'left', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: ivory, background: 'none', border: 'none', borderBottom: `1px solid ${goldBorder}`, cursor: 'pointer' }}
                               >
                                 {t.symbol} {t.name.toUpperCase()}
@@ -492,7 +472,7 @@ export default function MembersPage() {
                       <div style={{ textAlign: 'center', paddingTop: '3rem' }}>
                         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: goldDim, marginBottom: '1rem' }}>⬡</div>
                         <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: muted, fontStyle: 'italic' }}>
-                          Begin the conversation. Invite a thinker to join if you wish.
+                          Begin the conversation. You can add a Thinker-inspired question to your draft.
                         </div>
                       </div>
                     )}
@@ -526,6 +506,7 @@ export default function MembersPage() {
                   </div>
 
                   {/* Input */}
+                  {sendStatus && <p role="status" style={{ margin: '8px 20px', color: ivory }}>{sendStatus}</p>}
                   <div style={{ padding: '14px 20px', borderTop: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
                     <input
                       ref={inputRef}

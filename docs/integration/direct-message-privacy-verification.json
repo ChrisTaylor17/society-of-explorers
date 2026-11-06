@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T07:31:22.621655+00:00",
+  "baseCommit": "eacfb88cf1a7beaec1210689e78d5b39f4b75736",
+  "status": "LOCAL_DIRECT_MESSAGE_PASS_HOSTED_PRIVACY_HOLD",
+  "productionCleared": false,
+  "baseline": "The old handler accepted a sibling-origin text form with a signed wallet cookie and marked messages read on GET.",
+  "localProof": {
+    "httpChecks": 5,
+    "browserScenarios": 4,
+    "browserHandlerRequests": 15,
+    "compiledSourceFiles": 1064,
+    "scope": "Actual app routes and Members page, real NextRequest, signed synthetic wallet sessions, pinned Supabase query serialization, bounded PostgREST fixture, and disposable PostgreSQL. Browser bootstrap and transport are synthetic.",
+    "browserFixtureNote": "The first late-response probe waited on a routed response finish callback. The final probe verifies HTTP 200 and route fulfillment and then checks the displayed thread and stored read flags."
+  },
+  "hostedCatalog": {
+    "table": "public.direct_messages",
+    "browserRoles": [
+      "anon",
+      "authenticated"
+    ],
+    "effectiveTableGrants": [
+      "SELECT",
+      "INSERT",
+      "UPDATE",
+      "DELETE"
+    ],
+    "contentSelect": true,
+    "rowLevelSecurity": true,
+    "unconditionalPermissivePublicPolicy": true,
+    "realtimePublication": true,
+    "scope": "Read-only database catalog observations. Queried no direct-message rows."
+  },
+  "remaining": "Include the direct-message table in the approved backup and isolated restore comparison, rehearse service-only containment and Realtime handling, then coordinate the app and database cutover and verify hosted acceptance.",
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "app/api/message/route.ts": "d1399b4366991d175f7402af25ec3a698b6d0d1f2c27405146f3ae428cbf5a66",
+    "app/members/page.tsx": "098740c20d6bf62a3f834731d67a7dffb77d7328e9fbe9407b13915dee298597",
+    "lib/members/direct-message.ts": "5edaf753a96ed066e4a6c75fd0b55b6738a7524fb41172a72a6977cb5c4b80ad",
+    "verification/web/scripts/bundle-direct-message.mjs": "ebaaf54365a83786fb1cf825b92204e1032502f0699f9d6b08e75cf45d7b55a0",
+    "verification/web/tests/browser-direct-message.mjs": "61e756ac4f0d50e964de289053402b2db0f43d68e1f8bb7d5d8e314dba0bc2e1",
+    "verification/web/tests/direct-message-http.test.mjs": "673d36b89bad9ae048418d346a223ce4854c50c0f2be8c551616a44f55a9c370",
+    "verification/web/tests/support/direct-message-app.mjs": "57bdb1ce2d6dc3da1199d8756b2946849c806f782a084dc5004a21ded95092d6",
+    "verification/web/tests/support/direct-message-entry.tsx": "6280b5683414e23f01a7d5b9a95ce84324d627cde9d2be6f2b0cb2cb8b26355a"
+  },
+  "evidence": {
+    "baseline.tap": {
+      "path": "verification/web/evidence/direct-message-privacy/baseline.tap",
+      "bytes": 2451,
+      "sha256": "c3d93b09ef0b0872578d67c6aa42289f4138e601778ad330dfb3c5cf6c38d743"
+    },
+    "http.tap": {
+      "path": "verification/web/evidence/direct-message-privacy/http.tap",
+      "bytes": 1354,
+      "sha256": "f0c5c0b93be9ec3f9ae4b1c382c54e3b2f5aec7aa5eeeebb39c1ca41877c9872"
+    },
+    "browser-provisional.json": {
+      "path": "verification/web/evidence/direct-message-privacy/browser-provisional.json",
+      "bytes": 2500,
+      "sha256": "b686a4e1d91b1c7ad5e9a7eb8839e61abed402d4c20f2a627b714afdb61dd968"
+    },
+    "browser-provisional.log": {
+      "path": "verification/web/evidence/direct-message-privacy/browser-provisional.log",
+      "bytes": 570,
+      "sha256": "2b67b3c6ee594ab14fecba3314eeccae46a4af1d2aa790277d6c8fa2bd575bbb"
+    },
+    "browser.json": {
+      "path": "verification/web/evidence/direct-message-privacy/browser.json",
+      "bytes": 2576,
+      "sha256": "815f05d6f6cb423061e0db6a379b7289ba0f277111e8514a38653b67070ec24e"
+    },
+    "browser.log": {
+      "path": "verification/web/evidence/direct-message-privacy/browser.log",
+      "bytes": 615,
+      "sha256": "547f61fe95501b6c8e83d6865ebdb5f20933d5b1bc91ae518c468987fdd5578a"
+    },
+    "browser-source-hashes.json": {
+      "path": "verification/web/evidence/direct-message-privacy/browser-source-hashes.json",
+      "bytes": 541,
+      "sha256": "f5672dfe983a793816de3f04138d9dc47d985e374301ce5998ad3e5dedcd5c9d"
+    },
+    "next-build.json": {
+      "path": "verification/web/evidence/direct-message-privacy/next-build.json",
+      "bytes": 667,
+      "sha256": "4854bffd96a4b977c687609d6b6c4474c57734af17eb2857d766a40cd046b3ab"
+    },
+    "next-build.log": {
+      "path": "verification/web/evidence/direct-message-privacy/next-build.log",
+      "bytes": 9824,
+      "sha256": "2cc64f309a754eabf51f5c6edc3ba29501bd042b2c907e0a6a2f046828dfea8f"
+    },
+    "build-source-hashes.json": {
+      "path": "verification/web/evidence/direct-message-privacy/build-source-hashes.json",
+      "bytes": 129691,
+      "sha256": "9255f7deb2bcf8d11c90d19fa4ba8240ad0de733d056a80c80eb0920f185d4e5"
+    },
+    "production-catalog.json": {
+      "path": "verification/web/evidence/direct-message-privacy/production-catalog.json",
+      "bytes": 1824,
+      "sha256": "e787b9a5b82ac5c3cc39af707723a0248f0c781eed4ae4d63a17ce0cc7dcc287"
+    },
+    "production-table-grants.json": {
+      "path": "verification/web/evidence/direct-message-privacy/production-table-grants.json",
+      "bytes": 388,
+      "sha256": "89569f03d7a4d0915ce1d5dc8d094694281324568faf1a91e9eaf8094017de85"
+    }
+  }
+}

@@ -1,15 +1,14 @@
 import { NextRequest } from 'next/server'
+import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server'
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember'
 import { privateJson } from '@/lib/http/routeError'
+import { isUuid } from '@/lib/ids/uuid'
+import { DIRECT_MESSAGE_ACK_LIMIT, DIRECT_MESSAGE_OWNER_HEADER } from '@/lib/members/direct-message'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 
-type MessageCreateBody = {
-  recipientId?: unknown
-  content?: unknown
-}
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+type WriteRequest =
+  | { ok: false; response: Response }
+  | { ok: true; memberId: string; body: Record<string, unknown> }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -23,21 +22,32 @@ function boundedText(value: unknown, maxLength: number): string | null {
 }
 
 function memberIdField(value: unknown): string | null {
-  const memberId = boundedText(value, 80)
-  if (!memberId || !UUID_PATTERN.test(memberId)) return null
-  return memberId
+  const memberId = typeof value === 'string' ? value.trim() : null
+  return isUuid(memberId) ? memberId.toLowerCase() : null
 }
 
-async function safeRequestJson(req: NextRequest): Promise<unknown> {
-  try {
-    return await req.json()
-  } catch {
-    return null
+async function messageOwner(req: NextRequest) {
+  const auth = await getAuthenticatedMember(req)
+  const expected = req.headers.get(DIRECT_MESSAGE_OWNER_HEADER)
+  return expected === null || expected === auth?.memberId ? auth : null
+}
+
+async function messageWrite(req: NextRequest): Promise<WriteRequest> {
+  const originError = circleWriteOrigin(req)
+  if (originError) return { ok: false, response: originError }
+  const auth = await messageOwner(req)
+  if (!auth) return { ok: false, response: privateJson({ error: 'Unauthorized' }, { status: 401 }) }
+  if (req.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') {
+    return { ok: false, response: privateJson({ error: 'Use a JSON request.' }, { status: 415 }) }
   }
+  const parsed = await readCircleReviewJson(req, AbortSignal.any([req.signal, AbortSignal.timeout(5_000)]))
+  if (!parsed.ok) return parsed
+  if (!isRecord(parsed.value)) return { ok: false, response: privateJson({ error: 'Invalid body' }, { status: 400 }) }
+  return { ok: true, memberId: auth.memberId, body: parsed.value }
 }
 
 export async function GET(req: NextRequest) {
-  const auth = await getAuthenticatedMember(req)
+  const auth = await messageOwner(req)
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 })
 
   const supabaseAdmin = getSupabaseAdmin()
@@ -70,30 +80,44 @@ export async function GET(req: NextRequest) {
 
   const { data: messages, error } = await supabaseAdmin
     .from('direct_messages')
-    .select('*, sender:sender_id(id,display_name,wallet_address)')
+    .select('id,sender_id,recipient_id,content,created_at,read')
     .or(`and(sender_id.eq.${auth.memberId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${auth.memberId})`)
     .order('created_at', { ascending: true })
 
   if (error) return privateJson({ error: 'Failed to fetch messages' }, { status: 500 })
 
-  await supabaseAdmin
-    .from('direct_messages')
-    .update({ read: true })
-    .eq('recipient_id', auth.memberId)
-    .eq('sender_id', peerId)
-    .eq('read', false)
-
   return privateJson({ messages: messages || [] })
 }
 
+export async function PATCH(req: NextRequest) {
+  const request = await messageWrite(req)
+  if (!request.ok) return request.response
+
+  const { body, memberId } = request
+  const peerId = memberIdField(body.peerId)
+  const ids = body.messageIds
+  if (Object.keys(body).length !== 2 || !peerId || !Array.isArray(ids) ||
+      ids.length === 0 || ids.length > DIRECT_MESSAGE_ACK_LIMIT || !ids.every(isUuid)) {
+    return privateJson({ error: 'Use a valid message selection.' }, { status: 400 })
+  }
+
+  const { error } = await getSupabaseAdmin()
+    .from('direct_messages')
+    .update({ read: true })
+    .eq('recipient_id', memberId)
+    .eq('sender_id', peerId)
+    .eq('read', false)
+    .in('id', ids.map(id => id.toLowerCase()))
+  if (error) return privateJson({ error: 'Failed to mark messages read' }, { status: 500 })
+
+  return privateJson({ ok: true })
+}
+
 export async function POST(req: NextRequest) {
-  const auth = await getAuthenticatedMember(req)
-  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 })
+  const request = await messageWrite(req)
+  if (!request.ok) return request.response
 
-  const parsed = await safeRequestJson(req)
-  if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 })
-
-  const body: MessageCreateBody = parsed
+  const { body, memberId } = request
   const recipientId = memberIdField(body.recipientId)
   const content = boundedText(body.content, 4_000)
 
@@ -113,7 +137,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { error } = await supabaseAdmin.from('direct_messages').insert({
-    sender_id: auth.memberId,
+    sender_id: memberId,
     recipient_id: recipientId,
     content,
   })
