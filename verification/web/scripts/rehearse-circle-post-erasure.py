@@ -18,6 +18,7 @@ REQUEST = '72000000-0000-4000-8000-000000000001'
 TAMPER = '72000000-0000-4000-8000-000000000002'
 OTHER_REPLY = '72000000-0000-4000-8000-000000000003'
 LEGACY_COHORT = '72000000-0000-4000-8000-000000000004'
+REPORT_KEYS = [f'72000000-0000-4000-8000-{number:012d}' for number in range(11, 17)]
 DIGEST = hashlib.sha256(bytes([8]) * 32).hexdigest()
 COPIED_NOTE = 'PRIVATE_SYNTHETIC_REVIEW_NOTE'
 MODERATOR_SUMMARY = 'Synthetic reviewer considered the report.'
@@ -62,6 +63,30 @@ def exercise(staged, original, database, owner, temp, release, harness, kit, rep
     before = rpc('discussion_thread', host, circle, root_id)
     assert len(before['items']) == 2
 
+    listing, post, held_listing, late_post, separate_post, anonymous_listing = REPORT_KEYS
+    listing_report = (reader, None, circle, 'safety', 'Synthetic report before account removal.')
+    assert rpc('report', *listing_report, listing)['received']
+    reported_post = rpc('discussion_post', host, circle, separate_post, 'Separate post for the report guard.',
+                        None, None, None, 'Host')['message']['id']
+
+    def message_report_args(key):
+        state = rpc('message_state_profiles', reader, circle, reported_post)
+        return (reader, circle, reported_post, state['revision'], state['contentHash'], key,
+                'report', 'safety', 'Synthetic post report before account removal.')
+
+    first_report = message_report_args(post)
+    assert rpc('message_action', *first_report)['received']
+    duplicate_report = message_report_args(late_post)
+
+    def count_reports():
+        return run(f"""SELECT
+          (SELECT count(*) FROM public.circle_reports WHERE reporter_member_id='{reader}'),
+          (SELECT count(*) FROM public.circle_report_receipts WHERE actor_member_id='{reader}'),
+          (SELECT count(*) FROM public.circle_message_reports WHERE reporter_member_id='{reader}'),
+          (SELECT count(*) FROM public.circle_message_receipts WHERE actor_member_id='{reader}')""")
+
+    assert count_reports() == '1|1|1|1'
+
     def safety_bodies():
         return run(f"""SELECT concat(
           (SELECT jsonb_agg(to_jsonb(m) ORDER BY m.id)::text FROM seminar_messages m WHERE m.member_id='{reader}'),
@@ -74,7 +99,29 @@ def exercise(staged, original, database, owner, temp, release, harness, kit, rep
                role='service_role') == REQUEST
     preview = f'SELECT {SCHEMA}.preview_circle_posts({draft_scope})'
     run(preview, sqlstate='PT409')
-    assert run(f'SELECT {SCHEMA}.start_erasure({draft_scope})')
+    lock_test = runpy.run_path(str(SCRIPT.with_name('rehearse-erasure-access.py')))
+    race = lock_test['race']
+    race.__globals__['SOURCE'] = database
+    listing_call = ','.join(map(release['literal'], (*listing_report, held_listing)))
+    race(staged, f"SET LOCAL ROLE postgres; SELECT {SCHEMA}.start_erasure({draft_scope});",
+         f"SET ROLE service_role; SELECT public.soe_circle_report({listing_call});", 'PT403')
+    message_call = ','.join(map(release['literal'], duplicate_report))
+    race(staged, f"SET LOCAL ROLE postgres; SELECT {SCHEMA}.start_erasure({draft_scope});",
+         f"SET ROLE service_role; SELECT public.soe_circle_message_action({message_call});", 'PT403')
+    run(f"INSERT INTO public.circle_reports(cohort_id,reporter_member_id,reason,note) "
+        f"VALUES ('{circle}','{reader}','safety','Late direct report.');", role='service_role', sqlstate='PT403')
+    run(f"INSERT INTO public.circle_message_reports(cohort_id,message_id,reporter_member_id,reason,note) "
+        f"VALUES ('{circle}','{reported_post}','{reader}','safety','Late direct report.');", role='service_role', sqlstate='PT403')
+    assert rpc('report', *listing_report, listing)['received']
+    assert rpc('message_action', *first_report)['replayed']
+    assert count_reports() == '1|1|1|1'
+    assert rpc('report', None, 'c'*32, circle, 'safety', 'Synthetic anonymous listing report.', anonymous_listing)['received']
+    run(f"UPDATE public.circle_reports SET reporter_member_id='{reader}',reporter_key=NULL WHERE reporter_key='{'c'*32}'",
+        role='service_role', sqlstate='PT403')
+    run(f"UPDATE public.circle_message_reports SET reporter_member_id='{reader}' "
+        f"WHERE message_id='{root_id}' AND reporter_member_id='{host}'", role='service_role', sqlstate='PT403')
+    run(f"UPDATE public.circle_message_reports SET status='reviewed' WHERE message_id='{reported_post}'", role='service_role')
+    checks.append('Listing and message report receipts wait on the account gate and refuse the frozen account. Raw reporter writes are blocked. Exact replay, anonymous reports and human review still work.')
     assert source_text in safety_bodies() and COPIED_NOTE in safety_bodies() and MODERATOR_SUMMARY in safety_bodies()
 
     def erase(scope, allow=True, **kwargs):
@@ -110,7 +157,10 @@ def exercise(staged, original, database, owner, temp, release, harness, kit, rep
     run('ALTER TABLE public.seminar_messages DISABLE TRIGGER circle_message_identity_immutable')
     erase(scope, sqlstate='PT409')
     run('ALTER TABLE public.seminar_messages ENABLE TRIGGER circle_message_identity_immutable')
-    checks.append('Changed evidence, a new dependency or an inactive immutability guard invalidates the reviewed scope.')
+    run('ALTER TABLE public.circle_report_receipts DISABLE TRIGGER soe_guard_erased_copy')
+    erase(scope, sqlstate='PT409')
+    run('ALTER TABLE public.circle_report_receipts ENABLE TRIGGER soe_guard_erased_copy')
+    checks.append('Changed evidence, a new dependency or an inactive post or report guard invalidates the reviewed scope.')
 
     run(f'ALTER TABLE {SCHEMA}.circle_post_receipts ADD CONSTRAINT fixture_fail CHECK(false)')
     erase(scope, sqlstate='23514')
@@ -121,9 +171,6 @@ def exercise(staged, original, database, owner, temp, release, harness, kit, rep
     run(f'ALTER TABLE {SCHEMA}.circle_post_receipts DROP CONSTRAINT fixture_fail')
     checks.append('A forced late receipt failure rolls back post, moderation, AI consent and temporary authorization changes.')
 
-    lock_test = runpy.run_path(str(SCRIPT.with_name('rehearse-erasure-access.py')))
-    race = lock_test['race']
-    race.__globals__['SOURCE'] = database
     race(staged, f"SET LOCAL ROLE postgres; SELECT {SCHEMA}.erase_circle_posts({draft_scope},'{json.dumps(scope)}',true);",
          f"SET ROLE service_role; INSERT INTO public.circle_message_reports(cohort_id,message_id,reporter_member_id,reason,note) "
          f"VALUES ('{circle}','{root_id}','{host}','safety','late report with copied text');", 'PT403')
@@ -170,7 +217,9 @@ def exercise(staged, original, database, owner, temp, release, harness, kit, rep
     restored = original.query(restore, f"SET ROLE service_role; SELECT public.soe_circle_discussion_thread('{host}','{circle}','{root_id}')")
     assert json.loads(restored) == thread
     assert original.query(restore, f"SET ROLE service_role; SELECT id FROM public.soe_account_deletion_status('{REQUEST}','{DIGEST}')") == REQUEST
-    checks.append('A separate restore keeps the scrubbed thread and both receipts, including an exact retry of the owner operation.')
+    original.query(restore, f"SET ROLE service_role; SELECT public.soe_circle_report({listing_call})", sqlstate='PT403')
+    original.query(restore, f"SET ROLE service_role; SELECT public.soe_circle_message_action({message_call})", sqlstate='PT403')
+    checks.append('A separate restore keeps the scrubbed thread, exact owner retry and private status receipt. Both report paths still refuse writes by the frozen account.')
 
 
 def main():

@@ -28,6 +28,8 @@ The restored release proof covers legacy rows, removed reading locations, derive
 
 ## Remove authored Circle posts
 
+After processing starts, the database refuses new listing and post reports attributed to the departing member. This also covers new retry receipts for duplicate reports. A report that was committed before the freeze can still go through human review. Anonymous listing reports remain available. The local rehearsal tested both report paths on independent PostgreSQL connections and again after restore. [Verification](account-erasure-report-write-verification.json)
+
 The owner reviews the posts and their linked moderation records using `preview_circle_posts`. The erasure call requires the same request and account IDs, the exact reviewed snapshot, and explicit approval to remove linked evidence when present. A changed snapshot or unexpected dependency stops the operation.
 
 The transaction removes the post body, author details and passage reference. It leaves a withdrawn thread anchor under the name Former member so existing replies keep their place. It clears linked report notes, decision summaries and excerpts, and the copied material in moderation receipts. Open reports on those posts close because the posts have been removed. The procedure clears author consent and retires stale review access. Structured safety records, text-free post receipts and spent AI attempts remain for a separate retention review.

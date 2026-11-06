@@ -5,7 +5,8 @@ SET LOCAL search_path = pg_catalog;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '30s';
 
-LOCK TABLE public.seminar_messages, public.circle_message_decisions, public.circle_message_receipts
+LOCK TABLE public.seminar_messages, public.circle_message_decisions, public.circle_message_receipts,
+  public.circle_message_reports, public.circle_reports, public.circle_report_receipts
   IN SHARE ROW EXCLUSIVE MODE;
 
 DO $$
@@ -131,7 +132,30 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog A
 DECLARE
   target uuid;
   previous uuid;
+  actor uuid;
 BEGIN
+  -- The request may have passed app authentication before the account froze.
+  -- A new report key can write a receipt even when an open report already exists.
+  IF TG_TABLE_NAME IN ('circle_reports','circle_message_reports') THEN
+    IF TG_OP='INSERT' THEN
+      actor := NEW.reporter_member_id;
+    ELSIF NEW.reporter_member_id IS DISTINCT FROM OLD.reporter_member_id THEN
+      actor := NEW.reporter_member_id;
+    END IF;
+  ELSIF TG_TABLE_NAME IN ('circle_report_receipts','circle_message_receipts') THEN
+    actor := NEW.actor_member_id;
+  END IF;
+  IF actor IS NOT NULL THEN
+    PERFORM revision FROM soe_account_deletion_private.identity_gate WHERE only_row FOR SHARE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Account removal guard unavailable' USING ERRCODE = 'PT503';
+    END IF;
+    IF EXISTS (SELECT 1 FROM soe_account_deletion_private.processing AS p WHERE p.member_id=actor) THEN
+      RAISE EXCEPTION 'Account removal is in progress' USING ERRCODE = 'PT403';
+    END IF;
+  END IF;
+  IF TG_TABLE_NAME IN ('circle_reports','circle_report_receipts') THEN RETURN NEW; END IF;
+
   IF TG_TABLE_NAME = 'circle_message_receipts' THEN
     target := (NEW.payload->>'messageId')::uuid;
     previous := (NEW.result->>'messageId')::uuid;
@@ -158,6 +182,10 @@ CREATE TRIGGER soe_guard_erased_copy BEFORE INSERT OR UPDATE ON public.circle_me
 CREATE TRIGGER soe_guard_erased_copy BEFORE INSERT ON public.circle_message_decisions
   FOR EACH ROW EXECUTE FUNCTION soe_account_deletion_private.guard_erased_circle_copy();
 CREATE TRIGGER soe_guard_erased_copy BEFORE INSERT ON public.circle_message_receipts
+  FOR EACH ROW EXECUTE FUNCTION soe_account_deletion_private.guard_erased_circle_copy();
+CREATE TRIGGER soe_guard_erased_copy BEFORE INSERT OR UPDATE OF reporter_member_id ON public.circle_reports
+  FOR EACH ROW EXECUTE FUNCTION soe_account_deletion_private.guard_erased_circle_copy();
+CREATE TRIGGER soe_guard_erased_copy BEFORE INSERT ON public.circle_report_receipts
   FOR EACH ROW EXECUTE FUNCTION soe_account_deletion_private.guard_erased_circle_copy();
 CREATE TRIGGER soe_guard_erased_copy BEFORE INSERT OR UPDATE ON public.circle_message_ai_consents
   FOR EACH ROW EXECUTE FUNCTION soe_account_deletion_private.guard_erased_circle_copy();
@@ -203,14 +231,23 @@ BEGIN
       AND t.tgfoid = 'soe_account_deletion_private.guard_erased_circle_copy()'::regprocedure
       AND t.tgrelid IN ('public.circle_message_states'::regclass,'public.circle_message_reports'::regclass,
         'public.circle_message_decisions'::regclass,'public.circle_message_receipts'::regclass,
+        'public.circle_reports'::regclass,'public.circle_report_receipts'::regclass,
         'public.circle_message_ai_consents'::regclass,'public.circle_message_ai_attempts'::regclass,
         'public.circle_review_coverage_sessions'::regclass)
       AND t.tgtype=CASE
         WHEN t.tgrelid='public.circle_message_states'::regclass THEN 31
-        WHEN t.tgrelid IN ('public.circle_message_reports'::regclass,'public.circle_message_ai_consents'::regclass) THEN 23
+        WHEN t.tgrelid IN ('public.circle_reports'::regclass,'public.circle_message_reports'::regclass,
+          'public.circle_message_ai_consents'::regclass) THEN 23
         ELSE 7
       END
-  ) <> 7 OR (
+      AND CASE WHEN t.tgrelid='public.circle_reports'::regclass THEN
+        cardinality(t.tgattr::smallint[])=1 AND EXISTS (
+          SELECT 1 FROM pg_attribute AS a WHERE a.attrelid=t.tgrelid AND a.attname='reporter_member_id'
+            AND NOT a.attisdropped AND a.attnum=ANY(t.tgattr::smallint[])
+        )
+        ELSE cardinality(t.tgattr::smallint[])=0
+      END
+  ) <> 9 OR (
     SELECT count(*) FROM pg_trigger AS t
     WHERE t.tgenabled='O' AND t.tgtype=27 AND
       t.tgfoid='public._soe_circle_message_immutable()'::regprocedure AND

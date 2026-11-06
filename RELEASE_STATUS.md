@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+Once account deletion starts, held listing and post report requests can no longer write a report or retry receipt under the departing member. Existing reports stay available for human review. Independent PostgreSQL sessions verified that both writes wait for the account guard, and the restore preserved the refusals. The deletion process and retention decisions still need hosted approval and verification. [Verification](docs/integration/account-erasure-report-write-verification.json)
+
 An AI moderation request now checks the reviewer's sign-in again immediately before its final consent and case check. The local regression signed the reviewer out after the request was reserved and verified that no text reached the intercepted Anthropic transport. A fresh eligible session reached the transport with only the opted-in text. The compiled release build still leaves the provider disabled by default. [Verification](docs/integration/message-ai-reviewer-signout-verification.json)
 
 The homepage has a keyboard shortcut to its main content, and the survey summary wraps on narrow screens. Clip loading, cancelling and unloading keep focus on the same control. Circle search results and account options have accessible names. The compiled build passed the sampled phone-width automated scan, keyboard flows at up to 400% browser zoom, Reel playback and cancellation, and the test-account journey into Circle discussion. Manual screen-reader and physical-device acceptance remain open. [Verification](docs/integration/core-accessibility-verification.json)
