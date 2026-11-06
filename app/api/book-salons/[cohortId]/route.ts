@@ -138,6 +138,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ coh
     if (!UUID_RE.test(suppliedId)) return refused('Invalid cohort id', 400);
     const cohortId = suppliedId.toLowerCase();
 
+    const originError = circleWriteOrigin(req);
+    if (originError) return refused('Use this site to submit the request.', originError.status);
     const auth = await getAuthenticatedMember(req);
     if (!auth) return refused('Unauthorized', 401);
 
@@ -147,8 +149,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ coh
     if (!cohort.data) return refused('Not found', 404);
     if (!isRecord(cohort.data) || cohort.data.id !== cohortId || typeof cohort.data.book_id !== 'string') return refused('Discussion unavailable', 503);
     const isCircle = cohort.data.book_id === CIRCLE_BOOK_ID;
-    const originError = circleWriteOrigin(req);
-    if (originError) return refused('Use this site to submit the request.', originError.status);
     const read = await readCircleReviewJson(req);
     if (!read.ok) return refused(read.response.status === 413 ? 'Use a smaller request.' : 'Use a valid JSON request.', read.response.status);
     const parsed = read.value;

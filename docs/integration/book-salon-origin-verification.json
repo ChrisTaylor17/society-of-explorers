@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "recordedAt": "2026-11-06T06:16:32.527020+00:00",
+  "baseCommit": "38164dd596b03e3e88b3b71bfb2e0a8df9990099",
+  "status": "LOCAL_BOOK_SALON_ORIGIN_CHECKS_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "scope": "Actual NextRequest handlers with synthetic signed wallet sessions and a disposable database double, followed by Chromium plain-text form submissions to the compiled local Next server. The browser cookie only proves delivery.",
+  "baseline": "Both legacy create and join returned 200 in the signed-session sibling-origin fixture. The legacy body reader also accepted an oversized create body.",
+  "verified": {
+    "handlerTests": 5,
+    "focusedTests": 81,
+    "staticSmokeChecks": 73,
+    "compiledAPIChecks": 14,
+    "realChromiumFormPosts": [
+      {
+        "path": "/api/book-salons",
+        "status": 403,
+        "site": "same-site",
+        "cookiePresent": true
+      },
+      {
+        "path": "/api/book-salons/join",
+        "status": 403,
+        "site": "same-site",
+        "cookiePresent": true
+      },
+      {
+        "path": "/api/book-salons/33333333-3333-4333-8333-333333333333",
+        "status": 403,
+        "site": "same-site",
+        "cookiePresent": true
+      }
+    ],
+    "webBuildId": "Aos3azX3AO5zhV_YLMgV6",
+    "browserClosed": true,
+    "serverStopped": true,
+    "serverPortClosed": true
+  },
+  "initialRunNotes": [
+    "The original route fixture needed distinct mocked admin and bearer clients before it could exercise the signed-session write.",
+    "The first browser harness observed the intercepted request before Chromium attached Fetch Metadata. The final run checks wire headers through DevTools."
+  ],
+  "sourceHashes": {
+    "app/api/book-salons/route.ts": "df09752badd3ddf4372d8d55497a449a1537c755ce9fb158db27c0df63f81257",
+    "app/api/book-salons/join/route.ts": "0d3d0f2ee72a1b526bf15b90e59f0b33061b6365489165fc060d514a1c258ba6",
+    "app/api/book-salons/[cohortId]/route.ts": "06cfffe4089ffc6c3117c19a64eea56bfc7dabc6a2e6583a3e9abaf161ad9731",
+    "scripts/external-effect-lazy-clients-smoke.mjs": "0ee93982636900ef9d107a87c39e9c11c362675b9c845fd393b50e9f253b4f87",
+    "verification/web/scripts/browser-salon-origin.mjs": "482c89c6f3a35c050e31f228dd87ae1430369a2288591b5c73cbfed608b8f76f",
+    "verification/web/tests/book-salon-origin.test.mjs": "f98f8d3752ddef2cbed76b822fa05fa11be81243005c0ba040db7ac1eca9397c"
+  },
+  "evidence": {
+    "original-handler-regression.tap": {
+      "path": "verification/web/evidence/book-salon-origin/original-handler-regression.tap",
+      "sha256": "3d0362ae382dec56a37f715319232c9d141d6df25f3c0a392d07c66ace6717e5",
+      "bytes": 3666
+    },
+    "focused-regression.tap": {
+      "path": "verification/web/evidence/book-salon-origin/focused-regression.tap",
+      "sha256": "ff81d0fa9470ae15817fe68aef8045dc67e9c34904f7b2b921fb17b86ac4ee26",
+      "bytes": 19945
+    },
+    "source-guard.log": {
+      "path": "verification/web/evidence/book-salon-origin/source-guard.log",
+      "sha256": "345e2429e76142122aaca445aa12107b1c44afe623aa6dec251ab632cdd5d4db",
+      "bytes": 5996
+    },
+    "build.json": {
+      "path": "verification/web/evidence/book-salon-origin/build.json",
+      "sha256": "0b8ffd247fdc334f949c15ae839fee328a3674c602c0823a8473db799e00adcd",
+      "bytes": 660
+    },
+    "build-sources.json": {
+      "path": "verification/web/evidence/book-salon-origin/build-sources.json",
+      "sha256": "1ae2abe922af671b457956dfbae6ce385982104c57b9b1d4ea78441b12ac2270",
+      "bytes": 129588
+    },
+    "server-stopped.json": {
+      "path": "verification/web/evidence/book-salon-origin/server-stopped.json",
+      "sha256": "73930a2491a10c93fa213ea820ea169c672be6124da3ce0c252371b4e7dc721a",
+      "bytes": 692717
+    },
+    "compiled-api.json": {
+      "path": "verification/web/evidence/book-salon-origin/compiled-api.json",
+      "sha256": "221647bf880f2009ca3ee12f389b9e62d8f264e5bcbd79f20f7ad2455dd94460",
+      "bytes": 2701
+    },
+    "chromium.json": {
+      "path": "verification/web/evidence/book-salon-origin/chromium.json",
+      "sha256": "00c36dbe8f741f3063f54bad1bd20bb1636f534ac9bd93d117fb01eefd2f684f",
+      "bytes": 565
+    },
+    "initial-browser-diagnostic.json": {
+      "path": "verification/web/evidence/book-salon-origin/initial-browser-diagnostic.json",
+      "sha256": "3a97c2b5fcb84463227e2152731a351b0d776861f38195ef2f98f89bba0a6ffb",
+      "bytes": 380
+    }
+  }
+}

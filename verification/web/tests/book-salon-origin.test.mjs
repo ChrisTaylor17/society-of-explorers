@@ -1,0 +1,117 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import test from 'node:test';
+import { offlineApp } from './support/offline-app.mjs';
+
+const require = createRequire(new URL('../../../package.json', import.meta.url));
+const { NextRequest } = require('next/server');
+const origin = 'https://members.soe.test';
+const sibling = 'https://sibling.soe.test';
+const cohortId = '33333333-3333-4333-8333-333333333333';
+const intent = '44444444-4444-4444-8444-444444444444';
+const providerId = '55555555-5555-4555-8555-555555555555';
+const salon = { bookId: 'apology', title: 'Synthetic book salon' };
+const payloads = { create: salon, join: { cohortId } };
+
+async function fixture() {
+  const app = offlineApp();
+  const { JULES } = app.fakes;
+  const db = app.fakes.resetDb({
+    members: [{ id: JULES, display_name: 'Synthetic reader', supabase_auth_id: providerId }],
+    book_cohorts: [{ id: cohortId, book_id: 'apology', title: 'Existing salon', max_members: 8, status: 'forming' }],
+    book_cohort_members: [],
+  });
+  app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => db }));
+  app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({
+    auth: { getUser: async token => ({
+      data: { user: token === 'SYNTHETIC_SALON_BEARER' ? { id: providerId } : null }, error: null,
+    }) },
+  }) }));
+  const signed = await app.load('lib/auth/walletSession.ts').createWalletSessionValue(JULES);
+  assert(signed);
+  const cookie = [
+    'soe_auth_provider=wallet', `soe_auth_intent=${intent}`,
+    `soe_auth_selection_v1=v1.${intent}.wallet.${JULES}`, `soe_wallet_id=${signed}`,
+  ].join('; ');
+  return {
+    db, cookie, memberId: JULES,
+    handlers: {
+      create: app.load('app/api/book-salons/route.ts').POST,
+      join: app.load('app/api/book-salons/join/route.ts').POST,
+      post: request => app.load('app/api/book-salons/[cohortId]/route.ts')
+        .POST(request, { params: Promise.resolve({ cohortId }) }),
+    },
+  };
+}
+
+function request(action, headers, body) {
+  const suffix = { create: '', join: '/join', post: '/' + cohortId }[action];
+  return new NextRequest(origin + '/api/book-salons' + suffix, { method: 'POST', headers, body });
+}
+
+function privateHeaders(response) {
+  assert.match(response.headers.get('cache-control'), /private.*no-store/);
+}
+
+for (const action of ['create', 'join']) {
+  test(`a same-site sibling cannot ${action} a salon using the signed browser session`, async () => {
+    const f = await fixture();
+    // A text/plain form can serialize valid JSON as name=value plus CRLF.
+    const plainForm = JSON.stringify({ ...payloads[action], padding: '=' }) + '\r\n';
+    const req = request(action, {
+      origin: sibling, 'sec-fetch-site': 'same-site', cookie: f.cookie, 'content-type': 'text/plain',
+    }, plainForm);
+    const response = await f.handlers[action](req);
+    assert.equal(response.status, 403);
+    assert.equal(req.bodyUsed, false);
+    assert.equal(f.db.log.length, 0);
+    privateHeaders(response);
+  });
+}
+
+test('an ambiguous browser session or cross-origin message reaches no body or database read', async () => {
+  const f = await fixture();
+  for (const action of ['create', 'join', 'post']) {
+    for (const headers of [{ cookie: f.cookie }, { cookie: f.cookie, origin: sibling, 'sec-fetch-site': 'same-site' }]) {
+      const req = request(action, headers, JSON.stringify({ content: 'Synthetic body' }));
+      const response = await f.handlers[action](req);
+      assert.equal(response.status, 403);
+      assert.equal(req.bodyUsed, false);
+      assert.equal(f.db.log.length, 0);
+      privateHeaders(response);
+    }
+  }
+});
+
+test('same-origin wallet creation and a verified cookie-free bearer join still work', async () => {
+  const f = await fixture();
+  const created = await f.handlers.create(request('create', {
+    origin, 'sec-fetch-site': 'same-origin', cookie: f.cookie, 'content-type': 'application/json',
+  }, JSON.stringify(salon)));
+  assert.equal(created.status, 200);
+  const { cohort } = await created.json();
+  assert.equal(cohort.created_by, f.memberId);
+  assert.equal(f.db.rows('book_cohort_members')[0].member_id, f.memberId);
+  privateHeaders(created);
+
+  const joined = await f.handlers.join(request('join', {
+    authorization: 'Bearer SYNTHETIC_SALON_BEARER', 'content-type': 'application/json',
+  }, JSON.stringify({ cohortId })));
+  assert.equal(joined.status, 200);
+  assert.deepEqual(await joined.json(), { joined: true });
+  const member = f.db.rows('book_cohort_members').find(row => row.cohort_id === cohortId);
+  assert.equal(member.member_id, f.memberId);
+  privateHeaders(joined);
+});
+
+test('salon create and join refuse oversized JSON before resolving the account', async () => {
+  const f = await fixture();
+  for (const action of ['create', 'join']) {
+    const req = request(action, { origin, cookie: f.cookie, 'content-type': 'application/json' },
+      JSON.stringify({ ...payloads[action], padding: 'x'.repeat(64_000) }));
+    const response = await f.handlers[action](req);
+    assert.equal(response.status, 413);
+    assert.equal(f.db.log.length, 0);
+    privateHeaders(response);
+  }
+});

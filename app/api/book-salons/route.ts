@@ -3,6 +3,7 @@ import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { CIRCLE_BOOK_ID } from '@/lib/circles/path';
+import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server';
 
 type BookCohortListRow = {
   book_cohort_members?: Array<{ id: string }> | null;
@@ -30,14 +31,6 @@ function safeMaxMembers(value: unknown): number {
   return Math.max(2, Math.min(12, maxMembers));
 }
 
-async function safeRequestJson(req: NextRequest): Promise<unknown> {
-  try {
-    return await req.json();
-  } catch {
-    return null;
-  }
-}
-
 export async function GET() {
   const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
@@ -58,7 +51,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await safeRequestJson(req);
+  const originError = circleWriteOrigin(req);
+  if (originError) return originError;
+  const read = await readCircleReviewJson(req);
+  if (!read.ok) return read.response;
+  const body = read.value;
   if (!isRecord(body)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
   const bookId = safeKey(body.bookId, '');

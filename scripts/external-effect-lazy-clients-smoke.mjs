@@ -1,12 +1,20 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'node:fs';
+import { lstatSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
 
 function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
+  const file = join(root, relativePath);
+  const info = lstatSync(file);
+  if (!info.isFile() || (info.size > 0 && info.blocks === 0)) throw new Error('Unavailable source: ' + relativePath);
+  return readFileSync(file, 'utf8');
+}
+
+function precedes(source, first, second) {
+  const position = source.indexOf(first);
+  return position >= 0 && position < source.indexOf(second);
 }
 
 function lacksModuleScopeClients(source) {
@@ -198,6 +206,8 @@ const pages = {
   greatBooksReader: read('app/great-books/[bookId]/page.tsx'),
   greatBooksReaderClient: read('app/great-books/BookReader.tsx'),
   greatBooksReaderTools: read('app/great-books/ReaderTools.tsx'),
+  greatBooksSavedTools: read('app/great-books/SavedReadingTools.tsx'),
+  greatBooksSavedReading: read('app/great-books/useSavedReading.ts'),
   greatBooksLibraryBrowser: read('app/great-books/LibraryBrowser.tsx'),
   greatBooksReadingAccess: read('app/great-books/useReadingAccess.ts'),
   greatBooksReadingCredentials: read('lib/circles/client.ts'),
@@ -208,6 +218,7 @@ const pages = {
   practice: read('app/practice/page.tsx'),
   match: read('app/match/page.tsx'),
   members: read('app/members/page.tsx'),
+  profileEditor: read('app/account/profile/ProfileEditor.tsx'),
   worldMatch: read('app/world/match/page.tsx'),
   communityDashboard: read('app/c/[slug]/page.tsx'),
   createCommunity: read('app/create-community/page.tsx'),
@@ -683,21 +694,18 @@ const checks = [
           !source.includes('[key: string]'),
       ) &&
       routes.bookSalons.indexOf('Missing fields') < routes.bookSalons.lastIndexOf('getSupabaseAdmin()') &&
-      // The shared URL must classify Circle vs ordinary salon before deciding
-      // which body policy applies. Origin and streamed bounds precede the
-      // Circle RPC, and content validation still precedes ordinary inserts.
-      routes.bookSalonDetail.includes('UUID_RE.test(cohortId)') &&
-      routes.bookSalonDetail.includes('circleWriteOrigin(req)') &&
-      routes.bookSalonDetail.includes('readCircleReviewJson(req)') &&
+      // Both discussion protocols share the origin and byte checks, then
+      // delegate persistence to separate service-only RPCs.
+      routes.bookSalonDetail.includes('UUID_RE.test(suppliedId)') &&
       routes.bookSalonDetail.includes("if (!content) return refused('Empty message', 400)") &&
-      routes.bookSalonDetail.indexOf('UUID_RE.test(cohortId)') < routes.bookSalonDetail.lastIndexOf('getSupabaseAdmin()') &&
-      routes.bookSalonDetail.indexOf('circleWriteOrigin(req)') < routes.bookSalonDetail.indexOf('readCircleReviewJson(req)') &&
-      routes.bookSalonDetail.indexOf('readCircleReviewJson(req)') < routes.bookSalonDetail.indexOf("rpc('soe_circle_messages_post'") &&
-      routes.bookSalonDetail.indexOf('Empty message') < routes.bookSalonDetail.indexOf("supabaseAdmin.from('seminar_messages').insert(payload)") &&
+      precedes(routes.bookSalonDetail, 'circleWriteOrigin(req)', 'readCircleReviewJson(req)') &&
+      precedes(routes.bookSalonDetail, 'readCircleReviewJson(req)', "rpc('soe_circle_messages_post'") &&
+      precedes(routes.bookSalonDetail, 'Empty message', "rpc('soe_book_salon_messages_post'") &&
+      !routes.bookSalonDetail.includes(".from('seminar_messages')") &&
       routes.bookSalonJoin.indexOf('Missing fields') < routes.bookSalonJoin.indexOf('getSupabaseAdmin()'),
   },
   {
-    name: 'book salon create, join, and chat are auth-derived and token-bearing',
+    name: 'book salon writes check the origin and bind the verified actor',
     ok:
       [routes.bookSalons, routes.bookSalonDetail, routes.bookSalonJoin].every(lacksModuleScopeClients) &&
       [routes.bookSalons, routes.bookSalonDetail, routes.bookSalonJoin].every(
@@ -713,23 +721,26 @@ const checks = [
       routes.bookSalonJoin.includes(".eq('member_id', auth.memberId)") &&
       routes.bookSalonJoin.includes('member_id: auth.memberId') &&
       routes.bookSalonJoin.indexOf('getAuthenticatedMember(req)') < routes.bookSalonJoin.indexOf('getSupabaseAdmin()') &&
+      [routes.bookSalons, routes.bookSalonJoin, routes.bookSalonDetail].every(source => {
+        const post = source.slice(source.indexOf('export async function POST'));
+        return precedes(post, 'circleWriteOrigin(req)', 'getAuthenticatedMember(req)') &&
+          precedes(post, 'circleWriteOrigin(req)', 'readCircleReviewJson(req)');
+      }) &&
       routes.bookSalonDetail.includes(".eq('member_id', auth.memberId)") &&
-      routes.bookSalonDetail.includes('member_id: auth.memberId') &&
-      routes.bookSalonDetail.includes("member_name: auth.member.display_name || 'Explorer'") &&
-      routes.bookSalonDetail.includes('is_mine: Boolean') &&
-      routes.bookSalonDetail.indexOf('Empty message') < routes.bookSalonDetail.lastIndexOf('getAuthenticatedMember(req)') &&
-      routes.bookSalonDetail.indexOf('getAuthenticatedMember(req)') < routes.bookSalonDetail.lastIndexOf('getSupabaseAdmin()') &&
-      [pages.bookSalons, pages.bookSalonLegacy].every(
-        (source) =>
-          source.includes('getSupabaseAccessToken') &&
-          source.includes('Authorization: `Bearer ${accessToken}`') &&
-          source.includes("cache: 'no-store'"),
-      ) &&
+      routes.bookSalonDetail.includes('p_actor: auth.memberId, p_cohort_id: cohortId') &&
+      routes.bookSalonDetail.includes('p_member_name: memberName') &&
+      routes.bookSalonDetail.includes('ordinaryPost.expectedMemberId !== auth.memberId.toLowerCase()') &&
+      routes.bookSalonDetail.includes('parseSalonMessage(receipt.message, true)') &&
+      pages.bookSalons.includes('getSupabaseAccessToken') &&
+      pages.bookSalons.includes('Authorization: `Bearer ${accessToken}`') &&
+      pages.bookSalons.includes("cache: 'no-store'") &&
+      pages.bookSalonLegacy.includes('circleHeaders(true)') &&
+      pages.bookSalonLegacy.includes("cache: 'no-store'") &&
       pages.bookSalons.includes("fetch('/api/book-salons'") &&
       pages.bookSalons.includes("fetch('/api/book-salons/join'") &&
       pages.bookSalonLegacy.includes('fetch(`/api/book-salons/${cohortId}`') &&
-      pages.bookSalonLegacy.includes('is_mine: true') &&
-      pages.bookSalonLegacy.includes('const isMe = Boolean(msg.is_mine)') &&
+      pages.bookSalonLegacy.includes('expectedMemberId: expectedActor.memberId') &&
+      pages.bookSalonLegacy.includes('!observed.is_mine') &&
       !pages.bookSalons.includes('body: JSON.stringify({ cohortId, memberId })') &&
       !pages.bookSalons.includes('memberId,\\n        thinkerId') &&
       !pages.bookSalonLegacy.includes('body: JSON.stringify({ memberId') &&
@@ -760,7 +771,7 @@ const checks = [
       !pages.bookSalonDetail.includes("'use client'") &&
       !pages.bookSalonDetail.includes('getMemberSession') &&
       !pages.bookSalonDetail.includes('getSupabaseAccessToken') &&
-      routes.bookSalonDetail.includes("rpc('soe_circle_messages_read'") &&
+      routes.bookSalonDetail.includes("rpc('soe_circle_messages_read_profiles'") &&
       routes.bookSalonDetail.includes("rpc('soe_circle_messages_post'"),
   },
   {
@@ -1088,19 +1099,18 @@ const checks = [
     name: 'community detail route uses explicit public fields and lazy Supabase admin clients',
     ok:
       lacksModuleScopeClients(routes.communityDetail) &&
-      routes.communityDetail.includes('COMMUNITY_DETAIL_SELECT') &&
-      routes.communityDetail.includes('CONTRACT_SELECT') &&
-      routes.communityDetail.includes('COMMUNITY_MEMBER_SELECT') &&
-      routes.communityDetail.includes('MEMBER_PROFILE_SELECT') &&
-      routes.communityDetail.includes('PRODUCT_SELECT') &&
-      routes.communityDetail.includes('CommunityContractRow') &&
-      routes.communityDetail.includes('CommunityMemberRow') &&
-      routes.communityDetail.includes('MemberProfileRow') &&
+      routes.communityDetail.includes("select('id,slug,name,description,mission')") &&
+      routes.communityDetail.includes("select('contract_type,parameters')") &&
+      routes.communityDetail.includes('parameters(matches[0].parameters, kind)') &&
+      routes.communityDetail.includes('profile:members!community_members_member_id_fkey!inner(') &&
+      routes.communityDetail.includes('PUBLIC_MEMBER_SELECT') &&
+      routes.communityDetail.includes('parsePublicMemberProfile(source.profile)') &&
+      precedes(routes.communityDetail, ".eq('profile.profile_visibility', 'public')", '.limit(20)') &&
+      routes.communityDetail.includes("select('id,name,description,image_url,price_rep,is_token_gated,created_at')") &&
       routes.communityDetail.includes('getSupabaseAdmin()') &&
       routes.communityDetail.includes('privateJson') &&
-      routes.communityDetail.includes("select('member_id', { count: 'exact', head: true })") &&
-      routes.communityDetail.includes('displayNameByMemberId') &&
-      pages.communityDashboard.includes("fetch(`/api/communities/${slug}`)") &&
+      routes.communityDetail.includes('viewer: { canManage: false }') &&
+      pages.communityDashboard.includes("fetch(`/api/communities/${encodeURIComponent(slug)}`, { cache: 'no-store'") &&
       !routes.communityDetail.includes(".select('*')") &&
       !routes.communityDetail.includes('NextResponse') &&
       !routes.communityDetail.includes("import { createClient } from '@supabase/supabase-js'") &&
@@ -1282,13 +1292,20 @@ const checks = [
       !routes.leaderboard.includes(': any'),
   },
   {
-    name: 'ensure-member route uses lazy Supabase admin clients and private no-store JSON',
+    name: 'member setup uses a verified subject and a private response without subscribing the member',
     ok:
       lacksModuleScopeClients(routes.ensureMember) &&
       routes.ensureMember.includes('getSupabaseAdmin()') &&
       routes.ensureMember.includes('privateJson') &&
-      routes.ensureMember.indexOf('Missing auth ID') < routes.ensureMember.indexOf('getSupabaseAdmin()') &&
-      routes.ensureMember.includes('ensureDailySubscription(supabaseAdmin,'),
+      precedes(routes.ensureMember, 'authWriteOriginAllowed(req)', 'getSupabaseAdmin()') &&
+      precedes(routes.ensureMember, 'verifySupabaseBearerSubject(bearer)', 'getSupabaseAdmin()') &&
+      precedes(routes.ensureMember, "browserSelectionMatches(intent, receipt, 'supabase', subject)", 'getSupabaseAdmin()') &&
+      precedes(routes.ensureMember, 'body.supabaseAuthId.toLowerCase() !== subject', 'getSupabaseAdmin()') &&
+      routes.ensureMember.includes(".eq('supabase_auth_id', subject)") &&
+      routes.ensureMember.includes('supabase_auth_id: subject') &&
+      routes.ensureMember.includes('memberSessionDto(row)') &&
+      !routes.ensureMember.includes(".eq('email'") &&
+      !routes.ensureMember.includes('ensureDailySubscription'),
   },
   {
     name: 'scan history route uses lazy Supabase admin clients and private no-store JSON',
@@ -1500,16 +1517,21 @@ const checks = [
       routes.memberProfile.includes('getAuthenticatedMember(req)') &&
       routes.memberProfile.includes('getSupabaseAdmin()') &&
       routes.memberProfile.includes('privateJson') &&
-      routes.memberProfile.indexOf('getAuthenticatedMember(req)') < routes.memberProfile.indexOf('safeRequestJson(req)') &&
-      routes.memberProfile.indexOf('getAuthenticatedMember(req)') < routes.memberProfile.indexOf('getSupabaseAdmin()') &&
+      precedes(routes.memberProfile, 'getAuthenticatedMember(req)', 'getSupabaseAdmin()') &&
+      precedes(routes.memberProfile, 'authWriteOriginAllowed(req)', 'parseProfileMutation(await readProfileJson(req))') &&
       routes.memberProfile.includes(".eq('id', auth.memberId)") &&
-      routes.memberProfile.includes("select('id, display_name, discipline, skills, project_description, seeking, bio, exp_tokens, tier, philosophy')") &&
-      routes.memberProfile.includes('return privateJson({ ok: true, member })') &&
-      routes.memberProfile.includes('normalizeOptionalText') &&
-      routes.memberProfile.includes('MAX_PROFILE_TEXT_LENGTH') &&
-      routes.memberProfile.includes('MAX_SKILLS') &&
-      routes.memberProfile.includes('Failed to update profile') &&
-      pages.members.includes("fetch('/api/members/profile'") &&
+      routes.memberProfile.includes('select(OWNER_PROFILE_SELECT)') &&
+      routes.memberProfile.includes('return privateJson(profile)') &&
+      precedes(routes.memberProfile, 'mutation.expectedMemberId !== auth.memberId.toLowerCase()', "rpc('soe_member_profile_update'") &&
+      routes.memberProfile.includes('p_actor: auth.memberId, p_expected_revision: mutation.expectedRevision, p_patch: mutation.patch') &&
+      routes.memberProfile.includes('profile.revision !== mutation.expectedRevision + 1') &&
+      !routes.memberProfile.includes('.update(') &&
+      !routes.memberProfile.includes('.upsert(') &&
+      pages.members.includes('href="/account/profile"') &&
+      !pages.members.includes("fetch('/api/members/profile'") &&
+      pages.profileEditor.includes("fetch('/api/members/profile'") &&
+      pages.profileEditor.includes('expectedMemberId: owner.memberId, expectedRevision: owner.revision') &&
+      pages.profileEditor.includes("cache: 'no-store', redirect: 'error'") &&
       pages.members.includes('getSupabaseAccessToken') &&
       pages.members.includes('getAuthHeaders(true)') &&
       !pages.members.includes('memberId: currentMember.id') &&
@@ -1562,17 +1584,15 @@ const checks = [
       routes.membersDiscover.includes('getAuthenticatedMember(req)') &&
       routes.membersDiscover.includes('getSupabaseAdmin()') &&
       routes.membersDiscover.includes('privateJson') &&
-      routes.membersDiscover.indexOf('getAuthenticatedMember(req)') <
-        routes.membersDiscover.indexOf('getSupabaseAdmin()') &&
-      routes.membersDiscover.includes("error: 'Unauthorized'") &&
-      routes.membersDiscover.includes('discipline') &&
-      routes.membersDiscover.includes('project_description') &&
-      routes.membersDiscover.includes('seeking') &&
+      precedes(routes.membersDiscover, 'if (!auth) return unavailable(401)', 'getSupabaseAdmin()') &&
+      routes.membersDiscover.includes('communitySlug(req)') &&
+      routes.membersDiscover.includes(".eq('member_id', auth.memberId)") &&
+      precedes(routes.membersDiscover, 'if (!requester) return unavailable(403)', 'profile:members!community_members_member_id_fkey!inner(') &&
+      precedes(routes.membersDiscover, ".eq('profile.profile_visibility', 'public')", '.limit(50)') &&
+      routes.membersDiscover.includes('PUBLIC_MEMBER_SELECT') &&
+      routes.membersDiscover.includes('parsePublicMemberProfile(row.profile)') &&
       !routes.membersDiscover.includes('wallet_address') &&
       !routes.membersDiscover.includes('email') &&
-      routes.membersDiscover.includes('parseCommunitySlug') &&
-      routes.membersDiscover.includes('Failed to load members') &&
-      routes.membersDiscover.includes('Failed to load member profiles') &&
       pages.members.includes("fetch('/api/members/discover'") &&
       pages.members.includes("cache: 'no-store'") &&
       !pages.members.includes("from('members').select('*')") &&
@@ -1590,17 +1610,19 @@ const checks = [
       lacksModuleScopeClients(helpers.publicExplorerProfile) &&
       routes.explorerDetail.includes("import { isPublicExplorerId, loadPublicExplorerProfile } from '@/lib/explorer/publicProfile'") &&
       routes.explorerDetail.includes("export const dynamic = 'force-dynamic'") &&
-      routes.explorerDetail.includes("error: 'Invalid explorer id'") &&
+      routes.explorerDetail.includes('if (!isPublicExplorerId(id)) return unavailable(404)') &&
+      routes.explorerDetail.includes('privateJson({ profile })') &&
       routes.explorerDetail.includes('loadPublicExplorerProfile(id)') &&
       pages.explorerProfile.includes("import { loadPublicExplorerProfile } from '@/lib/explorer/publicProfile'") &&
       pages.explorerProfile.includes("export const dynamic = 'force-dynamic'") &&
       pages.explorerProfile.includes('loadPublicExplorerProfile(id)') &&
       helpers.publicExplorerProfile.includes('getSupabaseAdmin()') &&
       helpers.publicExplorerProfile.includes('isPublicExplorerId') &&
-      helpers.publicExplorerProfile.includes('PUBLIC_EXPLORER_MEMBER_SELECT') &&
-      helpers.publicExplorerProfile.includes('RESPONSE_SELECT') &&
-      helpers.publicExplorerProfile.includes('QUESTION_SELECT') &&
-      helpers.publicExplorerProfile.includes("select('amount')") &&
+      helpers.publicExplorerProfile.includes('select(PUBLIC_MEMBER_SELECT)') &&
+      helpers.publicExplorerProfile.includes(".eq('profile_visibility', 'public')") &&
+      helpers.publicExplorerProfile.includes('parsePublicMemberProfile(data)') &&
+      !helpers.publicExplorerProfile.includes("from('daily_responses')") &&
+      !helpers.publicExplorerProfile.includes("from('exp_events')") &&
       !routes.explorerDetail.includes("createClient(") &&
       !routes.explorerDetail.includes("from('members')") &&
       !pages.explorerProfile.includes("createClient(") &&
@@ -2334,9 +2356,12 @@ const checks = [
       routes.greatBooksProgress.includes('getSupabaseAdmin()') && routes.greatBooksProgress.includes('privateJson') &&
       routes.greatBooksProgress.includes('getAuthenticatedMember(req)') &&
       routes.greatBooksProgress.includes(".eq('member_id', auth.memberId)") &&
-      routes.greatBooksProgress.includes('member_id: auth.memberId') &&
-      routes.greatBooksProgress.includes('encodeBookmarkLocator') && routes.greatBooksProgress.includes('readBookEdition(body.bookId)') &&
-      routes.greatBooksProgress.includes('circleWriteOrigin(req)') && routes.greatBooksProgress.includes('readCircleReviewJson(req)') &&
+      routes.greatBooksProgress.includes('p_actor: auth.memberId, p_expected_revision: body.expectedRevision') &&
+      routes.greatBooksProgress.includes('encodeBookmarkLocator') && routes.greatBooksProgress.includes('readBookEdition(bookId)') &&
+      precedes(routes.greatBooksProgress, 'circleWriteOrigin(req)', 'await mutationBody(req)') &&
+      precedes(routes.greatBooksProgress, 'body.expectedMemberId !== auth.memberId.toLowerCase()', "rpc('soe_reading_progress_update'") &&
+      precedes(routes.greatBooksProgress, 'body.blockIndex >= edition.blockCount', "rpc('soe_reading_progress_update'") &&
+      !routes.greatBooksProgress.includes('.upsert(') &&
       !routes.greatBooksProgress.includes('memberId?: string') &&
       !routes.greatBooksProgress.includes("searchParams.get('memberId')") &&
       routes.greatBooksText.includes('Book not found') &&
@@ -2345,9 +2370,13 @@ const checks = [
       ) &&
       pages.greatBooksLibrary.includes('readBookEdition(book.id)') &&
       pages.greatBooksReaderClient.includes('parseBookEditionResponse') &&
-      pages.greatBooksLibraryBrowser.includes("run('/api/great-books/progress'") &&
-      pages.greatBooksReaderTools.includes('run(`/api/great-books/progress?bookId=${encodeURIComponent(bookId)}`') &&
-      pages.greatBooksReaderTools.includes('editionId: edition.editionId, blockIndex: index') &&
+      precedes(pages.greatBooksLibraryBrowser, "run('/api/auth/member'", "fetch('/api/great-books/progress'") &&
+      pages.greatBooksReaderTools.includes('<SavedReadingTools') &&
+      pages.greatBooksSavedTools.includes('useSavedReading(bookId, edition.editionId, edition.blockCount)') &&
+      pages.greatBooksSavedReading.includes('bindCircleAccess') &&
+      pages.greatBooksSavedReading.includes("fetch('/api/great-books/progress'") &&
+      pages.greatBooksSavedReading.includes("cache: 'no-store', redirect: 'error'") &&
+      pages.greatBooksSavedReading.includes('expectedMemberId: core.owner, expectedRevision: state.revision') &&
       [pages.greatBooksReaderTools, pages.greatBooksLibraryBrowser].every(source => source.includes('useReadingAccess')) &&
       pages.greatBooksReadingAccess.includes('bindCircleAccess') && pages.greatBooksReadingAccess.includes('await circleHeaders(') &&
       pages.greatBooksReadingAccess.includes("cache: 'no-store'") && pages.greatBooksReadingAccess.includes("redirect: 'error'") &&
@@ -2356,20 +2385,16 @@ const checks = [
       [pages.greatBooksLibrary, pages.greatBooksReader, pages.greatBooksReaderTools, pages.greatBooksLibraryBrowser, pages.greatBooksReadingAccess].every(source => !source.includes('getMemberSession')),
   },
   {
-    name: 'EXP award route stays authenticated and self-scoped; free reading does not award unverified completion',
+    name: 'direct reading awards are retired before parsing or opening any account or database connection',
     ok:
       lacksModuleScopeClients(routes.expAward) &&
-      routes.expAward.includes('getAuthenticatedMember(req)') &&
-      routes.expAward.includes('getSupabaseAdmin()') &&
-      routes.expAward.includes('privateJson') &&
-      routes.expAward.includes('ALLOWED_REASONS') &&
-      routes.expAward.includes('Cannot award EXP to another member') &&
-      routes.expAward.includes('rateLimits.get(auth.memberId)') &&
-      routes.expAward.includes('rateLimits.set(auth.memberId') &&
-      routes.expAward.includes('member_id: auth.memberId') &&
-      routes.expAward.indexOf('Missing fields') < routes.expAward.indexOf('getAuthenticatedMember(req)') &&
-      routes.expAward.indexOf('getAuthenticatedMember(req)') < routes.expAward.indexOf('getSupabaseAdmin()') &&
-      [pages.greatBooksReader, pages.greatBooksReaderClient, pages.greatBooksReaderTools].every(source => !source.includes('/api/exp/award')) &&
+      routes.expAward.includes('export function POST()') &&
+      routes.expAward.includes("privateJson({ error: 'Direct reading awards are unavailable.' }, { status: 410 })") &&
+      !routes.expAward.includes('getAuthenticatedMember') &&
+      !routes.expAward.includes('getSupabaseAdmin') &&
+      !routes.expAward.includes('.json(') &&
+      [pages.greatBooksReader, pages.greatBooksReaderClient, pages.greatBooksReaderTools, pages.greatBooksSavedTools,
+        pages.greatBooksSavedReading].every(source => !source.includes('/api/exp/award')) &&
       !routes.expAward.includes('NextResponse') &&
       !routes.expAward.includes('as any') &&
       !routes.expAward.includes(': any') &&

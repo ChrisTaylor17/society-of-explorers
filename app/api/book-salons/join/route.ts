@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { UUID_PATTERN as SHARED_UUID_PATTERN } from '@/lib/ids/uuid';
 import { CIRCLE_BOOK_ID } from '@/lib/circles/path';
 import { circleMutation } from '@/lib/circles/membership-server';
-import { readCircleReviewJson } from '@/lib/circles/moderation-server';
+import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server';
 
 const UUID_RE = SHARED_UUID_PATTERN;
 
@@ -13,12 +13,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-async function safeRequestJson(req: NextRequest) {
-  return readCircleReviewJson(req);
-}
-
 export async function POST(req: NextRequest) {
-  const read = await safeRequestJson(req);
+  const originError = circleWriteOrigin(req);
+  if (originError) return originError;
+  const read = await readCircleReviewJson(req);
   if (!read.ok) return read.response;
   const body = read.value;
   const cohortId = isRecord(body) && typeof body.cohortId === 'string' ? body.cohortId.toLowerCase() : '';

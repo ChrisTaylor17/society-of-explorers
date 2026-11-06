@@ -14,6 +14,10 @@ New posts require verified identity, same-origin/browser forgery checks, a bound
 
 The actual client loads public history without SDK or identity lookup. Explicit Prepare to post binds the actor before editing. Cookie authority is compared before/after SDK token lookup and around fresh readback. Selection changes abort and retire drafts and ownership context. A matching receipt alone is insufficient: fresh history must contain the same ID/content/name/time under the same actor. Deadlines and uncertain sends require manual reload.
 
+## Origin checks for salon writes
+
+Create, join and post check the request's browser origin before resolving the account or touching the database. Create and join also use the bounded UTF-8 reader. The original handlers returned 200 for create and join requests bearing a valid synthetic wallet session from a different origin on the same site. Chromium confirmed that a plain-text form can send a same-site cookie and arrive with a distinct Origin. The built app returned a private 403 at all three endpoints. Same-origin wallet creation and cookie-free verified bearer joins passed the handler tests. [Verification record](book-salon-origin-verification.json) · [Fetch origin standard](https://fetch.spec.whatwg.org/#origin-header) · [Fetch metadata standard](https://w3c.github.io/webappsec-fetch-metadata/#sec-fetch-site-header)
+
 ## Migration and rollback limits
 
 Requires the reviewed strict Circle legacy baseline, all nine Circle files in their documented order, and contained private-by-default member profiles. The local fixture's minimal `members` prerequisite is explicitly synthetic; separate profile SQL/HTTP/browser verification covers the complete profile migration. This is not one fully hosted restore/rollout proof.
