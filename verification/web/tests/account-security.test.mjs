@@ -66,23 +66,36 @@ for (const origin of [
   assert.equal(challenge.status, 200);
   const { nonce } = await challenge.json();
   const nonceCookie = challenge.cookies.get('soe_siwe_nonce').value;
-  async function signIn(signedOrigin) {
+  async function signedPayload(signedOrigin, signer = wallet) {
    const message = new SiweMessage({
     domain: new URL(signedOrigin).host, uri: signedOrigin, address: wallet.address,
     chainId: 1, version: '1', nonce,
    }).prepareMessage();
-   return siweRoute.POST(new NextRequest(`${origin}/api/auth/siwe`, {
-    method: 'POST',
-    headers: { ...headers, cookie: `${intentCookie}; soe_siwe_nonce=${nonceCookie}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ address: wallet.address, intent: INTENT, message, signature: await wallet.signMessage(message) }),
-   }));
+   return { address: wallet.address, intent: INTENT, message, signature: await signer.signMessage(message) };
   }
-  const refused = await signIn(`${new URL(origin).protocol}//localhost:3300`);
+  const signIn = payload => siweRoute.POST(new NextRequest(`${origin}/api/auth/siwe`, {
+   method: 'POST',
+   headers: { ...headers, cookie: `${intentCookie}; soe_siwe_nonce=${nonceCookie}`, 'content-type': 'application/json' },
+   body: JSON.stringify(payload),
+  }));
+  const refused = await signIn(await signedPayload(`${new URL(origin).protocol}//localhost:3300`));
   assert.equal(refused.status, 400);
   assert.equal(refused.cookies.get('soe_wallet_id'), undefined);
+  const wrongSigner = await signIn(await signedPayload(origin, Wallet.createRandom()));
+  assert.equal(wrongSigner.status, 401);
+  assert.equal(wrongSigner.cookies.get('soe_wallet_id'), undefined);
   assert.equal(app.db.log.length, 0);
-  const accepted = await signIn(origin);
-  assert.equal(accepted.status, 200);
+
+  const payload = await signedPayload(origin);
+  const responses = await Promise.all([signIn(payload), signIn(payload)]);
+  assert.deepEqual(responses.map(response => response.status).sort(), [200, 409]);
+  const accepted = responses.find(response => response.status === 200);
+  const rejected = responses.find(response => response.status === 409);
+  assert.equal(rejected.cookies.getAll().length, 0);
+  const replay = await signIn(payload);
+  assert.equal(replay.status, 409);
+  assert.equal(replay.cookies.getAll().length, 0);
+  assert.equal(app.db.log.length, 1);
   assert.deepEqual(await accepted.json(), { verified: true, member: { id: ADA }, intent: INTENT });
   const session = accepted.cookies.get('soe_wallet_id');
   assert.equal(session?.httpOnly, true);

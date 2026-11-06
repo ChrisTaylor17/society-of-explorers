@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T08:08:02.581552+00:00",
+  "baseCommit": "71143504bd8f2f62c0701a35cbc00b8c48f6091a",
+  "status": "LOCAL_WALLET_SINGLE_USE_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "baseline": {
+    "replayCases": 5,
+    "statusesForIdenticalSignedRequests": [
+      200,
+      200
+    ]
+  },
+  "httpRegression": {
+    "sameChallengeConcurrentStatuses": [
+      200,
+      409
+    ],
+    "sequentialReplayStatus": 409,
+    "invalidSignatureDidNotSpendChallenge": true,
+    "onlyOneMemberQuery": true,
+    "unavailableOrUnconfirmedStoreStatus": 503,
+    "priorChallengeFormatRefused": true
+  },
+  "accountTests": {
+    "totalPassed": 132,
+    "groups": {
+      "wallet-redeem-current-account.log": 35,
+      "wallet-redeem-existing-account.log": 74,
+      "wallet-redeem-s1-member-identity.log": 7,
+      "wallet-redeem-s3-siwe-nonce.log": 6,
+      "wallet-redeem-s10-siwe-wallet-session.log": 10
+    },
+    "runner": "Ran the five groups directly against resident locked dependencies. The historical combined wrapper references offloaded paths in its fixture manifest.",
+    "focusedLintPassed": true
+  },
+  "web": {
+    "productionModeBuildPassed": true,
+    "sourceFiles": 1064,
+    "buildId": "Tj2Pi2prAlDTF9lwojEKD",
+    "browser": "Chromium",
+    "stories": [
+      "No injected wallet leaves email sign-in available",
+      "Injected wallet signs and verifies the numeric loopback origin",
+      "HttpOnly session survives reload and the signed challenge is cleared"
+    ],
+    "scope": "Built Chromium UI, actual auth route source and Next cookies, synthetic wallet and member database, local network only.",
+    "ownedServerStopped": true
+  },
+  "postgres": {
+    "status": "passed",
+    "postgres": "17.11 (Homebrew)",
+    "walletDraftSha256": "db000a67d4fea1bec6033dc95cb240c4e596315a9fa5fc2d2a020c4ee7e73659",
+    "socketOnly": true,
+    "independentLockWaits": 2,
+    "oneRedemptionPerChallenge": true,
+    "expiryRecheckedAfterLockWait": true,
+    "invalidAndExpiredChallengesRefused": true,
+    "browserRpcAndRawServiceAccessRefused": true,
+    "unsafeRoleInheritanceRolledBack": true,
+    "duplicateMigrationRefused": true,
+    "pruneBatch": 32,
+    "fixtureRemoved": true
+  },
+  "sourceSha256": {
+    "app/api/auth/siwe/route.ts": "2116debd8a1362da3924ff82a1f4b5d3b0d9ac3e8448c3e68798b46b221bfca5",
+    "lib/auth/siweNonce.ts": "9e2fe06e3708299594fd5b55af3fa04b79bc2549cfcd1acc817bdb4e706a58ee",
+    "docs/sql/wallet-challenge-consumption-apply.sql": "db000a67d4fea1bec6033dc95cb240c4e596315a9fa5fc2d2a020c4ee7e73659",
+    "tests/security/fakes.ts": "2475c57e41cc6efe9ddd589369847a920fceadd8e52df6fa13568bdfc0de9aaf",
+    "tests/security/s10-siwe-wallet-session.test.ts": "530728b3c5959c58010b17ce7ac513a282c7c6bf9d7800d9197607677f117ffd",
+    "verification/web/scripts/rehearse-wallet-challenge-consumption.py": "dbbdfafc62da43e322be8f3707fff3fa5f1b2608aa0fe49c62211cd0b05e29ec",
+    "verification/web/scripts/verify-browser-intent.mjs": "7940d3b3c2a2d4a36b1e87733aae7f40eea7bd58a6b9d345c0c7e0352e439701",
+    "verification/web/tests/account-security.test.mjs": "f77a40ec58ea674470128a155f52463766ba082d165a9bd0b06fe6764d39b9f2",
+    "verification/web/tests/browser-intent.test.mjs": "1d174818ee7950bb5fdf250e107f5e597962521ab2aec9251e8a9bbfcab10506",
+    "verification/web/tests/support/offline-app.mjs": "bf25a96b7a77abebf92ef8cb026102998825e2a91f23d1eef3cfaabe19ed3104"
+  },
+  "proofs": [
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-redeem-before.log",
+      "sha256": "49edbb3060f75b1d438918a0be148c5a4945d59628ae7974071484a316081b33"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-redeem-current-account.log",
+      "sha256": "90e89f9757219efce6a64e5ad953cf5955916fddb900b14c8f3669481e78846b"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-redeem-existing-account.log",
+      "sha256": "d39fdfb80af8a131f1d99c9ce203fb8ed1f5a2e98031b83a568af29157374e6c"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-redeem-s1-member-identity.log",
+      "sha256": "11c3ac7472c4e0361ff381682e6715f15d2764538ab5e09bfe5391ff240a9433"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-redeem-s3-siwe-nonce.log",
+      "sha256": "792eff968f7ad830e97b459556bab1e9afb5010625a21a70df3f33398c17cc40"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-redeem-s10-siwe-wallet-session.log",
+      "sha256": "3e8bd4f1b470dc1cb3a006275029546928954e1019e663ac984ff05cf82c9762"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-redeem-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/built-shell-wallet-redeem-01-next-build.json",
+      "sha256": "44b69c35c4c984a525b21bdb2dfc52b61bb447c10b73c6d786336ff51173410c"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/built-shell-wallet-redeem-01-build-source-sha256.json",
+      "sha256": "d195985a477943d5f54277098443cf7e15fa017c64a68cddb1dfe54a8d8f1120"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/built-shell-wallet-redeem-01-wallet-browser.json",
+      "sha256": "e8111db6e7399832ac0ae04fa2f1b570d500a87a37aaa4c219af915f51d842ea"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/built-shell-wallet-redeem-01-server.json",
+      "sha256": "934c6530673566e39f0546d5975e350719133611dae1360be02d65dfc7183738"
+    },
+    {
+      "path": "verification/web/evidence/wallet-single-use-2026-11-06/wallet-consumption-postgres.json",
+      "sha256": "26902946268cf7375cccbccb2735e7e4867a8c1f13d692abb775f9b7be13d88d"
+    }
+  ],
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "remaining": "Review the separate draft on an approved isolated production restore. Verify hosted service-only Data API access and coordinated retirement of the old sign-in routes. Confirm wallet sign-in and replay refusal in the approved replacement environment."
+}

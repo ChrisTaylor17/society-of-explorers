@@ -26,7 +26,20 @@ function fixture(t) {
   fixtureCount++;
   const state = { user: A, exactUser: A, tokenUser: A, authCalls: 0, sqlCalls: 0, exchanges: 0, exactCalls: [], inserted: [], authWait: null,
     rows: [{ id: MA, supabase_auth_id: A, display_name: 'Synthetic A' }, { id: MB, supabase_auth_id: B, display_name: 'Synthetic B' }] };
-  const database = { from(table) { assert.equal(table, 'members'); state.sqlCalls++; let key, value, insert, asArray = false;
+  const redeemedChallenges = new Set();
+  const database = { rpc(name, args) {
+    assert.equal(name, 'soe_wallet_challenge_consume');
+    assert.deepEqual(Object.keys(args).sort(), ['p_digest', 'p_expires_at']);
+    assert.match(args.p_digest, /^[0-9a-f]{64}$/);
+    assert(Number.isSafeInteger(args.p_expires_at));
+    return { async abortSignal(signal) {
+      assert(signal instanceof AbortSignal);
+      if (state.walletStoreResponse) return state.walletStoreResponse;
+      const consumed = !redeemedChallenges.has(args.p_digest);
+      redeemedChallenges.add(args.p_digest);
+      return { data: consumed, error: null };
+    } };
+  }, from(table) { assert.equal(table, 'members'); state.sqlCalls++; let key, value, insert, asArray = false;
     const result = () => { if (insert) { const row = { id: MA, ...insert }; state.rows.push(row); state.inserted.push(row); return { data: row, error: null }; }
       const rows = state.rows.filter(row => !key || String(row[key]).toLowerCase() === String(value).toLowerCase()); return { data: asArray ? rows : rows[0] ?? null, error: null }; };
     const query = { select() { return query; }, eq(k, v) { key = k; value = v; return query; }, ilike(k, v) { key = k; value = v; return query; }, order() { return query; }, limit() { asArray = true; return Promise.resolve(result()); },
@@ -41,7 +54,7 @@ function fixture(t) {
       async getUser(token) { state.exactCalls.push(token); return { data: { user: { id: state.exactUser } }, error: null }; },
     } }) }],
   ]);
-  const context = vm.createContext({ console: { ...console, error() {}, warn() {} }, URL, URLSearchParams, Headers, Request, Response, TextEncoder, TextDecoder, AbortController, Buffer, crypto: webcrypto,
+  const context = vm.createContext({ console: { ...console, error() {}, warn() {} }, URL, URLSearchParams, Headers, Request, Response, TextEncoder, TextDecoder, AbortController, AbortSignal, Buffer, crypto: webcrypto,
     process: { env: { NODE_ENV: 'test', WALLET_SESSION_SECRET: 'SYNTHETIC_TEST_ONLY_'.repeat(4), NEXT_PUBLIC_SUPABASE_URL: 'https://provider.invalid', NEXT_PUBLIC_SUPABASE_ANON_KEY: 'NONISSUED_TEST_KEY' } },
     setTimeout, clearTimeout, setInterval, clearInterval, queueMicrotask, fetch: () => { throw Error('No live fetch'); } });
   const cache = new Map();
@@ -124,13 +137,22 @@ test('delayed A selector cannot authorize A after B begins or completes', async 
 });
 test('signed SIWE nonce authenticates its issuing intent and deadline', async t => {
   const f = fixture(t), api = f.load('lib/auth/siweNonce.ts'), now = Date.now(), value = await api.signNonce('SYNTHETIC123', IA, now);
-  assert.equal(await api.verifyNonceCookie(value, IA, now), 'SYNTHETIC123'); assert.equal(await api.verifyNonceCookie(value, IB, now), null); assert.equal(await api.verifyNonceCookie(value.replace(IA, IB), IB, now), null); assert.equal(await api.verifyNonceCookie(value, IA, now + 600000), null); assert.equal(await api.signNonce('short', IA), null); assert.equal(await api.signNonce('SYNTHETIC123', 'bad'), null);
+  const expiresAt = Math.floor(now / 1000) + 600;
+  assert.deepEqual({ ...await api.verifyNonceCookie(value, IA, now) }, { nonce: 'SYNTHETIC123', expiresAt });
+  assert.equal(await api.verifyNonceCookie(value, IB, now), null);
+  assert.equal(await api.verifyNonceCookie(value.replace(IA, IB), IB, now), null);
+  assert.equal(await api.verifyNonceCookie(value, IA, now + 600000), null);
+  assert.equal(await api.signNonce('short', IA), null);
+  assert.equal(await api.signNonce('SYNTHETIC123', 'bad'), null);
+  const legacy = `v2.SYNTHETIC123.${expiresAt}.${IA}`;
+  const legacyMac = await f.load('lib/auth/walletSession.ts').signWithWalletSessionSecret(`siwe-nonce|${legacy}`);
+  assert.equal(await api.verifyNonceCookie(`${legacy}.${legacyMac}`, IA, now), null);
 });
 test('nonce route checks browser intent before issuing an intent-bound signed nonce', async t => {
   const f = fixture(t), route = f.load('app/api/auth/nonce/route.ts');
   assert.equal((await route.GET(f.request('/api/auth/nonce'))).status, 409);
   assert.equal((await route.GET(f.request('/api/auth/nonce', { cookies: { soe_auth_intent: IA }, headers: { 'x-soe-auth-intent': IB } }))).status, 409);
-  const r = await route.GET(f.request('/api/auth/nonce', { cookies: { soe_auth_intent: IA }, headers: { 'x-soe-auth-intent': IA } })); const body = await r.json(); assert.equal(body.intent, IA); assert.equal(await f.load('lib/auth/siweNonce.ts').verifyNonceCookie(r.cookies.get('soe_siwe_nonce').value, IA), body.nonce); assert.equal(r.cookies.get('soe_auth_intent'), undefined);
+  const r = await route.GET(f.request('/api/auth/nonce', { cookies: { soe_auth_intent: IA }, headers: { 'x-soe-auth-intent': IA } })); const body = await r.json(); assert.equal(body.intent, IA); assert.equal((await f.load('lib/auth/siweNonce.ts').verifyNonceCookie(r.cookies.get('soe_siwe_nonce').value, IA))?.nonce, body.nonce); assert.equal(r.cookies.get('soe_auth_intent'), undefined);
 });
 async function walletRequest(f, overrides = {}) {
   // This publicly deterministic, synthetic test key never owns a real wallet.
@@ -143,6 +165,22 @@ async function walletRequest(f, overrides = {}) {
 test('actual SIWE signature verification selects only the nonce-bound wallet member', async t => {
   const f = fixture(t), route = f.load('app/api/auth/siwe/route.ts'), r = await route.POST(await walletRequest(f)); assert.equal(r.status, 200); const body = await r.json(); assert.equal(body.intent, IA); assert.equal(body.member.id, MA); assert.equal(r.cookies.get('soe_auth_selection_v1').value, receipt(IA, 'wallet', MA)); assert.equal(r.cookies.get('soe_auth_intent'), undefined);
   assert.equal(await f.load('lib/auth/walletSession.ts').verifyWalletSessionValue(r.cookies.get('soe_wallet_id').value), MA);
+});
+test('SIWE fails closed when challenge redemption is unavailable or unconfirmed', async t => {
+  const f = fixture(t), route = f.load('app/api/auth/siwe/route.ts');
+  for (const result of [
+    { data: null, error: { message: 'Synthetic missing RPC' } },
+    { data: null, error: null },
+    { data: 'true', error: null },
+    { data: true, error: { message: 'Synthetic database error' } },
+  ]) {
+    f.state.walletStoreResponse = result;
+    const response = await route.POST(await walletRequest(f));
+    assert.equal(response.status, 503);
+    assert.equal(response.cookies.getAll().length, 0);
+    assert.deepEqual(await response.json(), { error: 'Sign-in is temporarily unavailable. Please try again later.' });
+  }
+  assert.equal(f.state.sqlCalls, 0);
 });
 test('SIWE cannot borrow a nonce from another intent or select an unbound address', async t => {
   const f = fixture(t), route = f.load('app/api/auth/siwe/route.ts');

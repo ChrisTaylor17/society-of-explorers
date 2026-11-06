@@ -55,8 +55,8 @@ const runtimeHashes = () => Object.fromEntries([...runtime].sort().map(file => [
 const before = sourceHashes(), runtimeBefore = runtimeHashes(), startedAt = new Date().toISOString();
 const guard = path.join(root, 'verification/web/scripts/deny-build-network.cjs');
 const groups = [
-  { name: 'browser-intent-current', cwd: root, executable: process.execPath, args: ['--require', guard, '--test', 'verification/web/tests/browser-intent.test.mjs', 'verification/web/tests/email-recovery-callback.test.mjs'], tests: 34 },
-  { name: 'browser-intent-existing-account', cwd: web, executable: process.execPath, args: ['--require', guard, '--test', 'tests/account-security.test.mjs', 'tests/account-signout.test.mjs', 'tests/bearer-member-provisioning.test.mjs'], tests: 68 },
+  { name: 'browser-intent-current', cwd: root, executable: process.execPath, args: ['--require', guard, '--test', 'verification/web/tests/browser-intent.test.mjs', 'verification/web/tests/email-recovery-callback.test.mjs'], tests: 35 },
+  { name: 'browser-intent-existing-account', cwd: web, executable: process.execPath, args: ['--require', guard, '--test', 'tests/account-security.test.mjs', 'tests/account-signout.test.mjs', 'tests/bearer-member-provisioning.test.mjs'], tests: 74 },
   ...[['s1', 's1-member-identity', 7], ['s3', 's3-siwe-nonce', 6], ['s10', 's10-siwe-wallet-session', 10]].map(([name, file, tests]) => ({ name: 'browser-intent-' + name, cwd: root, executable: bun,
     args: ['test', '--no-env-file', '--no-install', '--preload', guard, '--preload', './verification/web/scripts/browser-intent-bun-guard.ts', 'tests/security/' + file + '.test.ts'], tests, bun: true })),
   { name: 'browser-intent-lint', cwd: root, executable: process.execPath, args: ['--require', guard, 'node_modules/eslint/bin/eslint.js', ...roots.filter(name => !name.startsWith('tests/security/') && !name.endsWith('.cjs') && name !== 'eslint.config.mjs')], tests: null },
@@ -88,7 +88,7 @@ const sourceUnchanged = JSON.stringify(before) === JSON.stringify(after), runtim
 const proofBound = !!proof && Object.entries(proof.sourceHashes).every(([name, hash]) => after[name] === hash) && Object.entries(proof.runtimeHashes).every(([file, hash]) => runtimeAfter[file] === hash);
 const cleanup = proof && { fixtures: proof.fixtures, closed: proof.closed, providerCalls: proof.providerCalls };
 const receipt = { status: checks.every(check => check.ok) && sourceUnchanged && runtimeUnchanged && proofBound && cleanup?.fixtures === cleanup?.closed && cleanup?.providerCalls === 0 ? 'PASS' : 'FAIL',
-  startedAt, finishedAt: new Date().toISOString(), tests: 125, checks, sourceUnchanged, runtimeUnchanged, proofBound, cleanup,
+  startedAt, finishedAt: new Date().toISOString(), tests: groups.reduce((total, group) => total + (group.tests ?? 0), 0), checks, sourceUnchanged, runtimeUnchanged, proofBound, cleanup,
   sourceHashes: after, runtimeHashes: runtimeAfter, sourceCount: sources.size, runtimeCount: runtime.size,
   scope: ['Browser intent and subject receipt, exact canonical member resolver/provider/SIWE/OAuth/setup/logout handlers, actual Next cookies and SIWE cryptography.',
     'Existing account safety, logout retirement, local subject-unique provisioning SQL and actual signature canonicalization regressions are included.',

@@ -1,7 +1,7 @@
 import { SiweMessage } from 'siwe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
-import { createWalletSessionValue } from '@/lib/auth/walletSession'
+import { createWalletSessionValue, signWithWalletSessionSecret } from '@/lib/auth/walletSession'
 import { privateJson } from '@/lib/http/routeError'
 import { SIWE_NONCE_COOKIE, verifyNonceCookie } from '@/lib/auth/siweNonce'
 import { selectAuthProvider } from '@/lib/auth/provider'
@@ -37,11 +37,10 @@ export async function POST(req: NextRequest) {
     return privateJson({ error: 'message, signature, and address are required' }, { status: 400 })
   }
 
-  // S3: only a nonce this server signed (and that has not expired) is accepted.
-  const nonce = await verifyNonceCookie(req.cookies.get(SIWE_NONCE_COOKIE)?.value, intent)
+  const challenge = await verifyNonceCookie(req.cookies.get(SIWE_NONCE_COOKIE)?.value, intent)
 
   try {
-    if (!nonce) {
+    if (!challenge) {
       return privateJson({ error: 'Sign-in nonce missing or expired.' }, { status: 400 })
     }
 
@@ -54,7 +53,7 @@ export async function POST(req: NextRequest) {
     const canonical = canonicalizeSignature(signature)
     let verified: Awaited<ReturnType<typeof siweMessage.verify>>
     try {
-      verified = await siweMessage.verify({ signature: canonical.signature, nonce, domain })
+      verified = await siweMessage.verify({ signature: canonical.signature, nonce: challenge.nonce, domain })
     } catch (verifyError: unknown) {
       logFailure(`verify_rejected:${errorMessage(verifyError)}`, address, { signatureShape: canonical.shape, signatureLength: signature.length })
       const rejected = privateJson({ error: 'Invalid signature. Please try again.' }, { status: 401 })
@@ -74,7 +73,20 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedAddress = (data.address || address).toLowerCase()
-    const supabase = createServiceClient()
+    let supabase: ReturnType<typeof createServiceClient>
+    try {
+      const digest = await signWithWalletSessionSecret(`siwe-consume|${challenge.nonce}`)
+      if (!digest) throw new Error('Wallet challenge digest unavailable')
+      supabase = createServiceClient()
+      const { data: consumed, error } = await supabase
+        .rpc('soe_wallet_challenge_consume', { p_digest: digest, p_expires_at: challenge.expiresAt })
+        .abortSignal(AbortSignal.timeout(5000))
+      if (error || typeof consumed !== 'boolean') throw new Error('Wallet challenge store unavailable')
+      if (!consumed) return privateJson({ error: 'Start wallet sign-in again.' }, { status: 409 })
+    } catch {
+      logFailure('challenge_store_unavailable', normalizedAddress)
+      return privateJson({ error: 'Sign-in is temporarily unavailable. Please try again later.' }, { status: 503 })
+    }
 
     const found = await findOrCreateWalletMember(supabase, normalizedAddress)
     if (!found.member) {

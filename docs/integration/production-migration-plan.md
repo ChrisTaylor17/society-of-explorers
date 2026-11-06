@@ -8,6 +8,8 @@ Daily Practice has a separate four-table privacy draft. Include those tables in 
 
 After Core and Practice containment, review and install `docs/sql/practice-response-save-apply.sql` before routing traffic to the replacement app. Confirm service-only execution through the hosted Data API and test a saved answer across reload. The restored synthetic fixture verified the ordering, concurrent saves and full rollback on a late database error. [Verification](practice-atomic-save-verification.json)
 
+Include `docs/sql/wallet-challenge-consumption-apply.sql` in the isolated restore and access review. During an approved cutover, apply the draft before routing sign-in to the replacement build. Verify RPC access through the hosted Data API with the service role and refusal for both browser roles. Retire reachable versions of the old sign-in route before reopening wallet sign-in. Challenges issued by the earlier build require a fresh sign-in attempt. If a later restore loses recent challenge receipts, stop issuance and verification until all outstanding challenges expire. Budget at least eleven minutes and account for server clock skew. [Verification](wallet-challenge-consumption-verification.json)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.

@@ -5,7 +5,7 @@ const nodeRequire=createRequire(import.meta.url),dependenciesRequire=createRequi
 export function offlineApp({root=path.resolve('../..')}={}){
  const projectRequire=createRequire(path.join(root,'package.json'));
  const cache=new Map(),mocks=new Map();
- const context=vm.createContext({console,URL,URLSearchParams,Headers,Request,Response,ReadableStream,TextEncoder,TextDecoder,AbortController,crypto:webcrypto,Buffer,structuredClone,setTimeout,clearTimeout,setInterval,clearInterval,queueMicrotask,process:{env:{NEXTAUTH_SECRET:'OFFLINE_FIXTURE_ONLY_'.repeat(4)},cwd:()=>root,versions:process.versions},fetch:()=>{throw Error('Network forbidden in offline route test');}});
+ const context=vm.createContext({console,URL,URLSearchParams,Headers,Request,Response,ReadableStream,TextEncoder,TextDecoder,AbortController,AbortSignal,crypto:webcrypto,Buffer,structuredClone,setTimeout,clearTimeout,setInterval,clearInterval,queueMicrotask,process:{env:{NEXTAUTH_SECRET:'OFFLINE_FIXTURE_ONLY_'.repeat(4)},cwd:()=>root,versions:process.versions},fetch:()=>{throw Error('Network forbidden in offline route test');}});
  function load(filename){
    const full=path.resolve(root,filename);if(!full.startsWith(root+path.sep))throw Error('Project import escaped test root');
    if(cache.has(full))return cache.get(full).exports;
@@ -28,8 +28,7 @@ export function offlineApp({root=path.resolve('../..')}={}){
    new vm.Script('(function(require,module,exports,__filename,__dirname){'+compiled+'\n})',{filename:full}).runInContext(context)(require,m,m.exports,full,path.dirname(full));return m.exports;
  }
  const fakes=load('tests/security/fakes.ts');fakes.installMocks();
- // The original FakeDb is unchanged. Its NextResponse double drops init headers;
- // make only that transport shim match NextResponse.json's real header semantics.
+ // Match NextResponse.json's header semantics in the offline transport shim.
  const next=mocks.get('next/server')();
  next.NextResponse.json=(data,init={})=>{
    const headers=new Headers(init.headers);headers.set('content-type','application/json');

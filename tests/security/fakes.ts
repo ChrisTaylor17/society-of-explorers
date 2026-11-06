@@ -18,13 +18,24 @@ export class FakeDb {
   // When set, every query resolves the way postgrest-js reports a thrown fetch (DNS failure, refused connection,
   // paused/deleted project): { data: null, error: { code: '', message: 'TypeError: fetch failed', ... }, status: 0 }.
   networkDown: null | { cause: string } = null;
+  private usedWalletChallenges = new Set<string>();
   seq = 0;
   constructor(seed: Record<string, Row[]> = {}) {
     for (const [k, v] of Object.entries(seed)) this.tables[k] = v.map(r => ({ ...r }));
   }
   rows(t: string) { return (this.tables[t] ??= []); }
   from(table: string) { return new Q(this, table); }
-  async rpc() { return { data: null, error: null }; }
+  rpc(name?: string, args?: { p_digest: string; p_expires_at: number }) {
+    const result = Promise.resolve().then(() => {
+      if (name !== 'soe_wallet_challenge_consume') return { data: null, error: null };
+      if (this.networkDown) return { data: null, error: { message: 'Fake database unavailable' } };
+      if (!args || !/^[0-9a-f]{64}$/.test(args.p_digest)) throw new Error('Invalid wallet challenge digest');
+      const consumed = args.p_expires_at > Date.now() / 1000 && !this.usedWalletChallenges.has(args.p_digest);
+      if (consumed) this.usedWalletChallenges.add(args.p_digest);
+      return { data: consumed, error: null };
+    });
+    return Object.assign(result, { abortSignal: (_signal: AbortSignal) => result });
+  }
   auth = { getUser: async () => ({ data: { user: null } }) };
 }
 

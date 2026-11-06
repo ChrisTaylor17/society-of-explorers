@@ -144,7 +144,11 @@ test('when no session can be made, the user gets a generic message and the reaso
 // throws. Production's Supabase hostname returns NXDOMAIN (paused or deleted project), so every DB call failed.
 test('an unreachable member database is classified as db_unreachable and answered 503, never as a wallet problem', async () => {
   const d = seed([]);
-  d.networkDown = { cause: 'ENOTFOUND' };
+  const from = d.from.bind(d);
+  d.from = table => {
+    d.networkDown = { cause: 'ENOTFOUND' };
+    return from(table);
+  };
   const { res, body, session } = await signIn();
   expect(res.status).toBe(503);
   expect(body.error).toBe('Sign-in is temporarily unavailable. Please try again later.');
