@@ -186,7 +186,9 @@ The current local fixture includes the publication-aware Circle chain and actual
 
 ## Separate direct-message gate
 
-The November 6 catalog shows table-level browser SELECT, INSERT, UPDATE and DELETE on `public.direct_messages`, an unconditional PUBLIC policy, and an active Realtime publication entry. The local Members page now reads and writes through a verified server route. Add direct messages to the owner-approved export and restore comparison before a targeted containment rehearsal. Include browser-role denial, retained service access, message read and send acceptance, and the Realtime cutover in the approval scope. [Direct-message privacy and proof](direct-message-privacy.md)
+The November 6 catalog shows broad browser grants on `public.direct_messages`, the unconditional `dm_open` policy, and an explicit Realtime entry. The separate owner draft revokes browser and PUBLIC grants, removes that policy and detaches that one publication member in the same transaction. It preserves stored conversations, remaining policies and existing service access. The disposable PostgreSQL run verified the 17-table restore, lock-timeout behavior, service read and write queries, and a second restore of the combined contained state, including browser denial on all 15 application tables. [Direct-message privacy and proof](direct-message-privacy.md) · [Reviewed SQL draft](../sql/direct-message-containment-apply.sql)
+
+Before applying the direct-message draft, compare the owner-approved export and isolated restore with `--include-direct-messages` and include Auth when the backup covers sign-in. Approve the named SQL, restored scope and Members app cutover together. Keep older browser sessions and deployments behind the hold until hosted checks confirm direct API and Realtime denial, current account verification, and authorized send and read behavior. Use the isolated archive and a separate reviewed recovery procedure for failure after a successful cutover. [Restore procedure](privacy-restore-check.md)
 
 ## Separate Live Council and room-data gate
 

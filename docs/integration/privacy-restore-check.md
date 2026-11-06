@@ -45,6 +45,16 @@ Verify that private reference with the same command and add `--include-auth`. It
 
 A 16-table match proves the named account records were preserved in the restored snapshot. Verify other Auth records, signing keys, provider settings and a fresh sign-in separately.
 
+## Include direct messages
+
+Capture the direct-message rows and publication metadata in the same snapshot as the archive.
+
+```sql
+\set soe_restore_include_direct_messages on
+```
+
+Add `--include-direct-messages` to the verifier command for the 15-table comparison. With `\set soe_restore_include_auth on` at capture and both verifier flags, the comparison covers 17 tables. The direct-message definition comparison includes replica identity and the effective publication membership, including any row filter, column list or schema-level membership. A different message body or a missing publication entry fails the comparison. [Direct-message containment proof](direct-message-containment-verification.json)
+
 ## Local rehearsal
 
 ```sh
@@ -55,5 +65,7 @@ env -i PATH=/opt/homebrew/bin:/usr/bin:/bin \
 The rehearsal creates two disposable PostgreSQL clusters and runs a real dump and restore from a shared snapshot. It checks later writes to answers and transcripts, detects data and permission drift, and applies the Core, Daily Practice and Live Council drafts to the same restored fixture. Both browser roles lose read access across all 14 tables and the service role retains reads. The service-only Live Council join records attendance after the changes. The PostgreSQL fixture uses `real[]` for embeddings. The separate Practice tests exercise the tracked vector schema. [Verification receipt](privacy-room-restore-verification.json)
 
 The account rehearsal restores a second archive that omits the rows in both Auth tables. The 14-table check matches that archive, and the 16-table check detects the omissions. On the complete restore, the 16-table check detects a replaced password hash, a rebound provider identity and changed Auth grants or role flags. [Account restore verification](privacy-auth-restore-verification.json)
+
+The direct-message rehearsal restores a second archive with the message rows omitted. The 16-table check passes that archive and the 17-table check flags the omission. A successful repair preserves the restored rows and denies direct reads and writes to both browser roles. The resulting archive restores the same 17 table definitions and data, including the contained permissions. [Direct-message containment proof](direct-message-containment-verification.json)
 
 The rehearsal also checks that the new Practice save function refuses the old browser grants. After containment it uses separate database sessions to exercise overlapping saves and a forced failure in the final update. [Practice save verification](practice-atomic-save-verification.json)

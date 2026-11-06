@@ -1,5 +1,6 @@
 """Rehearse the Stage 1 backup and restore with isolated PostgreSQL 17 fixtures."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -141,34 +142,41 @@ def prove_contained(cluster, database, row_hash):
     assert row_fingerprint(cluster, database, OWNER) == row_hash
 
 
-def prove_lock_abort(cluster, baseline):
-    with subprocess.Popen([str(BIN / 'psql'), *map(str, cluster.psql(RESTORED_DB, OWNER)),
-                           '-c', 'BEGIN; LOCK TABLE public.members IN ACCESS SHARE MODE; SELECT pg_sleep(30); COMMIT;'],
+@contextmanager
+def hold_access_share(cluster, database, relation):
+    assert re.fullmatch(r'public\.[a-z_]+', relation), 'Use a literal fixture table'
+    command = f'BEGIN; LOCK TABLE ONLY {relation} IN ACCESS SHARE MODE; SELECT pg_sleep(30); COMMIT;'
+    with subprocess.Popen([str(BIN / 'psql'), *map(str, cluster.psql(database, OWNER)), '-c', command],
                           env={**ENV, 'PGAPPNAME': 'soe_fixture_lock_holder'},
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) as holder:
         backend = None
         try:
             until = time.monotonic() + 6
             while time.monotonic() < until and holder.poll() is None:
-                candidate = cluster.query(RESTORED_DB, """
+                candidate = cluster.query(database, f"""
                   SELECT a.pid FROM pg_stat_activity a JOIN pg_locks l USING (pid)
                   WHERE a.application_name='soe_fixture_lock_holder' AND a.datname=current_database()
-                  AND l.relation='public.members'::regclass AND l.mode='AccessShareLock' AND l.granted
+                  AND l.relation='{relation}'::regclass AND l.mode='AccessShareLock' AND l.granted
                 """, OWNER)
                 if candidate.isdecimal():
                     backend = int(candidate)
                     break
                 time.sleep(0.05)
             assert backend, 'Owned lock holder did not acquire the expected relation lock'
-            cluster.file(RESTORED_DB, SQL['apply'], OWNER, '55P03')
-            assert boundary_fingerprint(cluster, RESTORED_DB, OWNER) == baseline
-            assert cluster.query(RESTORED_DB, "SELECT to_regclass('public.soe_core_containment_v1_state') IS NULL", OWNER) == 't'
+            yield
         finally:
             if backend:
-                cluster.query(RESTORED_DB, f'SELECT pg_terminate_backend({backend})', OWNER)
+                cluster.query(database, f'SELECT pg_terminate_backend({backend})', OWNER)
             elif holder.poll() is None:
                 holder.terminate()
             holder.wait(timeout=5)
+
+
+def prove_lock_abort(cluster, baseline):
+    with hold_access_share(cluster, RESTORED_DB, 'public.members'):
+        cluster.file(RESTORED_DB, SQL['apply'], OWNER, '55P03')
+        assert boundary_fingerprint(cluster, RESTORED_DB, OWNER) == baseline
+        assert cluster.query(RESTORED_DB, "SELECT to_regclass('public.soe_core_containment_v1_state') IS NULL", OWNER) == 't'
 
 
 def rehearse(destination, result):

@@ -14,6 +14,8 @@ REFERENCE_SQL = ROOT / 'docs/sql/privacy-restore-reference.sql'
 DEFAULT_PSQL = Path('/opt/homebrew/opt/postgresql@17/bin/psql')
 FORMAT = 'soe-privacy-restore-v2'
 AUTH_FORMAT = 'soe-privacy-restore-v3'
+DIRECT_FORMAT = 'soe-privacy-restore-v4'
+AUTH_DIRECT_FORMAT = 'soe-privacy-restore-v5'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -23,7 +25,16 @@ CORE_PRACTICE_TABLES = frozenset({
 ROOM_TABLES = frozenset({'video_rooms', 'room_participants', 'room_transcripts'})
 TABLES = CORE_PRACTICE_TABLES | ROOM_TABLES
 AUTH_TABLES = frozenset({'auth.users', 'auth.identities'})
-TABLES_BY_SCOPE = {FORMAT: TABLES, CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES, AUTH_FORMAT: TABLES | AUTH_TABLES}
+DIRECT_TABLES = frozenset({'direct_messages'})
+TABLES_BY_SCOPE = {
+    CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES,
+    FORMAT: TABLES,
+    AUTH_FORMAT: TABLES | AUTH_TABLES,
+    DIRECT_FORMAT: TABLES | DIRECT_TABLES,
+    AUTH_DIRECT_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES,
+}
+AUTH_SCOPES = {AUTH_FORMAT, AUTH_DIRECT_FORMAT}
+DIRECT_SCOPES = {DIRECT_FORMAT, AUTH_DIRECT_FORMAT}
 PRINCIPALS = ['anon', 'authenticated', 'service_role']
 AUTH_PRINCIPALS = [*PRINCIPALS, 'supabase_auth_admin']
 MAX_REFERENCE_BYTES = 16384
@@ -54,7 +65,7 @@ def decode_reference(raw, scope=FORMAT):
     if not raw or len(raw) > MAX_REFERENCE_BYTES:
         raise ValueError('Reference size')
     value = json.loads(raw, object_pairs_hook=unique_object)
-    principals = AUTH_PRINCIPALS if scope == AUTH_FORMAT else PRINCIPALS
+    principals = AUTH_PRINCIPALS if scope in AUTH_SCOPES else PRINCIPALS
     if (not isinstance(value, dict)
             or set(value) != {'format', 'serverMajor', 'principals', 'roles', 'tables'}
             or value['format'] != scope or value['principals'] != principals
@@ -117,10 +128,12 @@ def read_target(args):
     try:
         query = BEGIN + '\n' + LOCAL_ONLY + snapshot_sql() + '\nROLLBACK;'
         include_rooms = 'off' if args.scope == CORE_PRACTICE_FORMAT else 'on'
-        include_auth = 'on' if args.scope == AUTH_FORMAT else 'off'
+        include_auth = 'on' if args.scope in AUTH_SCOPES else 'off'
+        include_direct = 'on' if args.scope in DIRECT_SCOPES else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
+             '-v', f'soe_restore_include_direct_messages={include_direct}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -170,8 +183,14 @@ def main():
                        help='Compare an 11-table Core and Daily Practice reference.')
     scope.add_argument('--include-auth', dest='scope', action='store_const', const=AUTH_FORMAT,
                        help='Compare a 16-table reference including Supabase Auth users and identities.')
+    parser.add_argument('--include-direct-messages', action='store_true',
+                        help='Include direct messages and their publication metadata, with Auth when requested.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
+    if args.include_direct_messages:
+        if args.scope == CORE_PRACTICE_FORMAT:
+            parser.error('Use the standard Core, Practice and Live Council scope to include direct messages.')
+        args.scope = AUTH_DIRECT_FORMAT if args.scope == AUTH_FORMAT else DIRECT_FORMAT
     if not 1024 <= args.port <= 65535 or not all(
         re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]{0,62}', name) for name in (args.database, args.user)
     ):

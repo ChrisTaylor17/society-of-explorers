@@ -8,7 +8,14 @@
 \else
   \set soe_restore_include_auth off
 \endif
+\if :{?soe_restore_include_direct_messages}
+\else
+  \set soe_restore_include_direct_messages off
+\endif
 \if :soe_restore_include_auth
+  \set soe_restore_include_rooms on
+\endif
+\if :soe_restore_include_direct_messages
   \set soe_restore_include_rooms on
 \endif
 
@@ -44,6 +51,9 @@ relations(schema_name, name, evidence_name) AS (
 \if :soe_restore_include_rooms
     ('video_rooms'), ('room_participants'), ('room_transcripts'),
 \endif
+\if :soe_restore_include_direct_messages
+    ('direct_messages'),
+\endif
     ('members'), ('reading_progress'), ('book_highlights'),
     ('great_books_progress'), ('great_books_highlights'), ('book_reflections'), ('thinker_memory'),
     ('daily_questions'), ('matched_conversations'), ('practice_reflections'), ('question_responses')
@@ -75,6 +85,9 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'video_rooms', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.video_rooms t
   UNION ALL SELECT 'room_participants', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.room_participants t
   UNION ALL SELECT 'room_transcripts', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.room_transcripts t
+\endif
+\if :soe_restore_include_direct_messages
+  UNION ALL SELECT 'direct_messages', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.direct_messages t
 \endif
 \if :soe_restore_include_auth
   UNION ALL SELECT 'auth.users', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.users t
@@ -134,7 +147,19 @@ table_evidence AS (
       WHERE i.indrelid = c.oid),
     'triggers', (SELECT jsonb_agg(jsonb_build_array(pg_get_triggerdef(t.oid), t.tgenabled)
       ORDER BY t.tgname COLLATE "C") FROM pg_trigger t WHERE t.tgrelid = c.oid AND NOT t.tgisinternal)
-  ) AS definition
+  ) || CASE WHEN c.evidence_name = 'direct_messages' THEN jsonb_build_object(
+    'replicaIdentity', c.relreplident,
+    'replicaIdentityIndex', (SELECT idx.relname FROM pg_index i JOIN pg_class idx ON idx.oid = i.indexrelid
+      WHERE i.indrelid = c.oid AND i.indisreplident),
+    'publications', (SELECT jsonb_agg(jsonb_build_array(
+      p.pubname, pg_get_userbyid(p.pubowner), p.puballtables, p.pubinsert, p.pubupdate, p.pubdelete,
+      p.pubtruncate, p.pubviaroot, t.attnames, t.rowfilter,
+      EXISTS (SELECT 1 FROM pg_publication_rel pr WHERE pr.prpubid = p.oid AND pr.prrelid = c.oid),
+      EXISTS (SELECT 1 FROM pg_publication_namespace pn WHERE pn.pnpubid = p.oid AND pn.pnnspid = c.relnamespace)
+    ) ORDER BY p.pubname COLLATE "C")
+      FROM pg_publication_tables t JOIN pg_publication p ON p.pubname = t.pubname
+      WHERE t.schemaname = c.schema_name AND t.tablename = c.relname)
+  ) ELSE '{}'::jsonb END AS definition
   FROM scoped c
 ),
 principals AS (
@@ -170,6 +195,9 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_auth'::boolean AND :'soe_restore_include_direct_messages'::boolean
+      THEN 'soe-privacy-restore-v5'
+    WHEN :'soe_restore_include_direct_messages'::boolean THEN 'soe-privacy-restore-v4'
     WHEN :'soe_restore_include_auth'::boolean THEN 'soe-privacy-restore-v3'
     WHEN :'soe_restore_include_rooms'::boolean THEN 'soe-privacy-restore-v2'
     ELSE 'soe-privacy-restore-v1' END,

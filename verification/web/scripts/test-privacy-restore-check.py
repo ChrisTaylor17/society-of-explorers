@@ -25,6 +25,8 @@ PRACTICE = ROOT / 'docs/sql/practice-data-containment-apply.sql'
 PRACTICE_SAVE = ROOT / 'docs/sql/practice-response-save-apply.sql'
 LIVE_ROOMS = ROOT / 'docs/sql/live-room-containment-apply.sql'
 ROOM_FIXTURE = ROOT / 'verification/web/tests/fixtures/live-room-synthetic.sql'
+DIRECT_CONTAINMENT = ROOT / 'docs/sql/direct-message-containment-apply.sql'
+DIRECT_FIXTURE = ROOT / 'verification/web/tests/fixtures/direct-message-synthetic.sql'
 QUESTIONS = ROOT / 'supabase/migrations/20260414_daily_practice.sql'
 REFLECTIONS = ROOT / 'supabase/migrations/20260418_practice_reflections.sql'
 PRIVATE_TEXT = 'PRIVATE_SYNTHETIC_ANSWER'
@@ -33,6 +35,11 @@ AUTH_SUBJECT = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 SECOND_AUTH_SUBJECT = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 PASSWORD_MARKER = 'PRIVATE_SYNTHETIC_PASSWORD_HASH'
 IDENTITY_MARKER = 'PRIVATE_SYNTHETIC_OAUTH_IDENTITY'
+DIRECT_TEXT = 'PRIVATE_DIRECT_MESSAGE_FIXTURE'
+FIRST_MESSAGE = '20000000-0000-4000-8000-000000000001'
+OTHER_MESSAGE = '20000000-0000-4000-8000-000000000003'
+FIRST_MEMBER = '11111111-1111-4111-8111-111111111111'
+SECOND_MEMBER = '22222222-2222-4222-8222-222222222222'
 
 
 def resident(path):
@@ -114,7 +121,7 @@ def seed(source, database):
     """)
 
 
-def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, **overrides):
+def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, include_direct=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
@@ -125,6 +132,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
         argv.append('--core-practice-only')
     if include_auth:
         argv.append('--include-auth')
+    if include_direct:
+        argv.append('--include-direct-messages')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={
@@ -134,6 +143,7 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
     assert not result.stderr, 'The verifier exposed stderr'
     assert PRIVATE_TEXT not in result.stdout
     assert PRIVATE_TRANSCRIPT not in result.stdout
+    assert DIRECT_TEXT not in result.stdout and FIRST_MESSAGE not in result.stdout
     assert 'https://soe-fixture.daily.co' not in result.stdout
     assert all(value not in result.stdout for value in
                (AUTH_SUBJECT, SECOND_AUTH_SUBJECT, PASSWORD_MARKER, IDENTITY_MARKER, '@fixture.invalid'))
@@ -303,6 +313,109 @@ def exercise_auth_restore(target, database, reference, app_reference, omitted_da
     checks.append('A missing Auth relation fails closed without exposing raw database diagnostics.')
 
 
+def exercise_direct_messages(target, database, direct_reference, full_reference, fixture, checker, checks):
+    owner = fixture['OWNER']
+
+    def apply(state=None):
+        return target.file(database, DIRECT_CONTAINMENT, owner, state)
+
+    def compare_full(**overrides):
+        return verify(full_reference, target, fixture, include_auth=True, include_direct=True, **overrides)
+
+    direct = verify(direct_reference, target, fixture, include_direct=True)
+    full = compare_full()
+    assert direct['status'] == full['status'] == 'MATCH'
+    assert (direct['scope'], direct['tablesCompared']) == (checker['DIRECT_FORMAT'], 15)
+    assert (full['scope'], full['tablesCompared']) == (checker['AUTH_DIRECT_FORMAT'], 17)
+    assert verify(direct_reference, target, fixture)['check'] == 'private_reference_invalid'
+    assert verify(full_reference, target, fixture, include_auth=True)['check'] == 'private_reference_invalid'
+    assert target.query(database, f"SELECT count(*) FROM direct_messages WHERE content='{DIRECT_TEXT}'", owner) == '1'
+    checks.append('The same-snapshot archive restores direct messages in both new scopes. Only the extended scope catches omitted message rows.')
+
+    target.query(database, f"UPDATE direct_messages SET content='DRIFT', read=true WHERE id='{FIRST_MESSAGE}'", owner)
+    drift = compare_full()
+    assert drift['rowsDiffer'] == ['direct_messages'] and drift['definitionsDiffer'] == []
+    target.query(database, f"UPDATE direct_messages SET content='{DIRECT_TEXT}', read=false WHERE id='{FIRST_MESSAGE}'", owner)
+    target.query(database, 'ALTER PUBLICATION supabase_realtime DROP TABLE ONLY public.direct_messages', owner)
+    drift = compare_full()
+    assert drift['rowsDiffer'] == [] and drift['definitionsDiffer'] == ['direct_messages']
+    target.query(database, 'ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.direct_messages', owner)
+    assert compare_full()['status'] == 'MATCH'
+    checks.append('Same-count message edits and a missing Realtime entry each fail the restore comparison without exposing content.')
+
+    for role in ('anon', 'authenticated'):
+        assert target.query(database, f'SET ROLE {role}; SELECT count(content) FROM public.direct_messages', owner) == '4'
+    assert target.query(database, f"""
+      BEGIN; SET LOCAL ROLE anon;
+      UPDATE public.direct_messages SET read=true WHERE id='{FIRST_MESSAGE}' RETURNING read;
+      ROLLBACK;
+    """, owner) == 't'
+    assert compare_full()['status'] == 'MATCH'
+    checks.append('The synthetic legacy policy allows both browser roles to read every message and lets anon change a read flag.')
+
+    with fixture['hold_access_share'](target, database, 'public.direct_messages'):
+        apply('55P03')
+        assert compare_full()['status'] == 'MATCH'
+    checks.append('An independent access-share lock makes containment time out with all restored data and permissions intact.')
+
+    for prepare, cleanup in [
+        ('CREATE VIEW dm_fixture_view AS SELECT content FROM direct_messages; GRANT SELECT ON dm_fixture_view TO authenticated',
+         'DROP VIEW dm_fixture_view'),
+        ('CREATE FUNCTION dm_fixture_function() RETURNS bigint LANGUAGE sql SECURITY DEFINER '
+         'BEGIN ATOMIC SELECT count(*) FROM direct_messages; END; GRANT EXECUTE ON FUNCTION dm_fixture_function() TO anon',
+         'DROP FUNCTION dm_fixture_function()'),
+        ('CREATE PUBLICATION dm_fixture_other FOR TABLE direct_messages', 'DROP PUBLICATION dm_fixture_other'),
+        ('ALTER POLICY dm_open ON direct_messages USING (read)', 'ALTER POLICY dm_open ON direct_messages USING (true)'),
+        ('REVOKE SELECT ON direct_messages FROM service_role', 'GRANT SELECT ON direct_messages TO service_role'),
+    ]:
+        target.query(database, prepare, owner)
+        apply('PT409')
+        target.query(database, cleanup, owner)
+        assert compare_full()['status'] == 'MATCH'
+    checks.append('Dependent browser access, publication or policy drift, and lost service access refuse the cutover without partial changes.')
+
+    apply()
+    contained = compare_full()
+    assert contained['status'] == 'MISMATCH' and contained['rowsDiffer'] == []
+    assert contained['definitionsDiffer'] == ['direct_messages'] and contained['roleAndSchemaAccessMatch']
+    assert target.query(database, """
+      SELECT tablename FROM pg_publication_tables WHERE pubname='supabase_realtime' ORDER BY tablename
+    """, owner) == 'unrelated_public_catalog'
+    assert target.query(database, """
+      SELECT string_agg(policyname, ',' ORDER BY policyname)
+      FROM pg_policies WHERE schemaname='public' AND tablename='direct_messages'
+    """, owner) == 'Can read own messages,Can send messages'
+    for role in ('anon', 'authenticated'):
+        for operation in (
+            'SELECT content FROM public.direct_messages',
+            "INSERT INTO public.direct_messages (content) VALUES ('Synthetic rejected write')",
+            'UPDATE public.direct_messages SET read=true',
+            'DELETE FROM public.direct_messages',
+            'TRUNCATE public.direct_messages',
+        ):
+            target.query(database, f'SET ROLE {role}; {operation}', owner, '42501')
+    checks.append('Containment preserves the rows, the two participant policies and unrelated publication membership. Both browser roles lose direct reads and writes.')
+
+    # Exercise the current GET, PATCH and POST query shapes using the same
+    # service role as the app. Roll back the synthetic UI actions before backup.
+    service = target.query(database, f"""
+      BEGIN; SET LOCAL ROLE service_role;
+      SELECT count(content) FROM public.direct_messages WHERE
+        (sender_id='{FIRST_MEMBER}' AND recipient_id='{SECOND_MEMBER}')
+        OR (sender_id='{SECOND_MEMBER}' AND recipient_id='{FIRST_MEMBER}');
+      UPDATE public.direct_messages SET read=true
+        WHERE recipient_id='{FIRST_MEMBER}' AND sender_id='{SECOND_MEMBER}'
+          AND NOT read AND id IN ('{FIRST_MESSAGE}', '{OTHER_MESSAGE}') RETURNING id;
+      INSERT INTO public.direct_messages (sender_id, recipient_id, content)
+        VALUES ('{FIRST_MEMBER}', '{SECOND_MEMBER}', 'Synthetic service send') RETURNING read;
+      ROLLBACK;
+    """, owner)
+    assert service.splitlines() == ['2', FIRST_MESSAGE, 'f']
+    apply()
+    assert compare_full() == contained
+    checks.append('The service role can read the thread, mark the selected incoming message and send a reply. Reapplying keeps the same contained state.')
+
+
 def exercise(temp, fixture, checker, result):
     source = fixture['Cluster'](temp / 'source', fixture['OWNER'])
     target = fixture['Cluster'](temp / 'target', fixture['RESTORE_ADMIN'])
@@ -312,6 +425,10 @@ def exercise(temp, fixture, checker, result):
     auth_reference = temp / 'with-auth-reference.json'
     omitted_archive = temp / 'without-auth-data.pgcustom'
     omitted_database = 'soe_without_auth_data'
+    direct_reference = temp / 'direct-message-reference.json'
+    full_reference = temp / 'auth-and-direct-message-reference.json'
+    omitted_direct_archive = temp / 'without-direct-message-data.pgcustom'
+    omitted_direct_database = 'soe_without_direct_message_data'
     checks = result['checks']
     try:
         source.start()
@@ -319,6 +436,7 @@ def exercise(temp, fixture, checker, result):
         source.query('postgres', f'CREATE DATABASE {source_db}')
         source.file(source_db, fixture['BASELINE'])
         seed(source, source_db)
+        source.file(source_db, DIRECT_FIXTURE)
         source.file(source_db, REFERENCE, sqlstate='P0001')
         checks.append('The reference query refuses to run outside a repeatable-read, read-only snapshot.')
         with export_snapshot(source, fixture) as snapshot:
@@ -333,16 +451,22 @@ def exercise(temp, fixture, checker, result):
             legacy_reference.write_text(legacy + '\n')
             auth = fixture['run']('psql', '-v', 'soe_restore_include_auth=on', *capture)
             auth_reference.write_text(auth + '\n')
+            direct_capture = ('-v', 'soe_restore_include_direct_messages=on', *capture)
+            direct_reference.write_text(fixture['run']('psql', *direct_capture) + '\n')
+            full_reference.write_text(fixture['run']('psql', '-v', 'soe_restore_include_auth=on', *direct_capture) + '\n')
             source.query(source_db, """
               UPDATE question_responses SET response_text = 'LATER_SOURCE_WRITE';
               UPDATE room_transcripts SET content = 'LATER_SOURCE_TRANSCRIPT';
               UPDATE auth.users SET encrypted_password = 'LATER_SOURCE_PASSWORD';
+              UPDATE direct_messages SET content = 'LATER_SOURCE_DIRECT_MESSAGE';
             """)
             fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
                            '--file', archive, '-d', source_db)
             fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
                            '--exclude-table-data=auth.users', '--exclude-table-data=auth.identities',
                            '--file', omitted_archive, '-d', source_db)
+            fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
+                           '--exclude-table-data=public.direct_messages', '--file', omitted_direct_archive, '-d', source_db)
         fixture['run']('pg_dumpall', *source.connection(), '--roles-only', '--no-role-passwords',
                        '-l', 'postgres', '-f', roles)
         target.file('postgres', roles)
@@ -353,6 +477,13 @@ def exercise(temp, fixture, checker, result):
         assert verify(reference, target, fixture, database=omitted_database)['status'] == 'MATCH'
         checks.append('The 14-table comparison passes on a restored archive with no Auth rows, proving the need for a separate account-inclusive check.')
         exercise_auth_restore(target, target_db, auth_reference, reference, omitted_database, fixture, checks)
+        target.restore(omitted_direct_database, omitted_direct_archive)
+        assert verify(auth_reference, target, fixture, include_auth=True, database=omitted_direct_database)['status'] == 'MATCH'
+        missing = verify(full_reference, target, fixture, include_auth=True, include_direct=True, database=omitted_direct_database)
+        assert missing['status'] == 'MISMATCH' and missing['rowsDiffer'] == ['direct_messages']
+        assert missing['definitionsDiffer'] == [] and missing['roleAndSchemaAccessMatch']
+        assert source.query(source_db, "SELECT count(*) FROM direct_messages WHERE content='LATER_SOURCE_DIRECT_MESSAGE'") == '4'
+        exercise_direct_messages(target, target_db, direct_reference, full_reference, fixture, checker, checks)
         match = verify(reference, target, fixture)
         assert match['status'] == 'MATCH' and match['tablesCompared'] == 14 and match['roleAndSchemaAccessMatch']
         assert match['scope'] == checker['FORMAT']
@@ -441,6 +572,24 @@ def exercise(temp, fixture, checker, result):
             count = target.query(target_db, f'SET ROLE service_role; SELECT count(*) FROM public.{table}', owner)
             assert count == str(parsed['tables'][table]['rows'])
         checks.append('The Core, Daily Practice and Live Council changes preserve all restored rows. Both browser roles lose reads and service reads survive on all 14 tables.')
+        combined = verify(full_reference, target, fixture, include_auth=True, include_direct=True)
+        assert combined['rowsDiffer'] == [] and combined['roleAndSchemaAccessMatch']
+        assert set(combined['definitionsDiffer']) == checker['TABLES'] | checker['DIRECT_TABLES']
+        after_reference = temp / 'contained-full-reference.json'
+        after_archive = temp / 'contained-full.pgcustom'
+        after_database = 'soe_contained_full'
+        after_reference.write_text(fixture['run'](
+            'psql', '-v', 'soe_restore_include_auth=on', '-v', 'soe_restore_include_direct_messages=on',
+            *target.psql(target_db, owner), '-c', checker['BEGIN'], '-f', REFERENCE, '-c', 'ROLLBACK;'
+        ) + '\n')
+        target.dump(target_db, after_archive, owner)
+        target.restore(after_database, after_archive)
+        assert verify(after_reference, target, fixture, include_auth=True, include_direct=True,
+                      database=after_database)['status'] == 'MATCH'
+        for table in sorted(checker['TABLES'] | checker['DIRECT_TABLES']):
+            for role in ('anon', 'authenticated'):
+                target.query(after_database, f'SET ROLE {role}; SELECT count(*) FROM public.{table}', owner, '42501')
+        checks.append('A new logical archive restores all 17 row sets and preserves browser denial on all 15 application tables after the combined cutover.')
         assert target.query(target_db, """
           SET ROLE service_role;
           SELECT public.soe_join_live_council('30000000-0000-4000-8000-000000000001',
@@ -465,11 +614,12 @@ def main():
     os.umask(0o077)
     result = {'status': 'FAIL', 'scope': 'Synthetic PostgreSQL fixture', 'checks': [],
               'productionRestoreVerified': False, 'fixtureEmbeddingType': 'real[]'}
-    for path in (CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, LIVE_ROOMS, ROOM_FIXTURE, QUESTIONS, REFLECTIONS):
+    inputs = [SCRIPT, CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, LIVE_ROOMS, ROOM_FIXTURE,
+              DIRECT_CONTAINMENT, DIRECT_FIXTURE, QUESTIONS, REFLECTIONS]
+    for path in inputs:
         resident(path)
     fixture, checker = (runpy.run_path(str(path)) for path in (CORE_REHEARSAL, CHECKER))
-    inputs = [SCRIPT, CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, LIVE_ROOMS, ROOM_FIXTURE, QUESTIONS, REFLECTIONS,
-              fixture['BASELINE'], fixture['SQL']['preflight'], fixture['SQL']['apply']]
+    inputs.extend((fixture['BASELINE'], fixture['SQL']['preflight'], fixture['SQL']['apply']))
     result['sourceHashes'] = {str(path.relative_to(ROOT)): hashlib.sha256(resident(path)).hexdigest() for path in inputs}
     result['postgres'] = fixture['run']('postgres', '--version')
     temp = Path(mkdtemp(prefix='soe-restore-proof-', dir='/private/tmp'))
