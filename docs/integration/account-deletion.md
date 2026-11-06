@@ -42,6 +42,14 @@ The transaction makes the known profile fields private and clears their personal
 
 This phase removes authored posts from ordinary book salons and from rows without a cohort. The earlier Circle phase handles the shared Circle threads. Provider identities, memberships, billing records and any additional copies have their own review. The restored release rehearsal checked older rows, an in-flight message, a forced rollback and an exact retry after a second restore. [Verification](account-erasure-contact-verification.json)
 
+## Close hosted Circles and remove participation
+
+The owner calls `preview_circle_departure` for the same processing request. It lists affected and hosted group IDs, counts and a digest. Review the retained group details and disposition of each hosted salon. The removal requires the exact snapshot and explicit approval for the hosted list. Resolve any live handover in a separate reviewed process before starting erasure.
+
+The transaction removes the departing account’s memberships, RSVPs, Quest seats, reviewer grants and participation receipts. For the listed hosted groups, it detaches the creator and removes private meeting URLs. Circles use their existing completed state. Members with current access can still open the discussion and see the shared reading plan. Older book salons keep their shared group details. Other members keep their memberships and attendance records, and other hosts keep their meeting links.
+
+The same test account went through the preceding erasure steps and this one on a restored release. The rehearsal checked stale writes, a changed snapshot, a forced rollback, the actual Circle detail route and retry after a second restore. Provider identities, separate safety history and retention still require review. [Verification](account-erasure-circle-departure-verification.json)
+
 ## Release steps
 
 1. Review which records to erase and which records must be retained. Cover sign-in and wallet associations, private and published profiles, reading, Circle posts and moderation, direct messages, practice and council, uploads, notifications, billing and rewards, and data in backups and provider systems. Review shared content and define the handling for public blockchain records. Set the retention window for the minimal receipt.

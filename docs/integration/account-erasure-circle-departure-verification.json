@@ -1,0 +1,54 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T14:45:43.536766+00:00",
+  "parentCommit": "6449da0baa39f2854aa2ed16615db6c562d2bc29",
+  "productionCleared": false,
+  "results": {
+    "orderedSqlFiles": 54,
+    "archiveHttp": {
+      "status": 200,
+      "realDatabaseQueries": 1,
+      "canReadConversation": true,
+      "hasMeetingLink": false
+    },
+    "earlierParticipationBatch": {
+      "tests": 50,
+      "passed": 30,
+      "failed": 20,
+      "scope": "Historical harnesses without the Circle departure draft. Auth selection fixtures and the profile detail RPC fixtures need updating."
+    },
+    "preCutoverTablesVerified": 20,
+    "checks": [
+      "The pre-cutover archive and role export restore into a separate cluster and match all 20 tables.",
+      "The restored pre-cutover fixture reproduces browser access to private answers, messages and transcripts.",
+      "The complete ordered cutover runs on the restored copy and preserves every pre-cutover row in its original columns.",
+      "The processing boundary rejects an in-flight membership and stale changes to participation and hosted links.",
+      "The same request advances through the earlier private, post and contact phases before handling Circle relationships.",
+      "Only the owner can use the exact request and scope. Any hosted disposition needs explicit approval.",
+      "A changed Circle revision, disabled guard or unknown cascade stops the operation before data changes.",
+      "A late receipt error rolls back the membership, attendance, grant, link and host changes together.",
+      "Closed Circles lose the meeting link and remain readable. Other hosts\u2019 meetings, readers\u2019 replies and their RSVPs remain available.",
+      "The real Circle detail handler returns a private, readable archive with no meeting link from the restored database.",
+      "A second restore preserves the readable archive, the pending member receipt and the exact owner retry."
+    ],
+    "priorWebBuildInputsUnchanged": 1083
+  },
+  "scope": "Local restored PostgreSQL 17, one reviewed request across private, Circle post, contact and Circle relationship phases, an actual Circle detail handler with synthetic identity and real service-role database transport, and a second restore. Hosted and device acceptance remain pending.",
+  "remaining": [
+    "Hosted disposition approval and policy for retained metadata, detached sender copies and separate safety records",
+    "Provider sessions, storage, other data and retention exceptions",
+    "Owner retention review, completion notice and production restore verifier"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "6cc30ebd7cfc32b52c18e00e2892c1c05b3bd0fdb8cf337c9d4c0a5cfea8b470",
+    "docs/integration/account-deletion.md": "2bb1dd159127f034804608498fdeb1e32cd2fa9b7139b1083785af7c53afda31",
+    "docs/sql/account-erasure-circle-relationships-apply.sql": "c95a5fcd1f867f1cb78c14342204020086c5ac3ddac81e6e3ffd6bf80777e734",
+    "verification/web/scripts/rehearse-circle-departure.py": "c07fe650f40887a6341f55072e4cac588a50a1deb80f257bb42aaca18c2ae047",
+    "verification/web/tests/support/circle-departure-http.mjs": "6b5f016de9411785f4f1d3aecd8a0d92f25618df20660f16030fd3c7b18fd1ec"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-account-erasure-circle-departure",
+  "evidenceSha256": {
+    "account-erasure-circle-departure.json": "023d14bda2b18cc4c6979f5755be71d1f8aaf362c48c049c72a91853f49d31b8",
+    "account-erasure-circle-participation-regression.log": "70bd098e7e9782de241e5cf32c523672149f85eeab475843388efda44611aff7"
+  }
+}
