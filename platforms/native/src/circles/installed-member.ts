@@ -116,7 +116,7 @@ export async function prepareInstalledAuthPorts() {
   // Missing optional policies preserve older installed modules. An advertised
   // policy must be recognized; a similarly named or truthy value grants nothing.
   const policies = {
-    requestIdPolicy: 'os-random-uuid', emailAuthPolicy: 'supabase-email-pkce-v1', publicPolicy: 'circle-discovery-v1',
+    requestIdPolicy: 'os-random-uuid', emailAuthPolicy: 'supabase-email-pkce-v1', publicPolicy: 'circle-discovery-v1', circleInvitePolicy: 'public-circle-invite-v1',
     readingPolicy: 'pinned-passage-v1', profilePolicy: 'owner-profile-v1', publicProfilePolicy: 'published-profile-v1',
     memberBlocksPolicy: 'owner-member-blocks-v1',
     savedReadingPolicy: 'owner-reading-v1', attendancePolicy: 'circle-rsvp-v1', hostingPolicy: 'circle-host-v1',

@@ -77,10 +77,11 @@ export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>
 
 /** Uses the app's existing verified account. Member setup is deliberate; this
  * screen does not create an auth client, sign in or choose an account. */
-export function MemberCircleScreen({ config, connectivity, retained, philemonHosting = false, circleChoice, sharedReel, onClose }: {
+export function MemberCircleScreen({ config, connectivity, retained, philemonHosting = false, circleChoice, sharedReel, sharedInvite, onClose }: {
   config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection;
   philemonHosting?: boolean; circleChoice?: PublicCircleChoice & { reel?: ReelDiscussionId }; onClose(): void;
   sharedReel?: { reel: ReelDiscussionId; consume(): boolean };
+  sharedInvite?: { open(): void; dismiss(): void };
 }) {
   const connection = useMemo(() => {
     try {
@@ -250,6 +251,11 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
     <Action label="My profile" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.profileTransport} onPress={openProfile}/>
     <Action label="Delete account on the website" disabled={model?.phase !== 'ready'} onPress={openDeletion}/>
     <Action label="Saved reading" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.savedReadingTransport} onPress={() => openReadingDestination('saved')}/>
+    {sharedInvite && <>
+      <Text accessibilityLiveRegion="polite" style={styles.copy}>A shared salon invitation is ready to review.</Text>
+      <Action label="Open shared salon invitation" disabled={model?.busy || account?.busy} onPress={() => act(sharedInvite.open)}/>
+      <Action label="Dismiss salon invitation" onPress={() => act(sharedInvite.dismiss)}/>
+    </>}
     {sharedReel && <>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>A shared Reel is ready to open.</Text>
       <Action label="Open shared Reel" disabled={!account?.canOpenCircle || model?.phase !== 'ready'} onPress={() => act(() => {

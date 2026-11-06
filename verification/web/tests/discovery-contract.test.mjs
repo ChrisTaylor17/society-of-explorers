@@ -90,9 +90,10 @@ test('calendar dates and database microsecond timestamps are validated without i
   assert.equal(lib.isDiscoveryRestart({ restart_required: true }), true); assert.equal(lib.isDiscoveryRestart({ error: 'timeout' }), false);
 });
 
-test('trusted search catalog derives metadata only from the eight pinned editions and twelve starter readings', () => {
+test('trusted search catalog derives metadata only from the pinned editions and twelve starter readings', () => {
   const data = catalog.DISCOVERY_SEARCH_CATALOG;
-  assert.equal(data.starter.length, 12); assert.equal(data.editions.length, 8);
+  assert.equal(data.starter.length, 12);
+  assert(data.editions.some(edition => edition.bookId === 'philemon'));
   assert.deepEqual(clone(data.editions.map(e => [e.bookId, e.editionId, e.blockCount])), clone(READING_EDITIONS.map(e => [e.bookId, e.editionId, e.blockCount])));
   assert.equal(catalog.DISCOVERY_CATALOG_HASH, createHash('sha256').update(JSON.stringify(data)).digest('hex'));
   assert.doesNotMatch(JSON.stringify(data), /online_url|created_by|member_id|reports|https:\/\//);

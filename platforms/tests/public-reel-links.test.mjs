@@ -4,7 +4,7 @@ import { sourceLoader } from './load-source.mjs';
 
 const origin = 'https://circles.test', path = '/clips/watch/';
 const urls = ['night-sky-traffic', 'telescope-first-tilt', 'which-height'].map(id => origin + path + id);
-const { observePublicReelLinks } = sourceLoader()('platforms/native/src/circles/public-reel-links.ts');
+const { observePublicAppLinks } = sourceLoader()('platforms/native/src/circles/public-reel-links.ts');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => {
   let resolve;
@@ -15,14 +15,14 @@ const deferred = () => {
 function fixture(initial = Promise.resolve(null), installedOrigin = origin) {
   let listener;
   const received = [];
-  const off = observePublicReelLinks({
+  const off = observePublicAppLinks({
     getInitialURL: () => initial,
     addEventListener: (name, current) => {
       assert.equal(name, 'url');
       listener = current;
       return { remove: () => { listener = undefined; } };
     },
-  }, installedOrigin, (reel, cold) => received.push([reel, cold]));
+  }, installedOrigin, (link, cold) => received.push([link.kind === 'reel' ? link.reel : link.circleId, cold]));
   return { received, off, send: url => listener?.({ url }), subscribed: () => Boolean(listener) };
 }
 
@@ -78,4 +78,22 @@ test('a build without an approved public origin never subscribes to links', asyn
     assert.deepEqual(f.received, []);
     f.off();
   }
+});
+
+const circle = '11111111-aaaa-4111-8111-111111111111';
+const invite = origin + '/circles/invite/' + circle;
+
+test('a fresh salon link replaces a late Reel launch and accepts only the installed canonical address', async () => {
+  const initial = deferred(), f = fixture(initial.promise);
+  try {
+    for (const invalid of [invite + '/', invite + '?from=other', invite + '#extra', invite + '\n',
+      invite.replace('https:', 'http:'), invite.replace('circles.test', 'wrong.test'),
+      invite.replace('/invite/', '/'), invite.replace('aaaa', 'AAAA'), invite.replace('4111', '0111'),
+      invite.replace('8111', '7111'), invite.replace('aaaa', '%61aaa')]) f.send(invalid);
+    assert.deepEqual(f.received, []);
+    f.send(invite);
+    initial.resolve(urls[0]);
+    await tick();
+    assert.deepEqual(f.received, [[circle, false]]);
+  } finally { f.off(); }
 });

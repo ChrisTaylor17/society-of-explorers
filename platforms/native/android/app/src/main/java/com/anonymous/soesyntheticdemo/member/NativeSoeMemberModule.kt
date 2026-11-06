@@ -57,6 +57,7 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
       putString("redirectPolicy", "reject-before-send"); putString("storagePolicy", "os-protected"); putString("storageGeneration", generation)
       putString("requestIdPolicy", "os-random-uuid")
       putString("publicPolicy", "circle-discovery-v1")
+      putString("circleInvitePolicy", "public-circle-invite-v1")
       putString("readingPolicy", "pinned-passage-v1")
       putString("profilePolicy", "owner-profile-v1")
       putString("memberBlocksPolicy", "owner-member-blocks-v1")

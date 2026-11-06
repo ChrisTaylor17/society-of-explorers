@@ -17,6 +17,7 @@
         <data android:path="/clips/watch/night-sky-traffic" />
         <data android:path="/clips/watch/telescope-first-tilt" />
         <data android:path="/clips/watch/which-height" />
+        <data android:pathPrefix="/circles/invite/" />
       </intent-filter>
     </activity>
   </application>

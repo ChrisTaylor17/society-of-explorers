@@ -9,6 +9,7 @@ import { circleDetailHref, ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import { parseCircleListing, type CircleListing } from '@/lib/circles/membership';
 import ReportButton from '../ReportButton';
 import CircleConversation from './CircleConversation';
+import CircleInviteShare from './CircleInviteShare';
 import styles from '../participation.module.css';
 import ReadingProgramSummary from '../ReadingProgramSummary';
 import PublishedProfileLink from '@/components/PublishedProfileLink';
@@ -67,6 +68,9 @@ function CircleView({ circleId, fromOnline, reel }: { circleId: string; fromOnli
       <p style={body}>{listing.format_label} · {listing.meeting_label} · hosted by {listing.host_name}</p>
       <p style={small}>{listing.next_meeting ? `Next meeting · ${formatDay(listing.next_meeting)}, ${listing.next_meeting.slice(0, 4)}` : 'No upcoming meetings are listed.'}</p>
     </section>}
+    {preview && preview !== 'unavailable' && !management && !c?.hidden && <div className={styles.stack} style={{ marginBottom: '1rem' }}>
+      <CircleInviteShare id={preview.id} title={preview.title} disabled={actionDisabled}/>
+    </div>}
     {!detail && !management && !listing && <p role="status" style={small}>{preview === 'unavailable' ? 'The public Circle preview is unavailable.' : 'Loading public Circle preview…'}</p>}
     <p style={{ ...small, marginBottom: '1rem' }}><Link href={`/login?next=${nextPath}`}>Sign in</Link> · <Link href={`/login?mode=signup&next=${nextPath}`}>Create a free account</Link></p>
     <p ref={statusRef} tabIndex={-1} role="status" aria-live="polite" style={lead}>{notice}</p>

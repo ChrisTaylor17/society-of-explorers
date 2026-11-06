@@ -46,11 +46,11 @@ class MainActivity : ReactActivity() {
 
   private fun consumeLink(incoming: Intent): Intent {
     val raw = incoming.dataString
-    val reel = if (BuildConfig.SOE_REEL_LINKS_ENABLED && incoming.action == Intent.ACTION_VIEW)
-      publicReelLink(raw, BuildConfig.SOE_MEMBER_ORIGIN) else null
-    if (reel == null) EmailLinkLifecycle.capture(applicationContext, raw)
+    val publicLink = if (BuildConfig.SOE_REEL_LINKS_ENABLED && incoming.action == Intent.ACTION_VIEW)
+      publicAppLink(raw, BuildConfig.SOE_MEMBER_ORIGIN) else null
+    if (publicLink == null) EmailLinkLifecycle.capture(applicationContext, raw)
     return Intent(incoming).apply {
-      data = reel?.let { Uri.parse(it) }
+      data = publicLink?.let { Uri.parse(it) }
       clipData = null
     }
   }

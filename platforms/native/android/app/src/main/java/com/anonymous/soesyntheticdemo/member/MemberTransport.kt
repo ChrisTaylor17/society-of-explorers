@@ -403,6 +403,9 @@ internal class MemberTransport(
     if (Regex("/api/explorer/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").matches(url.encodedPath)) {
       require(url.encodedQuery == null); return
     }
+    if (Regex("/api/circles/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}").matches(url.encodedPath)) {
+      require(url.encodedQuery == "view=listing"); return
+    }
     require(url.encodedPath == "/api/circles")
     val order = listOf("book", "edition", "from", "to", "q", "city", "format", "open", "sort", "limit", "cursor")
     val query = linkedMapOf<String, String>()

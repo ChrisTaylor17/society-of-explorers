@@ -145,6 +145,7 @@ public final class SoeMemberBridge: NSObject, @unchecked Sendable {
                 "storageKey": .text(configuration.storageKey), "storageGeneration": .text(generation),
                 "redirectPolicy": .text("reject-before-send"), "storagePolicy": .text("os-protected"),
                 "requestIdPolicy": .text("os-random-uuid"), "publicPolicy": .text("circle-discovery-v1"),
+                "circleInvitePolicy": .text("public-circle-invite-v1"),
                 "readingPolicy": .text("pinned-passage-v1"), "profilePolicy": .text("owner-profile-v1"),
                 "memberBlocksPolicy": .text("owner-member-blocks-v1"),
                 "publicProfilePolicy": .text("published-profile-v1"), "savedReadingPolicy": .text("owner-reading-v1"),

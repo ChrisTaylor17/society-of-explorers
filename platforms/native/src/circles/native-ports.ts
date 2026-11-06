@@ -3,6 +3,7 @@ import type { NativeEmailPurpose } from '../auth/email-auth-types';
 import { parseDiscussionQuery } from '../../../../lib/circles/thread';
 import { isUuid } from '../../../../lib/ids/uuid';
 import { discoveryPageSearchParams, parseDiscoveryPageRequest } from '../../../../lib/circles/discovery-page';
+import { isCircleInviteId } from '../../../../lib/circles/invite';
 import { passageIndexPin } from '../../../../lib/books/passages';
 import { getReadingEdition } from '../../../../lib/circles/reading-program';
 import { parseCircleAttendanceMutation, circleAttendanceMutationBody, CIRCLE_ATTENDANCE_BODY_MAX_BYTES } from '../../../../lib/circles/membership';
@@ -18,7 +19,7 @@ import { parseReadingProgressMutation, readingProgressMutationBody, READING_PROG
 /** The native implementation owns the durable storage generation. Every storage
  * operation and allocated request is fenced by that generation across JS restarts. */
 export type NativeMemberBridge = {
-  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; emailAuthPolicy?: string; emailCallbackUrl?: string; publicPolicy?: string; readingPolicy?: string; profilePolicy?: string; memberBlocksPolicy?: string; publicProfilePolicy?: string; savedReadingPolicy?: string; attendancePolicy?: string; hostingPolicy?: string; messageAiConsentPolicy?: string; messageReviewPolicy?: string; circleReviewPolicy?: string }>;
+  capabilities(): Promise<{ version: number; origin: string; storageKey: string; redirectPolicy: string; storagePolicy: string; storageGeneration: string; requestIdPolicy?: string; authPolicy?: string; providerOrigin?: string; publishableKey?: string; emailAuthPolicy?: string; emailCallbackUrl?: string; publicPolicy?: string; circleInvitePolicy?: string; readingPolicy?: string; profilePolicy?: string; memberBlocksPolicy?: string; publicProfilePolicy?: string; savedReadingPolicy?: string; attendancePolicy?: string; hostingPolicy?: string; messageAiConsentPolicy?: string; messageReviewPolicy?: string; circleReviewPolicy?: string }>;
   newRequestId?(generation: string): Promise<string>;
   begin(generation: string): Promise<string>;
   send(id: string, request: { url: string; method: 'GET' | 'POST'; bearer: string; body?: string }): Promise<{ status: number; url: string; body: string; redirected: boolean }>;
@@ -135,6 +136,8 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
             && init.body === JSON.stringify(value);
         }
       }
+      const inviteListing = channel === 'discovery' && caps.circleInvitePolicy === 'public-circle-invite-v1'
+        && init.method === 'GET' && isCircleInviteId(detail?.[1]) && u.pathname === '/api/circles/' + detail[1] && u.search === '?view=listing';
       const publicQuery = channel === 'discovery' ? parseDiscoveryPageRequest(u.searchParams) : null;
       const discovery = channel === 'discovery' && u.pathname === '/api/circles' && init.method === 'GET' && publicQuery?.ok
         && (!hasQuery || Boolean(u.search)) && discoveryPageSearchParams(publicQuery.value).toString() === u.search.slice(1);
@@ -198,7 +201,7 @@ export async function createNativeMemberPorts(bridge: NativeMemberBridge | null,
         && validateCircleReviewRequest(u.pathname + u.search, { method: init.method, ...(init.body === undefined ? {} : { body: init.body }) });
       const bodyLimit = channel === 'circleReviewer' ? CIRCLE_REVIEW_BODY_MAX_BYTES : channel === 'reviewer' ? MESSAGE_REVIEW_BODY_MAX_BYTES : messageAiConsent ? 512 : channel === 'memberBlocks' ? 256 : channel === 'hosting' ? u.pathname === '/api/circles' ? CIRCLE_CREATE_BODY_MAX_BYTES : CIRCLE_COMPLETE_BODY_MAX_BYTES
         : channel === 'attendance' ? CIRCLE_ATTENDANCE_BODY_MAX_BYTES : channel === 'profile' ? 65536 : channel === 'savedReading' ? READING_PROGRESS_BODY_MAX_BYTES : 16384;
-      const approvedPath = publicRead ? discovery || passage || publicProfile || edition : channel === 'circleReviewer' ? circleReviewer : channel === 'reviewer' ? reviewer : channel === 'hosting' ? hosting : channel === 'profile' ? profile : channel === 'memberBlocks' ? memberBlocks : channel === 'savedReading' ? savedReading : channel === 'attendance' ? attendance : messageAiConsent || account || contributions || mine || membershipChange
+      const approvedPath = publicRead ? discovery || inviteListing || passage || publicProfile || edition : channel === 'circleReviewer' ? circleReviewer : channel === 'reviewer' ? reviewer : channel === 'hosting' ? hosting : channel === 'profile' ? profile : channel === 'memberBlocks' ? memberBlocks : channel === 'savedReading' ? savedReading : channel === 'attendance' ? attendance : messageAiConsent || account || contributions || mine || membershipChange
         || Boolean(detail && isUuid(detail[1]) && init.method === 'GET' && !hasQuery) || (legacy ? isUuid(legacy[1]) && !hasQuery
         : discussion ? isUuid(discussion[1]) && (init.method === 'GET' ? query !== null && (!hasQuery || Boolean(u.search)) : init.method === 'POST' && !hasQuery)
         : preview ? isUuid(preview[1]) && init.method === 'POST' && !hasQuery

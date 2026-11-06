@@ -1,0 +1,96 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "7c009ff207b611e8764f79213e19a232fb734255",
+  "recordedAt": "2026-11-06T21:10:58.931940+00:00",
+  "buildSourceFiles": 1098,
+  "buildSourceSha256": "d138ca20ee0f00dedbe33cfa41f89584e599775f8b7058a75a8d82896a660a5d",
+  "webAndQuestBrowserStories": [
+    "The compiled phone-width web page shares only the reviewed public salon invitation, without Reel context or the meeting address.",
+    "A Quest Browser user agent follows the compiled invite to the exact public salon, copies the link and retains the salon as the sign-in destination.",
+    "A hidden salon gives no public title or share action. A malformed invitation returns a local 404."
+  ],
+  "phoneSimulations": {
+    "ios": {
+      "invitationStories": [
+        "A cold invitation loads only the exact anonymous listing, survives verified sign-in, and requires a reviewed join before the meeting opens.",
+        "A warm invite waits on the current account, stale actions cannot open a newer invite, and the hidden listing exposes no title or selection.",
+        "Backgrounding retires a held preview and foregrounding waits for a new request."
+      ],
+      "totalStories": 7
+    },
+    "android": {
+      "invitationStories": [
+        "A cold invitation loads only the exact anonymous listing, survives verified sign-in, and requires a reviewed join before the meeting opens.",
+        "A warm invite waits on the current account, stale actions cannot open a newer invite, and the hidden listing exposes no title or selection.",
+        "Backgrounding retires a held preview and foregrounding waits for a new request."
+      ],
+      "totalStories": 24
+    }
+  },
+  "regressions": {
+    "platform": 46,
+    "web": 38
+  },
+  "macSwift": {
+    "linksAccepted": 2,
+    "linksRefused": 9,
+    "anonymousRequestsAccepted": 1,
+    "requestsRefused": 9
+  },
+  "scope": "Compiled website with a guarded loopback server and disposable Circle SQL. Quest used a headset browser user agent in Chromium. Both phones used the registered app and JS bridge with explicit OS and provider doubles. Swift link and request validation ran on Mac. Signed binaries, hosted domain association, device sign-in and physical Quest are pending.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "27208e66206baef0df4af098fa1913ffbee0160275621c3a825605b3b74ad49f",
+    "app/circles/[circleId]/CircleDetail.tsx": "38c1888338e554e9e567704b58918bb725a0e52b1f5cd3988a7c22dfa805084c",
+    "app/circles/[circleId]/CircleInviteShare.tsx": "a46529cee2949874eecde5fdc646dc7ebda026608422fd27922b7f2bb417a112",
+    "app/circles/invite/[circleId]/page.tsx": "29820c57de8472ec8ecd215ba48b4eaf17aa4c5ee297532f86a78fc24eae13eb",
+    "docs/integration/native-reel-links.md": "cbf849893bf01cd238f8a471cd72cd7576d52dce32a1a0d219ef6b89ce68c99f",
+    "docs/integration/salon-invitations.md": "59012b64921df3d845f379d6a3a6d8fd7c5d263ceb86ba6755c02f248d1fe328",
+    "lib/circles/invite.ts": "83b1539ae5f3f591efa0c3abb68a7798368bb99e267e52932de9487120708468",
+    "lib/clips/app-links.ts": "fa1a0d41a2f0e8ce70c9674754c66dd97b0f5eb9874ac2e996c642780bcfff9a",
+    "platforms/native/MemberCircleScreen.tsx": "89f945583b735b17a9a9fcbcb651354adca5acefa0ef8147a19947e075f6863c",
+    "platforms/native/OwnedAccountScreen.tsx": "413b339c6ec14a2ab0001775895ff6116ce5fdd445ba3e471c294ea0ba746223",
+    "platforms/native/PublicCirclesScreen.tsx": "98d80a777e43a2be82a47d35f662a06080b77fb76c876886225d336a2a0e347c",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/MainActivity.kt": "866405a3be044aaa29c3f48203bbafbb4402101f7601e4790c4f2af0570a1c75",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/PublicReelLink.kt": "e24220a6fd8a31f3047b419e4b7a39bd441dcc184b294d92bccd20c8600f444b",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberTransport.kt": "4cb8cf4c59d5bd7c19a27db3af9b57842b9bce00ef142d0ae1c6b2b9df30e507",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/NativeSoeMemberModule.kt": "5b8401b0b1d76ba79dfbde7994f5fe0b91c8385ab4f367ca2c3039ab24efe994",
+    "platforms/native/android/app/src/release/AndroidManifest.xml": "e18e75bb6bfe16e95280a215bc1e4d29d644a0d268b4a0c10492df467f6a2bf2",
+    "platforms/native/ios-member/SoeMemberBridge.swift": "213d732eafa028b3cb491898201412d5252eeb314060cd915cc94f264bd02ffa",
+    "platforms/native/ios-member/SoeMemberRequestPolicy.swift": "28e36c649e9389a811ed0b0c0a1f329fe0d0a5520a029553a3bc9ebd3040c7ec",
+    "platforms/native/ios-member/SoePublicReelLink.swift": "b508e2270635de03f6acb9afc0d9673a4d47b85d8944a2111a751c83953ff555",
+    "platforms/native/specs/NativeSoeMember.ts": "e5e42c3f289845fef3fdad15d6aad8d332c3c04c86f02aee2caf51e6115d3dfe",
+    "platforms/native/src/circles/installed-member.ts": "1dd65c4848f989c5d50fd06f4a00d67ad91bd458cdae02b8248b8f236261b7c9",
+    "platforms/native/src/circles/native-ports.ts": "f765849e63f644855a294f86c2e87819d736606bb677bdff205b183a77556249",
+    "platforms/native/src/circles/public-reel-links.ts": "d8afd082623d9cca7067fe580b58bfb92bd276874e7f8432433e6431c29c7b8b",
+    "platforms/shared/circle-directory.ts": "49ea1182317782e9dcde085a9c64fbf0fdc10349a6b519ec9b2ab2dfda97c539",
+    "platforms/tests/browser-native-hosting.mjs": "0559b2dba1c395b5901e91955c1075de42c9fba75672e69990af3ea002c63d72",
+    "platforms/tests/ios-salon-invitation-policy.swift": "0cbcc4babbcfdfeab37cccb5e281d7aba632ef2ef91423e429165b0f1251250c",
+    "platforms/tests/native-discovery-policy.test.mjs": "aea4cb1820174b045ee4188a979995c3f17e82c80cf7dad8175de7c8e8bc4d0f",
+    "platforms/tests/native-hosting-entry.tsx": "59bb14fb62d8943f9d3155743d265bece5e90fc84cf6852ee4af93f3606f3aa8",
+    "platforms/tests/public-reel-links.test.mjs": "ebbf3bccc65bf18e1389486e7460dc9166144a583b87273d881e93de7f00611f",
+    "verification/web/tests/browser-salon-invitation.mjs": "d198a6e1316a8041415cc381944aac71b72b9ee1cf4a0a91f910b70769617341",
+    "verification/web/tests/discovery-contract.test.mjs": "35a70aeb557c84a1c9668d05fb216fecb47ac3f14f975a692231b0eac42eb10b",
+    "verification/web/tests/salon-app-association.test.mjs": "9ce32d687af17a93117b0e997e831f7f64ac11af16a3ddbdcefb9965f21ef27f"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-salon-invitations",
+  "evidenceSha256": {
+    "web-next-build.json": "170bb9bc97280d113bf899d6cd623474796689a1bbefc8c2f79cf8fcf01f00fc",
+    "web-next-build.log": "8573b751a94bcdbe826348cd974c75714654e7ca63411ce44c38e346b46de422",
+    "web-build-source-sha256.json": "98d951555f722764a77856db250f9e2c9e1cb1a40ef9087910f7c1bb9044fffd",
+    "web-server-ready.json": "f5c77e2e0adb8d8fe597ea203d7bbf6416dc3eea9d617b26a08008478a8242d4",
+    "web-server-stopped.json": "37d3976a64ebe4ddb0261d6917930caaf184cfd0f80160291af38197f8be804f",
+    "web-browser.json": "2804af27f37a6b8087f77931c7d5709dedaa579493acfa522119f24f13784d74",
+    "web-salon-preview.png": "0498f44358529d49c56644dc0f2cabb716078e1843eab10889b7c63d15ce9387",
+    "android-simulation.json": "646f0e37d29e07bbf30b8f7afe5ff246152568a8c71a5ea0572ca8f33810b0e1",
+    "ios-simulation.json": "beb50356f091c5d5fb9fb2b9bf5c11224e8416af4b7c15ebdedebf128717f4c4",
+    "phone-salon-preview.png": "bcc9451e3354e1d9a5f074d215d6f4aeb75733971c7b78b6c1d6655c6a352837",
+    "phone-source-manifest.json": "4d954e353d6ba82ad2a13ba043120eab98084b0f50bbadfc9c318d46f6137410",
+    "salon-invite-esbuild.mjs": "6ee2f455085b9bd43bac0c40f0bd7bcbc49a2bfaebf15594ebddef719f925ffd",
+    "platform-regressions.tap": "bb8ad93e189b46df68dab1f60e2a5363bfc3840e7481ffc909dc21f82292edae",
+    "web-regressions.tap": "c811c0b99037ebb4c2e44e57360d3994dcecbfeceb1cee212ac3e8683603b417",
+    "swift-mac-policy.log": "2c5dd17da396a37806cf20bdd5b9ee3cb8564675fe0718c98be8a3b8e71f8e5f",
+    "native-types.log": "2d2f86ef52328f44fce5020cca44456d72ef3c0769fb4d6e85ab0ab502922af0",
+    "invitation-lint.log": "fafb768ddaf3f2090b903a08fab7bcbf16761e0eb1fab729b3fbe4b869859679"
+  }
+}

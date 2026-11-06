@@ -1,8 +1,8 @@
 import { defaultDiscoveryPageRequest, discoveryPageSearchParams, isDiscoveryRestart, parseDiscoveryPage, parseDiscoveryPageRequest,
   type DiscoveryPageReply, type DiscoveryPageRequest } from '../../lib/circles/discovery-page';
-import { parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt, parseMyCircles, membershipDay,
+import { parseCircleDetail, parseCircleListing, parseCircleManagement, parseCircleMembershipReceipt, parseMyCircles, membershipDay,
   parseCircleAttendanceMutation, circleAttendanceMutationBody, parseCircleAttendanceReceipt,
-  type CircleDetail, type CircleManagement, type MyCircles } from '../../lib/circles/membership';
+  type CircleDetail, type CircleListing, type CircleManagement, type MyCircles } from '../../lib/circles/membership';
 import { isUuid } from '../../lib/ids/uuid';
 import { parseCircleCompleteMutation, circleCompleteMutationBody, parseOwnedCircleCompleteReceipt } from '../../lib/circles/hosting';
 import { approvedOrigin, type BearerCircleOwner, type CircleTransport } from '../native/src/circles/host';
@@ -16,7 +16,7 @@ export type CircleAttendanceReview = { date: string; status: 'going' | 'not_goin
 export type CircleDirectoryModel = {
   connected: boolean; active: boolean; online: boolean; busy: boolean;
   phase: 'idle' | 'loading' | 'ready' | 'review' | 'sending' | 'unknown' | 'unavailable' | 'closed';
-  list: 'discover' | 'mine' | null; page: DiscoveryPageReply | null; mine: MyCircles | null;
+  list: 'discover' | 'mine' | null; page: DiscoveryPageReply | null; mine: MyCircles | null; invite: CircleListing | null;
   selected: string | null; detail: CircleDetail | null; management: CircleManagement | null;
   intent: 'join' | 'leave' | 'rsvp' | 'complete' | null; attendanceReview: CircleAttendanceReview | null; message: string;
   canSearch: boolean; canNextPage: boolean; canFirstPage: boolean; canMine: boolean; canSelect: boolean; canRefresh: boolean;
@@ -45,6 +45,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
   let phase: CircleDirectoryModel['phase'] = 'closed', busy = false, list: CircleDirectoryModel['list'] = null;
   let page: DiscoveryPageReply | null = null, own: MyCircles | null = null, selected: string | null = null;
   let detail: CircleDetail | null = null, management: CircleManagement | null = null, intent: Action | null = null;
+  let invite: CircleListing | null = null;
   let attendanceReview: CircleAttendanceReview | null = null;
   const attendanceAvailable = Boolean(config.attendanceTransport && isUuid(config.memberId) && config.memberId === config.memberId?.toLowerCase());
   const hostingAvailable = Boolean(config.hostingTransport && isUuid(config.memberId) && config.memberId === config.memberId?.toLowerCase());
@@ -59,7 +60,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       : Boolean(attendanceAvailable && detail?.capabilities.canRsvp && attendance && detail.meetings.some(meeting => meeting.date === attendance.date));
   const model = (): CircleDirectoryModel => {
     const canNavigate = !busy && !pending && phase !== 'review', publicReady = publicEnabled() && canNavigate, ready = enabled() && canNavigate;
-    return { connected: attached && scope !== null, active, online, busy, phase, list, page: copy(page), mine: copy(own),
+    return { connected: attached && scope !== null, active, online, busy, phase, list, page: copy(page), mine: copy(own), invite: copy(invite),
       selected, detail: copy(detail), management: copy(management), intent, attendanceReview: copy(attendanceReview), message,
       canSearch: publicReady && Boolean(config.publicTransport), canNextPage: publicReady && Boolean(config.publicTransport && page?.page.nextCursor),
       canFirstPage: publicReady && Boolean(config.publicTransport && list === 'discover'), canMine: ready,
@@ -74,7 +75,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       canOpenDiscussion: ready && phase === 'ready' && Boolean(detail?.viewer.signed_in && detail.viewer.is_member && detail.capabilities.canReadConversation) };
   };
   const emit = () => { for (const listener of listeners) { try { listener(model()); } catch { /* Independent observers cannot retain authority. */ } } };
-  function clear() { page = null; own = null; selected = null; detail = null; management = null; intent = null; attendanceReview = null; pending = null; minimumRevision = 0; list = null; }
+  function clear() { page = null; own = null; invite = null; selected = null; detail = null; management = null; intent = null; attendanceReview = null; pending = null; minimumRevision = 0; list = null; }
   function retire(notice: string) {
     generation++; for (const controller of requests) controller.abort(); clear(); busy = false; phase = attached ? 'idle' : 'closed'; message = notice; emit();
   }
@@ -118,6 +119,18 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
       if (!parsedPage) throw Error('Unverified public page');
       page = parsedPage; busy = false; phase = 'ready'; message = page.circles.length ? 'Select a Circle to check its current access.' : 'No Circles were returned on this page at this check.'; emit();
     } catch { if (current(g, false)) { busy = false; phase = 'unavailable'; message = 'Public Circle listings could not be verified. Search again when ready.'; emit(); } }
+  }
+  async function loadInvite() {
+    if (!previewCircleId || !model().canSearch) return;
+    const g = ++generation;
+    clear(); busy = true; phase = 'loading'; message = 'Checking the public salon invitation…'; emit();
+    try {
+      const result = await send(`/api/circles/${previewCircleId}?view=listing`, 'GET', g, undefined, true);
+      if (!current(g, false)) return;
+      const listing = result.status === 200 ? parseCircleListing(result.body, previewCircleId) : null;
+      if (!listing) throw Error('Salon invitation unavailable');
+      invite = listing; busy = false; phase = 'ready'; message = 'Public salon invitation checked. Sign in to check current access.'; emit();
+    } catch { if (current(g, false)) unavailable('This public salon invitation is unavailable. Try again when ready.'); }
   }
   async function mine(cursor: string | null = null) {
     if (!model().canMine || cursor !== null && (!isUuid(cursor) || cursor.toLowerCase() !== own?.nextCursor)) return;
@@ -232,7 +245,7 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
     disconnect() { attachment++; attached = false; scope = null; offOwner(); offOwner = () => {}; retire('Circle view closed. A previously sent change may still have completed.'); },
     activity(value: boolean) { active = value; if (!value) retire('Circle details cleared while inactive. A previously sent change may still have completed.'); else emit(); },
     connectivity(value: boolean) { online = value; if (!value) retire('Circle details cleared while offline. Reconnect, then check manually. A previously sent change may still have completed.'); else emit(); },
-    search, nextPage() { return model().canNextPage ? search({ ...request, cursor: page!.page.nextCursor }) : Promise.resolve(); },
+    loadInvite, search, nextPage() { return model().canNextPage ? search({ ...request, cursor: page!.page.nextCursor }) : Promise.resolve(); },
     firstPage() { return model().canFirstPage ? search({ ...request, cursor: null }) : Promise.resolve(); }, mine,
     async select(circleId: string) {
       if (!model().canSelect || !isUuid(circleId)) return;
@@ -254,9 +267,9 @@ export function createCircleDirectory(config: CircleDirectoryConfig) {
 }
 export type CircleDirectory = ReturnType<typeof createCircleDirectory>;
 
-export function createPublicCircleDirectory(origin: string, publicTransport: CircleTransport): Pick<CircleDirectory,
-  'model' | 'subscribe' | 'connect' | 'close' | 'activity' | 'connectivity' | 'search' | 'nextPage'> {
-  return createCircleDirectory({ origin, publicTransport, initialOnline: false,
+export function createPublicCircleDirectory(origin: string, publicTransport: CircleTransport, previewCircleId?: string): Pick<CircleDirectory,
+  'model' | 'subscribe' | 'connect' | 'close' | 'activity' | 'connectivity' | 'loadInvite' | 'search' | 'nextPage'> {
+  return createCircleDirectory({ origin, publicTransport, previewCircleId, initialOnline: false,
     owner: { scope: () => null, bearer: async () => null, subscribe: () => () => {} },
     transport: async () => { throw Error('Member access requires a verified account'); },
   });

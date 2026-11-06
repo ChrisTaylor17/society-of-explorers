@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+A shared salon invitation opens the same public listing on the web or Quest Browser and carries the selected salon through phone sign-in. The phone preview uses an anonymous request, and membership still requires review and confirmation. The compiled web and both phone simulations passed the invitation checks. Signed domain association and physical device acceptance remain open. [Verification](docs/integration/salon-invitation-verification.json)
+
 The account deletion draft now covers private member blocks. Existing blocks protect older messages and Circle posts until those records are cleared. The local PostgreSQL rehearsal verified concurrent writes, overlapping deletion requests, exact retries and a 67-table restore that detects missing receipts. Hosted recovery and the retention decision are pending. [Verification](docs/integration/member-block-erasure-verification.json)
 
 Members can review and remove their own blocks from the phone member menu and regular Quest Browser. The list requires a current account check and clears on backgrounding, account changes or entering VR. A lost reply can be retried with the same request. The web build, signed Quest Browser, simulated iPhone and Android screens, and Swift request policy passed local checks. Hosted rollout, installed phone builds and headset testing remain open. [Verification](docs/integration/member-block-management-verification.json)

@@ -6,6 +6,7 @@ import {createRequire} from 'node:module';
 const [run,platform='android',...extra]=process.argv.slice(2);
 assert(!extra.length&&(run===undefined||/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run))&&['android','ios'].includes(platform));
 const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hosting-browser-'+run+'-'+platform:'');
+const inviteMode=run?.startsWith('salon-invite-');
 const clipMode=run?.startsWith('clips-');
 const shareMode=run?.startsWith('clips-share-');
 const salonMode=run?.startsWith('clips-salon-');
@@ -76,7 +77,7 @@ try{
    await route.fulfill({status,headers:{'content-type':'application/json','cache-control':'no-store'},body:JSON.stringify(body)});return;
   }
   if(u.origin===ORIGIN&&(u.pathname.startsWith('/api/auth/')||u.pathname.startsWith('/api/circles')||u.pathname.startsWith('/api/book-salons/')||u.pathname.startsWith('/api/great-books/'))){
-   const publicLane=req.method()==='GET'&&(u.pathname==='/api/circles'||u.pathname==='/api/great-books/passage'||u.pathname.startsWith('/api/great-books/text/'));if(publicLane){assert.equal(headers.authorization,undefined);assert.equal(headers.apikey,undefined);assert.equal(req.method(),'GET');}else assert(Object.values(ACCESS).some(token=>headers.authorization==='Bearer '+token));
+   const publicLane=req.method()==='GET'&&(u.pathname==='/api/circles'||/^\/api\/circles\/[0-9a-f-]{36}$/.test(u.pathname)&&u.search==='?view=listing'||u.pathname==='/api/great-books/passage'||u.pathname.startsWith('/api/great-books/text/'));if(publicLane){assert.equal(headers.authorization,undefined);assert.equal(headers.apikey,undefined);assert.equal(req.method(),'GET');}else assert(Object.values(ACCESS).some(token=>headers.authorization==='Bearer '+token));
    let requestGate=null;
    if(holdNextPost&&(u.pathname==='/api/circles'||u.pathname.endsWith('/complete'))&&req.method()==='POST'){holdNextPost=false;let release;const promise=new Promise(resolve=>{release=resolve;});heldPost={release,done:false,body:req.postData()};requestGate=heldPost;await promise;}
    const response=await fixture.dispatch(u.pathname+u.search,{method:req.method(),headers,body:req.postData()??undefined}),body=await response.text();
@@ -125,6 +126,89 @@ try{
  const edition=JSON.parse(read('content/root-kernel/philemon.web-classic.json'));
  const radio=name=>p.getByRole('radio',{name,exact:true});
  const hostingChoice='Prepare Philemon Circle online';
+ if (inviteMode) {
+   const invitedTitle = 'Philemon invitation salon', hiddenTitle = 'Hidden invitation fixture';
+   const meeting = 'https://meeting.example.test/private-invitation-fixture';
+   async function seedInvitation(title) {
+     const host = fixture.actors.other;
+     const body = await fixture.createBody({expectedMemberId: host, title, description: 'Read Philemon together.',
+       format: 'online', city: null, venueName: null, venueType: 'online', onlineUrl: meeting});
+     const response = await fixture.dispatch('/api/circles', {method: 'POST', body,
+       headers: {authorization: 'Bearer ' + ACCESS.other, origin: ORIGIN, 'x-soe-expected-member': host}});
+     assert.equal(response.status, 200);
+     return (await response.json()).circleId;
+   }
+   const circle = await seedInvitation(invitedTitle), hidden = await seedInvitation(hiddenTitle);
+   await fixture.db.query('UPDATE public.book_cohorts SET circle_hidden=true WHERE id=$1', [hidden]);
+   const invite = ORIGIN + '/circles/invite/' + circle, hiddenInvite = ORIGIN + '/circles/invite/' + hidden;
+   const listing = '/api/circles/' + circle + '?view=listing';
+   const choice = 'Sign in for ' + invitedTitle, checkInvite = 'Check this salon invitation';
+   const begin = http.length;
+   await p.evaluate(url => window.nativeQa.show('online', false, url), invite);
+   await enabled(checkInvite);
+   assert.equal(http.length, begin);
+   await button(checkInvite).click();
+   await enabled(choice);
+   const [preview] = http.slice(begin);
+   assert.deepEqual(http.slice(begin).map(row => [row.kind, row.path, row.method, row.status]), [['public', listing, 'GET', 200]]);
+   assert.deepEqual(Object.keys(preview.response).sort(), ['description','format_label','host_name','id','meeting_label','next_meeting','title']);
+   assert.equal(preview.response.id, circle);
+   assert(!(await text()).includes(meeting));
+   assert.deepEqual((await state()).stats.storedSlots, []);
+   assert.equal((await state()).stats.prepared, 0);
+   await screenshot('salon-invitation-320.png', true);
+   await button(choice).click();
+   await signIn(); await account();
+   await button('Open selected Circle').click(); await enabled('Review joining this Circle');
+   assert.equal(await fixture.isMember(circle), false);
+   assert.equal(await button('Open online meeting').count(), 0);
+   await button('Review joining this Circle').click();
+   assert.equal(await fixture.isMember(circle), false);
+   await button('Confirm join').click(); await enabled('Open online meeting');
+   assert.equal(await fixture.isMember(circle), true);
+   pass('A cold invitation loads only the exact anonymous listing, survives verified sign-in, and requires a reviewed join before the meeting opens.');
+
+   await show({fresh: false}); await signIn(); await account();
+   const before = http.length;
+   for (const invalid of [invite + '?redirect=private', invite + '#note', invite.replace(ORIGIN, 'https://wrong.test')]) {
+     await p.evaluate(url => window.nativeQa.emitLink(url), invalid);
+   }
+   await settle();
+   assert.equal(await button('Open shared salon invitation').count(), 0);
+   await p.evaluate(url => window.nativeQa.emitLink(url), invite);
+   await enabled('Open shared salon invitation');
+   const stale = await retain('Open shared salon invitation');
+   await p.evaluate(url => window.nativeQa.emitLink(url), hiddenInvite);
+   await settle(); await invoke(stale);
+   await enabled('Open shared salon invitation');
+   assert.equal(http.length, before);
+   await button('Open shared salon invitation').click(); await enabled(checkInvite);
+   assert.equal(http.length, before);
+   await button(checkInvite).click();
+   await p.getByText('This public salon invitation is unavailable. Try again when ready.', {exact: true}).waitFor();
+   assert.equal(http.length, before + 1);
+   assert.equal(http.at(-1).path, '/api/circles/' + hidden + '?view=listing');
+   assert(!(await text()).includes(hiddenTitle));
+   assert.equal(await button('Sign in for ' + hiddenTitle).count(), 0);
+   await button('Back from salon invitation').click();
+   await enabled('Continue to my member account');
+   pass('A warm invite waits on the current account, stale actions cannot open a newer invite, and the hidden listing exposes no title or selection.');
+
+   await p.evaluate(url => window.nativeQa.emitLink(url), invite);
+   await button('Open shared salon invitation').click(); await enabled(checkInvite);
+   await p.evaluate(path => window.nativeQa.hold(path, 'GET'), listing.split('?')[0]);
+   await button(checkInvite).click();
+   await p.waitForFunction(path => window.nativeQa.requests.some(row => row.path === path && row.held), listing);
+   await p.evaluate(() => { window.nativeQa.activity('change', 'background'); window.nativeQa.release(); });
+   await settle();
+   const held = http.length;
+   await p.evaluate(() => window.nativeQa.activity('change', 'active'));
+   await enabled(checkInvite);
+   assert.equal(await button(choice).count(), 0);
+   assert.equal(http.length, held);
+   pass('Backgrounding retires a held preview and foregrounding waits for a new request.');
+   await show();
+ }
  if(salonMode){
    const beforeUnavailable=http.length;
    await p.evaluate(()=>window.nativeQa.showUnconfigured());

@@ -241,6 +241,9 @@ internal struct SoeMemberRequestPolicy: Sendable {
         }
         if let m = captures(path, "/api/great-books/text/([a-z-]+)") { try check((books.contains(m[0]) || m[0] == "philemon") && query == nil); return }
         if matches(path, "/api/explorer/" + uuidPattern) { try check(query == nil); return }
+        if matches(path, "/api/circles/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}") {
+            try check(query == "view=listing"); return
+        }
         try check(path == "/api/circles")
         let order = ["book", "edition", "from", "to", "q", "city", "format", "open", "sort", "limit", "cursor"]
         let pairs = try formQuery(query), q = Dictionary(uniqueKeysWithValues: pairs)

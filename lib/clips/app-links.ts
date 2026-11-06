@@ -1,8 +1,9 @@
 import 'server-only';
 import { reelHref } from './contracts';
 import { REEL_QUESTIONS } from './salon';
+import { CIRCLE_INVITE_PREFIX } from '../circles/invite';
 
-const pathComponents = Object.keys(REEL_QUESTIONS).map(id => ({ '/': reelHref(id) }));
+const pathComponents = [...Object.keys(REEL_QUESTIONS).map(reelHref), CIRCLE_INVITE_PREFIX + '*'].map(path => ({ '/': path }));
 const originPattern = /^https:\/\/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 const packagePattern = /^(?:[A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/;
 const appleIdPattern = /^[A-Z0-9]{10}\.(?:[A-Za-z][A-Za-z0-9-]*\.)+[A-Za-z0-9-]+$/;

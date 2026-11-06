@@ -116,3 +116,22 @@ test('Android public/member routes retain independent credential boundary and sh
  for(const required of ['fun sendPublic(', 'validatePublic(input); transmit(id, input.url, "GET", null, emptyMap()', 'url.encodedPath == "/api/circles"','query.keys.toList() == order.filter { it in query }','URLEncoder.encode(value, "UTF-8") == pair[1]','names == setOf("url", "method")','version in 0..9007199254740991L','parsed.length() == 2','/api/circles/mine','/(join|leave)','(?:/membership)?','.cookieJar(CookieJar.NO_COOKIES)','.followRedirects(false)','.retryOnConnectionFailure(false)','transmission.sent.compareAndSet(false, true)','store.withGeneration(generation)','MAX_RESPONSE = 1048576'])assert(transport.includes(required),required);
  assert(nativeModule.includes('putString("publicPolicy", "circle-discovery-v1")'));assert(nativeModule.includes('override fun sendPublic('));assert(spec.includes('sendPublic(id: string, request: PublicRequest)'));
 });
+
+test('only an invite-capable native module can load the exact public listing without account credentials', async () => {
+ const path = '/api/circles/' + circle, url = origin + path + '?view=listing';
+ const old = await fixture();
+ await assert.rejects(old.ports.publicTransport(url, init()));
+ assert.deepEqual(old.calls, []);
+ const f = await fixture({caps:{circleInvitePolicy:'public-circle-invite-v1'}});
+ for (const wrong of [origin + path, url + '&next=/private', url + '#', url.replace('view=', '%76iew='),
+   url.replace('/circles/', '/circles/private/'), url.replace('?view=listing', '/membership?view=listing'),
+   url.replace('4111', '0111'), url.replace(origin, 'https://elsewhere.invalid')]) {
+   await assert.rejects(f.ports.publicTransport(wrong, init()));
+ }
+ await assert.rejects(f.ports.publicTransport(url, init(true)));
+ await assert.rejects(f.ports.publicTransport(url, init(false, 'POST', '{}')));
+ await assert.rejects(f.ports.transport(url, init(true)));
+ assert.deepEqual(f.calls, []);
+ await f.ports.publicTransport(url, init());
+ assert.deepEqual(f.calls, [{begin:generation}, {lane:'public',id:'handle-1',url,method:'GET'}]);
+});

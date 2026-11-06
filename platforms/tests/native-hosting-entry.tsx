@@ -42,7 +42,7 @@ function createBridge(store:Disk){
   return{status:response.status,url:request.url,body,redirected:false};
  }
  return{
-  async capabilities(){return{version:2,origin,storageKey,redirectPolicy:'reject-before-send',storagePolicy:'os-protected',storageGeneration:store.generation,requestIdPolicy:'os-random-uuid',publicPolicy:'circle-discovery-v1',...(hostingEnabled?{hostingPolicy:'circle-host-v1'}:{}),...(attendanceEnabled?{attendancePolicy:'circle-rsvp-v1'}:{}),...(savedEnabled?{savedReadingPolicy:'owner-reading-v1'}:{}),...(readingEnabled?{readingPolicy:'pinned-passage-v1'}:{}),authPolicy:'supabase-password-v1',providerOrigin,publishableKey};},
+  async capabilities(){return{version:2,origin,storageKey,redirectPolicy:'reject-before-send',storagePolicy:'os-protected',storageGeneration:store.generation,requestIdPolicy:'os-random-uuid',publicPolicy:'circle-discovery-v1',circleInvitePolicy:'public-circle-invite-v1',...(hostingEnabled?{hostingPolicy:'circle-host-v1'}:{}),...(attendanceEnabled?{attendancePolicy:'circle-rsvp-v1'}:{}),...(savedEnabled?{savedReadingPolicy:'owner-reading-v1'}:{}),...(readingEnabled?{readingPolicy:'pinned-passage-v1'}:{}),authPolicy:'supabase-password-v1',providerOrigin,publishableKey};},
   async newRequestId(generation:string){assertGeneration(generation);return uuid();},
   async begin(generation:string){assertGeneration(generation);const id='native_qa_'+(++sequence);allocated.set(id,generation);handles++;return id;},
   async send(id:string,request:Parameters<typeof deliver>[2]){return deliver('member',id,request);},
