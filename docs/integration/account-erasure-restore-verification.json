@@ -1,0 +1,150 @@
+{
+  "date": "2026-11-06",
+  "parentCommit": "4d74ee4710949085f15e5c602cce69926a00a488",
+  "status": "PASS",
+  "productionRestoreVerified": false,
+  "hostedChanges": false,
+  "scope": "PostgreSQL 17 synthetic local rehearsal after the 57 staged migrations.",
+  "results": {
+    "previousFormatOmission": {
+      "scope": "soe-privacy-restore-v10",
+      "status": "MATCH",
+      "tablesCompared": 42,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "partialRestore": {
+      "scope": "soe-privacy-restore-v11",
+      "status": "MISMATCH",
+      "tablesCompared": 63,
+      "rowsDiffer": [
+        "auth.flow_state",
+        "auth.refresh_tokens",
+        "auth.sessions",
+        "soe_account_deletion_private.circle_departure_receipts",
+        "soe_account_deletion_private.circle_post_receipts",
+        "soe_account_deletion_private.circle_post_targets",
+        "soe_account_deletion_private.contact_receipts",
+        "soe_account_deletion_private.identity_gate",
+        "soe_account_deletion_private.identity_removals",
+        "soe_account_deletion_private.private_data_receipts",
+        "soe_account_deletion_private.processing",
+        "soe_account_deletion_private.requests",
+        "soe_account_deletion_private.twiddle_erasure_receipts",
+        "soe_account_deletion_private.twiddle_erasure_targets",
+        "twiddle_collaborators",
+        "twiddle_reactions",
+        "twiddles"
+      ],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "completeRestore": {
+      "scope": "soe-privacy-restore-v11",
+      "status": "MATCH",
+      "tablesCompared": 63,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "olderReferenceRefused": {
+      "scope": "soe-privacy-restore-v11",
+      "status": "UNAVAILABLE",
+      "check": "private_reference_invalid",
+      "productionCleared": false
+    },
+    "missingRoutineRefused": {
+      "scope": "soe-privacy-restore-v11",
+      "status": "UNAVAILABLE",
+      "check": "local_snapshot_unavailable",
+      "productionCleared": false
+    },
+    "missingTableRefused": {
+      "scope": "soe-privacy-restore-v11",
+      "status": "UNAVAILABLE",
+      "check": "local_snapshot_unavailable",
+      "productionCleared": false
+    }
+  },
+  "orderedSqlFiles": 57,
+  "integratedScenarioGroups": 23,
+  "olderRestoreRegressionChecks": 43,
+  "firstReleaseRegressionChecks": 16,
+  "byteIdenticalLegacyReferences": [
+    "v1",
+    "v2",
+    "v3",
+    "v4",
+    "v5",
+    "v6",
+    "v7",
+    "v8",
+    "v9",
+    "v10"
+  ],
+  "previousReferenceSqlSha256": "18538b6813449e2cbf8133da4c21429fbdb7ab1a8ce8808ebb8c666d2e94c84f",
+  "hostedReadOnlyCatalog": {
+    "date": "2026-11-06",
+    "scope": "Read-only relation metadata. No application or Auth rows read.",
+    "relations": [
+      {
+        "schema_name": "auth",
+        "relname": "flow_state",
+        "relkind": "r",
+        "relispartition": false,
+        "relhassubclass": false,
+        "owner": "supabase_auth_admin"
+      },
+      {
+        "schema_name": "auth",
+        "relname": "refresh_tokens",
+        "relkind": "r",
+        "relispartition": false,
+        "relhassubclass": false,
+        "owner": "supabase_auth_admin"
+      },
+      {
+        "schema_name": "auth",
+        "relname": "sessions",
+        "relkind": "r",
+        "relispartition": false,
+        "relhassubclass": false,
+        "owner": "supabase_auth_admin"
+      }
+    ]
+  },
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "9c5561aa8d1487623c9e750a861af76ac7e92f9db698739af2e0e995cbf97453",
+    "docs/integration/privacy-restore-check.md": "7730625e362fd7297d6be42d8c62dfbbf33da01035ddc207c1941d06926b17c3",
+    "docs/integration/account-deletion.md": "80ef68eb3a506c4c921cfa4f5875fdc98b13c0c5c4b3dba7be3c3b960f90447b",
+    "docs/integration/production-migration-plan.md": "8edb8bb2ddc9d80fd14f1e74d13a75fa11ecbe4b1266f6c29d74c3cc9d823fe4",
+    "docs/sql/privacy-restore-reference.sql": "3c800bad1d63b8dfaf6f8277b1a46e59fff94172b6775cec43d5dcba9bb38713",
+    "verification/web/scripts/verify-privacy-restore.py": "e571c22cf278639f7deaf6b28519f8b735452f2c0c5abc5d6bd3e80e8fe3f42d",
+    "verification/web/scripts/test-privacy-restore-check.py": "1d6d1b55d3851e1651fd894e0f77cae30f460a2fb4fdde30c4b405b5e4be5ad5",
+    "verification/web/scripts/rehearse-twiddle-erasure.py": "68d88f6f6f2fbf3eb7c1e217f3d1ed09878c775e4d2c82bcc0cd196f23af7ea3"
+  },
+  "rawEvidence": "verification/web/evidence/checkpoint-account-erasure-restore",
+  "rawEvidenceSha256": {
+    "account-erasure-restore-v11.json": "6c0cbbb7df424befe682152a6756b42a386be8245da562836eb14de89a781798",
+    "account-erasure-restore-v11.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-erasure-restore-older-regression.json": "b58a452f7427e7a9a74b1b33ece2be7f1115f368f3c3ee386dcfb9f5eb28192c",
+    "account-erasure-restore-first-release-regression.json": "6f6a5b46847c672eeaa89442e03f7a569a6648529967355c0622e7968bf3fbc5",
+    "account-erasure-restore-wire-compatibility.json": "c966adecfae9d80282ac320075f6f93317d5d837c18afdde21160ce1fda4d634",
+    "account-erasure-restore-hosted-catalog.json": "17097d7be2ccac13850be925c2a7442636266390c020b6f4bc5e8ff49856a4c5"
+  }
+}

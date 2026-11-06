@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The post-erasure restore check now covers 63 tables and the account deletion routines. The 42-table check matched a deliberately incomplete archive that lost request receipts and reopened a frozen test account. The new check flagged 17 missing row sets, and the complete restore preserved the receipts and access block. Hosted backup and acceptance remain open. [Restore procedure](docs/integration/privacy-restore-check.md#verify-a-backup-after-the-account-erasure-drafts) · [Verification](docs/integration/account-erasure-restore-verification.json)
+
 The account deletion draft now clears a departing member’s Twiddle text and links while retaining the posts as thread anchors. The 57-file local rehearsal confirmed 36 app access denials, atomic rollback, exact retry, preserved replies and verified identity removal on a second restore. Media, minted items and known copies need a separate disposition when present. [Account deletion](docs/integration/account-deletion.md) · [Verification](docs/integration/account-erasure-twiddle-verification.json)
 
 The release build now pauses the older Twiddle feed, posting, reactions and AI routes. Saved links show a notice that opens online salon discovery. The clean build and 20 Chromium requests passed, and the compiled comparison confirmed that all eight handlers stop before the database or AI provider, even with synthetic credentials configured. Hosted alias protection and cutover remain open. [Review and verification](docs/integration/legacy-twiddle-containment.md)

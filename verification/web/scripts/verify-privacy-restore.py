@@ -21,6 +21,7 @@ CIRCLES_FORMAT = 'soe-privacy-restore-v7'
 CIRCLES_WALLET_FORMAT = 'soe-privacy-restore-v8'
 CIRCLE_RELEASE_FORMAT = 'soe-privacy-restore-v9'
 FIRST_RELEASE_FORMAT = 'soe-privacy-restore-v10'
+ACCOUNT_DELETION_FORMAT = 'soe-privacy-restore-v11'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -56,6 +57,15 @@ CIRCLE_RELEASE_TABLES = frozenset({
     'circle_salon_presence',
 })
 RELEASE_TABLES = TABLES | AUTH_TABLES | DIRECT_TABLES | CIRCLE_TABLES | WALLET_TABLES | CIRCLE_RELEASE_TABLES
+DELETION_PRIVATE_TABLES = frozenset(f'soe_account_deletion_private.{name}' for name in (
+    'requests', 'processing', 'identity_gate', 'private_data_receipts',
+    'circle_post_targets', 'circle_post_receipts', 'circle_post_context',
+    'contact_receipts', 'contact_context', 'circle_departure_receipts', 'circle_departure_context',
+    'identity_removals', 'identity_removal_context', 'twiddle_erasure_receipts', 'twiddle_erasure_targets',
+))
+DELETION_AUTH_TABLES = frozenset({'auth.sessions', 'auth.refresh_tokens', 'auth.flow_state'})
+ARCHIVED_TWIDDLE_TABLES = frozenset({'twiddles', 'twiddle_collaborators', 'twiddle_reactions'})
+DELETION_TABLES = DELETION_PRIVATE_TABLES | DELETION_AUTH_TABLES | ARCHIVED_TWIDDLE_TABLES
 TABLES_BY_SCOPE = {
     CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES,
     FORMAT: TABLES,
@@ -67,8 +77,10 @@ TABLES_BY_SCOPE = {
     CIRCLES_WALLET_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES | CIRCLE_TABLES | WALLET_TABLES,
     CIRCLE_RELEASE_FORMAT: RELEASE_TABLES,
     FIRST_RELEASE_FORMAT: RELEASE_TABLES,
+    ACCOUNT_DELETION_FORMAT: RELEASE_TABLES | DELETION_TABLES,
 }
-CIRCLE_RELEASE_SCOPES = {CIRCLE_RELEASE_FORMAT, FIRST_RELEASE_FORMAT}
+FIRST_RELEASE_SCOPES = {FIRST_RELEASE_FORMAT, ACCOUNT_DELETION_FORMAT}
+CIRCLE_RELEASE_SCOPES = {CIRCLE_RELEASE_FORMAT} | FIRST_RELEASE_SCOPES
 WALLET_SCOPES = {WALLET_FORMAT, CIRCLES_WALLET_FORMAT} | CIRCLE_RELEASE_SCOPES
 CIRCLE_SCOPES = {CIRCLES_FORMAT, CIRCLES_WALLET_FORMAT} | CIRCLE_RELEASE_SCOPES
 AUTH_SCOPES = {AUTH_FORMAT, AUTH_DIRECT_FORMAT} | WALLET_SCOPES | CIRCLE_SCOPES
@@ -109,8 +121,10 @@ def decode_reference(raw, scope=FORMAT):
         keys.add('walletRoutines')
     if scope in CIRCLE_RELEASE_SCOPES:
         keys.add('circleRoutines')
-    if scope == FIRST_RELEASE_FORMAT:
+    if scope in FIRST_RELEASE_SCOPES:
         keys.add('releaseServiceRoutines')
+    if scope == ACCOUNT_DELETION_FORMAT:
+        keys.add('accountDeletionRoutines')
     if (not isinstance(value, dict)
             or set(value) != keys
             or value['format'] != scope or value['principals'] != principals
@@ -122,8 +136,10 @@ def decode_reference(raw, scope=FORMAT):
         raise ValueError('Wallet routine evidence')
     if scope in CIRCLE_RELEASE_SCOPES and not valid_digest(value['circleRoutines']):
         raise ValueError('Circle routine evidence')
-    if scope == FIRST_RELEASE_FORMAT and not valid_digest(value['releaseServiceRoutines']):
+    if scope in FIRST_RELEASE_SCOPES and not valid_digest(value['releaseServiceRoutines']):
         raise ValueError('Release service routine evidence')
+    if scope == ACCOUNT_DELETION_FORMAT and not valid_digest(value['accountDeletionRoutines']):
+        raise ValueError('Account deletion routine evidence')
     for entry in value['tables'].values():
         if (not isinstance(entry, dict) or set(entry) != {'rows', 'data', 'definition'}
                 or type(entry['rows']) is not int or not 0 <= entry['rows'] <= 2**63 - 1
@@ -184,7 +200,8 @@ def read_target(args):
         include_wallet = 'on' if args.scope in WALLET_SCOPES else 'off'
         include_circles = 'on' if args.scope in CIRCLE_SCOPES else 'off'
         include_circle_release = 'on' if args.scope in CIRCLE_RELEASE_SCOPES else 'off'
-        include_first_release = 'on' if args.scope == FIRST_RELEASE_FORMAT else 'off'
+        include_first_release = 'on' if args.scope in FIRST_RELEASE_SCOPES else 'off'
+        include_account_deletion = 'on' if args.scope == ACCOUNT_DELETION_FORMAT else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
@@ -193,6 +210,7 @@ def read_target(args):
              '-v', f'soe_restore_include_circles={include_circles}',
              '-v', f'soe_restore_include_circle_release_state={include_circle_release}',
              '-v', f'soe_restore_include_first_release_state={include_first_release}',
+             '-v', f'soe_restore_include_account_deletion_state={include_account_deletion}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -223,7 +241,9 @@ def compare(reference, restored):
     wallet_match = reference.get('walletRoutines') == restored.get('walletRoutines')
     circle_match = reference.get('circleRoutines') == restored.get('circleRoutines')
     service_match = reference.get('releaseServiceRoutines') == restored.get('releaseServiceRoutines')
-    matched = not data_drift and not definition_drift and role_match and wallet_match and circle_match and service_match
+    deletion_match = reference.get('accountDeletionRoutines') == restored.get('accountDeletionRoutines')
+    matched = (not data_drift and not definition_drift and role_match and wallet_match
+               and circle_match and service_match and deletion_match)
     return {
         'status': 'MATCH' if matched else 'MISMATCH',
         'tablesCompared': len(reference['tables']),
@@ -232,7 +252,8 @@ def compare(reference, restored):
         'roleAndSchemaAccessMatch': role_match,
         **({'walletRoutinesMatch': wallet_match} if reference['format'] in WALLET_SCOPES else {}),
         **({'circleRoutinesMatch': circle_match} if reference['format'] in CIRCLE_RELEASE_SCOPES else {}),
-        **({'releaseServiceRoutinesMatch': service_match} if reference['format'] == FIRST_RELEASE_FORMAT else {}),
+        **({'releaseServiceRoutinesMatch': service_match} if reference['format'] in FIRST_RELEASE_SCOPES else {}),
+        **({'accountDeletionRoutinesMatch': deletion_match} if reference['format'] == ACCOUNT_DELETION_FORMAT else {}),
     }
 
 
@@ -260,9 +281,15 @@ def main():
                         help='Compare the 42-table reference after the Circle and wallet release migrations, including Circle routines.')
     parser.add_argument('--include-first-release-state', action='store_true',
                         help='Compare the 42-table release reference with the Practice and Live Council service routines.')
+    parser.add_argument('--include-account-deletion-state', action='store_true',
+                        help='Compare the 63-table reference after the account erasure migrations, including deletion routines.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
-    if args.include_first_release_state:
+    if args.include_account_deletion_state:
+        if args.scope == CORE_PRACTICE_FORMAT:
+            parser.error('Use the full restore scope to include account deletion state.')
+        args.scope = ACCOUNT_DELETION_FORMAT
+    elif args.include_first_release_state:
         if args.scope == CORE_PRACTICE_FORMAT:
             parser.error('Use the full restore scope to include first-release state.')
         args.scope = FIRST_RELEASE_FORMAT

@@ -101,6 +101,20 @@ Add `--include-first-release-state` to the isolated verifier command. Use the ne
 
 On the isolated restore, exercise a Practice answer save and a Live Council join as the service role. Check that both browser roles are refused and that Realtime still excludes direct messages. A matching reference establishes snapshot parity. The expected access probes establish the release boundary. [Combined rehearsal](first-release-restore-verification.json)
 
+## Verify a backup after the account erasure drafts
+
+Once the queue, processing and erasure drafts have been installed, capture the post-erasure reference inside the same snapshot as the backup.
+
+```sql
+\set soe_restore_include_account_deletion_state on
+```
+
+Add `--include-account-deletion-state` to the isolated verifier command. The 63-table scope adds the 15 deletion tables, the three archived Twiddle tables, and Auth sessions, refresh tokens and flow state to the 42-table release scope. It compares account deletion routine definitions and grants, the private schema and its role access, and archived table publication settings. A change in a deletion routine reports `accountDeletionRoutinesMatch: false`. A missing required table or routine stops verification.
+
+The local test used two archives from the same PostgreSQL snapshot. The 42-table check matched the incomplete archive even though it lost both pending status receipts and opened a frozen test account. The expanded check identified all 17 populated row sets that were missing. The complete restore kept both receipts, the access block, verified identity removals and the withdrawn Twiddle anchors. The verifier also detected changed routine authority, schema access, column grants and replication exposure. [Verification](account-erasure-restore-verification.json)
+
+The check compares the restored database to the chosen point in time. Keep member access closed until the operator has reconciled any deletion and access changes recorded after that snapshot. Review the other provider records, signing configuration and stored files separately. Database backups cover Storage metadata and the actual files need their own recovery evidence. [PostgreSQL synchronized snapshots](https://www.postgresql.org/docs/17/app-pgdump.html) · [Supabase backup scope](https://supabase.com/docs/guides/platform/backups)
+
 ## Local rehearsal
 
 ```sh

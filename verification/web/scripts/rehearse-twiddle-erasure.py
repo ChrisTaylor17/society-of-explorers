@@ -249,6 +249,109 @@ def exercise(staged, original, database, owner, temp, release, harness, kit, pre
     checks.append('A second restore preserves the anchor, retained reply, archive access, exact erasure retry and pending public receipt.')
 
 
+def exercise_deletion_restore(staged, original, database, temp, harness, kit, checker, report):
+    pending_request, frozen_request, frozen_auth = (key(i) for i in (120,121,122))
+    pending_auth = harness['SECOND_AUTH_SUBJECT']
+    pending_digest, frozen_digest = '8'*64, '9'*64
+
+    def query(cluster, db, sql, role='postgres'):
+        return cluster.query(db, f'SET ROLE {role}; ' + sql)
+
+    def state(cluster, db):
+        return [
+            query(cluster,db,f"SELECT id FROM public.soe_account_deletion_status('{req}','{digest}')",
+                  role='service_role')
+            for req, digest in ((pending_request,pending_digest),(frozen_request,frozen_digest))
+        ] + [
+            query(cluster,db,f"SELECT public.soe_account_erasure_access_allowed('supabase','{auth}')",
+                  role='service_role')
+            for auth in (pending_auth,frozen_auth)
+        ]
+
+    query(staged,database,f"INSERT INTO auth.users VALUES ('{frozen_auth}','frozen@fixture.invalid','synthetic'); "
+          f"INSERT INTO auth.flow_state VALUES ('{key(123)}','{frozen_auth}');")
+    for req, auth, digest in ((pending_request,pending_auth,pending_digest),(frozen_request,frozen_auth,frozen_digest)):
+        assert query(staged,database,f"SELECT id FROM public.soe_account_deletion_request("
+                     f"'supabase','{auth}','{req}','{digest}',4)",role='service_role') == req
+    query(staged,database,f"SELECT {SCHEMA}.start_erasure('{frozen_request}',NULL,'{frozen_auth}')")
+    assert state(staged,database) == [pending_request,frozen_request,'t','f']
+
+    legacy = temp/'deletion-legacy.json'
+    reference = temp/'deletion-reference.json'
+    full_archive = temp/'deletion-full.dump'
+    omitted_archive = temp/'deletion-omitted.dump'
+    with harness['export_snapshot'](staged,kit,database=database) as snapshot:
+        capture = (*staged.psql(database), '-c', f"{checker['BEGIN']} SET TRANSACTION SNAPSHOT '{snapshot}';",
+                   '-f', harness['REFERENCE'], '-c', 'ROLLBACK;')
+        legacy.write_text(kit['run']('psql','-v','soe_restore_include_first_release_state=on',*capture)+'\n')
+        reference.write_text(kit['run']('psql','-v','soe_restore_include_account_deletion_state=on',*capture)+'\n')
+        dump = (*staged.connection(),'--format=custom','--snapshot',snapshot,'-d',database)
+        kit['run']('pg_dump',*dump,'--file',full_archive)
+        exclude = [f"--exclude-table-data={name if '.' in name else 'public.'+name}"
+                   for name in sorted(checker['DELETION_TABLES'])]
+        kit['run']('pg_dump',*dump,'--file',omitted_archive,*exclude)
+    source = checker['decode_reference'](reference.read_bytes(),checker['ACCOUNT_DELETION_FORMAT'])
+    omitted_rows = sorted(name for name in checker['DELETION_TABLES'] if source['tables'][name]['rows'])
+    assert len(omitted_rows) == 17
+    full, omitted = 'soe_deletion_full', 'soe_deletion_omitted'
+    original.restore(full,full_archive)
+    original.restore(omitted,omitted_archive)
+
+    def verify(db=full, ref=reference, *, current=True):
+        return harness['verify'](ref,original,kit,database=db,
+                                 include_account_deletion=current,include_first_release=not current)
+
+    previous_match = verify(omitted,legacy,current=False)
+    assert previous_match['status']=='MATCH' and previous_match['tablesCompared']==42
+    assert state(original,omitted) == ['', '', 't','t']
+    report['checks'].append('The older reference matches an incomplete archive that loses the request codes and reopens a frozen account.')
+    matched = verify()
+    assert matched['status']=='MATCH' and matched['tablesCompared']==63 and matched['accountDeletionRoutinesMatch']
+    mismatch = verify(omitted)
+    assert mismatch == {**matched,'status':'MISMATCH','rowsDiffer':omitted_rows}, mismatch
+    assert state(original,full) == [pending_request,frozen_request,'t','f']
+    assert query(original,full,f"SELECT count(*) FROM auth.users WHERE id='{frozen_auth}'") == '1'
+    assert query(original,full,f"SELECT count(*) FROM {SCHEMA}.identity_removals WHERE verified_at IS NOT NULL") == '3'
+    assert query(original,full,f"SELECT count(*) FROM {SCHEMA}.twiddle_erasure_targets") == '3'
+    report['checks'].append('The full restore matches all 63 tables and preserves receipts, access blocks, verified identities and archived anchors.')
+
+    changes = (
+        ('ALTER FUNCTION public.soe_account_erasure_access_allowed(text,uuid) SECURITY DEFINER',
+         'ALTER FUNCTION public.soe_account_erasure_access_allowed(text,uuid) SECURITY INVOKER',
+         {'accountDeletionRoutinesMatch':False}),
+        ('GRANT USAGE ON SCHEMA soe_account_deletion_private TO authenticated',
+         'REVOKE USAGE ON SCHEMA soe_account_deletion_private FROM authenticated',
+         {'roleAndSchemaAccessMatch':False}),
+        ('GRANT SELECT(content) ON public.twiddles TO service_role',
+         'REVOKE SELECT(content) ON public.twiddles FROM service_role',
+         {'definitionsDiffer':['twiddles']}),
+        ('CREATE PUBLICATION fixture_deletion_publication FOR TABLE public.twiddle_reactions',
+         'DROP PUBLICATION fixture_deletion_publication',
+         {'definitionsDiffer':['twiddle_reactions']}),
+    )
+    for change, undo, expected in changes:
+        query(original,full,change)
+        assert verify(full,legacy,current=False) == previous_match
+        assert verify() == {**matched,'status':'MISMATCH',**expected}
+        query(original,full,undo)
+    assert verify() == matched
+    report['checks'].append('The expanded check detects changes to deletion routines, private schema access, archived column grants and replication exposure.')
+
+    old_reference = verify(full,legacy)
+    assert old_reference['status']=='UNAVAILABLE' and old_reference['check']=='private_reference_invalid'
+    query(original,omitted,f'DROP FUNCTION {SCHEMA}.preview_twiddle_erasure(uuid,uuid,uuid)')
+    missing_routine = verify(omitted)
+    assert missing_routine['status']=='UNAVAILABLE' and missing_routine['check']=='local_snapshot_unavailable'
+    query(original,full,f'DROP TABLE {SCHEMA}.identity_removal_context')
+    missing_table = verify()
+    assert missing_table['status']=='UNAVAILABLE' and missing_table['check']=='local_snapshot_unavailable'
+    report['checks'].append('The expanded verifier refuses an older reference, a missing required routine and a missing expected table.')
+    report['deletionRestore'] = {
+        'previousFormatOmission':previous_match,'partialRestore':mismatch,'completeRestore':matched,
+        'olderReferenceRefused':old_reference,'missingRoutineRefused':missing_routine,'missingTableRefused':missing_table,
+    }
+
+
 def main():
     os.umask(0o077)
     identity = runpy.run_path(str(SCRIPT.with_name('rehearse-identity-removal.py')))
@@ -272,6 +375,7 @@ def main():
             staged.start()
             release['stage_restored_release'](original,staged,database,temp,harness,kit,checker,report)
             exercise(staged,original,database,owner,temp,release,harness,kit,previous,identity,drafts,report)
+            exercise_deletion_restore(staged,original,database,temp,harness,kit,checker,report)
         finally:
             try:
                 staged.stop()

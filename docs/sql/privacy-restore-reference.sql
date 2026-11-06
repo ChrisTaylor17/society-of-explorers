@@ -28,6 +28,13 @@
 \else
   \set soe_restore_include_first_release_state off
 \endif
+\if :{?soe_restore_include_account_deletion_state}
+\else
+  \set soe_restore_include_account_deletion_state off
+\endif
+\if :soe_restore_include_account_deletion_state
+  \set soe_restore_include_first_release_state on
+\endif
 \if :soe_restore_include_first_release_state
   \set soe_restore_include_circle_release_state on
 \endif
@@ -78,7 +85,36 @@ WITH RECURSIVE schemas AS (
 \if :soe_restore_include_wallet_state
     OR nspname = 'soe_wallet_private'
 \endif
+\if :soe_restore_include_account_deletion_state
+    OR nspname = 'soe_account_deletion_private'
+\endif
 ),
+\if :soe_restore_include_account_deletion_state
+deletion_relations(schema_name, name, evidence_name) AS (
+  VALUES
+    ('public', 'twiddles', 'twiddles'),
+    ('public', 'twiddle_collaborators', 'twiddle_collaborators'),
+    ('public', 'twiddle_reactions', 'twiddle_reactions'),
+    ('auth', 'sessions', 'auth.sessions'),
+    ('auth', 'refresh_tokens', 'auth.refresh_tokens'),
+    ('auth', 'flow_state', 'auth.flow_state'),
+    ('soe_account_deletion_private', 'requests', 'soe_account_deletion_private.requests'),
+    ('soe_account_deletion_private', 'processing', 'soe_account_deletion_private.processing'),
+    ('soe_account_deletion_private', 'identity_gate', 'soe_account_deletion_private.identity_gate'),
+    ('soe_account_deletion_private', 'private_data_receipts', 'soe_account_deletion_private.private_data_receipts'),
+    ('soe_account_deletion_private', 'circle_post_targets', 'soe_account_deletion_private.circle_post_targets'),
+    ('soe_account_deletion_private', 'circle_post_receipts', 'soe_account_deletion_private.circle_post_receipts'),
+    ('soe_account_deletion_private', 'circle_post_context', 'soe_account_deletion_private.circle_post_context'),
+    ('soe_account_deletion_private', 'contact_receipts', 'soe_account_deletion_private.contact_receipts'),
+    ('soe_account_deletion_private', 'contact_context', 'soe_account_deletion_private.contact_context'),
+    ('soe_account_deletion_private', 'circle_departure_receipts', 'soe_account_deletion_private.circle_departure_receipts'),
+    ('soe_account_deletion_private', 'circle_departure_context', 'soe_account_deletion_private.circle_departure_context'),
+    ('soe_account_deletion_private', 'identity_removals', 'soe_account_deletion_private.identity_removals'),
+    ('soe_account_deletion_private', 'identity_removal_context', 'soe_account_deletion_private.identity_removal_context'),
+    ('soe_account_deletion_private', 'twiddle_erasure_receipts', 'soe_account_deletion_private.twiddle_erasure_receipts'),
+    ('soe_account_deletion_private', 'twiddle_erasure_targets', 'soe_account_deletion_private.twiddle_erasure_targets')
+),
+\endif
 relations(schema_name, name, evidence_name) AS (
   SELECT 'public', name, name FROM (VALUES
 \if :soe_restore_include_rooms
@@ -122,6 +158,9 @@ relations(schema_name, name, evidence_name) AS (
 \if :soe_restore_include_wallet_state
   UNION ALL VALUES ('soe_wallet_private', 'used_challenges', 'soe_wallet_private.used_challenges'),
     ('soe_wallet_private', 'revoked_sessions', 'soe_wallet_private.revoked_sessions')
+\endif
+\if :soe_restore_include_account_deletion_state
+  UNION ALL SELECT schema_name, name, evidence_name FROM deletion_relations
 \endif
 ),
 scoped AS (
@@ -208,6 +247,50 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'soe_wallet_private.revoked_sessions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY soe_wallet_private.revoked_sessions t
 \endif
+\if :soe_restore_include_account_deletion_state
+  UNION ALL SELECT 'twiddles', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.twiddles t
+  UNION ALL SELECT 'twiddle_collaborators', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.twiddle_collaborators t
+  UNION ALL SELECT 'twiddle_reactions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.twiddle_reactions t
+  UNION ALL SELECT 'auth.sessions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY auth.sessions t
+  UNION ALL SELECT 'auth.refresh_tokens', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY auth.refresh_tokens t
+  UNION ALL SELECT 'auth.flow_state', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY auth.flow_state t
+  UNION ALL SELECT 'soe_account_deletion_private.requests', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.requests t
+  UNION ALL SELECT 'soe_account_deletion_private.processing', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.processing t
+  UNION ALL SELECT 'soe_account_deletion_private.identity_gate', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.identity_gate t
+  UNION ALL SELECT 'soe_account_deletion_private.private_data_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.private_data_receipts t
+  UNION ALL SELECT 'soe_account_deletion_private.circle_post_targets', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.circle_post_targets t
+  UNION ALL SELECT 'soe_account_deletion_private.circle_post_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.circle_post_receipts t
+  UNION ALL SELECT 'soe_account_deletion_private.circle_post_context', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.circle_post_context t
+  UNION ALL SELECT 'soe_account_deletion_private.contact_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.contact_receipts t
+  UNION ALL SELECT 'soe_account_deletion_private.contact_context', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.contact_context t
+  UNION ALL SELECT 'soe_account_deletion_private.circle_departure_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.circle_departure_receipts t
+  UNION ALL SELECT 'soe_account_deletion_private.circle_departure_context', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.circle_departure_context t
+  UNION ALL SELECT 'soe_account_deletion_private.identity_removals', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.identity_removals t
+  UNION ALL SELECT 'soe_account_deletion_private.identity_removal_context', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.identity_removal_context t
+  UNION ALL SELECT 'soe_account_deletion_private.twiddle_erasure_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.twiddle_erasure_receipts t
+  UNION ALL SELECT 'soe_account_deletion_private.twiddle_erasure_targets', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.twiddle_erasure_targets t
+\endif
 ),
 numbered AS (
   SELECT name, digest, (row_number() OVER (PARTITION BY name ORDER BY digest) - 1) / 4096 AS batch
@@ -250,6 +333,79 @@ release_service_routines AS (
   )
 ),
 \endif
+\if :soe_restore_include_account_deletion_state
+deletion_routine_requirements(signature) AS (
+  SELECT 'soe_account_deletion_private.' || name FROM (VALUES
+    ('check_circle_departure_shape()'),
+    ('check_circle_post_erasure_shape()'),
+    ('check_contact_erasure_shape()'),
+    ('check_identity_prerequisites(uuid,uuid)'),
+    ('check_identity_removal_shape()'),
+    ('check_legacy_post_dependencies(uuid[])'),
+    ('check_private_data_shape()'),
+    ('check_twiddle_erasure_shape()'),
+    ('circle_departure_in_context(uuid)'),
+    ('circle_departure_scope(uuid)'),
+    ('circle_erasure_scope(uuid[])'),
+    ('circle_post_in_context(text)'),
+    ('circle_posts_for_member(uuid)'),
+    ('cleared_profile_fields()'),
+    ('contact_in_context(uuid)'),
+    ('contact_scope(uuid,uuid[])'),
+    ('count_or_remove_private_data(uuid,boolean)'),
+    ('erase_circle_departure(uuid,uuid,uuid,jsonb,boolean)'),
+    ('erase_circle_posts(uuid,uuid,uuid,jsonb,boolean)'),
+    ('erase_contact_data(uuid,uuid,uuid,jsonb,boolean)'),
+    ('erase_private_data(uuid,uuid,uuid,jsonb)'),
+    ('erase_twiddle_data(uuid,uuid,uuid,jsonb,boolean)'),
+    ('erasure_access_allowed(text,uuid)'),
+    ('guard_circle_participation_receipt()'),
+    ('guard_circle_post_insert()'),
+    ('guard_circle_relationship()'),
+    ('guard_erased_circle_copy()'),
+    ('guard_frozen_direct_message()'),
+    ('guard_frozen_profile()'),
+    ('guard_private_data_write()'),
+    ('identity_provider_scope(uuid)'),
+    ('legacy_posts_for_member(uuid)'),
+    ('owner_links(text,uuid)'),
+    ('owner_state(text,uuid)'),
+    ('prepare_identity_removal(uuid,uuid,uuid,jsonb,boolean)'),
+    ('preview_circle_departure(uuid,uuid,uuid)'),
+    ('preview_circle_posts(uuid,uuid,uuid)'),
+    ('preview_contact_data(uuid,uuid,uuid)'),
+    ('preview_identity_removal(uuid,uuid,uuid)'),
+    ('preview_private_data(uuid,uuid,uuid)'),
+    ('preview_twiddle_erasure(uuid,uuid,uuid)'),
+    ('private_data_tables()'),
+    ('receipt_status(uuid,text)'),
+    ('serialize_identity_change()'),
+    ('start_erasure(uuid,uuid,uuid)'),
+    ('submit_request(text,uuid,uuid,text,integer)'),
+    ('twiddle_anchor_digest(uuid)'),
+    ('twiddle_erasure_scope(uuid,uuid)'),
+    ('verify_circle_departure(uuid,uuid[])'),
+    ('verify_circle_post_erasure(uuid)'),
+    ('verify_contact_erasure(uuid)'),
+    ('verify_identity_removal(uuid,uuid,uuid)'),
+    ('verify_twiddle_erasure(uuid,uuid)')
+  ) AS internal(name)
+  UNION ALL VALUES
+    ('public._soe_circle_message_immutable()'),
+    ('public.soe_account_deletion_owner_state(text,uuid)'),
+    ('public.soe_account_deletion_request(text,uuid,uuid,text,integer)'),
+    ('public.soe_account_deletion_status(uuid,text)'),
+    ('public.soe_account_erasure_access_allowed(text,uuid)'),
+    ('public.update_twiddle_timestamp()')
+),
+deletion_routines AS (
+  SELECT p.oid, n.nspname, p.proname, p.proowner, p.proacl, pg_get_function_identity_arguments(p.oid) AS arguments
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE p.prokind IN ('f', 'p') AND (n.nspname = 'soe_account_deletion_private'
+    OR (n.nspname = 'public' AND (p.proname ~ '^soe_account_(deletion|erasure)_'
+      OR p.oid IN (SELECT to_regprocedure(signature) FROM deletion_routine_requirements))))
+),
+\endif
 acl_sources(kind, object, column_no, permissions) AS (
   SELECT 'relation', oid, 0, coalesce(relacl, acldefault('r', relowner)) FROM scoped
   UNION ALL
@@ -268,6 +424,11 @@ acl_sources(kind, object, column_no, permissions) AS (
 \if :soe_restore_include_first_release_state
   UNION ALL
   SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM release_service_routines
+\endif
+\if :soe_restore_include_account_deletion_state
+  UNION ALL
+  SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM deletion_routines
+  WHERE oid NOT IN (SELECT oid FROM circle_routines)
 \endif
 ),
 acl_entries AS (
@@ -309,6 +470,17 @@ release_service_routine_evidence AS (
   FROM release_service_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
 ),
 \endif
+\if :soe_restore_include_account_deletion_state
+deletion_routine_evidence AS (
+  SELECT CASE WHEN NOT EXISTS (
+    SELECT 1 FROM deletion_routine_requirements AS required
+    WHERE NOT EXISTS (SELECT 1 FROM deletion_routines AS p WHERE p.oid = to_regprocedure(required.signature))
+  ) THEN encode(sha256(convert_to(jsonb_agg(jsonb_build_array(
+    p.nspname, p.proname, p.arguments, pg_get_userbyid(p.proowner), pg_get_functiondef(p.oid), a.entries
+  ) ORDER BY p.nspname COLLATE "C", p.proname COLLATE "C", p.arguments COLLATE "C")::text, 'UTF8')), 'hex') END AS digest
+  FROM deletion_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
+),
+\endif
 table_evidence AS (
   SELECT c.evidence_name AS name, jsonb_build_object(
     'owner', pg_get_userbyid(c.relowner),
@@ -335,7 +507,11 @@ table_evidence AS (
       ORDER BY t.tgname COLLATE "C") FROM pg_trigger t WHERE t.tgrelid = c.oid AND NOT t.tgisinternal)
   ) || CASE WHEN c.evidence_name IN ('direct_messages', 'book_cohorts', 'book_cohort_members', 'seminar_messages')
     OR c.schema_name = 'soe_wallet_private'
-    OR (:'soe_restore_include_circle_release_state'::boolean AND c.relname ~ '^circle_') THEN jsonb_build_object(
+    OR (:'soe_restore_include_circle_release_state'::boolean AND c.relname ~ '^circle_')
+\if :soe_restore_include_account_deletion_state
+    OR c.evidence_name IN (SELECT evidence_name FROM deletion_relations)
+\endif
+    THEN jsonb_build_object(
     'replicaIdentity', c.relreplident,
     'replicaIdentityIndex', (SELECT idx.relname FROM pg_index i JOIN pg_class idx ON idx.oid = i.indexrelid
       WHERE i.indrelid = c.oid AND i.indisreplident),
@@ -377,6 +553,11 @@ role_roots(oid) AS (
 \if :soe_restore_include_first_release_state
   UNION SELECT proowner FROM release_service_routines
 \endif
+\if :soe_restore_include_account_deletion_state
+  UNION SELECT nspowner FROM schemas WHERE nspname = 'soe_account_deletion_private'
+  UNION SELECT relowner FROM scoped WHERE evidence_name IN (SELECT evidence_name FROM deletion_relations)
+  UNION SELECT proowner FROM deletion_routines
+\endif
 ),
 role_tree(oid) AS (
   SELECT oid FROM role_roots
@@ -396,6 +577,9 @@ role_evidence AS (
 \if :soe_restore_include_wallet_state
     'walletSchema', (SELECT definition FROM schema_evidence WHERE nspname = 'soe_wallet_private'),
 \endif
+\if :soe_restore_include_account_deletion_state
+    'accountDeletionSchema', (SELECT definition FROM schema_evidence WHERE nspname = 'soe_account_deletion_private'),
+\endif
     'roles', (SELECT jsonb_agg(jsonb_build_array(r.rolname, r.rolsuper, r.rolinherit,
       r.rolbypassrls, r.rolcanlogin, r.rolcreaterole, r.rolcreatedb, r.rolreplication)
       ORDER BY r.rolname COLLATE "C") FROM role_tree t JOIN pg_roles r ON r.oid = t.oid),
@@ -408,6 +592,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_account_deletion_state'::boolean THEN 'soe-privacy-restore-v11'
     WHEN :'soe_restore_include_first_release_state'::boolean THEN 'soe-privacy-restore-v10'
     WHEN :'soe_restore_include_circle_release_state'::boolean THEN 'soe-privacy-restore-v9'
     WHEN :'soe_restore_include_circles'::boolean AND :'soe_restore_include_wallet_state'::boolean THEN 'soe-privacy-restore-v8'
@@ -436,5 +621,8 @@ SELECT jsonb_build_object(
 \endif
 \if :soe_restore_include_first_release_state
   || jsonb_build_object('releaseServiceRoutines', (SELECT digest FROM release_service_routine_evidence))
+\endif
+\if :soe_restore_include_account_deletion_state
+  || jsonb_build_object('accountDeletionRoutines', (SELECT digest FROM deletion_routine_evidence))
 \endif
 ;

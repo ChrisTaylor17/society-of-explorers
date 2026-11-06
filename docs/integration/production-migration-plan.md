@@ -14,6 +14,8 @@ Apply `docs/sql/wallet-session-revocation-apply.sql` next under the same databas
 
 The coordinated local PostgreSQL rehearsal restores a 20-table pre-cutover archive, runs the 48 listed SQL files on the restored copy and preserves the original columns and rows. The second restore matches the populated 42-table release scope and retains access controls and active service workflows. After the Practice save and Live Council join routines are installed, capture and compare the first-release reference with `--include-first-release-state`. The earlier Circle-only scope has its own flag. Hosted export and cutover approval remain open. [Exact local execution order and verification](first-release-restore-verification.json)
 
+For backups taken after the account erasure drafts, use `--include-account-deletion-state`. Its reference covers the request and access state and the archived Twiddle boundary. During an approved recovery, reconcile newer deletion work before opening member access. [Post-erasure restore procedure](privacy-restore-check.md#verify-a-backup-after-the-account-erasure-drafts)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.
