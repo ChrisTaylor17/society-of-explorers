@@ -66,31 +66,40 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     onRetire: retire,
     select: target => void select(target),
   });
+  function showSalon(model) {
+    const footer = model.phase === 'present' ? 'Point and trigger to choose. Squeeze to exit the headset room.' :
+      model.phase === 'idle' ? 'Trigger to join. Squeeze to exit the headset room.' : 'Squeeze to exit the headset room.';
+    panel = prompt(model.message, footer);
+    if (model.phase === 'present') panel.rows = [[
+      ...(onMeetingRequested ? [control('meeting', 'Meeting in browser')] : []),
+      control('salon-leave', 'Leave salon'), control('salon-discussion', 'Read Circle discussion'),
+    ]];
+  }
   function prepare() {
     const auth = immersive.createAuth(active);
     try {
       const binding = createVerifiedSupabaseCircleOwner(auth.auth);
-      const host = view === 'discussion' ? createCircleHost({ origin, circleId, owner: binding.owner, newRequestId,
+      const host = createCircleHost({ origin, circleId, owner: binding.owner, newRequestId,
         transport(url, init) {
           const read = init.method === 'GET' && (url === discussion ||
             url.startsWith(receiptPrefix) && requestId.test(url.slice(receiptPrefix.length)));
           const write = init.method === 'POST' && (url === discussion || url === discussion + '/preview');
-          if (!active() || !(read || write)) throw Error('Immersive discussion request unavailable');
+          if (!active() || view !== 'discussion' || !(read || write)) throw Error('Immersive discussion request unavailable');
           return transport(url, init);
         },
-      }) : null;
+      });
       const current = { auth, binding, host, salon: null, scope: null, off: () => {}, pending: false, cards: [], index: 0,
         keyboard: null, sent: false };
       room = current;
-      host?.connect();
+      host.connect();
       if (view === 'salon') current.salon = createSalonPresence({
         window: win, origin, circleId, transport, owner: binding.owner, isActive: active,
         onState(model) {
           if (room !== current || !active()) return;
-          const footer = model.phase === 'present' ? 'Trigger to leave the salon. Squeeze to exit the headset room.' :
-            model.phase === 'idle' ? 'Trigger to join. Squeeze to exit the headset room.' : 'Squeeze to exit the headset room.';
-          panel = prompt(model.message, footer);
-          if (model.phase === 'present' && onMeetingRequested) panel.rows = [[control('meeting', 'Meeting in browser')]];
+          if (view === 'salon') showSalon(model);
+          else if (model.phase !== 'present') {
+            void headset.leave('Your shared salon check-in ended. Open the room again to check access.');
+          }
         },
       });
       current.off = binding.subscribe(model => {
@@ -119,8 +128,14 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     const model = current.host.model(), card = current.cards[current.index];
     const canWrite = model.threadWrite.canStart;
     const more = current.index + 1 < current.cards.length;
-    const rows = [[...(canWrite ? [control('new', 'Write a post')] : []),
-      ...(card && canWrite ? [control('reply', 'Reply')] : []), control('advance', more ? 'Next preview' : 'Refresh')]];
+    const actions = [...(canWrite ? [control('new', 'Write a post')] : []),
+      ...(card && canWrite ? [control('reply', 'Reply')] : []), control('advance', more ? 'Next preview' : 'Refresh')];
+    if (current.salon) {
+      // Keep Back on the same side as Read, away from Leave and Meeting.
+      if (actions.length === 1) actions.push(null);
+      actions.push(control('salon-back', 'Back to salon'));
+    }
+    const rows = [actions];
     if (card) {
       panel = { heading: card.heading, text: card.text, rows,
         footer: `Recent discussion ${current.index + 1} of ${current.cards.length}. Trigger for ${more ? 'next preview' : 'a fresh check'}.` };
@@ -128,6 +143,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       panel = { ...prompt('No visible contributions in the latest discussion page. Trigger to check again.'), rows };
     } else {
       panel = prompt('Current Circle discussion is unavailable. Trigger to check again or use the regular Circle view.');
+      if (current.salon) panel.rows = rows;
     }
   }
   async function loadDiscussion(current) {
@@ -200,19 +216,33 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       if (!current) { await prepare().binding.start(); return; }
       if (!current.scope) { await current.binding.check(); return; }
       current.pending = true;
-      if (current.salon) {
-        if (target === 'meeting') {
-          if (!onMeetingRequested || current.salon.model().phase !== 'present') return;
+      if (!ownsRoom(current)) return;
+      if (view === 'salon') {
+        const { phase } = current.salon.model();
+        if (phase === 'idle' && target === null) await current.salon.join();
+        if (phase !== 'present') return;
+        if (target === 'salon-discussion') {
+          view = 'discussion';
+          await loadDiscussion(current);
+        } else if (target === 'salon-leave') {
+          await current.salon.leave();
+        } else if (target === 'meeting' && onMeetingRequested) {
           await current.salon.leave();
           if (!ownsRoom(current)) return;
           await headset.leave('Check your member session, then open the live meeting in this browser.');
           if (!disposed && !state.open) onMeetingRequested();
-        } else if (current.salon.model().phase === 'present') await current.salon.leave();
-        else await current.salon.join();
+        }
         return;
       }
-      if (!ownsRoom(current)) return;
       if (current.keyboard) { await compose(current, target); return; }
+      if (target === 'salon-back' && current.salon) {
+        current.cards = [];
+        current.index = 0;
+        current.host.close();
+        view = 'salon';
+        showSalon(current.salon.model());
+        return;
+      }
       if (target === 'new' || target === 'reply') {
         const parent = current.cards[current.index]?.id;
         if ((target === 'new' || parent) && current.host.threadStart(target === 'new' ? null : parent)) {

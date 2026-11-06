@@ -47,7 +47,8 @@ function controlBounds(content) {
     // Review and Post must never share a target with an unchanged ray.
     const y = content.keyboard ? 321 + index * 61 : content.review ? 505 : 597;
     const height = content.keyboard ? 51 : 57;
-    return row.map((control, column) => ({ ...control, x: MARGIN + column * (width + 10), y, width, height }));
+    return row.flatMap((control, column) => control
+      ? [{ ...control, x: MARGIN + column * (width + 10), y, width, height }] : []);
   });
 }
 

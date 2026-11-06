@@ -140,7 +140,7 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       </section>
       {circleId && sharedSalon ? <section aria-labelledby="quest-salon-heading">
         <h2 id="quest-salon-heading">Shared salon</h2>
-        <p>Check in to see how many Circle members are here. Other members in this room can see the count. In the headset salon, choose Meeting in browser to leave the count and return to the live meeting controls.</p>
+        <p>Check in to see how many Circle members are here. In the headset, choose Read Circle discussion to read or post while you’re checked in. Choose Meeting in browser to leave the count and return to the live meeting controls.</p>
         <p id="quest-salon-status" role="status">Connect a member account to join the shared salon.</p>
         <button id="quest-salon-join" type="button" disabled>Join shared salon in this browser</button>
         <button id="quest-salon-leave" type="button" disabled>Leave shared salon</button>

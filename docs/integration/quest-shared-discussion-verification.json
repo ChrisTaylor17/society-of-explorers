@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T07:05:21.713744+00:00",
+  "baseCommit": "1f56193b14cbb294ed040573d4741cebe2fa8ac4",
+  "status": "LOCAL_QUEST_SHARED_DISCUSSION_PASS_PRODUCTION_HOLD",
+  "pilotDefaultsEnabled": false,
+  "productionCleared": false,
+  "physicalHeadsetVerified": false,
+  "baseline": "The previous app admitted two members to the shared salon and then timed out waiting for a discussion control on the headset panel.",
+  "sharedSalon": {
+    "scenarios": 13,
+    "browserHandlerRequests": 73,
+    "scope": "Two isolated Chromium contexts, simulated WebXR selection, actual WebGL, the canonical Quest view, HTTP handlers and disposable SQL. The same seat renews while drafting and persists after posting. Another browser reads the saved post. Membership removal clears the draft on the next renewal."
+  },
+  "discussionRegression": {
+    "scenarios": 20,
+    "handlerRequests": 75
+  },
+  "builtApp": {
+    "buildId": "Q_EGRuKkLrDUlkVU1kckD",
+    "sourceFiles": 1063,
+    "scenarios": 3,
+    "scope": "Guarded local webpack build with synthetic public configuration. Checks built Quest entry, 320px signed-out Circle and secure fallback using no issued credentials.",
+    "ownedProcessStopped": true
+  },
+  "fixtureCorrections": [
+    "Added the tracked shared reading and component fixtures to the isolated checkout.",
+    "Changed the account assertion to require fresh verification for private requests, while preserving the headset session and lease.",
+    "Used a fresh local port for the browser smoke because the preceding guard test had just closed the first port."
+  ],
+  "remaining": "Physical Quest input, readability, comfort and accessibility, hosted member accounts, provider meeting acceptance and immersive conversation.",
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "app/quest/[circleId]/QuestCircle.tsx": "84861c62465539e10617c90cbbbb2285967bfb1eb14fc8fd566acce71c925608",
+    "platforms/quest/immersive-circle.mjs": "22e356c6cc30d50ddbaea267efd2e2fb1d451aadc1ec062e8a700982c4b8787b",
+    "platforms/quest/xr-room.mjs": "ef2341aee439012b86f88d5b783a26ec4a3054e3ae3402514d22ad1751f9ae3a",
+    "platforms/tests/browser-quest-salon-presence.mjs": "67a35fbefbc9b1e6c9bacd9172944d46aa5dc7f1bd42bb665acc507c02b70a39"
+  },
+  "evidence": {
+    "baseline-missing-discussion.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/baseline-missing-discussion.json",
+      "bytes": 6492,
+      "sha256": "f90af9f82bd4b20d26ae1d8f304998d881f0e050550612a3ddf2d810882bbd28"
+    },
+    "baseline.log": {
+      "path": "verification/web/evidence/quest-shared-discussion/baseline.log",
+      "bytes": 789,
+      "sha256": "2b65cdead5d5c591800b5351301dbbf3c239e68ef6d67e2572c20be3ab87629e"
+    },
+    "first-composed-pass.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/first-composed-pass.json",
+      "bytes": 13590,
+      "sha256": "ab499ac35f04c0a7642c3ba784977b48bdd4a96907c9aa84a63c6aef1a611c5a"
+    },
+    "account-assertion-failure.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/account-assertion-failure.json",
+      "bytes": 7697,
+      "sha256": "b3a438aae284c90613a3b3f0498481ad9ac2ceb8b4ce874b80310c220b4abe6b"
+    },
+    "shared-browser.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/shared-browser.json",
+      "bytes": 13590,
+      "sha256": "3f9044ac021f5a4e1b8582a4b2f7832ec5fe5e231c53975547f5ff1bffd22c18"
+    },
+    "shared-browser.log": {
+      "path": "verification/web/evidence/quest-shared-discussion/shared-browser.log",
+      "bytes": 1552,
+      "sha256": "f45ae8df210a24e523522cc7c4145d345c5baa18f55aa8876a3d218fddc90e6a"
+    },
+    "discussion-browser.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/discussion-browser.json",
+      "bytes": 37506,
+      "sha256": "5a0f544e5746587e9d48f199859347f3f223ab8edc05157020d0e3e326fdab40"
+    },
+    "discussion-browser.log": {
+      "path": "verification/web/evidence/quest-shared-discussion/discussion-browser.log",
+      "bytes": 2782,
+      "sha256": "8847c9e43e536bee9cfbed6ac72e6ad6df2b207d15297259480f9165a563f9da"
+    },
+    "next-build.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/next-build.json",
+      "bytes": 673,
+      "sha256": "070f04d2c301883cd8ea65270843aad24ed59c3a7ff07b2ed695a38b25d733fa"
+    },
+    "next-build.log": {
+      "path": "verification/web/evidence/quest-shared-discussion/next-build.log",
+      "bytes": 9955,
+      "sha256": "3909ee5d9f59bf74f90aef7b65b9ac38fe4dbe5de734c6ee0b6a1bd86e37dd50"
+    },
+    "build-source-sha256.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/build-source-sha256.json",
+      "bytes": 129588,
+      "sha256": "ae9f99b456bf31865a88a5183ae0cc23ded9b68b56a10b4cf87c9f0199b93422"
+    },
+    "server.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/server.json",
+      "bytes": 698661,
+      "sha256": "4e64e2bbd545de171d98766fa2d03207461700f6bf32ea0de565eef31f957c15"
+    },
+    "server-ready.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/server-ready.json",
+      "bytes": 569976,
+      "sha256": "fb013e3d28e88270d3d8f8ef1540043665ce80643e02185ed3f62cec224458b9"
+    },
+    "guard-check.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/guard-check.json",
+      "bytes": 266,
+      "sha256": "50f1c8c0010da0dd731a901d35a9df1fd77358dc9a4e1a7c48e2029ee3103af4"
+    },
+    "built-browser.json": {
+      "path": "verification/web/evidence/quest-shared-discussion/built-browser.json",
+      "bytes": 896,
+      "sha256": "9e4ba3ef8a3dca1a182b64752c62fbbcd63072f4b13fdaedcb55167f43128331"
+    },
+    "built-quest-320.png": {
+      "path": "verification/web/evidence/quest-shared-discussion/built-quest-320.png",
+      "bytes": 403406,
+      "sha256": "fe62b28021520260476516def826fc2044adbbc617fd92af0b26358fe467d987"
+    }
+  }
+}

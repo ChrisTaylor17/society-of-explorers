@@ -24,6 +24,8 @@ const sources = [
   'verification/web/tests/support/offline-app.mjs', 'verification/web/tests/support/circle-live-db.mjs',
   'app/api/circles/[circleId]/salon-presence/route.ts', 'lib/circles/moderation-server.ts', 'lib/http/routeError.ts',
   'app/api/circles/[circleId]/route.ts', 'lib/circles/membership-server.ts', 'lib/circles/membership.ts',
+  'app/api/circles/[circleId]/discussion/route.ts', 'app/api/circles/[circleId]/discussion/preview/route.ts',
+  'lib/circles/thread-server.ts', 'lib/circles/thread.ts',
   'docs/sql/circle-salon-presence-apply.sql', 'docs/sql/circle-salon-presence-rollback.sql',
 ];
 const hashFile = async name => sha(await readFile(resolve(root, name)));
@@ -51,9 +53,10 @@ await writeFile(evidence, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' 
 try {
   process.chdir(resolve(root, 'verification/web'));
   const { questMemberApp, QUEST_ORIGIN: origin, QUEST_TEST_MEETING: meetingUrl, TOKENS } = await import('../../verification/web/tests/support/quest-member-app.mjs');
-  const f = db = await questMemberApp({ sharedSalon: true, meeting: true });
+  const f = db = await questMemberApp({ sharedSalon: true, writing: true, meeting: true });
   const endpoint = '/api/circles/' + f.circleId + '/salon-presence';
   const detailPath = '/api/circles/' + f.circleId;
+  const discussionPath = detailPath + '/discussion';
   const headers = actor => ({ origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json',
     ...(actor ? { authorization: 'Bearer ' + TOKENS[actor] } : {}) });
   const send = (actor, data, extra = {}) => f.dispatch(endpoint, { ...headers(actor), ...extra }, undefined, { body: JSON.stringify(data) });
@@ -112,17 +115,28 @@ try {
         const account = { actor, provider: 'supabase' };
         const memberCheck = url.pathname === '/api/auth/member';
         const detailRead = url.pathname === detailPath;
+        const presence = url.pathname === endpoint;
+        const discussion = url.pathname === discussionPath;
+        const preview = url.pathname === discussionPath + '/preview';
+        const method = request.method();
         assert.equal(url.search, '');
-        assert.equal(memberCheck || detailRead ? request.method() === 'GET' : url.pathname === endpoint && request.method() === 'POST', true);
+        assert.ok(method === 'GET' && (memberCheck || detailRead || discussion) ||
+          method === 'POST' && (presence || discussion || preview), method + ' ' + url.pathname);
         assert.equal(actual.authorization, memberCheck ? undefined : 'Bearer ' + TOKENS[actor]);
-        const body = memberCheck || detailRead ? undefined : request.postData();
-        const input = body === undefined ? null : JSON.parse(body);
+        if (discussion || preview) {
+          assert.equal(actual.cookie, undefined);
+          assert.equal(actual.referer, undefined);
+        }
+        const body = method === 'POST' ? request.postData() : undefined;
+        const input = presence ? JSON.parse(body) : null;
         if (input) assert.deepEqual(Object.keys(input).sort(), ['action', 'leaseId']);
         const response = await f.dispatch(url.pathname, actual, undefined, { body, account });
         assert.match(response.headers.get('cache-control'), /private.*no-store/);
         const bytes = await response.text(), value = JSON.parse(bytes);
         if (input && response.ok) assert.deepEqual(Object.keys(value).sort(), input.action === 'sync' ? ['count', 'state'] : ['state']);
-        browserRequests.push({ actor, action: detailRead ? 'meeting' : input?.action ?? 'account', status: response.status, count: value.count ?? null });
+        const action = detailRead ? 'meeting' : preview ? 'preview' :
+          discussion ? (method === 'GET' ? 'archive' : 'post') : input?.action ?? 'account';
+        browserRequests.push({ actor, action, status: response.status, count: value.count ?? null });
         if (input?.action === 'reserve' && holdReserve) {
           const gate = holdReserve;
           holdReserve = null;
@@ -163,10 +177,12 @@ try {
     catch (error) { throw Error('Expected browser salon status "' + text + '". Saw "' + await regular.locator('#quest-salon-status').textContent() + '".', { cause: error }); }
   };
   const poll = page => page.clock.fastForward(10_500);
-  const heartbeat = async () => {
-    await Promise.all([regular.waitForResponse(response => new URL(response.url()).pathname === endpoint
-      && response.request().postDataJSON()?.action === 'sync'), poll(regular)]);
+  const heartbeat = async (page = regular) => {
+    const [response] = await Promise.all([page.waitForResponse(response => new URL(response.url()).pathname === endpoint
+      && response.request().postDataJSON()?.action === 'sync'), poll(page)]);
+    return response;
   };
+  const press = label => xr.evaluate(value => window.questXrQa.press(value), label);
   const openXR = async () => {
     await xr.locator('#quest-salon-headset').click();
     await panel('Press the controller trigger to check your signed-in account.');
@@ -203,13 +219,71 @@ try {
   const headsetLease = (await f.db.query('SELECT lease_id FROM circle_salon_presence WHERE member_id=$1', [f.reviewerId])).rows[0].lease_id;
   pass('An independent regular browser and simulated headset see the same two seats, with one seat per member and no cross-member control');
 
-  await trigger();
+  assert.equal(browserRequests.some(entry => entry.action === 'archive'), false);
+  const beforeDiscussion = await xr.evaluate(() => window.questXrQa.stats().requests);
+  const accountChecks = () => browserRequests.filter(entry => entry.actor === 'outsider' && entry.action === 'account').length;
+  const beforeAccountChecks = accountChecks();
+  const receiptsBefore = await f.receiptCount();
+  await panel('Read Circle discussion');
+  await press('Read Circle discussion');
+  await panel('Independent visible reply remains readable.');
+  assert.ok(browserRequests.some(entry => entry.actor === 'outsider' && entry.action === 'archive' && entry.status === 200));
+  await press('Write a post');
+  await panel('Choose letters');
+  await press('o');
+  await panel('1 of 180');
+  await press('k');
+  await panel('2 of 180');
+  assert.equal((await heartbeat(xr)).status(), 200);
+  await panel('2 of 180');
+  await press('Review');
+  await panel('Review your post');
+  assert.equal(await f.receiptCount(), receiptsBefore);
+  await press('Post');
+  await panel('Post confirmed');
+  assert.equal(await f.receiptCount(), receiptsBefore + 1);
+  await regular.locator('#circle-archive-open').click();
+  await regular.locator('#circle-archive-messages').getByText('ok', { exact: true }).waitFor();
+  await press('Read recent discussion');
+  await panel('Back to salon');
+  await press('Back to salon');
+  await panel('2 members checked in, including you.');
+  assert.equal(await xr.evaluate(() => window.questXrQa.stats().requests), beforeDiscussion);
+  assert.ok(accountChecks() > beforeAccountChecks, 'Private requests recheck the same selected account');
+  assert.equal(await xr.evaluate(() => window.questXrQa.panel().split('\n').includes('ok')), false);
+  assert.deepEqual((await f.db.query('SELECT lease_id FROM circle_salon_presence WHERE member_id=$1',
+    [f.reviewerId])).rows, [{ lease_id: headsetLease }]);
+  assert.equal(await seats(), 2);
+  pass('A headset member reads and posts within the same shared seat while its heartbeat continues, and the regular browser reads the saved post');
+
+  await xr.evaluate(() => window.questXrQa.miss());
+  await panel('2 members checked in, including you.');
+  assert.equal(await seats(), 2);
+  await press('Leave salon');
   await panel('You left the shared salon.');
   await heartbeat();
   await status('You are the only member checked in.');
   assert.equal(await seats(), 1);
   assert.equal((await send('outsider', { action: 'sync', leaseId: headsetLease })).status, 410);
   pass('An explicit headset leave removes its seat and the other browser observes the smaller count');
+
+  await trigger();
+  await panel('Read Circle discussion');
+  await press('Read Circle discussion');
+  await panel('Write a post');
+  await press('Write a post');
+  await panel('Choose letters');
+  await press('z');
+  await panel('1 of 180');
+  await f.db.query('DELETE FROM book_cohort_members WHERE cohort_id=$1 AND member_id=$2', [f.circleId, f.reviewerId]);
+  assert.equal((await heartbeat(xr)).status(), 404);
+  await xr.waitForFunction(() => window.questXrQa.panel() === '' && window.questXrQa.stats().pendingFrames === 0);
+  await xr.getByText('Your shared salon check-in ended. Open the room again to check access.', { exact: true }).waitFor();
+  assert.equal(await f.receiptCount(), receiptsBefore + 1);
+  pass('Removing the headset member closes the shared discussion on the next heartbeat and clears its private draft');
+  await f.db.query('INSERT INTO book_cohort_members(cohort_id,member_id) VALUES($1,$2)', [f.circleId, f.reviewerId]);
+  await openXR();
+  await verifyXR();
 
   const gate = { reached: deferred(), release: deferred() };
   gates.add(gate.release);
