@@ -55,6 +55,18 @@ Capture the direct-message rows and publication metadata in the same snapshot as
 
 Add `--include-direct-messages` to the verifier command for the 15-table comparison. With `\set soe_restore_include_auth on` at capture and both verifier flags, the comparison covers 17 tables. The direct-message definition comparison includes replica identity and the effective publication membership, including any row filter, column list or schema-level membership. A different message body or a missing publication entry fails the comparison. [Direct-message containment proof](direct-message-containment-verification.json)
 
+## Include wallet sign-in state
+
+After both wallet migrations are installed, capture the 19-table reference. Set this flag in the same read-only export transaction before loading the reference query.
+
+```sql
+\set soe_restore_include_wallet_state on
+```
+
+Add `--include-wallet-state` to the isolated verifier command. This scope includes Auth, direct messages and both wallet tables. It compares used sign-in challenges, revoked session fingerprints, table and schema access, publication membership, the four wallet routines and their owners' role memberships. A missing table or routine stops the check. The report identifies drift while keeping row contents, fingerprints and routine definitions private. Use the 17-table scope for the initial backup taken before installing the wallet migrations.
+
+The archive and reference must cover the same snapshot. A match establishes wallet state at capture time. If a later restore could lose security state written after that snapshot, keep wallet access closed until that state is recovered or the signing secret is rotated. Verify challenge reuse refusal and revoked-session replay refusal before reopening. [Synchronized PostgreSQL snapshots](https://www.postgresql.org/docs/17/app-pgdump.html#APP-PGDUMP) · [Wallet restore verification](wallet-restore-verification.json)
+
 ## Local rehearsal
 
 ```sh
@@ -69,3 +81,5 @@ The account rehearsal restores a second archive that omits the rows in both Auth
 The direct-message rehearsal restores a second archive with the message rows omitted. The 16-table check passes that archive and the 17-table check flags the omission. A successful repair preserves the restored rows and denies direct reads and writes to both browser roles. The resulting archive restores the same 17 table definitions and data, including the contained permissions. [Direct-message containment proof](direct-message-containment-verification.json)
 
 The rehearsal also checks that the new Practice save function refuses the old browser grants. After containment it uses separate database sessions to exercise overlapping saves and a forced failure in the final update. [Practice save verification](practice-atomic-save-verification.json)
+
+The same rehearsal applies both wallet migrations to the contained restore, then restores complete and deliberately incomplete archives from one later snapshot. The 17-table check passes the incomplete archive. The 19-table check identifies both missing wallet row sets. The complete archive preserves both replay refusals. [Wallet restore verification](wallet-restore-verification.json)

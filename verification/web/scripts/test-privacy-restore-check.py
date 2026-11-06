@@ -27,6 +27,10 @@ LIVE_ROOMS = ROOT / 'docs/sql/live-room-containment-apply.sql'
 ROOM_FIXTURE = ROOT / 'verification/web/tests/fixtures/live-room-synthetic.sql'
 DIRECT_CONTAINMENT = ROOT / 'docs/sql/direct-message-containment-apply.sql'
 DIRECT_FIXTURE = ROOT / 'verification/web/tests/fixtures/direct-message-synthetic.sql'
+WALLET_CHALLENGE = ROOT / 'docs/sql/wallet-challenge-consumption-apply.sql'
+WALLET_REVOCATION = ROOT / 'docs/sql/wallet-session-revocation-apply.sql'
+WALLET_CHALLENGES_TABLE = 'soe_wallet_private.used_challenges'
+WALLET_REVOCATIONS_TABLE = 'soe_wallet_private.revoked_sessions'
 QUESTIONS = ROOT / 'supabase/migrations/20260414_daily_practice.sql'
 REFLECTIONS = ROOT / 'supabase/migrations/20260418_practice_reflections.sql'
 PRIVATE_TEXT = 'PRIVATE_SYNTHETIC_ANSWER'
@@ -50,8 +54,8 @@ def resident(path):
 
 
 @contextmanager
-def export_snapshot(source, fixture):
-    command = [str(fixture['BIN'] / 'psql'), *map(str, source.psql(fixture['SOURCE_DB']))]
+def export_snapshot(source, fixture, *, database=None, user=None):
+    command = [str(fixture['BIN'] / 'psql'), *map(str, source.psql(database or fixture['SOURCE_DB'], user))]
     with subprocess.Popen(command, env=fixture['ENV'], text=True,
                           stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as session:
         try:
@@ -121,7 +125,8 @@ def seed(source, database):
     """)
 
 
-def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, include_direct=False, **overrides):
+def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, include_direct=False,
+           include_wallet=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
@@ -134,6 +139,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
         argv.append('--include-auth')
     if include_direct:
         argv.append('--include-direct-messages')
+    if include_wallet:
+        argv.append('--include-wallet-state')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={
@@ -416,6 +423,125 @@ def exercise_direct_messages(target, database, direct_reference, full_reference,
     checks.append('The service role can read the thread, mark the selected incoming message and send a reply. Reapplying keeps the same contained state.')
 
 
+def exercise_wallet_restore(temp, target, database, fixture, checker, checks):
+    owner = fixture['OWNER']
+    target.file(database, WALLET_CHALLENGE, owner)
+    target.file(database, WALLET_REVOCATION, owner)
+    now = int(time.time())
+    challenge = f"SELECT public.soe_wallet_challenge_consume('{'3' * 64}', {now + 500});"
+
+    def access(value, revoke=False):
+        return f"SELECT public.soe_wallet_session_access('{value * 64}', {now + 3600}, {str(revoke).lower()});"
+
+    service = 'SET ROLE service_role; '
+    assert target.query(database, service + challenge, owner) == 't'
+    assert target.query(database, service + access('4', True), owner) == 't'
+
+    previous_reference = temp / 'post-wallet-app-auth-dm-reference.json'
+    wallet_reference = temp / 'wallet-state-reference.json'
+    complete_archive = temp / 'complete-post-wallet.pgcustom'
+    omitted_archive = temp / 'without-wallet-security-data.pgcustom'
+    with export_snapshot(target, fixture, database=database, user=owner) as snapshot:
+        transaction = f"{checker['BEGIN']} SET TRANSACTION SNAPSHOT '{snapshot}';"
+        capture = (*target.psql(database, owner), '-c', transaction, '-f', REFERENCE, '-c', 'ROLLBACK;')
+        previous_reference.write_text(fixture['run']('psql', '-v', 'soe_restore_include_auth=on',
+            '-v', 'soe_restore_include_direct_messages=on', *capture) + '\n')
+        wallet_reference.write_text(fixture['run'](
+            'psql', '-v', 'soe_restore_include_wallet_state=on', *capture
+        ) + '\n')
+        assert target.query(database, service + access('5', True), owner) == 't'
+        dump = (*target.connection(owner), '--format=custom', '--snapshot', snapshot, '-d', database)
+        fixture['run']('pg_dump', *dump, '--file', complete_archive)
+        fixture['run']('pg_dump', *dump, '--exclude-table-data=' + WALLET_CHALLENGES_TABLE,
+                       '--exclude-table-data=' + WALLET_REVOCATIONS_TABLE, '--file', omitted_archive)
+
+    restored, omitted = 'soe_complete_wallet', 'soe_without_wallet_data'
+    target.restore(restored, complete_archive)
+    target.restore(omitted, omitted_archive)
+
+    def compare_wallet(database=restored, reference=wallet_reference):
+        return verify(reference, target, fixture, include_wallet=True, database=database)
+
+    old_check = verify(previous_reference, target, fixture, include_auth=True, include_direct=True, database=omitted)
+    assert old_check['status'] == 'MATCH' and old_check['tablesCompared'] == 17
+    assert target.query(omitted, service + access('4'), owner) == 't'
+    assert target.query(omitted, 'BEGIN; SET LOCAL ROLE service_role; ' + challenge + ' ROLLBACK;', owner) == 't'
+    checks.append('The 17-table scope matches an archive missing both wallet row sets. On that incomplete restore the revoked credential is admitted and the consumed challenge can be redeemed again.')
+
+    missing = compare_wallet(database=omitted)
+    assert missing['status'] == 'MISMATCH'
+    assert missing['rowsDiffer'] == sorted(checker['WALLET_TABLES']) and missing['definitionsDiffer'] == []
+    assert missing['walletRoutinesMatch'] and missing['roleAndSchemaAccessMatch']
+    checks.append('The 19-table comparison detects both missing wallet row sets in the same incomplete archive.')
+
+    match = compare_wallet()
+    assert match['status'] == 'MATCH' and match['tablesCompared'] == 19 and match['scope'] == checker['WALLET_FORMAT']
+    assert match['walletRoutinesMatch'] and match['roleAndSchemaAccessMatch']
+    assert target.query(restored, service + access('4'), owner) == 'f'
+    assert target.query(restored, service + challenge, owner) == 'f'
+    assert target.query(restored, service + access('6'), owner) == 't'
+    assert target.query(database, service + access('5'), owner) == 'f'
+    assert target.query(restored, service + access('5'), owner) == 't'
+    for role in ('anon', 'authenticated'):
+        target.query(restored, f'SET ROLE {role}; ' + challenge, owner, '42501')
+        target.query(restored, f'SET ROLE {role}; ' + access('4'), owner, '42501')
+    for table in sorted(checker['WALLET_TABLES']):
+        target.query(restored, f'SET ROLE service_role; SELECT count(*) FROM {table}', owner, '42501')
+    checks.append('The complete same-snapshot archive matches all 19 tables, preserves both replay refusals, admits a distinct credential and keeps the service-only RPC and raw table boundaries.')
+    checks.append('A later source revocation falls outside the archived snapshot and needs separate recovery coverage.')
+
+    assert compare_wallet(reference=previous_reference)['check'] == 'private_reference_invalid'
+    assert verify(wallet_reference, target, fixture, include_auth=True, include_direct=True,
+                  database=restored)['check'] == 'private_reference_invalid'
+    partial = temp / 'partial-wallet-reference.json'
+    parsed = json.loads(wallet_reference.read_bytes())
+    parsed.pop('walletRoutines')
+    partial.write_text(json.dumps(parsed))
+    assert compare_wallet(reference=partial)['check'] == 'private_reference_invalid'
+    checks.append('The verifier requires the exact wallet scope and a private reference with all four routines.')
+
+    signature = 'public.soe_wallet_session_access(text,bigint,boolean)'
+    definition = target.query(restored, f"SELECT pg_get_functiondef('{signature}'::regprocedure)", owner)
+    for change, undo in [
+        (f'GRANT EXECUTE ON FUNCTION {signature} TO anon', f'REVOKE EXECUTE ON FUNCTION {signature} FROM anon'),
+        (f'ALTER FUNCTION {signature} SECURITY DEFINER', f'ALTER FUNCTION {signature} SECURITY INVOKER'),
+        ('CREATE OR REPLACE FUNCTION public.soe_wallet_session_access(p_digest text, p_expires_at bigint, '
+         'p_revoke boolean) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$', definition),
+    ]:
+        target.query(restored, change, owner)
+        drift = compare_wallet()
+        assert drift['status'] == 'MISMATCH' and not drift['walletRoutinesMatch']
+        assert drift['rowsDiffer'] == [] and drift['definitionsDiffer'] == [] and drift['roleAndSchemaAccessMatch']
+        target.query(restored, undo, owner)
+        assert compare_wallet() == match
+    checks.append('A wallet routine body change, security mode change or browser execution grant fails the restore comparison even with every row intact.')
+
+    target.query(restored, 'GRANT USAGE ON SCHEMA soe_wallet_private TO authenticated', owner)
+    drift = compare_wallet()
+    assert drift['status'] == 'MISMATCH' and not drift['roleAndSchemaAccessMatch'] and drift['walletRoutinesMatch']
+    assert drift['rowsDiffer'] == [] and drift['definitionsDiffer'] == []
+    target.query(restored, 'REVOKE USAGE ON SCHEMA soe_wallet_private FROM authenticated', owner)
+    target.query(restored, f'GRANT unrelated_reader TO {owner}')
+    drift = compare_wallet()
+    assert drift['status'] == 'MISMATCH' and not drift['roleAndSchemaAccessMatch'] and drift['walletRoutinesMatch']
+    assert drift['rowsDiffer'] == [] and drift['definitionsDiffer'] == []
+    target.query(restored, f'REVOKE unrelated_reader FROM {owner}')
+    target.query(restored, f'CREATE PUBLICATION wallet_fixture_publication FOR TABLE {WALLET_REVOCATIONS_TABLE}', owner)
+    drift = compare_wallet()
+    assert drift['status'] == 'MISMATCH' and drift['definitionsDiffer'] == [WALLET_REVOCATIONS_TABLE]
+    assert drift['rowsDiffer'] == [] and drift['roleAndSchemaAccessMatch'] and drift['walletRoutinesMatch']
+    target.query(restored, 'DROP PUBLICATION wallet_fixture_publication', owner)
+    assert compare_wallet() == match
+    checks.append('Wallet schema access drift, new privileges inherited by the wallet owner, and a publication exposing the revocation table each fail the comparison.')
+
+    target.query(restored, f'ALTER FUNCTION {signature} RENAME TO missing_session_access', owner)
+    assert compare_wallet()['check'] == 'local_snapshot_unavailable'
+    target.query(restored, 'ALTER FUNCTION public.missing_session_access(text,bigint,boolean) '
+                 'RENAME TO soe_wallet_session_access', owner)
+    assert compare_wallet() == match
+    checks.append('A missing wallet routine prevents any successful report and keeps database diagnostics private.')
+
+
 def exercise(temp, fixture, checker, result):
     source = fixture['Cluster'](temp / 'source', fixture['OWNER'])
     target = fixture['Cluster'](temp / 'target', fixture['RESTORE_ADMIN'])
@@ -598,6 +724,7 @@ def exercise(temp, fixture, checker, result):
         assert target.query(target_db, 'SELECT count(*) FROM room_participants', owner) == '2'
         checks.append('The installed service join records attendance on the same restored database after all three privacy drafts.')
         exercise_practice_save(target, target_db, fixture, checks)
+        exercise_wallet_restore(temp, target, target_db, fixture, checker, checks)
     finally:
         cleanup = {}
         for label, cluster in (('source', source), ('target', target)):
@@ -615,7 +742,7 @@ def main():
     result = {'status': 'FAIL', 'scope': 'Synthetic PostgreSQL fixture', 'checks': [],
               'productionRestoreVerified': False, 'fixtureEmbeddingType': 'real[]'}
     inputs = [SCRIPT, CHECKER, CORE_REHEARSAL, REFERENCE, PRACTICE, PRACTICE_SAVE, LIVE_ROOMS, ROOM_FIXTURE,
-              DIRECT_CONTAINMENT, DIRECT_FIXTURE, QUESTIONS, REFLECTIONS]
+              DIRECT_CONTAINMENT, DIRECT_FIXTURE, QUESTIONS, REFLECTIONS, WALLET_CHALLENGE, WALLET_REVOCATION]
     for path in inputs:
         resident(path)
     fixture, checker = (runpy.run_path(str(path)) for path in (CORE_REHEARSAL, CHECKER))

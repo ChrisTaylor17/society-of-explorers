@@ -12,6 +12,14 @@
 \else
   \set soe_restore_include_direct_messages off
 \endif
+\if :{?soe_restore_include_wallet_state}
+\else
+  \set soe_restore_include_wallet_state off
+\endif
+\if :soe_restore_include_wallet_state
+  \set soe_restore_include_auth on
+  \set soe_restore_include_direct_messages on
+\endif
 \if :soe_restore_include_auth
   \set soe_restore_include_rooms on
 \endif
@@ -45,6 +53,9 @@ WITH RECURSIVE schemas AS (
 \if :soe_restore_include_auth
     OR nspname = 'auth'
 \endif
+\if :soe_restore_include_wallet_state
+    OR nspname = 'soe_wallet_private'
+\endif
 ),
 relations(schema_name, name, evidence_name) AS (
   SELECT 'public', name, name FROM (VALUES
@@ -60,6 +71,10 @@ relations(schema_name, name, evidence_name) AS (
   ) AS app_tables(name)
 \if :soe_restore_include_auth
   UNION ALL VALUES ('auth', 'users', 'auth.users'), ('auth', 'identities', 'auth.identities')
+\endif
+\if :soe_restore_include_wallet_state
+  UNION ALL VALUES ('soe_wallet_private', 'used_challenges', 'soe_wallet_private.used_challenges'),
+    ('soe_wallet_private', 'revoked_sessions', 'soe_wallet_private.revoked_sessions')
 \endif
 ),
 scoped AS (
@@ -93,6 +108,12 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'auth.users', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.users t
   UNION ALL SELECT 'auth.identities', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.identities t
 \endif
+\if :soe_restore_include_wallet_state
+  UNION ALL SELECT 'soe_wallet_private.used_challenges', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_wallet_private.used_challenges t
+  UNION ALL SELECT 'soe_wallet_private.revoked_sessions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_wallet_private.revoked_sessions t
+\endif
 ),
 numbered AS (
   SELECT name, digest, (row_number() OVER (PARTITION BY name ORDER BY digest) - 1) / 4096 AS batch
@@ -106,6 +127,18 @@ row_evidence AS (
   SELECT name, sum(rows)::bigint AS rows, sha256(string_agg(digest, ''::bytea ORDER BY batch)) AS digest
   FROM chunks GROUP BY name
 ),
+\if :soe_restore_include_wallet_state
+wallet_routines AS (
+  SELECT p.oid, n.nspname, p.proname, p.proowner, p.proacl
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE p.prokind = 'f' AND p.oid IN (
+    to_regprocedure('public.soe_wallet_challenge_consume(text,bigint)'),
+    to_regprocedure('soe_wallet_private.consume_challenge(text,bigint)'),
+    to_regprocedure('public.soe_wallet_session_access(text,bigint,boolean)'),
+    to_regprocedure('soe_wallet_private.session_access(text,bigint,boolean)')
+  )
+),
+\endif
 acl_sources(kind, object, column_no, permissions) AS (
   SELECT 'relation', oid, 0, coalesce(relacl, acldefault('r', relowner)) FROM scoped
   UNION ALL
@@ -113,6 +146,10 @@ acl_sources(kind, object, column_no, permissions) AS (
   WHERE a.attnum > 0 AND NOT a.attisdropped
   UNION ALL
   SELECT 'schema', oid, 0, coalesce(nspacl, acldefault('n', nspowner)) FROM schemas
+\if :soe_restore_include_wallet_state
+  UNION ALL
+  SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM wallet_routines
+\endif
 ),
 acl_entries AS (
   SELECT src.kind, src.object, src.column_no,
@@ -126,6 +163,15 @@ acls AS (
   SELECT kind, object, column_no, jsonb_agg(entry ORDER BY entry::text COLLATE "C") AS entries
   FROM acl_entries GROUP BY kind, object, column_no
 ),
+\if :soe_restore_include_wallet_state
+wallet_routine_evidence AS (
+  -- A missing routine makes a wallet-state reference or comparison unusable.
+  SELECT CASE WHEN count(*) = 4 THEN encode(sha256(convert_to(jsonb_agg(jsonb_build_array(
+    p.nspname, p.proname, pg_get_userbyid(p.proowner), pg_get_functiondef(p.oid), a.entries
+  ) ORDER BY p.nspname COLLATE "C", p.proname COLLATE "C")::text, 'UTF8')), 'hex') END AS digest
+  FROM wallet_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
+),
+\endif
 table_evidence AS (
   SELECT c.evidence_name AS name, jsonb_build_object(
     'owner', pg_get_userbyid(c.relowner),
@@ -147,7 +193,7 @@ table_evidence AS (
       WHERE i.indrelid = c.oid),
     'triggers', (SELECT jsonb_agg(jsonb_build_array(pg_get_triggerdef(t.oid), t.tgenabled)
       ORDER BY t.tgname COLLATE "C") FROM pg_trigger t WHERE t.tgrelid = c.oid AND NOT t.tgisinternal)
-  ) || CASE WHEN c.evidence_name = 'direct_messages' THEN jsonb_build_object(
+  ) || CASE WHEN c.evidence_name = 'direct_messages' OR c.schema_name = 'soe_wallet_private' THEN jsonb_build_object(
     'replicaIdentity', c.relreplident,
     'replicaIdentityIndex', (SELECT idx.relname FROM pg_index i JOIN pg_class idx ON idx.oid = i.indexrelid
       WHERE i.indrelid = c.oid AND i.indisreplident),
@@ -168,8 +214,16 @@ principals AS (
     OR rolname = 'supabase_auth_admin'
 \endif
 ),
-role_tree(oid) AS (
+role_roots(oid) AS (
   SELECT oid FROM principals
+\if :soe_restore_include_wallet_state
+  UNION SELECT nspowner FROM schemas WHERE nspname = 'soe_wallet_private'
+  UNION SELECT relowner FROM scoped WHERE schema_name = 'soe_wallet_private'
+  UNION SELECT proowner FROM wallet_routines
+\endif
+),
+role_tree(oid) AS (
+  SELECT oid FROM role_roots
   UNION
   SELECT m.roleid FROM pg_auth_members m JOIN role_tree r ON m.member = r.oid
 ),
@@ -183,6 +237,9 @@ role_evidence AS (
 \if :soe_restore_include_auth
     'authSchema', (SELECT definition FROM schema_evidence WHERE nspname = 'auth'),
 \endif
+\if :soe_restore_include_wallet_state
+    'walletSchema', (SELECT definition FROM schema_evidence WHERE nspname = 'soe_wallet_private'),
+\endif
     'roles', (SELECT jsonb_agg(jsonb_build_array(r.rolname, r.rolsuper, r.rolinherit,
       r.rolbypassrls, r.rolcanlogin, r.rolcreaterole, r.rolcreatedb, r.rolreplication)
       ORDER BY r.rolname COLLATE "C") FROM role_tree t JOIN pg_roles r ON r.oid = t.oid),
@@ -195,6 +252,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_wallet_state'::boolean THEN 'soe-privacy-restore-v6'
     WHEN :'soe_restore_include_auth'::boolean AND :'soe_restore_include_direct_messages'::boolean
       THEN 'soe-privacy-restore-v5'
     WHEN :'soe_restore_include_direct_messages'::boolean THEN 'soe-privacy-restore-v4'
@@ -209,4 +267,8 @@ SELECT jsonb_build_object(
     'data', encode(coalesce(r.digest, sha256(''::bytea)), 'hex'),
     'definition', encode(sha256(convert_to(t.definition::text, 'UTF8')), 'hex')
   )) FROM table_evidence t LEFT JOIN row_evidence r USING (name))
-);
+)
+\if :soe_restore_include_wallet_state
+  || jsonb_build_object('walletRoutines', (SELECT digest FROM wallet_routine_evidence))
+\endif
+;

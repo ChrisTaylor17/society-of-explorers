@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "baseCommit": "56ee5fb11ac7c4a9dc5c425aeef3d8a44fed745c",
+  "verifiedAt": "2026-11-06T09:36:30.412275+00:00",
+  "status": "LOCAL_WALLET_RESTORE_CHECK_PASS_PRODUCTION_HOLD",
+  "productionRestoreVerified": false,
+  "productionCleared": false,
+  "baseline": {
+    "scope": "soe-privacy-restore-v5",
+    "tablesCompared": 17,
+    "incompleteArchive": "MATCH",
+    "usedWalletChallengeRedeemable": true,
+    "revokedWalletCredentialAccepted": true
+  },
+  "current": {
+    "scope": "soe-privacy-restore-v6",
+    "tablesCompared": 19,
+    "completeArchive": "MATCH",
+    "incompleteArchive": "MISMATCH",
+    "omittedRowSets": [
+      "soe_wallet_private.revoked_sessions",
+      "soe_wallet_private.used_challenges"
+    ],
+    "restoredCompleteArchiveRefusedChallengeReuseAndSessionReplay": true
+  },
+  "verification": {
+    "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+    "combinedRestoreChecksPassed": 36,
+    "walletChallengeConcurrencyRegression": "passed",
+    "walletSessionConcurrencyAndRestoreRegression": "passed",
+    "fixtureEmbeddingType": "real[]",
+    "clustersStopped": true,
+    "fixturesRemoved": true
+  },
+  "limits": "Socket-only PostgreSQL used synthetic records. A match covers the archived snapshot. Security state written after capture, the actual hosted backup, signing secret and device acceptance require separate checks.",
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "9b02c42d6a4cb0f2a2b3b8a28455de381ea9fe5c2d4c88e4243e92303117541d",
+    "docs/integration/privacy-restore-check.md": "60cd9dff2eee1e9e53289315b25ad1e3df1da685eac7ed5110577dbf8a999142",
+    "docs/integration/production-migration-plan.md": "00d657b1a2547ea12276fd97e5f91d21443cb127d4011a05730ed21713ffff6f",
+    "docs/sql/privacy-restore-reference.sql": "e96d7ffd4a4ec0b4117d4dff40d5e0893a095e9fc1607fcfe8bfc00b72edf58d",
+    "verification/web/scripts/test-privacy-restore-check.py": "309db61607d69221bc2715eb227e77d99af73e1d3b86a16732181b263c8ba388",
+    "verification/web/scripts/verify-privacy-restore.py": "f1deb3ea9185dc4b907007d0f2045a175ee08e60b857a011141ba2df2b352bf6"
+  },
+  "proofs": [
+    {
+      "path": "verification/web/evidence/wallet-restore-2026-11-06/wallet-restore-baseline.json",
+      "sha256": "37ad91a0012976bc74d5c7fb539f1f892ce4d240e088057a5d9ca8cde9b8cddd"
+    },
+    {
+      "path": "verification/web/evidence/wallet-restore-2026-11-06/wallet-restore-final-owner.json",
+      "sha256": "ca69e2062d3b854a2a3f9f963c520bbe461cd351e46389be75be53bf5f4795c4"
+    },
+    {
+      "path": "verification/web/evidence/wallet-restore-2026-11-06/wallet-restore-challenge-regression.json",
+      "sha256": "26902946268cf7375cccbccb2735e7e4867a8c1f13d692abb775f9b7be13d88d"
+    },
+    {
+      "path": "verification/web/evidence/wallet-restore-2026-11-06/wallet-restore-session-regression.json",
+      "sha256": "ca562611792fc9399c0cb45c00112f172a72ca1f1136adb1eda08c31407eeec3"
+    }
+  ]
+}

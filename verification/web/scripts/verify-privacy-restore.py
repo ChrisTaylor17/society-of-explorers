@@ -16,6 +16,7 @@ FORMAT = 'soe-privacy-restore-v2'
 AUTH_FORMAT = 'soe-privacy-restore-v3'
 DIRECT_FORMAT = 'soe-privacy-restore-v4'
 AUTH_DIRECT_FORMAT = 'soe-privacy-restore-v5'
+WALLET_FORMAT = 'soe-privacy-restore-v6'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -26,15 +27,17 @@ ROOM_TABLES = frozenset({'video_rooms', 'room_participants', 'room_transcripts'}
 TABLES = CORE_PRACTICE_TABLES | ROOM_TABLES
 AUTH_TABLES = frozenset({'auth.users', 'auth.identities'})
 DIRECT_TABLES = frozenset({'direct_messages'})
+WALLET_TABLES = frozenset({'soe_wallet_private.used_challenges', 'soe_wallet_private.revoked_sessions'})
 TABLES_BY_SCOPE = {
     CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES,
     FORMAT: TABLES,
     AUTH_FORMAT: TABLES | AUTH_TABLES,
     DIRECT_FORMAT: TABLES | DIRECT_TABLES,
     AUTH_DIRECT_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES,
+    WALLET_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES | WALLET_TABLES,
 }
-AUTH_SCOPES = {AUTH_FORMAT, AUTH_DIRECT_FORMAT}
-DIRECT_SCOPES = {DIRECT_FORMAT, AUTH_DIRECT_FORMAT}
+AUTH_SCOPES = {AUTH_FORMAT, AUTH_DIRECT_FORMAT, WALLET_FORMAT}
+DIRECT_SCOPES = {DIRECT_FORMAT, AUTH_DIRECT_FORMAT, WALLET_FORMAT}
 PRINCIPALS = ['anon', 'authenticated', 'service_role']
 AUTH_PRINCIPALS = [*PRINCIPALS, 'supabase_auth_admin']
 MAX_REFERENCE_BYTES = 16384
@@ -66,13 +69,18 @@ def decode_reference(raw, scope=FORMAT):
         raise ValueError('Reference size')
     value = json.loads(raw, object_pairs_hook=unique_object)
     principals = AUTH_PRINCIPALS if scope in AUTH_SCOPES else PRINCIPALS
+    keys = {'format', 'serverMajor', 'principals', 'roles', 'tables'}
+    if scope == WALLET_FORMAT:
+        keys.add('walletRoutines')
     if (not isinstance(value, dict)
-            or set(value) != {'format', 'serverMajor', 'principals', 'roles', 'tables'}
+            or set(value) != keys
             or value['format'] != scope or value['principals'] != principals
             or type(value['serverMajor']) is not int or value['serverMajor'] < 15
             or not valid_digest(value['roles'])
             or not isinstance(value['tables'], dict) or set(value['tables']) != TABLES_BY_SCOPE[scope]):
         raise ValueError('Reference shape')
+    if scope == WALLET_FORMAT and not valid_digest(value['walletRoutines']):
+        raise ValueError('Wallet routine evidence')
     for entry in value['tables'].values():
         if (not isinstance(entry, dict) or set(entry) != {'rows', 'data', 'definition'}
                 or type(entry['rows']) is not int or not 0 <= entry['rows'] <= 2**63 - 1
@@ -130,10 +138,12 @@ def read_target(args):
         include_rooms = 'off' if args.scope == CORE_PRACTICE_FORMAT else 'on'
         include_auth = 'on' if args.scope in AUTH_SCOPES else 'off'
         include_direct = 'on' if args.scope in DIRECT_SCOPES else 'off'
+        include_wallet = 'on' if args.scope == WALLET_FORMAT else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
              '-v', f'soe_restore_include_direct_messages={include_direct}',
+             '-v', f'soe_restore_include_wallet_state={include_wallet}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -161,12 +171,14 @@ def compare(reference, restored):
         if expected['definition'] != actual['definition']:
             definition_drift.append(table)
     role_match = reference['roles'] == restored['roles']
+    wallet_match = reference.get('walletRoutines') == restored.get('walletRoutines')
     return {
-        'status': 'MATCH' if not data_drift and not definition_drift and role_match else 'MISMATCH',
+        'status': 'MATCH' if not data_drift and not definition_drift and role_match and wallet_match else 'MISMATCH',
         'tablesCompared': len(reference['tables']),
         'rowsDiffer': data_drift,
         'definitionsDiffer': definition_drift,
         'roleAndSchemaAccessMatch': role_match,
+        **({'walletRoutinesMatch': wallet_match} if reference['format'] == WALLET_FORMAT else {}),
     }
 
 
@@ -185,9 +197,15 @@ def main():
                        help='Compare a 16-table reference including Supabase Auth users and identities.')
     parser.add_argument('--include-direct-messages', action='store_true',
                         help='Include direct messages and their publication metadata, with Auth when requested.')
+    parser.add_argument('--include-wallet-state', action='store_true',
+                        help='Compare a 19-table reference including Auth, direct messages and both wallet stores and their routines.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
-    if args.include_direct_messages:
+    if args.include_wallet_state:
+        if args.scope == CORE_PRACTICE_FORMAT:
+            parser.error('Use the full restore scope to include wallet state.')
+        args.scope = WALLET_FORMAT
+    elif args.include_direct_messages:
         if args.scope == CORE_PRACTICE_FORMAT:
             parser.error('Use the standard Core, Practice and Live Council scope to include direct messages.')
         args.scope = AUTH_DIRECT_FORMAT if args.scope == AUTH_FORMAT else DIRECT_FORMAT
