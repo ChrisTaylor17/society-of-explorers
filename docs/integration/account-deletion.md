@@ -50,6 +50,16 @@ The transaction removes the departing account’s memberships, RSVPs, Quest seat
 
 The same test account went through the preceding erasure steps and this one on a restored release. The rehearsal checked stale writes, a changed snapshot, a forced rollback, the actual Circle detail route and retry after a second restore. Provider identities, separate safety history and retention still require review. [Verification](account-erasure-circle-departure-verification.json)
 
+## Remove sign-in identities
+
+The owner calls `preview_identity_removal` with the exact processing request, member ID and Supabase subject. Use a null member ID for a provider-only account or a null provider subject for a wallet-only member. The preview rechecks the four earlier erasure phases and shows linked Auth records, storage ownership and other database references. The owner resolves applicable storage through the provider’s Storage tools and reviews other app records before proceeding. [Supabase Storage ownership](https://supabase.com/docs/guides/storage/security/ownership)
+
+The owner passes the exact reviewed snapshot and explicit approval to `prepare_identity_removal`. It clears the Supabase link and wallet address together and records the preparation. The hosted Supabase link cascades from `auth.users` to `members`, so complete preparation before any provider deletion. The app access fence stays active for the original identities across all reachable builds. The hosted catalog also shows Auth references from `twiddles`, `twiddle_collaborators` and `twiddle_reactions`. A request with any of those links needs a separate disposition. The rehearsal used synthetic records to check refusal and preservation.
+
+After the separate provider authorization, recheck the prepared scope and use the supported Supabase hard-delete operation for the reviewed subject in the same project. A lost response can be followed by an exact lookup. The owner calls `verify_identity_removal` to check the actual provider user, sessions, linked identities, refresh tokens and other user-linked Auth rows. It records verification only when those records and the checked storage and app links are clear. A previously issued access token can remain valid until expiry. The app access fence and browser grant containment are prerequisites for hosted use. [Supabase Admin deletion](https://supabase.com/docs/reference/javascript/auth-admin-deleteuser) · [Supabase user management](https://supabase.com/docs/guides/auth/managing-user-data#deleting-users)
+
+This phase keeps the private status code and the pending member receipt. It verifies SoE sign-in identity removal, including accounts that never created a member profile. Completion still needs the approved handling of other member data, retained records, backups and the completion notice. [Verification](account-erasure-identity-verification.json)
+
 ## Release steps
 
 1. Review which records to erase and which records must be retained. Cover sign-in and wallet associations, private and published profiles, reading, Circle posts and moderation, direct messages, practice and council, uploads, notifications, billing and rewards, and data in backups and provider systems. Review shared content and define the handling for public blockchain records. Set the retention window for the minimal receipt.

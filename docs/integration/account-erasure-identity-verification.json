@@ -1,0 +1,121 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T15:34:02.133480+00:00",
+  "parentCommit": "8907d3f11104bbdc20d3d0d1ce65737b3d2ad7fe",
+  "productionCleared": false,
+  "results": {
+    "orderedSqlFiles": 55,
+    "preCutoverTablesVerified": 20,
+    "checks": [
+      "The pre-cutover archive and role export restore into a separate cluster and match all 20 tables.",
+      "The restored pre-cutover fixture reproduces browser access to private answers, messages and transcripts.",
+      "The complete ordered cutover runs on the restored copy and preserves every pre-cutover row in its original columns.",
+      "The processing boundary rejects an in-flight membership and stale changes to participation and hosted links.",
+      "The same request advances through the earlier private, post and contact phases before handling Circle relationships.",
+      "Only the owner can use the exact request and scope. Any hosted disposition needs explicit approval.",
+      "A changed Circle revision, disabled guard or unknown cascade stops the operation before data changes.",
+      "A late receipt error rolls back the membership, attendance, grant, link and host changes together.",
+      "Closed Circles lose the meeting link and remain readable. Other hosts\u2019 meetings, readers\u2019 replies and their RSVPs remain available.",
+      "The real Circle detail handler returns a private, readable archive with no meeting link from the restored database.",
+      "A second restore preserves the readable archive, the pending member receipt and the exact owner retry.",
+      "The exact owner-only review counts Auth and both forms of storage ownership and refuses premature preparation.",
+      "Filtered storage reads, the three observed Twiddle links and an unknown cascade all stop owner preparation.",
+      "Preparation is atomic, retryable and limited to the exact account. The old identities remain blocked after detachment.",
+      "Provider refusal, a late Twiddle reference and residual provider data leave verification pending. A lost reply can be checked without another deletion, and the prepared member survives the observed cascade.",
+      "Provider-only accounts and wallet-only members can both verify removal without creating a new member or calling an unrelated provider.",
+      "A separate restore preserves each verified identity phase, the unrelated provider account and the original pending public receipt."
+    ],
+    "previousAccessTestsPassed": 6,
+    "syntheticProviderSdk": {
+      "version": "2.99.3",
+      "cases": [
+        {
+          "mode": "refused",
+          "calls": [
+            "GET",
+            "DELETE",
+            "GET"
+          ],
+          "absentAfter": false
+        },
+        {
+          "mode": "ack_only",
+          "calls": [
+            "GET",
+            "DELETE",
+            "GET"
+          ],
+          "absentAfter": false
+        },
+        {
+          "mode": "reference_blocks",
+          "calls": [
+            "GET",
+            "DELETE",
+            "GET"
+          ],
+          "absentAfter": false
+        },
+        {
+          "mode": "commit_without_reply",
+          "calls": [
+            "GET",
+            "DELETE",
+            "GET"
+          ],
+          "absentAfter": true
+        },
+        {
+          "mode": "lookup_absent",
+          "calls": [
+            "GET"
+          ],
+          "absentAfter": true
+        },
+        {
+          "mode": "hard_delete",
+          "calls": [
+            "GET",
+            "DELETE",
+            "GET"
+          ],
+          "absentAfter": true
+        }
+      ]
+    },
+    "hostedCatalog": {
+      "observed": {
+        "current_time": "2026-11-06 15:31:57 UTC"
+      },
+      "metadataOnly": true,
+      "memberAuthDeleteCascades": true,
+      "legacyReferences": [
+        "twiddle_collaborators",
+        "twiddle_reactions",
+        "twiddles"
+      ],
+      "browserRawMemberGrantsPresent": true,
+      "draftPresent": false
+    },
+    "priorWebBuildInputsUnchanged": 1083
+  },
+  "scope": "Owner-only sign-in removal on an isolated PostgreSQL restore, with the installed SDK using a synthetic Auth transport. The read-only hosted comparison checked catalog metadata and grants. The member receipt remains pending.",
+  "remaining": [
+    "Approved handling of Twiddle references and other retained records, storage and backups",
+    "Provider and hosted acceptance after browser grant containment and an approved restore",
+    "Member completion notice and signed builds on physical devices"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "03e1f10914063c4e93c5e81d0aebe684329165f600acdd83854aad5d068bd7ed",
+    "docs/integration/account-deletion.md": "a8310b9976dec1460b76df230cc7eca300e38d676e317e6c87dd1ac9d33d439b",
+    "docs/sql/account-erasure-identity-apply.sql": "d830844ed194a6489ddc3a13d6ebc69d7af59d599e5caf89405885ed215a25ca",
+    "verification/web/scripts/rehearse-identity-removal.py": "d7fae562d99f2362fa2fcb91dc25ee09b238777d4425aacd316f6550a0377f37",
+    "verification/web/tests/support/identity-removal-auth.mjs": "924f2ac0e78dd8c608a4e53f7b6ab7e0498fb92cb7f332c2af14b8212bf3e536"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-account-erasure-identity",
+  "evidenceSha256": {
+    "account-erasure-identity.json": "a08f781b8017a59b924df0a06606501ad8cfd81dd4015f21474f3d15a925daeb",
+    "account-erasure-identity-access-regression.log": "2266ffaafe929022919ac90d87bf9b91ccfc97085193b299d385919e3ec76c29",
+    "account-erasure-identity-hosted-catalog.json": "91ccafa9531bcc0b895d5b2176305dabe253d01c324fc4d40c5459c4b610276d"
+  }
+}
