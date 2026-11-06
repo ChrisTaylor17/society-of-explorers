@@ -1,0 +1,13 @@
+# Waddle recording and publication
+
+The November 6 hosted catalog showed anonymous and signed-in read, write and truncate privileges on `public.waddles`, with row security disabled. The `waddles` Storage bucket is public and also received older Twiddle audio. The inspection used permissions and bucket settings only. [Supabase bucket access](https://supabase.com/docs/guides/storage/buckets/fundamentals)
+
+The [local database draft](../sql/waddle-data-containment-apply.sql) enables row security and revokes browser table and column access. It keeps the records and the app server’s permissions, including the member’s own Waddle count. It adds a nullable publication-consent timestamp without backfilling the old rows. Unknown dependencies stop the draft. The isolated rehearsal reproduced the original read and edit access, refused 12 browser operations after applying the draft, and preserved all fixture records through a second restore.
+
+The feed requires both the public flag and recorded publication consent. The earlier Save to archive action set the public flag, so those records stay preserved and need fresh consent to appear in the feed. The response contains six fields and omits the member join and token fields. For published rows, the app accepts audio links in the configured project’s Waddle bucket. The file URL may still include an internal path.
+
+When recording stops, the browser shows local playback. The member chooses whether to send the recording to OpenAI for transcription. They then see a separate publication action that says the recording and transcript will be public. The server requires that explicit choice and the account shown at review time before uploading a WebM file or writing a consented public record. A failure stays visible without showing a success state.
+
+The route rehearsal used the installed Supabase client and a disposable PostgreSQL database with a simulated Storage transport. The built Chromium test used a synthetic microphone, account, and provider. It checked that recording alone sends neither request, that each action uses the expected fields, and that refusal and retry render correctly. [Verification](waddle-privacy-verification.json)
+
+The hosted table, bucket, and old reachable builds remain release gates. Confirm the contents and ownership of the bucket through an approved export and backup. Direct requests for known public URLs can bypass the application. Any change to bucket access needs a supported Storage operation and verification of public playback through the replacement boundary. Member deletion also needs a disposition for the Waddle row, any audio object and linked copies. [Supabase Storage access](https://supabase.com/docs/guides/storage/security/access-control)

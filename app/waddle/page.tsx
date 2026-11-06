@@ -25,7 +25,6 @@ type WaddleFeedItem = {
   thinker_id?: string | null;
   thinker_reaction?: string | null;
   created_at: string;
-  members?: { display_name?: string | null } | null;
 };
 
 type WaddleMember = {
@@ -41,11 +40,13 @@ export default function WaddleForge() {
   const [audioUrl, setAudioUrl] = useState('');
   const [transcription, setTranscription] = useState('');
   const [transcribing, setTranscribing] = useState(false);
+  const [transcriptionError, setTranscriptionError] = useState('');
   const [selectedThinker, setSelectedThinker] = useState('socrates');
   const [thinkerReaction, setThinkerReaction] = useState('');
   const [reacting, setReacting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [publishError, setPublishError] = useState('');
   const [copied, setCopied] = useState(false);
   const [cardStatus, setCardStatus] = useState<'idle' | 'generating' | 'done'>('idle');
   const [feed, setFeed] = useState<WaddleFeedItem[]>([]);
@@ -74,9 +75,14 @@ export default function WaddleForge() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (audioUrl) return () => URL.revokeObjectURL(audioUrl);
+  }, [audioUrl]);
+
   async function startRecording() {
     chunksRef.current = [];
     setElapsed(0); setAudioBlob(null); setAudioUrl(''); setTranscription(''); setThinkerReaction(''); setSaved(false);
+    setTranscriptionError(''); setPublishError('');
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     streamRef.current = stream;
@@ -96,43 +102,45 @@ export default function WaddleForge() {
     }, 1000);
   }
 
-  async function stopRecording() {
+  function stopRecording() {
     if (timerRef.current) clearInterval(timerRef.current);
-    setIsRecording(false);
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === 'inactive') return;
+    recorder.onstop = () => {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+      setAudioBlob(blob);
+      setAudioUrl(URL.createObjectURL(blob));
+      setIsRecording(false);
+    };
+    recorder.stop();
+  }
 
-    return new Promise<void>(resolve => {
-      const recorder = recorderRef.current;
-      if (!recorder || recorder.state === 'inactive') { resolve(); return; }
-      recorder.onstop = async () => {
-        streamRef.current?.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        // Transcribe
-        setTranscribing(true);
-        try {
-          const fd = new FormData();
-          fd.append('audio', blob, 'waddle.webm');
-          fd.append('consentToTranscription', 'true');
-          const accessToken = await getSupabaseAccessToken();
-          const res = await fetch('/api/transcribe', {
-            method: 'POST',
-            body: fd,
-            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-            cache: 'no-store',
-          });
-          if (!res.ok) {
-            setTranscription('[transcription failed]');
-            return;
-          }
-          const data = await res.json();
-          setTranscription(data.text || '');
-        } catch { setTranscription('[transcription failed]'); }
-        setTranscribing(false);
-        resolve();
-      };
-      recorder.stop();
-    });
+  async function transcribeWaddle() {
+    if (!audioBlob || transcribing) return;
+    setTranscribing(true);
+    setTranscriptionError('');
+    try {
+      const fd = new FormData();
+      fd.append('audio', audioBlob, 'waddle.webm');
+      fd.append('consentToTranscription', 'true');
+      const accessToken = await getSupabaseAccessToken();
+      const res = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: fd,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        cache: 'no-store',
+        redirect: 'error',
+      });
+      if (!res.ok) throw new Error('Transcription unavailable');
+      const data = await res.json();
+      if (typeof data?.text !== 'string' || !data.text.trim()) throw new Error('Transcription was empty');
+      setTranscription(data.text);
+    } catch {
+      setTranscriptionError('Could not transcribe this recording. Try again or make a new recording.');
+    } finally {
+      setTranscribing(false);
+    }
   }
 
   async function getThinkerReaction() {
@@ -177,26 +185,36 @@ export default function WaddleForge() {
     setReacting(false);
   }
 
-  async function saveWaddle() {
+  async function publishWaddle() {
     if (!memberId || !audioBlob || !transcription) return;
     setSaving(true);
-    const fd = new FormData();
-    fd.append('audio', audioBlob, 'waddle.webm');
-    fd.append('transcription', transcription);
-    if (thinkerReaction) { fd.append('thinkerReaction', thinkerReaction); fd.append('thinkerId', selectedThinker); }
-    const accessToken = await getSupabaseAccessToken();
-    const res = await fetch('/api/waddle', {
-      method: 'POST',
-      cache: 'no-store',
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      body: fd,
-    }).catch(() => null);
-    setSaving(false); setSaved(Boolean(res?.ok));
-    // Refresh feed
-    fetch('/api/waddle', { cache: 'no-store' })
-      .then(r => r.json())
-      .then((d: { waddles?: WaddleFeedItem[] }) => setFeed(d.waddles || []))
-      .catch(() => {});
+    setPublishError('');
+    try {
+      const fd = new FormData();
+      fd.append('audio', audioBlob, 'waddle.webm');
+      fd.append('transcription', transcription);
+      fd.append('expectedMemberId', memberId);
+      fd.append('publishPublicly', 'true');
+      if (thinkerReaction) { fd.append('thinkerReaction', thinkerReaction); fd.append('thinkerId', selectedThinker); }
+      const accessToken = await getSupabaseAccessToken();
+      const res = await fetch('/api/waddle', {
+        method: 'POST',
+        cache: 'no-store',
+        redirect: 'error',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: fd,
+      });
+      if (!res.ok) throw new Error('Publication unavailable');
+      setSaved(true);
+      fetch('/api/waddle', { cache: 'no-store' })
+        .then(r => r.json())
+        .then((d: { waddles?: WaddleFeedItem[] }) => setFeed(d.waddles || []))
+        .catch(() => {});
+    } catch {
+      setPublishError('Could not confirm publication. Check your account and the public feed.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, maxW: number, lineH: number, maxLines: number): string[] {
@@ -338,7 +356,7 @@ export default function WaddleForge() {
           THE WADDLE FORGE
         </h1>
         <p style={{ fontSize: '1.1rem', color: muted, fontStyle: 'italic', maxWidth: '500px', margin: '0 auto', lineHeight: 1.8 }}>
-          Record 15 seconds. Own it forever. A Waddle is a thought made permanent — your voice, transcribed, stored, yours.
+          Record a short thought. Listen before choosing to send it for transcription or publish it to the public feed.
         </p>
       </div>
 
@@ -362,6 +380,7 @@ export default function WaddleForge() {
               style={{ transition: 'stroke-dashoffset 0.3s' }} />
           </svg>
           <button
+            disabled={transcribing || saving || reacting}
             onMouseDown={() => hasAccess(memberTier, 'seeker') && startRecording()} onMouseUp={() => isRecording && stopRecording()}
             onTouchStart={() => hasAccess(memberTier, 'seeker') && startRecording()} onTouchEnd={() => isRecording && stopRecording()}
             style={{
@@ -381,9 +400,16 @@ export default function WaddleForge() {
           {isRecording ? 'RECORDING...' : 'HOLD TO RECORD · 15 SECONDS MAX'}
         </div>
 
-        {/* Transcribing */}
-        {transcribing && (
-          <div style={{ padding: '1.5rem', color: muted, fontStyle: 'italic' }}>Transcribing your Waddle...</div>
+        {audioUrl && !transcription && (
+          <div style={{ border: `1px solid ${gold}22`, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <audio controls src={audioUrl} style={{ width: '100%' }} />
+            <p style={{ color: parchment }}>This sends the recording to OpenAI to turn it into text.</p>
+            <button type="button" onClick={transcribeWaddle} disabled={transcribing}
+              style={{ padding: '10px 18px', background: gold, color: '#000', border: 'none' }}>
+              {transcribing ? 'Transcribing…' : 'Transcribe with OpenAI'}
+            </button>
+            {transcriptionError && <p role="alert" style={{ color: parchment }}>{transcriptionError}</p>}
+          </div>
         )}
 
         {/* Result */}
@@ -425,13 +451,15 @@ export default function WaddleForge() {
             )}
 
             {/* Actions */}
+            <p style={{ color: parchment }}>Anyone can listen to the recording and read the transcript after you publish it.</p>
+            {publishError && <p role="alert" style={{ color: parchment }}>{publishError}</p>}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button onClick={saveWaddle} disabled={saving || saved} style={{
+              <button type="button" onClick={publishWaddle} disabled={saving || saved} style={{
                 fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
                 color: saved ? '#6B9E6B' : '#000', background: saved ? 'transparent' : gold,
                 border: saved ? `1px solid #6B9E6B` : 'none', padding: '8px 16px', cursor: 'pointer',
               }}>
-                {saved ? '✓ SAVED' : saving ? 'SAVING...' : '⬡ SAVE TO ARCHIVE'}
+                {saved ? 'Published' : saving ? 'Publishing…' : 'Publish recording and transcript'}
               </button>
               <button onClick={() => {
                 const text = `"${transcription}" — recorded in the Society of Explorers temple. societyofexplorers.com/waddle`;
@@ -464,7 +492,9 @@ export default function WaddleForge() {
 
         {/* New Waddle button */}
         {transcription && !transcribing && (
-          <button onClick={() => { setTranscription(''); setAudioBlob(null); setAudioUrl(''); setThinkerReaction(''); setSaved(false); setElapsed(0); }}
+          <button disabled={saving || reacting} onClick={() => {
+            setTranscription(''); setAudioBlob(null); setAudioUrl(''); setThinkerReaction(''); setSaved(false); setElapsed(0); setPublishError('');
+          }}
             style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted, background: 'none', border: 'none', cursor: 'pointer', marginBottom: '3rem' }}>
             RECORD ANOTHER WADDLE
           </button>
@@ -483,14 +513,14 @@ export default function WaddleForge() {
           {feed.map(w => (
             <div key={w.id} style={{ background: '#0d0d0d', padding: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: gold }}>{w.members?.display_name || 'Explorer'}</div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: gold }}>Explorer</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', color: muted }}>{new Date(w.created_at).toLocaleDateString()}</div>
               </div>
               <p style={{ fontSize: '14px', color: parchment, lineHeight: 1.7, marginBottom: '0.75rem' }}>
                 {(w.transcription || '').slice(0, 200)}{(w.transcription || '').length > 200 ? '...' : ''}
               </p>
               {w.audio_url && (
-                <audio controls src={w.audio_url} style={{ width: '100%', height: '32px', marginBottom: '0.5rem', filter: 'invert(0.8) sepia(0.5) hue-rotate(10deg)' }} />
+                <audio controls preload="none" src={w.audio_url} style={{ width: '100%', height: '32px', marginBottom: '0.5rem', filter: 'invert(0.8) sepia(0.5) hue-rotate(10deg)' }} />
               )}
               {w.thinker_reaction && (
                 <div style={{ borderLeft: `2px solid ${gold}22`, paddingLeft: '10px', marginTop: '0.5rem' }}>

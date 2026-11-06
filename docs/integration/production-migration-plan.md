@@ -16,6 +16,8 @@ The coordinated local PostgreSQL rehearsal restores a 20-table pre-cutover archi
 
 For backups taken after the account erasure drafts, use `--include-account-deletion-state`. Its reference covers the request and access state and the archived Twiddle boundary. During an approved recovery, reconcile newer deletion work before opening member access. [Post-erasure restore procedure](privacy-restore-check.md#verify-a-backup-after-the-account-erasure-drafts)
 
+Review Waddle’s raw database grants and file access separately. Pair the owner-reviewed table draft with the replacement consent and feed routes, protect older builds, and verify the recording inventory and file recovery before changing access to its bucket. [Waddle review](waddle-privacy.md)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.

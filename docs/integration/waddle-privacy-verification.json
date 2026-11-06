@@ -1,0 +1,98 @@
+{
+  "date": "2026-11-06",
+  "parentCommit": "93a5059ce204f469c56af1b3446a1edad2326333",
+  "status": "PASS for the local Waddle database and publication boundary",
+  "hostedChanges": false,
+  "hostedCatalogReadOnly": true,
+  "hostedBucketCutoverVerified": false,
+  "webBuild": {
+    "buildId": "XyIYqLauxuQg1fNLFF2Np",
+    "sourceFiles": 1085,
+    "sourceSha256": "1c98aa29e2f38822bd1aadf37acb60e08fdad3f2475db3e24055fa585a675053"
+  },
+  "browser": {
+    "status": "PASS",
+    "buildId": "XyIYqLauxuQg1fNLFF2Np",
+    "transcriptionRequests": 2,
+    "publicationRequests": 2,
+    "externalBrowserRequests": [],
+    "pageErrors": [],
+    "fixtureErrors": [],
+    "checks": [
+      "The real recorder produces a local playback preview without contacting a provider.",
+      "Explicit transcription handles provider refusal and displays the successful transcript without publishing.",
+      "Explicit publication carries the reviewed account and recovers after a refusal before showing success."
+    ],
+    "browserClosed": true
+  },
+  "localRestore": {
+    "checks": [
+      "The hosted-shape fixture reproduces unauthorized reads and public-flag changes after restore.",
+      "Unknown dependencies stop apply. The reviewed draft closes table and column access and preserves all rows.",
+      "Existing flags supply no publication consent. The actual route returns only consented rows and writes only after exact account checks.",
+      "A second restore preserves the contained table and the public feed through the actual route."
+    ],
+    "http": [
+      {
+        "mode": "read-before-review",
+        "requests": [
+          "list"
+        ],
+        "publicRows": 0,
+        "refusedBeforeEffects": 0
+      },
+      {
+        "mode": "write-and-read",
+        "requests": [
+          "storage",
+          "publish",
+          "list"
+        ],
+        "publicRows": 4,
+        "refusedBeforeEffects": 5
+      },
+      {
+        "mode": "read-restored",
+        "requests": [
+          "list"
+        ],
+        "publicRows": 4,
+        "refusedBeforeEffects": 0
+      }
+    ],
+    "browserDenials": 12,
+    "hostedChanges": false,
+    "status": "PASS",
+    "clusterStopped": true,
+    "temporaryDirectoryRemoved": true,
+    "draftSha256": "4fd0370dcb99cbc0b12576d5577d5ebd7252d1db340373f38ed828fa7419a360"
+  },
+  "actualProviderCalls": 0,
+  "broaderSourceAudit": "Identical to the earlier baseline with three pre-existing failures.",
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "951e594770b3bdcea113a16e63e9ae2bedb6ca4eb1c4ab171c1a8683f50cc008",
+    "docs/integration/production-migration-plan.md": "22fb4c91ebd20a64e57091a9d576a676ca3a1c9577335f8f181b6530f8c009a8",
+    "app/api/waddle/route.ts": "5f435f0be87bfeaecec86d6041ce14bd7f780c8bb9ef88cc2c3f1f7acf812d65",
+    "app/waddle/page.tsx": "6619d493edfae06a722602159a2e3bd6a867ded5246477eff5aef46d3a01ad93",
+    "docs/integration/waddle-privacy.md": "a01a9a310e8ac5334c2d054389f889dab9a47b1ddb0adcccb4a1b5af89a8b587",
+    "docs/sql/waddle-data-containment-apply.sql": "4fd0370dcb99cbc0b12576d5577d5ebd7252d1db340373f38ed828fa7419a360",
+    "verification/web/scripts/browser-built-waddle-privacy.mjs": "d78bd2fa7dc423d4ea9c8127b7cb163c9e05357602f5d25662264128b34aab05",
+    "verification/web/scripts/rehearse-waddle-privacy.py": "93ceebd4e6476198d774ac773f16a13a1295417892b0f6cde69045a8ae5a591c",
+    "verification/web/tests/support/waddle-privacy-http.mjs": "b437fef1bec660f46fa3064008184be2c9c1f05a103c835f363c308d6beeb13f"
+  },
+  "rawEvidence": "verification/web/evidence/checkpoint-waddle-privacy",
+  "rawEvidenceSha256": {
+    "built-shell-waddle-consent-build-source-sha256.json": "98193c57c9457d3a8b018f739d9c527e4658ccf61c68ea6d4fcaf21c6af13e89",
+    "built-shell-waddle-consent-next-build.json": "41e46e2d8a34cbef951870a42eeedcbca01b0355856e1d163aed0e622c2cb38d",
+    "built-shell-waddle-consent-next-build.log": "4fa39980605adfc5d28442b4a5a8db2476a78e50ca5983e2cb25a4b8bc649019",
+    "built-shell-waddle-consent-browser.json": "a67ad63eecbb3c25a5fddf41e9be2572ae55bce832e6fa5ce39c4609a8a043fe",
+    "built-shell-waddle-consent-server.json": "ab38b6467c21709c1a3e72ccaf4ec003c7088e1c86d093c50bafe460a77a6de7",
+    "built-shell-waddle-consent-server-runtime.json": "ac12d70b6130d728a6a2f45c579163f68832ce46cd61aa598b19601b39269ca8",
+    "built-shell-waddle-consent-publication-review.png": "142ae44098796f6a5d346d4208b159804d778865917ca5822420a5d509e16f1c",
+    "built-shell-waddle-consent-recording-preview.png": "52b84eef22f356b6bb520162dac871bfa40d2e0cecda46d71a85aadc06a8d612",
+    "waddle-consent-restore-final.json": "71a55e8ed012d445acf75d695e9076364b375e17b8680f64545c2d7e51648fef",
+    "waddle-consent-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "waddle-consent-source-smoke.log": "fa9dcf1ec0ea63e349f96b293d29c7125ddde8216b572ab99ceb07474a7c2410",
+    "waddle-privacy-hosted-catalog.json": "dce6bccd77a2d3cacd7269dcac61ef9d65b24588d0345ba3d2a0e49985fdd7e1"
+  }
+}
