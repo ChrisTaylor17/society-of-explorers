@@ -1,0 +1,9 @@
+# Legacy Twiddle access review
+
+The November 6 hosted catalog showed effective read and write grants for both browser roles on the three Twiddle tables. Each table had row-level security enabled. Permissive policies allowed anonymous reads and broad writes. The three links from authored posts, collaborators and reactions to `auth.users` use the default `NO ACTION` behavior and can block a provider deletion. The catalog review queried permissions and definitions only.
+
+The [owner review draft](../sql/legacy-twiddle-data-containment-apply.sql) revokes raw table and column access from the two browser roles and PUBLIC. It checks service access before commit and leaves rows, policies and other explicit grants in place. Unexpected role inheritance, dependent views, browser-callable privileged routines identified by catalog dependencies or source text, and replication publication membership require review. The transaction uses a bounded exclusive lock.
+
+The isolated PostgreSQL 17 fixture reproduced reads and writes for both browser roles. All 24 attempted browser operations were refused after containment and again after a logical restore. The owner verified preserved rows, policies, constraints and trigger definitions. The service role could still read, create, update and delete test records. [Verification](legacy-twiddle-containment-verification.json)
+
+Before an approved cutover, verify the backup and resolve the application paths. The current list, detail and reaction read routes use a privileged server client. The response and cron routes can pass Twiddle text to an AI provider. Review those paths and any older reachable builds before changing grants. The next account-deletion step needs a reviewed disposition for authored posts, collaborator and reaction links, associated media, minted posts and known copies. Keep provider identity preparation gated on those references.

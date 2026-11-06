@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The legacy Twiddle draft closes raw browser access to three tables. A disposable PostgreSQL rehearsal preserved the records, policies and service access, then confirmed all 24 browser denials again after a restore. Hosted changes, older service-backed routes and account-specific cleanup remain open. [Review and evidence](docs/integration/legacy-twiddle-containment.md)
+
 The identity-removal draft now unlinks a reviewed account before provider deletion and verifies the remaining Auth records. The 55-file isolated rehearsal covered lost replies, storage ownership and separate provider-only and wallet-only accounts. A read-only hosted catalog check confirmed the member cascade, three Twiddle links that need review when present, and browser grants on the member table that still need containment. [Account deletion](docs/integration/account-deletion.md) · [Verification](docs/integration/account-erasure-identity-verification.json)
 
 Members who leave through the recovery controls now see the confirmed result when those controls disappear. The app clears the private view and retires the retry after the exact receipt. The refreshed test setup passed all 110 web cases and 27 phone controller cases. The clean web build passed a Chromium check against the actual Circle handlers and test database. [Verification](docs/integration/circle-participation-regression-verification.json)
