@@ -8,7 +8,8 @@ import type { ExistingMemberAccountConfig } from './src/circles/verified-member-
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import type { createNativeEmailAuth } from './src/auth/email-auth';
 import { NativeEmailAccountForm } from './NativeEmailAccountForm';
-import { PhilemonStudyScreen } from './PhilemonStudyScreen';
+import { ScriptureStudyScreen } from './PhilemonStudyScreen';
+import { getScriptureStudy, SCRIPTURE_STUDIES, type ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
 import { ClipsScreen } from './ClipsScreen';
 import { REEL_QUESTIONS, type ReelDiscussionId } from '../../lib/clips/salon';
 import { PublicCirclesScreen } from './PublicCirclesScreen';
@@ -42,14 +43,14 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');
   const [entered, setEntered] = useState<OwnedAccountConnection | null>(null);
   const [memberProblem, setMemberProblem] = useState('');
-  const [studyOpen, setStudyOpen] = useState(false);
+  const [studyOpen, setStudyOpen] = useState<ScriptureStudyId | null>(null);
   const [clipsOpen, setClipsOpen] = useState<{ reel?: ReelDiscussionId } | null>(null);
   const [sharedLink, setSharedLink] = useState<PublicAppLink | null>(null);
   const sharedReel = sharedLink?.kind === 'reel' ? sharedLink : null;
   const sharedInvite = sharedLink?.kind === 'circle' ? sharedLink : null;
   const [publicCircles, setPublicCircles] = useState<{ reel?: ReelDiscussionId; inviteId?: string } | null>(null);
   const [circleChoice, setCircleChoice] = useState<(PublicCircleChoice & { reel?: ReelDiscussionId }) | null>(null);
-  const [philemonHosting, setPhilemonHosting] = useState(false);
+  const [studyHosting, setStudyHosting] = useState<ScriptureStudyId | null>(null);
   const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
   const epoch = useRef(0), modeRef = useRef<AccountMode>('signin'), preparing = useRef(false);
@@ -181,7 +182,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     if (!value) return;
     const model = value.controller.model();
     if (onlineSignOut ? !model.canSignOut : !model.canClear) return;
-    invalidate(); setPhilemonHosting(false); setCircleChoice(null);
+    invalidate(); setStudyHosting(null); setCircleChoice(null);
     clearFields(); setEntered(null);
     const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
     setMemberContext(null);
@@ -219,14 +220,14 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     if (!validView() || mode !== 'signin' || !connection?.controller.model().canSignIn) return;
     invalidate(); setter(value);
   }
-  function openStudy() {
+  function openStudy(id: ScriptureStudyId) {
     if (!validView() || current.current || preparing.current) return;
-    invalidate(); setStudyOpen(true);
+    invalidate(); setStudyOpen(id);
   }
   function closeStudy(prepareHosting: boolean) {
     if (!validView() || !studyOpen || current.current) return;
-    invalidate(); setStudyOpen(false);
-    if (prepareHosting) { setPhilemonHosting(true); setCircleChoice(null); }
+    invalidate(); setStudyOpen(null);
+    if (prepareHosting) { setStudyHosting(studyOpen); setCircleChoice(null); }
   }
   function consumeSharedLink(link: PublicAppLink | null) {
     if (!link || pendingLink.current !== link) return false;
@@ -251,7 +252,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   function closeClips(read: boolean) {
     if (!validView() || !clipsOpen || current.current) return;
     invalidate(); setClipsOpen(null);
-    if (read) setStudyOpen(true);
+    if (read) setStudyOpen('philemon');
   }
   function openPublicCircles(reel?: ReelDiscussionId) {
     if (!validView() || !active.current || current.current || preparing.current || publicCircles) return;
@@ -261,15 +262,17 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     if (!validView() || !publicCircles || current.current && !publicCircles.inviteId
       || choice && (!active.current || publicCircles.inviteId && choice.id !== publicCircles.inviteId)) return;
     invalidate(); setPublicCircles(null);
-    if (choice) { setClipsOpen(null); setStudyOpen(false); setPhilemonHosting(false); setCircleChoice({ ...choice, reel: publicCircles.reel }); }
+    if (choice) { setClipsOpen(null); setStudyOpen(null); setStudyHosting(null); setCircleChoice({ ...choice, reel: publicCircles.reel }); }
   }
   if (publicCircles) return <PublicCirclesScreen key={publicCircles.inviteId ?? 'directory'} prepare={publicCirclesPrepare}
     reel={publicCircles.reel} inviteId={publicCircles.inviteId} onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
   if (clipsOpen) return <ClipsScreen reel={clipsOpen.reel} onBack={() => closeClips(false)} onRead={() => closeClips(true)}
     onBrowse={openPublicCircles} preparePublicCircles={publicCirclesPrepare}/>;
-  if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)} onBrowse={() => openPublicCircles()}/>;
+  const scripture = getScriptureStudy(studyOpen);
+  if (scripture) return <ScriptureStudyScreen key={scripture.id} study={scripture} onBack={() => closeStudy(false)}
+    onHost={() => closeStudy(true)} onBrowse={() => openPublicCircles()}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
-    retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} circleChoice={circleChoice ?? undefined}
+    retained={memberContext.view} connectivity={connection.connectivity} studyHosting={studyHosting ?? undefined} circleChoice={circleChoice ?? undefined}
     sharedReel={sharedReel ? { reel: sharedReel.reel, consume: consumeSharedReel } : undefined}
     sharedInvite={sharedInvite ? { open: openSharedInvite, dismiss: dismissSharedInvite } : undefined} onClose={() => {
       if (current.current !== connection || memberView.current !== memberContext) return;
@@ -293,7 +296,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
       </>}
       <Action label="Find an online Circle" disabled={connecting} onPress={() => openPublicCircles()}/>
       <Action label="Explore Clips" disabled={connecting} onPress={() => openClips()}/>
-      <Action label="Read Philemon" disabled={connecting} onPress={openStudy}/>
+      {SCRIPTURE_STUDIES.map(study => <Action key={study.id} label={study.readAction} disabled={connecting} onPress={() => openStudy(study.id)}/>)}
     </> : null}
     {circleChoice ? <>
       <Text style={styles.note}>{m?.ready ? 'Continue' : 'Sign in to continue'} with {circleChoice.title}.</Text>
@@ -303,11 +306,11 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
         invalidate(); setCircleChoice(null);
       }}/>
     </> : null}
-    {philemonHosting ? <>
-      <Text style={styles.note}>Sign in and check your member account to prepare a weekly online Circle from the Philemon guide.</Text>
-      <Action label="Clear Philemon hosting choice" onPress={() => {
+    {studyHosting ? <>
+      <Text style={styles.note}>Sign in and check your member account to prepare a weekly online Circle from the {getScriptureStudy(studyHosting)?.shortTitle} guide.</Text>
+      <Action label={`Clear ${getScriptureStudy(studyHosting)?.shortTitle} hosting choice`} onPress={() => {
         if (!validView()) return;
-        invalidate(); setPhilemonHosting(false);
+        invalidate(); setStudyHosting(null);
       }}/>
     </> : null}
     {mode === 'signin' ? <Text accessibilityLiveRegion="polite" style={styles.copy}>{m?.message ?? notice}</Text> : null}

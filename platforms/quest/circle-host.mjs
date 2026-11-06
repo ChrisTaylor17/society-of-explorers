@@ -322,10 +322,10 @@ function createCircleParticipationSession(request, circleId) {
   const emit = () => {
     if (!disposed && syncDepth === 0) for (const listener of listeners) listener(model());
   };
-  const batch = (work) => {
+  const batch = (work2) => {
     syncDepth++;
     try {
-      work();
+      work2();
     } finally {
       syncDepth--;
       emit();
@@ -1641,10 +1641,10 @@ function createVerifiedMemberSession(source, { timeoutMs = 5e3 } = {}) {
     return transition;
   }
   const current = (g) => started && active && generation === g;
-  async function deadline(work) {
+  async function deadline(work2) {
     let timer;
     try {
-      return await Promise.race([work(), new Promise((_, reject) => {
+      return await Promise.race([work2(), new Promise((_, reject) => {
         timer = setTimeout(() => reject(Error("Verification unavailable")), timeoutMs);
       })]);
     } finally {
@@ -2263,7 +2263,7 @@ function createMemberContributions(config) {
     const expected = aiConsent.model().action;
     return Object.keys(action).sort().join(",") === "circleId,contextRevision,interactionRevision,messageId" && action.circleId === expected.circleId && action.messageId === expected.messageId && action.contextRevision === expected.contextRevision && action.interactionRevision === expected.interactionRevision ? aiConsent : null;
   }
-  async function withSafety(work) {
+  async function withSafety(work2) {
     if (actionTransition || !enabled() || loading || !safety || aiConsent?.model().busy) return;
     const action = safety, child = aiConsent, g = generation;
     actionTransition = true;
@@ -2272,19 +2272,19 @@ function createMemberContributions(config) {
         child.activity(false);
         if (enabled() && generation === g && aiConsent === child) child.activity(true);
       }
-      return enabled() && generation === g && safety === action ? work(action) : void 0;
+      return enabled() && generation === g && safety === action ? work2(action) : void 0;
     } finally {
       actionTransition = false;
     }
   }
-  function withConsent(action, work) {
+  function withConsent(action, work2) {
     if (actionTransition) return;
     const child = consentAction(action);
     if (!child) return;
     actionTransition = true;
     try {
       safety?.confirm(false);
-      return consentAction(action) === child ? work(child) : void 0;
+      return consentAction(action) === child ? work2(child) : void 0;
     } finally {
       actionTransition = false;
     }
@@ -2481,7 +2481,7 @@ function createMemberBlocks(config) {
     message = notice;
     emit();
   }
-  async function execute(work, failure) {
+  async function execute(work2, failure) {
     const expected = scope;
     if (!usable() || !expected || busy) return;
     const g = ++generation, abort = new AbortController();
@@ -2503,7 +2503,7 @@ function createMemberBlocks(config) {
         const proof = headers?.[DIRECT_MESSAGE_OWNER_HEADER];
         const memberId = config.memberId?.toLowerCase() ?? proof;
         if (!current() || !headers || !isUuid(memberId) || proof && proof !== memberId) throw Error("Member proof unavailable");
-        await work({ memberId, current, async request(path, method, body) {
+        await work2({ memberId, current, async request(path, method, body) {
           if (!current()) throw Error("Member request retired");
           const url = origin + path;
           const result = await config.transport(url, {
@@ -2917,6 +2917,7 @@ var philemon_web_classic_default = {
 };
 
 // lib/root-kernel/philemon-edition.ts
+var PHILEMON_STUDY_HREF = "/great-books/scripture/philemon";
 var PHILEMON_SOURCE_SHA256 = "b2bc6316f4217a8c97637d44786a4cd6b9b9a83b88cd4880b5aacdf67cae4e19";
 var PHILEMON_READING = { bookId: "philemon", editionId: `web-classic-${PHILEMON_SOURCE_SHA256}`, from: 0, to: 0 };
 var PHILEMON_WORK = { id: PHILEMON_READING.bookId, title: philemon_web_classic_default.title, author: "Paul" };
@@ -2949,6 +2950,251 @@ function philemonReadingText() {
   const paragraphs = philemon_web_classic_default.paragraphs.map((paragraph) => paragraph.map(({ verse, text: text3 }) => `${verse}${notes.has(verse) ? "*" : ""} ${text3}`).join(" "));
   const footnotes = philemon_web_classic_default.footnotes.map(({ verse, text: text3 }) => `Verse ${verse} \xB7 ${text3}`);
   return [...paragraphs, "Publisher footnotes", ...footnotes].join("\n\n");
+}
+
+// lib/root-kernel/philemon-study.ts
+var PHILEMON_GREETING = "Paul names the Father and Jesus together in one blessing. The greeting distinguishes them and leaves their relationship to be explored in other passages.";
+var PHILEMON_PERSPECTIVES = [
+  {
+    id: "nicene-reading",
+    title: "Nicene Christian reading",
+    detail: "This reading hears the Father and the Son as distinct persons named together in the blessing. In Nicene theology, their distinction is compatible with their sharing the one divine nature.",
+    source: {
+      label: "Catholic Catechism, paragraphs 253\u2013255",
+      href: "https://www.vatican.va/content/catechism/en/part_one/section_two/chapter_one/article_1/paragraph_2_the_father.html"
+    }
+  },
+  {
+    id: "unitarian-reading",
+    title: "Biblical Unitarian reading",
+    detail: "This reading takes \u201CGod our Father\u201D as naming the one God and \u201Cthe Lord Jesus Christ\u201D as naming the Messiah whom God made Lord. It sees the shared blessing as compatible with the Father granting authority to Jesus.",
+    source: {
+      label: "Biblical Unitarian statement of beliefs",
+      href: "https://www.biblicalunitarian.com/articles/what-do-biblical-unitarians-believe"
+    }
+  }
+];
+var PHILEMON_COMPARISON = "The greeting alone leaves the later doctrinal question open.";
+var PHILEMON_FURTHER_READING = [
+  { label: "John 17:3", href: "https://ebible.org/eng-web/JHN17.htm#V3" },
+  { label: "Philippians 2:5\u201311", href: "https://ebible.org/eng-web/PHP02.htm#V5" }
+];
+var PHILEMON_SALON_QUESTIONS = [
+  { before: "How does each reading account for both the distinction and the shared blessing in ", verse: 3, after: "?" },
+  { before: "What would it ask of Philemon to receive Onesimus as a beloved brother in ", verse: 16, after: "? What does the letter leave open about what happened next?" }
+];
+var PHILEMON_AGENDA = [
+  { minutes: 5, title: "Welcome", detail: "Use first names, read the norms, and open with a brief prayer. Readers are welcome to listen quietly." },
+  { minutes: 8, title: "Read aloud", detail: "Ask a volunteer to read verses 1 through 7 and another to read verses 8 through 25." },
+  { minutes: 12, title: "Compare the greeting", detail: "Read verse 3 again. Ask someone to state each interpretation in terms a reader who holds it would accept. Look together at what the greeting leaves open." },
+  { minutes: 15, title: "Discuss the appeal", detail: "What would it ask of Philemon to receive Onesimus as a beloved brother? What does the letter leave open about what happened next?" },
+  { minutes: 5, title: "Close", detail: "Ask each person what they will take away and whether they would return for another meeting. Let anyone pass." }
+];
+var PHILEMON_VIDEO_ROOM = "Test the video room before opening it. Share the meeting link privately and keep recording and automated note-taking off.";
+
+// content/root-kernel/luke-good-samaritan.web-classic.json
+var luke_good_samaritan_web_classic_default = {
+  edition: "World English Bible Classic",
+  editionId: "eng-web",
+  title: "The Good Samaritan",
+  chapter: 10,
+  publisherUrl: "https://ebible.org/eng-web/LUK10.htm",
+  rightsUrl: "https://ebible.org/eng-web/webfaq.htm",
+  sourceMemberSha256: "5764741dfbaf6d2fd946881e3ea14e03b000ab82111a680627b4f9fed1e61c4f",
+  paragraphs: [
+    [
+      {
+        verse: 25,
+        text: "Behold, a certain lawyer stood up and tested him, saying, \u201CTeacher, what shall I do to inherit eternal life?\u201D"
+      }
+    ],
+    [
+      {
+        verse: 26,
+        text: "He said to him, \u201CWhat is written in the law? How do you read it?\u201D"
+      }
+    ],
+    [
+      {
+        verse: 27,
+        text: "He answered, \u201CYou shall love the Lord your God with all your heart, with all your soul, with all your strength, and with all your mind; and your neighbor as yourself.\u201D"
+      }
+    ],
+    [
+      {
+        verse: 28,
+        text: "He said to him, \u201CYou have answered correctly. Do this, and you will live.\u201D"
+      }
+    ],
+    [
+      {
+        verse: 29,
+        text: "But he, desiring to justify himself, asked Jesus, \u201CWho is my neighbor?\u201D"
+      }
+    ],
+    [
+      {
+        verse: 30,
+        text: "Jesus answered, \u201CA certain man was going down from Jerusalem to Jericho, and he fell among robbers, who both stripped him and beat him, and departed, leaving him half dead."
+      },
+      {
+        verse: 31,
+        text: "By chance a certain priest was going down that way. When he saw him, he passed by on the other side."
+      },
+      {
+        verse: 32,
+        text: "In the same way a Levite also, when he came to the place and saw him, passed by on the other side."
+      },
+      {
+        verse: 33,
+        text: "But a certain Samaritan, as he traveled, came where he was. When he saw him, he was moved with compassion,"
+      },
+      {
+        verse: 34,
+        text: "came to him, and bound up his wounds, pouring on oil and wine. He set him on his own animal, brought him to an inn, and took care of him."
+      },
+      {
+        verse: 35,
+        text: "On the next day, when he departed, he took out two denarii, gave them to the host, and said to him, \u2018Take care of him. Whatever you spend beyond that, I will repay you when I return.\u2019"
+      },
+      {
+        verse: 36,
+        text: "Now which of these three do you think seemed to be a neighbor to him who fell among the robbers?\u201D"
+      }
+    ],
+    [
+      {
+        verse: 37,
+        text: "He said, \u201CHe who showed mercy on him.\u201D\n\nThen Jesus said to him, \u201CGo and do likewise.\u201D"
+      }
+    ]
+  ],
+  footnotes: [
+    {
+      verse: 27,
+      text: "Deuteronomy 6:5",
+      href: "https://ebible.org/eng-web/DEU06.htm#V5"
+    },
+    {
+      verse: 27,
+      text: "Leviticus 19:18",
+      href: "https://ebible.org/eng-web/LEV19.htm#V18"
+    }
+  ]
+};
+
+// lib/root-kernel/luke-good-samaritan.ts
+var LUKE_SOURCE_SHA256 = "08e329a5fdbf1c3516a4b59ca8add43b81c05b74e3807bb1c9211c269ba7507f";
+var LUKE_READING = { bookId: "luke-good-samaritan", editionId: `web-classic-${LUKE_SOURCE_SHA256}`, from: 0, to: 0 };
+var LUKE_STUDY_HREF = "/great-books/scripture/luke-good-samaritan";
+var work = { id: LUKE_READING.bookId, title: luke_good_samaritan_web_classic_default.title, author: "Gospel of Luke" };
+var range = "Luke 10:25\u201337";
+var lukeGoodSamaritan = {
+  id: LUKE_READING.bookId,
+  work,
+  selection: LUKE_READING,
+  href: LUKE_STUDY_HREF,
+  source: luke_good_samaritan_web_classic_default,
+  range,
+  shortTitle: "Good Samaritan",
+  readAction: "Read the Good Samaritan",
+  readerTab: "Read the passage",
+  extent: "Complete selected passage",
+  notesTitle: "Two ways to read the question",
+  notesReference: range,
+  intro: "A lawyer asks Jesus what he must do to inherit eternal life. Jesus asks how he reads the law, and the conversation turns to what it means to be a neighbor.",
+  perspectives: [
+    {
+      id: "love-without-boundaries",
+      title: "How far does neighbor love reach?",
+      detail: "The lawyer draws on two commands in Scripture. Read the parable as a test of how far that love reaches when the person in need is a stranger.",
+      source: { label: "Read Luke 10:27\u201329", href: luke_good_samaritan_web_classic_default.publisherUrl + "#V27" }
+    },
+    {
+      id: "becoming-a-neighbor",
+      title: "What does it take to act as a neighbor?",
+      detail: "The Samaritan stops, tends to the man and makes arrangements for his care. Jesus asks which person acted as a neighbor. Follow the change from defining a neighbor to showing mercy.",
+      source: { label: "Read Luke 10:33\u201337", href: luke_good_samaritan_web_classic_default.publisherUrl + "#V33" }
+    }
+  ],
+  comparison: "Read the story both ways. Which details support each reading? What questions does the passage leave open?",
+  furtherReading: luke_good_samaritan_web_classic_default.footnotes.map((note) => ({ label: note.text, href: note.href })),
+  questions: [
+    { before: "How does Jesus turn the lawyer\u2019s question around in ", verse: 36, after: "?" },
+    { before: "What does the Samaritan commit to in ", verse: 35, after: ", and which part would cost you the most?" },
+    { before: "How would you explain the instruction in ", verse: 37, after: " to someone who reads the story differently?" }
+  ],
+  agenda: [
+    { minutes: 5, title: "Welcome and pray", detail: "Open with a short prayer for wisdom and mercy. Invite each reader to name one question, with room to pass." },
+    { minutes: 8, title: "Read the passage aloud", detail: "Read Luke 10:25\u201337 without interruption. Give everyone a moment to mark a detail they noticed." },
+    { minutes: 10, title: "Compare the two questions", detail: "Read verses 29 and 36 again. Ask each reader how they hear the change." },
+    { minutes: 17, title: "Discuss what mercy costs", detail: "Trace the Samaritan\u2019s actions in the text. Invite a different reading and give its reader time to explain." },
+    { minutes: 5, title: "Close with one next step", detail: "Invite one concrete act of neighbor love for the week. Close in prayer." }
+  ],
+  meetingNote: "Use your Circle\u2019s private meeting link. Ask each person before sharing their comments outside the group.",
+  metadata: {
+    bookId: work.id,
+    title: work.title,
+    author: work.author,
+    sourceSha256: LUKE_SOURCE_SHA256,
+    edition: {
+      editionId: LUKE_READING.editionId,
+      sourceTitle: luke_good_samaritan_web_classic_default.title,
+      sourceCatalogUrl: luke_good_samaritan_web_classic_default.publisherUrl,
+      licenseUrl: luke_good_samaritan_web_classic_default.rightsUrl,
+      attribution: `${range} \xB7 ${luke_good_samaritan_web_classic_default.edition}`,
+      licenseNotice: PHILEMON_RIGHTS,
+      translators: [],
+      editors: [],
+      illustrators: [],
+      editionNotes: ["Selected verses with both publisher cross-references."],
+      blockCount: 1,
+      contents: [{ id: "scripture", label: range, level: 2, readingIndex: 0 }]
+    }
+  }
+};
+
+// lib/root-kernel/scripture-studies.ts
+var philemon = {
+  id: PHILEMON_READING.bookId,
+  work: PHILEMON_WORK,
+  selection: PHILEMON_READING,
+  href: PHILEMON_STUDY_HREF,
+  shortTitle: "Philemon",
+  readAction: "Read Philemon",
+  source: philemon_web_classic_default,
+  range: "Philemon 1",
+  readerTab: "Read the letter",
+  extent: "Complete letter",
+  notesTitle: "Two readings of the greeting",
+  notesReference: "Philemon 1:3",
+  intro: PHILEMON_GREETING,
+  perspectives: PHILEMON_PERSPECTIVES,
+  comparison: PHILEMON_COMPARISON,
+  furtherReading: PHILEMON_FURTHER_READING,
+  questions: PHILEMON_SALON_QUESTIONS,
+  agenda: PHILEMON_AGENDA,
+  meetingNote: PHILEMON_VIDEO_ROOM,
+  metadata: PHILEMON_EDITION_METADATA
+};
+var SCRIPTURE_STUDIES = [philemon, lukeGoodSamaritan];
+function getScriptureStudy(id2) {
+  return SCRIPTURE_STUDIES.find((study) => study.id === id2);
+}
+function getScriptureReading(context) {
+  if (!context) return void 0;
+  const study = getScriptureStudy(context.bookId);
+  return study && context.editionId === study.selection.editionId && context.from === study.selection.from && context.to === study.selection.to ? study : void 0;
+}
+function scriptureReadingText(study) {
+  if (study.id === PHILEMON_READING.bookId) return philemonReadingText();
+  const { paragraphs, footnotes } = study.source;
+  const notes = new Set(footnotes.map((note) => note.verse));
+  return [
+    ...paragraphs.map((paragraph) => paragraph.map(({ verse, text: text3 }) => `${verse}${notes.has(verse) ? "*" : ""} ${text3}`).join(" ")),
+    "Publisher cross-references",
+    ...footnotes.map(({ verse, text: text3 }) => `Verse ${verse} \xB7 ${text3}`)
+  ].join("\n\n");
 }
 
 // lib/circles/reading-program-editions.json
@@ -4838,7 +5084,7 @@ var reading_program_editions_default = [
 var READING_PROGRAM_MAX_SESSIONS = 12;
 var READING_EDITIONS = [
   ...reading_program_editions_default,
-  { ...PHILEMON_EDITION_METADATA.edition, bookId: PHILEMON_READING.bookId }
+  ...SCRIPTURE_STUDIES.map(({ id: id2, metadata }) => ({ ...metadata.edition, bookId: id2 }))
 ];
 var record8 = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 var exact2 = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.hasOwn(v, k));
@@ -5572,11 +5818,13 @@ export {
   createMemberContributions,
   createVerifiedSupabaseCircleOwner,
   discussionContentSuffix,
+  getScriptureReading,
   hasCircleAuthority,
   isPhilemonReading,
   memberCircleConfig,
   parseCircleDetail,
   philemonReadingText,
   safePrivateMeetingUrl,
+  scriptureReadingText,
   starterReadingContext
 };

@@ -16,7 +16,8 @@ import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } f
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { openAccountDeletionPage } from './src/auth/account-deletion';
 import { createMemberAccountSession } from '../shared/account-session';
-import { PhilemonStudyScreen } from './PhilemonStudyScreen';
+import { ScriptureStudyScreen } from './PhilemonStudyScreen';
+import { getScriptureStudy, SCRIPTURE_STUDIES, type ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
 import { ClipsScreen } from './ClipsScreen';
 import type { ReelDiscussionId } from '../../lib/clips/salon';
 import type { PublicCircleChoice } from '../shared/circle-directory';
@@ -77,9 +78,9 @@ export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>
 
 /** Uses the app's existing verified account. Member setup is deliberate; this
  * screen does not create an auth client, sign in or choose an account. */
-export function MemberCircleScreen({ config, connectivity, retained, philemonHosting = false, circleChoice, sharedReel, sharedInvite, onClose }: {
+export function MemberCircleScreen({ config, connectivity, retained, studyHosting, circleChoice, sharedReel, sharedInvite, onClose }: {
   config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection;
-  philemonHosting?: boolean; circleChoice?: PublicCircleChoice & { reel?: ReelDiscussionId }; onClose(): void;
+  studyHosting?: ScriptureStudyId; circleChoice?: PublicCircleChoice & { reel?: ReelDiscussionId }; onClose(): void;
   sharedReel?: { reel: ReelDiscussionId; consume(): boolean };
   sharedInvite?: { open(): void; dismiss(): void };
 }) {
@@ -91,8 +92,8 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; philemonPreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
-    destination: 'circle' | 'contributions' | 'blocks' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'philemon' | 'clips' } | null>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; scripturePreset?: ScriptureStudyId; studyId?: ScriptureStudyId; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
+    destination: 'circle' | 'contributions' | 'blocks' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'scripture' | 'clips' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -176,10 +177,10 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
       setProfileNotice(''); setEntered({ connection, destination, ...options });
     } catch { setProfileNotice('Saved reading is unavailable. Check the member account and try again.'); }
   });
-  const openHosting = (philemonPreset = false) => act(() => {
+  const openHosting = (scripturePreset?: ScriptureStudyId) => act(() => {
     const current = connection?.account.model();
     if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
-    try { connection.openHosting(current.member.id); setProfileNotice(''); setEntered({ connection, destination: 'hosting', philemonPreset }); }
+    try { connection.openHosting(current.member.id); setProfileNotice(''); setEntered({ connection, destination: 'hosting', scripturePreset }); }
     catch { setProfileNotice('Circle hosting is unavailable. Check your member account and try again.'); }
   });
   const profileConnection = connection?.profile();
@@ -188,14 +189,15 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   const hostingAvailable = Boolean(connection?.host.hostingTransport && connection.host.newRequestId);
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
     if (entered.destination === 'clips') return <ClipsScreen onBack={back} appOrigin={connection.host.origin} reel={entered.reel}
-      onRead={() => act(() => setEntered({ connection, destination: 'philemon' }))}
+      onRead={() => act(() => setEntered({ connection, destination: 'scripture', studyId: 'philemon' }))}
       onBrowse={reel => openReadingDestination('discover', { onlinePreset: true, reel })}/>;
-    if (entered.destination === 'philemon') {
-      return <PhilemonStudyScreen onBack={back} onHost={hostingAvailable ? () => openHosting(true) : undefined}
+    const scripture = getScriptureStudy(entered.studyId);
+    if (entered.destination === 'scripture' && scripture) {
+      return <ScriptureStudyScreen study={scripture} onBack={back} onHost={hostingAvailable ? () => openHosting(scripture.id) : undefined}
         onBrowse={() => openReadingDestination('discover', { onlinePreset: true })}/>;
     }
     if (entered.destination === 'hosting' && hostingConnection && hostingConnection.memberId === account.member?.id) {
-      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity} philemonPreset={entered.philemonPreset}
+      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity} scripturePreset={entered.scripturePreset}
         onBack={back} onMyCircles={() => openReadingDestination('mine')} onClose={close}/>;
     }
     if (entered.destination === 'saved' && savedReadingConnection && savedReadingConnection.memberId === account.member?.id) {
@@ -274,14 +276,14 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
       onPress={() => openReadingDestination('discover')}/>
     <Action label="My Circles" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => openReadingDestination('mine')}/>
-    <Action label="Read Philemon" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
+    {SCRIPTURE_STUDIES.map(study => <Action key={study.id} label={study.readAction} disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
       onPress={() => act(() => {
         if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') {
-          setEntered({ connection, destination: 'philemon' });
+          setEntered({ connection, destination: 'scripture', studyId: study.id });
         }
-      })}/>
-    {philemonHosting ? <Action label="Prepare Philemon Circle online" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !hostingAvailable}
-      onPress={() => openHosting(true)}/> : null}
+      })}/>)}
+    {studyHosting ? <Action label={`Prepare ${getScriptureStudy(studyHosting)?.shortTitle} Circle online`}
+      disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !hostingAvailable} onPress={() => openHosting(studyHosting)}/> : null}
     <Action label="Start a Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !hostingAvailable}
       onPress={() => openHosting()}/>
     {connection?.host.circleId ? <Action label="Continue to Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}

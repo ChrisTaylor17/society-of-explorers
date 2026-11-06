@@ -7,8 +7,8 @@ import type { SavedReading } from '../shared/saved-reading';
 import { SavedReadingTools } from './SavedReadingTools';
 import { sourceReaderAvailable } from './SourceReader';
 import { SourceReadingScreen } from './SourceReadingScreen';
-import { PhilemonStudyScreen } from './PhilemonStudyScreen';
-import { isPhilemonReading } from '../../lib/root-kernel/philemon-edition';
+import { ScriptureStudyScreen } from './PhilemonStudyScreen';
+import { getScriptureReading } from '../../lib/root-kernel/scripture-studies';
 
 /** Mounted only by an explicit selection from freshly checked Circle detail. */
 export type CircleReadingScreenProps = {
@@ -16,8 +16,9 @@ export type CircleReadingScreenProps = {
   backLabel?: string; onBack(): void; onClose(): void;
 };
 export function CircleReadingScreen(props: CircleReadingScreenProps) {
-  if (isPhilemonReading(props.config.context)) {
-    return <PhilemonStudyScreen onBack={props.onBack} onClose={props.onClose} backLabel={props.backLabel ?? 'Back to Circle reading plan'}/>;
+  const scripture = getScriptureReading(props.config.context);
+  if (scripture) {
+    return <ScriptureStudyScreen study={scripture} onBack={props.onBack} onClose={props.onClose} backLabel={props.backLabel ?? 'Back to Circle reading plan'}/>;
   }
   return sourceReaderAvailable() ? <SourceReadingScreen {...props}/> : <PassageReadingScreen {...props}/>;
 }

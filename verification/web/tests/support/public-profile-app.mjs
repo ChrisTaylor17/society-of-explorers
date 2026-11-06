@@ -12,7 +12,7 @@ export const {ORIGIN,PROVIDER,PUBLIC_KEY,ACCESS,SUBJECTS,NEW_SUBJECT}=base;
 export const TOKENS=base.TOKENS;
 const BOOKS=['republic', 'meditations', 'genealogy-of-morals', 'apology', 'odyssey', 'divine-comedy', 'hamlet', 'relativity'];
 const ASSETS=BOOKS.flatMap(book=>['manifest.json','reader.html'].map(name=>`content/great-books/${book}/${name}`));
-const SOURCES=['app/api/members/profile/route.ts','app/api/auth/provider/route.ts',...['preflight','apply','rollback'].map(n=>'docs/sql/circle-public-profiles-'+n+'.sql'),'app/api/book-salons/[cohortId]/route.ts','app/api/circles/[circleId]/discussion/route.ts','app/api/circles/[circleId]/discussion/preview/route.ts','app/api/circles/[circleId]/messages/[messageId]/route.ts','app/api/explorer/[id]/route.ts','app/explorer/[id]/page.tsx',...['preflight','apply'].map(n=>'docs/sql/member-profile-'+n+'.sql'),...['preflight','apply','rollback'].map(n=>'docs/sql/member-profile-intent-'+n+'.sql'),'verification/web/tests/support/public-profile-app.mjs','docs/sql/circle-membership-intent-preflight.sql','docs/sql/circle-membership-intent-apply.sql','docs/sql/circle-membership-intent-rollback.sql', 'lib/circles/hosting.ts','app/api/circles/start/route.ts','app/api/circles/route.ts','app/api/great-books/text/[bookId]/route.ts',...ASSETS,
+const SOURCES=['app/api/members/profile/route.ts','app/api/auth/provider/route.ts','docs/sql/circle-luke-good-samaritan-edition-apply.sql',...['preflight','apply','rollback'].map(n=>'docs/sql/circle-public-profiles-'+n+'.sql'),'app/api/book-salons/[cohortId]/route.ts','app/api/circles/[circleId]/discussion/route.ts','app/api/circles/[circleId]/discussion/preview/route.ts','app/api/circles/[circleId]/messages/[messageId]/route.ts','app/api/explorer/[id]/route.ts','app/explorer/[id]/page.tsx',...['preflight','apply'].map(n=>'docs/sql/member-profile-'+n+'.sql'),...['preflight','apply','rollback'].map(n=>'docs/sql/member-profile-intent-'+n+'.sql'),'verification/web/tests/support/public-profile-app.mjs','docs/sql/circle-membership-intent-preflight.sql','docs/sql/circle-membership-intent-apply.sql','docs/sql/circle-membership-intent-rollback.sql', 'lib/circles/hosting.ts','app/api/circles/start/route.ts','app/api/circles/route.ts','app/api/great-books/text/[bookId]/route.ts',...ASSETS,
  'lib/circles/membership.ts','lib/circles/membership-server.ts','app/api/auth/member/route.ts','app/api/circles/[circleId]/route.ts',
  ...['membership','rsvp','join','leave','complete'].map(action=>`app/api/circles/[circleId]/${action}/route.ts`)];
 export async function publicProfileAppHashes(){
@@ -26,7 +26,7 @@ export async function publicProfileAppHashes(){
  }
  for(const name of SOURCES)await bind(name);return hashes;
 }
-export async function createPublicProfileApp({memberBlocks=false}={}){
+export async function createPublicProfileApp({memberBlocks=false,lukeEdition=false}={}){
  await publicProfileAppHashes();const f=await base.createCircleHostingApp(),app=offlineApp(),sql=[],provider=[],http=[];
  let closed=false,httpHook=null,beforeHook=null,dbHook=null,cookieActor=null,lane=Promise.resolve();
  const serial=fn=>{const task=lane.then(fn);lane=task.catch(()=>{});return task;};
@@ -38,6 +38,7 @@ export async function createPublicProfileApp({memberBlocks=false}={}){
    assert.equal((await f.db.query("SELECT count(*)::int AS n FROM members WHERE profile_visibility IS DISTINCT FROM 'private'")).rows[0].n,0);
    await f.db.exec('ALTER TABLE members DROP COLUMN profile_visibility');
    for(const name of ['member-profile-preflight.sql','member-profile-apply.sql','member-profile-intent-preflight.sql','member-profile-intent-apply.sql','circle-public-profiles-preflight.sql','circle-public-profiles-apply.sql'])await f.db.exec((await contributionSource('docs/sql/'+name)).toString());
+  if (lukeEdition) await f.db.exec((await contributionSource('docs/sql/circle-luke-good-samaritan-edition-apply.sql')).toString());
   if (memberBlocks) {
     await f.db.exec(`CREATE TABLE public.direct_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(), sender_id uuid, recipient_id uuid,
@@ -109,7 +110,7 @@ export async function createPublicProfileApp({memberBlocks=false}={}){
     const ownerBlocks=memberBlocks&&url.pathname==='/api/members/blocks';
     const owned=Boolean(discussion||message||legacy)||ownerProfile||ownerBlocks||Boolean(publicProfile)||hosting||Boolean(edition)||account||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
     if(publicProfile){assert.equal(method,'GET');assert.equal(url.search,'');const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
-    if(edition){assert(BOOKS.includes(edition[1])||edition[1]==='philemon');assert.equal(method,'GET');assert.equal(url.search,'');assert.equal(body,undefined);const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
+    if(edition){assert(BOOKS.includes(edition[1])||edition[1]==='philemon'||lukeEdition&&edition[1]==='luke-good-samaritan');assert.equal(method,'GET');assert.equal(url.search,'');assert.equal(body,undefined);const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
    assert(['GET','POST'].includes(method));const h=new Headers(headers);if(method==='POST'&&!h.has('content-type'))h.set('content-type','application/json');
    const request=new Request(url,{method,headers:h,signal,...(body===undefined?{}:{body:typeof body==='string'?body:JSON.stringify(body)})});
    const cookies=new Map((h.get('cookie')??'').split(';').map(x=>x.trim().split('=')));

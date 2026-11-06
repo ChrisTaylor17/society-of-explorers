@@ -6,9 +6,10 @@ import { offlineApp } from './support/offline-app.mjs';
 
 const app = offlineApp(), tools = app.load('lib/circles/reading-program.ts');
 const plain = value => JSON.parse(JSON.stringify(value));
+const { getScriptureStudy } = app.load('lib/root-kernel/scripture-studies.ts');
 
 test('every Gutenberg program pin and heading is backed by the complete, unchanged local edition', async () => {
-  const books = tools.READING_EDITIONS.filter(edition => edition.bookId !== 'philemon');
+  const books = tools.READING_EDITIONS.filter(edition => !getScriptureStudy(edition.bookId));
   assert.equal(books.length, 8);
   for (const edition of books) {
     const manifest = JSON.parse(fs.readFileSync(`../../content/great-books/${edition.bookId}/manifest.json`, 'utf8'));
@@ -49,6 +50,25 @@ test('the Philemon plan binds the complete study and exact edition, with no gene
     `/great-books/scripture/philemon?circle=${circle}#scripture`);
   assert.equal(tools.parseReadingProgram({ version: 1, bookId, editionId, sessions: [{ from, to: 1 }] }), null);
   assert.equal(app.load('lib/books/catalog.ts').getBook(bookId), undefined);
+  assert.equal(app.load('lib/books/passages.ts').passageIndexPin(bookId), null);
+});
+
+test('the Good Samaritan study binds Luke 10:25–37 and retains the checked Circle link', async () => {
+  const bookId = 'luke-good-samaritan';
+  const { source, selection, href } = getScriptureStudy(bookId);
+  const sha = createHash('sha256').update(JSON.stringify(source)).digest('hex');
+  const metadata = await app.load('lib/circles/reading-edition-server.ts').readCircleReadingEdition(bookId);
+  const { from, to, editionId } = selection;
+  assert.equal(editionId, 'web-classic-' + sha);
+  assert.equal(metadata.sourceSha256, sha);
+  assert.equal(tools.matchesReadingEdition(metadata, selection), true);
+  assert.equal(tools.parseCircleReadingEditionResponse({ ...metadata, sourceSha256: '0'.repeat(64) }), null);
+  const program = { version: 1, bookId, editionId, sessions: [{ from, to }] };
+  assert.deepEqual(plain(tools.parseReadingProgram(program)), program);
+  assert.equal(tools.parseReadingProgram({ ...program, sessions: [{ from, to: to + 1 }] }), null);
+  assert.equal(tools.readingReaderHref(selection, selection), href + '#scripture');
+  const circle = '11111111-1111-4111-8111-111111111111';
+  assert.equal(tools.readingReaderHref(selection, selection, circle), href + '?circle=' + circle + '#scripture');
   assert.equal(app.load('lib/books/passages.ts').passageIndexPin(bookId), null);
 });
 

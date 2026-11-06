@@ -3,7 +3,7 @@ import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Te
 import type { CircleHosting } from '../shared/circle-hosting';
 import type { CircleReadingConfig } from '../shared/circle-reading';
 import { getReadingWork, READING_EDITIONS, parseReadingProgram, readingEditionLabel, readingSessionLabel, type ReadingContext } from '../../lib/circles/reading-program';
-import { PHILEMON_READING, PHILEMON_RIGHTS } from '../../lib/root-kernel/philemon-edition';
+import { getScriptureStudy, type ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
 import { CIRCLE_FORMATS, FORMAT_LABELS, VENUE_TYPES, VENUE_LABELS, WEEKDAYS, TIMEZONES, firstMeeting, formatDay, type CircleInput } from '../../lib/circles/schedule';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleCommunityNorms } from './CircleCommunityNorms';
@@ -16,22 +16,23 @@ type Range = { from: string; to: string };
 
 /** The parent retains only the owned controller. Unsent fields are cleared on
  * retirement; a sent, unresolved request survives privately for exact retry. */
-export function CircleHostingScreen({ session, config, connectivity, philemonPreset = false, onBack, onMyCircles, onClose }: {
-  session: CircleHosting; config: Omit<CircleReadingConfig, 'context'>; connectivity?: NativeConnectivityPort; philemonPreset?: boolean;
+export function CircleHostingScreen({ session, config, connectivity, scripturePreset, onBack, onMyCircles, onClose }: {
+  session: CircleHosting; config: Omit<CircleReadingConfig, 'context'>; connectivity?: NativeConnectivityPort; scripturePreset?: ScriptureStudyId;
   onBack(): void; onMyCircles(): void; onClose(): void;
 }) {
   const [snapshot, setSnapshot] = useState(() => ({ session, model: session.model() }));
-  const defaultBook = philemonPreset ? PHILEMON_READING.bookId : READING_EDITIONS[0].bookId;
-  const [draft, setDraft] = useState(() => emptyDraft(philemonPreset)), [norms, setNorms] = useState(false);
-  const [custom, setCustom] = useState(philemonPreset), [bookId, setBookId] = useState(defaultBook);
+  const defaultBook = scripturePreset ?? READING_EDITIONS[0].bookId;
+  const onlinePreset = scripturePreset !== undefined;
+  const [draft, setDraft] = useState(() => emptyDraft(onlinePreset)), [norms, setNorms] = useState(false);
+  const [custom, setCustom] = useState(onlinePreset), [bookId, setBookId] = useState(defaultBook);
   const [ranges, setRanges] = useState<Range[]>([]), [rangeNotice, setRangeNotice] = useState('');
   const [headings, setHeadings] = useState(false), [reading, setReading] = useState<ReadingContext | null>(null);
   const [viewEpoch, setViewEpoch] = useState(0), viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
   const m = snapshot.session === session ? snapshot.model : session.model();
   const edition = m.edition?.bookId === bookId ? m.edition : null;
   const readingConfig = useMemo(() => reading ? { ...config, context: reading } : null, [config, reading]);
-  const clearDraft = useCallback(() => { setDraft(emptyDraft(philemonPreset)); setNorms(false); setCustom(philemonPreset); setBookId(defaultBook);
-    setRanges([]); setRangeNotice(''); setHeadings(false); setReading(null); }, [defaultBook, philemonPreset]);
+  const clearDraft = useCallback(() => { setDraft(emptyDraft(onlinePreset)); setNorms(false); setCustom(onlinePreset); setBookId(defaultBook);
+    setRanges([]); setRangeNotice(''); setHeadings(false); setReading(null); }, [defaultBook, onlinePreset]);
   useLayoutEffect(() => {
     const life = viewLife.current; life.mounted = true; life.enabled = false; setViewEpoch(++life.epoch);
     let signature = '', loadedEdition: string | null = null;
@@ -145,7 +146,7 @@ export function CircleHostingScreen({ session, config, connectivity, philemonPre
           <Text selectable style={styles.note}>License: {edition.edition.licenseUrl}</Text>
           <Text style={styles.note}>{edition.edition.licenseNotice}</Text>
           {edition.edition.editionNotes.map((note, index) => <Text key={index} style={styles.note}>{note}</Text>)}
-          {edition.bookId !== PHILEMON_READING.bookId ? <Text style={styles.note}>Public domain in the United States according to Project Gutenberg. Rights outside the US have not been assessed; check local rules before use.</Text> : null}
+          {!getScriptureStudy(edition.bookId) ? <Text style={styles.note}>Public domain in the United States according to Project Gutenberg. Rights outside the US have not been assessed; check local rules before use.</Text> : null}
           <Action label={headings ? 'Hide source headings' : 'Show source headings'} disabled={!m.canEdit} onPress={() => act(() => setHeadings(!headings))}/>
           {headings ? edition.edition.contents.map(heading => <Text key={heading.id} style={styles.note}>{heading.label} · {heading.readingIndex === null ? 'No text position' : `position ${heading.readingIndex + 1}`}</Text>) : null}
           {ranges.map((range, index) => <View key={index} style={styles.card}>
@@ -204,8 +205,7 @@ function ListingReview({ input }: { input: CircleInput }) {
     {program ? <>
       <Text style={styles.copy}>{readingEditionLabel(program)}</Text>
       {program.sessions.map((range, index) => <Text key={index} style={styles.note}>Week {index + 1}: {readingSessionLabel(program, range)} · positions {range.from + 1}–{range.to + 1}</Text>)}
-      <Text style={styles.note}>{program.bookId === PHILEMON_READING.bookId ? PHILEMON_RIGHTS
-        : 'Project Gutenberg edition. Public domain in the US; rights elsewhere are not assessed.'}</Text>
+      <Text style={styles.note}>{getScriptureStudy(program.bookId)?.metadata.edition.licenseNotice ?? 'Project Gutenberg edition. Public domain in the US; rights elsewhere are not assessed.'}</Text>
     </> : <Text style={styles.copy}>Shared 12-week starter reading path</Text>}
   </View>;
 }

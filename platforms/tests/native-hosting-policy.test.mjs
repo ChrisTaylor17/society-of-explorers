@@ -32,10 +32,10 @@ test('hosting exact GET and normalized full create/completion bodies each transm
  await f.ports.hostingTransport(completeUrl,post(completion({expectedRevision:Number.MAX_SAFE_INTEGER})));
  const sent=f.calls.filter(c=>c.lane);assert.equal(sent.length,5);assert(sent.every(c=>c.lane==='member'&&c.bearer===bearer));assert.equal(f.calls.filter(c=>c.begin).length,5);
 });
-test('all nine pinned edition metadata paths are anonymous, exact, and independent of discovery capability',async()=>{
+test('all ten pinned edition metadata paths are anonymous, exact, and independent of discovery capability',async()=>{
  const f=await fixture({caps:{publicPolicy:undefined}}),pins=f.load('lib/circles/reading-program.ts').READING_EDITIONS;
  for(const p of pins)await f.ports.editionTransport(origin+'/api/great-books/text/'+p.bookId,init(false));
- assert.equal(pins.length,9);assert.equal(f.calls.filter(c=>c.lane==='public').length,9);for(const c of f.calls.filter(c=>c.lane))assert.deepEqual(Object.keys(c),['lane','id','url','method']);
+ assert.equal(pins.length,10);assert.equal(f.calls.filter(c=>c.lane==='public').length,pins.length);for(const c of f.calls.filter(c=>c.lane))assert.deepEqual(Object.keys(c),['lane','id','url','method']);
 });
 test('creation supports twelve exact pinned ranges and bounded full multibyte fields',async()=>{
  const f=await fixture(),p=f.load('lib/circles/reading-program.ts').getReadingEdition('hamlet');

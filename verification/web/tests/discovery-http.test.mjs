@@ -153,6 +153,21 @@ test('exact book/edition searches canonical metadata while ranges remain only bo
   assert.deepEqual((await get(a, query({ book: other.bookId, edition: other.editionId }))).circles, []);
 });
 
+test('the reviewed Good Samaritan program is searchable by the current pin and complete selection label', async t => {
+  const previous = await discoveryApp({ previousEditions: true });
+  t.after(() => previous.close());
+  await get(previous, '', 503);
+  const a = await discoveryApp(); t.after(() => a.close()); await a.excludeOriginalCircles();
+  const { selection } = a.app.load('lib/root-kernel/luke-good-samaritan.ts').lukeGoodSamaritan;
+  const { bookId, editionId, from, to } = selection;
+  const readingProgram = { version: 1, bookId, editionId, sessions: [{ from, to }] };
+  const [id] = await a.seedCircles(1, { readingProgram });
+  for (const q of ['good samaritan', 'complete source edition']) {
+    const result = await get(a, query({ q, book: bookId, edition: editionId, from: '0', to: '0' }));
+    assert.deepEqual(result.circles.map(circle => circle.id), [id]);
+  }
+});
+
 test('public projection discards private/authority extras and rejects malformed service calendar or page replies', async t => {
   const a = await discoveryApp(); t.after(() => a.close());
   a.transformRpc((name, args, result) => name === 'soe_circle_discovery_search' ? { ...result, data: { ...result.data,

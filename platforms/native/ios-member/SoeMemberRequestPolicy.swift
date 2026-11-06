@@ -11,7 +11,10 @@ internal struct SoeMemberRequestPolicy: Sendable {
     private let publishableKey: String?
     private static let uuidPattern = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}"
     private static let books: Set<String> = ["apology", "divine-comedy", "genealogy-of-morals", "hamlet", "meditations", "odyssey", "relativity", "republic"]
-    private static let philemonEdition = "web-classic-b2bc6316f4217a8c97637d44786a4cd6b9b9a83b88cd4880b5aacdf67cae4e19"
+    private static let scriptureEditions = [
+        "philemon": "web-classic-b2bc6316f4217a8c97637d44786a4cd6b9b9a83b88cd4880b5aacdf67cae4e19",
+        "luke-good-samaritan": "web-classic-08e329a5fdbf1c3516a4b59ca8add43b81c05b74e3807bb1c9211c269ba7507f"
+    ]
     private static let editionPattern = "pg-[1-9][0-9]{0,9}-[a-f0-9]{64}"
 
     init(memberOrigin: String, providerOrigin: String?, publishableKey: String?) throws {
@@ -228,7 +231,7 @@ internal struct SoeMemberRequestPolicy: Sendable {
     }
 
     private static func readingEdition(_ book: String, _ edition: String) -> Bool {
-        book == "philemon" ? edition == philemonEdition : matches(edition, editionPattern)
+        scriptureEditions[book].map { $0 == edition } ?? matches(edition, editionPattern)
     }
 
     private static func publicRead(path: String, query: String?) throws {
@@ -239,7 +242,7 @@ internal struct SoeMemberRequestPolicy: Sendable {
             try check(matches(q["book"]!, "[a-z0-9][a-z0-9-]{0,159}") && matches(q["edition"]!, editionPattern))
             try decimal(q["block"]!, maximum: 100000, allowZero: true, digits: 6); return
         }
-        if let m = captures(path, "/api/great-books/text/([a-z-]+)") { try check((books.contains(m[0]) || m[0] == "philemon") && query == nil); return }
+        if let m = captures(path, "/api/great-books/text/([a-z-]+)") { try check((books.contains(m[0]) || scriptureEditions[m[0]] != nil) && query == nil); return }
         if matches(path, "/api/explorer/" + uuidPattern) { try check(query == nil); return }
         if matches(path, "/api/circles/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}") {
             try check(query == "view=listing"); return
@@ -260,7 +263,7 @@ internal struct SoeMemberRequestPolicy: Sendable {
             if q["from"] != nil || q["to"] != nil {
                 try decimal(q["from"] ?? "", maximum: 999999, allowZero: true, digits: 6)
                 try decimal(q["to"] ?? "", maximum: 999999, allowZero: true, digits: 6)
-                try check(Int(q["from"]!)! <= Int(q["to"]!)! && (book != "philemon" || q["to"] == "0"))
+                try check(Int(q["from"]!)! <= Int(q["to"]!)! && (scriptureEditions[book] == nil || q["to"] == "0"))
             }
         }
     }
@@ -336,12 +339,12 @@ internal struct SoeMemberRequestPolicy: Sendable {
             let p = try dictionary(value); try keys(p, ["version", "bookId", "editionId", "sessions"])
             try check(try integer(p, "version", minimum: 1, maximum: 1) == 1)
             let book = try string(p, "bookId")
-            try check((books.contains(book) || book == "philemon") && readingEdition(book, try string(p, "editionId")))
+            try check((books.contains(book) || scriptureEditions[book] != nil) && readingEdition(book, try string(p, "editionId")))
             guard case .array(let sessions) = p["sessions"] else { throw SoeMemberRequestPolicyError.rejected }; try check((1...12).contains(sessions.count))
             var rows: [SoePolicyJSON] = []
             for row in sessions {
                 let s = try dictionary(row); try keys(s, ["from", "to"])
-                let from = try integer(s, "from", maximum: 99999), to = try integer(s, "to", maximum: 99999); try check(to >= from && (book != "philemon" || to == 0))
+                let from = try integer(s, "from", maximum: 99999), to = try integer(s, "to", maximum: 99999); try check(to >= from && (scriptureEditions[book] == nil || to == 0))
                 rows.append(.object([("from", .number(String(from))), ("to", .number(String(to)))]))
             }
             fields.append(("readingProgram", .object([("version", .number("1")), ("bookId", p["bookId"]!), ("editionId", p["editionId"]!), ("sessions", .array(rows))])))

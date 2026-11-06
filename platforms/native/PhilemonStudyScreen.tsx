@@ -1,24 +1,23 @@
 import { useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { philemonEdition, PHILEMON_AGENDA, PHILEMON_COMPARISON, PHILEMON_FURTHER_READING,
-  PHILEMON_GREETING, PHILEMON_PERSPECTIVES, PHILEMON_SALON_QUESTIONS, PHILEMON_VIDEO_ROOM } from '../../lib/root-kernel/philemon-study';
+import type { ScriptureStudy } from '../../lib/root-kernel/scripture-studies';
 
-const sections = [
-  { id: 'letter', label: 'Read the letter' },
-  { id: 'compare', label: 'Compare readings' },
-  { id: 'host', label: 'Host guide' },
-] as const;
-const noteVerses = new Set(philemonEdition.footnotes.map(note => note.verse));
-
-export function PhilemonStudyScreen({ onBack, onHost, onBrowse, onClose, backLabel = 'Back to account' }: {
-  onBack(): void; onHost?: () => void; onBrowse?: () => void; onClose?: () => void; backLabel?: string;
+export function ScriptureStudyScreen({ study, onBack, onHost, onBrowse, onClose, backLabel = 'Back to account' }: {
+  study: ScriptureStudy; onBack(): void; onHost?: () => void; onBrowse?: () => void; onClose?: () => void; backLabel?: string;
 }) {
-  const [section, setSection] = useState<(typeof sections)[number]['id']>('letter');
+  const sections = [
+    { id: 'text', label: study.readerTab },
+    { id: 'compare', label: 'Compare readings' },
+    { id: 'host', label: 'Host guide' },
+  ] as const;
+  const { source } = study;
+  const notesByVerse = new Set(source.footnotes.map(note => note.verse));
+  const [section, setSection] = useState<(typeof sections)[number]['id']>('text');
 
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}>
       <Text style={styles.eyebrow}>ROOT KERNEL · SCRIPTURE STUDY</Text>
-      <Text accessibilityRole="header" style={styles.title}>{philemonEdition.title}</Text>
+      <Text accessibilityRole="header" style={styles.title}>{source.title}</Text>
       <View style={styles.tabs}>
         {sections.map(({ id, label }) => (
           <Pressable key={id} accessibilityRole="button" accessibilityLabel={label}
@@ -30,54 +29,55 @@ export function PhilemonStudyScreen({ onBack, onHost, onBrowse, onClose, backLab
       </View>
     </View>
     <ScrollView key={section} style={styles.scroller} contentContainerStyle={styles.content}>
-      {section === 'letter' ? <>
-        <Text accessibilityRole="header" style={styles.heading}>Scripture · Philemon 1</Text>
-        <Text style={styles.note}>{philemonEdition.edition} · Complete letter</Text>
-        {philemonEdition.paragraphs.map(paragraph => (
+      {section === 'text' ? <>
+        <Text accessibilityRole="header" style={styles.heading}>Scripture · {study.range}</Text>
+        <Text style={styles.note}>{source.edition} · {study.extent}</Text>
+        {source.paragraphs.map(paragraph => (
           <View key={paragraph[0].verse} style={styles.paragraph}>
             {paragraph.map(({ verse, text }) => (
               <Text key={verse} selectable style={styles.copy}>
-                <Text style={styles.verseNumber}>{verse}{noteVerses.has(verse) ? '*' : ''}{' '}</Text>{text}
+                <Text style={styles.verseNumber}>{verse}{notesByVerse.has(verse) ? '*' : ''}{' '}</Text>{text}
               </Text>
             ))}
           </View>
         ))}
-        <Text accessibilityRole="header" style={styles.heading}>Publisher footnotes</Text>
-        {philemonEdition.footnotes.map(({ verse, text }) => (
-          <Text key={verse} selectable style={styles.copy}>Verse {verse} · {text}</Text>
-        ))}
+        <Text accessibilityRole="header" style={styles.heading}>{study.id === 'philemon' ? 'Publisher footnotes' : 'Publisher cross-references'}</Text>
+        {source.footnotes.map(note => <View key={note.text} style={styles.source}>
+          <Text selectable style={styles.copy}>Verse {note.verse} · {note.text}</Text>
+          {'href' in note && <Text selectable style={styles.address}>{note.href}</Text>}
+        </View>)}
         <Text accessibilityRole="header" style={styles.heading}>Edition and rights</Text>
         <Text style={styles.note}>The publisher dedicates this edition to the public domain.</Text>
-        <Source label="Publisher’s edition" href={philemonEdition.publisherUrl}/>
-        <Source label="Publisher reuse terms" href={philemonEdition.rightsUrl}/>
+        <Source label="Publisher’s edition" href={source.publisherUrl}/>
+        <Source label="Publisher reuse terms" href={source.rightsUrl}/>
       </> : section === 'compare' ? <>
-        <Text style={styles.eyebrow}>STUDY NOTES · PHILEMON 1:3</Text>
-        <Text accessibilityRole="header" style={styles.heading}>Two readings of the greeting</Text>
-        <Text style={styles.copy}>{PHILEMON_GREETING}</Text>
-        {PHILEMON_PERSPECTIVES.map(({ id, title, detail, source }) => (
+        <Text style={styles.eyebrow}>STUDY NOTES · {study.notesReference.toUpperCase()}</Text>
+        <Text accessibilityRole="header" style={styles.heading}>{study.notesTitle}</Text>
+        <Text style={styles.copy}>{study.intro}</Text>
+        {study.perspectives.map(({ id, title, detail, source }) => (
           <View key={id} style={styles.card}>
             <Text accessibilityRole="header" style={styles.heading}>{title}</Text>
             <Text style={styles.copy}>{detail}</Text>
             <Source label={source.label} href={source.href}/>
           </View>
         ))}
-        <Text style={styles.copy}>{PHILEMON_COMPARISON}</Text>
-        {PHILEMON_FURTHER_READING.map(({ label, href }) => <Source key={href} label={label} href={href}/>)}
+        <Text style={styles.copy}>{study.comparison}</Text>
+        {study.furtherReading.map(({ label, href }) => <Source key={href} label={label} href={href}/>)}
         <Text accessibilityRole="header" style={styles.heading}>Questions for your salon</Text>
-        {PHILEMON_SALON_QUESTIONS.map(({ before, verse, after }) => (
+        {study.questions.map(({ before, verse, after }) => (
           <Text key={verse} style={styles.copy}>{before}verse {verse}{after}</Text>
         ))}
       </> : <>
-        <Text accessibilityRole="header" style={styles.heading}>Host a Philemon salon online</Text>
-        <Text style={styles.copy}>Try one 45-minute conversation with four to six readers. Ask everyone to read the letter and bring a question.</Text>
-        <Text style={styles.copy}>{PHILEMON_VIDEO_ROOM}</Text>
-        {PHILEMON_AGENDA.map(({ title, minutes, detail }) => (
+        <Text accessibilityRole="header" style={styles.heading}>Host a {study.shortTitle} salon online</Text>
+        <Text style={styles.copy}>Try one 45-minute conversation with four to six readers. Ask everyone to read the selection and bring a question.</Text>
+        <Text style={styles.copy}>{study.meetingNote}</Text>
+        {study.agenda.map(({ title, minutes, detail }) => (
           <View key={title} style={styles.card}>
             <Text accessibilityRole="header" style={styles.heading}>{title} · {minutes} min</Text>
             <Text style={styles.copy}>{detail}</Text>
           </View>
         ))}
-        <Text style={styles.copy}>To list your salon, choose a time and verify the complete letter as its first reading.</Text>
+        <Text style={styles.copy}>To list your salon, choose a time and verify the {study.extent.toLowerCase()} as its first reading.</Text>
         {onHost ? <Pressable accessibilityRole="button" accessibilityLabel="Prepare a weekly online Circle" onPress={onHost} style={styles.button}>
           <Text style={styles.buttonText}>Prepare a weekly online Circle</Text>
         </Pressable> : <Text style={styles.note}>Circle hosting is unavailable in this connection.</Text>}

@@ -7,6 +7,7 @@ const [run,platform='android',...extra]=process.argv.slice(2);
 assert(!extra.length&&(run===undefined||/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run))&&['android','ios'].includes(platform));
 const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hosting-browser-'+run+'-'+platform:'');
 const inviteMode=run?.startsWith('salon-invite-');
+const lukeMode=run?.startsWith('luke-study-');
 const clipMode=run?.startsWith('clips-');
 const shareMode=run?.startsWith('clips-share-');
 const salonMode=run?.startsWith('clips-salon-');
@@ -34,7 +35,7 @@ try{
  const executablePath='/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';runtime(executablePath);
  bundle=read(fixtureDir+'/page.js');sourceHashes={...JSON.parse(read(fixtureDir+'/source-manifest.json')).sourceHashes,...await hostingAppHashes(),'platforms/tests/browser-native-hosting.mjs':sha(read('platforms/tests/browser-native-hosting.mjs'))};
  for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Rebundle changed source '+n);
- fixture=await createCircleHostingApp();
+ fixture=await createCircleHostingApp({lukeEdition: Boolean(lukeMode)});
  browser=await require('playwright').chromium.launch({headless:true,timeout:15000,executablePath,env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
  const context=await browser.newContext({viewport:{width:320,height:850},serviceWorkers:'block'});page=await context.newPage();const p=page;p.setDefaultTimeout(6500);
  const clips=clipMode?JSON.parse(read('platforms/native/clip-catalog.json')).videos:[];
@@ -99,7 +100,7 @@ try{
  async function waitHeld(){await bounded(async()=>{while(!heldPost)await new Promise(r=>setTimeout(r,10));});}
  async function releaseHeld(){const gate=heldPost;if(!gate)return;gate.release();await bounded(async()=>{while(!gate.done)await new Promise(r=>setTimeout(r,10));});heldPost=null;await settle();return gate;}
  async function show({fresh=true,hosting=true,who='author'}={}){
-  await releaseHeld();await p.evaluate(()=>window.nativeQa.unmount());await settle();if(fresh){await fixture.close();fixture=await createCircleHostingApp();}
+  await releaseHeld();await p.evaluate(()=>window.nativeQa.unmount());await settle();if(fresh){await fixture.close();fixture=await createCircleHostingApp({lukeEdition: Boolean(lukeMode)});}
   fixture.transformHttp(null);fixture.beforeHttp(null);actor=who;mismatch=false;denied=false;holdNextPost=false;
   await p.evaluate(hosting=>{window.nativeQa.hostingAvailable(hosting);window.nativeQa.show();},hosting);await enabled('Connect my account');
  }
@@ -126,6 +127,50 @@ try{
  const edition=JSON.parse(read('content/root-kernel/philemon.web-classic.json'));
  const radio=name=>p.getByRole('radio',{name,exact:true});
  const hostingChoice='Prepare Philemon Circle online';
+ if (lukeMode) {
+   const name = 'Good Samaritan native salon';
+   const source = JSON.parse(read('content/root-kernel/luke-good-samaritan.web-classic.json'));
+   const pin = 'web-classic-' + sha(JSON.stringify(source));
+   const selection = {version: 1, bookId: 'luke-good-samaritan', editionId: pin, sessions: [{from: 0, to: 0}]};
+   const before = http.length;
+   await p.evaluate(() => window.nativeQa.show('offline'));
+   await button('Read the Good Samaritan').click();
+   await button('Read the passage').waitFor();
+   const normalise = value => value.replace(/\s+/g, ' ').trim();
+   const studyCopy = normalise(await text());
+   for (const {verse, text: line} of source.paragraphs.flat()) {
+     const marker = source.footnotes.some(note => note.verse === verse) ? '*' : '';
+     assert(studyCopy.includes(normalise(`${verse}${marker} ${line}`)), `Missing verse ${verse}`);
+   }
+   for (const note of source.footnotes) assert(studyCopy.includes(note.href));
+   await screenshot('good-samaritan-reading-320.png', true);
+   await button('Compare readings').click();
+   await p.getByText('Two ways to read the question', {exact: true}).waitFor();
+   await button('Host guide').click();
+   await p.getByText('Host a Good Samaritan salon online', {exact: true}).waitFor();
+   assert.equal(http.length, before);
+   await button('Prepare a weekly online Circle').click();
+   await p.evaluate(() => window.nativeQa.network('online'));
+   await signIn(); await account();
+   await button('Prepare Good Samaritan Circle online').click(); await check();
+   assert.equal(await radio('Online').getAttribute('aria-checked'), 'true');
+   assert.equal(await radio('The Good Samaritan').getAttribute('aria-checked'), 'true');
+   await button('Load source edition').click();
+   await field('Week 1 first reading position').waitFor();
+   await fill({name,format:'Online',selectFormat:false});
+   await review(); await confirm();
+   await enabled('New Circle draft');
+   assert.deepEqual((await fixture.hosted()).find(row => row.title === name).circle_reading_program, selection);
+   const beforeRead = http.length;
+   await mine(name);
+   await button('Read meeting 1 selection').click();
+   await button('Read the passage').waitFor();
+   assert(normalise(await text()).includes(normalise(source.paragraphs.at(-1).at(-1).text)));
+   assert(http.slice(beforeRead).some(row => /^\/api\/circles\/[a-f0-9-]{36}$/.test(row.path) && row.kind === 'member'));
+   assert(!http.slice(beforeRead).some(row => row.path.startsWith('/api/great-books/')));
+   pass('The offline study and host guide carry the exact Good Samaritan selection through phone sign-in, approved hosting and a fresh member check. Reading uses the bundled verses.');
+   await show();
+ }
  if (inviteMode) {
    const invitedTitle = 'Philemon invitation salon', hiddenTitle = 'Hidden invitation fixture';
    const meeting = 'https://meeting.example.test/private-invitation-fixture';

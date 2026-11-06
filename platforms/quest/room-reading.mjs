@@ -1,5 +1,5 @@
-import { circleAuthorizationHeaders, createCircleReading, isPhilemonReading, parseCircleDetail, philemonReadingText,
-  PHILEMON_EDITION_METADATA, starterReadingContext } from './circle-host.mjs';
+import { circleAuthorizationHeaders, createCircleReading, getScriptureReading, parseCircleDetail, scriptureReadingText,
+  starterReadingContext } from './circle-host.mjs';
 import { ROOM_TEXT_COLUMNS } from './room-composer.mjs';
 
 const DEADLINE_MS = 9000;
@@ -46,7 +46,7 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
   const scope = owner.scope(), lifetime = new AbortController();
   const back = control('reading-back', backLabel);
   const active = () => !lifetime.signal.aborted && isActive() && scope !== null && owner.scope() === scope;
-  let reader = null, pages = [], credits = [], page = 0, creditPage = null;
+  let reader = null, scripture = null, pages = [], credits = [], page = 0, creditPage = null;
   const footer = 'Squeeze to exit the headset room.';
   const notice = (heading, text, rows = []) => onPanel({ label, heading, text, rows, footer });
   const backRow = [[null, null, null, back]];
@@ -54,6 +54,7 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
   function clear() {
     reader?.close();
     reader = null;
+    scripture = null;
     pages = credits = [];
     page = 0;
     creditPage = null;
@@ -78,13 +79,14 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
 
   function show() {
     const model = reader?.model();
-    const edition = model?.passage.metadata.edition ?? PHILEMON_EDITION_METADATA.edition;
+    const edition = model?.passage.metadata.edition ?? scripture?.metadata.edition;
+    if (!edition) return;
     const reading = creditPage === null;
     const position = reading ? page : creditPage;
     const currentPages = reading ? pages : credits;
     const previous = position > 0 ? 'Previous page' : reading && model?.canPrevious ? 'Previous block' : null;
     const next = position + 1 < currentPages.length ? 'Next page' : reading && model?.canNext ? 'Next block' : null;
-    const blockLabel = model ? `Block ${model.blockIndex - model.context.from + 1} of ${model.context.to - model.context.from + 1}` : 'Philemon 1';
+    const blockLabel = model ? `Block ${model.blockIndex - model.context.from + 1} of ${model.context.to - model.context.from + 1}` : scripture.range;
     onPanel({ label, heading: reading ? edition.sourceTitle : 'Source edition and rights',
       readingLines: currentPages[position],
       rows: [[previous && control('reading-previous', previous), control('reading-credits', reading ? 'Source info' : 'Back to text'),
@@ -103,10 +105,12 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
         notice('Circle reading unavailable', 'There is no current selection from a supported edition. See the regular Circle for its reading plan.', backRow);
         return;
       }
-      if (isPhilemonReading(selection)) {
+      const bundled = getScriptureReading(selection);
+      if (bundled) {
         clear();
-        const edition = PHILEMON_EDITION_METADATA.edition;
-        pages = roomReadingPages(philemonReadingText());
+        scripture = bundled;
+        const edition = bundled.metadata.edition;
+        pages = roomReadingPages(scriptureReadingText(bundled));
         credits = roomReadingPages([edition.attribution, edition.licenseNotice, edition.sourceCatalogUrl, edition.licenseUrl].join('\n\n'));
         show();
         return;

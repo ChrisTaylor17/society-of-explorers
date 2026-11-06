@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The Good Samaritan is a second assignable study in SoE’s Root Kernel section. The public page contains Luke 10:25–37 and a 45-minute salon guide. The compiled web form, phone simulations and simulated Quest room opened the same edition from a current Circle. The isolated PostgreSQL restore preserved the assignment and detected the previous catalog. Hosted privacy repair and physical device acceptance remain open. [Study and verification](docs/integration/root-kernel-good-samaritan.md)
+
 The Quest headset room now lets members review a checked post, report it for human review, block its author or withdraw their own post. Compiled Chromium checks used simulated controller input and the current Circle routes and SQL. A lost report or block reply recovered through exact retry, and headset focus loss cleared held private replies. Physical headset acceptance remains open. [Verification](docs/integration/quest-room-message-safety-verification.json)
 
 A shared salon invitation opens the same public listing on the web or Quest Browser and carries the selected salon through phone sign-in. The phone preview uses an anonymous request, and membership still requires review and confirmation. The compiled web and both phone simulations passed the invitation checks. Signed domain association and physical device acceptance remain open. [Verification](docs/integration/salon-invitation-verification.json)

@@ -1,6 +1,6 @@
 import { getBook } from '@/lib/books/catalog';
 import { parseBookEditionResponse, type BookEditionResponse, type EditionContents } from '@/lib/books/bookmarks';
-import { isPhilemonReading, PHILEMON_EDITION_METADATA, PHILEMON_READING, PHILEMON_STUDY_HREF, PHILEMON_WORK } from '@/lib/root-kernel/philemon-edition';
+import { getScriptureReading, getScriptureStudy, SCRIPTURE_STUDIES, type ScriptureStudy } from '@/lib/root-kernel/scripture-studies';
 import pinnedEditions from './reading-program-editions.json';
 
 /** Inclusive, zero-based positions in the exact complete source edition. */
@@ -12,26 +12,28 @@ export type ReadingEdition = {
   sourceTitle: string; translators: Array<{ name: string; appliesTo: string }>; editors: string[]; illustrators: string[];
 };
 export const READING_PROGRAM_MAX_SESSIONS = 12;
-export type CircleReadingEditionResponse = BookEditionResponse | typeof PHILEMON_EDITION_METADATA;
+export type CircleReadingEditionResponse = BookEditionResponse | ScriptureStudy['metadata'];
 export const READING_EDITIONS: readonly ReadingEdition[] = [
-  ...pinnedEditions, { ...PHILEMON_EDITION_METADATA.edition, bookId: PHILEMON_READING.bookId },
+  ...pinnedEditions, ...SCRIPTURE_STUDIES.map(({ id, metadata }) => ({ ...metadata.edition, bookId: id })),
 ];
 const record = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const exact = (v: Record<string, unknown>, keys: string[]) => Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const position = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 
 export function getReadingWork(bookId: string) {
-  return bookId === PHILEMON_WORK.id ? PHILEMON_WORK : getBook(bookId);
+  return getScriptureStudy(bookId)?.work ?? getBook(bookId);
 }
 
 export function parseCircleReadingEditionResponse(value: unknown): CircleReadingEditionResponse | null {
-  if (!record(value) || value.bookId !== PHILEMON_WORK.id) return parseBookEditionResponse(value);
+  if (!record(value)) return null;
+  const study = getScriptureStudy(value.bookId);
+  if (!study) return parseBookEditionResponse(value);
   const edition = value.edition;
-  const pinned = PHILEMON_EDITION_METADATA.edition;
-  if (value.sourceSha256 !== PHILEMON_EDITION_METADATA.sourceSha256 || !record(edition) || edition.editionId !== pinned.editionId
+  const pinned = study.metadata.edition;
+  if (value.sourceSha256 !== study.metadata.sourceSha256 || !record(edition) || edition.editionId !== pinned.editionId
     || edition.blockCount !== pinned.blockCount || JSON.stringify(edition.contents) !== JSON.stringify(pinned.contents)) return null;
   // Project from the bundled edition. The response attests to the source pin.
-  return PHILEMON_EDITION_METADATA;
+  return study.metadata;
 }
 
 export function getReadingEdition(bookId: string, editionId?: string): ReadingEdition | undefined {
@@ -73,7 +75,8 @@ export function readingSessionLabel(program: Pick<ReadingProgram, 'bookId' | 'ed
 export function readingEditionLabel(program: Pick<ReadingProgram, 'bookId' | 'editionId'>): string {
   const edition = getReadingEdition(program.bookId, program.editionId);
   if (!edition) return 'Edition unavailable';
-  if (program.bookId === PHILEMON_WORK.id) return PHILEMON_EDITION_METADATA.edition.attribution;
+  const scripture = getScriptureStudy(program.bookId);
+  if (scripture) return scripture.metadata.edition.attribution;
   const credits = edition.translators.map(t => `${t.name} (${t.appliesTo})`);
   return [edition.sourceTitle, ...credits, `Project Gutenberg ${getBook(program.bookId)?.gutenberg_id || ''}`].join(' · ');
 }
@@ -104,9 +107,10 @@ export function readingReaderHref(program: Pick<ReadingProgram, 'bookId' | 'edit
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(circleId)) throw new Error('Invalid Circle identifier');
     params.set('circle', circleId.toLowerCase());
   }
-  if (isPhilemonReading({ ...program, ...session })) {
+  const scripture = getScriptureReading({ ...program, ...session });
+  if (scripture) {
     const circle = params.get('circle');
-    return `${PHILEMON_STUDY_HREF}${circle ? `?circle=${circle}` : ''}#scripture`;
+    return `${scripture.href}${circle ? `?circle=${circle}` : ''}#scripture`;
   }
   return `/great-books/${encodeURIComponent(program.bookId)}?${params}`;
 }

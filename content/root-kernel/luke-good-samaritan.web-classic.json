@@ -1,0 +1,89 @@
+{
+  "edition": "World English Bible Classic",
+  "editionId": "eng-web",
+  "title": "The Good Samaritan",
+  "chapter": 10,
+  "publisherUrl": "https://ebible.org/eng-web/LUK10.htm",
+  "rightsUrl": "https://ebible.org/eng-web/webfaq.htm",
+  "sourceMemberSha256": "5764741dfbaf6d2fd946881e3ea14e03b000ab82111a680627b4f9fed1e61c4f",
+  "paragraphs": [
+    [
+      {
+        "verse": 25,
+        "text": "Behold, a certain lawyer stood up and tested him, saying, “Teacher, what shall I do to inherit eternal life?”"
+      }
+    ],
+    [
+      {
+        "verse": 26,
+        "text": "He said to him, “What is written in the law? How do you read it?”"
+      }
+    ],
+    [
+      {
+        "verse": 27,
+        "text": "He answered, “You shall love the Lord your God with all your heart, with all your soul, with all your strength, and with all your mind; and your neighbor as yourself.”"
+      }
+    ],
+    [
+      {
+        "verse": 28,
+        "text": "He said to him, “You have answered correctly. Do this, and you will live.”"
+      }
+    ],
+    [
+      {
+        "verse": 29,
+        "text": "But he, desiring to justify himself, asked Jesus, “Who is my neighbor?”"
+      }
+    ],
+    [
+      {
+        "verse": 30,
+        "text": "Jesus answered, “A certain man was going down from Jerusalem to Jericho, and he fell among robbers, who both stripped him and beat him, and departed, leaving him half dead."
+      },
+      {
+        "verse": 31,
+        "text": "By chance a certain priest was going down that way. When he saw him, he passed by on the other side."
+      },
+      {
+        "verse": 32,
+        "text": "In the same way a Levite also, when he came to the place and saw him, passed by on the other side."
+      },
+      {
+        "verse": 33,
+        "text": "But a certain Samaritan, as he traveled, came where he was. When he saw him, he was moved with compassion,"
+      },
+      {
+        "verse": 34,
+        "text": "came to him, and bound up his wounds, pouring on oil and wine. He set him on his own animal, brought him to an inn, and took care of him."
+      },
+      {
+        "verse": 35,
+        "text": "On the next day, when he departed, he took out two denarii, gave them to the host, and said to him, ‘Take care of him. Whatever you spend beyond that, I will repay you when I return.’"
+      },
+      {
+        "verse": 36,
+        "text": "Now which of these three do you think seemed to be a neighbor to him who fell among the robbers?”"
+      }
+    ],
+    [
+      {
+        "verse": 37,
+        "text": "He said, “He who showed mercy on him.”\n\nThen Jesus said to him, “Go and do likewise.”"
+      }
+    ]
+  ],
+  "footnotes": [
+    {
+      "verse": 27,
+      "text": "Deuteronomy 6:5",
+      "href": "https://ebible.org/eng-web/DEU06.htm#V5"
+    },
+    {
+      "verse": 27,
+      "text": "Leviticus 19:18",
+      "href": "https://ebible.org/eng-web/LEV19.htm#V18"
+    }
+  ]
+}

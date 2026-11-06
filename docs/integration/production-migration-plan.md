@@ -93,6 +93,8 @@ Existing files and intended dependency order, after the separate strict baseline
 | 8 | `docs/sql/circle-discovery-unicode.sql` | Pinned generated fold/sort profile; verify embedded identity hash, do not hand edit. Can precede unrelated discussion deltas after prerequisites are reviewed. |
 | 9 | `docs/sql/circle-discovery-search.sql` | Service-only live discovery using participation/program/Unicode prerequisites. |
 
+Stage the [Good Samaritan edition draft](../sql/circle-luke-good-samaritan-edition-apply.sql) after the existing reading and discovery routines and before routing to the matching web build. Keep search and hosting under the same approved maintenance window. The two builds use different edition lists, and discovery checks every catalog entry. Verify the old Philemon and new Luke assignments, a search and a reviewed Circle creation on the isolated target. The 67-table restore comparison binds the catalog routine. [Study and verification](root-kernel-good-samaritan.md)
+
 Stage 0 covers the conditional legacy-policy cleanup for `reading_progress` and `book_highlights`. Stage 1 covers raw access for those two tables and the separate `great_books_progress` and `great_books_highlights` tables.
 
 After private profile consent and the Circle chain, `book-salon-conversation.sql` supplies service-only ordinary-salon read/write RPCs with explicit published-profile joins, bounded messages and actor-bound posting. Its function-only reverse file preserves posts and containment. See `book-salon-conversation.md`; 23 final affected cases and five composed browser stories pass locally. Missing functions fail closed rather than falling back to raw tables. This does not resolve all old direct-Supabase callers.

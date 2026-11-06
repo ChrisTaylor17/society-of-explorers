@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { parseCircleReadingEditionResponse, type CircleReadingEditionResponse, getReadingWork, getReadingEdition, matchesReadingEdition, parseReadingProgram, READING_EDITIONS, READING_PROGRAM_MAX_SESSIONS, readingReaderHref, readingSessionLabel, type ReadingContext, type ReadingProgram } from '@/lib/circles/reading-program';
-import { isPhilemonReading, PHILEMON_RIGHTS, PHILEMON_WORK } from '@/lib/root-kernel/philemon-edition';
+import { getScriptureReading, getScriptureStudy } from '@/lib/root-kernel/scripture-studies';
 import { body, button, card, fieldLabel, h2, input, small } from '@/lib/circles/ui';
 import styles from './reading-program.module.css';
 
@@ -72,7 +72,7 @@ export default function ReadingProgramEditor({ value, context = null, disabled, 
     <h2 id="reading-plan-heading" style={{ ...h2, marginTop: '.5rem' }}>Agreed reading plan</h2>
     <label htmlFor="circle-reading-plan" style={fieldLabel}>Reading plan</label>
     <select id="circle-reading-plan" style={input} value={value.custom ? 'book' : 'starter'} disabled={disabled || busy} onChange={event => choose(event.target.value === 'book')}><option value="starter">Existing twelve-week starter path</option><option value="book">Choose a pinned book edition and weekly readings</option></select>
-    {context && !isPhilemonReading(context) && <button type="button" style={button} disabled={disabled || busy} onClick={useContext}>Use the reader selection as the first reading</button>}
+    {context && !getScriptureReading(context) && <button type="button" style={button} disabled={disabled || busy} onClick={useContext}>Use the reader selection as the first reading</button>}
     <p role="status" aria-live="polite" style={small}>{notice}</p>
     {value.custom && <>
       <label htmlFor="circle-reading-book" style={fieldLabel}>Book and pinned source edition</label>
@@ -80,7 +80,7 @@ export default function ReadingProgramEditor({ value, context = null, disabled, 
       <button type="button" style={button} disabled={disabled || busy} onClick={() => void load()}>{busy ? 'Verifying edition…' : 'Load and verify selected edition'}</button>
       {metadata && <>
         <p style={body}>{metadata.edition.attribution}</p>
-        <p style={small}>{metadata.bookId === PHILEMON_WORK.id ? PHILEMON_RIGHTS : 'US public-domain assessment by Project Gutenberg. Rights outside the US have not been assessed; check local law.'}{' '}
+        <p style={small}>{getScriptureStudy(metadata.bookId)?.metadata.edition.licenseNotice ?? 'US public-domain assessment by Project Gutenberg. Rights outside the US have not been assessed; check local law.'}{' '}
           <a href={metadata.edition.sourceCatalogUrl}>Edition source and credits</a>.</p>
         <p style={small}>Choose 1 to 12 weekly readings. Selections may omit parts of the edition or revisit earlier readings. Reading positions are stable places in this edition, not invented chapters. The plan cannot be changed after the Circle is created.</p>
         <ol className={styles.list}>{rows.map((row, index) => <li key={index} style={card} className={styles.stack}>

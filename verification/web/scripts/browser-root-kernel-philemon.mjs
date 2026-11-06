@@ -93,7 +93,7 @@ try {
   const desktop = await pageFor(1360);
   const page = desktop.page;
   assert.equal((await page.goto(origin + '/great-books')).status(), 200);
-  assert.equal(await page.getByRole('heading', { name: 'Root Kernel Scripture study', exact: true }).count(), 1);
+  assert.equal(await page.getByRole('heading', { name: 'Root Kernel Scripture studies', exact: true }).count(), 1);
   await page.getByRole('link', { name: 'Read and discuss Philemon', exact: true }).press('Enter');
   await page.waitForURL(origin + routePath);
   await page.getByRole('heading', { name: edition.title, level: 1, exact: true }).waitFor();

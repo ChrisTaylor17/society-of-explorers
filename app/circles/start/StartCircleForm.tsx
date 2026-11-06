@@ -5,7 +5,7 @@ import { useCircleHosting } from '@/lib/circles/useCircleHosting';
 import { CIRCLE_MAX_MEMBERS, CIRCLE_MIN_MEMBERS, TIMEZONES, VENUE_LABELS, VENUE_TYPES, WEEKDAYS, validateCircleInput, type CircleFormat } from '@/lib/circles/schedule';
 import { body, button, card, fieldLabel, h2, input, primary, small } from '@/lib/circles/ui';
 import { matchesReadingEdition, parseReadingProgram, readingStartHref, type ReadingContext } from '@/lib/circles/reading-program';
-import { isPhilemonReading } from '@/lib/root-kernel/philemon-edition';
+import { getScriptureReading } from '@/lib/root-kernel/scripture-studies';
 import ReadingProgramEditor, { emptyReadingProgramDraft } from '../ReadingProgramEditor';
 import ReadingProgramSummary from '../ReadingProgramSummary';
 import styles from '../participation.module.css';
@@ -16,12 +16,13 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
   const defaultFormat = onlinePreset ? 'online' : 'in_person';
   const [draft, setDraft] = useState(() => emptyDraft(defaultFormat));
   const [agreed, setAgreed] = useState(false);
-  const philemonPreset = isPhilemonReading(initialContext);
-  const [programDraft, setProgramDraft] = useState(() => emptyReadingProgramDraft(philemonPreset));
+  const scripture = getScriptureReading(initialContext);
+  const scripturePreset = Boolean(scripture);
+  const [programDraft, setProgramDraft] = useState(() => emptyReadingProgramDraft(scripturePreset));
   const [editorEpoch, setEditorEpoch] = useState(0);
   const draftGeneration = useRef(0), generation = draftGeneration.current;
   const focusPreview = useCallback((element: HTMLHeadingElement | null) => element?.focus({ preventScroll: true }), []);
-  const clearDraft = useCallback(() => { draftGeneration.current++; setDraft(emptyDraft(defaultFormat)); setAgreed(false); setProgramDraft(emptyReadingProgramDraft(philemonPreset)); setEditorEpoch(value => value + 1); }, [defaultFormat, philemonPreset]);
+  const clearDraft = useCallback(() => { draftGeneration.current++; setDraft(emptyDraft(defaultFormat)); setAgreed(false); setProgramDraft(emptyReadingProgramDraft(scripturePreset)); setEditorEpoch(value => value + 1); }, [defaultFormat, scripturePreset]);
   const hosting = useCircleHosting(clearDraft);
   const { active, busy, preview, edition: previewEdition, confirmed, created, notice } = hosting;
   const disabled = !active || busy;
@@ -48,8 +49,8 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
     <p role="status" aria-live="polite" style={{ ...body, marginBottom: '1rem' }}>{notice}</p>
     <p style={{ ...small, marginBottom: '1rem' }}>{hosting.uncertain || hosting.phase === 'review' || busy ? <span>Close this hosting view before changing sign-in.</span> : <><Link href={`/login?next=${encodedReturn}`}>Sign in</Link> · <Link href={`/login?mode=signup&next=${encodedReturn}`}>Create a free account</Link></>} · {hosting.uncertain || hosting.phase === 'review' || busy ? <span>My Circles (close this hosting view before leaving)</span> : <Link href="/circles/mine">My Circles</Link>}</p>
     {invalidContext && <p style={small}>The supplied book or reading selection could not be verified. It has not been used in this form. Choose a verified reading plan after checking hosting access.</p>}
-    {initialContext && <p style={small}>{philemonPreset
-      ? 'The Philemon study is selected for your first meeting. Check hosting access and verify the edition before listing.'
+    {initialContext && <p style={small}>{scripture
+      ? `The ${scripture.shortTitle} study is selected for your first meeting. Check hosting access and verify the edition before listing.`
       : 'A public reader selection is available. After checking hosting access, explicitly choose it and verify the source edition before using it in the Circle.'}</p>}
     <div className={styles.row} style={{ marginBottom: '1rem' }}>
       <button type="button" style={button} disabled={disabled || hosting.phase === 'review' || !!created} onClick={hosting.load}>Check hosting access</button>
