@@ -6,12 +6,15 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { createCircleMemberBlocksApp, text } from './support/circle-member-blocks-app.mjs';
+import { rpc } from './support/review-coverage-db.mjs';
 import { installQuestXrDouble } from '../../../platforms/tests/quest-xr-browser-double.mjs';
 
 const ROOT = resolve('../..');
 const files = name => resolve(ROOT, name);
 const evidence = 'verification/web/evidence/';
-const prefix = evidence + 'built-shell-member-block-manager-final-browser-';
+const [run, ...extra] = process.argv.slice(2);
+assert(!extra.length && (run === undefined || /^built-shell-quest-room-safety-[a-z0-9-]+-$/.test(run)));
+const prefix = evidence + (run ?? 'built-shell-member-block-manager-final-browser-');
 const resultPath = files(prefix + 'stories.json');
 const readyPath = files(prefix + 'server-ready.json');
 const read = path => {
@@ -30,7 +33,8 @@ const exec = promisify(execFile);
 const guard = files('verification/web/scripts/built-shell-network-guard.cjs');
 const report = { status: 'RUNNING', buildId: ready.buildId, readySha256: hash(readyBytes),
   stories: [], faults: [], blockedOrigins: [], calls: [], sourceHashes: {}, cleanup: {} };
-let app, browser, loseNext = false, loseNextUnblock = false;
+let app, browser, loseNext = false, loseNextUnblock = false, loseReport = false;
+let holdReply = null, releaseReply = null;
 const save = () => writeFileSync(resultPath, JSON.stringify(report, null, 2) + '\n');
 const button = (page, label) => page.getByRole('button', { name: label, exact: true });
 async function shell(request, url) {
@@ -67,26 +71,36 @@ async function open(path) {
   }));
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
+    let delayed = false;
     try {
       if (url.origin !== app.ORIGIN) { report.blockedOrigins.push(url.origin); await route.abort(); return; }
       if (!url.pathname.startsWith('/api/')) { await route.fulfill(await shell(request, url)); return; }
       assert(/^\/api\/(?:auth\/(?:member|provider)|members\/blocks|book-salons\/[a-f0-9-]+|circles\/[a-f0-9-]+(?:\/(?:discussion(?:\/preview)?|messages\/[a-f0-9-]+))?)$/.test(url.pathname), url.pathname);
       const method = request.method(), body = request.postData() ?? undefined;
       const response = await app.dispatch(url.pathname + url.search, { method, headers: await request.allHeaders(), body });
-      const block = method === 'POST' && body !== undefined && JSON.parse(body).action === 'block';
+      const safety = /^\/api\/circles\/[a-f0-9-]+\/messages\/[a-f0-9-]+$/.test(url.pathname);
+      const action = safety && method === 'POST' ? JSON.parse(body).action : null;
+      const block = action === 'block';
       const unblock = method === 'POST' && url.pathname === '/api/members/blocks';
       report.calls.push({ method, path: url.pathname, status: response.status, block,
-        ...(unblock ? { unblockBodySha256: hash(body) } : {}) });
-      if (block && loseNext || unblock && loseNextUnblock) {
+        ...(action ? { action, actionBodySha256: hash(body) } : {}), ...(unblock ? { unblockBodySha256: hash(body) } : {}) });
+      if (safety && url.pathname === holdReply?.path && method === holdReply.method) {
+        holdReply = null; delayed = true;
+        await new Promise(resolve => { releaseReply = resolve; });
+      }
+      if (block && loseNext || unblock && loseNextUnblock || action === 'report' && loseReport) {
         assert.equal(response.status, 200);
         if (block) loseNext = false;
-        else loseNextUnblock = false;
+        else if (unblock) loseNextUnblock = false;
+        else loseReport = false;
         await route.abort('failed');
         return;
       }
       await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
     } catch (error) {
-      report.faults.push(String(error));
+      // A retired request can lose its browser route after its exact state
+      // reply has been held. Any other route error remains a fixture failure.
+      if (!delayed || !request.failure()?.errorText.includes('ERR_ABORTED')) report.faults.push(String(error));
       await route.abort().catch(() => {});
     }
   });
@@ -115,6 +129,174 @@ async function blockWeb(page) {
   await block.click();
 }
 
+async function testRoomMessageActions() {
+  const heading = 'First checked line of the synthetic post.';
+  const finalLine = 'Final checked line with café and a reply.';
+  const long = [heading, ...Array.from({ length: 9 }, (_, i) => `Checked part ${i + 1}. Read every line.`), finalLine].join('\n');
+  const longPost = (await rpc(app.db, 'soe_circle_discussion_post', [app.targetId, app.circleId, randomUUID(), long,
+    null, null, null, 'Synthetic member'])).message.id;
+  const longState = '/api/circles/' + app.circleId + '/messages/' + longPost;
+  const viewerState = '/api/circles/' + app.circleId + '/messages/' + app.viewerPostId;
+  const quest = await open('/quest/' + app.circleId), { page } = quest;
+  await page.evaluate(() => window.questXrQa.enable());
+  await button(page, 'Connect signed-in account').click();
+  const see = value => page.waitForFunction(text => window.questXrQa.panel().replace(/\s+/g, ' ').includes(text), value);
+  const labels = () => page.evaluate(() => window.questXrQa.labels());
+  const label = value => page.waitForFunction(text => window.questXrQa.labels().includes(text), value);
+  const press = async value => { await label(value); await page.evaluate(text => window.questXrQa.press(text), value); };
+  const trigger = () => page.evaluate(() => window.questXrQa.select());
+  const roomEnter = page.locator('#quest-immersive-enter'), roomExit = page.locator('#quest-immersive-exit');
+  async function enter() {
+    await roomEnter.click();
+    await see('Press the controller trigger to check your signed-in account.');
+    await trigger();
+    await see('Press the trigger to check Circle access and load recent discussion.');
+    await trigger();
+    await see('discussion 1 of');
+  }
+  async function findPreview(value) {
+    for (let count = 0; count < 5; count++) {
+      const before = await page.evaluate(() => window.questXrQa.panel());
+      if (before.replace(/\s+/g, ' ').includes(value)) return;
+      await press('Next preview');
+      await page.waitForFunction(previous => window.questXrQa.panel() !== previous, before);
+    }
+    throw Error('Expected Circle preview did not appear');
+  }
+  const calls = path => report.calls.filter(call => call.path === path);
+  async function waitForHeldReply() {
+    for (let i = 0; !releaseReply && i < 80; i++) await new Promise(resolve => setTimeout(resolve, 50));
+    assert(releaseReply, 'Expected the actual message action reply to be held');
+  }
+  const writes = (path, action) => calls(path).filter(call => call.action === action);
+  async function readAndChoose() {
+    await press('Message actions');
+    await see('Checked post. Part 1 of');
+    if ((await labels()).includes('Next part')) await press('Next part');
+    await press('Choose action');
+  }
+  await enter();
+  await findPreview(heading);
+  await press('Message actions');
+  await see('Checked post. Part 1 of 2.');
+  assert((await labels()).includes('Next part'));
+  assert(!(await labels()).includes('Choose action'));
+  assert.deepEqual(calls(longState).map(call => call.method), ['GET']);
+  await press('Next part');
+  await see(finalLine);
+  await press('Choose action');
+  await press('Report post');
+  await see('Reason 1 of 6.');
+  await press('Next reason');
+  await see('Harassment or hateful conduct. Reason 2 of 6.');
+  await press('Use this reason');
+  await see('Review private report');
+  await label('Send private report');
+  await page.evaluate(() => window.questXrQa.repeat());
+  assert.equal(writes(longState, 'report').length, 0);
+  const screenshot = await page.evaluate(() => window.questXrQa.image());
+  assert(screenshot.startsWith('data:image/png;base64,'));
+  writeFileSync(files(prefix + 'headset-report-review.png'), Buffer.from(screenshot.split(',')[1], 'base64'));
+  loseReport = true;
+  await press('Send private report');
+  await see('Message action unconfirmed');
+  assert.equal(loseReport, false);
+  await press('Check current message');
+  await see('Current message state loaded.');
+  assert.equal(writes(longState, 'report').length, 1);
+  await press('Retry exact report');
+  await see('Report received for private human review.');
+  const reports = writes(longState, 'report');
+  assert.equal(reports.length, 2);
+  assert(reports.every(call => call.status === 200 && call.actionBodySha256 === reports[0].actionBodySha256));
+  assert.deepEqual((await app.db.query('SELECT reason, note, status FROM public.circle_message_reports WHERE message_id=$1', [longPost])).rows,
+    [{ reason: 'harassment', note: null, status: 'open' }]);
+  report.stories.push('The headset pages through the exact checked text and confirms a reason separately. A lost report reply stays unconfirmed after a read, then exact retry recovers one private human report.');
+
+  await press('Read current discussion');
+  await see('discussion 1 of');
+  await findPreview(text.viewer);
+  await readAndChoose();
+  await label('Withdraw my post');
+  assert(!(await labels()).includes('Report post') && !(await labels()).includes('Block member'));
+  await press('Withdraw my post');
+  await see('Restricted evidence may remain for safety review.');
+  assert.equal(writes(viewerState, 'withdraw').length, 0);
+  await press('Confirm withdrawal');
+  await see('Withdrawal confirmed.');
+  assert.equal((await app.db.query('SELECT withdrawn FROM public.circle_message_states WHERE message_id=$1', [app.viewerPostId])).rows[0].withdrawn, true);
+  await press('Read current discussion');
+  await see('discussion 1 of');
+  report.stories.push('Only the author receives withdrawal for their post, with a separate confirmation and a saved tombstone.');
+
+  await findPreview(heading);
+  holdReply = { path: longState, method: 'GET' };
+  const before = writes(longState, 'block').length;
+  await press('Message actions');
+  await waitForHeldReply();
+  await page.evaluate(() => window.questXrQa.visibility('visible-blurred'));
+  await page.waitForFunction(() => document.getElementById('quest-immersive-status').textContent.includes('Headset focus changed.'));
+  releaseReply(); releaseReply = null;
+  await page.waitForFunction(() => window.questXrQa.labels().length === 0);
+  assert(!(await page.evaluate(() => window.questXrQa.panel())).includes(heading));
+  assert.equal(writes(longState, 'block').length, before);
+  report.stories.push('Headset focus loss during a held message check clears the controls and ignores the late private response.');
+
+  await page.locator('#member-session-check').click();
+  await enter();
+  await findPreview(heading);
+  await readAndChoose();
+  await press('Block member');
+  await see('Review member block');
+  assert.equal(writes(longState, 'block').length, 0);
+  loseNext = true;
+  await press('Confirm block');
+  await see('Message action unconfirmed');
+  assert(await app.ownedBlock());
+  assert(!(await labels()).includes('Check current message'));
+  await press('Retry exact block');
+  await see('Member blocked.');
+  const blocks = writes(longState, 'block');
+  assert.equal(blocks.length, 2);
+  assert(blocks.every(call => call.status === 200 && call.actionBodySha256 === blocks[0].actionBodySha256));
+  await press('Read current discussion');
+  await see(text.independent);
+  const current = await page.evaluate(() => ({ panel: window.questXrQa.panel(), ...window.questXrQa.stats() }));
+  assert(!current.panel.includes(heading) && !current.panel.includes(text.target));
+  assert(current.draws > 0 && current.uploads > 0);
+  assert.deepEqual(current.errors, []);
+  await roomExit.click();
+  await page.locator('#member-session-check').click();
+  await page.locator('#circle-archive-open').click();
+  await contains(page, text.independent);
+  await absent(page, text.target, text.targetOther, long);
+  report.stories.push('The checked member block uses an exact retry after a lost reply. The reloaded room and regular archive hide that author and retain the independent reply.');
+
+  await enter();
+  await findPreview(text.independent);
+  await readAndChoose();
+  await press('Report post');
+  await press('Use this reason');
+  await see('Review private report');
+  const independentState = '/api/circles/' + app.circleId + '/messages/' + app.thirdReplyId;
+  holdReply = { path: independentState, method: 'POST' };
+  await press('Send private report');
+  await waitForHeldReply();
+  assert.equal(writes(independentState, 'report').length, 1);
+  await page.evaluate(() => window.questXrQa.visibility('visible-blurred'));
+  await page.waitForFunction(() => document.getElementById('quest-immersive-status').textContent.includes('An interrupted message action may have been saved.'));
+  releaseReply(); releaseReply = null;
+  await page.waitForFunction(() => window.questXrQa.labels().length === 0);
+  assert(!(await page.evaluate(() => window.questXrQa.panel())).includes(text.independent));
+  assert.equal(writes(independentState, 'report').length, 1);
+  assert.deepEqual((await app.db.query('SELECT reason, note, status FROM public.circle_message_reports WHERE message_id=$1', [app.thirdReplyId])).rows,
+    [{ reason: 'safety', note: null, status: 'open' }]);
+  const ai = await app.db.query('SELECT count(*)::integer AS total FROM public.circle_message_ai_attempts WHERE message_id=ANY($1::uuid[])', [[longPost, app.thirdReplyId]]);
+  assert.equal(ai.rows[0].total, 0);
+  report.stories.push('Focus loss after a saved report clears its private review, shows an interrupted-action notice and makes no automatic retry. Neither report creates an AI review attempt.');
+  await quest.context.close();
+}
+
 try {
   for (const name of [
     'platforms/tests/quest-xr-browser-double.mjs', 'verification/web/tests/browser-circle-member-blocks.mjs', 'verification/web/tests/support/circle-member-blocks-app.mjs',
@@ -125,6 +307,7 @@ try {
     'platforms/quest/circle-view.mjs', 'lib/circles/message-moderation.ts',
     'platforms/quest/member-blocks-view.mjs', 'platforms/shared/member-blocks.ts', 'app/api/members/blocks/route.ts',
     'lib/members/direct-message.ts', 'lib/members/direct-message-server.ts',
+    ...(run ? ['platforms/quest/immersive-circle.mjs', 'platforms/quest/room-message-safety.mjs', 'platforms/quest/room-reading.mjs'] : []),
   ]) {
     report.sourceHashes[name] = hash(read(files(name)));
     if (ready.sourceHashes[name]) assert.equal(report.sourceHashes[name], ready.sourceHashes[name], name);
@@ -243,10 +426,13 @@ try {
   await contains(quest.page, text.target);
   report.stories.push('Quest Browser retries the unchanged unblock after the committed reply is lost. The refreshed list is empty and the current Circle post is visible again.');
   await quest.context.close();
-  assert.deepEqual(report.faults, []);
   assert.equal(report.calls.filter(call => call.block && call.status === 200).length, 3);
+  if (run) await testRoomMessageActions();
+  assert.deepEqual(report.faults, []);
+  assert.deepEqual(report.blockedOrigins, []);
   report.status = 'PASS';
 } finally {
+  releaseReply?.();
   try { await browser?.close(); report.cleanup.browser = true; }
   finally { await app?.close(); report.cleanup.database = true; save(); }
 }

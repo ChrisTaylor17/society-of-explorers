@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The Quest headset room now lets members review a checked post, report it for human review, block its author or withdraw their own post. Compiled Chromium checks used simulated controller input and the current Circle routes and SQL. A lost report or block reply recovered through exact retry, and headset focus loss cleared held private replies. Physical headset acceptance remains open. [Verification](docs/integration/quest-room-message-safety-verification.json)
+
 A shared salon invitation opens the same public listing on the web or Quest Browser and carries the selected salon through phone sign-in. The phone preview uses an anonymous request, and membership still requires review and confirmation. The compiled web and both phone simulations passed the invitation checks. Signed domain association and physical device acceptance remain open. [Verification](docs/integration/salon-invitation-verification.json)
 
 The account deletion draft now covers private member blocks. Existing blocks protect older messages and Circle posts until those records are cleared. The local PostgreSQL rehearsal verified concurrent writes, overlapping deletion requests, exact retries and a 67-table restore that detects missing receipts. Hosted recovery and the retention decision are pending. [Verification](docs/integration/member-block-erasure-verification.json)
