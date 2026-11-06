@@ -1,0 +1,78 @@
+{
+  "status": "local_web_wallet_and_selected_release_acceptance_passed_hosted_pending",
+  "recordedAt": "2026-11-06T03:33:15.378217+00:00",
+  "baseCommit": "860c01ed56bcb9537413a3170580d459f49669e9",
+  "priorBuildReceipt": "docs/integration/web-locked-build-verification.json",
+  "sourceSha256": {
+    "app/api/auth/siwe/route.ts": "ed6ebc33cddf3f4d52219fca3258d9c3db14b0e012eedc427268410064d0877a",
+    "app/layout.tsx": "edc5263944fda4e016ebe543d36338e2f8933f9d6ee44c73460222f55f7a3be2",
+    "package.json": "a6ae70e5d649b66a060c788f54003811e4d82ff40814169d5f120a9cbfdb9935",
+    "package-lock.json": "c2ea9fdc6811a666a57e794755dd770e12ae116a049c3a78650ea4d51afb9968",
+    "verification/web/scripts/browser-built-wallet.mjs": "0df7d7ad4330cbeeaf4f6ad6914b329d44012d560e88fae55afe4fab4bc794b8",
+    "verification/web/tests/account-security.test.mjs": "b6c4d1fcfd72132bb526909cbdd1ac89c94c28e51a95a09f79779275665f45da",
+    "verification/web/tests/circle-attendance-backend.test.mjs": "4dbbbc10db27a1a4e4affe06a87bd1192a412e4d2fd6f3ab558e9fd2b48a5870"
+  },
+  "removedUnusedSources": [
+    "components/shared/Providers.tsx",
+    "lib/wagmi/config.ts"
+  ],
+  "build": {
+    "id": "WL99sFE9nSYkZou8ibvty",
+    "next": "16.2.9",
+    "sourceSha256": "b01f3e8313a45178ad3e0680a1dd519c5b7c99e46a65186cc4addc6185eadb17",
+    "sourceFiles": 1059,
+    "seconds": 42.28,
+    "typeScriptPassed": true,
+    "scopedLintPassed": true,
+    "previousWalletModuleWarnings": 8,
+    "compilerWarnings": 0,
+    "dependencyLockChange": "Seven unused packages removed. All retained dependency records are identical.",
+    "serverStoppedWithMatchingInputs": true,
+    "deniedNetworkOperations": 0
+  },
+  "testResults": {
+    "selectedSerialRegressionTestsPassed": 231,
+    "compiledApiChecksPassed": 14,
+    "chromiumScenariosPassed": {
+      "Wallet sign-in": 3,
+      "Online Circles and account selection": 7,
+      "Live Council": 5,
+      "Philemon study and host guide": 7,
+      "Paranal Reel": 4,
+      "Telescope tilt Reel": 4,
+      "Daily Practice": 7,
+      "Quest Browser": 3
+    },
+    "legacyStaticSmokeFailuresMatchingBaseline": 10
+  },
+  "findings": [
+    "The actual NextRequest test reproduced acceptance of a distinct localhost signature on two numeric loopback origins. The fixed handler rejects the alternate origin and verifies the actual browser origin on IPv4 and IPv6. The HTTPS control passed.",
+    "Chromium opened the built login page without an extension and exposed the email path. The same built page used a throwaway wallet, verified the exact member and preserved the HttpOnly session on reload.",
+    "The attendance endpoint tests use the profile-aware SQL chain and current browser selection. Historical preflight and rollback checks use the attendance migration stage.",
+    "A 30 ms email-recovery case failed under parallel test load and passed in the serial suite."
+  ],
+  "scope": "Guarded local build and compiled API probes. Browser sign-in uses real route source and Next cookies with a throwaway signer and disposable member database. Hosted sign-in, production restore and physical devices remain open.",
+  "evidenceSha256": {
+    "verification/web/evidence/web-wallet-verification/built-shell-web-wallet-01-next-build.json": "e5e1e791c18e4605945c8eddbbecb8991ff4429f705a33fc2c13af657881734e",
+    "verification/web/evidence/web-wallet-verification/built-shell-web-wallet-01-next-build.log": "254b32497ca0b58c8921d6acda22a349138658034aca13819370c7de86d0a5ac",
+    "verification/web/evidence/web-wallet-verification/built-shell-web-wallet-01-build-source-sha256.json": "2296b3ca8588f9cbc6974a6811bc163f29081b67993f0e5724388299c44c4203",
+    "verification/web/evidence/web-wallet-verification/built-shell-live-room-03-server.json": "26a143a1368cb0dd9d3dee27806cfe666d62311fc140e847f7146408ec323982",
+    "verification/web/evidence/web-wallet-verification/built-shell-live-room-03-release-boundary-probe.json": "4787402f7bf6b3781a0abd5ec2c2c8ef2d37e1715a8eeed22ca74f5fa1768d55",
+    "verification/web/evidence/web-wallet-verification/built-shell-live-room-03-wallet-browser.json": "a86f6e1fc64672ee92c6c28e231d927c1d9ba7f1ba6f3a55c4a24dede1492abb",
+    "verification/web/evidence/web-wallet-verification/online-salon-browser-03/browser.json": "4049a16e24bcccad2670d07f4f45cf201cef31e710e86137ca203e644b876536",
+    "verification/web/evidence/web-wallet-verification/built-shell-live-room-03-browser.json": "3c947532c5dbd72f6f8339ebb3ebe793718b042ad3702f0966425a81bff5a4b0",
+    "verification/web/evidence/web-wallet-verification/root-kernel-philemon-03/browser.json": "9eeff4ef75e016273bccb565c9b1ea87bd43e2dae5a76da2f06b49b4f641c272",
+    "verification/web/evidence/web-wallet-verification/reel-paranal-built-03/browser.json": "e87bd2f81ae72c0fddca8e032a102740e9c5cc9a9d06c42a7fab9589e8f819b6",
+    "verification/web/evidence/web-wallet-verification/reel-elt-built-03/browser.json": "ecb64889dc8da5cb31b6cd6d1f4a94ab7f265f7acd4ce6a10db9c43390b2ce3e",
+    "verification/web/evidence/web-wallet-verification/practice-browser-03/browser.json": "3a63c5439fa345a6e614d2f54e5eaedba4aede106f14cf219559f49ad93d8bd4",
+    "verification/web/evidence/web-wallet-verification/quest-immersive-built-03/browser.json": "ecb0d381e8648de006e69e271a7ac6e31fc31bb6eb689d8a110915326bf4a276",
+    "verification/web/evidence/web-wallet-verification/web-wallet-regressions-02.tap": "4c4158e82b24850286067c01b285da5ba9e8e90838e8a8846a2a3f5ebedb728a",
+    "verification/web/evidence/web-wallet-verification/web-wallet-lint-02.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/web-wallet-verification/web-wallet-legacy-smoke-01.log": "5c9220e4b67c2e67b3f3580a74539d7abf5e0402a7fa96bfed3c42ca12c0c265"
+  },
+  "scratchPath": "/private/tmp/soe-web-locked.HVd9JZvE",
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683"
+  }
+}

@@ -1,19 +1,27 @@
 import test,{after,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {createCircleAttendanceApp,TOKENS,ORIGIN} from './support/circle-attendance-app.mjs';
+import {createPublicProfileApp,TOKENS,ORIGIN,SUBJECTS} from './support/public-profile-app.mjs';
+import {createCircleAttendanceApp} from './support/circle-attendance-app.mjs';
 import {contributionSource,rpc} from './support/member-contributions-app.mjs';
 import {createNativeReadingApp} from './support/native-reading-app.mjs';
 let f,id,current,contract;
 const h=(who='author')=>({authorization:'Bearer '+TOKENS[who]});
+const intent='c1000000-0000-4000-8000-000000000001';
+const selectedCookies=(provider,subject)=>`soe_auth_provider=${provider}; soe_auth_intent=${intent}; soe_auth_selection_v1=v1.${intent}.${provider}.${subject}`;
+async function walletCookies(who) {
+ const session=(await f.walletCookie(who)).split('; ').find(value=>value.startsWith('soe_wallet_id='));
+ assert(session);
+ return selectedCookies('wallet',f.actors[who])+'; '+session;
+}
 const path=()=>'/api/circles/'+id;
 const read=(headers=h(),suffix='')=>f.dispatch(path()+suffix,{headers});
 const post=(body,headers=h(),action='rsvp')=>f.dispatch(path()+'/'+action,{method:'POST',headers,body});
 const input=(extra={})=>({expectedMemberId:f.authorId,requestId:crypto.randomUUID(),expectedRevision:current.revision,date:current.meetings[0].date,status:'going',...extra});
 async function json(response,status=200){assert.equal(response.status,status);return response.json();}
 async function role(query,args=[],name='service_role'){await f.db.exec('SET ROLE '+name);try{return await f.db.query(query,args);}finally{await f.db.exec('RESET ROLE');}}
-async function script(name){await f.db.exec('SET ROLE postgres');await f.db.exec((await contributionSource('docs/sql/circle-attendance-'+name+'.sql')).toString());}
+async function script(db,name){await db.exec('SET ROLE postgres');await db.exec((await contributionSource('docs/sql/circle-attendance-'+name+'.sql')).toString());}
 after(async()=>{await f?.close();});
-beforeEach(async()=>{await f?.close();f=await createCircleAttendanceApp();contract=f.app.load('lib/circles/membership.ts');f.beforeHttp(null);f.transformHttp(null);f.transformDb(null);f.setCookieActor(null);await f.db.exec("ROLLBACK; RESET ROLE; UPDATE book_cohorts SET status='completed'");id=await f.seedCircle();await f.join(id);current=await json(await read());f.sql.length=0;f.http.length=0;});
+beforeEach(async()=>{await f?.close();f=await createPublicProfileApp();contract=f.app.load('lib/circles/membership.ts');await f.db.exec("ROLLBACK; RESET ROLE; UPDATE book_cohorts SET status='completed'");id=await f.seedCircle();await f.join(id);current=await json(await read());f.sql.length=0;f.http.length=0;});
 
 test('strict mutation parser preserves canonical compact wire and rejects old/injected bodies',()=>{
  const body=input();assert.deepEqual(JSON.parse(contract.circleAttendanceMutationBody(body)),body);assert(Buffer.byteLength(contract.circleAttendanceMutationBody(body))<=contract.CIRCLE_ATTENDANCE_BODY_MAX_BYTES);
@@ -54,15 +62,20 @@ test('anonymous detail stays public; private expected-owner reads reject stale a
  await json(await read({'x-soe-expected-member':f.authorId}),401);
 });
 test('cookie account switch between proof and RSVP is refused by canonical expectedMemberId',async()=>{
- f.setCookieActor('author');const proof=await json(await f.dispatch('/api/auth/member'));assert.equal(proof.id??proof.member?.id,f.authorId);f.setCookieActor('other');await json(await post(input(),{origin:ORIGIN}),409);assert.equal(await f.rsvpRow(id,current.meetings[0].date),null);
+ f.setCookieActor('author');
+ const proof=await json(await f.dispatch('/api/auth/member',{headers:{cookie:selectedCookies('supabase',SUBJECTS.author)}}));
+ assert.equal(proof.member.id,f.authorId);
+ f.setCookieActor('other');
+ await json(await post(input(),{origin:ORIGIN,cookie:selectedCookies('supabase',SUBJECTS.other)}),409);
+ assert.equal(await f.rsvpRow(id,current.meetings[0].date),null);
 });
 test('actual signed wallet switch is guarded for join leave completion and private reads',async()=>{
- const a=await f.walletCookie('author'),b=await f.walletCookie('other');await json(await f.dispatch('/api/auth/member',{headers:{cookie:a}}));
+ const a=await walletCookies('author'),b=await walletCookies('other');await json(await f.dispatch('/api/auth/member',{headers:{cookie:a}}));
  const headers={origin:ORIGIN,cookie:b,'x-soe-expected-member':f.authorId};for(const action of ['join','leave','complete'])await json(await post({requestId:crypto.randomUUID(),expectedRevision:current.revision,...(action==='complete'?{expectedMemberId:f.authorId}:{})},headers,action),409);
  await json(await read(headers),409);assert.equal(f.sql.filter(x=>x.kind==='rpc').length,0);
 });
 test('invalid explicit bearer cannot fall back to valid cookie or wallet',async()=>{
- f.setCookieActor('author');const cookie=await f.walletCookie();await json(await post(input(),{origin:ORIGIN,authorization:'Bearer invalid',cookie}),401);assert.equal(f.sql.filter(x=>x.kind==='rpc').length,0);
+ f.setCookieActor('author');const cookie=await walletCookies('author');await json(await post(input(),{origin:ORIGIN,authorization:'Bearer invalid',cookie}),401);assert.equal(f.sql.filter(x=>x.kind==='rpc').length,0);
 });
 test('signed-out browser selection vetoes an otherwise valid bearer',async()=>{await json(await post(input(),{...h(),origin:ORIGIN,cookie:'soe_auth_provider=signed_out'}),401);assert.equal(f.sql.filter(x=>x.kind==='rpc').length,0);});
 test('foreign origin and oversized streamed JSON are refused before SQL',async()=>{
@@ -103,13 +116,39 @@ test('raw service DML and browser function execution cannot bypass reviewed RSVP
 test('revision ceiling rejects even a new same-value request without partial mutation',async()=>{
  const body=input({status:'not_going'});await json(await post(body));await f.db.query('UPDATE book_cohorts SET circle_participation_revision=9007199254740991 WHERE id=$1',[id]);await json(await post(input({status:'not_going',expectedRevision:Number.MAX_SAFE_INTEGER})),409);assert.equal((await f.rsvpRow(id,body.date)).status,'not_going');
 });
-test('preflight rejects helper drift and installed raw-write privilege drift',async()=>{
- await f.db.exec('BEGIN; ALTER FUNCTION _soe_circle_participation_bump(uuid) SECURITY DEFINER');await assert.rejects(script('preflight'),e=>e.code==='PT409');await f.db.exec('ROLLBACK');
- await f.db.exec('BEGIN; GRANT UPDATE ON circle_rsvps TO service_role');await assert.rejects(script('apply'),e=>e.code==='PT409');await f.db.exec('ROLLBACK');await script('preflight');
+// These scripts pin the function bodies at the historical attendance migration stage.
+test('preflight rejects helper drift and installed raw-write privilege drift',async t=>{
+ const old=await createCircleAttendanceApp();
+ t.after(()=>old.close());
+ await old.db.exec('BEGIN; ALTER FUNCTION _soe_circle_participation_bump(uuid) SECURITY DEFINER');
+ await assert.rejects(script(old.db,'preflight'),e=>e.code==='PT409');
+ await old.db.exec('ROLLBACK');
+ await old.db.exec('BEGIN; GRANT UPDATE ON circle_rsvps TO service_role');
+ await assert.rejects(script(old.db,'apply'),e=>e.code==='PT409');
+ await old.db.exec('ROLLBACK');
+ await script(old.db,'preflight');
 });
-test('disable rollback preserves rows receipts ordering and operational leave; reapply restores RSVP',async()=>{
- const body=input(),saved=await json(await post(body)),count=await f.receiptCount();await script('rollback');assert.equal((await f.rsvpRow(id,body.date)).status,'going');assert.equal(await f.receiptCount(),count);await json(await post(body),503);
- await json(await post({requestId:crypto.randomUUID(),expectedRevision:saved.state.revision},h(),'leave'));assert.equal(await f.rsvpRow(id,body.date),null);await script('apply');const replay=await json(await post(body));assert.equal(replay.state.isMember,false);assert.equal(replay.replayed,true);
+test('disable rollback preserves rows receipts ordering and operational leave; reapply restores RSVP',async t=>{
+ const old=await createCircleAttendanceApp();
+ t.after(()=>old.close());
+ const circle=await old.seedCircle();
+ await old.join(circle);
+ const state=await old.membership(circle),date=state.meetings[0].date;
+ const args=[old.authorId,circle,state.revision,crypto.randomUUID(),date,'going'];
+ const saved=await rpc(old.db,'soe_circle_rsvp',args);
+ const count=await old.receiptCount();
+ await script(old.db,'rollback');
+ assert.equal((await old.rsvpRow(circle,date)).status,'going');
+ assert.equal(await old.receiptCount(),count);
+ await assert.rejects(rpc(old.db,'soe_circle_rsvp',args),e=>e.code==='42501');
+ const left=await rpc(old.db,'soe_circle_leave',[old.authorId,circle,saved.state.revision,crypto.randomUUID()]);
+ assert.equal(left.state.isMember,false);
+ assert.equal(await old.rsvpRow(circle,date),null);
+ await script(old.db,'apply');
+ const replay=await rpc(old.db,'soe_circle_rsvp',args);
+ assert.equal(replay.state.revision,left.state.revision);
+ assert.equal(replay.state.isMember,false);
+ assert.equal(replay.replayed,true);
 });
 
 test('detail parser rejects off-plan first dates weekdays and finite program coordinates',()=>{
@@ -120,7 +159,7 @@ test('detail parser rejects off-plan first dates weekdays and finite program coo
  }
 });
 test('actual detail handler refuses an off-program SQL date projection before attendance review',async()=>{
- f.transformDb(({name,result})=>{if(name==='soe_circle_detail'&&result.data){const d=new Date(result.data.meetings[0].date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);result.data.meetings[0].date=d.toISOString().slice(0,10);result.data.nextMeeting=result.data.meetings[0].date;}return result;});
+ f.transformDb(({name,result})=>{if(name==='soe_circle_detail_profiles'&&result.data){const d=new Date(result.data.meetings[0].date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);result.data.meetings[0].date=d.toISOString().slice(0,10);result.data.nextMeeting=result.data.meetings[0].date;}return result;});
  const value=await json(await read(),503);assert.equal('meetings' in value,false);assert.equal('circle' in value,false);
 });
 

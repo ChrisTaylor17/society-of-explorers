@@ -8,7 +8,7 @@ import { selectAuthProvider } from '@/lib/auth/provider'
 import { canonicalizeSignature, shortAddress } from '@/lib/auth/siweSignature'
 import { findOrCreateWalletMember, isDbUnreachable } from '@/lib/auth/walletMember'
 import { AUTH_INTENT_COOKIE, parseBrowserIntent } from '@/lib/auth/browserIntent'
-import { authWriteOriginAllowed, readAuthJson } from '@/lib/auth/request'
+import { authWriteOriginAllowed, readAuthJson, requestOrigin } from '@/lib/auth/request'
 
 // siwe rejects with a SiweResponse ({ success, error: SiweError { type } }), not an Error.
 function errorMessage(error: unknown): string {
@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
     }
 
     const siweMessage = new SiweMessage(message)
-    const origin = new URL(req.url)
-    const domain = origin.host
-    if (siweMessage.uri !== origin.origin || siweMessage.address.toLowerCase() !== address.toLowerCase()) {
+    const origin = requestOrigin(new URL(req.url), req.headers)
+    if (siweMessage.uri !== origin || siweMessage.address.toLowerCase() !== address.toLowerCase()) {
       return privateJson({ error: 'Invalid wallet sign-in request.' }, { status: 400 })
     }
+    const domain = new URL(origin).host
     const canonical = canonicalizeSignature(signature)
     let verified: Awaited<ReturnType<typeof siweMessage.verify>>
     try {

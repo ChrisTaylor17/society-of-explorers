@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { Wallet } from 'ethers';
+import { NextRequest, NextResponse } from 'next/server.js';
+import { SiweMessage } from 'siwe';
 import {offlineApp} from './support/offline-app.mjs';
 const ADA='11111111-1111-4111-8111-111111111111',JULES='22222222-2222-4222-8222-222222222222';
 const SUBJECT='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',OTHER='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -39,6 +42,45 @@ test('normalized HTTP loopback uses the exact incoming authority', () => {
  assert.equal(check('https://member.invalid', '127.0.0.1:3300', 'https://member.invalid'), true);
  assert.equal(check('https://member.invalid', '127.0.0.1:3300', 'http://127.0.0.1:3300'), false);
 });
+for (const origin of ['http://127.0.0.1:3300', 'http://[::1]:3300', 'https://soe.invalid']) {
+ test(`SIWE signs in using the browser authority at ${origin}`, async () => {
+  const wallet = Wallet.createRandom();
+  const app = setup({ members: [row({ wallet_address: wallet.address.toLowerCase() })] });
+  app.setMock('next/server', () => ({ NextResponse }));
+  app.setMock('@/lib/supabase/server', () => ({ createServiceClient: () => app.db }));
+  const nonceRoute = app.load('app/api/auth/nonce/route.ts');
+  const siweRoute = app.load('app/api/auth/siwe/route.ts');
+  const headers = { host: new URL(origin).host, origin, 'sec-fetch-site': 'same-origin' };
+  const intentCookie = `soe_auth_intent=${INTENT}`;
+  const challenge = await nonceRoute.GET(new NextRequest(`${origin}/api/auth/nonce`, {
+   headers: { ...headers, cookie: intentCookie, 'x-soe-auth-intent': INTENT },
+  }));
+  assert.equal(challenge.status, 200);
+  const { nonce } = await challenge.json();
+  const nonceCookie = challenge.cookies.get('soe_siwe_nonce').value;
+  async function signIn(signedOrigin) {
+   const message = new SiweMessage({
+    domain: new URL(signedOrigin).host, uri: signedOrigin, address: wallet.address,
+    chainId: 1, version: '1', nonce,
+   }).prepareMessage();
+   return siweRoute.POST(new NextRequest(`${origin}/api/auth/siwe`, {
+    method: 'POST',
+    headers: { ...headers, cookie: `${intentCookie}; soe_siwe_nonce=${nonceCookie}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ address: wallet.address, intent: INTENT, message, signature: await wallet.signMessage(message) }),
+   }));
+  }
+  const refused = await signIn('http://localhost:3300');
+  assert.equal(refused.status, 400);
+  assert.equal(refused.cookies.get('soe_wallet_id'), undefined);
+  assert.equal(app.db.log.length, 0);
+  const accepted = await signIn(origin);
+  assert.equal(accepted.status, 200);
+  assert.deepEqual(await accepted.json(), { verified: true, member: { id: ADA }, intent: INTENT });
+  const session = accepted.cookies.get('soe_wallet_id');
+  assert.equal(session?.httpOnly, true);
+  assert.equal(await app.load('lib/auth/walletSession.ts').verifyWalletSessionValue(session.value), ADA);
+ });
+}
 test('forged auth subject is refused before member queries',async()=>{
  const app=setup();assert.equal((await app.load('app/api/auth/ensure-member/route.ts').POST(request({supabaseAuthId:OTHER}))).status,403);assert.equal(app.db.log.length,0);
 });

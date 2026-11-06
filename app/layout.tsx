@@ -17,7 +17,6 @@ import '@fontsource/playfair-display/latin-400.css'
 import '@fontsource/playfair-display/latin-500.css'
 import '@fontsource/playfair-display/latin-600.css'
 import './globals.css'
-import { Providers } from '@/components/shared/Providers'
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration'
 
 export const metadata: Metadata = {
@@ -85,7 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           />
         )}
         <script dangerouslySetInnerHTML={{ __html: "if(!window.location.hash){window.scrollTo(0,0)}" }} />
-        <Providers>{children}</Providers>
+        {children}
         <ServiceWorkerRegistration />
       </body>
     </html>
