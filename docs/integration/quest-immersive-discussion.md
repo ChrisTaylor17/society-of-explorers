@@ -8,6 +8,8 @@ The headset has its own session and uses the regular Circle's account checks, di
 
 In the shared salon, the first preview checks for new posts after each successful check-in. Older previews and the composer pause this check. After posting, choose **Read recent discussion** to return to the latest preview. The standalone room refreshes when you choose **Refresh**. [Live discussion verification](quest-live-discussion-verification.json)
 
+When you open Quest Browser from a Circle selected for an Archivist Reel, the question and credited video link travel with you. Check your session and open the discussion archive. In Quest Browser, **Use Reel question in a draft** adds the question and full public link. In the headset, point at **Reel question** to read it and **Use question** to prepare a short draft with the source path. Add your response, then review the exact text before choosing **Post**. While you read the question in a shared salon, check-in continues and the discussion waits until you return. [Quest Reel verification](quest-reel-discussion-verification.json)
+
 ## Reading in the room
 
 Point at **Read selection** from recent discussion or the shared salon. The room checks current membership and loads the upcoming meeting's exact book, edition and assigned range. It supports the pinned Great Books editions and the two starter readings already bound to those editions. For other assignments, the regular Circle shows the reading plan.

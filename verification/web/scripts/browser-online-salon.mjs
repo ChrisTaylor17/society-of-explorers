@@ -258,9 +258,20 @@ try {
   await button('Confirm join').click();
   await saved();
   await meetingButton.waitFor();
+  assert.equal(await link('Open in Quest Browser').getAttribute('href'), `/quest/${circleId}?reel=${reelId}`);
   assert.equal(await page.locator('a[href*="private-meeting-do-not-expose"]').count(), 0);
   assert.equal(await fits(), true);
   pass('A verified nonmember reviews the norms and confirms membership before the private meeting control appears.');
+
+  const questPath = `/quest/${circleId}?reel=${reelId}`;
+  await link('Open in Quest Browser').click();
+  await page.waitForURL(origin + questPath);
+  await page.getByRole('region', { name: 'Question from the Reel' }).getByText(reelQuestion, { exact: true }).waitFor();
+  assert.equal(new URL(await link('Sign in to your account').getAttribute('href'), origin).searchParams.get('next'), questPath);
+  await page.goBack();
+  await page.waitForURL(origin + detailPath);
+  await button('Load current Circle access').click();
+  pass('The verified Circle opens Quest Browser with the same Reel question and a sign-in link back to it.');
 
   await link('Open discussion with the Reel question').click();
   await page.waitForURL(origin + `/circles/${circleId}/discussion?reel=${reelId}`);

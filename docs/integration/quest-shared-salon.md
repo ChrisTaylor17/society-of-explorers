@@ -6,6 +6,8 @@ The same count appears in the regular browser and headset. It includes your own 
 
 While checked in, open the latest discussion archive in Quest Browser or choose **Read Circle discussion** in the headset. After a successful check-in, the latest page checks for changes about every ten seconds. Older pages, open threads, drafts and message actions stay in place. In the browser, updates also pause while an archive control has focus. In the headset, the first preview follows new posts and the older previews stay where you left them. A membership refusal clears the open archive.
 
+If you came from an Archivist Reel, the same question appears in Quest Browser and under **Reel question** in the headset discussion. Each member can add it to their own draft and review it before posting. The other member sees the saved post after the next check-in while following the latest discussion. [Quest Reel verification](quest-reel-discussion-verification.json)
+
 In the headset salon, point at **Meeting in browser** to release your seat and return to the Circle’s Quest page. Check your member session there and choose **Open live meeting**. The live-meeting control is also available in Quest Browser when the shared count is disabled.
 
 ## Live meeting handoff

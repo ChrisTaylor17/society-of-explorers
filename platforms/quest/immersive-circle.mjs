@@ -21,7 +21,7 @@ export function immersiveControls(doc, sharedSalon) {
 
 /** The headset gets a separate member lifetime. A visible headset may
  * have focus while the regular browser window's private session is paused. */
-export function mountImmersiveCircle({ window: win, document: doc, config, onModeChange, onMeetingRequested }) {
+export function mountImmersiveCircle({ window: win, document: doc, config, reelStarter, onModeChange, onMeetingRequested }) {
   const [status, enter, exit, enterSalon] = immersiveControls(doc, config.sharedSalon);
   const { origin, circleId, transport, immersive, newRequestId } = config;
   const discussion = origin + '/api/circles/' + circleId + '/discussion';
@@ -132,7 +132,10 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     const following = current.salon && current.index === 0;
     const actions = [...(canWrite ? [control('new', 'Write a post')] : []),
       ...(card && canWrite ? [control('reply', 'Reply')] : []), control('advance', more ? 'Next preview' : 'Refresh')];
-    if (model.archive.phase === 'ready') actions.push(control('reading-open', 'Read selection'));
+    if (model.archive.phase === 'ready') {
+      if (reelStarter) actions.push(control('reel-question', 'Reel question'));
+      actions.push(control('reading-open', 'Read selection'));
+    }
     if (current.salon) {
       // Keep Back on the same side as Read, away from Leave and Meeting.
       if (actions.length === 1) actions.push(null);
@@ -193,6 +196,19 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     if (!archive.page) { current.cards = []; current.index = 0; }
     panel = roomComposerPanel(threadWrite, current.keyboard);
   }
+  function startComposer(current, parent, draft = '') {
+    if (!current.host.threadStart(parent)) { showDiscussion(current); return; }
+    if (draft) current.host.threadEdit(draft);
+    current.keyboard = { caps: false, symbols: false };
+    showComposer(current);
+  }
+  function showReelQuestion(current) {
+    view = 'reel';
+    const canDraft = current.host.model().threadWrite.canStart && reelStarter.roomDraft.length <= ROOM_POST_LIMIT;
+    panel = { label: 'ARCHIVIST REEL', heading: 'Question from the Reel', text: reelStarter.question,
+      rows: [[...(canDraft ? [control('reel-draft', 'Use question')] : []), control('reel-back', 'Back to discussion')]],
+      footer: 'Open the credited video and captions in Quest Browser.' };
+  }
   async function compose(current, target) {
     const { host, keyboard } = current;
     const model = host.model().threadWrite;
@@ -241,6 +257,14 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       if (!current.scope) { await current.binding.check(); return; }
       current.pending = true;
       if (!ownsRoom(current)) return;
+      if (view === 'reel') {
+        if (target === 'reel-back' || target === 'reel-draft') {
+          view = 'discussion';
+          if (target === 'reel-draft') startComposer(current, null, reelStarter.roomDraft);
+          else showDiscussion(current);
+        }
+        return;
+      }
       if (view === 'reading') {
         const { reader, from } = current.reading;
         if (target === 'reading-back') {
@@ -272,6 +296,9 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
         return;
       }
       if (current.keyboard) { await compose(current, target); return; }
+      if (target === 'reel-question' && reelStarter && current.host.model().archive.phase === 'ready') {
+        showReelQuestion(current); return;
+      }
       if (target === 'reading-open' && current.host.model().archive.phase === 'ready') { await openReading(current); return; }
       if (target === 'salon-back' && current.salon) {
         current.cards = [];
@@ -283,10 +310,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       }
       if (target === 'new' || target === 'reply') {
         const parent = current.cards[current.index]?.id;
-        if ((target === 'new' || parent) && current.host.threadStart(target === 'new' ? null : parent)) {
-          current.keyboard = { caps: false, symbols: false };
-          showComposer(current);
-        }
+        if (target === 'new' || parent) startComposer(current, target === 'new' ? null : parent);
         return;
       }
       if (current.index + 1 < current.cards.length) { current.index++; showDiscussion(current); return; }

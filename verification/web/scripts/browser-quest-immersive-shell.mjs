@@ -120,6 +120,20 @@ try {
   assert(await meeting(secure.page).isDisabled());
   assert.equal(await secure.page.locator('#quest-salon-join, #quest-salon-headset').count(), 0);
   assert.equal(await secure.page.evaluate(() => window.xrFixtureCalls), 0);
+  const reelPath = path + '?reel=which-height';
+  assert.equal((await secure.page.goto(secureOrigin + reelPath)).status(), 200);
+  const question = secure.page.getByRole('region', { name: 'Question from the Reel' });
+  await question.getByText(/where it was measured from/).waitFor();
+  assert.equal(await question.getByRole('link', { name: 'Watch the Reel' }).getAttribute('href'), '/clips/watch/which-height');
+  assert.equal(new URL(await secure.page.getByRole('link', { name: 'Sign in to your account', exact: true })
+    .getAttribute('href'), secureOrigin).searchParams.get('next'), reelPath);
+  assert.equal(await secure.page.getByRole('link', { name: 'Full discussion archive' }).getAttribute('href'),
+    '/circles/' + circle + '/discussion?reel=which-height');
+  assert(await secure.page.locator('#circle-thread-reel').isDisabled());
+  assert.equal((await secure.page.goto(secureOrigin + reelPath + '&reel=night-sky-traffic')).status(), 200);
+  assert.equal(await question.count(), 0);
+  assert.equal(await secure.page.locator('#circle-thread-reel').count(), 0);
+  stories.push('The built Quest route carries the chosen public Reel through sign-in and the archive fallback, while duplicate choices add no draft control.');
   assert.equal((await secure.page.goto(secureOrigin + '/quest/contributions')).status(), 200);
   await secure.page.getByRole('heading', { name: 'My Quest Browser contributions' }).waitFor();
   assert.equal(await enter(secure.page).count(), 0);

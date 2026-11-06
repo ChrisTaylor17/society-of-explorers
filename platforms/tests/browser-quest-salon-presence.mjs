@@ -88,7 +88,9 @@ try {
       '--host-resolver-rules=MAP * ~NOTFOUND', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   receipt.chromium = browser.version();
   let holdReserve = null, holdDetail = null, holdPassage = null, corruptPassage = false, meetingNavigations = 0;
-  async function client(actor, headset = false, { circleId = f.circleId, salon = true } = {}) {
+  const reelId = 'which-height';
+  const reelQuestion = 'How would you report both heights so a reader can tell what each number measures and where it was measured from?';
+  async function client(actor, headset = false, { circleId = f.circleId, salon = true, reel = false } = {}) {
     const context = await browser.newContext({ viewport: { width: 375, height: 844 }, serviceWorkers: 'block' });
     const readingCircle = circleId !== f.circleId, circlePath = '/api/circles/' + circleId;
     if (readingCircle) await context.addCookies([{ name: 'quest_fixture_cookie', value: 'test-only', url: origin }]);
@@ -112,7 +114,7 @@ try {
         }
         assert.equal(url.origin, origin);
         if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body:
-          `<!doctype html><html lang="en" data-circle="${circleId}" ${salon ? 'data-shared-salon' : ''}><head><link rel="stylesheet" href="/page.css"></head><body><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
+          `<!doctype html><html lang="en" data-circle="${circleId}" ${salon ? 'data-shared-salon' : ''} ${reel ? 'data-reel="' + reelId + '"' : ''}><head><link rel="stylesheet" href="/page.css"></head><body><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
         if (url.pathname === '/page.mjs') return route.fulfill({ contentType: 'text/javascript', body: bundle });
         if (url.pathname === '/page.css') return route.fulfill({ contentType: 'text/css', body: css });
         const actual = await request.allHeaders();
@@ -194,10 +196,23 @@ try {
     await page.getByRole('button', { name: 'Connect signed-in account', exact: true }).click();
     return page;
   }
-  const regular = await client('author');
-  const xr = await client('outsider', true);
+  const regular = await client('author', false, { reel: true });
+  const xr = await client('outsider', true, { reel: true });
+  const reelPath = '/clips/watch/' + reelId;
+  const reelBanner = regular.getByRole('region', { name: 'Question from the Reel' });
+  await reelBanner.getByText(reelQuestion, { exact: true }).waitFor();
+  assert.equal(await reelBanner.getByRole('link', { name: 'Watch the Reel' }).getAttribute('href'), reelPath);
+  assert(await regular.locator('#circle-thread-reel').isDisabled());
   const trigger = () => xr.evaluate(() => window.questXrQa.select());
   const panel = text => xr.waitForFunction(value => window.questXrQa.panel().replace(/\s+/g, ' ').includes(value), text);
+  const capturePanel = async (page, name) => {
+    const image = await page.evaluate(() => window.questXrQa.image());
+    assert.match(image, /^data:image\/png;base64,/);
+    const path = 'platforms/evidence/' + name + '-' + run + '.png';
+    const bytes = Buffer.from(image.split(',')[1], 'base64');
+    await writeFile(resolve(root, path), bytes, { flag: 'wx' });
+    return { path, sha256: sha(bytes) };
+  };
   const status = async text => {
     try { await regular.waitForFunction(value => document.getElementById('quest-salon-status').textContent.includes(value), text); }
     catch (error) { throw Error('Expected browser salon status "' + text + '". Saw "' + await regular.locator('#quest-salon-status').textContent() + '".', { cause: error }); }
@@ -258,29 +273,52 @@ try {
   await press('Read Circle discussion');
   await panel('Independent visible reply remains readable.');
   assert.ok(browserRequests.some(entry => entry.actor === 'outsider' && entry.action === 'archive' && entry.status === 200));
-  await press('Write a post');
-  await panel('Choose letters');
+  const headsetPromptReads = archiveReads('outsider');
+  await press('Reel question');
+  await panel(reelQuestion);
+  receipt.reelPanel = await capturePanel(xr, 'quest-reel-question');
+  assert.equal((await heartbeat(xr)).status(), 200);
+  await panel(reelQuestion);
+  assert.equal(archiveReads('outsider'), headsetPromptReads);
+  assert.equal(await f.receiptCount(), receiptsBefore);
+  await press('Back to discussion');
+  await panel('Independent visible reply remains readable.');
+  await press('Reel question');
+  await panel('Use question');
+  const roomDraft = reelQuestion + '\n\n' + reelPath + '\n\n';
+  await press('Use question');
+  await panel(`${roomDraft.length} of 180`);
   await press('o');
-  await panel('1 of 180');
+  await panel(`${roomDraft.length + 1} of 180`);
   await press('k');
-  await panel('2 of 180');
+  await panel(`${roomDraft.length + 2} of 180`);
   const headsetDraftReads = archiveReads('outsider');
   assert.equal((await heartbeat(xr)).status(), 200);
-  await panel('2 of 180');
+  await panel(`${roomDraft.length + 2} of 180`);
   assert.equal(archiveReads('outsider'), headsetDraftReads);
   await press('Review');
   await panel('Review your post');
+  await panel(reelPath);
+  receipt.reelReview = await capturePanel(xr, 'quest-reel-review');
   assert.equal(await f.receiptCount(), receiptsBefore);
   await press('Post');
   await panel('Post confirmed');
   assert.equal(await f.receiptCount(), receiptsBefore + 1);
+  const roomPost = roomDraft + 'ok';
+  assert.deepEqual((await f.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1 AND member_id=$2 AND content=$3',
+    [f.circleId, f.reviewerId, roomPost])).rows, [{ content: roomPost }]);
   await heartbeat();
-  await regularArchive.getByText('ok', { exact: true }).waitFor();
+  await regularArchive.getByText(roomPost, { exact: true }).waitFor();
   await press('Read recent discussion');
   await panel('Live discussion 1 of');
-  const browserPost = 'Browser answer during the shared salon.';
-  await regular.locator('#circle-thread-new').click();
+  const browserStarter = regular.locator('#circle-thread-reel');
+  await browserStarter.click();
   const browserDraft = regular.locator('#circle-thread-draft');
+  const fullDraft = reelQuestion + '\n\n' + origin + reelPath;
+  assert.equal(await browserDraft.inputValue(), fullDraft);
+  assert(await browserStarter.isDisabled());
+  const browserAnswer = 'Browser answer during the shared salon.';
+  const browserPost = browserAnswer + '\n\n' + fullDraft;
   await browserDraft.fill(browserPost);
   const browserDraftReads = archiveReads('author');
   await heartbeat();
@@ -292,9 +330,11 @@ try {
   await regular.locator('#circle-thread-post').click();
   await regular.locator('#circle-thread-saved').waitFor();
   assert.equal(await f.receiptCount(), receiptsBefore + 2);
+  assert.deepEqual((await f.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1 AND member_id=$2 AND content=$3',
+    [f.circleId, f.authorId, browserPost])).rows, [{ content: browserPost }]);
   await heartbeat(xr);
-  await panel(browserPost);
-  pass('The latest discussion follows posts in both directions while members keep their drafts through check-ins');
+  await panel(browserAnswer);
+  pass('A browser and a headset load the selected Reel, review their edited drafts, and see each other’s exact posts on the next check-in');
 
   await press('Next preview');
   await panel('Recent discussion 2 of');
@@ -493,12 +533,7 @@ try {
   await readingPress(readingPage, 'Next block');
   await readingPanel(readingPage, 'Block 3 of 3');
   await readingPanel(readingPage, 'In what relation the “Apology” of Plato stands');
-  const panelImage = await readingPage.evaluate(() => window.questXrQa.image());
-  assert.match(panelImage, /^data:image\/png;base64,/);
-  const screenshot = 'platforms/evidence/quest-reading-' + run + '.png';
-  const panelBytes = Buffer.from(panelImage.split(',')[1], 'base64');
-  await writeFile(resolve(root, screenshot), panelBytes, { flag: 'wx' });
-  receipt.readingPanel = { path: screenshot, sha256: sha(panelBytes) };
+  receipt.readingPanel = await capturePanel(readingPage, 'quest-reading');
   const paragraph = [];
   for (let index = 0; index < 30; index++) {
     const frame = await readingPage.evaluate(() => ({ lines: window.questXrQa.panel().split('\n'), labels: window.questXrQa.labels() }));

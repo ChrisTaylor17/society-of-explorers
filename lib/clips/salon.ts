@@ -16,6 +16,7 @@ export function withReelDiscussion(href: string, reel?: ReelDiscussionId): strin
   return reel ? `${href}${href.includes('?') ? '&' : '?'}reel=${reel}` : href;
 }
 
-export function reelDiscussionDraft(reel: ReelDiscussionId, origin: string): string {
-  return `${REEL_QUESTIONS[reel]}\n\n${new URL(reelHref(reel), origin).href}`;
+export function reelDiscussionDraft(reel: ReelDiscussionId, origin?: string): string {
+  const href = reelHref(reel);
+  return `${REEL_QUESTIONS[reel]}\n\n${origin === undefined ? href : new URL(href, origin).href}`;
 }

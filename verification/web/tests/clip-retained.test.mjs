@@ -63,6 +63,7 @@ test('only the retained Archivist Reels supply a local discussion question and p
  const app = offlineApp();
  const { approvedReel } = app.load('lib/clips/server.ts');
  const { REEL_QUESTIONS, reelDiscussionId, withReelDiscussion, reelDiscussionDraft } = app.load('lib/clips/salon.ts');
+ const { ROOM_POST_LIMIT, roomReviewText } = await import('../../../platforms/quest/room-composer.mjs');
  const native = app.load('platforms/native/clip-catalog.json');
  assert.deepEqual(Object.keys(REEL_QUESTIONS), ['night-sky-traffic', 'telescope-first-tilt', 'which-height']);
  for (const [id, question] of Object.entries(REEL_QUESTIONS)) {
@@ -71,6 +72,11 @@ test('only the retained Archivist Reels supply a local discussion question and p
   assert.ok(native.videos.some(clip => clip.id === id && clip.attribution));
   assert.equal(withReelDiscussion('/circles?format=online', id), '/circles?format=online&reel=' + id);
   assert.equal(reelDiscussionDraft(id, 'https://public-app.example.test'), question + '\n\nhttps://public-app.example.test/clips/watch/' + id);
+  const roomDraft = reelDiscussionDraft(id);
+  assert.equal(roomDraft, question + '\n\n/clips/watch/' + id);
+  const withAnswer = roomDraft + '\n\nI would ask for more evidence.';
+  assert(withAnswer.length <= ROOM_POST_LIMIT);
+  assert.equal(roomReviewText({ preview: { content: withAnswer } }), withAnswer);
  }
  for (const value of ['how-a-circle-works', 'missing', '__proto__', 'constructor', ['which-height', 'night-sky-traffic']]) {
   assert.equal(reelDiscussionId(value), undefined);

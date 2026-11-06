@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import QuestCircle from '../../app/quest/[circleId]/QuestCircle';
 import { notifyAuthProviderChanged } from '../../lib/auth/providerSelection';
+import { reelDiscussionId } from '../../lib/clips/salon';
 
 const subjects = { author: '72111111-1111-4111-8111-111111111111', outsider: '72222222-2222-4222-8222-222222222222' };
 const tokens = { author: 'NONISSUED_QUEST_COMPOSED_AUTHOR', outsider: 'NONISSUED_QUEST_COMPOSED_OUTSIDER' };
@@ -18,4 +19,5 @@ const qa = { factory() { factories++; return { auth }; }, counts: () => ({ facto
   emit(event: string) { for (const listener of [...listeners]) listener(event, null); }, unmount() { root.unmount(); } };
 Object.assign(window, { questComposedQa: qa });
 root.render(<React.StrictMode><QuestCircle circleId={document.documentElement.dataset.circle!}
-  sharedSalon={document.documentElement.hasAttribute('data-shared-salon')} /></React.StrictMode>);
+  sharedSalon={document.documentElement.hasAttribute('data-shared-salon')}
+  reel={reelDiscussionId(document.documentElement.dataset.reel)} /></React.StrictMode>);

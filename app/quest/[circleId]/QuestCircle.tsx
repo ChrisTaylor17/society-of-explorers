@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createQuestMemberAuth } from '@/lib/circles/quest-member-auth';
 import { AUTH_INTENT_HEADER, currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
+import { reelHref } from '@/lib/clips/contracts';
+import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
 import styles from './quest.module.css';
 
 type Connection = { dispose(): void; invalidate(): void };
@@ -21,7 +23,9 @@ function providerConfigured() {
 
 /** The platform view owns this DOM island. React only owns its surrounding
  * connect controls; no credential or private message enters React props/state. */
-export default function QuestCircle({ circleId, sharedSalon = false }: { circleId?: string; sharedSalon?: boolean }) {
+export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
+  circleId?: string; sharedSalon?: boolean; reel?: ReelDiscussionId;
+}) {
   const connection = useRef<Connection | null>(null);
   const lifetime = useRef({ mounted: false, generation: 0 });
   const [phase, setPhase] = useState<'closed' | 'connecting' | 'connected'>('closed');
@@ -71,6 +75,10 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       if (!current()) throw Error('Browser account changed');
       assertContributionsMarkup(document, true);
       const origin = window.location.origin;
+      const reelStarter = reel ? {
+        question: REEL_QUESTIONS[reel], draft: reelDiscussionDraft(reel, origin),
+        roomDraft: reelDiscussionDraft(reel) + '\n\n',
+      } : undefined;
       const transport = (url: string, init: RequestInit) => {
         const target = new URL(url);
         if (!current() || init.signal?.aborted || target.origin !== origin || target.username || target.password || target.hash) {
@@ -91,7 +99,7 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       try {
         const view = circleId
           ? mountExistingMemberCircle({ window, document, config: { circleId, origin, transport, auth: memberAuth.auth, aiConsent: true, sharedSalon, meeting: true,
-            immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate } } })
+            immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate }, reelStarter } })
           : mountExistingMemberContributions({ window, document, config: { origin, transport, auth: memberAuth.auth, aiConsent: true } });
         connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
       } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
@@ -111,12 +119,17 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
     <section><p>READ. REFLECT. SHARE.</p><h1>{circleId ? 'Quest Browser Circle' : 'My Quest Browser contributions'}</h1>
       <p>This view uses your existing web account. It opens in the regular browser window.</p>
       <p>Use email or Google sign-in for this view. For a wallet-only account, use the regular {circleId ? 'Circle view' : 'posted messages page'}.</p>
-      <p>{circleId ? <><Link href={`/circles/${circleId}`}>Regular Circle view and safety controls</Link>{' · '}<Link href={`/circles/${circleId}/discussion`}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
-      <p><Link href={`/login?next=${encodeURIComponent(circleId ? `/quest/${circleId}` : '/quest/contributions')}`}>Sign in to your account</Link></p>
+      <p>{circleId ? <><Link href={withReelDiscussion(`/circles/${circleId}`, reel)}>Regular Circle view and safety controls</Link>{' · '}<Link href={withReelDiscussion(`/circles/${circleId}/discussion`, reel)}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
+      <p><Link href={`/login?next=${encodeURIComponent(circleId ? withReelDiscussion(`/quest/${circleId}`, reel) : '/quest/contributions')}`}>Sign in to your account</Link></p>
       <p role="status">{notice}</p>
       <button type="button" disabled={phase !== 'closed'} onClick={() => void connect()}>{phase === 'connecting' ? 'Connecting…' : 'Connect signed-in account'}</button>
       <button type="button" disabled={phase === 'closed'} onClick={disconnect}>{circleId ? 'Disconnect Circle view' : 'Disconnect contributions view'}</button>
     </section>
+    {circleId && reel && <section aria-label="Question from the Reel">
+      <h2>Question from the Reel</h2>
+      <p>{REEL_QUESTIONS[reel]}</p>
+      <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
+    </section>}
     <div data-quest-member-view>
       {circleId ? <h2 id="circle-title">A conversation worth having.</h2> : null}
       <section aria-label="Member session"><p id="member-session-status" role="status">Member session is not connected.</p><button id="member-session-check" type="button" disabled>Check member session</button></section>
@@ -185,6 +198,7 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
         <section id="circle-thread-write" aria-labelledby="circle-thread-write-heading" hidden>
           <h3 id="circle-thread-write-heading">Write in this discussion</h3>
           <button id="circle-thread-new" type="button" disabled>Start a new discussion</button>
+          {reel && <button id="circle-thread-reel" type="button" disabled>Use Reel question in a draft</button>}
           <p id="circle-thread-target" /><label htmlFor="circle-thread-draft">Your contribution</label>
           <textarea id="circle-thread-draft" maxLength={2000} autoComplete="off" spellCheck={false} aria-describedby="circle-thread-remaining circle-thread-status" disabled />
           <p id="circle-thread-remaining">2000 characters remaining</p><p id="circle-thread-status" role="status" />
