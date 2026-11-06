@@ -20,6 +20,8 @@ Review Waddle’s raw database grants and file access separately. Before changin
 
 After Waddle containment, verified private Storage and archived Twiddle erasure, stage the [owner voice-erasure draft](../sql/account-erasure-waddle-apply.sql). Use the 65-table `--include-waddle-erasure` check for later backups. Drain in-flight uploads before processing a request and require separate provider removal and readback for its exact keys before clearing the database posts. Verify a synthetic removal on the reviewed hosted candidate before opening account-deletion intake. [Voice erasure procedure](account-deletion.md#remove-waddle-voice-posts)
 
+After direct-message containment, pair the [member blocking draft](../sql/direct-message-blocks-apply.sql) with the replacement app routes. Verify the old service-table reads are closed and the service-only routes preserve an unrelated conversation. Protect legacy aliases before opening the app. Use the 66-table `--include-member-safety` scope for later backups. [Direct-message blocking](direct-message-blocking.md)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.

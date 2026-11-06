@@ -5,7 +5,10 @@ import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession'
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { DIRECT_MESSAGE_ACK_LIMIT, DIRECT_MESSAGE_OWNER_HEADER, type DirectMessage } from '@/lib/members/direct-message'
+import { DIRECT_MESSAGE_ACK_LIMIT, DIRECT_MESSAGE_OWNER_HEADER, parseDirectMessageThread, type DirectContact,
+  type DirectMessage, type DirectMessageBlockChange } from '@/lib/members/direct-message'
+import DirectMessageBlocks, { sendBlockChange } from './DirectMessageBlocks'
+import styles from './direct-message.module.css'
 import PublishedProfileLink from '@/components/PublishedProfileLink'
 
 interface Member {
@@ -64,6 +67,7 @@ type ChatScope = {
   peerId: string
   readRevision: number
   sending: boolean
+  changingBlock: boolean
 }
 
 async function getAuthHeaders(includeContentType = false): Promise<HeadersInit> {
@@ -97,9 +101,12 @@ export default function MembersPage() {
   const [currentMember, setCurrentMember] = useState<Member | null>(null)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [messages, setMessages] = useState<DirectMessage[]>([])
+  const [contact, setContact] = useState<DirectContact | null>(null)
+  const [blockReview, setBlockReview] = useState<DirectContact | null>(null)
+  const [blockBusy, setBlockBusy] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile'>('directory')
+  const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile' | 'blocked'>('directory')
   const [directoryStatus, setDirectoryStatus] = useState<'loading' | 'ready' | 'forbidden' | 'unavailable'>('loading')
   const [retired, setRetired] = useState(false)
   const [matchQuery, setMatchQuery] = useState('')
@@ -116,6 +123,13 @@ export default function MembersPage() {
   const router = useRouter()
   const currentMemberId = currentMember?.id ?? null
   const selectedMemberId = selectedMember?.id ?? null
+  const canCompose = Boolean(contact?.canMessage && !blockBusy && !blockReview)
+
+  const dmHeaders = useCallback(async (json = false) => {
+    const scoped = new Headers(await getAuthHeaders(json))
+    if (currentMemberId) scoped.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
+    return scoped
+  }, [currentMemberId])
 
   useEffect(() => {
     const invalidate = () => {
@@ -125,7 +139,8 @@ export default function MembersPage() {
     const stop = subscribeAuthProviderChanges(() => {
       invalidate()
       setRetired(true); setCurrentMember(null); setSelectedMember(null); setMembers([]); setMessages([])
-      setInput(''); setSendStatus(''); setMatchQuery(''); setMatchResult(''); setUnreadCount(0)
+      setInput(''); setContact(null); setBlockReview(null); setBlockBusy(false)
+      setSendStatus(''); setMatchQuery(''); setMatchResult(''); setUnreadCount(0)
     })
     return () => { invalidate(); stop() }
   }, [])
@@ -168,11 +183,9 @@ export default function MembersPage() {
     if (!currentMemberId) return
     let cancelled = false
 
-    getAuthHeaders().then(headers => {
+    dmHeaders().then(headers => {
       if (cancelled) throw new Error('retired')
-      const scoped = new Headers(headers)
-      scoped.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
-      return fetch('/api/message', { headers: scoped, cache: 'no-store' })
+      return fetch('/api/message', { headers, cache: 'no-store' })
     })
       .then(async res => {
         if (!res.ok) throw new Error(await res.text())
@@ -186,11 +199,11 @@ export default function MembersPage() {
       })
 
     return () => { cancelled = true }
-  }, [currentMemberId, messages])
+  }, [currentMemberId, dmHeaders, messages])
 
   const loadMessages = useCallback(async () => {
     const scope = chatScope.current
-    if (!scope || scope.peerId !== selectedMemberId || !currentMemberId) return
+    if (!scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.changingBlock) return
     const generation = authorityEpoch.current
     const revision = ++scope.readRevision
     const current = () => generation === authorityEpoch.current && chatScope.current === scope &&
@@ -198,20 +211,22 @@ export default function MembersPage() {
     if (!current()) return
 
     try {
-      const headers = new Headers(await getAuthHeaders())
+      const headers = await dmHeaders()
       if (!current()) return
-      headers.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
       const signal = AbortSignal.timeout(8_000)
       const res = await fetch(`/api/message?peerId=${encodeURIComponent(scope.peerId)}`, {
         headers, cache: 'no-store', signal,
       })
       if (!current()) return
-      if (!res.ok) {
-        if ([401, 403, 404].includes(res.status)) setMessages([])
+      const data = res.ok ? parseDirectMessageThread(await res.json(), currentMemberId, scope.peerId) : null
+      if (!current()) return
+      if (!data || !data.contact.canMessage) {
+        setContact(data?.contact ?? null)
+        setMessages([])
+        if (data || [401, 403, 404].includes(res.status)) setInput('')
+        setShowThinkerPicker(false)
         return
       }
-      const data = await res.json() as { messages?: DirectMessage[] }
-      if (!current() || !Array.isArray(data.messages)) return
 
       const ids = data.messages.filter(message => message.read === false &&
         message.sender_id === scope.peerId && message.recipient_id === currentMemberId).map(message => message.id)
@@ -223,14 +238,16 @@ export default function MembersPage() {
           body: JSON.stringify({ peerId: scope.peerId, messageIds: ids.slice(index, index + DIRECT_MESSAGE_ACK_LIMIT) }),
         }).catch(() => null)
         if (reply?.status === 401 || reply?.status === 403) {
-          if (current()) setMessages([])
+          if (current()) { setContact(null); setMessages([]); setInput('') }
           return
         }
         if (!reply?.ok) break
       }
-      if (current()) setMessages(data.messages)
-    } catch { /* The current conversation will refresh on its next check. */ }
-  }, [currentMemberId, selectedMemberId])
+      if (current()) { setContact(data.contact); setMessages(data.messages) }
+    } catch {
+      if (current()) { setContact(null); setMessages([]) }
+    }
+  }, [currentMemberId, dmHeaders, selectedMemberId])
 
   useEffect(() => {
     if (view !== 'chat' || !selectedMemberId || !currentMemberId) return
@@ -252,21 +269,26 @@ export default function MembersPage() {
   async function sendMessage() {
     const msg = input.trim()
     const scope = chatScope.current
-    if (!msg || !scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.sending) return
+    if (!msg || !canCompose || !scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.sending || scope.changingBlock) return
     const generation = authorityEpoch.current
     const current = () => generation === authorityEpoch.current && chatScope.current === scope
     scope.sending = true
     setSending(true)
     setSendStatus('')
     try {
-      const headers = new Headers(await getAuthHeaders(true))
+      const headers = await dmHeaders(true)
       if (!current()) return
-      headers.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
       const res = await fetch('/api/message', {
         method: 'POST', headers, signal: AbortSignal.timeout(8_000),
         body: JSON.stringify({ recipientId: scope.peerId, content: msg }),
       })
       if (!current()) return
+      if (res.status === 403) {
+        setMessages([]); setContact(null); setInput('')
+        setSendStatus('This conversation is unavailable.')
+        await loadMessages()
+        return
+      }
       if (!res.ok) throw new Error('Message not confirmed')
       setInput(draft => draft.trim() === msg ? '' : draft)
       await loadMessages()
@@ -278,6 +300,36 @@ export default function MembersPage() {
         setSending(false)
         inputRef.current?.focus()
       }
+    }
+  }
+
+  async function confirmBlock() {
+    const scope = chatScope.current
+    const checked = blockReview
+    if (!checked || !scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.changingBlock || scope.sending) return
+    const generation = authorityEpoch.current
+    const current = () => generation === authorityEpoch.current && chatScope.current === scope
+    scope.changingBlock = true
+    scope.readRevision++
+    setBlockBusy(true); setBlockReview(null); setContact(null); setMessages([]); setInput('')
+    setShowThinkerPicker(false); setSendStatus('Checking the reviewed block change…')
+    try {
+      const base = { requestId: crypto.randomUUID(), expectedRevision: checked.revision }
+      if (checked.blockedByMe && !checked.blockId) throw Error('Block reference missing')
+      const input: DirectMessageBlockChange = checked.blockedByMe && checked.blockId
+        ? { ...base, blocked: false, blockId: checked.blockId }
+        : { ...base, blocked: true, peerId: scope.peerId }
+      const headers = await dmHeaders(true)
+      if (!current()) return
+      const receipt = await sendBlockChange(input, headers)
+      if (!current()) return
+      setSendStatus(receipt ? receipt.blockedByMe ? 'Direct messages blocked.' : 'Your block was removed.'
+        : 'The change was not confirmed. Check the current conversation before trying again.')
+    } catch {
+      if (current()) setSendStatus('The change could not be confirmed. Check the current conversation before trying again.')
+    } finally {
+      scope.changingBlock = false
+      if (current()) { setBlockBusy(false); await loadMessages() }
     }
   }
 
@@ -303,7 +355,10 @@ export default function MembersPage() {
 
   function focusChat(peerId: string | null) {
     if ((chatScope.current?.peerId ?? null) === peerId) return
-    chatScope.current = peerId ? { peerId, readRevision: 0, sending: false } : null
+    chatScope.current = peerId ? { peerId, readRevision: 0, sending: false, changingBlock: false } : null
+    setContact(null)
+    setBlockReview(null)
+    setBlockBusy(false)
     setMessages([])
     setInput('')
     setSending(false)
@@ -322,7 +377,8 @@ export default function MembersPage() {
     setView('chat')
   }
 
-  function formatTime(ts: string) {
+  function formatTime(ts: string | null) {
+    if (ts === null) return ''
     const d = new Date(ts)
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
@@ -333,9 +389,9 @@ export default function MembersPage() {
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: bg, fontFamily: 'Cormorant Garamond, serif', color: ivory, overflow: 'hidden' }}>
 
       {/* TOPBAR */}
-      <div style={{ height: '52px', background: bgCard, borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
+      <div className={styles.topBar} style={{ background: bgCard, borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.25em', color: gold }}>SOCIETY OF EXPLORERS</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <nav className={styles.topNav} aria-label="Member views">
           {(['directory', 'chat', 'match', 'profile'] as const).map(v => (
             <button key={v} onClick={() => changeView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
               {v === 'chat' && unreadCount > 0 && (
@@ -345,7 +401,7 @@ export default function MembersPage() {
             </button>
           ))}
           <button onClick={() => router.push('/salon')} style={{ background: 'none', border: `1px solid ${goldBorder}`, color: muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px' }}>← SALON</button>
-        </div>
+        </nav>
       </div>
 
       {/* BODY */}
@@ -396,30 +452,36 @@ export default function MembersPage() {
           </div>
         )}
 
+        {view === 'blocked' && currentMemberId && (
+          <DirectMessageBlocks headersFor={dmHeaders} onBack={() => changeView('chat')} />
+        )}
+
         {/* CHAT VIEW */}
         {view === 'chat' && (
-          <>
+          <div className={styles.chatLayout} data-open={Boolean(selectedMember)}>
             {/* Sidebar — member list */}
-            <div style={{ width: '260px', background: bgCard, borderRight: `1px solid ${goldBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+            <div className={styles.chatRail} style={{ background: bgCard, borderRight: `1px solid ${goldBorder}`, flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
               <div style={{ padding: '12px 16px', borderBottom: `1px solid ${goldBorder}` }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: goldDim }}>CONVERSATIONS</div>
+                {currentMemberId && <button type="button" className={styles.safetyButton}
+                  onClick={() => changeView('blocked')}>Blocked members</button>}
               </div>
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {members.filter(m => m.id !== currentMember?.id).map(m => (
-                  <div
+                  <button type="button" className={styles.peerChoice} aria-pressed={selectedMember?.id === m.id}
                     key={m.id}
                     onClick={() => openChat(m)}
                     style={{ padding: '14px 16px', cursor: 'pointer', borderLeft: `2px solid ${selectedMember?.id === m.id ? gold : 'transparent'}`, background: selectedMember?.id === m.id ? 'rgba(201,168,76,0.06)' : 'transparent', borderBottom: `1px solid ${goldBorder}` }}
                   >
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: selectedMember?.id === m.id ? gold : ivory }}>{displayName(m)}</div>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>Published profile</div>
-                  </div>
+                    <span style={{ display: 'block', fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: selectedMember?.id === m.id ? gold : ivory }}>{displayName(m)}</span>
+                    <span style={{ display: 'block', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>Published profile</span>
+                  </button>
                 ))}
               </div>
             </div>
 
             {/* Chat area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: bg }}>
+            <div className={styles.chatPanel} style={{ flex: 1, flexDirection: 'column', overflow: 'hidden', background: bg }}>
               {!selectedMember ? (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: goldDim }}>⬡</div>
@@ -428,16 +490,20 @@ export default function MembersPage() {
               ) : (
                 <>
                   {/* Chat header */}
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: bgCard, flexShrink: 0 }}>
+                  <button type="button" className={`${styles.safetyButton} ${styles.backToContacts}`}
+                    onClick={() => { focusChat(null); setSelectedMember(null) }}>Back to conversations</button>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'space-between', alignItems: 'center', background: bgCard, flexShrink: 0 }}>
                     <div>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold }}>{displayName(selectedMember)}</div>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{selectedMember.discipline || 'Published profile'}</div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                      {contact && <button type="button" className={styles.safetyButton} disabled={sending || blockBusy}
+                        onClick={() => { setShowThinkerPicker(false); setBlockReview(contact) }}>{contact.blockedByMe ? 'Unblock member' : 'Block member'}</button>}
                       <div style={{ position: 'relative' }}>
                         <button
                           onClick={() => setShowThinkerPicker(v => !v)}
-                          disabled={sending}
+                          disabled={sending || !canCompose}
                           aria-expanded={showThinkerPicker}
                           style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, background: 'rgba(201,168,76,0.08)', border: `1px solid ${goldBorder}`, padding: '6px 14px', cursor: 'pointer' }}
                         >
@@ -466,13 +532,25 @@ export default function MembersPage() {
                     </div>
                   </div>
 
+                  {blockReview && <section className={styles.review} aria-label="Review direct-message block">
+                    <p>{blockReview.blockedByMe ? `Remove your block for ${displayName(selectedMember)}?`
+                      : `Block direct messages with ${displayName(selectedMember)} and hide the conversation?`}</p>
+                    <button type="button" className={styles.safetyButton} onClick={() => void confirmBlock()}>
+                      {blockReview.blockedByMe ? 'Confirm unblock' : 'Confirm block'}
+                    </button>
+                    <button type="button" className={styles.safetyButton} onClick={() => setBlockReview(null)}>Cancel</button>
+                  </section>}
+
                   {/* Messages */}
                   <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {messages.length === 0 && (
                       <div style={{ textAlign: 'center', paddingTop: '3rem' }}>
                         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: goldDim, marginBottom: '1rem' }}>⬡</div>
                         <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: muted, fontStyle: 'italic' }}>
-                          Begin the conversation. You can add a Thinker-inspired question to your draft.
+                          {contact?.blockedByMe ? 'You blocked direct messages with this member.'
+                            : contact?.canMessage === false ? 'This conversation is unavailable.'
+                              : contact?.canMessage ? 'Begin the conversation. You can add a Thinker-inspired question to your draft.'
+                                : 'Current conversation access is being checked.'}
                         </div>
                       </div>
                     )}
@@ -507,14 +585,14 @@ export default function MembersPage() {
 
                   {/* Input */}
                   {sendStatus && <p role="status" style={{ margin: '8px 20px', color: ivory }}>{sendStatus}</p>}
-                  <div style={{ padding: '14px 20px', borderTop: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+                  {canCompose && <div style={{ padding: '14px 20px', borderTop: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
                     <input
                       ref={inputRef}
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                       placeholder={`Message ${displayName(selectedMember)}...`}
-                      style={{ flex: 1, background: bgElevated, border: `1px solid ${goldBorder}`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', borderRadius: '4px' }}
+                      style={{ flex: 1, minWidth: 0, background: bgElevated, border: `1px solid ${goldBorder}`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', borderRadius: '4px' }}
                     />
                     <button
                       onClick={() => setRecording(r => !r)}
@@ -530,11 +608,11 @@ export default function MembersPage() {
                     >
                       SEND
                     </button>
-                  </div>
+                  </div>}
                 </>
               )}
             </div>
-          </>
+          </div>
         )}
 
         {/* MATCH VIEW */}

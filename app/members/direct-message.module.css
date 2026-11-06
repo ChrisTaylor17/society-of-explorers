@@ -1,0 +1,121 @@
+.topBar {
+  height: 52px;
+  padding: 0 24px;
+}
+
+.topNav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatLayout {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chatRail {
+  display: flex;
+  width: 260px;
+}
+
+.chatPanel {
+  display: flex;
+  min-width: 0;
+}
+
+.safetyButton {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid rgba(201, 168, 76, 0.5);
+  border-radius: 4px;
+  color: #e8e0d0;
+  background: #17140d;
+  cursor: pointer;
+}
+
+.safetyButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.safetyButton:focus-visible,
+.peerChoice:focus-visible {
+  outline: 2px solid #e5bc65;
+  outline-offset: -2px;
+}
+
+.peerChoice {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  text-align: left;
+}
+
+.review,
+.blockList {
+  padding: 12px 20px;
+  overflow-wrap: anywhere;
+}
+
+.review p,
+.blockList p {
+  margin: 0 0 8px;
+}
+
+.review button + button,
+.blockList button + button {
+  margin-left: 8px;
+}
+
+.blockList {
+  width: min(100%, 640px);
+  overflow-y: auto;
+}
+
+.blockList li {
+  margin: 10px 0;
+}
+
+.blockList li button {
+  margin-left: 10px;
+}
+
+.backToContacts {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .topBar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 52px;
+    padding: 10px 12px;
+    row-gap: 6px;
+  }
+
+  .topNav {
+    width: 100%;
+  }
+
+  .topNav button {
+    min-height: 44px;
+  }
+
+  .chatRail {
+    width: 100%;
+  }
+
+  .chatLayout[data-open='true'] .chatRail,
+  .chatLayout[data-open='false'] .chatPanel {
+    display: none;
+  }
+
+  .backToContacts {
+    display: inline-block;
+  }
+}

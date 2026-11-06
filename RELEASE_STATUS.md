@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+Members can now block direct messages in both directions and manage their own blocks. The database refuses a send waiting behind a block, hides the existing conversation and excludes it from unread counts. The web checks covered a delayed reply and the owner’s unblock flow at phone width. The new 66-table restore scope catches missing blocks. Circle-wide controls, hosted rollout and installed device checks remain open. [Verification](docs/integration/direct-message-blocking-verification.json)
+
 The account deletion draft now hides a departing member’s Waddle posts before reviewing their audio files. It includes unlinked uploads under that member’s folder and clears the transcripts only after exact file readback and a catalog check. The local restore test detected missing voice-removal receipts that the older 64-table check accepted. Hosted Storage removal, backup approval and device acceptance remain open. [Voice erasure verification](docs/integration/account-erasure-waddle-verification.json)
 
 The Quest Browser and immersive Circle room now accept the wallet selected in the web app. Chromium used a signed test wallet to review and post a reply, then read it in the simulated room. Switching wallets after the account check refused the old request before it reached Circle SQL. Email and Google still require the selected account's verified token. Native builds, hosted sign-in and a physical Quest session still need acceptance. [Verification](docs/integration/quest-wallet-account-verification.json)

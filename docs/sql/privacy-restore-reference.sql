@@ -40,6 +40,13 @@
 \else
   \set soe_restore_include_waddle_erasure off
 \endif
+\if :{?soe_restore_include_member_safety}
+\else
+  \set soe_restore_include_member_safety off
+\endif
+\if :soe_restore_include_member_safety
+  \set soe_restore_include_waddle_erasure on
+\endif
 \if :soe_restore_include_waddle_erasure
   \set soe_restore_include_account_deletion_state on
   \set soe_restore_include_voice_archive on
@@ -121,6 +128,9 @@ WITH RECURSIVE schemas AS (
 \if :soe_restore_include_account_deletion_state
     OR nspname = 'soe_account_deletion_private'
 \endif
+\if :soe_restore_include_member_safety
+    OR nspname = 'soe_member_safety_private'
+\endif
 ),
 \if :soe_restore_include_account_deletion_state
 deletion_relations(schema_name, name, evidence_name) AS (
@@ -145,6 +155,9 @@ deletion_relations(schema_name, name, evidence_name) AS (
     ('soe_account_deletion_private', 'twiddle_erasure_targets', 'soe_account_deletion_private.twiddle_erasure_targets')
 \if :soe_restore_include_waddle_erasure
     , ('soe_account_deletion_private', 'waddle_erasure_receipts', 'soe_account_deletion_private.waddle_erasure_receipts')
+\if :soe_restore_include_member_safety
+    , ('soe_member_safety_private', 'member_blocks', 'soe_member_safety_private.member_blocks')
+\endif
 \endif
 ),
 \endif
@@ -339,6 +352,10 @@ row_hashes(name, digest) AS (
 \if :soe_restore_include_waddle_erasure
   UNION ALL SELECT 'soe_account_deletion_private.waddle_erasure_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY soe_account_deletion_private.waddle_erasure_receipts t
+\if :soe_restore_include_member_safety
+  UNION ALL SELECT 'soe_member_safety_private.member_blocks', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_member_safety_private.member_blocks t
+\endif
 \endif
 \endif
 ),
@@ -457,13 +474,22 @@ deletion_routine_requirements(signature) AS (
     ('public.soe_account_deletion_status(uuid,text)'),
     ('public.soe_account_erasure_access_allowed(text,uuid)'),
     ('public.update_twiddle_timestamp()')
+\if :soe_restore_include_member_safety
+    , ('public.soe_direct_message_read(uuid,uuid)')
+    , ('public.soe_direct_message_send(uuid,uuid,text)')
+    , ('public.soe_direct_message_ack(uuid,uuid,uuid[])')
+    , ('public.soe_direct_message_blocks(uuid,uuid)')
+    , ('public.soe_direct_message_set_block(uuid,uuid,uuid,boolean,bigint,uuid)')
+    , ('soe_member_safety_private.lock_pair(uuid,uuid)')
+    , ('soe_member_safety_private.contact_blocked(uuid,uuid)')
+\endif
 ),
 deletion_routines AS (
   SELECT p.oid, n.nspname, p.proname, p.proowner, p.proacl, pg_get_function_identity_arguments(p.oid) AS arguments
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE p.prokind IN ('f', 'p') AND (n.nspname = 'soe_account_deletion_private'
-    OR (n.nspname = 'public' AND (p.proname ~ '^soe_account_(deletion|erasure)_'
-      OR p.oid IN (SELECT to_regprocedure(signature) FROM deletion_routine_requirements))))
+    OR (n.nspname = 'public' AND p.proname ~ '^soe_account_(deletion|erasure)_')
+    OR p.oid IN (SELECT to_regprocedure(signature) FROM deletion_routine_requirements))
 ),
 \endif
 acl_sources(kind, object, column_no, permissions) AS (
@@ -625,6 +651,9 @@ role_roots(oid) AS (
 \if :soe_restore_include_first_release_state
   UNION SELECT proowner FROM release_service_routines
 \endif
+\if :soe_restore_include_member_safety
+  UNION SELECT nspowner FROM schemas WHERE nspname = 'soe_member_safety_private'
+\endif
 \if :soe_restore_include_account_deletion_state
   UNION SELECT nspowner FROM schemas WHERE nspname = 'soe_account_deletion_private'
   UNION SELECT relowner FROM scoped WHERE evidence_name IN (SELECT evidence_name FROM deletion_relations)
@@ -652,6 +681,9 @@ role_evidence AS (
 \if :soe_restore_include_account_deletion_state
     'accountDeletionSchema', (SELECT definition FROM schema_evidence WHERE nspname = 'soe_account_deletion_private'),
 \endif
+\if :soe_restore_include_member_safety
+    'memberSafetySchema', (SELECT definition FROM schema_evidence WHERE nspname = 'soe_member_safety_private'),
+\endif
     'roles', (SELECT jsonb_agg(jsonb_build_array(r.rolname, r.rolsuper, r.rolinherit,
       r.rolbypassrls, r.rolcanlogin, r.rolcreaterole, r.rolcreatedb, r.rolreplication)
       ORDER BY r.rolname COLLATE "C") FROM role_tree t JOIN pg_roles r ON r.oid = t.oid),
@@ -664,6 +696,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_member_safety'::boolean THEN 'soe-privacy-restore-v15'
     WHEN :'soe_restore_include_waddle_erasure'::boolean THEN 'soe-privacy-restore-v14'
     WHEN :'soe_restore_include_voice_archive'::boolean AND :'soe_restore_include_account_deletion_state'::boolean
       THEN 'soe-privacy-restore-v13'

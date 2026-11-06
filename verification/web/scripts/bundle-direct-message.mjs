@@ -20,14 +20,14 @@ const result = await Bun.build({
         : path === 'next/navigation'
           ? 'const router = {push(path){window.location.assign(path)}}; export function useRouter(){return router}'
           : 'import React from "react"; export default function Link({children, ...props}) {return React.createElement("a", props, children)}' }));
-    build.onLoad({ filter: /\.(?:[cm]?[jt]sx?|json)$/ }, ({ path }) => {
+    build.onLoad({ filter: /\.(?:[cm]?[jt]sx?|json|css)$/ }, ({ path }) => {
       const info = lstatSync(path);
       assert(info.isFile() && (!info.size || info.blocks), path);
       const contents = readFileSync(path);
       const name = relative(process.cwd(), path);
       if (!name.startsWith('..') && !name.split('/').includes('node_modules')) hashes[name] = createHash('sha256').update(contents).digest('hex');
       return { contents: contents.toString(), loader: path.endsWith('.tsx') ? 'tsx' : path.endsWith('.ts') ? 'ts' :
-        path.endsWith('.json') ? 'json' : 'jsx', resolveDir: dirname(path) };
+        path.endsWith('.json') ? 'json' : path.endsWith('.css') ? 'css' : 'jsx', resolveDir: dirname(path) };
     });
   } }],
 });
