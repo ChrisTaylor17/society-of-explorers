@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 REFERENCE_SQL = ROOT / 'docs/sql/privacy-restore-reference.sql'
 DEFAULT_PSQL = Path('/opt/homebrew/opt/postgresql@17/bin/psql')
 FORMAT = 'soe-privacy-restore-v2'
+AUTH_FORMAT = 'soe-privacy-restore-v3'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -21,8 +22,10 @@ CORE_PRACTICE_TABLES = frozenset({
 })
 ROOM_TABLES = frozenset({'video_rooms', 'room_participants', 'room_transcripts'})
 TABLES = CORE_PRACTICE_TABLES | ROOM_TABLES
-TABLES_BY_SCOPE = {FORMAT: TABLES, CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES}
+AUTH_TABLES = frozenset({'auth.users', 'auth.identities'})
+TABLES_BY_SCOPE = {FORMAT: TABLES, CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES, AUTH_FORMAT: TABLES | AUTH_TABLES}
 PRINCIPALS = ['anon', 'authenticated', 'service_role']
+AUTH_PRINCIPALS = [*PRINCIPALS, 'supabase_auth_admin']
 MAX_REFERENCE_BYTES = 16384
 BEGIN = 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;'
 LOCAL_ONLY = """
@@ -51,9 +54,10 @@ def decode_reference(raw, scope=FORMAT):
     if not raw or len(raw) > MAX_REFERENCE_BYTES:
         raise ValueError('Reference size')
     value = json.loads(raw, object_pairs_hook=unique_object)
+    principals = AUTH_PRINCIPALS if scope == AUTH_FORMAT else PRINCIPALS
     if (not isinstance(value, dict)
             or set(value) != {'format', 'serverMajor', 'principals', 'roles', 'tables'}
-            or value['format'] != scope or value['principals'] != PRINCIPALS
+            or value['format'] != scope or value['principals'] != principals
             or type(value['serverMajor']) is not int or value['serverMajor'] < 15
             or not valid_digest(value['roles'])
             or not isinstance(value['tables'], dict) or set(value['tables']) != TABLES_BY_SCOPE[scope]):
@@ -112,9 +116,11 @@ def read_target(args):
         raise CheckError('local_psql_required')
     try:
         query = BEGIN + '\n' + LOCAL_ONLY + snapshot_sql() + '\nROLLBACK;'
-        include_rooms = 'on' if args.scope == FORMAT else 'off'
+        include_rooms = 'off' if args.scope == CORE_PRACTICE_FORMAT else 'on'
+        include_auth = 'on' if args.scope == AUTH_FORMAT else 'off'
         result = subprocess.run(
-            [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1', '-v', f'soe_restore_include_rooms={include_rooms}',
+            [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
+             '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -159,9 +165,12 @@ def main():
     parser.add_argument('--database', required=True)
     parser.add_argument('--user', required=True)
     parser.add_argument('--psql', type=Path, default=DEFAULT_PSQL)
-    parser.add_argument('--core-practice-only', dest='scope', action='store_const',
-                        const=CORE_PRACTICE_FORMAT, default=FORMAT,
-                        help='Compare an 11-table Core and Daily Practice reference.')
+    scope = parser.add_mutually_exclusive_group()
+    scope.add_argument('--core-practice-only', dest='scope', action='store_const', const=CORE_PRACTICE_FORMAT,
+                       help='Compare an 11-table Core and Daily Practice reference.')
+    scope.add_argument('--include-auth', dest='scope', action='store_const', const=AUTH_FORMAT,
+                       help='Compare a 16-table reference including Supabase Auth users and identities.')
+    parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535 or not all(
         re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]{0,62}', name) for name in (args.database, args.user)

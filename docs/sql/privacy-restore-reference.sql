@@ -4,6 +4,13 @@
 \else
   \set soe_restore_include_rooms on
 \endif
+\if :{?soe_restore_include_auth}
+\else
+  \set soe_restore_include_auth off
+\endif
+\if :soe_restore_include_auth
+  \set soe_restore_include_rooms on
+\endif
 
 SET LOCAL search_path = pg_catalog;
 
@@ -25,19 +32,31 @@ SET LOCAL bytea_output = 'hex';
 SET LOCAL statement_timeout = '90s';
 SET LOCAL lock_timeout = '5s';
 
-WITH RECURSIVE relations(name) AS (
-  VALUES
+WITH RECURSIVE schemas AS (
+  SELECT oid, nspname, nspowner, nspacl FROM pg_namespace
+  WHERE nspname = 'public'
+\if :soe_restore_include_auth
+    OR nspname = 'auth'
+\endif
+),
+relations(schema_name, name, evidence_name) AS (
+  SELECT 'public', name, name FROM (VALUES
 \if :soe_restore_include_rooms
     ('video_rooms'), ('room_participants'), ('room_transcripts'),
 \endif
     ('members'), ('reading_progress'), ('book_highlights'),
     ('great_books_progress'), ('great_books_highlights'), ('book_reflections'), ('thinker_memory'),
     ('daily_questions'), ('matched_conversations'), ('practice_reflections'), ('question_responses')
+  ) AS app_tables(name)
+\if :soe_restore_include_auth
+  UNION ALL VALUES ('auth', 'users', 'auth.users'), ('auth', 'identities', 'auth.identities')
+\endif
 ),
 scoped AS (
-  SELECT c.* FROM pg_class c JOIN relations r ON c.relname = r.name
-  WHERE c.relnamespace = 'public'::regnamespace
-    AND c.relkind = 'r' AND NOT c.relispartition AND NOT c.relhassubclass
+  SELECT c.*, r.schema_name, r.evidence_name
+  FROM pg_class c JOIN schemas n ON c.relnamespace = n.oid
+  JOIN relations r ON c.relname = r.name AND n.nspname = r.schema_name
+  WHERE c.relkind = 'r' AND NOT c.relispartition AND NOT c.relhassubclass
     AND NOT EXISTS (SELECT 1 FROM pg_inherits i WHERE i.inhrelid = c.oid)
 ),
 row_hashes(name, digest) AS (
@@ -56,6 +75,10 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'video_rooms', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.video_rooms t
   UNION ALL SELECT 'room_participants', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.room_participants t
   UNION ALL SELECT 'room_transcripts', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.room_transcripts t
+\endif
+\if :soe_restore_include_auth
+  UNION ALL SELECT 'auth.users', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.users t
+  UNION ALL SELECT 'auth.identities', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.identities t
 \endif
 ),
 numbered AS (
@@ -76,7 +99,7 @@ acl_sources(kind, object, column_no, permissions) AS (
   SELECT 'relation', c.oid, a.attnum, a.attacl FROM scoped c JOIN pg_attribute a ON a.attrelid = c.oid
   WHERE a.attnum > 0 AND NOT a.attisdropped
   UNION ALL
-  SELECT 'schema', oid, 0, coalesce(nspacl, acldefault('n', nspowner)) FROM pg_namespace WHERE nspname = 'public'
+  SELECT 'schema', oid, 0, coalesce(nspacl, acldefault('n', nspowner)) FROM schemas
 ),
 acl_entries AS (
   SELECT src.kind, src.object, src.column_no,
@@ -91,7 +114,7 @@ acls AS (
   FROM acl_entries GROUP BY kind, object, column_no
 ),
 table_evidence AS (
-  SELECT c.relname AS name, jsonb_build_object(
+  SELECT c.evidence_name AS name, jsonb_build_object(
     'owner', pg_get_userbyid(c.relowner),
     'rls', c.relrowsecurity,
     'forceRls', c.relforcerowsecurity,
@@ -103,7 +126,7 @@ table_evidence AS (
       LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
       WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped),
     'policies', (SELECT jsonb_agg(to_jsonb(p) ORDER BY p.policyname COLLATE "C")
-      FROM pg_policies p WHERE p.schemaname = 'public' AND p.tablename = c.relname),
+      FROM pg_policies p WHERE p.schemaname = c.schema_name AND p.tablename = c.relname),
     'constraints', (SELECT jsonb_agg(jsonb_build_array(k.conname, k.convalidated, pg_get_constraintdef(k.oid))
       ORDER BY k.conname COLLATE "C") FROM pg_constraint k WHERE k.conrelid = c.oid),
     'indexes', (SELECT jsonb_agg(jsonb_build_array(pg_get_indexdef(i.indexrelid), i.indisvalid, i.indisready)
@@ -116,17 +139,25 @@ table_evidence AS (
 ),
 principals AS (
   SELECT oid, rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated', 'service_role')
+\if :soe_restore_include_auth
+    OR rolname = 'supabase_auth_admin'
+\endif
 ),
 role_tree(oid) AS (
   SELECT oid FROM principals
   UNION
   SELECT m.roleid FROM pg_auth_members m JOIN role_tree r ON m.member = r.oid
 ),
+schema_evidence AS (
+  SELECT nspname, jsonb_build_array(pg_get_userbyid(nspowner), a.entries) AS definition
+  FROM schemas n LEFT JOIN acls a ON a.kind = 'schema' AND a.object = n.oid AND a.column_no = 0
+),
 role_evidence AS (
   SELECT jsonb_build_object(
-    'schema', (SELECT jsonb_build_array(pg_get_userbyid(nspowner),
-      (SELECT entries FROM acls WHERE kind = 'schema' AND object = oid AND column_no = 0))
-      FROM pg_namespace WHERE nspname = 'public'),
+    'schema', (SELECT definition FROM schema_evidence WHERE nspname = 'public'),
+\if :soe_restore_include_auth
+    'authSchema', (SELECT definition FROM schema_evidence WHERE nspname = 'auth'),
+\endif
     'roles', (SELECT jsonb_agg(jsonb_build_array(r.rolname, r.rolsuper, r.rolinherit,
       r.rolbypassrls, r.rolcanlogin, r.rolcreaterole, r.rolcreatedb, r.rolreplication)
       ORDER BY r.rolname COLLATE "C") FROM role_tree t JOIN pg_roles r ON r.oid = t.oid),
@@ -138,7 +169,10 @@ role_evidence AS (
   ) AS definition
 )
 SELECT jsonb_build_object(
-  'format', CASE WHEN :'soe_restore_include_rooms'::boolean THEN 'soe-privacy-restore-v2' ELSE 'soe-privacy-restore-v1' END,
+  'format', CASE
+    WHEN :'soe_restore_include_auth'::boolean THEN 'soe-privacy-restore-v3'
+    WHEN :'soe_restore_include_rooms'::boolean THEN 'soe-privacy-restore-v2'
+    ELSE 'soe-privacy-restore-v1' END,
   'serverMajor', current_setting('server_version_num')::integer / 10000,
   'principals', (SELECT jsonb_agg(rolname ORDER BY rolname COLLATE "C") FROM principals),
   'roles', (SELECT encode(sha256(convert_to(definition::text, 'UTF8')), 'hex') FROM role_evidence),

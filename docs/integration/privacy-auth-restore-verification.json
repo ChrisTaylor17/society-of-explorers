@@ -1,0 +1,98 @@
+{
+  "status": "local_auth_restore_rehearsal_passed_production_hold",
+  "recordedAt": "2026-11-06T05:00:01+00:00",
+  "baseCommit": "699612301b527c8fb5999b3849794c2b913b8050",
+  "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+  "scope": {
+    "defaultAppTables": 14,
+    "explicitCorePracticeTables": 11,
+    "accountInclusiveTables": 16,
+    "addedTables": [
+      "auth.identities",
+      "auth.users"
+    ],
+    "addedRole": "supabase_auth_admin",
+    "addedSchemaAccessComparison": "auth"
+  },
+  "omissionReproduction": {
+    "archive": "Same exported snapshot and full definitions. Both Auth tables are excluded from the archive data section.",
+    "priorAppOnlyResult": "MATCH",
+    "accountInclusiveResult": "MISMATCH",
+    "missingRowSets": [
+      "auth.identities",
+      "auth.users"
+    ],
+    "completeArchiveResult": "MATCH"
+  },
+  "rehearsalChecksPassed": 20,
+  "rehearsalChecks": [
+    "The reference query refuses to run outside a repeatable-read, read-only snapshot.",
+    "The 14-table comparison passes on a restored archive with no Auth rows, proving the need for a separate account-inclusive check.",
+    "The account-inclusive restore matches 16 tables and preserves the linked member, password hash and provider identity from the shared snapshot.",
+    "The account-inclusive comparison identifies both missing Auth row sets in the incomplete archive.",
+    "The account-inclusive mode refuses mismatched formats and a reference missing either Auth table.",
+    "Replacing a password hash and rebinding a provider identity are detected even when Auth row counts stay constant.",
+    "Independent changes to an Auth table grant, the Auth schema ACL and the Auth service role each fail the comparison.",
+    "A missing Auth relation fails closed without exposing raw database diagnostics.",
+    "All 14 restored tables match a reference from the same snapshot despite later source writes to answers and transcripts.",
+    "The earlier 11-table reference remains usable in explicit Core and Practice mode. Both wrong-scope formats and a partial room reference are refused.",
+    "Same-count changes to an answer, attendance, a transcript and a room link are detected. The receipt names the affected tables.",
+    "With all rows intact, the comparison detects changes to RLS, table and column grants, and an inherited role.",
+    "A missing room table prevents a full comparison. A shared reference, linked socket and different PostgreSQL major also cause failure.",
+    "The save draft refuses a database with the old browser grants and leaves no function behind.",
+    "The Core, Daily Practice and Live Council changes preserve all restored rows. Both browser roles lose reads and service reads survive on all 14 tables.",
+    "The installed service join records attendance on the same restored database after all three privacy drafts.",
+    "The save draft refuses unexpected EXECUTE defaults. Browser and unrelated roles cannot execute it after installation.",
+    "Two independent sessions overlapping on one member preserve one answer ID and one counter increment.",
+    "Two independent authors sharing one prompt both save and the prompt count reflects all four answers.",
+    "An error on the final prompt update rolls back the new answer and member streak in the same transaction."
+  ],
+  "legacyCompatibility": {
+    "scopes": [
+      11,
+      14
+    ],
+    "priorQuerySha256": "f68884c967799c3ad10d68e108d6e710e10f6ec3dc8cbbf3574b19ce272f1704",
+    "byteIdenticalInSameSnapshot": true,
+    "compatibilityRunPassed": true
+  },
+  "cleanup": {
+    "source": "stopped",
+    "target": "stopped",
+    "temporaryDataRemoved": true
+  },
+  "initialRunNotes": "The old verifier matched the incomplete archive before rejecting the new flag. A separate scratch checkout used exact tracked fixture bytes because the original local preflight file was offloaded.",
+  "limits": [
+    "Only disposable PostgreSQL databases, synthetic identity records and private Unix sockets were used.",
+    "The account-inclusive check covers users, identities and their selected access metadata. Other Auth records, hosted configuration, file storage and actual sign-in require separate acceptance.",
+    "The owner-approved production export and isolated restore have yet to be verified."
+  ],
+  "productionRestoreVerified": false,
+  "originalCheckout": {
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "statusEntries": 681
+  },
+  "sourceSha256": {
+    "verification/web/scripts/test-privacy-restore-check.py": "95dfb027b368546f94e27c48ff398982eff1bdfb1410ae503468722b5dd2f23e",
+    "verification/web/scripts/verify-privacy-restore.py": "273ed677650f8e7a98c1adad96a6122a74e99054675a6c7d795a2e5c4ec96512",
+    "verification/web/scripts/rehearse-native-core-restore.py": "62dec9ba2625f81605463089782bb0e2466283f84885bc085355e20a063ea312",
+    "docs/sql/privacy-restore-reference.sql": "c3c5b3c229c32c69b72931831e1dd96e3603ee63a90983d5b40c174fdaa52028",
+    "docs/sql/practice-data-containment-apply.sql": "0e1c494fb39add6b9e6c656faa32dd4e888f4baedc5468905af6011841b88593",
+    "docs/sql/practice-response-save-apply.sql": "450f26a4a36036808f9551b1ecb380fc5755521c3bd02cc09119e62faa79b142",
+    "docs/sql/live-room-containment-apply.sql": "cba4457ef50664bd0305fed3f265311f35e090a2db22b7930402290613d53711",
+    "verification/web/tests/fixtures/live-room-synthetic.sql": "52d5a8316e34c66ea1c9cbc8ce0841d926eb3aabad9f352b75baf8670aae119b",
+    "supabase/migrations/20260414_daily_practice.sql": "a928960a7db0429aaedcea5f177f7eb6b0f41b475e8c54977ba0b3cbe3be0457",
+    "supabase/migrations/20260418_practice_reflections.sql": "47529879d0d0b39b51722a1e4a69e9f2a3285eb066e21dc404f5153d1fb8deac",
+    "verification/web/tests/fixtures/core-containment-synthetic.sql": "c09a83634f7feb6ea58b02600070dccaaf67d7086949adffc40b44d2b0098433",
+    "docs/sql/first-release-core-containment-preflight.sql": "17db6ff8b73d65de0b3d87fb60fc43a84d84437341a062cb2e195f078a2f34d1",
+    "docs/sql/first-release-core-containment-apply.sql": "b88ffa86bb265f467dbf9fe9d7ba17ce246df8a8d2618db86ade8a6401fb1b1b"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/privacy-auth-restore-2026-11-05/baseline.json": "7822ad1d06f9d67f34bf2cf0ac5b031e748c66a14008ebdaf18eb3155018b5c0",
+    "verification/web/evidence/privacy-auth-restore-2026-11-05/rehearsal-01.json": "509b169e70da626f4eaedba3f14c68a783392fe8b3c2e6ac443adf7e747ae2be",
+    "verification/web/evidence/privacy-auth-restore-2026-11-05/compatibility-01.json": "e14742aca69fae61177303456600b686f26758a54705bbbeb8ecf4cdae120040",
+    "verification/web/evidence/privacy-auth-restore-2026-11-05/prior-reference.sql": "f68884c967799c3ad10d68e108d6e710e10f6ec3dc8cbbf3574b19ce272f1704",
+    "verification/web/evidence/privacy-auth-restore-2026-11-05/prior-checker.py": "1398ccbeda2e8ebb44d8b5870950d2a269463d9eb641da2b9e748796030311af",
+    "verification/web/evidence/privacy-auth-restore-2026-11-05/test-privacy-restore-compatibility.py": "4ae2db3bbf13cc192f49d34df1a17ea204be5a97dc52e022b982bedd7fcfc8d1"
+  }
+}

@@ -1,6 +1,6 @@
 # Privacy cutover restore check
 
-The restore check covers 14 tables across Core, Daily Practice and Live Council. It compares row contents, definitions, ownership, grants and row policies against the export snapshot. Live Council coverage includes meeting links, attendance and transcripts. The check also compares public schema grants and the roles that `anon`, `authenticated` and `service_role` can inherit. Its report names mismatched tables and keeps individual rows, row counts, fingerprints and database errors private.
+The default restore check covers 14 tables across Core, Daily Practice and Live Council. It compares row contents, definitions, ownership, grants and row policies against the export snapshot. Live Council coverage includes meeting links, attendance and transcripts. The check also compares public schema grants and the roles that `anon`, `authenticated` and `service_role` can inherit. Its report names mismatched tables and keeps individual rows, row counts, fingerprints and database errors private.
 
 ## Capture the approved export reference
 
@@ -33,6 +33,18 @@ To compare an existing 11-table Core and Daily Practice reference, add `--core-p
 
 The operator still verifies that the reference came from the named export and the query reached its isolated restoration. Full backup acceptance also covers provider identities, other database objects and credentials, and file storage. Supabase stores object metadata in the database backup. The files need separate recovery evidence. [Supabase backup scope](https://supabase.com/docs/guides/platform/backups)
 
+## Include sign-in data
+
+For an approved backup that includes Supabase Auth, run the following in the same snapshot transaction before loading the reference query.
+
+```sql
+\set soe_restore_include_auth on
+```
+
+Verify that private reference with the same command and add `--include-auth`. It requires 16 tables, including `auth.users` and `auth.identities`. It compares the complete rows, including stored password hashes and linked provider identities. The Auth schema permissions and the Auth service role are checked alongside table definitions and the existing app-table scope. The report gives mismatch categories and table names. Keep the reference and the archive in the owner's private storage. [Supabase Auth backup scope](https://supabase.com/kb/troubleshooting/migrating-auth-users-between-projects) · [Supabase database roles](https://supabase.com/docs/guides/database/postgres/roles)
+
+A 16-table match proves the named account records were preserved in the restored snapshot. Verify other Auth records, signing keys, provider settings and a fresh sign-in separately.
+
 ## Local rehearsal
 
 ```sh
@@ -41,5 +53,7 @@ env -i PATH=/opt/homebrew/bin:/usr/bin:/bin \
 ```
 
 The rehearsal creates two disposable PostgreSQL clusters and runs a real dump and restore from a shared snapshot. It checks later writes to answers and transcripts, detects data and permission drift, and applies the Core, Daily Practice and Live Council drafts to the same restored fixture. Both browser roles lose read access across all 14 tables and the service role retains reads. The service-only Live Council join records attendance after the changes. The PostgreSQL fixture uses `real[]` for embeddings. The separate Practice tests exercise the tracked vector schema. [Verification receipt](privacy-room-restore-verification.json)
+
+The account rehearsal restores a second archive that omits the rows in both Auth tables. The 14-table check matches that archive, and the 16-table check detects the omissions. On the complete restore, the 16-table check detects a replaced password hash, a rebound provider identity and changed Auth grants or role flags. [Account restore verification](privacy-auth-restore-verification.json)
 
 The rehearsal also checks that the new Practice save function refuses the old browser grants. After containment it uses separate database sessions to exercise overlapping saves and a forced failure in the final update. [Practice save verification](practice-atomic-save-verification.json)

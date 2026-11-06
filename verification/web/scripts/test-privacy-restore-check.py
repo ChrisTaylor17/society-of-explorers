@@ -29,6 +29,10 @@ QUESTIONS = ROOT / 'supabase/migrations/20260414_daily_practice.sql'
 REFLECTIONS = ROOT / 'supabase/migrations/20260418_practice_reflections.sql'
 PRIVATE_TEXT = 'PRIVATE_SYNTHETIC_ANSWER'
 PRIVATE_TRANSCRIPT = 'PRIVATE_TRANSCRIPT_FIXTURE'
+AUTH_SUBJECT = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+SECOND_AUTH_SUBJECT = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+PASSWORD_MARKER = 'PRIVATE_SYNTHETIC_PASSWORD_HASH'
+IDENTITY_MARKER = 'PRIVATE_SYNTHETIC_OAUTH_IDENTITY'
 
 
 def resident(path):
@@ -90,9 +94,27 @@ def seed(source, database):
           'SYNTHETIC_READING' FROM generate_series(1, 4097) n;
     """)
     source.file(database, ROOM_FIXTURE)
+    source.query(database, f"""
+      CREATE ROLE supabase_auth_admin;
+      ALTER SCHEMA auth OWNER TO supabase_auth_admin;
+      CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, encrypted_password text);
+      CREATE TABLE auth.identities (
+        id uuid PRIMARY KEY,
+        user_id uuid NOT NULL REFERENCES auth.users (id),
+        provider text NOT NULL,
+        provider_id text NOT NULL
+      );
+      ALTER TABLE auth.users OWNER TO supabase_auth_admin;
+      ALTER TABLE auth.identities OWNER TO supabase_auth_admin;
+      INSERT INTO auth.users VALUES
+        ('{AUTH_SUBJECT}', 'first-account@fixture.invalid', '{PASSWORD_MARKER}'),
+        ('{SECOND_AUTH_SUBJECT}', 'second-account@fixture.invalid', NULL);
+      INSERT INTO auth.identities VALUES
+        ('a1a1a1a1-1111-4111-8111-111111111111', '{AUTH_SUBJECT}', 'google', '{IDENTITY_MARKER}');
+    """)
 
 
-def verify(reference, target, fixture, *, core_practice_only=False, **overrides):
+def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
@@ -101,6 +123,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, **overrides)
     argv = [sys.executable, '-B', str(CHECKER)]
     if core_practice_only:
         argv.append('--core-practice-only')
+    if include_auth:
+        argv.append('--include-auth')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={
@@ -111,6 +135,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, **overrides)
     assert PRIVATE_TEXT not in result.stdout
     assert PRIVATE_TRANSCRIPT not in result.stdout
     assert 'https://soe-fixture.daily.co' not in result.stdout
+    assert all(value not in result.stdout for value in
+               (AUTH_SUBJECT, SECOND_AUTH_SUBJECT, PASSWORD_MARKER, IDENTITY_MARKER, '@fixture.invalid'))
     assert not re.search(r'[0-9a-f]{64}', result.stdout), 'The verifier exposed a fingerprint'
     report = json.loads(result.stdout)
     assert report['productionCleared'] is False
@@ -212,12 +238,80 @@ def exercise_practice_save(target, database, fixture, checks):
     checks.append('An error on the final prompt update rolls back the new answer and member streak in the same transaction.')
 
 
+def exercise_auth_restore(target, database, reference, app_reference, omitted_database, fixture, checks):
+    owner = fixture['OWNER']
+    restored = verify(reference, target, fixture, include_auth=True)
+    assert restored['status'] == 'MATCH' and restored['tablesCompared'] == 16
+    assert restored['roleAndSchemaAccessMatch']
+    assert target.query(database, f"""
+      SELECT count(*) FROM public.members m JOIN auth.users u ON u.id = m.supabase_auth_id
+      JOIN auth.identities i ON i.user_id = u.id
+      WHERE u.encrypted_password = '{PASSWORD_MARKER}' AND i.provider_id = '{IDENTITY_MARKER}';
+    """, owner) == '1'
+    checks.append('The account-inclusive restore matches 16 tables and preserves the linked member, password hash and provider identity from the shared snapshot.')
+
+    omitted = verify(reference, target, fixture, include_auth=True, database=omitted_database)
+    assert omitted['status'] == 'MISMATCH'
+    assert omitted['rowsDiffer'] == ['auth.identities', 'auth.users'] and omitted['definitionsDiffer'] == []
+    assert omitted['roleAndSchemaAccessMatch']
+    checks.append('The account-inclusive comparison identifies both missing Auth row sets in the incomplete archive.')
+
+    assert verify(reference, target, fixture)['check'] == 'private_reference_invalid'
+    assert verify(app_reference, target, fixture, include_auth=True)['check'] == 'private_reference_invalid'
+    parsed = json.loads(reference.read_text())
+    parsed['tables'].pop('auth.identities')
+    incomplete_reference = reference.with_name('partial-auth-reference.json')
+    incomplete_reference.write_text(json.dumps(parsed))
+    assert verify(incomplete_reference, target, fixture, include_auth=True)['check'] == 'private_reference_invalid'
+    checks.append('The account-inclusive mode refuses mismatched formats and a reference missing either Auth table.')
+
+    target.query(database, f"""
+      UPDATE auth.users SET encrypted_password = 'CHANGED_SYNTHETIC_PASSWORD_HASH' WHERE id = '{AUTH_SUBJECT}';
+      UPDATE auth.identities SET user_id = '{SECOND_AUTH_SUBJECT}' WHERE provider_id = '{IDENTITY_MARKER}';
+    """, owner)
+    drift = verify(reference, target, fixture, include_auth=True)
+    assert drift['status'] == 'MISMATCH' and drift['rowsDiffer'] == ['auth.identities', 'auth.users']
+    assert drift['definitionsDiffer'] == [] and drift['roleAndSchemaAccessMatch']
+    target.query(database, f"""
+      UPDATE auth.users SET encrypted_password = '{PASSWORD_MARKER}' WHERE id = '{AUTH_SUBJECT}';
+      UPDATE auth.identities SET user_id = '{AUTH_SUBJECT}' WHERE provider_id = '{IDENTITY_MARKER}';
+    """, owner)
+    checks.append('Replacing a password hash and rebinding a provider identity are detected even when Auth row counts stay constant.')
+
+    target.query(database, 'GRANT SELECT ON auth.users TO authenticated', owner)
+    drift = verify(reference, target, fixture, include_auth=True)
+    assert drift['status'] == 'MISMATCH' and drift['definitionsDiffer'] == ['auth.users']
+    assert drift['rowsDiffer'] == [] and drift['roleAndSchemaAccessMatch']
+    target.query(database, 'REVOKE SELECT ON auth.users FROM authenticated', owner)
+    target.query(database, 'GRANT CREATE ON SCHEMA auth TO authenticated', owner)
+    drift = verify(reference, target, fixture, include_auth=True)
+    assert drift['status'] == 'MISMATCH' and not drift['roleAndSchemaAccessMatch']
+    assert drift['rowsDiffer'] == [] and drift['definitionsDiffer'] == []
+    target.query(database, 'REVOKE CREATE ON SCHEMA auth FROM authenticated', owner)
+    target.query(database, 'ALTER ROLE supabase_auth_admin LOGIN', owner)
+    drift = verify(reference, target, fixture, include_auth=True)
+    assert drift['status'] == 'MISMATCH' and not drift['roleAndSchemaAccessMatch']
+    assert drift['rowsDiffer'] == [] and drift['definitionsDiffer'] == []
+    target.query(database, 'ALTER ROLE supabase_auth_admin NOLOGIN', owner)
+    assert verify(reference, target, fixture, include_auth=True)['status'] == 'MATCH'
+    checks.append('Independent changes to an Auth table grant, the Auth schema ACL and the Auth service role each fail the comparison.')
+
+    target.query(database, 'ALTER TABLE auth.identities RENAME TO missing_identities', owner)
+    assert verify(reference, target, fixture, include_auth=True)['check'] == 'local_snapshot_unavailable'
+    target.query(database, 'ALTER TABLE auth.missing_identities RENAME TO identities', owner)
+    assert verify(reference, target, fixture, include_auth=True)['status'] == 'MATCH'
+    checks.append('A missing Auth relation fails closed without exposing raw database diagnostics.')
+
+
 def exercise(temp, fixture, checker, result):
     source = fixture['Cluster'](temp / 'source', fixture['OWNER'])
     target = fixture['Cluster'](temp / 'target', fixture['RESTORE_ADMIN'])
     source_db, target_db, owner = (fixture[k] for k in ('SOURCE_DB', 'RESTORED_DB', 'OWNER'))
     reference, archive, roles = (temp / name for name in ('reference.json', 'source.pgcustom', 'roles.sql'))
     legacy_reference = temp / 'core-practice-reference.json'
+    auth_reference = temp / 'with-auth-reference.json'
+    omitted_archive = temp / 'without-auth-data.pgcustom'
+    omitted_database = 'soe_without_auth_data'
     checks = result['checks']
     try:
         source.start()
@@ -237,16 +331,28 @@ def exercise(temp, fixture, checker, result):
             reference.write_text(raw + '\n')
             legacy = fixture['run']('psql', '-v', 'soe_restore_include_rooms=off', *capture)
             legacy_reference.write_text(legacy + '\n')
+            auth = fixture['run']('psql', '-v', 'soe_restore_include_auth=on', *capture)
+            auth_reference.write_text(auth + '\n')
             source.query(source_db, """
               UPDATE question_responses SET response_text = 'LATER_SOURCE_WRITE';
               UPDATE room_transcripts SET content = 'LATER_SOURCE_TRANSCRIPT';
+              UPDATE auth.users SET encrypted_password = 'LATER_SOURCE_PASSWORD';
             """)
             fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
                            '--file', archive, '-d', source_db)
+            fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
+                           '--exclude-table-data=auth.users', '--exclude-table-data=auth.identities',
+                           '--file', omitted_archive, '-d', source_db)
         fixture['run']('pg_dumpall', *source.connection(), '--roles-only', '--no-role-passwords',
                        '-l', 'postgres', '-f', roles)
         target.file('postgres', roles)
         target.restore(target_db, archive)
+        target.restore(omitted_database, omitted_archive)
+        assert target.query(omitted_database, 'SELECT count(*) FROM auth.users', owner) == '0'
+        assert target.query(omitted_database, 'SELECT count(*) FROM auth.identities', owner) == '0'
+        assert verify(reference, target, fixture, database=omitted_database)['status'] == 'MATCH'
+        checks.append('The 14-table comparison passes on a restored archive with no Auth rows, proving the need for a separate account-inclusive check.')
+        exercise_auth_restore(target, target_db, auth_reference, reference, omitted_database, fixture, checks)
         match = verify(reference, target, fixture)
         assert match['status'] == 'MATCH' and match['tablesCompared'] == 14 and match['roleAndSchemaAccessMatch']
         assert match['scope'] == checker['FORMAT']
