@@ -19,8 +19,9 @@ function playerAvailable() {
   catch { return false; }
 }
 
-export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublicCircles = prepareInstalledPublicCircles }: {
+export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, reel, preparePublicCircles = prepareInstalledPublicCircles }: {
   onBack(): void; onRead(): void; onBrowse?: (reel?: ReelDiscussionId) => void; appOrigin?: string;
+  reel?: ReelDiscussionId;
   preparePublicCircles?: () => Promise<PublicCircleDiscoveryConnection>;
 }) {
   const current = useRef<Playback | null>(null);
@@ -96,11 +97,11 @@ export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublic
   return <SafeAreaView style={styles.screen}>
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
-      <Text accessibilityRole="header" style={styles.title}>Clips</Text>
-      <Text style={styles.copy}>Short films and source readings to bring to a salon.</Text>
-      <Text accessibilityRole="header" style={styles.heading}>Video clips</Text>
+      <Text accessibilityRole="header" style={styles.title}>{reel ? 'Shared Reel' : 'Clips'}</Text>
+      {!reel && <><Text style={styles.copy}>Short films and source readings to bring to a salon.</Text>
+        <Text accessibilityRole="header" style={styles.heading}>Video clips</Text></>}
       {!available ? <Text style={styles.note}>This build can open the transcripts. Video playback needs the installed clip player.</Text> : null}
-      {catalog.videos.map(clip => {
+      {catalog.videos.filter(clip => !reel || clip.id === reel).map(clip => {
         const reel = clip.attribution ? reelDiscussionId(clip.id) : undefined;
         const playing = playback?.id === clip.id ? playback : null;
         const action = playing?.phase === 'ended' ? 'Replay' : playing?.playing ? 'Pause' : 'Play';
@@ -117,6 +118,10 @@ export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublic
                 style={[styles.video, { aspectRatio: clip.width / clip.height }]}/>
             </Suspense> : null}
           </> : null}
+          {reel && onBrowse && <>
+            <Text style={styles.note}>{REEL_QUESTIONS[reel]}</Text>
+            <Action label={`Discuss ${clip.title} in a Circle`} disabled={!active} onPress={() => onBrowse(reel)}/>
+          </>}
           <Text selectable style={styles.note}>{clip.credit}</Text>
           {clip.attribution ? <>
             <Text style={styles.note}>{clip.attribution.edits}</Text>
@@ -134,21 +139,19 @@ export function ClipsScreen({ onBack, onRead, onBrowse, appOrigin, preparePublic
           </> : null}
           <Text accessibilityRole="header" style={styles.note}>Transcript</Text>
           <Text selectable style={styles.copy}>{clip.transcript}</Text>
-          {reel && onBrowse && <>
-            <Text style={styles.note}>{REEL_QUESTIONS[reel]}</Text>
-            <Action label={`Discuss ${clip.title} in a Circle`} disabled={!active} onPress={() => onBrowse(reel)}/>
-          </>}
         </View>;
       })}
-      <Text accessibilityRole="header" style={styles.heading}>Reading clip</Text>
-      <View style={styles.card}>
-        <Text accessibilityRole="header" style={styles.heading}>Grace and peace</Text>
-        <Text selectable style={styles.copy}>{greeting}</Text>
-        <Text style={styles.note}>Philemon 1:3 · {philemonEdition.edition} · Public domain</Text>
-        <Text selectable style={styles.address}>{philemonEdition.publisherUrl}</Text>
-        <Action label="Read the full Philemon study" onPress={onRead}/>
-      </View>
-      {onBrowse ? <Action label="Find an online Circle" onPress={() => onBrowse()}/> : null}
+      {!reel && <>
+        <Text accessibilityRole="header" style={styles.heading}>Reading clip</Text>
+        <View style={styles.card}>
+          <Text accessibilityRole="header" style={styles.heading}>Grace and peace</Text>
+          <Text selectable style={styles.copy}>{greeting}</Text>
+          <Text style={styles.note}>Philemon 1:3 · {philemonEdition.edition} · Public domain</Text>
+          <Text selectable style={styles.address}>{philemonEdition.publisherUrl}</Text>
+          <Action label="Read the full Philemon study" onPress={onRead}/>
+        </View>
+        {onBrowse ? <Action label="Find an online Circle" onPress={() => onBrowse()}/> : null}
+      </>}
     </ScrollView>
     <View style={styles.footer}><Action label="Back to account" onPress={onBack}/></View>
   </SafeAreaView>;

@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { memberConfig } = require('../android/member-config.cjs');
+const { memberConfig, reelLinkHost } = require('../android/member-config.cjs');
 const { packageClipAssets } = require('../prepare-clip-assets.cjs');
 const sceneClass = 'SoeMemberSceneDelegate';
 const callbackType = 'org.soe.member.email';
@@ -29,6 +29,14 @@ function publicString(info, key) {
   const value = info[key];
   if (typeof value !== 'string' || value.trim() !== value) throw Error('Invalid installed SoE policy.');
   return value;
+}
+
+function requireReelDomain(info, domains) {
+  const enabled = info?.SoeReelLinksEnabled;
+  if (enabled === undefined || enabled === false) return;
+  if (enabled !== true) throw Error('Invalid iOS Reel link policy.');
+  const association = 'applinks:' + reelLinkHost(publicString(info, 'SoeMemberOrigin'));
+  if (!Array.isArray(domains) || !domains.includes(association)) throw Error('The iOS Reel link domain must match the installed member origin.');
 }
 
 function configureInfoPlist(info, bundleID) {
@@ -100,6 +108,7 @@ function packageReaderPins(projectRoot) {
 function withSoeIOSHost(config) {
   const { withAppDelegate, withDangerousMod, withInfoPlist } = require('expo/config-plugins');
   const bundleID = config.ios?.bundleIdentifier;
+  requireReelDomain(config.ios?.infoPlist, config.ios?.associatedDomains);
   config = withInfoPlist(config, mod => {
     // Before prebuild the introspection placeholder has no scene manifest.
     if (mod.modRequest.introspect) return mod;
@@ -120,5 +129,6 @@ function withSoeIOSHost(config) {
 
 module.exports = withSoeIOSHost;
 module.exports.configureInfoPlist = configureInfoPlist;
+module.exports.requireReelDomain = requireReelDomain;
 module.exports.patchAppDelegate = patchAppDelegate;
 module.exports.packageReaderPins = packageReaderPins;

@@ -9,13 +9,14 @@ import type { PublicCircleDiscoveryConnection } from './src/circles/installed-me
 
 /** The registered app owns sign-in through its trusted native public policy.
  * Existing verified Circle composition remains available to trusted callers. */
-export default function App({ memberCircle, connectivity, ownedAccountPrepare, publicCirclesPrepare }: {
+export default function App({ memberCircle, connectivity, ownedAccountPrepare, publicCirclesPrepare, soeReelLinkOrigin }: {
   memberCircle?: ExistingMemberCircleConfig; connectivity?: NativeConnectivityPort;
   ownedAccountPrepare?: () => Promise<OwnedAccountConnection>; publicCirclesPrepare?: () => Promise<PublicCircleDiscoveryConnection>;
+  soeReelLinkOrigin?: string;
 } = {}) {
   const config = useMemo(() => memberCircleConfig(memberCircle), [memberCircle]);
   const [closed, setClosed] = useState<ExistingMemberCircleConfig | null>(null);
-  if (!memberCircle) return <OwnedAccountScreen prepare={ownedAccountPrepare} publicCirclesPrepare={publicCirclesPrepare}/>;
+  if (!memberCircle) return <OwnedAccountScreen prepare={ownedAccountPrepare} publicCirclesPrepare={publicCirclesPrepare} reelLinkOrigin={soeReelLinkOrigin}/>;
   if (config && closed !== config) return <MemberCircleScreen config={config} connectivity={connectivity} onClose={() => setClosed(config)}/>;
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>

@@ -1,0 +1,131 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "verifiedAt": "2026-11-06T12:10:33+00:00",
+  "baseCommit": "5d90512630dc75d8bd5ed68126b763a7af0ad149",
+  "publicReels": [
+    "/clips/watch/night-sky-traffic",
+    "/clips/watch/telescope-first-tilt",
+    "/clips/watch/which-height"
+  ],
+  "checks": {
+    "androidBrowserScenarios": 35,
+    "iosBrowserScenarios": 18,
+    "nativeEmailRegressionScenarios": 21,
+    "phonePolicyAndLinkTests": 29,
+    "webAssociationAndClipTests": 11,
+    "accountRegressionTests": 49,
+    "executableSwiftLinkChecks": 18,
+    "compiledWebRouteChecks": {
+      "status": "PASS",
+      "buildId": "ghyEO-PWqh0qNqypIIjiT",
+      "disabled": [
+        {
+          "route": "/.well-known/apple-app-site-association",
+          "status": 404
+        },
+        {
+          "route": "/.well-known/assetlinks.json",
+          "status": 404
+        }
+      ],
+      "webFallback": [
+        {
+          "route": "/clips/watch/night-sky-traffic",
+          "status": 200
+        },
+        {
+          "route": "/clips/watch/telescope-first-tilt",
+          "status": 200
+        },
+        {
+          "route": "/clips/watch/which-height",
+          "status": 200
+        }
+      ],
+      "enabled": [
+        {
+          "route": "/.well-known/apple-app-site-association",
+          "status": 200
+        },
+        {
+          "route": "/.well-known/assetlinks.json",
+          "status": 200
+        }
+      ],
+      "scope": "Actual loopback Next routes with clean configuration and actual compiled association handlers with synthetic identities. External network blocked."
+    },
+    "nativeRegisteredAppTypesAndScopedLint": "PASS",
+    "iosCatalystHostAndTemplate": "PASS",
+    "phone320pxFirstScreenReelAndSalonAction": "PASS"
+  },
+  "result": "Cold links open an exact bundled Reel before foreground or sign-in. Warm links keep the current view and wait for an explicit selection. Starting from the shared link, both simulated phone paths reached the reviewed discussion flow and saved one edited post.",
+  "limits": [
+    "The native browser runs use explicit delivery, OS and provider doubles with disposable Circle SQL.",
+    "Swift link policy ran on the Mac. Catalyst checked the scene against UIKit, pinned Expo code and interface doubles.",
+    "Android App Link manifest and launch wiring have source-policy checks. The Kotlin app build remains open.",
+    "Live association settings, signed iPhone and Android installations and physical link delivery remain open."
+  ],
+  "evidenceDirectory": "verification/web/evidence/native-reel-app-links-2026-11-06",
+  "evidenceSha256": {
+    "android-browser.json": "8d07d5b76d5a92c0d621bb3c88a621eaa1e32a65cdc7e77ea1b3a4e574715385",
+    "android-shared-reel-320.png": "fa585b951fd7c41f9d761955f724d517f9d680b7fb3f436f9d76875049e4207d",
+    "built-shell-guard-check.json": "09ddec8d7feb48aae570c3a51081cf10bd4364362bb38595ef0d59e9d413eeed",
+    "built-shell-reel-app-links-03-build-source-sha256.json": "c140aec2aec92faf46acb5e76b1ced8a32ab9b5fee64deb535865ac87ae33d97",
+    "built-shell-reel-app-links-03-compiled-reel-links.json": "6044e52b06d0448a57bf92469cf80c1bca3367c88834230c60857c66d3a26874",
+    "built-shell-reel-app-links-03-next-build.json": "36915104fae87cc031a5d8f1477288bd34fb126b79bc156bcb8e4f77901eb210",
+    "built-shell-reel-app-links-03-next-build.log": "dabc97a4c33b944b0d7b877804c3617d4ebcc1f1fc763a0487baadb50e527dde",
+    "built-shell-reel-app-links-03-server-ready.json": "fe369a2c933d01d851c4bd55c34d1e3aad02b2c97d9fe4b329c7fd88d34398b2",
+    "built-shell-reel-app-links-03-server-runtime.json": "064ce608b0ee9ccb9847d39958eba4c577d28af0b6dbe340ed335df56cfd8fa1",
+    "built-shell-reel-app-links-03-server.json": "f599a0a4754aa134cc7794755f1e8c5a92032898a2595a23a2ea424f003513ac",
+    "built-shell-reel-app-links-03-server.log": "5390813e6d3eea716d345e8c65f23c4b9c111fe50719a068ee191454d0dacdc5",
+    "check-compiled-reel-links.cjs": "0ef0e27045a953a3d293d0d42519c8d22ad8d579d7c8b605c294fd58166540ab",
+    "ios-browser.json": "9a975b2ab843f665f5ac91a2a0ded9c9cce747e7fd1aa94c1596ca9c0acf8cee",
+    "ios-shared-reel-320.png": "fa585b951fd7c41f9d761955f724d517f9d680b7fb3f436f9d76875049e4207d",
+    "native-bundle-page.js": "ce5df650e29eea0dd2c729f09d9f532401cb8a051f9a8dfbaf9d4b348feecdd1",
+    "native-bundle-source-manifest.json": "ee3686c1da5acec80d3104f22fc44d3067890525e882cc1a686281f3c9ccbf77",
+    "native-email-auth-browser.json": "8dc96c19b86c048b6d2abe86a348c5b240cc76bc91a657cb54ba572cfbd8033f",
+    "reel-app-link-account-regression.log": "8441486f745f115fb2016d962cbb734b8fa176c278c2d32bf4c1d3b79dd2dc9a",
+    "reel-app-links-native-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reel-links-catalyst-source.json": "2628b247752a62a2cbb413fe6b1540273e988145c4e8e9cdd0c6cb597afbe8ff",
+    "reel-links-catalyst.log": "f11c177ddf758e6c3d556b0574eafe7db38e6bb2ea0ee5032227df0f18e0f47b",
+    "reel-links-email-regression-final.log": "3de0fdbe391c6190a8d4e5884c215df20e2dac0527f604846570cdc6c3e3b169",
+    "reel-links-final-android.log": "dd509024801bc617428493f2c04af3d7735f903a1c73e02e57ecaee4a7f589bd",
+    "reel-links-final-ios.log": "d684b21dcb9bab8deb65ffdf7cf90208953455efecf34551cc0c3da49924920d",
+    "reel-links-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reel-links-policy-tests.log": "276c93cf93aab64299cfa5dff5b2fc90ca32a5944a87aa8d2a63f6f9cb99e7aa",
+    "reel-links-web-tests.log": "3ac3ca626de991f5724dcbe79d8c52067f2dc22ad856e9bbba5580162b84d7cf",
+    "swift-receipt.json": "2016a2ef0ce5bece750ca9f48f8a22460dd5fb516029d162aae38bacbcbce2ef",
+    "swift-result.log": "7c45827111bc173114abe1baa2f40d8f6a4652e47e4e17343af44b1293639eee"
+  },
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "a6be36b2cb45bc8b95d44ddec87d71ce897dd6fa8033ec6fce7e0cd01b41380f",
+    "app/.well-known/apple-app-site-association/route.ts": "8b2fe3d922d5a1ac8c58f25516eddf04b3ef8de20d906b88378187548cb554e5",
+    "app/.well-known/assetlinks.json/route.ts": "0ac21c23ffa72390e5856679aa962201f70d3a3065f388d97a0709c9287220c6",
+    "docs/integration/native-clips.md": "2e4186522e75d8ffda1d57e55bd556223fd4b0813a6de7c63a795680f47efc4d",
+    "docs/integration/native-reel-links.md": "73855495aaef45d71d5b42aec9b5e359a1060842dd440afdec2533bdab6bd905",
+    "lib/clips/app-links.ts": "a78d64ccf1f851a2506ad235a5bea6b81dbafb4b6a5079d60af03b119d81595c",
+    "platforms/native/App.tsx": "1ee8db83f9b5fc0cc5fff4fa9ac7ccd2fcefa58d65dd092b9b1c2d6b46d5d112",
+    "platforms/native/ClipsScreen.tsx": "a558cfb435930b886ec182081d7d3b7e5cf01a99bd90babd16ab1061395674ca",
+    "platforms/native/MemberCircleScreen.tsx": "27528528fd1a5ba764da09722133ec4ee95db7a15dae20e77ccfae14c057910b",
+    "platforms/native/OwnedAccountScreen.tsx": "7d3d7d3f337759fb3d8991678707bfd529d77226f86e264872ffded588873934",
+    "platforms/native/android/app/build.gradle": "af5935afd0977fd090f93a2ac4052d31db800c0e786bf81eac6f2b5458c15e39",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/MainActivity.kt": "bec899c011a466e427d1170ef356c4445695c0e18ae0d4362ae84dcfddba85c1",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/PublicReelLink.kt": "8cc5e293c8f610b6617f62bad78d080d767b2602f28817be08580821458dff58",
+    "platforms/native/android/app/src/release/AndroidManifest.xml": "e6816ce80e51f7d4307970e60960b24becb95ede2449c12a60f4583a508fdffa",
+    "platforms/native/android/member-config.cjs": "42a20b5edc7d18b7de239321098a41ac5d575a1baf0df658c6c6e2be20c2fd2e",
+    "platforms/native/ios-member/SoeMemberAppDelegates.swift": "fcc9159292bdbc0cc15e9fdab32b44d6ed62a731666fb091ab4315da94646377",
+    "platforms/native/ios-member/SoePublicReelLink.swift": "5d93eb1f91bf4549462ead944c4b6c83dc413f7aa4ebcee4e9d41e77e6b65cda",
+    "platforms/native/plugins/with-soe-ios-host.cjs": "8b24f64155dd3cc115d696aac34a04fab28db380ba72d184f1ace1b76736463f",
+    "platforms/native/src/circles/public-reel-links.ts": "8a70a438667148c6710d4ef7106a91560d6c5644eb9b63e20d7eed2368d6fe83",
+    "platforms/tests/browser-native-hosting.mjs": "499bea63ea09ab6e2ccd5e32be258bbdebc20efb674a69d47a8e22678eda7503",
+    "platforms/tests/bundle-native-hosting.mjs": "a40cb88811fe3232f5b34d02ec731cff4809eba1d2aca8ab94777e79486b316f",
+    "platforms/tests/native-hosting-entry.tsx": "c441ac65ea26da27fbc0202fa95d1712095f27b4daa14d9ef63917fa2d160ad2",
+    "platforms/tests/native-installed-account-types.d.ts": "7f612820098269f01a976c2a65b24f24160d91f88f4332f08f60cc5bde85cc60",
+    "platforms/tests/public-reel-links.test.mjs": "484259105635831d4e345460525313a9756e18f2cead234ae7d73a93e46752e2",
+    "verification/android-hardening.test.mjs": "91ad372ee7af6e4ef409a09dfe1931f4f9587aa3004b2299f667d2b99746ee71",
+    "verification/native-ios/SoePublicReelLinkTests.swift": "461ce244b904ea7cc570615f98ef880139d9ceb581540d68380b20765f43ac1a",
+    "verification/native-ios/host-config.test.mjs": "e2198ad8d70352d406cdcbdecd69a64f3b72028c5e3d75b487405abc0a668836",
+    "verification/web/tests/reel-app-links.test.mjs": "671a13a16ef62244d0633a7db97ad1d9b303b847ed25a363984ca32b6bbbfaa8"
+  }
+}

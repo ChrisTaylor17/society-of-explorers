@@ -3,6 +3,7 @@ package com.anonymous.soesyntheticdemo
 import android.os.Build
 import android.os.Bundle
 import android.content.Intent
+import android.net.Uri
 import com.anonymous.soesyntheticdemo.member.EmailLinkLifecycle
 
 import com.facebook.react.ReactActivity
@@ -18,11 +19,8 @@ class MainActivity : ReactActivity() {
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
-    // Capture before React/Linking exists. The Activity retains no raw callback.
-    val callback = intent?.dataString
-    intent?.data = null
-    intent?.clipData = null
-    EmailLinkLifecycle.capture(applicationContext, callback)
+    // Only a reviewed public Reel can reach React/Linking.
+    intent?.let { setIntent(consumeLink(it)) }
     super.onCreate(null)
     ReportPrivacyGuard.install(window.decorView)
   }
@@ -41,11 +39,20 @@ class MainActivity : ReactActivity() {
   }
 
   override fun onNewIntent(incoming: Intent) {
-    val callback = incoming.dataString
-    val sanitized = Intent(incoming).apply { data = null; clipData = null }
-    EmailLinkLifecycle.capture(applicationContext, callback)
+    val sanitized = consumeLink(incoming)
     setIntent(sanitized)
     super.onNewIntent(sanitized)
+  }
+
+  private fun consumeLink(incoming: Intent): Intent {
+    val raw = incoming.dataString
+    val reel = if (BuildConfig.SOE_REEL_LINKS_ENABLED && incoming.action == Intent.ACTION_VIEW)
+      publicReelLink(raw, BuildConfig.SOE_MEMBER_ORIGIN) else null
+    if (reel == null) EmailLinkLifecycle.capture(applicationContext, raw)
+    return Intent(incoming).apply {
+      data = reel?.let { Uri.parse(it) }
+      clipData = null
+    }
   }
 
   /**
@@ -70,6 +77,7 @@ class MainActivity : ReactActivity() {
             override fun getLaunchOptions(): Bundle = Bundle().apply {
               putBoolean("embeddedSynthetic", BuildConfig.SOE_EMBEDDED_SYNTHETIC)
               putBoolean("syntheticAutorun", BuildConfig.SOE_EMBEDDED_SYNTHETIC && intent.getBooleanExtra("soe.synthetic.autorun", false))
+              if (BuildConfig.SOE_REEL_LINKS_ENABLED) putString("soeReelLinkOrigin", BuildConfig.SOE_MEMBER_ORIGIN)
             }
           })
   }

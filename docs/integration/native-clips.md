@@ -1,5 +1,7 @@
 # Clips in the phone app
 
+Shared public Reel URLs can enter the signed phone app after the release website and app are associated. The same Reel can open in a browser. [Shared link behavior and release configuration](native-reel-links.md)
+
 Choose **Explore Clips** before connecting an account or from the verified member screen. Both paths open the same four short videos and a reading clip. The reading clip uses Philemon 1:3 from the publisher’s public-domain World English Bible Classic. Its button opens the complete Philemon study, including the salon guide. **Find an online Circle** opens public listings for guests and sets the Online filter for members. Guests can choose a Circle before signing in and open that Circle after member verification. [Publisher reuse terms](https://ebible.org/eng-web/webfaq.htm) · [Philemon study](root-kernel-philemon.md) · [Online Circle verification](native-online-circles-verification.json)
 
 **How a Circle works** and **Who gets the night sky?** use the approved silent MP4s and exact transcripts. Each clip starts on a tap and can pause or replay. The Archivist Reel includes its credit in the picture. The card supplies the original source, CC BY 4.0 terms and edit disclosure. The displayed duration is approximate. Chromium reported 23.955 seconds for the Circle introduction and macOS reported 24.664 seconds. Both measured the Reel at 24 seconds. [Reel rights and edit](paranal-reel.md) · [ESO source](https://www.eso.org/public/videos/eso2607d/) · [ESO reuse terms](https://www.eso.org/public/outreach/copyright/)

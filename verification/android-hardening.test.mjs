@@ -11,8 +11,34 @@ import { spawnSync } from 'node:child_process';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const android = path.join(root, 'platforms/native/android');
 const { validateReleaseConfig } = createRequire(import.meta.url)(path.join(android, 'release-policy.cjs'));
+const { reelLinkHost } = createRequire(import.meta.url)(path.join(android, 'member-config.cjs'));
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const guard = path.join(root, 'verification/web/scripts/deny-build-network.cjs');
+
+test('Reel App Links stay in the release overlay and match the installed HTTPS policy', () => {
+  const manifest = variant => fs.readFileSync(path.join(android, 'app/src', variant, 'AndroidManifest.xml'), 'utf8');
+  const release = manifest('release');
+  const activity = fs.readFileSync(path.join(android, 'app/src/main/java/com/anonymous/soesyntheticdemo/MainActivity.kt'), 'utf8');
+  const policy = fs.readFileSync(path.join(android, 'app/src/main/java/com/anonymous/soesyntheticdemo/PublicReelLink.kt'), 'utf8');
+  const swift = fs.readFileSync(path.join(root, 'platforms/native/ios-member/SoePublicReelLink.swift'), 'utf8');
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, 'platforms/native/clip-catalog.json'), 'utf8'));
+  const ids = catalog.videos.filter(clip => clip.attribution).map(clip => clip.id).sort();
+  assert.deepEqual([...release.matchAll(/android:path="\/clips\/watch\/([^"]+)"/g)].map(match => match[1]).sort(), ids);
+  for (const source of [policy, swift]) {
+    assert.deepEqual([...source.matchAll(/slug == "([^"]+)"/g)].map(match => match[1]).sort(), ids);
+  }
+  assert.match(release, /android:autoVerify="\$\{soeReelLinkVerify\}"/);
+  assert.match(release, /android:host="\$\{soeReelLinkHost\}"/);
+  for (const variant of ['main', 'debug', 'synthetic']) assert.doesNotMatch(manifest(variant), /\/clips\/watch\//);
+  assert.match(activity, /BuildConfig\.SOE_REEL_LINKS_ENABLED && incoming\.action == Intent\.ACTION_VIEW/);
+  assert.match(activity, /data = reel\?\.let \{ Uri\.parse\(it\) \}\s+clipData = null/);
+  assert.match(activity, /EmailLinkLifecycle\.capture\(applicationContext, raw\)/);
+  assert.match(activity, /if \(BuildConfig\.SOE_REEL_LINKS_ENABLED\) putString\("soeReelLinkOrigin", BuildConfig\.SOE_MEMBER_ORIGIN\)/);
+  assert.equal(reelLinkHost('https://circles.test'), 'circles.test');
+  for (const origin of ['', 'https://127.0.0.1', 'https://circle', 'https://circles.test:444', 'http://circles.test']) {
+    assert.throws(() => reelLinkHost(origin));
+  }
+});
 
 function fixture(run) {
   const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'soe-android-policy-'));

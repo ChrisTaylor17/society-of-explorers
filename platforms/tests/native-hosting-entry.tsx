@@ -24,6 +24,8 @@ let invalidMemberClosed=0;
 
 const requests:Array<{kind:string;path:string;method:string;bodyKeys:string[];held:boolean;status?:number}>=[];
 const netListeners=new Set<(state:Network)=>void>(),appListeners=new Map<string,Set<(state:string)=>void>>();
+const linkListeners = new Set<(event: { url: string }) => void>();
+let launchLink: string | null = null;
 const appState={currentState:'active',addEventListener(name:string,fn:(state:string)=>void){let listeners=appListeners.get(name);if(!listeners){listeners=new Set();appListeners.set(name,listeners);}listeners.add(fn);return{remove(){listeners?.delete(fn);}};}};
 const connectivity={snapshot:()=>online,subscribe(fn:(state:Network)=>void){netListeners.add(fn);return()=>{netListeners.delete(fn);};}};
 function uuid(){return`98000000-0000-4000-8000-${String(++sequence).padStart(12,'0')}`;}
@@ -54,6 +56,9 @@ function createBridge(store:Disk){
  };
 }
 const qa={appState,requests,platform:new URL(window.location.href).searchParams.get('platform')==='ios'?'ios':'android',
+ getInitialURL: async () => launchLink,
+ onLink(listener: (event: { url: string }) => void) { linkListeners.add(listener); return { remove: () => linkListeners.delete(listener) }; },
+ emitLink(url: string) { for (const listener of [...linkListeners]) listener({ url }); },
  openedMeetings,recordMeeting(url:string){openedMeetings.push(url);},
  reelShares, shareUnavailable(value: boolean) { shareUnavailable = value; },
  recordShare(content: { title: string; message: string }) {
@@ -70,8 +75,9 @@ const qa={appState,requests,platform:new URL(window.location.href).searchParams.
  attendanceAvailable(value:boolean){attendanceEnabled=value;},
  savedReadingAvailable(value:boolean){savedEnabled=value;},readingAvailable(value:boolean){readingEnabled=value;},
  showUnconfigured(){root.render(<React.StrictMode key={++epoch}><App/></React.StrictMode>);},
- show(network:Network='online',preserve=false){
-  held?.release();held=null;heldDelivery?.release();heldDelivery=null;heldPreparation?.release();heldPreparation=null;preparationHeld=false;online=network;appState.currentState='active';requests.length=0;prepared=0;reads=0;writes=0;resets=0;cancels=0;connectionsClosed=0;
+ show(network:Network='online',preserve=false,initialUrl: string | null = null, initialActivity = 'active'){
+  launchLink = initialUrl;
+  held?.release();held=null;heldDelivery?.release();heldDelivery=null;heldPreparation?.release();heldPreparation=null;preparationHeld=false;online=network;appState.currentState=initialActivity;requests.length=0;prepared=0;reads=0;writes=0;resets=0;cancels=0;connectionsClosed=0;
   if(!preserve)disk={generation:uuid(),slots:new Map(),resetUnknown:false};
   const bridge=createBridge(disk);
   openedMeetings.length=0; reelShares.length=0; shareUnavailable=false;
@@ -84,9 +90,10 @@ const qa={appState,requests,platform:new URL(window.location.href).searchParams.
    let closed=false;const connection={controller,config:{origin,auth:controller.auth,transport:ports.member.transport,savedReadingTransport:ports.member.savedReadingTransport,attendanceTransport:ports.member.attendanceTransport,hostingTransport:ports.member.hostingTransport,editionTransport:ports.member.editionTransport,publicTransport:ports.member.publicTransport,passageTransport:ports.member.passageTransport,timeoutMs:1200,newRequestId:ports.member.newRequestId},connectivity,close(){if(!closed){closed=true;connectionsClosed++;controller.close();ports.retire();}}};
    const gate=heldPreparation;if(gate){preparationHeld=true;await gate.promise;}return connection;
   };
-  root.render(<React.StrictMode key={++epoch}><App ownedAccountPrepare={prepare} publicCirclesPrepare={publicCirclesPrepare}/></React.StrictMode>);
+  root.render(<React.StrictMode key={++epoch}><App ownedAccountPrepare={prepare} publicCirclesPrepare={publicCirclesPrepare}
+    soeReelLinkOrigin={origin}/></React.StrictMode>);
  },
- stats:()=>({prepared,reads,writes,resets,cancels,handles,connectionsClosed,preparationHeld,invalidMemberClosed,retainedCallbacks:retainedCallbacks.size,storedSlots:[...disk.slots.keys()].sort(),netListeners:netListeners.size,appListeners:[...appListeners.values()].reduce((n,set)=>n+set.size,0)}),
+ stats:()=>({prepared,reads,writes,resets,cancels,handles,connectionsClosed,preparationHeld,invalidMemberClosed,retainedCallbacks:retainedCallbacks.size,storedSlots:[...disk.slots.keys()].sort(),netListeners:netListeners.size,appListeners:[...appListeners.values()].reduce((n,set)=>n+set.size,0),linkListeners:linkListeners.size}),
  activity(name:string,value='active'){if(name==='change')appState.currentState=value;for(const fn of [...appListeners.get(name)??[]])fn(value);},
  network(value:Network){online=value;for(const fn of [...netListeners])fn(value);},
  hold(path:string,method?:string){let release=()=>{};const promise=new Promise<void>(resolve=>{release=resolve;});held={path,method,promise,release};},

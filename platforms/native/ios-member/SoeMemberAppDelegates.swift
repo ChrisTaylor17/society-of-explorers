@@ -116,17 +116,24 @@ open class SoeMemberAppDelegate: ExpoAppDelegate {
 @available(iOSApplicationExtension, unavailable)
 @objc(SoeMemberSceneDelegate)
 public final class SoeMemberSceneDelegate: ExpoAppSceneDelegate {
+    public override var initialProperties: [AnyHashable: Any]? {
+        guard let origin = SoePublicReelLink.installedOrigin(Bundle.main.infoDictionary ?? [:]) else {
+            return super.initialProperties
+        }
+        var properties = super.initialProperties ?? [:]
+        properties["soeReelLinkOrigin"] = origin
+        return properties
+    }
+
     public override func scene(
         _ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
         let publicURLs = connectionOptions.urlContexts.filter { !SoeMemberIOSHost.consumeEmailLink($0.url) }
-        let publicActivities = connectionOptions.userActivities.filter { activity in
-            guard let url = activity.webpageURL else { return true }
-            return !SoeMemberIOSHost.consumeEmailLink(url)
-        }
+        let publicActivities = connectionOptions.userActivities.compactMap { forwardedActivity($0) }
         if publicURLs.count == connectionOptions.urlContexts.count,
-           publicActivities.count == connectionOptions.userActivities.count {
+           publicActivities.count == connectionOptions.userActivities.count,
+           !publicActivities.contains(where: { $0.activityType == NSUserActivityTypeBrowsingWeb }) {
             super.scene(scene, willConnectTo: session, options: connectionOptions)
             return
         }
@@ -150,7 +157,9 @@ public final class SoeMemberSceneDelegate: ExpoAppSceneDelegate {
                                  initialProperties: initialProperties,
                                  launchOptions: launchOptions.isEmpty ? nil : launchOptions)
         if !publicURLs.isEmpty { super.scene(scene, openURLContexts: publicURLs) }
-        publicActivities.forEach { super.scene(scene, continue: $0) }
+        // React reads the accepted cold Reel from the launch options above.
+        publicActivities.filter { $0.activityType != NSUserActivityTypeBrowsingWeb }
+            .forEach { super.scene(scene, continue: $0) }
         if let shortcut = connectionOptions.shortcutItem {
             super.windowScene(windowScene, performActionFor: shortcut) { _ in }
         }
@@ -162,13 +171,21 @@ public final class SoeMemberSceneDelegate: ExpoAppSceneDelegate {
     }
 
     public override func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-        if let url = userActivity.webpageURL, SoeMemberIOSHost.consumeEmailLink(url) { return }
-        super.scene(scene, continue: userActivity)
+        if let activity = forwardedActivity(userActivity) { super.scene(scene, continue: activity) }
     }
 
     public override func scene(_ scene: UIScene, didUpdate userActivity: NSUserActivity) {
-        if let url = userActivity.webpageURL, SoeMemberIOSHost.consumeEmailLink(url, capture: false) { return }
-        super.scene(scene, didUpdate: userActivity)
+        if let activity = forwardedActivity(userActivity, capture: false) { super.scene(scene, didUpdate: activity) }
+    }
+
+    private func forwardedActivity(_ activity: NSUserActivity, capture: Bool = true) -> NSUserActivity? {
+        if let url = activity.webpageURL, SoeMemberIOSHost.consumeEmailLink(url, capture: capture) { return nil }
+        guard activity.activityType == NSUserActivityTypeBrowsingWeb else { return activity }
+        guard let url = activity.webpageURL,
+              SoePublicReelLink.allows(url, info: Bundle.main.infoDictionary ?? [:]) else { return nil }
+        let publicActivity = NSUserActivity(activityType: NSUserActivityTypeBrowsingWeb)
+        publicActivity.webpageURL = url
+        return publicActivity
     }
 
     public override func sceneDidDisconnect(_ scene: UIScene) {

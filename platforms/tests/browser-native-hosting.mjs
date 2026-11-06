@@ -9,6 +9,7 @@ const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hostin
 const clipMode=run?.startsWith('clips-');
 const shareMode=run?.startsWith('clips-share-');
 const salonMode=run?.startsWith('clips-salon-');
+const linkMode=run?.startsWith('clips-salon-links-');
 const eltMode=run?.startsWith('clips-elt-');
 const lavaMode=run?.startsWith('clips-lava-');
 if(run)fs.mkdirSync(path.join(ROOT,output));
@@ -160,7 +161,26 @@ try{
    await button('Find an online reading Circle').click();await enabled('Load online Circles');await invoke(staleChoice);
    assert.equal(await button('Clear selected Circle').count(),0);
    await button('Back from online Circles').click();await button('Back to account').click();
-   await button('Explore Clips').click();await button(discussReel).click();await enabled('Load online Circles');
+   if (linkMode) {
+     const before = http.length;
+     const link = ORIGIN + '/clips/watch/which-height';
+     await p.evaluate(link => window.nativeQa.show('offline', false, link, 'inactive'), link);
+     await p.getByText('Shared Reel', { exact: true }).waitFor();
+     assert(await button('Play Which height are we measuring?').isDisabled());
+     await p.evaluate(() => { window.nativeQa.activity('change', 'active'); window.nativeQa.network('online'); });
+     await enabled('Play Which height are we measuring?');
+     assert.equal(await button('Play Who gets the night sky?').count(), 0);
+     assert.equal(await button('Connect my account').count(), 0);
+     assert.equal(await p.locator('video').count(), 0);
+     assert.equal(http.length, before);assert.equal(mediaHttp.length, 0);
+     assert.equal((await state()).stats.prepared, 0);
+     await p.getByText('Shared Reel', { exact: true }).waitFor();
+     const discussBounds = await button(discussReel).boundingBox();
+     assert(discussBounds.y + discussBounds.height <= 850);
+     await screenshot('shared-reel-cold-320.png', true);
+     pass('a cold link delivered before foreground while offline opens the exact public Reel and transcript without autoplay, an account read or a Circle request');
+   } else await button('Explore Clips').click();
+   await button(discussReel).click();await enabled('Load online Circles');
    await p.getByText(reelQuestion,{exact:true}).waitFor();
    await button('Load online Circles').click();await enabled(guestButton);
    await button(guestButton).click();await enabled('Connect my account');
@@ -229,6 +249,31 @@ try{
    await p.evaluate(()=>window.nativeQa.activity('change','background'));await p.evaluate(()=>window.nativeQa.release());await settle();
    assert.deepEqual(await openings(),[meeting]);assert.equal(await button('Open online meeting').count(),0);
    pass('a meeting reply delivered after backgrounding cannot open the meeting');
+   if (linkMode) {
+     await show();await signIn();await account();
+     await button('Read Philemon').click();await button('Host guide').waitFor();
+     const before = http.length;
+     await p.evaluate(url => window.nativeQa.emitLink(url), ORIGIN + '/clips/watch/night-sky-traffic');
+     await settle();await button('Host guide').waitFor();
+     assert.equal(await button('Open shared Reel').count(), 0);
+     await button('Back to account').click();await enabled('Open shared Reel');
+     const staleOpen = await retain('Open shared Reel');
+     await p.evaluate(url => window.nativeQa.emitLink(url), ORIGIN + '/clips/watch/telescope-first-tilt');
+     await settle();await invoke(staleOpen);
+     await enabled('Open shared Reel');assert.equal(await p.getByText('Shared Reel', {exact: true}).count(), 0);
+     for (const url of [ORIGIN + '/clips/watch/night-sky-traffic?token=secret', 'https://another.test/clips/watch/which-height',
+       'com.example.email://auth/callback?code=fixture', ORIGIN + '/circles/private', ORIGIN + '/clips/watch/missing-reel']) {
+       await p.evaluate(url => window.nativeQa.emitLink(url), url);
+     }
+     await settle();
+     await button('Open shared Reel').click();
+     await enabled('Play What did the tilt prove?');
+     assert.equal(await button('Play Who gets the night sky?').count(), 0);
+     assert.equal(http.length, before);assert.equal(await p.locator('video').count(), 0);
+     await button('Discuss What did the tilt prove? in a Circle').click();await enabled('Search Circles');
+     assert.equal(await radio('Online').getAttribute('aria-checked'), 'true');assert.equal(http.length, before);
+     pass('a warm link preserves the open study, rejects malformed and older actions, and opens the latest chosen Reel into the verified member directory');
+   }
    await show();
  }
  if(clipMode){
@@ -507,7 +552,7 @@ try{
 
  await start();await fill();await review();await confirm();await created();assert(!String(await text()).includes('Active Circles at your last hosting check'));assert(!String(await text()).includes('Active Circles you host:'));await screenshot('native-hosting-created-320.png',true);
  }
- assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.evaluate(()=>window.nativeQa.unmount());await settle();stats=(await state()).stats;assert.equal(stats.netListeners,0);assert.equal(stats.appListeners,0);assert.equal(stats.handles,0);assert.equal(stats.retainedCallbacks,0);assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Changed source during proof '+n);
+ assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.evaluate(()=>window.nativeQa.unmount());await settle();stats=(await state()).stats;assert.equal(stats.netListeners,0);assert.equal(stats.appListeners,0);assert.equal(stats.linkListeners,0);assert.equal(stats.handles,0);assert.equal(stats.retainedCallbacks,0);assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Changed source during proof '+n);
  pass('the composed 320px screen fits without horizontal overflow and terminal unmount releases native handles, subscriptions and retained callbacks, with no unexpected network or browser errors');
 }catch(error){failure=error.stack||String(error);console.error(failure);}
 finally{try{heldPost?.release();if(browser)await browser.close();cleanup.browser='closed';}catch(error){cleanup.browser=String(error);}try{if(fixture)await fixture.close();cleanup.database='closed';}catch(error){cleanup.database=String(error);}write(failure||cleanup.browser!=='closed'||cleanup.database!=='closed'?'FAIL':'PASS');}

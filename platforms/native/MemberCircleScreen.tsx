@@ -75,9 +75,10 @@ export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>
 
 /** Uses the app's existing verified account. Member setup is deliberate; this
  * screen does not create an auth client, sign in or choose an account. */
-export function MemberCircleScreen({ config, connectivity, retained, philemonHosting = false, circleChoice, onClose }: {
+export function MemberCircleScreen({ config, connectivity, retained, philemonHosting = false, circleChoice, sharedReel, onClose }: {
   config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection;
   philemonHosting?: boolean; circleChoice?: PublicCircleChoice & { reel?: ReelDiscussionId }; onClose(): void;
+  sharedReel?: { reel: ReelDiscussionId; consume(): boolean };
 }) {
   const connection = useMemo(() => {
     try {
@@ -174,7 +175,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
   const hostingConnection = connection?.hosting();
   const hostingAvailable = Boolean(connection?.host.hostingTransport && connection.host.newRequestId);
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
-    if (entered.destination === 'clips') return <ClipsScreen onBack={back} appOrigin={connection.host.origin}
+    if (entered.destination === 'clips') return <ClipsScreen onBack={back} appOrigin={connection.host.origin} reel={entered.reel}
       onRead={() => act(() => setEntered({ connection, destination: 'philemon' }))}
       onBrowse={reel => openReadingDestination('discover', { onlinePreset: true, reel })}/>;
     if (entered.destination === 'philemon') {
@@ -235,6 +236,15 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
     </View> : null}
     <Action label="My profile" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.profileTransport} onPress={openProfile}/>
     <Action label="Saved reading" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.savedReadingTransport} onPress={() => openReadingDestination('saved')}/>
+    {sharedReel && <>
+      <Text accessibilityLiveRegion="polite" style={styles.copy}>A shared Reel is ready to open.</Text>
+      <Action label="Open shared Reel" disabled={!account?.canOpenCircle || model?.phase !== 'ready'} onPress={() => act(() => {
+        if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready' && sharedReel.consume()) {
+          setEntered({ connection, destination: 'clips', reel: sharedReel.reel });
+        }
+      })}/>
+      <Action label="Dismiss shared Reel" onPress={() => act(() => { sharedReel.consume(); })}/>
+    </>}
     <Action label="Explore Clips" disabled={!account?.canOpenCircle || model?.phase !== 'ready'} onPress={() => act(() => {
       if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'clips' });
     })}/>

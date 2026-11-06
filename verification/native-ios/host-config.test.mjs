@@ -3,7 +3,7 @@ import { lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, w
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
-import { configureInfoPlist, packageReaderPins, patchAppDelegate } from '../../platforms/native/plugins/with-soe-ios-host.cjs';
+import { configureInfoPlist, packageReaderPins, patchAppDelegate, requireReelDomain } from '../../platforms/native/plugins/with-soe-ios-host.cjs';
 
 const appID = 'org.soe.syntheticHost';
 const scheme = 'org.soe.synthetichost.email';
@@ -18,6 +18,17 @@ const template = () => ({
   },
 });
 const member = { SoeMemberOrigin: 'https://soe.invalid', SoeMemberStorageKey: 'soe-session' };
+
+test('Reel association requires explicit opt-in and the exact installed HTTPS domain', () => {
+  const enabled = { ...member, SoeReelLinksEnabled: true };
+  assert.doesNotThrow(() => requireReelDomain(member));
+  assert.doesNotThrow(() => requireReelDomain(enabled, ['applinks:soe.invalid']));
+  for (const domains of [[], ['applinks:*.invalid'], ['applinks:other.invalid'], ['applinks:soe.invalid?mode=developer']]) {
+    assert.throws(() => requireReelDomain(enabled, domains));
+  }
+  assert.throws(() => requireReelDomain({ ...enabled, SoeReelLinksEnabled: 'true' }, ['applinks:soe.invalid']));
+  assert.throws(() => requireReelDomain({ ...enabled, SoeMemberOrigin: 'https://soe.invalid:444' }, ['applinks:soe.invalid']));
+});
 const provider = { SoeProviderOrigin: 'https://auth.invalid', SoePublishableKey: 'sb_publishable_syntheticHostTestKey00' };
 const publicURLType = { CFBundleURLName: 'expo', CFBundleURLSchemes: ['expo-test'] };
 
@@ -37,7 +48,9 @@ test('installed public configuration adds one dedicated callback and preserves o
   }]);
   assert.equal(output.SoeReaderOrigin, member.SoeMemberOrigin);
   assert.deepEqual(configureInfoPlist(output, appID), output);
-  const { SoeProviderOrigin, SoePublishableKey, ...memberOnly } = output;
+  const memberOnly = { ...output };
+  delete memberOnly.SoeProviderOrigin;
+  delete memberOnly.SoePublishableKey;
   assert.deepEqual(configureInfoPlist(memberOnly, appID).CFBundleURLTypes, [publicURLType]);
 });
 
@@ -119,18 +132,20 @@ test('the app config activates the host plugin and both podspecs resolve from th
   assert.match(read(moduleRoot + local.apple.podspecPath[1]), /'SoeSourceReaderPins' => \['generated\/source-reader-catalog.json'\]/);
 });
 
-test('both user activity update paths suppress reserved URLs before Expo forwarding (source check)', () => {
+test('both activity update paths suppress recovery URLs and the scene forwards only a reviewed browsing activity', () => {
   const url = new URL('../../platforms/native/ios-member/SoeMemberAppDelegates.swift', import.meta.url);
   const stat = lstatSync(url);
   assert(stat.isFile() && stat.blocks > 0);
   const text = readFileSync(url, 'utf8');
-  for (const handler of ['application', 'scene']) {
-    const update = new RegExp(`func ${handler}\\([^\\n]+didUpdate userActivity: NSUserActivity\\) \\{([\\s\\S]*?)\\n    \\}`);
-    const body = text.match(update)?.[1];
-    assert(body);
-    const guard = body.indexOf('SoeMemberIOSHost.consumeEmailLink(url, capture: false) { return }');
-    assert(guard >= 0 && guard < body.indexOf(`super.${handler}(`));
-  }
+  const appUpdate = text.match(/func application\([^\n]+didUpdate userActivity: NSUserActivity\) \{([\s\S]*?)\n    \}/)?.[1];
+  const sceneUpdate = text.match(/func scene\([^\n]+didUpdate userActivity: NSUserActivity\) \{([\s\S]*?)\n    \}/)?.[1];
+  assert.match(appUpdate, /consumeEmailLink\(url, capture: false\) \{ return \}[\s\S]*super\.application/);
+  assert.match(sceneUpdate, /forwardedActivity\(userActivity, capture: false\)[\s\S]*super\.scene\(scene, didUpdate: activity\)/);
+  const activityFilter = text.match(/private func forwardedActivity[^\n]+\{([\s\S]*?)\n    \}/)?.[1];
+  assert.match(activityFilter, /consumeEmailLink\(url, capture: capture\) \{ return nil \}[\s\S]*SoePublicReelLink\.allows/);
+  assert.match(activityFilter, /let publicActivity = NSUserActivity\(activityType: NSUserActivityTypeBrowsingWeb\)[\s\S]*publicActivity\.webpageURL = url/);
+  assert.doesNotMatch(activityFilter, /userInfo/);
+  assert.match(text, /initialProperties: \[AnyHashable: Any\]\?[\s\S]*SoePublicReelLink\.installedOrigin[\s\S]*properties\["soeReelLinkOrigin"\] = origin/);
 });
 
 test('reader packaging copies the exact canonical bytes into the pod and repeats cleanly', () => {

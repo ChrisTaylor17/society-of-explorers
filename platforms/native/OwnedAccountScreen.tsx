@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import * as ReactNative from 'react-native';
 import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { MemberCircleScreen, createMemberViewConnection, type MemberViewConnection } from './MemberCircleScreen';
 import type { createOwnedNativeAuth } from './src/auth/owned-auth';
@@ -13,6 +14,7 @@ import { REEL_QUESTIONS, type ReelDiscussionId } from '../../lib/clips/salon';
 import { PublicCirclesScreen } from './PublicCirclesScreen';
 import type { PublicCircleChoice } from '../shared/circle-directory';
 import type { PublicCircleDiscoveryConnection } from './src/circles/installed-member';
+import { observePublicReelLinks } from './src/circles/public-reel-links';
 
 export type OwnedAccountConnection = {
   controller: ReturnType<typeof createOwnedNativeAuth>;
@@ -26,8 +28,9 @@ type AccountMode = 'signin' | 'signup' | 'recovery';
 
 /** Only the native policy factory is used by the registered app. The explicit
  * prepare prop is a trusted composition seam, never populated from a URL. */
-export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, publicCirclesPrepare }: {
+export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, publicCirclesPrepare, reelLinkOrigin }: {
   prepare?: () => Promise<OwnedAccountConnection>; publicCirclesPrepare?: () => Promise<PublicCircleDiscoveryConnection>;
+  reelLinkOrigin?: string;
 }) {
   const [connection, setConnection] = useState<OwnedAccountConnection | null>(null);
   const [snapshot, setSnapshot] = useState<{ connection: OwnedAccountConnection; model: AuthModel } | null>(null);
@@ -39,17 +42,24 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   const [entered, setEntered] = useState<OwnedAccountConnection | null>(null);
   const [memberProblem, setMemberProblem] = useState('');
   const [studyOpen, setStudyOpen] = useState(false);
-  const [clipsOpen, setClipsOpen] = useState(false);
+  const [clipsOpen, setClipsOpen] = useState<{ reel?: ReelDiscussionId } | null>(null);
+  const [sharedReel, setSharedReel] = useState<{ reel: ReelDiscussionId } | null>(null);
   const [publicCircles, setPublicCircles] = useState<{ reel?: ReelDiscussionId } | null>(null);
   const [circleChoice, setCircleChoice] = useState<(PublicCircleChoice & { reel?: ReelDiscussionId }) | null>(null);
   const [philemonHosting, setPhilemonHosting] = useState(false);
   const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
   const epoch = useRef(0), modeRef = useRef<AccountMode>('signin'), preparing = useRef(false);
+  const hasChosenView = useRef(false);
   const current = useRef<OwnedAccountConnection | null>(null);
   const memberView = useRef<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
+  const pendingReel = useRef<typeof sharedReel>(null);
   const clearFields = () => { setEmail(''); setPassword(''); };
-  const invalidate = () => { epoch.current++; setVersion(value => value + 1); };
+  const invalidate = (choice = true) => {
+    if (choice) hasChosenView.current = true;
+    epoch.current++;
+    setVersion(value => value + 1);
+  };
   const m = snapshot?.connection === connection ? snapshot?.model : connection?.controller.model();
   const signingOut = m?.phase === 'signing_out';
   const capturedEpoch = epoch.current;
@@ -63,7 +73,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     const sync = () => {
       // Lifecycle replay also retires rendered callbacks before any connection
       // exists. Publish a render so the new active view can connect explicitly.
-      invalidate();
+      invalidate(false);
       active.current = AppState.currentState === 'active' && !blurred;
       current.current?.controller.activity(active.current && modeRef.current === 'signin');
       current.current?.email?.activity(active.current && modeRef.current !== 'signin');
@@ -80,6 +90,20 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
       change.remove(); blur?.remove(); focus?.remove();
     };
   }, []);
+
+  useLayoutEffect(() => {
+    return observePublicReelLinks(ReactNative.Linking, reelLinkOrigin, (reel, initial) => {
+      if (initial && !hasChosenView.current && !current.current && !preparing.current) {
+        hasChosenView.current = true;
+        epoch.current++;
+        setClipsOpen({ reel });
+      } else {
+        const selection = { reel };
+        pendingReel.current = selection;
+        setSharedReel(selection);
+      }
+    });
+  }, [reelLinkOrigin]);
 
   useLayoutEffect(() => {
     if (!connection) return;
@@ -194,13 +218,20 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     invalidate(); setStudyOpen(false);
     if (prepareHosting) { setPhilemonHosting(true); setCircleChoice(null); }
   }
-  function openClips() {
-    if (!validView() || current.current || preparing.current) return;
-    invalidate(); setClipsOpen(true);
+  function consumeSharedReel() {
+    if (!sharedReel || pendingReel.current !== sharedReel) return false;
+    pendingReel.current = null;
+    setSharedReel(null);
+    return true;
+  }
+  function openClips(useShared = false) {
+    if (!validView() || !active.current || current.current || preparing.current) return;
+    if (useShared && !consumeSharedReel()) return;
+    invalidate(); setClipsOpen({ reel: useShared ? sharedReel?.reel : undefined });
   }
   function closeClips(read: boolean) {
     if (!validView() || !clipsOpen || current.current) return;
-    invalidate(); setClipsOpen(false);
+    invalidate(); setClipsOpen(null);
     if (read) setStudyOpen(true);
   }
   function openPublicCircles(reel?: ReelDiscussionId) {
@@ -210,15 +241,16 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   function closePublicCircles(choice?: PublicCircleChoice) {
     if (!validView() || !publicCircles || current.current || choice && !active.current) return;
     invalidate(); setPublicCircles(null);
-    if (choice) { setClipsOpen(false); setStudyOpen(false); setPhilemonHosting(false); setCircleChoice({ ...choice, reel: publicCircles.reel }); }
+    if (choice) { setClipsOpen(null); setStudyOpen(false); setPhilemonHosting(false); setCircleChoice({ ...choice, reel: publicCircles.reel }); }
   }
   if (publicCircles) return <PublicCirclesScreen prepare={publicCirclesPrepare} reel={publicCircles.reel}
     onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
-  if (clipsOpen) return <ClipsScreen onBack={() => closeClips(false)} onRead={() => closeClips(true)}
+  if (clipsOpen) return <ClipsScreen reel={clipsOpen.reel} onBack={() => closeClips(false)} onRead={() => closeClips(true)}
     onBrowse={openPublicCircles} preparePublicCircles={publicCirclesPrepare}/>;
   if (studyOpen) return <PhilemonStudyScreen onBack={() => closeStudy(false)} onHost={() => closeStudy(true)} onBrowse={() => openPublicCircles()}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
-    retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} circleChoice={circleChoice ?? undefined} onClose={() => {
+    retained={memberContext.view} connectivity={connection.connectivity} philemonHosting={philemonHosting} circleChoice={circleChoice ?? undefined}
+    sharedReel={sharedReel ? { reel: sharedReel.reel, consume: consumeSharedReel } : undefined} onClose={() => {
       if (current.current !== connection || memberView.current !== memberContext) return;
       const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberContext(null); setEntered(null); setCircleChoice(null);
     }}/>;
@@ -228,8 +260,13 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     <Text accessibilityRole="header" style={styles.title}>Your account, on this device</Text>
     <Text style={styles.copy}>Read deeply. Share thoughtfully. A Great Books community rooted in Christian and American traditions, open to everyone willing to explore in good faith.</Text>
     {!connection ? <>
+      {sharedReel && <>
+        <Text accessibilityLiveRegion="polite" style={styles.note}>A shared Reel is ready to open.</Text>
+        <Action label="Open shared Reel" disabled={connecting || !active.current} onPress={() => openClips(true)}/>
+        <Action label="Dismiss shared Reel" onPress={() => { if (validView()) consumeSharedReel(); }}/>
+      </>}
       <Action label="Find an online Circle" disabled={connecting} onPress={() => openPublicCircles()}/>
-      <Action label="Explore Clips" disabled={connecting} onPress={openClips}/>
+      <Action label="Explore Clips" disabled={connecting} onPress={() => openClips()}/>
       <Action label="Read Philemon" disabled={connecting} onPress={openStudy}/>
     </> : null}
     {circleChoice ? <>

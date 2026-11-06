@@ -17,8 +17,9 @@ def clipPackager = new File(projectRoot, 'prepare-clip-assets.cjs')
 def packageClipAssets = tasks.register('packageSoeClipAssets', Exec) {
     inputs.files(clipPackager, new File(projectRoot, 'clip-catalog.json'), new File(projectRoot, '../../lib/clips/registry.json'))
     inputs.files(fileTree(new File(projectRoot, '../../content/clips')) {
-        include 'circle-intro.*', 'night-sky-traffic.*', 'telescope-first-tilt.*',
-                'circle-intro-inspection.json', 'night-sky-traffic-inspection.json', 'telescope-first-tilt-inspection.json'
+        include 'circle-intro.*', 'night-sky-traffic.*', 'telescope-first-tilt.*', 'which-height.*',
+                'circle-intro-inspection.json', 'night-sky-traffic-inspection.json', 'telescope-first-tilt-inspection.json',
+                'which-height-inspection.json'
     })
     outputs.dir(clipResources)
     doFirst { commandLine('node', clipPackager.absolutePath, clipResources.get().dir('raw').asFile.absolutePath) }
@@ -31,7 +32,8 @@ def soeMemberPolicyProcess = new ProcessBuilder('node', rootProject.file('member
     providers.gradleProperty('soeMemberOrigin').orElse('').get(),
     providers.gradleProperty('soeMemberStorageKey').orElse('').get(),
     providers.gradleProperty('soeProviderOrigin').orElse('').get(),
-    providers.gradleProperty('soePublishableKey').orElse('').get()).directory(rootDir).start()
+    providers.gradleProperty('soePublishableKey').orElse('').get(),
+    providers.gradleProperty('soeEnableReelLinks').orElse('false').get()).directory(rootDir).start()
 def soeMemberPolicyJson = soeMemberPolicyProcess.inputStream.getText('UTF-8')
 soeMemberPolicyProcess.errorStream.getText('UTF-8')
 if (soeMemberPolicyProcess.waitFor() != 0) throw new GradleException('SoE member public configuration rejected.')
@@ -172,6 +174,7 @@ android {
         versionName "0.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "boolean", "SOE_EMBEDDED_SYNTHETIC", "false"
+        buildConfigField "boolean", "SOE_REEL_LINKS_ENABLED", "false"
         buildConfigField "String", "SOE_MEMBER_ORIGIN", '"' + soeMemberPolicy.origin + '"'
         buildConfigField "String", "SOE_PROVIDER_ORIGIN", '"' + (soeMemberPolicy.providerOrigin ?: '') + '"'
         buildConfigField "String", "SOE_PUBLISHABLE_KEY", '"' + (soeMemberPolicy.publishableKey ?: '') + '"'
@@ -215,6 +218,9 @@ android {
         release {
             signingConfig signingConfigs.soeOwnedRelease
             debuggable false
+            def reelHost = soeMemberPolicy.reelLinkHost
+            buildConfigField "boolean", "SOE_REEL_LINKS_ENABLED", reelHost ? "true" : "false"
+            manifestPlaceholders += [soeReelLinkHost: reelHost ?: 'disabled.invalid', soeReelLinkVerify: reelHost ? 'true' : 'false']
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

@@ -5,7 +5,11 @@ declare module 'react-native' {
   export type HostComponent<T> = import('react').ComponentType<T>;
   export const ActivityIndicator: import('react').ComponentType<{ [name: string]: unknown }>;
   export const UIManager: { getViewManagerConfig(name: string): object | null };
-  export const Linking: { openURL(url: string): Promise<void> };
+  export const Linking: {
+    openURL(url: string): Promise<void>;
+    getInitialURL(): Promise<string | null>;
+    addEventListener(name: 'url', listener: (event: { url: string }) => void): { remove(): void };
+  };
   export const Share: { share(content: { message: string; title?: string }): Promise<{ action: string }> };
   export function codegenNativeComponent<T>(name: string): HostComponent<T>;
   export namespace CodegenTypes {
