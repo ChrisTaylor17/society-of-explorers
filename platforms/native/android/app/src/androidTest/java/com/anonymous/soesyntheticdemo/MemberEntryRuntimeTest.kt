@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.anonymous.soesyntheticdemo.member.EmailLinkLifecycle
 import com.anonymous.soesyntheticdemo.member.NativeSoeMemberModule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicLong
 
 /** Runs only in the embedded synthetic app with member and provider policy unset. */
 @RunWith(AndroidJUnit4::class)
@@ -75,6 +77,35 @@ class MemberEntryRuntimeTest {
 
             scenario.recreate()
             awaitEntry(scenario, initial)
+        }
+    }
+
+    @Test
+    fun foregroundRequestEpochRetiresAcrossActivityPauseAndResume() {
+        assumeTrue("Requires the synthetic build variant", BuildConfig.SOE_EMBEDDED_SYNTHETIC)
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val retiredBefore = AtomicLong(0)
+            val unsubscribe = EmailLinkLifecycle.onRetirement { cutoff ->
+                retiredBefore.updateAndGet { previous -> maxOf(previous, cutoff) }
+            }
+            try {
+                var beforePause = 0L
+                scenario.onActivity { beforePause = EmailLinkLifecycle.stamp() }
+
+                scenario.moveToState(Lifecycle.State.CREATED)
+                assertTrue("Pause reports a cutoff newer than the captured epoch", retiredBefore.get() > beforePause)
+                assertTrue("The paused activity cannot grant a new epoch",
+                    runCatching { EmailLinkLifecycle.stamp() }.exceptionOrNull() is IllegalStateException)
+
+                scenario.moveToState(Lifecycle.State.RESUMED)
+                scenario.onActivity {
+                    assertTrue("Resume grants a fresh epoch", EmailLinkLifecycle.stamp() > beforePause)
+                    assertTrue("Resume cannot reauthorize work from before pause",
+                        runCatching { EmailLinkLifecycle.withCurrent(beforePause) {} }.exceptionOrNull() is IllegalStateException)
+                }
+            } finally {
+                unsubscribe()
+            }
         }
     }
 

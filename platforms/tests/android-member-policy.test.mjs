@@ -96,6 +96,26 @@ test('actual dedicated transport contains epoch/single-use/pre-send/deadline and
  assert(s.indexOf('require(System.nanoTime() < handle.deadline)')<s.indexOf('call.enqueue('));
  assert(!s.includes('OkHttpClientProvider'));assert(!s.includes('.followRedirects(true)'));
 });
+test('foreground epoch guards queued work, HTTP admission and reply delivery (STATIC)',()=>{
+ const {module,transport}=capture(),lifecycle=read(member+'EmailLinkSession.kt'),entries=module.split('\n');
+ for(const lane of ['begin','send','sendReview','sendCircleReview','sendAuth','sendPublic','sendEmailAuth']){
+  const entry=entries.find(line=>line.includes('override fun '+lane+'('));
+  assert(entry?.includes('= onlineWork(promise)'),lane+' must be fenced before queueing');
+ }
+ const localReset=entries.find(line=>line.includes('override fun resetAccountStorage('));
+ assert(localReset?.includes('= work(promise)'),'Account clearing must remain local and available offline');
+ assert.match(module,/transport\(\)\.begin\(generation, epoch\)/);
+ assert.match(transport,/Handle\(generation, epoch,/);
+ assert.match(transport,/requireCurrent\(handle\.epoch\)\s+\/\/[^\n]+\s+handle\.consumed = true/);
+ assert.match(transport,/tag\(Transmission::class\.java, Transmission\(handle\.epoch\)\)/);
+ assert.match(transport,/connectivity\.withOnline \{\s+EmailLinkLifecycle\.withCurrent\(transmission\.epoch\) \{\s+transmission\.sent\.compareAndSet\(false, true\)/);
+ assert.match(transport,/connectivity\.withOnline \{\s+EmailLinkLifecycle\.withCurrent\(handle\.epoch\) \{\s+store\.withGeneration\(generation\) \{\s+synchronized\(lock\) \{[^}]*finish\(id\); success\(result\)/);
+ assert.match(lifecycle,/fun background\(\) = retire\(loseForeground = true\)/);
+ assert.match(lifecycle,/fun retireConnectivity\(\) = retire\(loseForeground = false\)/);
+ assert.match(transport,/onRetirement \{ cutoff -> cancelAll\(beforeEpoch = cutoff\) \}/);
+ assert.match(transport,/it\.epoch < beforeEpoch/);
+ assert.match(transport,/offActivity\(\)/);
+});
 test('store confirms disk writes and closes old access before a reset can acknowledge clear (STATIC)',()=>{
  const {store:s,module}=capture();
  function inOrder(source,...steps){
@@ -130,6 +150,7 @@ test('actual connectivity and module lifecycle source preserves register-before-
  assert(s.indexOf('manager.registerDefaultNetworkCallback(callback)')<s.indexOf('val network = manager.activeNetwork'));
  assert(s.includes('sequence == before'));assert(s.includes('current != network'));assert(s.includes('NET_CAPABILITY_INTERNET'));assert(s.includes('NET_CAPABILITY_VALIDATED'));
  assert(s.includes('retired = true; state = "unknown"'));assert(s.includes('manager?.unregisterNetworkCallback(callback)'));
- for(const required of ['closed.compareAndSet(false, true)','connectivity.close()','transportValue?.close()','pending.toList()','worker.shutdownNow()'])assert(module.includes(required),required);
+ for(const required of ['closed.compareAndSet(false, true)','connectivity.close()','transport?.close()','pending.toList()','worker.shutdownNow()'])assert(module.includes(required),required);
+ assert.match(module,/transportValue = null\s+detached\s+\}\s+email\?\.retire\(\)\s+transport\?\.close\(\)/);
  assert(!module.includes('intent.'));assert(!module.includes('System.getenv'));assert(!module.includes('Log.'));
 });

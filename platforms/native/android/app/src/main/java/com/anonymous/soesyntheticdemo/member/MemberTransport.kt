@@ -27,18 +27,22 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Dedicated client, never the RN global client or the synthetic HTTP policy. */
-internal class MemberTransport(private val config: MemberConfig, private val store: MemberSecureStore) {
+internal class MemberTransport(
+  private val config: MemberConfig,
+  private val store: MemberSecureStore,
+  private val connectivity: MemberConnectivity
+) {
   data class Input(val url: String, val method: String, val bearer: String, val body: String?)
   data class AuthInput(val url: String, val method: String, val bearer: String?, val body: String?)
   data class PublicInput(val url: String, val method: String)
   data class Result(val status: Int, val url: String, val body: String)
-  private class Handle(val generation: String, val deadline: Long) {
+  private class Handle(val generation: String, val epoch: Long, val deadline: Long) {
     var consumed = false
     var call: Call? = null
     var expiry: ScheduledFuture<*>? = null
     var cancelled: (() -> Unit)? = null
   }
-  private class Transmission { val sent = AtomicBoolean(false) }
+  private class Transmission(val epoch: Long) { val sent = AtomicBoolean(false) }
   private val lock = Any()
   private val handles = mutableMapOf<String, Handle>()
   private var closed = false
@@ -51,18 +55,28 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     // client's connection-retry flag. Never authorize a second HTTP exchange.
     .addNetworkInterceptor { chain ->
       val transmission = chain.request().tag(Transmission::class.java)
-      if (transmission == null || !transmission.sent.compareAndSet(false, true)) throw IOException("Native member service unavailable")
+        ?: throw IOException("Native member service unavailable")
+      val admitted = try {
+        connectivity.withOnline {
+          EmailLinkLifecycle.withCurrent(transmission.epoch) {
+            transmission.sent.compareAndSet(false, true)
+          }
+        }
+      } catch (_: IllegalStateException) { false }
+      if (!admitted) throw IOException("Native member service unavailable")
       chain.proceed(chain.request())
     }
     .connectTimeout(5, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS)
     .callTimeout(15, TimeUnit.SECONDS).build()
   private val offReset = store.onRetirement { cancelAll() }
+  private val offActivity = EmailLinkLifecycle.onRetirement { cutoff -> cancelAll(beforeEpoch = cutoff) }
 
-  fun begin(generation: String): String = store.withGeneration(generation) {
+  fun begin(generation: String, epoch: Long): String = store.withGeneration(generation) {
     synchronized(lock) {
       require(!closed && handles.size < 32)
+      EmailLinkLifecycle.requireCurrent(epoch)
       val id = UUID.randomUUID().toString()
-      val handle = Handle(generation, System.nanoTime() + TimeUnit.SECONDS.toNanos(15))
+      val handle = Handle(generation, epoch, System.nanoTime() + TimeUnit.SECONDS.toNanos(15))
       handles[id] = handle
       handle.expiry = timer.schedule({ cancel(id) }, 15, TimeUnit.SECONDS)
       id
@@ -95,8 +109,9 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     var permit: EmailLinkSession.Permit? = null
     val failed = { session.failed(id, permit); failure() }
     try {
-      val generation = synchronized(lock) { require(!closed); handles[id]?.generation ?: throw IllegalStateException() }
-      session.dispatch(id, generation, epoch, input, { cancel(id) }) { authorized ->
+      val handle = synchronized(lock) { require(!closed); handles[id] ?: throw IllegalStateException() }
+      require(handle.epoch == epoch)
+      session.dispatch(id, handle.generation, epoch, input, { cancel(id) }) { authorized ->
         permit = authorized
         transmit(id, input.url, input.method, input.body, mapOf("apikey" to config.publishableKey,
           "Authorization" to "Bearer " + (input.bearer ?: config.publishableKey), "X-Supabase-Api-Version" to "2024-01-01"), { result ->
@@ -112,11 +127,12 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
         synchronized(lock) {
           val handle = handles[id] ?: throw IllegalStateException()
           require(!closed && !handle.consumed && handle.generation == generation && System.nanoTime() < handle.deadline)
+          EmailLinkLifecycle.requireCurrent(handle.epoch)
           // A handle is consumed once even if construction, transmission or receipt fails.
           handle.consumed = true; handle.cancelled = failure
           val builder = Request.Builder().url(url).apply { headers.forEach { (name, value) -> header(name, value) } }
             .header("Cache-Control", "no-store").header("Pragma", "no-cache")
-            .tag(Transmission::class.java, Transmission())
+            .tag(Transmission::class.java, Transmission(handle.epoch))
           if (method == "GET") builder.get()
           else if (method == "PUT") builder.put((body ?: "").toRequestBody("application/json".toMediaType()))
           else builder.post((body ?: "").toRequestBody("application/json".toMediaType()))
@@ -141,10 +157,14 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
                     .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
                   Result(it.code, url, text)
                 }
-                store.withGeneration(generation) {
-                  synchronized(lock) {
-                    require(!closed && handles[id] === handle && System.nanoTime() < handle.deadline)
-                    finish(id); success(result)
+                connectivity.withOnline {
+                  EmailLinkLifecycle.withCurrent(handle.epoch) {
+                    store.withGeneration(generation) {
+                      synchronized(lock) {
+                        require(!closed && handles[id] === handle && System.nanoTime() < handle.deadline)
+                        finish(id); success(result)
+                      }
+                    }
                   }
                 }
               } catch (_: Exception) { finish(id); failure() }
@@ -159,10 +179,17 @@ internal class MemberTransport(private val config: MemberConfig, private val sto
     handle.expiry?.cancel(false); handle.call?.cancel(); handle.cancelled?.invoke()
   }
   private fun finish(id: String) { synchronized(lock) { handles.remove(id)?.expiry?.cancel(false) } }
-  private fun cancelAll() { val ids = synchronized(lock) { handles.keys.toList() }; ids.forEach { cancel(it) } }
+  private fun cancelAll(beforeEpoch: Long? = null) {
+    val ids = synchronized(lock) {
+      handles.filterValues { beforeEpoch == null || it.epoch < beforeEpoch }.keys.toList()
+    }
+    ids.forEach { id ->
+      try { cancel(id) } catch (_: Exception) { /* The handle has already been removed. */ }
+    }
+  }
   fun close() {
     synchronized(lock) { closed = true }
-    cancelAll(); offReset(); timer.shutdownNow()
+    cancelAll(); offReset(); offActivity(); timer.shutdownNow()
     client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll()
   }
   /** Reviewer endpoints have a separate native entry. Ordinary member requests

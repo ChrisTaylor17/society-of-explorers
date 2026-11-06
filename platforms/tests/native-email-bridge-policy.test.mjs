@@ -61,16 +61,21 @@ test('STATIC: one-use durable claim erases secrets before return and retains onl
 });
 test('STATIC: lifecycle epoch is captured before FIFO work and background retires memory without erasing pending',()=>{
  const s=session(),m=moduleSource(),activity=read(native+'MainActivity.kt');
- const helper=m.slice(m.indexOf('  private fun emailWork'),m.indexOf('  override fun getName'));
- assert(helper.indexOf('EmailLinkLifecycle.stamp()')<helper.indexOf('work(promise)'));assert.match(helper,/EmailLinkLifecycle\.withCurrent\(epoch\)/);assert.match(m,/ThreadPoolExecutor\(1, 1/);
- assert(helper.indexOf('check(connectivity.snapshot() == "online")')<helper.indexOf('EmailLinkLifecycle.stamp()'));
+ const helper=m.slice(m.indexOf('  private fun onlineWork'),m.indexOf('  override fun getName'));
+ assert.match(helper,/connectivity\.withOnline \{ EmailLinkLifecycle\.stamp\(\) \}/);
+ assert(helper.indexOf('EmailLinkLifecycle.stamp()')<helper.indexOf('work(promise)'));assert.match(m,/ThreadPoolExecutor\(1, 1/);
  assert.match(helper,/connectivity\.withOnline \{ EmailLinkLifecycle\.withCurrent\(epoch\)/);
+ for(const name of ['prepareEmailLink','pendingEmailLink','claimEmailLink','sendEmailAuth']){
+  assert(m.split('\n').some(line=>line.includes('override fun '+name+'(')&&line.includes('= onlineWork(promise)')),name);
+ }
  const connectivity=read(native+'member/MemberConnectivity.kt');assert.match(connectivity,/fun <T> withOnline\(work: \(\) -> T\): T = synchronized\(lock\) \{\s+check\(!retired && registered && state == "online"\); work\(\)/);
  assert.match(activity,/override fun onPause\(\) \{\s+EmailLinkLifecycle\.background\(\)/);assert.match(activity,/EmailLinkLifecycle\.foreground\(\)/);
- const background=s.slice(s.indexOf('  fun background()'),s.indexOf('  @Synchronized internal fun stamp'));assert.match(background,/active = false; epoch\.incrementAndGet\(\)/);assert.match(background,/EmailLinkSession\.retireAll\(\)/);assert.match(s,/@Synchronized internal fun stamp/);assert.doesNotMatch(background,/emailWrite/);
+ const retire=s.slice(s.indexOf('  private fun retire(loseForeground'),s.indexOf('  @Synchronized internal fun stamp'));
+ assert.match(s,/fun background\(\) = retire\(loseForeground = true\)/);
+ assert.match(s,/fun retireConnectivity\(\) = retire\(loseForeground = false\)/);
+ assert.match(retire,/synchronized\(this\) \{\s+if \(loseForeground\) active = false\s+epoch\.incrementAndGet\(\) to retirements\.toList\(\)/);
+ assert.match(retire,/EmailLinkSession\.retireAll\(\)/);assert.match(s,/@Synchronized internal fun stamp/);assert.doesNotMatch(retire,/emailWrite/);
  assert.match(m,/if \(state != "online"\) EmailLinkLifecycle\.retireConnectivity\(\)/);
- const offline=s.slice(s.indexOf('  fun retireConnectivity()'),s.indexOf('  @Synchronized internal fun stamp'));
- assert.match(offline,/synchronized\(this\) \{ epoch\.incrementAndGet\(\) \}/);assert.match(offline,/EmailLinkSession\.retireAll\(\)/);assert.doesNotMatch(offline,/emailWrite/);
  assert.match(s,/store\.onRetirement \{ retire\(\) \}/);
 });
 test('STATIC: strict email lane cannot expand ordinary member or password allowlists',()=>{
@@ -92,7 +97,9 @@ test('STATIC: native requests use strict bounded canonical bodies and purpose-bo
 test('STATIC: email requests reuse generation, deadline, single physical transmission and cookie-free cancellation engine',()=>{
  const t=transport();
  const send=t.slice(t.indexOf('  fun sendEmailAuth('),t.indexOf('  private fun transmit'));
- assert.match(send,/handles\[id\]\?\.generation/);assert.match(send,/session\.dispatch/);assert.match(send,/session\.receive/);assert.match(send,/session\.failed/);assert.match(send,/transmit\(id/);assert.doesNotMatch(send,/newCall/);
+ assert.match(send,/val handle = synchronized\(lock\) \{ require\(!closed\); handles\[id\]/);
+ assert.match(send,/require\(handle\.epoch == epoch\)\s+session\.dispatch\(id, handle\.generation, epoch,/);
+ assert.match(send,/session\.receive/);assert.match(send,/session\.failed/);assert.match(send,/transmit\(id/);assert.doesNotMatch(send,/newCall/);
  for(const text of ['followRedirects(false)','followSslRedirects(false)','retryOnConnectionFailure(false)','CookieJar.NO_COOKIES','transmission.sent.compareAndSet(false, true)','!handle.consumed','handle.consumed = true','System.nanoTime() < handle.deadline','MAX_RESPONSE = 1048576'])assert(t.includes(text));
  assert.match(t,/else if \(method == "PUT"\) builder\.put/);assert.match(t,/handle\.call\?\.cancel\(\)/);
 });

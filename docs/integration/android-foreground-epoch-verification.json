@@ -1,0 +1,44 @@
+{
+  "status": "source_and_synthetic_checks_passed_android_device_pending",
+  "recordedAt": "2026-11-06T06:50:00.138007+00:00",
+  "startingCommit": "a2f9007a5cee7ac5e3822d83e4f1fb8acd3f3d54",
+  "productionCleared": false,
+  "baseline": "The added source regression refused the previous Kotlin because begin used the ordinary worker queue without capturing a foreground epoch.",
+  "localChecks": {
+    "passed": 60,
+    "nodeVersion": "22.22.1",
+    "scope": "Android release and member policy, native email bridge, Android adapter, native auth ports, and discovery. The tests inspect Kotlin source and run configuration helpers and TypeScript against synthetic native ports. The Node build guard denies external network at startup.",
+    "initialFixtureNote": "The first full run was missing the shared controller sources in its isolated test checkout. The confirmed run used the tracked controller sources."
+  },
+  "androidDeviceCase": {
+    "name": "foregroundRequestEpochRetiresAcrossActivityPauseAndResume",
+    "status": "pending",
+    "scope": "Synthetic ActivityScenario checks that pause retires the captured epoch and resume can grant only a fresh epoch."
+  },
+  "remainingProof": [
+    "Android toolchain, Codegen, Kotlin compilation and a synthetic APK",
+    "Run the installed ActivityScenario case and verify native connectivity events, OkHttp request and reply retirement, and account storage on a device"
+  ],
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/MainActivity.kt": "5d3a026888c241b7e8eb710a3be986aada9d2efb672411535fcc9eff5b5e7467",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/EmailLinkSession.kt": "d357b569798847cad532bae97e135fff25e8d4eb9c6cbfac7b52c418d0e371fb",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberConnectivity.kt": "57e46b90375cb5bce2bd778a09f30c34a617face5694f6317d4be0572cc30eb1",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberTransport.kt": "f42b5d788c1d864994a5c68c8b7f61fa182d169144ce8f0a9cd93eda0fb84d60",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/NativeSoeMemberModule.kt": "c53a7f3aa1d437281a5ff2e4bca01822c0fbac219a096a5590dd7b1de5d85278",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberSecureStore.kt": "a8169188d970eb62685a8a26281df661720efc8d9099b46bba265222fec9484e",
+    "platforms/native/android/app/src/androidTest/java/com/anonymous/soesyntheticdemo/MemberEntryRuntimeTest.kt": "90e036ca99eef87930342c9d07a0828ea87188484de94a87027a7b3a1e37817c",
+    "platforms/tests/android-member-policy.test.mjs": "567fc87cdafe2661e36d033a51d433d2f9cc81803ccde024860e92592fa81e95",
+    "platforms/tests/native-email-bridge-policy.test.mjs": "bf8f58c3082492bd8393b5699747e57634daaf4e057c7c6d59e277741acf7c22"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/android-foreground-epoch/baseline-failure.tap": "ea2300a210a673d1abd3cc3f889aaa96e62433d0926a779b1039c95a933e8d9e",
+    "verification/web/evidence/android-foreground-epoch/incomplete-fixture.tap": "87b84ffe91c61aea66642c4b2de7f2f1b72df982488023849e0362d6a8d3a906",
+    "verification/web/evidence/android-foreground-epoch/confirmed.tap": "715aaadf065e9e8f64048a71f60e6c816c3bac3a2d8fe03baa53fcd2172e0a17",
+    "verification/web/evidence/android-foreground-epoch/before-cancel-cleanup.tap": "868fdeaa9e771b30b9b4cef74ea8bc57297c3251739779bdd0bace058ee1518f"
+  }
+}

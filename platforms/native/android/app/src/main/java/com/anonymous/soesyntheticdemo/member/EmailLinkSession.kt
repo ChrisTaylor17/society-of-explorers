@@ -15,19 +15,26 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-/** Native lifecycle authority, independent of delayed JS AppState delivery. */
+/** Shared native member lifecycle, independent of delayed JS AppState delivery. */
 object EmailLinkLifecycle {
   private val epoch = AtomicLong(0)
+  private val retirements = mutableSetOf<(Long) -> Unit>()
   @Volatile private var active = false
   @Synchronized fun foreground() { if (!active) { epoch.incrementAndGet(); active = true } }
-  fun background() {
-    synchronized(this) { active = false; epoch.incrementAndGet() }
-    EmailLinkSession.retireAll()
+  fun background() = retire(loseForeground = true)
+  fun retireConnectivity() = retire(loseForeground = false)
+
+  @Synchronized internal fun onRetirement(listener: (Long) -> Unit): () -> Unit {
+    retirements.add(listener)
+    return { synchronized(this) { retirements.remove(listener); Unit } }
   }
-  fun retireConnectivity() {
-    // Retire work captured before a native offline/unknown observation, including
-    // work still queued in the module. The unclaimed disk binding stays intact.
-    synchronized(this) { epoch.incrementAndGet() }
+  private fun retire(loseForeground: Boolean) {
+    // Close admission first. Cancelling retired work leaves the pending link on disk.
+    val (cutoff, listeners) = synchronized(this) {
+      if (loseForeground) active = false
+      epoch.incrementAndGet() to retirements.toList()
+    }
+    listeners.forEach { listener -> try { listener(cutoff) } catch (_: Exception) { /* Epoch already fenced. */ } }
     EmailLinkSession.retireAll()
   }
   @Synchronized internal fun stamp(): Long { check(active); return epoch.get() }

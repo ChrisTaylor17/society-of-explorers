@@ -26,7 +26,7 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
     if (!closed.get()) { try { emitOnConnectivityChange(Arguments.createMap().apply { putString("state", state) }) } catch (_: Exception) { /* No JS listener/context. */ } }
   }
   private fun transport(): MemberTransport = synchronized(this) {
-    check(!closed.get()); transportValue ?: MemberTransport(config, store).also { transportValue = it }
+    check(!closed.get()); transportValue ?: MemberTransport(config, store, connectivity).also { transportValue = it }
   }
   private fun emailSession(): EmailLinkSession = synchronized(this) {
     check(!closed.get()); emailValue ?: EmailLinkSession.open(context, config).also { emailValue = it }
@@ -42,10 +42,9 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
     try { worker.execute { try { check(!closed.get()); block(reply) } catch (_: Exception) { reply.fail() } } }
     catch (_: Exception) { reply.fail() }
   }
-  private fun emailWork(promise: Promise, block: (Reply, Long) -> Unit) {
-    // Capture BEFORE FIFO queueing: a paused/resumed Activity cannot authorize
-    // old queued preparations or claims with its new foreground epoch.
-    val epoch = try { check(connectivity.snapshot() == "online"); EmailLinkLifecycle.stamp() } catch (_: Exception) {
+  private fun onlineWork(promise: Promise, block: (Reply, Long) -> Unit) {
+    // Bind queued work to the current online, foreground session before submission.
+    val epoch = try { connectivity.withOnline { EmailLinkLifecycle.stamp() } } catch (_: Exception) {
       promise.reject("SOE_MEMBER_UNAVAILABLE", "Native member service unavailable"); return
     }
     work(promise) { reply -> connectivity.withOnline { EmailLinkLifecycle.withCurrent(epoch) { block(reply, epoch) } } }
@@ -73,59 +72,61 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
       }
     })
   }
-  override fun begin(generation: String, promise: Promise) = work(promise) { it.resolve(transport().begin(generation)) }
+  override fun begin(generation: String, promise: Promise) = onlineWork(promise) { reply, epoch ->
+    reply.resolve(transport().begin(generation, epoch))
+  }
   override fun newRequestId(generation: String, promise: Promise) = work(promise) { reply ->
     store.withGeneration(generation) { reply.resolve(UUID.randomUUID().toString()) }
   }
-  override fun send(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
+  override fun send(id: String, request: ReadableMap, promise: Promise) = onlineWork(promise) { reply, _ ->
     transport().send(id, MemberTransport.input(request), { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
       })
     }, { reply.fail() })
   }
-  override fun sendReview(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
+  override fun sendReview(id: String, request: ReadableMap, promise: Promise) = onlineWork(promise) { reply, _ ->
     transport().sendReview(id, MemberTransport.input(request), { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
       })
     }, { reply.fail() })
   }
-  override fun sendCircleReview(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
+  override fun sendCircleReview(id: String, request: ReadableMap, promise: Promise) = onlineWork(promise) { reply, _ ->
     transport().sendCircleReview(id, MemberTransport.input(request), { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
       })
     }, { reply.fail() })
   }
-  override fun sendAuth(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
+  override fun sendAuth(id: String, request: ReadableMap, promise: Promise) = onlineWork(promise) { reply, _ ->
     transport().sendAuth(id, MemberTransport.authInput(request), { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
       })
     }, { reply.fail() })
   }
-  override fun sendPublic(id: String, request: ReadableMap, promise: Promise) = work(promise) { reply ->
+  override fun sendPublic(id: String, request: ReadableMap, promise: Promise) = onlineWork(promise) { reply, _ ->
     transport().sendPublic(id, MemberTransport.publicInput(request), { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
       })
     }, { reply.fail() })
   }
-  override fun prepareEmailLink(generation: String, purpose: String, email: String, promise: Promise) = emailWork(promise) { reply, epoch ->
+  override fun prepareEmailLink(generation: String, purpose: String, email: String, promise: Promise) = onlineWork(promise) { reply, epoch ->
     reply.resolve(Arguments.makeNativeMap(emailSession().prepare(generation, epoch, purpose, email)))
   }
-  override fun pendingEmailLink(generation: String, promise: Promise) = emailWork(promise) { reply, epoch ->
+  override fun pendingEmailLink(generation: String, promise: Promise) = onlineWork(promise) { reply, epoch ->
     reply.resolve(emailSession().pending(generation, epoch)?.let { Arguments.makeNativeMap(it) })
   }
-  override fun claimEmailLink(generation: String, flowId: String, promise: Promise) = emailWork(promise) { reply, epoch ->
+  override fun claimEmailLink(generation: String, flowId: String, promise: Promise) = onlineWork(promise) { reply, epoch ->
     reply.resolve(Arguments.makeNativeMap(emailSession().claim(generation, epoch, flowId)))
   }
   override fun discardEmailLink(generation: String, flowId: String, promise: Promise) = work(promise) { reply ->
     // Local-only erasure is safe while inactive; exact flow protects a newer link.
     emailSession().discard(generation, flowId); reply.resolve(null)
   }
-  override fun sendEmailAuth(id: String, request: ReadableMap, promise: Promise) = emailWork(promise) { reply, epoch ->
+  override fun sendEmailAuth(id: String, request: ReadableMap, promise: Promise) = onlineWork(promise) { reply, epoch ->
     transport().sendEmailAuth(id, MemberTransport.emailInput(request), emailSession(), epoch, { result ->
       reply.resolve(Arguments.createMap().apply {
         putDouble("status", result.status.toDouble()); putString("url", result.url); putString("body", result.body); putBoolean("redirected", false)
@@ -150,7 +151,14 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
   override fun invalidate() {
     if (closed.compareAndSet(false, true)) {
       connectivity.close()
-      synchronized(this) { emailValue?.retire(); emailValue = null; transportValue?.close(); transportValue = null }
+      val (email, transport) = synchronized(this) {
+        val detached = emailValue to transportValue
+        emailValue = null
+        transportValue = null
+        detached
+      }
+      email?.retire()
+      transport?.close()
       synchronized(pending) { pending.toList() }.forEach { it.fail() }
       worker.shutdownNow()
     }
