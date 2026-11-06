@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
@@ -131,6 +132,7 @@ function withReactionCounts(twiddle: TwiddleRow, reactionMap: Record<string, Rec
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
 
@@ -173,6 +175,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
 

@@ -2,7 +2,9 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
-The legacy Twiddle draft closes raw browser access to three tables. A disposable PostgreSQL rehearsal preserved the records, policies and service access, then confirmed all 24 browser denials again after a restore. Hosted changes, older service-backed routes and account-specific cleanup remain open. [Review and evidence](docs/integration/legacy-twiddle-containment.md)
+The release build now pauses the older Twiddle feed, posting, reactions and AI routes. Saved links show a notice that opens online salon discovery. The clean build and 20 Chromium requests passed, and the compiled comparison confirmed that all eight handlers stop before the database or AI provider, even with synthetic credentials configured. Hosted aliases and the separately reviewed Twiddle data cleanup still need work. [Review and verification](docs/integration/legacy-twiddle-containment.md)
+
+The legacy Twiddle draft closes raw browser access to three tables. A disposable PostgreSQL rehearsal preserved the records, policies and service access, then confirmed all 24 browser denials again after a restore. [Database verification](docs/integration/legacy-twiddle-containment-verification.json)
 
 The identity-removal draft now unlinks a reviewed account before provider deletion and verifies the remaining Auth records. The 55-file isolated rehearsal covered lost replies, storage ownership and separate provider-only and wallet-only accounts. A read-only hosted catalog check confirmed the member cascade, three Twiddle links that need review when present, and browser grants on the member table that still need containment. [Account deletion](docs/integration/account-deletion.md) · [Verification](docs/integration/account-erasure-identity-verification.json)
 

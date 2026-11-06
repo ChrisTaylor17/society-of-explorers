@@ -7,6 +7,7 @@ import { privateJson } from '@/lib/http/routeError';
 import { getMemory } from '@/lib/thinkerMemory';
 import { parseActions, executeThinkerAction } from '@/lib/thinkerActions';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
 const VALID_THINKERS = new Set(['socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs']);
 const UUID_PATTERN =
@@ -247,6 +248,7 @@ async function generateVoiceUrl({
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
   if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid twiddle' }, { status: 400 });
 

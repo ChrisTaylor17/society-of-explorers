@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
 const THINKER_KEYS = ['socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs'] as const;
 type ThinkerKey = (typeof THINKER_KEYS)[number];
@@ -36,6 +37,7 @@ async function classifyThinker(content: string): Promise<string> {
 }
 
 export async function GET(req: NextRequest) {
+  if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   if (!cronAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

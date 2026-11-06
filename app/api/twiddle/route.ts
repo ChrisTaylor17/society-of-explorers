@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
@@ -140,6 +141,7 @@ function withEmptyReactionCounts(twiddle: TwiddleRow): TwiddleWithReactions {
 }
 
 export async function POST(req: NextRequest) {
+  if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const parsed = await safeRequestJson(req);
   if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
@@ -204,6 +206,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { searchParams } = req.nextUrl;
   const filter = normalizeFeedFilter(searchParams.get('filter'));
   const thinker = normalizeThinker(searchParams.get('thinker'));

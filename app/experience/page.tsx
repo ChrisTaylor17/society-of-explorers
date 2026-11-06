@@ -124,12 +124,12 @@ export default function ExperiencePage() {
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
             <div style={{ background: '#0a0a0a', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>TWIDDLETWATTLE</div>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>TWIDDLETWATTLE CONCEPT</div>
               <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>
                 Ideas that grow.
               </h2>
               <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
-                Post an idea. Tag a thinker. Watch it branch into threads, remixes, and weaves. The Constellation maps your intellectual journey — every question, every connection, every insight charted over time.
+                The prototype explores how a question can grow into threads, remixes, and weaves. The Constellation concept maps those connections over time.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 {['Post & Branch', 'Tag Thinkers', 'Constellation Map', 'Collaborative Threads'].map(tag => (
