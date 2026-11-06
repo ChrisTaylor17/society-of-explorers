@@ -16,7 +16,7 @@ The coordinated local PostgreSQL rehearsal restores a 20-table pre-cutover archi
 
 For backups taken after the account erasure drafts, use `--include-account-deletion-state`. Its reference covers the request and access state and the archived Twiddle boundary. During an approved recovery, reconcile newer deletion work before opening member access. [Post-erasure restore procedure](privacy-restore-check.md#verify-a-backup-after-the-account-erasure-drafts)
 
-Review Waddle’s raw database grants and file access separately. Pair the owner-reviewed table draft with the replacement consent and feed routes, protect older builds, and verify the recording inventory and file recovery before changing access to its bucket. [Waddle review](waddle-privacy.md)
+Review Waddle’s raw database grants and file access separately. Before changing access, verify the 24-table pre-cutover reference and a separate restore of the recorded bytes from the shared `waddles` bucket. Pair the owner-reviewed table draft with the replacement consent, feed and playback routes and protect older builds. After the Waddle and account erasure drafts, use the 64-table reference for subsequent backups. [Waddle review](waddle-privacy.md) · [Recovery procedure](privacy-restore-check.md#verify-waddle-and-archived-twiddle-recovery)
 
 ## Stage 0: choose the saved-reading policy baseline
 

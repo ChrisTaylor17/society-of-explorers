@@ -22,6 +22,8 @@ CIRCLES_WALLET_FORMAT = 'soe-privacy-restore-v8'
 CIRCLE_RELEASE_FORMAT = 'soe-privacy-restore-v9'
 FIRST_RELEASE_FORMAT = 'soe-privacy-restore-v10'
 ACCOUNT_DELETION_FORMAT = 'soe-privacy-restore-v11'
+VOICE_ARCHIVE_FORMAT = 'soe-privacy-restore-v12'
+VOICE_RELEASE_FORMAT = 'soe-privacy-restore-v13'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -66,6 +68,7 @@ DELETION_PRIVATE_TABLES = frozenset(f'soe_account_deletion_private.{name}' for n
 DELETION_AUTH_TABLES = frozenset({'auth.sessions', 'auth.refresh_tokens', 'auth.flow_state'})
 ARCHIVED_TWIDDLE_TABLES = frozenset({'twiddles', 'twiddle_collaborators', 'twiddle_reactions'})
 DELETION_TABLES = DELETION_PRIVATE_TABLES | DELETION_AUTH_TABLES | ARCHIVED_TWIDDLE_TABLES
+VOICE_ARCHIVE_TABLES = ARCHIVED_TWIDDLE_TABLES | {'waddles'}
 TABLES_BY_SCOPE = {
     CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES,
     FORMAT: TABLES,
@@ -78,11 +81,15 @@ TABLES_BY_SCOPE = {
     CIRCLE_RELEASE_FORMAT: RELEASE_TABLES,
     FIRST_RELEASE_FORMAT: RELEASE_TABLES,
     ACCOUNT_DELETION_FORMAT: RELEASE_TABLES | DELETION_TABLES,
+    VOICE_ARCHIVE_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES | CIRCLE_TABLES | VOICE_ARCHIVE_TABLES,
+    VOICE_RELEASE_FORMAT: RELEASE_TABLES | DELETION_TABLES | VOICE_ARCHIVE_TABLES,
 }
-FIRST_RELEASE_SCOPES = {FIRST_RELEASE_FORMAT, ACCOUNT_DELETION_FORMAT}
+DELETION_SCOPES = {ACCOUNT_DELETION_FORMAT, VOICE_RELEASE_FORMAT}
+VOICE_SCOPES = {VOICE_ARCHIVE_FORMAT, VOICE_RELEASE_FORMAT}
+FIRST_RELEASE_SCOPES = {FIRST_RELEASE_FORMAT} | DELETION_SCOPES
 CIRCLE_RELEASE_SCOPES = {CIRCLE_RELEASE_FORMAT} | FIRST_RELEASE_SCOPES
 WALLET_SCOPES = {WALLET_FORMAT, CIRCLES_WALLET_FORMAT} | CIRCLE_RELEASE_SCOPES
-CIRCLE_SCOPES = {CIRCLES_FORMAT, CIRCLES_WALLET_FORMAT} | CIRCLE_RELEASE_SCOPES
+CIRCLE_SCOPES = {CIRCLES_FORMAT, CIRCLES_WALLET_FORMAT, VOICE_ARCHIVE_FORMAT} | CIRCLE_RELEASE_SCOPES
 AUTH_SCOPES = {AUTH_FORMAT, AUTH_DIRECT_FORMAT} | WALLET_SCOPES | CIRCLE_SCOPES
 DIRECT_SCOPES = {DIRECT_FORMAT, AUTH_DIRECT_FORMAT} | WALLET_SCOPES | CIRCLE_SCOPES
 PRINCIPALS = ['anon', 'authenticated', 'service_role']
@@ -123,7 +130,7 @@ def decode_reference(raw, scope=FORMAT):
         keys.add('circleRoutines')
     if scope in FIRST_RELEASE_SCOPES:
         keys.add('releaseServiceRoutines')
-    if scope == ACCOUNT_DELETION_FORMAT:
+    if scope in DELETION_SCOPES:
         keys.add('accountDeletionRoutines')
     if (not isinstance(value, dict)
             or set(value) != keys
@@ -138,7 +145,7 @@ def decode_reference(raw, scope=FORMAT):
         raise ValueError('Circle routine evidence')
     if scope in FIRST_RELEASE_SCOPES and not valid_digest(value['releaseServiceRoutines']):
         raise ValueError('Release service routine evidence')
-    if scope == ACCOUNT_DELETION_FORMAT and not valid_digest(value['accountDeletionRoutines']):
+    if scope in DELETION_SCOPES and not valid_digest(value['accountDeletionRoutines']):
         raise ValueError('Account deletion routine evidence')
     for entry in value['tables'].values():
         if (not isinstance(entry, dict) or set(entry) != {'rows', 'data', 'definition'}
@@ -201,7 +208,8 @@ def read_target(args):
         include_circles = 'on' if args.scope in CIRCLE_SCOPES else 'off'
         include_circle_release = 'on' if args.scope in CIRCLE_RELEASE_SCOPES else 'off'
         include_first_release = 'on' if args.scope in FIRST_RELEASE_SCOPES else 'off'
-        include_account_deletion = 'on' if args.scope == ACCOUNT_DELETION_FORMAT else 'off'
+        include_account_deletion = 'on' if args.scope in DELETION_SCOPES else 'off'
+        include_voice_archive = 'on' if args.scope in VOICE_SCOPES else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
@@ -211,6 +219,7 @@ def read_target(args):
              '-v', f'soe_restore_include_circle_release_state={include_circle_release}',
              '-v', f'soe_restore_include_first_release_state={include_first_release}',
              '-v', f'soe_restore_include_account_deletion_state={include_account_deletion}',
+             '-v', f'soe_restore_include_voice_archive={include_voice_archive}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -253,7 +262,7 @@ def compare(reference, restored):
         **({'walletRoutinesMatch': wallet_match} if reference['format'] in WALLET_SCOPES else {}),
         **({'circleRoutinesMatch': circle_match} if reference['format'] in CIRCLE_RELEASE_SCOPES else {}),
         **({'releaseServiceRoutinesMatch': service_match} if reference['format'] in FIRST_RELEASE_SCOPES else {}),
-        **({'accountDeletionRoutinesMatch': deletion_match} if reference['format'] == ACCOUNT_DELETION_FORMAT else {}),
+        **({'accountDeletionRoutinesMatch': deletion_match} if reference['format'] in DELETION_SCOPES else {}),
     }
 
 
@@ -283,9 +292,17 @@ def main():
                         help='Compare the 42-table release reference with the Practice and Live Council service routines.')
     parser.add_argument('--include-account-deletion-state', action='store_true',
                         help='Compare the 63-table reference after the account erasure migrations, including deletion routines.')
+    parser.add_argument('--include-voice-archive', action='store_true',
+                        help='Compare the 24-table pre-cutover reference including Waddle and Twiddle. '
+                             'Combine with --include-account-deletion-state for the 64-table release reference.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
-    if args.include_account_deletion_state:
+    if args.include_voice_archive:
+        if (args.scope == CORE_PRACTICE_FORMAT or args.include_wallet_state
+                or args.include_circle_release_state or args.include_first_release_state):
+            parser.error('Use --include-voice-archive alone or with --include-account-deletion-state.')
+        args.scope = VOICE_RELEASE_FORMAT if args.include_account_deletion_state else VOICE_ARCHIVE_FORMAT
+    elif args.include_account_deletion_state:
         if args.scope == CORE_PRACTICE_FORMAT:
             parser.error('Use the full restore scope to include account deletion state.')
         args.scope = ACCOUNT_DELETION_FORMAT

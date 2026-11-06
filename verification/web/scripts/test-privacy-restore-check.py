@@ -161,7 +161,7 @@ def seed_circles(source, database):
 
 def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, include_direct=False,
            include_wallet=False, include_circles=False, include_circle_release=False, include_first_release=False,
-           include_account_deletion=False, **overrides):
+           include_account_deletion=False, include_voice_archive=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
@@ -184,6 +184,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
         argv.append('--include-first-release-state')
     if include_account_deletion:
         argv.append('--include-account-deletion-state')
+    if include_voice_archive:
+        argv.append('--include-voice-archive')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={

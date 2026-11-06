@@ -19,15 +19,18 @@ def key(number):
     return f'76000000-0000-4000-8000-{number:012d}'
 
 
-def seed_twiddle(run, subject, other, resident):
-    # The identity fixture predates the live-shaped Twiddle review. Keep its
-    # provider/storage setup and replace only its three synthetic Twiddle tables.
-    run('DROP TABLE public.twiddle_collaborators,public.twiddle_reactions,public.twiddles RESTRICT')
+def twiddle_schema(resident):
     source = resident(FIXTURE).decode()
     first = 'CREATE TABLE public.twiddles ('
     last = 'GRANT SELECT (id) ON public.twiddles TO fixture_audit;'
     assert source.count(first) == source.count(last) == 1
-    run(source[source.index(first):source.index(last)])
+    return source[source.index(first):source.index(last)]
+
+
+def seed_twiddle(run, subject, other, resident):
+    # Keep the identity fixture's provider setup and replace its Twiddle tables.
+    run('DROP TABLE public.twiddle_collaborators,public.twiddle_reactions,public.twiddles RESTRICT')
+    run(twiddle_schema(resident))
     run(f"""
       INSERT INTO public.twiddles(id,author_id,content,twiddle_type,thread_type,voice_url,
         artifact_url,sketch_data,thinker_tags,mintable,exp_awarded,created_at)
@@ -352,6 +355,88 @@ def exercise_deletion_restore(staged, original, database, temp, harness, kit, ch
     }
 
 
+def exercise_voice_restore(original, staged, database, temp, harness, kit, checker, report):
+    waddle = runpy.run_path(str(SCRIPT.with_name('rehearse-waddle-privacy.py')))
+    voice_title = 'Synthetic public recording'
+    reviewed = '2026-11-06 10:06:00+00'
+
+    def run(cluster, db, sql, role='postgres', **options):
+        return cluster.query(db, f'SET ROLE {role}; ' + sql, **options)
+
+    if not original.query(database, "SELECT to_regprocedure('auth.uid()')"):
+        original.query(database, "CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT NULL::uuid'")
+    run(original,database,twiddle_schema(harness['resident']))
+    run(original,database,f"""
+      INSERT INTO public.twiddles(id,author_id,content,twiddle_type,thread_type,voice_url)
+        VALUES ('{key(140)}','{harness['AUTH_SUBJECT']}','Synthetic old recording','voice','open','fixture.wav');
+      INSERT INTO public.twiddle_collaborators(id,twiddle_id,user_id,contribution_type)
+        VALUES ('{key(141)}','{key(140)}','{harness['SECOND_AUTH_SUBJECT']}','voice');
+      INSERT INTO public.twiddle_reactions(id,twiddle_id,user_id,reaction_type)
+        VALUES ('{key(142)}','{key(140)}','{harness['SECOND_AUTH_SUBJECT']}','question');
+    """)
+    for cluster in (original, staged):
+        run(cluster,database,waddle['FIXTURE'])
+    kit['run']('psql', *staged.psql(database), '-c', 'SET ROLE postgres', '-f', waddle['DRAFT'])
+    assert run(staged,database,"SELECT count(*) FROM public.waddles WHERE public_consent_at IS NOT NULL") == '0'
+    run(staged,database,f"UPDATE public.waddles SET public_consent_at='{reviewed}' WHERE transcription='{voice_title}'")
+    report['orderedMigrationFiles'].append(str(waddle['DRAFT'].relative_to(ROOT)))
+
+    for label, source, post, omitted_tables in (
+        ('before', original, False, sorted(checker['VOICE_ARCHIVE_TABLES'])),
+        ('after', staged, True, ['waddles']),
+    ):
+        legacy_ref, voice_ref = [temp / f'voice-{label}-{name}.json' for name in ('legacy','current')]
+        complete_dump, incomplete_dump = [temp / f'voice-{label}-{name}.dump' for name in ('full','omitted')]
+        old_flag = 'soe_restore_include_account_deletion_state=on' if post else 'soe_restore_include_circles=on'
+        with harness['export_snapshot'](source,kit,database=database) as snapshot:
+            capture = (*source.psql(database), '-c', f"{checker['BEGIN']} SET TRANSACTION SNAPSHOT '{snapshot}';",
+                       '-f', harness['REFERENCE'], '-c', 'ROLLBACK;')
+            legacy_ref.write_text(kit['run']('psql','-v',old_flag,*capture)+'\n')
+            voice_ref.write_text(kit['run']('psql','-v',old_flag,'-v','soe_restore_include_voice_archive=on',*capture)+'\n')
+            dump = (*source.connection(),'--format=custom','--snapshot',snapshot,'-d',database)
+            kit['run']('pg_dump',*dump,'--file',complete_dump)
+            kit['run']('pg_dump',*dump,'--file',incomplete_dump,*(f'--exclude-table-data=public.{name}' for name in omitted_tables))
+        complete, incomplete = f'soe_voice_{label}_full', f'soe_voice_{label}_omitted'
+        original.restore(complete,complete_dump)
+        original.restore(incomplete,incomplete_dump)
+
+        def verify(db, ref=voice_ref, current=True):
+            return harness['verify'](ref,original,kit,database=db,include_circles=not post,
+                                     include_account_deletion=post,include_voice_archive=current)
+
+        old = verify(incomplete,legacy_ref,current=False)
+        assert old['status']=='MATCH' and old['tablesCompared']==(63 if post else 20), old
+        matched = verify(complete)
+        assert matched['status']=='MATCH' and matched['tablesCompared']==(64 if post else 24), matched
+        missing = verify(incomplete)
+        assert missing == {**matched,'status':'MISMATCH','rowsDiffer':omitted_tables}, missing
+        assert verify(complete,legacy_ref)['check']=='private_reference_invalid'
+        report['voiceRestore'][label] = {'olderMatchWithOmissions':old,'completeRestore':matched,'partialRestore':missing}
+
+        if post:
+            assert run(original,complete,f"SELECT transcription FROM public.waddles WHERE is_public "
+                       f"AND public_consent_at='{reviewed}'",role='service_role') == voice_title
+            for role in ('anon','authenticated'):
+                run(original,complete,'SELECT transcription FROM public.waddles',role=role,sqlstate='42501')
+            run(original,complete,f"UPDATE public.waddles SET public_consent_at=NULL WHERE transcription='{voice_title}'")
+            assert verify(complete) == {**matched,'status':'MISMATCH','rowsDiffer':['waddles']}
+            run(original,complete,f"UPDATE public.waddles SET public_consent_at='{reviewed}' WHERE transcription='{voice_title}'")
+            for change, undo in (
+                ('GRANT SELECT(audio_url) ON public.waddles TO anon','REVOKE SELECT(audio_url) ON public.waddles FROM anon'),
+                ('CREATE PUBLICATION voice_fixture_pub FOR TABLE public.waddles','DROP PUBLICATION voice_fixture_pub'),
+                ('COMMENT ON COLUMN public.waddles.public_consent_at IS NULL',
+                 "COMMENT ON COLUMN public.waddles.public_consent_at IS 'soe:waddle-public-consent:v1'"),
+            ):
+                run(original,complete,change)
+                assert verify(complete) == {**matched,'status':'MISMATCH','definitionsDiffer':['waddles']}
+                run(original,complete,undo)
+            assert verify(complete) == matched
+            run(original,incomplete,'ALTER TABLE public.waddles DROP COLUMN public_consent_at')
+            assert verify(incomplete)['check']=='local_snapshot_unavailable'
+            report['checks'].append('The release restore preserves Waddle consent and the browser denial. It detects consent, grant, publication and column-provenance drift and refuses a missing consent column.')
+    report['checks'].append('The 24-table and 64-table scopes catch missing voice records that matched the older references.')
+
+
 def main():
     os.umask(0o077)
     identity = runpy.run_path(str(SCRIPT.with_name('rehearse-identity-removal.py')))
@@ -362,7 +447,7 @@ def main():
     harness = runpy.run_path(str(release['RESTORE_TEST']))
     kit, checker = (runpy.run_path(str(harness[name])) for name in ('CORE_REHEARSAL','CHECKER'))
     owner, database = kit['OWNER'], kit['SOURCE_DB']
-    report = {'checks': [], 'providerSdk': [], 'closedRoleOperations': 0, 'productionRestoreVerified': False}
+    report = {'checks': [], 'providerSdk': [], 'closedRoleOperations': 0, 'voiceRestore': {}, 'productionRestoreVerified': False}
     with TemporaryDirectory(prefix='soe-circle-departure-',dir='/private/tmp') as directory:
         temp = Path(directory)
         original, staged = [kit['Cluster'](temp/name,owner) for name in ('original','staged')]
@@ -376,6 +461,7 @@ def main():
             release['stage_restored_release'](original,staged,database,temp,harness,kit,checker,report)
             exercise(staged,original,database,owner,temp,release,harness,kit,previous,identity,drafts,report)
             exercise_deletion_restore(staged,original,database,temp,harness,kit,checker,report)
+            exercise_voice_restore(original,staged,database,temp,harness,kit,checker,report)
         finally:
             try:
                 staged.stop()

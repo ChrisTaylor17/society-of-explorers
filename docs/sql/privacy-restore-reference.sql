@@ -32,6 +32,15 @@
 \else
   \set soe_restore_include_account_deletion_state off
 \endif
+\if :{?soe_restore_include_voice_archive}
+\else
+  \set soe_restore_include_voice_archive off
+\endif
+\set soe_restore_include_twiddle_archive :soe_restore_include_account_deletion_state
+\if :soe_restore_include_voice_archive
+  \set soe_restore_include_twiddle_archive on
+  \set soe_restore_include_circles on
+\endif
 \if :soe_restore_include_account_deletion_state
   \set soe_restore_include_first_release_state on
 \endif
@@ -67,6 +76,22 @@ BEGIN
 END;
 $guard$;
 
+\if :soe_restore_include_voice_archive
+\if :soe_restore_include_account_deletion_state
+DO $waddle$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_attribute
+    WHERE attrelid = 'public.waddles'::regclass AND attname = 'public_consent_at'
+      AND attnum > 0 AND NOT attisdropped AND atttypid = 'timestamptz'::regtype
+  ) THEN
+    RAISE EXCEPTION 'The release voice scope requires the Waddle consent column.';
+  END IF;
+END;
+$waddle$;
+\endif
+\endif
+
 SET LOCAL row_security = off;
 SET LOCAL timezone = 'UTC';
 SET LOCAL datestyle = 'ISO, YMD';
@@ -92,9 +117,6 @@ WITH RECURSIVE schemas AS (
 \if :soe_restore_include_account_deletion_state
 deletion_relations(schema_name, name, evidence_name) AS (
   VALUES
-    ('public', 'twiddles', 'twiddles'),
-    ('public', 'twiddle_collaborators', 'twiddle_collaborators'),
-    ('public', 'twiddle_reactions', 'twiddle_reactions'),
     ('auth', 'sessions', 'auth.sessions'),
     ('auth', 'refresh_tokens', 'auth.refresh_tokens'),
     ('auth', 'flow_state', 'auth.flow_state'),
@@ -152,6 +174,13 @@ relations(schema_name, name, evidence_name) AS (
     ('great_books_progress'), ('great_books_highlights'), ('book_reflections'), ('thinker_memory'),
     ('daily_questions'), ('matched_conversations'), ('practice_reflections'), ('question_responses')
   ) AS app_tables(name)
+\if :soe_restore_include_twiddle_archive
+  UNION ALL VALUES ('public', 'twiddles', 'twiddles'), ('public', 'twiddle_collaborators', 'twiddle_collaborators'),
+    ('public', 'twiddle_reactions', 'twiddle_reactions')
+\endif
+\if :soe_restore_include_voice_archive
+  UNION ALL VALUES ('public', 'waddles', 'waddles')
+\endif
 \if :soe_restore_include_auth
   UNION ALL VALUES ('auth', 'users', 'auth.users'), ('auth', 'identities', 'auth.identities')
 \endif
@@ -247,13 +276,19 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'soe_wallet_private.revoked_sessions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY soe_wallet_private.revoked_sessions t
 \endif
-\if :soe_restore_include_account_deletion_state
+\if :soe_restore_include_twiddle_archive
   UNION ALL SELECT 'twiddles', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY public.twiddles t
   UNION ALL SELECT 'twiddle_collaborators', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY public.twiddle_collaborators t
   UNION ALL SELECT 'twiddle_reactions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY public.twiddle_reactions t
+\endif
+\if :soe_restore_include_voice_archive
+  UNION ALL SELECT 'waddles', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.waddles t
+\endif
+\if :soe_restore_include_account_deletion_state
   UNION ALL SELECT 'auth.sessions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY auth.sessions t
   UNION ALL SELECT 'auth.refresh_tokens', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
@@ -508,6 +543,12 @@ table_evidence AS (
   ) || CASE WHEN c.evidence_name IN ('direct_messages', 'book_cohorts', 'book_cohort_members', 'seminar_messages')
     OR c.schema_name = 'soe_wallet_private'
     OR (:'soe_restore_include_circle_release_state'::boolean AND c.relname ~ '^circle_')
+\if :soe_restore_include_twiddle_archive
+    OR c.evidence_name IN ('twiddles', 'twiddle_collaborators', 'twiddle_reactions')
+\endif
+\if :soe_restore_include_voice_archive
+    OR c.evidence_name = 'waddles'
+\endif
 \if :soe_restore_include_account_deletion_state
     OR c.evidence_name IN (SELECT evidence_name FROM deletion_relations)
 \endif
@@ -528,6 +569,12 @@ table_evidence AS (
   || CASE WHEN c.evidence_name IN ('book_cohorts', 'book_cohort_members', 'seminar_messages')
     OR c.relname ~ '^circle_' THEN jsonb_build_object('comment', obj_description(c.oid, 'pg_class'))
     ELSE '{}'::jsonb END
+\endif
+\if :soe_restore_include_voice_archive
+  || CASE WHEN c.evidence_name = 'waddles' THEN jsonb_build_object('publicationConsentComment', (
+    SELECT col_description(a.attrelid, a.attnum) FROM pg_attribute a
+    WHERE a.attrelid = c.oid AND a.attname = 'public_consent_at' AND a.attnum > 0 AND NOT a.attisdropped
+  )) ELSE '{}'::jsonb END
 \endif
   AS definition
   FROM scoped c
@@ -592,6 +639,9 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_voice_archive'::boolean AND :'soe_restore_include_account_deletion_state'::boolean
+      THEN 'soe-privacy-restore-v13'
+    WHEN :'soe_restore_include_voice_archive'::boolean THEN 'soe-privacy-restore-v12'
     WHEN :'soe_restore_include_account_deletion_state'::boolean THEN 'soe-privacy-restore-v11'
     WHEN :'soe_restore_include_first_release_state'::boolean THEN 'soe-privacy-restore-v10'
     WHEN :'soe_restore_include_circle_release_state'::boolean THEN 'soe-privacy-restore-v9'

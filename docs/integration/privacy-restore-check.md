@@ -115,6 +115,34 @@ The local test used two archives from the same PostgreSQL snapshot. The 42-table
 
 The check compares the restored database to the chosen point in time. Keep member access closed until the operator has reconciled any deletion and access changes recorded after that snapshot. Review the other provider records, signing configuration and stored files separately. Database backups cover Storage metadata and the actual files need their own recovery evidence. [PostgreSQL synchronized snapshots](https://www.postgresql.org/docs/17/app-pgdump.html) · [Supabase backup scope](https://supabase.com/docs/guides/platform/backups)
 
+## Verify Waddle and archived Twiddle recovery
+
+Before the approved cutover, set `soe_restore_include_voice_archive` to `on` in the same read-only export transaction. Add `--include-voice-archive` to the isolated verifier. This extends the 20-table Circle scope to 24 tables. It covers Waddle rows and the three archived Twiddle tables, including their grants, row security and Realtime exposure. The older Circle reference remains available for comparison to its original scope.
+
+After both the account erasure and Waddle drafts, set `soe_restore_include_voice_archive` and `soe_restore_include_account_deletion_state` to `on`. Add `--include-voice-archive --include-account-deletion-state` to the isolated verifier. The 64-table reference requires the Waddle consent column and compares its definition, provenance comment and stored values. The rehearsal found that the older 20- and 63-table references accepted partial restores with missing voice records. The expanded references detected those omissions. [Voice recovery verification](voice-archive-restore-verification.json)
+
+## Verify the separate audio archive
+
+The `waddles` bucket also holds older Twiddle objects. Preserve every inventoried object, including ones with no current app reference. Use the same approved capture window for the database and media, with writes to the shared bucket held for the capture. In the export transaction, direct the output of `docs/sql/voice-storage-inventory.sql` to a private `inventory.json`. Repeat on the isolated Storage target after import. The inventory contains private object keys and captures the bucket settings and recorded media metadata. Keep both inventories and the files in the owner's private recovery directory. [Supabase database backup scope](https://supabase.com/docs/guides/platform/backups)
+
+Use the approved Storage or S3 client to read each inventoried object by its exact key, once from the source and separately from the restored target. Save each response in an owner-only `objects` directory as `<sha256-of-UTF-8-key>.blob`. This keeps object keys out of filesystem paths and handles names that would collide on a case-insensitive filesystem. The source bytes and their sealed reference belong with the approved recovery archive. Restore through the Storage API or the S3 endpoint so the target has usable object records. Keep the isolated bucket private and preserve its other settings and object content types and encodings. [Supabase S3 copy procedure](https://supabase.com/docs/guides/self-hosting/copy-from-platform-s3)
+
+```sh
+python3 -B verification/web/scripts/verify-voice-storage.py seal \
+  --inventory /private/owner-recovery/source/inventory.json \
+  --objects /private/owner-recovery/source/objects \
+  --reference /private/owner-recovery/voice-reference.json
+
+python3 -B verification/web/scripts/verify-voice-storage.py check \
+  --inventory /private/owner-recovery/restore/inventory.json \
+  --objects /private/owner-recovery/restore/objects \
+  --reference /private/owner-recovery/voice-reference.json
+```
+
+Record the source and restore identifiers, capture times and archive hashes in the owner's private manifest. Use fresh readback files from the isolated endpoint for the second command. The verifier compares exact keys, lengths, SHA-256 digests and playback metadata. It requires a private target and matching size and MIME settings. It reports only result categories and counts. This procedure covers unversioned objects and requires a separate recovery review if the bucket has version history.
+
+After both comparisons pass, check direct access with anonymous and signed-in browser roles. Use a synthetic publication to check the replacement app, including a seek request and a denial after consent withdrawal. Keep that acceptance separate from the database and file comparisons. [Waddle cutover](waddle-privacy.md#hosted-cutover)
+
 ## Local rehearsal
 
 ```sh
