@@ -6,3 +6,6 @@ export { createMemberContributions } from './member-contributions';
 export { MESSAGE_AI_DISCLOSURE, MESSAGE_AI_POLICY, MESSAGE_AI_POLICY_HREF } from './message-ai-consent';
 export { discussionContentSuffix } from '../../lib/circles/thread';
 export { safePrivateMeetingUrl } from '../native/src/circles/discussion-reader';
+export { createCircleReading } from './circle-reading';
+export { parseCircleDetail } from '../../lib/circles/membership';
+export { starterReadingContext } from '../../lib/circles/reading-program';

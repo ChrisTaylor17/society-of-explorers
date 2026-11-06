@@ -13,8 +13,8 @@ function read(file) {
 const result = await Bun.build({ entrypoints: ['platforms/shared/quest-entry.ts'], target: 'browser', format: 'esm',
   outdir: 'platforms/quest', naming: 'circle-host.mjs', minify: false,
   plugins: [{ name: 'resident-source-inputs', setup(build) {
-    build.onLoad({ filter: /\.(?:ts|js|mjs)$/ }, args => ({ contents: read(args.path).toString(),
-      loader: args.path.endsWith('.ts') ? 'ts' : 'js', resolveDir: path.dirname(args.path) }));
+    build.onLoad({ filter: /\.(?:ts|js|mjs|json)$/ }, args => ({ contents: read(args.path).toString(),
+      loader: args.path.endsWith('.json') ? 'json' : args.path.endsWith('.ts') ? 'ts' : 'js', resolveDir: path.dirname(args.path) }));
   } }] });
 for (const log of result.logs) process.stderr.write(String(log) + '\n');
 if (!result.success) process.exitCode = 1;

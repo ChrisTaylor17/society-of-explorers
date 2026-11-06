@@ -178,7 +178,10 @@ export async function renderXRRoom(session, doc, readPanel, signal, onFailure) {
             ctx.fillText('SOCIETY OF EXPLORERS  ·  ' + (content.label ?? 'CIRCLE DISCUSSION'), MARGIN, 66, WIDTH - 2 * MARGIN);
             ctx.fillStyle = '#eef0e7'; ctx.font = 'bold 39px system-ui';
             drawText(ctx, content.heading, 140, 1);
-            if (content.exact) drawExact(ctx, content.text);
+            if (content.readingLines) {
+              ctx.font = '30px monospace';
+              content.readingLines.forEach((line, index) => ctx.fillText(line, MARGIN, 203 + index * 41, WIDTH - 2 * MARGIN));
+            } else if (content.exact) drawExact(ctx, content.text);
             else { ctx.font = '34px system-ui'; drawText(ctx, content.text, 203, controls.length ? 9 : 10); }
             drawControls(ctx, controls, pointed);
             ctx.fillStyle = '#e3cb8e'; ctx.font = '26px system-ui';

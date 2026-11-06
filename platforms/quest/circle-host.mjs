@@ -2477,6 +2477,2783 @@ function createMemberContributions(config) {
     }
   };
 }
+// lib/books/catalog.ts
+var GREAT_BOOKS = [
+  {
+    id: "republic",
+    title: "The Republic",
+    author: "Plato",
+    year: "~380 BC",
+    gutenberg_id: "1497",
+    recommended_thinker: "plato",
+    authorThinkerId: "plato",
+    description: "The blueprint for every utopia and every tyranny. What is justice? Who should rule? Plato answers — and the answers are dangerous."
+  },
+  {
+    id: "meditations",
+    title: "Meditations",
+    author: "Marcus Aurelius",
+    year: "~170 AD",
+    gutenberg_id: "2680",
+    recommended_thinker: "aurelius",
+    authorThinkerId: "aurelius",
+    description: "Private journals of a Roman emperor at war. Not philosophy for the academy — philosophy for survival."
+  },
+  {
+    id: "genealogy-of-morals",
+    title: "On the Genealogy of Morals",
+    author: "Friedrich Nietzsche",
+    year: "1887",
+    gutenberg_id: "52319",
+    recommended_thinker: "nietzsche",
+    authorThinkerId: "nietzsche",
+    description: 'Where did "good" and "evil" come from? Nietzsche traces the bloodline and finds something disturbing.'
+  },
+  {
+    id: "apology",
+    title: "The Apology of Socrates",
+    author: "Plato",
+    year: "~399 BC",
+    gutenberg_id: "1656",
+    recommended_thinker: "socrates",
+    authorThinkerId: "plato",
+    description: "Socrates on trial for his life. His defense is not a defense — it is an attack on everyone in the room."
+  },
+  {
+    id: "odyssey",
+    title: "The Odyssey",
+    author: "Homer",
+    year: "~700 BC",
+    gutenberg_id: "1727",
+    recommended_thinker: "socrates",
+    description: "The original homecoming story. Every detour is a test. Every monster is a mirror."
+  },
+  {
+    id: "divine-comedy",
+    title: "The Divine Comedy",
+    author: "Dante Alighieri",
+    year: "1320",
+    gutenberg_id: "8800",
+    recommended_thinker: "plato",
+    description: "The descent into Hell, the climb through Purgatory, the blinding light of Paradise. The most ambitious poem ever written."
+  },
+  {
+    id: "hamlet",
+    title: "Hamlet",
+    author: "William Shakespeare",
+    year: "1601",
+    gutenberg_id: "1524",
+    recommended_thinker: "nietzsche",
+    description: 'A man who thinks too much and acts too late. The question is not "to be or not to be" — it is why he cannot decide.'
+  },
+  {
+    id: "relativity",
+    title: "Relativity: The Special and General Theory",
+    author: "Albert Einstein",
+    year: "1916",
+    gutenberg_id: "5001",
+    recommended_thinker: "einstein",
+    authorThinkerId: "einstein",
+    description: "Einstein explains his own revolution — in plain language, for anyone willing to think carefully."
+  }
+];
+function getBook(bookId) {
+  return GREAT_BOOKS.find((b) => b.id === bookId);
+}
+
+// lib/circles/reading-program-editions.json
+var reading_program_editions_default = [
+  {
+    bookId: "apology",
+    editionId: "pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+    blockCount: 125,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of Apology",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "Apology",
+        level: 1,
+        readingIndex: 8
+      },
+      {
+        id: "reading-heading-3",
+        label: "by Plato",
+        level: 2,
+        readingIndex: 9
+      },
+      {
+        id: "reading-heading-4",
+        label: "Translated by Benjamin Jowett",
+        level: 3,
+        readingIndex: 10
+      },
+      {
+        id: "reading-heading-5",
+        label: "Contents",
+        level: 2,
+        readingIndex: 11
+      },
+      {
+        id: "reading-heading-6",
+        label: "INTRODUCTION.",
+        level: 2,
+        readingIndex: 14
+      },
+      {
+        id: "reading-heading-7",
+        label: "APOLOGY",
+        level: 2,
+        readingIndex: 43
+      }
+    ],
+    sourceTitle: "Apology",
+    translators: [
+      {
+        name: "Benjamin Jowett",
+        appliesTo: "Main work"
+      }
+    ],
+    editors: [],
+    illustrators: []
+  },
+  {
+    bookId: "divine-comedy",
+    editionId: "pg-8800-e77de137b64fe83297c694a797430e09510f31591e099272edd1d49bdc9b94bb",
+    blockCount: 440,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of The divine comedy",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "THE DIVINE COMEDY",
+        level: 1,
+        readingIndex: 9
+      },
+      {
+        id: "reading-heading-3",
+        label: "BY DANTE ALIGHIERI",
+        level: 2,
+        readingIndex: 10
+      },
+      {
+        id: "reading-heading-4",
+        label: "LIST OF CANTOS",
+        level: 2,
+        readingIndex: 11
+      },
+      {
+        id: "reading-heading-5",
+        label: "HELL OR THE INFERNO",
+        level: 2,
+        readingIndex: 115
+      },
+      {
+        id: "reading-heading-6",
+        label: "CANTO I",
+        level: 2,
+        readingIndex: 116
+      },
+      {
+        id: "reading-heading-7",
+        label: "CANTO II",
+        level: 2,
+        readingIndex: 121
+      },
+      {
+        id: "reading-heading-8",
+        label: "CANTO III",
+        level: 2,
+        readingIndex: 124
+      },
+      {
+        id: "reading-heading-9",
+        label: "CANTO IV",
+        level: 2,
+        readingIndex: 129
+      },
+      {
+        id: "reading-heading-10",
+        label: "CANTO V",
+        level: 2,
+        readingIndex: 133
+      },
+      {
+        id: "reading-heading-11",
+        label: "CANTO VI",
+        level: 2,
+        readingIndex: 139
+      },
+      {
+        id: "reading-heading-12",
+        label: "CANTO VII",
+        level: 2,
+        readingIndex: 143
+      },
+      {
+        id: "reading-heading-13",
+        label: "CANTO VIII",
+        level: 2,
+        readingIndex: 148
+      },
+      {
+        id: "reading-heading-14",
+        label: "CANTO IX",
+        level: 2,
+        readingIndex: 153
+      },
+      {
+        id: "reading-heading-15",
+        label: "CANTO X",
+        level: 2,
+        readingIndex: 158
+      },
+      {
+        id: "reading-heading-16",
+        label: "CANTO XI",
+        level: 2,
+        readingIndex: 161
+      },
+      {
+        id: "reading-heading-17",
+        label: "CANTO XII",
+        level: 2,
+        readingIndex: 164
+      },
+      {
+        id: "reading-heading-18",
+        label: "CANTO XIII",
+        level: 2,
+        readingIndex: 169
+      },
+      {
+        id: "reading-heading-19",
+        label: "CANTO XIV",
+        level: 2,
+        readingIndex: 174
+      },
+      {
+        id: "reading-heading-20",
+        label: "CANTO XV",
+        level: 2,
+        readingIndex: 177
+      },
+      {
+        id: "reading-heading-21",
+        label: "CANTO XVI",
+        level: 2,
+        readingIndex: 180
+      },
+      {
+        id: "reading-heading-22",
+        label: "CANTO XVII",
+        level: 2,
+        readingIndex: 182
+      },
+      {
+        id: "reading-heading-23",
+        label: "CANTO XVIII",
+        level: 2,
+        readingIndex: 186
+      },
+      {
+        id: "reading-heading-24",
+        label: "CANTO XIX",
+        level: 2,
+        readingIndex: 191
+      },
+      {
+        id: "reading-heading-25",
+        label: "CANTO XX",
+        level: 2,
+        readingIndex: 194
+      },
+      {
+        id: "reading-heading-26",
+        label: "CANTO XXI",
+        level: 2,
+        readingIndex: 196
+      },
+      {
+        id: "reading-heading-27",
+        label: "CANTO XXII",
+        level: 2,
+        readingIndex: 200
+      },
+      {
+        id: "reading-heading-28",
+        label: "CANTO XXIII",
+        level: 2,
+        readingIndex: 204
+      },
+      {
+        id: "reading-heading-29",
+        label: "CANTO XXIV",
+        level: 2,
+        readingIndex: 209
+      },
+      {
+        id: "reading-heading-30",
+        label: "CANTO XXV",
+        level: 2,
+        readingIndex: 212
+      },
+      {
+        id: "reading-heading-31",
+        label: "CANTO XXVI",
+        level: 2,
+        readingIndex: 215
+      },
+      {
+        id: "reading-heading-32",
+        label: "CANTO XXVII",
+        level: 2,
+        readingIndex: 218
+      },
+      {
+        id: "reading-heading-33",
+        label: "CANTO XXVIII",
+        level: 2,
+        readingIndex: 220
+      },
+      {
+        id: "reading-heading-34",
+        label: "CANTO XXIX",
+        level: 2,
+        readingIndex: 225
+      },
+      {
+        id: "reading-heading-35",
+        label: "CANTO XXX",
+        level: 2,
+        readingIndex: 230
+      },
+      {
+        id: "reading-heading-36",
+        label: "CANTO XXXI",
+        level: 2,
+        readingIndex: 234
+      },
+      {
+        id: "reading-heading-37",
+        label: "CANTO XXXII",
+        level: 2,
+        readingIndex: 238
+      },
+      {
+        id: "reading-heading-38",
+        label: "CANTO XXXIII",
+        level: 2,
+        readingIndex: 243
+      },
+      {
+        id: "reading-heading-39",
+        label: "CANTO XXXIV",
+        level: 2,
+        readingIndex: 248
+      },
+      {
+        id: "reading-heading-40",
+        label: "PURGATORY",
+        level: 2,
+        readingIndex: 251
+      },
+      {
+        id: "reading-heading-41",
+        label: "CANTO I",
+        level: 2,
+        readingIndex: 252
+      },
+      {
+        id: "reading-heading-42",
+        label: "CANTO II",
+        level: 2,
+        readingIndex: 256
+      },
+      {
+        id: "reading-heading-43",
+        label: "CANTO III",
+        level: 2,
+        readingIndex: 260
+      },
+      {
+        id: "reading-heading-44",
+        label: "CANTO IV",
+        level: 2,
+        readingIndex: 263
+      },
+      {
+        id: "reading-heading-45",
+        label: "CANTO V",
+        level: 2,
+        readingIndex: 267
+      },
+      {
+        id: "reading-heading-46",
+        label: "CANTO VI",
+        level: 2,
+        readingIndex: 271
+      },
+      {
+        id: "reading-heading-47",
+        label: "CANTO VII",
+        level: 2,
+        readingIndex: 273
+      },
+      {
+        id: "reading-heading-48",
+        label: "CANTO VIII",
+        level: 2,
+        readingIndex: 277
+      },
+      {
+        id: "reading-heading-49",
+        label: "CANTO IX",
+        level: 2,
+        readingIndex: 280
+      },
+      {
+        id: "reading-heading-50",
+        label: "CANTO X",
+        level: 2,
+        readingIndex: 284
+      },
+      {
+        id: "reading-heading-51",
+        label: "CANTO XI",
+        level: 2,
+        readingIndex: 287
+      },
+      {
+        id: "reading-heading-52",
+        label: "CANTO XII",
+        level: 2,
+        readingIndex: 289
+      },
+      {
+        id: "reading-heading-53",
+        label: "CANTO XIII",
+        level: 2,
+        readingIndex: 292
+      },
+      {
+        id: "reading-heading-54",
+        label: "CANTO XIV",
+        level: 2,
+        readingIndex: 296
+      },
+      {
+        id: "reading-heading-55",
+        label: "CANTO XV",
+        level: 2,
+        readingIndex: 298
+      },
+      {
+        id: "reading-heading-56",
+        label: "CANTO XVI",
+        level: 2,
+        readingIndex: 301
+      },
+      {
+        id: "reading-heading-57",
+        label: "CANTO XVII",
+        level: 2,
+        readingIndex: 305
+      },
+      {
+        id: "reading-heading-58",
+        label: "CANTO XVIII",
+        level: 2,
+        readingIndex: 307
+      },
+      {
+        id: "reading-heading-59",
+        label: "CANTO XIX",
+        level: 2,
+        readingIndex: 310
+      },
+      {
+        id: "reading-heading-60",
+        label: "CANTO XX",
+        level: 2,
+        readingIndex: 314
+      },
+      {
+        id: "reading-heading-61",
+        label: "CANTO XXI",
+        level: 2,
+        readingIndex: 317
+      },
+      {
+        id: "reading-heading-62",
+        label: "CANTO XXII",
+        level: 2,
+        readingIndex: 319
+      },
+      {
+        id: "reading-heading-63",
+        label: "CANTO XXIII",
+        level: 2,
+        readingIndex: 321
+      },
+      {
+        id: "reading-heading-64",
+        label: "CANTO XXIV",
+        level: 2,
+        readingIndex: 324
+      },
+      {
+        id: "reading-heading-65",
+        label: "CANTO XXV",
+        level: 2,
+        readingIndex: 328
+      },
+      {
+        id: "reading-heading-66",
+        label: "CANTO XXVI",
+        level: 2,
+        readingIndex: 332
+      },
+      {
+        id: "reading-heading-67",
+        label: "CANTO XXVII",
+        level: 2,
+        readingIndex: 334
+      },
+      {
+        id: "reading-heading-68",
+        label: "CANTO XXVIII",
+        level: 2,
+        readingIndex: 337
+      },
+      {
+        id: "reading-heading-69",
+        label: "CANTO XXIX",
+        level: 2,
+        readingIndex: 340
+      },
+      {
+        id: "reading-heading-70",
+        label: "CANTO XXX",
+        level: 2,
+        readingIndex: 344
+      },
+      {
+        id: "reading-heading-71",
+        label: "CANTO XXXI",
+        level: 2,
+        readingIndex: 347
+      },
+      {
+        id: "reading-heading-72",
+        label: "CANTO XXXII",
+        level: 2,
+        readingIndex: 350
+      },
+      {
+        id: "reading-heading-73",
+        label: "CANTO XXXIII",
+        level: 2,
+        readingIndex: 352
+      },
+      {
+        id: "reading-heading-74",
+        label: "PARADISE",
+        level: 2,
+        readingIndex: 354
+      },
+      {
+        id: "reading-heading-75",
+        label: "CANTO I",
+        level: 2,
+        readingIndex: 355
+      },
+      {
+        id: "reading-heading-76",
+        label: "CANTO II",
+        level: 2,
+        readingIndex: 357
+      },
+      {
+        id: "reading-heading-77",
+        label: "CANTO III",
+        level: 2,
+        readingIndex: 359
+      },
+      {
+        id: "reading-heading-78",
+        label: "CANTO IV",
+        level: 2,
+        readingIndex: 362
+      },
+      {
+        id: "reading-heading-79",
+        label: "CANTO V",
+        level: 2,
+        readingIndex: 364
+      },
+      {
+        id: "reading-heading-80",
+        label: "CANTO VI",
+        level: 2,
+        readingIndex: 367
+      },
+      {
+        id: "reading-heading-81",
+        label: "CANTO VII",
+        level: 2,
+        readingIndex: 369
+      },
+      {
+        id: "reading-heading-82",
+        label: "CANTO VIII",
+        level: 2,
+        readingIndex: 371
+      },
+      {
+        id: "reading-heading-83",
+        label: "CANTO IX",
+        level: 2,
+        readingIndex: 374
+      },
+      {
+        id: "reading-heading-84",
+        label: "CANTO X",
+        level: 2,
+        readingIndex: 376
+      },
+      {
+        id: "reading-heading-85",
+        label: "CANTO XI",
+        level: 2,
+        readingIndex: 378
+      },
+      {
+        id: "reading-heading-86",
+        label: "CANTO XII",
+        level: 2,
+        readingIndex: 380
+      },
+      {
+        id: "reading-heading-87",
+        label: "CANTO XIII",
+        level: 2,
+        readingIndex: 383
+      },
+      {
+        id: "reading-heading-88",
+        label: "CANTO XIV",
+        level: 2,
+        readingIndex: 385
+      },
+      {
+        id: "reading-heading-89",
+        label: "CANTO XV",
+        level: 2,
+        readingIndex: 389
+      },
+      {
+        id: "reading-heading-90",
+        label: "CANTO XVI",
+        level: 2,
+        readingIndex: 391
+      },
+      {
+        id: "reading-heading-91",
+        label: "CANTO XVII",
+        level: 2,
+        readingIndex: 393
+      },
+      {
+        id: "reading-heading-92",
+        label: "CANTO XVIII",
+        level: 2,
+        readingIndex: 395
+      },
+      {
+        id: "reading-heading-93",
+        label: "CANTO XIX",
+        level: 2,
+        readingIndex: 399
+      },
+      {
+        id: "reading-heading-94",
+        label: "CANTO XX",
+        level: 2,
+        readingIndex: 401
+      },
+      {
+        id: "reading-heading-95",
+        label: "CANTO XXI",
+        level: 2,
+        readingIndex: 404
+      },
+      {
+        id: "reading-heading-96",
+        label: "CANTO XXII",
+        level: 2,
+        readingIndex: 407
+      },
+      {
+        id: "reading-heading-97",
+        label: "CANTO XXIII",
+        level: 2,
+        readingIndex: 409
+      },
+      {
+        id: "reading-heading-98",
+        label: "CANTO XXIV",
+        level: 2,
+        readingIndex: 411
+      },
+      {
+        id: "reading-heading-99",
+        label: "CANTO XXV",
+        level: 2,
+        readingIndex: 413
+      },
+      {
+        id: "reading-heading-100",
+        label: "CANTO XXVI",
+        level: 2,
+        readingIndex: 415
+      },
+      {
+        id: "reading-heading-101",
+        label: "CANTO XXVII",
+        level: 2,
+        readingIndex: 418
+      },
+      {
+        id: "reading-heading-102",
+        label: "CANTO XXVIII",
+        level: 2,
+        readingIndex: 420
+      },
+      {
+        id: "reading-heading-103",
+        label: "CANTO XXIX",
+        level: 2,
+        readingIndex: 423
+      },
+      {
+        id: "reading-heading-104",
+        label: "CANTO XXX",
+        level: 2,
+        readingIndex: 425
+      },
+      {
+        id: "reading-heading-105",
+        label: "CANTO XXXI",
+        level: 2,
+        readingIndex: 427
+      },
+      {
+        id: "reading-heading-106",
+        label: "CANTO XXXII",
+        level: 2,
+        readingIndex: 430
+      },
+      {
+        id: "reading-heading-107",
+        label: "CANTO XXXIII",
+        level: 2,
+        readingIndex: 432
+      }
+    ],
+    sourceTitle: "The divine comedy",
+    translators: [
+      {
+        name: "Henry Francis Cary",
+        appliesTo: "Main work"
+      }
+    ],
+    editors: [],
+    illustrators: [
+      "Gustave Doré"
+    ]
+  },
+  {
+    bookId: "genealogy-of-morals",
+    editionId: "pg-52319-50880f01d2e0afb107d49cb939f69086d3c1e6fccd2aad4ee68c329a1091e50c",
+    blockCount: 347,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of The Genealogy of Morals",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "THE GENEALOGY OF MORALS",
+        level: 1,
+        readingIndex: 10
+      },
+      {
+        id: "reading-heading-3",
+        label: "A POLEMIC",
+        level: 3,
+        readingIndex: 11
+      },
+      {
+        id: "reading-heading-4",
+        label: "BY",
+        level: 3,
+        readingIndex: 12
+      },
+      {
+        id: "reading-heading-5",
+        label: "FRIEDRICH NIETZSCHE",
+        level: 2,
+        readingIndex: 13
+      },
+      {
+        id: "reading-heading-6",
+        label: "TRANSLATED BY",
+        level: 4,
+        readingIndex: 14
+      },
+      {
+        id: "reading-heading-7",
+        label: "HORACE B. SAMUEL, M.A.",
+        level: 4,
+        readingIndex: 15
+      },
+      {
+        id: "reading-heading-8",
+        label: "PEOPLES AND COUNTRIES (FRAGMENT)",
+        level: 4,
+        readingIndex: 16
+      },
+      {
+        id: "reading-heading-9",
+        label: "TRANSLATED BY J. M. KENNEDY",
+        level: 4,
+        readingIndex: 17
+      },
+      {
+        id: "reading-heading-10",
+        label: "The Complete Works of Friedrich Nietzsche",
+        level: 4,
+        readingIndex: 18
+      },
+      {
+        id: "reading-heading-11",
+        label: "The First Complete and Authorised English Translation",
+        level: 5,
+        readingIndex: 19
+      },
+      {
+        id: "reading-heading-12",
+        label: "Edited by Dr Oscar Levy",
+        level: 4,
+        readingIndex: 20
+      },
+      {
+        id: "reading-heading-13",
+        label: "Volume Eight",
+        level: 4,
+        readingIndex: 21
+      },
+      {
+        id: "reading-heading-14",
+        label: "T.N. FOULIS",
+        level: 5,
+        readingIndex: 22
+      },
+      {
+        id: "reading-heading-15",
+        label: "13 & 15 FREDERICK STREET",
+        level: 5,
+        readingIndex: 23
+      },
+      {
+        id: "reading-heading-16",
+        label: "EDINBURGH: AND LONDON",
+        level: 5,
+        readingIndex: 24
+      },
+      {
+        id: "reading-heading-17",
+        label: "1913",
+        level: 5,
+        readingIndex: 25
+      },
+      {
+        id: "reading-heading-18",
+        label: "EDITOR'S NOTE.",
+        level: 4,
+        readingIndex: 27
+      },
+      {
+        id: "reading-heading-19",
+        label: "PREFACE.",
+        level: 4,
+        readingIndex: 30
+      },
+      {
+        id: "reading-heading-20",
+        label: "FIRST ESSAY.",
+        level: 5,
+        readingIndex: 53
+      },
+      {
+        id: "reading-heading-21",
+        label: '"GOOD AND EVIL," "GOOD AND BAD."',
+        level: 4,
+        readingIndex: 54
+      },
+      {
+        id: "reading-heading-22",
+        label: "SECOND ESSAY.",
+        level: 5,
+        readingIndex: 115
+      },
+      {
+        id: "reading-heading-23",
+        label: '"GUILT," "BAD CONSCIENCE," AND THE LIKE.',
+        level: 4,
+        readingIndex: 116
+      },
+      {
+        id: "reading-heading-24",
+        label: "THIRD ESSAY.",
+        level: 5,
+        readingIndex: 181
+      },
+      {
+        id: "reading-heading-25",
+        label: "WHAT IS THE MEANING OF ASCETIC IDEALS?",
+        level: 4,
+        readingIndex: 182
+      },
+      {
+        id: "reading-heading-26",
+        label: "PEOPLES AND COUNTRIES.",
+        level: 4,
+        readingIndex: 263
+      },
+      {
+        id: "reading-heading-27",
+        label: "Translated by J. M. KENNEDY.",
+        level: 5,
+        readingIndex: 264
+      }
+    ],
+    sourceTitle: "The Genealogy of Morals",
+    translators: [
+      {
+        name: "Horace Barnett Samuel",
+        appliesTo: "The Genealogy of Morals"
+      },
+      {
+        name: "J. M. Kennedy",
+        appliesTo: "Appended Peoples and Countries fragment"
+      }
+    ],
+    editors: [
+      "Oscar Levy"
+    ],
+    illustrators: []
+  },
+  {
+    bookId: "hamlet",
+    editionId: "pg-1524-6bcc78cc0b21d3130b1a267990dd41b78f17785eeb089da3c5c9aa4eaac82825",
+    blockCount: 1446,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of Hamlet",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "THE TRAGEDY OF HAMLET, PRINCE OF DENMARK",
+        level: 1,
+        readingIndex: 7
+      },
+      {
+        id: "reading-heading-3",
+        label: "by William Shakespeare",
+        level: 2,
+        readingIndex: 8
+      },
+      {
+        id: "reading-heading-4",
+        label: "Contents",
+        level: 2,
+        readingIndex: 9
+      },
+      {
+        id: "reading-heading-5",
+        label: "Dramatis Personæ",
+        level: 3,
+        readingIndex: 35
+      },
+      {
+        id: "reading-heading-6",
+        label: "SCENE. Elsinore.",
+        level: 3,
+        readingIndex: 37
+      },
+      {
+        id: "reading-heading-7",
+        label: "ACT I",
+        level: 2,
+        readingIndex: 38
+      },
+      {
+        id: "reading-heading-8",
+        label: "SCENE I. Elsinore. A platform before the Castle.",
+        level: 3,
+        readingIndex: 39
+      },
+      {
+        id: "reading-heading-9",
+        label: "SCENE II. Elsinore. A room of state in the Castle.",
+        level: 3,
+        readingIndex: 111
+      },
+      {
+        id: "reading-heading-10",
+        label: "SCENE III. A room in Polonius’s house.",
+        level: 3,
+        readingIndex: 195
+      },
+      {
+        id: "reading-heading-11",
+        label: "SCENE IV. The platform.",
+        level: 3,
+        readingIndex: 228
+      },
+      {
+        id: "reading-heading-12",
+        label: "SCENE V. A more remote part of the Castle.",
+        level: 3,
+        readingIndex: 269
+      },
+      {
+        id: "reading-heading-13",
+        label: "ACT II",
+        level: 2,
+        readingIndex: 338
+      },
+      {
+        id: "reading-heading-14",
+        label: "SCENE I. A room in Polonius’s house.",
+        level: 3,
+        readingIndex: 339
+      },
+      {
+        id: "reading-heading-15",
+        label: "SCENE II. A room in the Castle.",
+        level: 3,
+        readingIndex: 382
+      },
+      {
+        id: "reading-heading-16",
+        label: "ACT III",
+        level: 2,
+        readingIndex: 570
+      },
+      {
+        id: "reading-heading-17",
+        label: "SCENE I. A room in the Castle.",
+        level: 3,
+        readingIndex: 571
+      },
+      {
+        id: "reading-heading-18",
+        label: "SCENE II. A hall in the Castle.",
+        level: 3,
+        readingIndex: 625
+      },
+      {
+        id: "reading-heading-19",
+        label: "SCENE III. A room in the Castle.",
+        level: 3,
+        readingIndex: 795
+      },
+      {
+        id: "reading-heading-20",
+        label: "SCENE IV. Another room in the Castle.",
+        level: 3,
+        readingIndex: 815
+      },
+      {
+        id: "reading-heading-21",
+        label: "ACT IV",
+        level: 2,
+        readingIndex: 882
+      },
+      {
+        id: "reading-heading-22",
+        label: "SCENE I. A room in the Castle.",
+        level: 3,
+        readingIndex: 883
+      },
+      {
+        id: "reading-heading-23",
+        label: "SCENE II. Another room in the Castle.",
+        level: 3,
+        readingIndex: 899
+      },
+      {
+        id: "reading-heading-24",
+        label: "SCENE III. Another room in the Castle.",
+        level: 3,
+        readingIndex: 920
+      },
+      {
+        id: "reading-heading-25",
+        label: "SCENE IV. A plain in Denmark.",
+        level: 3,
+        readingIndex: 957
+      },
+      {
+        id: "reading-heading-26",
+        label: "SCENE V. Elsinore. A room in the Castle.",
+        level: 3,
+        readingIndex: 982
+      },
+      {
+        id: "reading-heading-27",
+        label: "SCENE VI. Another room in the Castle.",
+        level: 3,
+        readingIndex: 1068
+      },
+      {
+        id: "reading-heading-28",
+        label: "SCENE VII. Another room in the Castle.",
+        level: 3,
+        readingIndex: 1082
+      },
+      {
+        id: "reading-heading-29",
+        label: "ACT V",
+        level: 2,
+        readingIndex: 1133
+      },
+      {
+        id: "reading-heading-30",
+        label: "SCENE I. A churchyard.",
+        level: 3,
+        readingIndex: 1134
+      },
+      {
+        id: "reading-heading-31",
+        label: "SCENE II. A hall in the Castle.",
+        level: 3,
+        readingIndex: 1261
+      }
+    ],
+    sourceTitle: "Hamlet",
+    translators: [],
+    editors: [],
+    illustrators: []
+  },
+  {
+    bookId: "meditations",
+    editionId: "pg-2680-299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+    blockCount: 1186,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of Meditations",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "MEDITATIONS",
+        level: 1,
+        readingIndex: 7
+      },
+      {
+        id: "reading-heading-3",
+        label: "By Marcus Aurelius",
+        level: 2,
+        readingIndex: 8
+      },
+      {
+        id: "reading-heading-4",
+        label: "MARCUS AURELIUS ANTONINUS THE ROMAN EMPEROR",
+        level: 3,
+        readingIndex: 9
+      },
+      {
+        id: "reading-heading-5",
+        label: "BOOKS",
+        level: 2,
+        readingIndex: 10
+      },
+      {
+        id: "reading-heading-6",
+        label: "INTRODUCTION",
+        level: 2,
+        readingIndex: 27
+      },
+      {
+        id: "reading-heading-7",
+        label: "HIS FIRST BOOK",
+        level: 2,
+        readingIndex: 54
+      },
+      {
+        id: "reading-heading-8",
+        label: "concerning HIMSELF:",
+        level: 3,
+        readingIndex: 55
+      },
+      {
+        id: "reading-heading-9",
+        label: "THE FIRST BOOK",
+        level: 2,
+        readingIndex: 60
+      },
+      {
+        id: "reading-heading-10",
+        label: "THE SECOND BOOK",
+        level: 2,
+        readingIndex: 78
+      },
+      {
+        id: "reading-heading-11",
+        label: "THE THIRD BOOK",
+        level: 2,
+        readingIndex: 95
+      },
+      {
+        id: "reading-heading-12",
+        label: "THE FOURTH BOOK",
+        level: 2,
+        readingIndex: 113
+      },
+      {
+        id: "reading-heading-13",
+        label: "THE FIFTH BOOK",
+        level: 2,
+        readingIndex: 157
+      },
+      {
+        id: "reading-heading-14",
+        label: "THE SIXTH BOOK",
+        level: 2,
+        readingIndex: 189
+      },
+      {
+        id: "reading-heading-15",
+        label: "THE SEVENTH BOOK",
+        level: 2,
+        readingIndex: 242
+      },
+      {
+        id: "reading-heading-16",
+        label: "THE EIGHTH BOOK",
+        level: 2,
+        readingIndex: 288
+      },
+      {
+        id: "reading-heading-17",
+        label: "THE NINTH BOOK",
+        level: 2,
+        readingIndex: 346
+      },
+      {
+        id: "reading-heading-18",
+        label: "THE TENTH BOOK",
+        level: 2,
+        readingIndex: 390
+      },
+      {
+        id: "reading-heading-19",
+        label: "THE ELEVENTH BOOK",
+        level: 2,
+        readingIndex: 429
+      },
+      {
+        id: "reading-heading-20",
+        label: "THE TWELFTH BOOK",
+        level: 2,
+        readingIndex: 461
+      },
+      {
+        id: "reading-heading-21",
+        label: "APPENDIX",
+        level: 2,
+        readingIndex: 489
+      },
+      {
+        id: "reading-heading-22",
+        label: "NOTES",
+        level: 2,
+        readingIndex: 589
+      },
+      {
+        id: "reading-heading-23",
+        label: "GLOSSARY",
+        level: 2,
+        readingIndex: 635
+      },
+      {
+        id: "reading-heading-24",
+        label: "Paragraphs with First Lines",
+        level: 3,
+        readingIndex: 750
+      }
+    ],
+    sourceTitle: "Meditations",
+    translators: [
+      {
+        name: "Meric Casaubon",
+        appliesTo: "Main work"
+      }
+    ],
+    editors: [],
+    illustrators: []
+  },
+  {
+    bookId: "odyssey",
+    editionId: "pg-1727-9328957b68516333c6c2f5618e8680f738c3f847756b777a94a5469231a9e569",
+    blockCount: 1357,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of The Odyssey",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "The Odyssey",
+        level: 1,
+        readingIndex: 8
+      },
+      {
+        id: "reading-heading-3",
+        label: "Contents",
+        level: 2,
+        readingIndex: 9
+      },
+      {
+        id: "reading-heading-4",
+        label: "PREFACE TO FIRST EDITION",
+        level: 2,
+        readingIndex: 39
+      },
+      {
+        id: "reading-heading-5",
+        label: "PREFACE TO SECOND EDITION",
+        level: 2,
+        readingIndex: 58
+      },
+      {
+        id: "reading-heading-6",
+        label: "THE ODYSSEY",
+        level: 2,
+        readingIndex: 70
+      },
+      {
+        id: "reading-heading-7",
+        label: "BOOK I",
+        level: 2,
+        readingIndex: 71
+      },
+      {
+        id: "reading-heading-8",
+        label: "BOOK II",
+        level: 2,
+        readingIndex: 105
+      },
+      {
+        id: "reading-heading-9",
+        label: "BOOK III",
+        level: 2,
+        readingIndex: 142
+      },
+      {
+        id: "reading-heading-10",
+        label: "BOOK IV",
+        level: 2,
+        readingIndex: 182
+      },
+      {
+        id: "reading-heading-11",
+        label: "BOOK V",
+        level: 2,
+        readingIndex: 265
+      },
+      {
+        id: "reading-heading-12",
+        label: "BOOK VI",
+        level: 2,
+        readingIndex: 304
+      },
+      {
+        id: "reading-heading-13",
+        label: "BOOK VII",
+        level: 2,
+        readingIndex: 332
+      },
+      {
+        id: "reading-heading-14",
+        label: "BOOK VIII",
+        level: 2,
+        readingIndex: 363
+      },
+      {
+        id: "reading-heading-15",
+        label: "BOOK IX",
+        level: 2,
+        readingIndex: 415
+      },
+      {
+        id: "reading-heading-16",
+        label: "BOOK X",
+        level: 2,
+        readingIndex: 461
+      },
+      {
+        id: "reading-heading-17",
+        label: "BOOK XI",
+        level: 2,
+        readingIndex: 512
+      },
+      {
+        id: "reading-heading-18",
+        label: "BOOK XII",
+        level: 2,
+        readingIndex: 568
+      },
+      {
+        id: "reading-heading-19",
+        label: "BOOK XIII",
+        level: 2,
+        readingIndex: 609
+      },
+      {
+        id: "reading-heading-20",
+        label: "BOOK XIV",
+        level: 2,
+        readingIndex: 649
+      },
+      {
+        id: "reading-heading-21",
+        label: "BOOK XV",
+        level: 2,
+        readingIndex: 686
+      },
+      {
+        id: "reading-heading-22",
+        label: "BOOK XVI",
+        level: 2,
+        readingIndex: 736
+      },
+      {
+        id: "reading-heading-23",
+        label: "BOOK XVII",
+        level: 2,
+        readingIndex: 783
+      },
+      {
+        id: "reading-heading-24",
+        label: "BOOK XVIII",
+        level: 2,
+        readingIndex: 848
+      },
+      {
+        id: "reading-heading-25",
+        label: "BOOK XIX",
+        level: 2,
+        readingIndex: 891
+      },
+      {
+        id: "reading-heading-26",
+        label: "BOOK XX",
+        level: 2,
+        readingIndex: 932
+      },
+      {
+        id: "reading-heading-27",
+        label: "BOOK XXI",
+        level: 2,
+        readingIndex: 970
+      },
+      {
+        id: "reading-heading-28",
+        label: "BOOK XXII",
+        level: 2,
+        readingIndex: 1014
+      },
+      {
+        id: "reading-heading-29",
+        label: "BOOK XXIII",
+        level: 2,
+        readingIndex: 1068
+      },
+      {
+        id: "reading-heading-30",
+        label: "BOOK XXIV",
+        level: 2,
+        readingIndex: 1099
+      },
+      {
+        id: "reading-heading-31",
+        label: "FOOTNOTES:",
+        level: 2,
+        readingIndex: 1146
+      }
+    ],
+    sourceTitle: "The Odyssey",
+    translators: [
+      {
+        name: "Samuel Butler",
+        appliesTo: "Main work"
+      }
+    ],
+    editors: [],
+    illustrators: []
+  },
+  {
+    bookId: "relativity",
+    editionId: "pg-5001-14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+    blockCount: 550,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of Relativity : the Special and General Theory",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "Relativity The Special and General TheoryA Popular Exposition",
+        level: 1,
+        readingIndex: 10
+      },
+      {
+        id: "reading-heading-3",
+        label: "Table of Contents",
+        level: 2,
+        readingIndex: 11
+      },
+      {
+        id: "reading-heading-4",
+        label: "Preface",
+        level: 2,
+        readingIndex: 97
+      },
+      {
+        id: "reading-heading-5",
+        label: "PART I The Special Theory of Relativity",
+        level: 2,
+        readingIndex: 101
+      },
+      {
+        id: "reading-heading-6",
+        label: "I Physical Meaning of Geometrical Propositions",
+        level: 3,
+        readingIndex: 102
+      },
+      {
+        id: "reading-heading-7",
+        label: "II The System of Co-ordinates",
+        level: 3,
+        readingIndex: 109
+      },
+      {
+        id: "reading-heading-8",
+        label: "III Space and Time in Classical Mechanics",
+        level: 3,
+        readingIndex: 124
+      },
+      {
+        id: "reading-heading-9",
+        label: "IV The Galileian System of Co-ordinates",
+        level: 3,
+        readingIndex: 129
+      },
+      {
+        id: "reading-heading-10",
+        label: "V The Principle of Relativity in the Restricted Sense",
+        level: 3,
+        readingIndex: 131
+      },
+      {
+        id: "reading-heading-11",
+        label: "VI The Theorem of the Addition of Velocities Employed in Classical Mechanics",
+        level: 3,
+        readingIndex: 139
+      },
+      {
+        id: "reading-heading-12",
+        label: "VII The Apparent Incompatibility of the Law of Propagation of Light with the Principle of Relativity",
+        level: 3,
+        readingIndex: 141
+      },
+      {
+        id: "reading-heading-13",
+        label: "VIII On the Idea of Time in Physics",
+        level: 3,
+        readingIndex: 149
+      },
+      {
+        id: "reading-heading-14",
+        label: "IX The Relativity of Simultaneity",
+        level: 3,
+        readingIndex: 160
+      },
+      {
+        id: "reading-heading-15",
+        label: "X On the Relativity of the Conception of Distance",
+        level: 3,
+        readingIndex: 170
+      },
+      {
+        id: "reading-heading-16",
+        label: "XI The Lorentz Transformation",
+        level: 3,
+        readingIndex: 175
+      },
+      {
+        id: "reading-heading-17",
+        label: "XII The Behaviour of Measuring-Rods and Clocks in Motion",
+        level: 3,
+        readingIndex: 186
+      },
+      {
+        id: "reading-heading-18",
+        label: "XIII Theorem of the Addition of Velocities. The Experiment of Fizeau",
+        level: 3,
+        readingIndex: 194
+      },
+      {
+        id: "reading-heading-19",
+        label: "XIV The Heuristic Value of the Theory of Relativity",
+        level: 3,
+        readingIndex: 205
+      },
+      {
+        id: "reading-heading-20",
+        label: "XV General Results of the Theory",
+        level: 3,
+        readingIndex: 210
+      },
+      {
+        id: "reading-heading-21",
+        label: "XVI Experience and the Special Theory of Relativity",
+        level: 3,
+        readingIndex: 224
+      },
+      {
+        id: "reading-heading-22",
+        label: "XVII Minkowski’s Four-Dimensional Space",
+        level: 3,
+        readingIndex: 233
+      },
+      {
+        id: "reading-heading-23",
+        label: "PART II The General Theory of Relativity",
+        level: 2,
+        readingIndex: 241
+      },
+      {
+        id: "reading-heading-24",
+        label: "XVIII Special and General Principle of Relativity",
+        level: 3,
+        readingIndex: 242
+      },
+      {
+        id: "reading-heading-25",
+        label: "XIX The Gravitational Field",
+        level: 3,
+        readingIndex: 256
+      },
+      {
+        id: "reading-heading-26",
+        label: "XX The Equality of Inertial and Gravitational Mass as an Argument for the General Postulate of Relativity",
+        level: 3,
+        readingIndex: 267
+      },
+      {
+        id: "reading-heading-27",
+        label: "XXI In What Respects Are the Foundations of Classical Mechanics and of the Special Theory of Relativity Unsatisfactory?",
+        level: 3,
+        readingIndex: 277
+      },
+      {
+        id: "reading-heading-28",
+        label: "XXII A Few Inferences from the General Principle of Relativity",
+        level: 3,
+        readingIndex: 283
+      },
+      {
+        id: "reading-heading-29",
+        label: "XXIII Behaviour of Clocks and Measuring-Rods on a Rotating Body of Reference",
+        level: 3,
+        readingIndex: 294
+      },
+      {
+        id: "reading-heading-30",
+        label: "XXIV Euclidean and Non-Euclidean Continuum",
+        level: 3,
+        readingIndex: 303
+      },
+      {
+        id: "reading-heading-31",
+        label: "XXV Gaussian Co-Ordinates",
+        level: 3,
+        readingIndex: 312
+      },
+      {
+        id: "reading-heading-32",
+        label: "XXVI The Space-Time Continuum of the Special Theory of Relativity Considered as a Euclidean Continuum",
+        level: 3,
+        readingIndex: 320
+      },
+      {
+        id: "reading-heading-33",
+        label: "XXVII The Space-Time Continuum of the General Theory of Relativity is Not a Euclidean Continuum",
+        level: 3,
+        readingIndex: 326
+      },
+      {
+        id: "reading-heading-34",
+        label: "XXVIII Exact Formulation of the General Principle of Relativity",
+        level: 3,
+        readingIndex: 333
+      },
+      {
+        id: "reading-heading-35",
+        label: "XXIX The Solution of the Problem of Gravitation on the Basis of the General Principle of Relativity",
+        level: 3,
+        readingIndex: 341
+      },
+      {
+        id: "reading-heading-36",
+        label: "PART III Considerations on the Universe as a Whole",
+        level: 2,
+        readingIndex: 358
+      },
+      {
+        id: "reading-heading-37",
+        label: "XXX Cosmological Difficulties of Newton’s Theory",
+        level: 3,
+        readingIndex: 359
+      },
+      {
+        id: "reading-heading-38",
+        label: "XXXI The Possibility of a “Finite” and yet “Unbounded” Universe",
+        level: 3,
+        readingIndex: 365
+      },
+      {
+        id: "reading-heading-39",
+        label: "XXXII The Structure of Space According to the General Theory of Relativity",
+        level: 3,
+        readingIndex: 376
+      },
+      {
+        id: "reading-heading-40",
+        label: "APPENDIX I Simple Derivation of the Lorentz Transformation [Supplementary to Section XI]",
+        level: 2,
+        readingIndex: 382
+      },
+      {
+        id: "reading-heading-41",
+        label: "APPENDIX II Minkowski’s Four-Dimensional Space (“World”) [Supplementary to Section XVII]",
+        level: 2,
+        readingIndex: 405
+      },
+      {
+        id: "reading-heading-42",
+        label: "APPENDIX III The Experimental Confirmation of the General Theory of Relativity",
+        level: 2,
+        readingIndex: 411
+      },
+      {
+        id: "reading-heading-43",
+        label: "(a) Motion of the Perihelion of Mercury",
+        level: 3,
+        readingIndex: 416
+      },
+      {
+        id: "reading-heading-44",
+        label: "(b) Deflection of Light by a Gravitational Field",
+        level: 3,
+        readingIndex: 421
+      },
+      {
+        id: "reading-heading-45",
+        label: "(c) Displacement of Spectral Lines Towards the Red",
+        level: 3,
+        readingIndex: 471
+      },
+      {
+        id: "reading-heading-46",
+        label: "APPENDIX IV The Structure of Space According to the General Theory of Relativity [Supplementary to Section XXXII]",
+        level: 2,
+        readingIndex: 485
+      }
+    ],
+    sourceTitle: "Relativity : the Special and General Theory",
+    translators: [
+      {
+        name: "Robert William Lawson",
+        appliesTo: "Main work"
+      }
+    ],
+    editors: [],
+    illustrators: [
+      "Hermann Struck (portrait, credited in the ebook metadata)"
+    ]
+  },
+  {
+    bookId: "republic",
+    editionId: "pg-1497-c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f9b496dcfb4",
+    blockCount: 4747,
+    contents: [
+      {
+        id: "pg-header-heading",
+        label: "The Project Gutenberg eBook of The Republic",
+        level: 2,
+        readingIndex: 0
+      },
+      {
+        id: "reading-heading-2",
+        label: "THE REPUBLIC",
+        level: 1,
+        readingIndex: 8
+      },
+      {
+        id: "reading-heading-3",
+        label: "By Plato",
+        level: 2,
+        readingIndex: 9
+      },
+      {
+        id: "reading-heading-4",
+        label: "Translated by Benjamin Jowett",
+        level: 3,
+        readingIndex: 10
+      },
+      {
+        id: "reading-heading-5",
+        label: "Contents",
+        level: 2,
+        readingIndex: 12
+      },
+      {
+        id: "reading-heading-6",
+        label: "INTRODUCTION AND ANALYSIS.",
+        level: 2,
+        readingIndex: 26
+      },
+      {
+        id: "reading-heading-7",
+        label: "THE REPUBLIC.",
+        level: 2,
+        readingIndex: 411
+      },
+      {
+        id: "reading-heading-8",
+        label: "PERSONS OF THE DIALOGUE.",
+        level: 2,
+        readingIndex: 412
+      },
+      {
+        id: "reading-heading-9",
+        label: "BOOK I.",
+        level: 2,
+        readingIndex: 422
+      },
+      {
+        id: "reading-heading-10",
+        label: "BOOK II.",
+        level: 2,
+        readingIndex: 915
+      },
+      {
+        id: "reading-heading-11",
+        label: "BOOK III.",
+        level: 2,
+        readingIndex: 1265
+      },
+      {
+        id: "reading-heading-12",
+        label: "BOOK IV.",
+        level: 2,
+        readingIndex: 1763
+      },
+      {
+        id: "reading-heading-13",
+        label: "BOOK V.",
+        level: 2,
+        readingIndex: 2221
+      },
+      {
+        id: "reading-heading-14",
+        label: "BOOK VI.",
+        level: 2,
+        readingIndex: 2785
+      },
+      {
+        id: "reading-heading-15",
+        label: "BOOK VII.",
+        level: 2,
+        readingIndex: 3194
+      },
+      {
+        id: "reading-heading-16",
+        label: "BOOK VIII.",
+        level: 2,
+        readingIndex: 3567
+      },
+      {
+        id: "reading-heading-17",
+        label: "BOOK IX.",
+        level: 2,
+        readingIndex: 4015
+      },
+      {
+        id: "reading-heading-18",
+        label: "BOOK X.",
+        level: 2,
+        readingIndex: 4421
+      }
+    ],
+    sourceTitle: "The Republic",
+    translators: [
+      {
+        name: "Benjamin Jowett",
+        appliesTo: "Main work"
+      }
+    ],
+    editors: [],
+    illustrators: []
+  }
+];
+
+// lib/circles/reading-program.ts
+var READING_PROGRAM_MAX_SESSIONS = 12;
+var READING_EDITIONS = reading_program_editions_default;
+var record6 = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+var exact2 = (v, keys) => Object.keys(v).length === keys.length && keys.every((k) => Object.hasOwn(v, k));
+var position = (v) => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
+function getReadingEdition(bookId, editionId) {
+  return READING_EDITIONS.find((e) => e.bookId === bookId && (editionId === undefined || e.editionId === editionId));
+}
+function parseReadingProgram(value) {
+  if (!record6(value) || !exact2(value, ["version", "bookId", "editionId", "sessions"]) || value.version !== 1 || typeof value.bookId !== "string" || typeof value.editionId !== "string" || !Array.isArray(value.sessions) || value.sessions.length < 1 || value.sessions.length > READING_PROGRAM_MAX_SESSIONS)
+    return null;
+  const edition = getReadingEdition(value.bookId, value.editionId);
+  if (!edition)
+    return null;
+  const sessions = [];
+  for (const s of value.sessions) {
+    if (!record6(s) || !exact2(s, ["from", "to"]) || !position(s.from) || !position(s.to) || s.from > s.to || s.to >= edition.blockCount)
+      return null;
+    sessions.push({ from: s.from, to: s.to });
+  }
+  return { version: 1, bookId: value.bookId, editionId: value.editionId, sessions };
+}
+function matchesReadingEdition(metadata, program) {
+  const pinned = getReadingEdition(program.bookId, program.editionId);
+  return Boolean(pinned && metadata.bookId === program.bookId && metadata.edition.editionId === program.editionId && metadata.edition.blockCount === pinned.blockCount && JSON.stringify(metadata.edition.contents) === JSON.stringify(pinned.contents));
+}
+function starterReadingContext(week) {
+  const binding = week === 2 ? { bookId: "apology", start: "APOLOGY", before: null } : week === 5 ? { bookId: "meditations", start: "THE FIRST BOOK", before: "THE THIRD BOOK" } : null;
+  if (!binding)
+    return null;
+  const edition = getReadingEdition(binding.bookId);
+  const from = edition.contents.find((c) => c.label === binding.start)?.readingIndex;
+  const end = binding.before ? edition.contents.find((c) => c.label === binding.before)?.readingIndex : edition.blockCount;
+  if (from == null || end == null || end <= from)
+    return null;
+  return { bookId: binding.bookId, editionId: edition.editionId, from, to: end - 1 };
+}
+
+// lib/books/passage-indexes.json
+var passage_indexes_default = [
+  {
+    bookId: "apology",
+    editionId: "pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+    blockCount: 125,
+    documentSha256: "39935b8fd0710a044e2ccfc8af7543ba1070e206daf1bfc133eb1640d962a4fc",
+    metadataSha256: "05c62c4966fb63dca1ad3bf72edd028e03ab403d363847f2bb83a7d5a8419bab",
+    indexSha256: "9fdd28fb9c9e72a6f9992f7221e67d4c7d4af44b1b4cdb39cf57859e325a06bf",
+    indexBytes: 95107
+  },
+  {
+    bookId: "divine-comedy",
+    editionId: "pg-8800-e77de137b64fe83297c694a797430e09510f31591e099272edd1d49bdc9b94bb",
+    blockCount: 440,
+    documentSha256: "54726c71c3134294ade661003557c192136ace1a02666b74790cd7dc415a82e8",
+    metadataSha256: "8ca380fada7df8781feb6359be9778f0dcbae5f371884d04414bcb1f1e3d153c",
+    indexSha256: "cad05e69828d4e6c78344eda73e38a3681c9047a4a08d4c0ec5e0b821c7177f1",
+    indexBytes: 659614
+  },
+  {
+    bookId: "genealogy-of-morals",
+    editionId: "pg-52319-50880f01d2e0afb107d49cb939f69086d3c1e6fccd2aad4ee68c329a1091e50c",
+    blockCount: 347,
+    documentSha256: "548408ac3ea88ac0b556442d3bc0a327e02167a4681d1b3a939da5334fb07f90",
+    metadataSha256: "8cd0065c0beead28eeea2b9dbb612eaf1264ec126dd0876cbad1c5d4d64ccca7",
+    indexSha256: "a9aacd6442e190bb824f06012c03d33739b8984e4cfc9aac0598e56c9e7d22a6",
+    indexBytes: 355464
+  },
+  {
+    bookId: "hamlet",
+    editionId: "pg-1524-6bcc78cc0b21d3130b1a267990dd41b78f17785eeb089da3c5c9aa4eaac82825",
+    blockCount: 1446,
+    documentSha256: "16a07e48f082e5eb760b30923c74c14932ea243799aebf7497b39a7d4f6b6fe7",
+    metadataSha256: "dbf399e2811795653ad79e54d3299cf79a316c5f8b74e155d897bccfc7806e65",
+    indexSha256: "41e4c6ce41de0fe04ca1bb37e18e05928a29df0f6cec9d3d93e55fc6e8adf648",
+    indexBytes: 257379
+  },
+  {
+    bookId: "meditations",
+    editionId: "pg-2680-299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+    blockCount: 1186,
+    documentSha256: "d729af988c62e47826523d30e35356e98f83175af7887e9d30f602403ead9c90",
+    metadataSha256: "53ad5c074c3e0c2cdc99e9431f4d8766b1c8c77f9fe0e33fa2ba263f9d60cd0e",
+    indexSha256: "1d4471993ee1579632cb1c6313d52f47ee104edee9cf5167fd948621da18b6fc",
+    indexBytes: 490459
+  },
+  {
+    bookId: "odyssey",
+    editionId: "pg-1727-9328957b68516333c6c2f5618e8680f738c3f847756b777a94a5469231a9e569",
+    blockCount: 1357,
+    documentSha256: "49fc43595dca6722da7dccbaf62a101e68e3354ef597f2a82d12fbaec2e327d9",
+    metadataSha256: "876db330aa71dd590bd0173cc919cfa946be16d6caa20a16df1fb130d77990d7",
+    indexSha256: "5461f4453ab60d7afb58821de32c87d7301bb93010304d9412802c3acf1e94a3",
+    indexBytes: 756587
+  },
+  {
+    bookId: "relativity",
+    editionId: "pg-5001-14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+    blockCount: 550,
+    documentSha256: "7f3a565f524e4df164ee2e5df8cd24a480ad566934f06974495b2bf1dd04141b",
+    metadataSha256: "fe375adc9ca35b766cff450804a81a0a072abb2178be753c6560e9afd0e3b25f",
+    indexSha256: "8dff1791dd3aac9bb3942c661934ab52eb358d018b67ecf7465c766e47774387",
+    indexBytes: 156863
+  },
+  {
+    bookId: "republic",
+    editionId: "pg-1497-c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f9b496dcfb4",
+    blockCount: 4747,
+    documentSha256: "ae02d803079893480ab4110e5d84f79a82ff2ba002137ec2217988cff1f18884",
+    metadataSha256: "585862c5b69501dfcfe8f632fd66174339fbe6de6a32c9b91314a89ffa5d188b",
+    indexSha256: "4e9440336bf6008aeaa61c338461783d73c09ef0e225db11bbe1535d45e1935e",
+    indexBytes: 1439793
+  }
+];
+
+// lib/books/bookmarks.ts
+var isEditionId = (v) => typeof v === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(v);
+var record7 = (v) => Boolean(v && typeof v === "object" && !Array.isArray(v));
+var text2 = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(v);
+var texts = (v, max) => Array.isArray(v) && v.length <= 100 && v.every((x) => text2(x, max));
+function parseBookEditionResponse(value) {
+  if (!record7(value) || typeof value.bookId !== "string")
+    return null;
+  const book = getBook(value.bookId);
+  if (!book || value.title !== book.title || value.author !== book.author || !record7(value.edition))
+    return null;
+  const e = value.edition;
+  if (!isEditionId(e.editionId) || e.documentUrl !== `/api/great-books/edition/${book.id}?edition=${e.editionId}` || e.downloadUrl !== `/api/great-books/edition/${book.id}/download?edition=${e.editionId}` || e.sourceCatalogUrl !== `https://www.gutenberg.org/ebooks/${book.gutenberg_id}` || !text2(e.sourceArchiveUrl, 500) || !text2(e.sourceTitle, 1000) || !text2(e.sourceAuthor, 500) || !text2(e.attribution, 4000) || e.licenseUrl !== "https://www.gutenberg.org/policy/license.html" || !text2(e.licenseNotice, 4000) || !texts(e.editors, 300) || !texts(e.illustrators, 300) || !texts(e.editionNotes, 3000) || !Array.isArray(e.translators) || e.translators.length > 30 || !e.translators.every((t) => record7(t) && text2(t.name, 300) && text2(t.appliesTo, 1000)) || !record7(e.rights) || e.rights.jurisdiction !== "US" || e.rights.status !== "public-domain" || e.rights.authority !== "Project Gutenberg" || e.rights.outsideUS !== "not-assessed" || !text2(e.rights.reviewedAt, 50) || !Number.isSafeInteger(e.blockCount) || Number(e.blockCount) < 1 || Number(e.blockCount) > 1e5 || !Array.isArray(e.contents) || e.contents.length > 5000)
+    return null;
+  try {
+    const u = new URL(e.sourceArchiveUrl);
+    if (u.href !== `https://www.gutenberg.org/cache/epub/${book.gutenberg_id}/pg${book.gutenberg_id}-h.zip`)
+      return null;
+  } catch {
+    return null;
+  }
+  if (!e.contents.every((c) => record7(c) && text2(c.id, 200) && /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(c.id) && text2(c.label, 1000) && Number.isInteger(c.level) && Number(c.level) >= 1 && Number(c.level) <= 6 && (c.readingIndex === null || Number.isSafeInteger(c.readingIndex) && Number(c.readingIndex) >= 0 && Number(c.readingIndex) < Number(e.blockCount))))
+    return null;
+  if (new Set(e.contents.map((c) => c.id)).size !== e.contents.length)
+    return null;
+  return {
+    bookId: book.id,
+    title: book.title,
+    author: book.author,
+    edition: {
+      editionId: e.editionId,
+      documentUrl: e.documentUrl,
+      downloadUrl: e.downloadUrl,
+      sourceCatalogUrl: e.sourceCatalogUrl,
+      sourceArchiveUrl: e.sourceArchiveUrl,
+      sourceTitle: e.sourceTitle,
+      sourceAuthor: e.sourceAuthor,
+      attribution: e.attribution,
+      translators: e.translators.map((t) => ({ name: t.name, appliesTo: t.appliesTo })),
+      editors: [...e.editors],
+      illustrators: [...e.illustrators],
+      licenseUrl: e.licenseUrl,
+      licenseNotice: e.licenseNotice,
+      editionNotes: [...e.editionNotes],
+      rights: { jurisdiction: "US", status: "public-domain", authority: "Project Gutenberg", outsideUS: "not-assessed", reviewedAt: e.rights.reviewedAt },
+      blockCount: Number(e.blockCount),
+      contents: e.contents.map((c) => ({ id: c.id, label: c.label, level: c.level, readingIndex: c.readingIndex }))
+    }
+  };
+}
+
+// lib/books/passages.ts
+var PASSAGE_QUOTE_LIMIT = 600;
+var PASSAGE_MESSAGE_LIMIT = 2000;
+var record8 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var plain3 = (value, max) => typeof value === "string" && value.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value);
+var integer2 = (value, max = 1e5) => Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) <= max;
+var pins = passage_indexes_default;
+function passageIndexPin(bookId) {
+  const pin = pins.find((value) => value.bookId === bookId);
+  return pin ? { ...pin } : null;
+}
+function parsePassageReference(value) {
+  if (!record8(value) || Object.keys(value).sort().join(",") !== "blockIndex,bookId,editionId,end,start,version" || value.version !== 1 || typeof value.bookId !== "string" || !getBook(value.bookId) || !passageIndexPin(value.bookId) || !isEditionId(value.editionId) || !integer2(value.blockIndex))
+    return null;
+  const linked = value.start === null && value.end === null;
+  if (!linked && (!integer2(value.start) || !integer2(value.end) || value.end <= value.start || value.end - value.start > PASSAGE_QUOTE_LIMIT))
+    return null;
+  return { version: 1, bookId: value.bookId, editionId: value.editionId, blockIndex: value.blockIndex, start: value.start, end: value.end };
+}
+function samePassageReference(a, b) {
+  return a.version === b.version && a.bookId === b.bookId && a.editionId === b.editionId && a.blockIndex === b.blockIndex && a.start === b.start && a.end === b.end;
+}
+function passageReaderHref(reference) {
+  const r = parsePassageReference(reference);
+  if (!r)
+    throw Error("Invalid passage reference");
+  const query = new URLSearchParams({ edition: r.editionId, passageBlock: String(r.blockIndex) });
+  if (r.start !== null) {
+    query.set("passageStart", String(r.start));
+    query.set("passageEnd", String(r.end));
+  }
+  return `/great-books/${r.bookId}?${query}`;
+}
+function passageContentSuffix(source) {
+  const heading = source.quote === null ? "Referenced source block (no quotation):" : `Referenced passage (edition text; line breaks retained):
+“${source.quote}”`;
+  const credit = source.metadata.edition.attribution.replace(/\s+/gu, " ").trim();
+  return `${heading}
+
+Source edition: ${credit}
+Reading block ${source.reference.blockIndex + 1}.
+${passageReaderHref(source.reference)}`;
+}
+function parseBookPassage(value) {
+  if (!record8(value))
+    return null;
+  const reference = parsePassageReference(value.reference), metadata = parseBookEditionResponse(value.metadata);
+  if (!reference || !metadata)
+    return null;
+  const pin = passageIndexPin(reference.bookId);
+  if (!pin || reference.editionId !== pin.editionId || reference.blockIndex >= pin.blockCount || metadata.bookId !== reference.bookId || metadata.edition.editionId !== reference.editionId || metadata.edition.blockCount !== pin.blockCount || value.sourceHash !== pin.documentSha256 || ![null, "non_text", "table", "empty"].includes(value.reason) || value.blockText !== null && !plain3(value.blockText, 1e5) || value.quote !== null && !plain3(value.quote, PASSAGE_QUOTE_LIMIT))
+    return null;
+  const { quote, blockText, reason } = value;
+  if (reason !== null && (blockText !== null || quote !== null) || reason === null && !blockText || (reference.start === null ? quote !== null : !blockText || !quote || reason !== null || blockText.slice(reference.start, reference.end) !== quote || quote.length !== reference.end - reference.start || quote !== quote.trim() || reference.start > 0 && /[\uDC00-\uDFFF]/u.test(blockText[reference.start]) || reference.end < blockText.length && /[\uDC00-\uDFFF]/u.test(blockText[reference.end])))
+    return null;
+  const projected = { reference, quote, blockText, reason, metadata, readerHref: passageReaderHref(reference), sourceHash: pin.documentSha256 };
+  const contentSuffix = passageContentSuffix(projected), commentLimit = PASSAGE_MESSAGE_LIMIT - contentSuffix.length - 2;
+  if (commentLimit < 1 || value.readerHref !== projected.readerHref || value.contentSuffix !== contentSuffix || value.commentLimit !== commentLimit)
+    return null;
+  return { ...projected, contentSuffix, commentLimit };
+}
+// platforms/shared/reading-metadata.json
+var reading_metadata_default = {
+  version: 1,
+  editions: [
+    {
+      bookId: "apology",
+      editionId: "pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+      metadataSha256: "05c62c4966fb63dca1ad3bf72edd028e03ab403d363847f2bb83a7d5a8419bab",
+      tuple: [
+        "Apology",
+        "Plato",
+        [
+          {
+            name: "Benjamin Jowett",
+            appliesTo: "Main work"
+          }
+        ],
+        [],
+        [],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "The Apology of Socrates is the application display alias; Apology is the source title."
+        ],
+        "https://www.gutenberg.org/ebooks/1656",
+        "https://www.gutenberg.org/cache/epub/1656/pg1656-h.zip"
+      ],
+      attribution: "Apology · Plato · Benjamin Jowett (translation: Main work) · Project Gutenberg ebook 1656"
+    },
+    {
+      bookId: "divine-comedy",
+      editionId: "pg-8800-e77de137b64fe83297c694a797430e09510f31591e099272edd1d49bdc9b94bb",
+      metadataSha256: "8ca380fada7df8781feb6359be9778f0dcbae5f371884d04414bcb1f1e3d153c",
+      tuple: [
+        "The divine comedy",
+        "Dante Alighieri",
+        [
+          {
+            name: "Henry Francis Cary",
+            appliesTo: "Main work"
+          }
+        ],
+        [],
+        [
+          "Gustave Doré"
+        ],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "Cary translation with Doré illustrations; not the Longfellow translation."
+        ],
+        "https://www.gutenberg.org/ebooks/8800",
+        "https://www.gutenberg.org/cache/epub/8800/pg8800-h.zip"
+      ],
+      attribution: "The divine comedy · Dante Alighieri · Henry Francis Cary (translation: Main work) · Gustave Doré (illustrator) · Project Gutenberg ebook 8800"
+    },
+    {
+      bookId: "genealogy-of-morals",
+      editionId: "pg-52319-50880f01d2e0afb107d49cb939f69086d3c1e6fccd2aad4ee68c329a1091e50c",
+      metadataSha256: "8cd0065c0beead28eeea2b9dbb612eaf1264ec126dd0876cbad1c5d4d64ccca7",
+      tuple: [
+        "The Genealogy of Morals",
+        "Friedrich Wilhelm Nietzsche",
+        [
+          {
+            name: "Horace Barnett Samuel",
+            appliesTo: "The Genealogy of Morals"
+          },
+          {
+            name: "J. M. Kennedy",
+            appliesTo: "Appended Peoples and Countries fragment"
+          }
+        ],
+        [
+          "Oscar Levy"
+        ],
+        [],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "Includes the Peoples and Countries fragment.",
+          "Catalog/RDF describes Volume Thirteen; the ebook front matter says Volume Eight, 1913. The discrepancy is retained rather than resolved by assumption."
+        ],
+        "https://www.gutenberg.org/ebooks/52319",
+        "https://www.gutenberg.org/cache/epub/52319/pg52319-h.zip"
+      ],
+      attribution: "The Genealogy of Morals · Friedrich Wilhelm Nietzsche · Horace Barnett Samuel (translation: The Genealogy of Morals) · J. M. Kennedy (translation: Appended Peoples and Countries fragment) · Oscar Levy (editor) · Project Gutenberg ebook 52319"
+    },
+    {
+      bookId: "hamlet",
+      editionId: "pg-1524-6bcc78cc0b21d3130b1a267990dd41b78f17785eeb089da3c5c9aa4eaac82825",
+      metadataSha256: "dbf399e2811795653ad79e54d3299cf79a316c5f8b74e155d897bccfc7806e65",
+      tuple: [
+        "Hamlet",
+        "William Shakespeare",
+        [],
+        [],
+        [],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "Original English; no translator is listed. Speaker labels, stage directions and verse line breaks are retained."
+        ],
+        "https://www.gutenberg.org/ebooks/1524",
+        "https://www.gutenberg.org/cache/epub/1524/pg1524-h.zip"
+      ],
+      attribution: "Hamlet · William Shakespeare · Project Gutenberg ebook 1524"
+    },
+    {
+      bookId: "meditations",
+      editionId: "pg-2680-299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+      metadataSha256: "53ad5c074c3e0c2cdc99e9431f4d8766b1c8c77f9fe0e33fa2ba263f9d60cd0e",
+      tuple: [
+        "Meditations",
+        "Marcus Aurelius",
+        [
+          {
+            name: "Meric Casaubon",
+            appliesTo: "Main work"
+          }
+        ],
+        [],
+        [],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "Translator is not listed in the Gutenberg catalog/RDF. The edition notes identify Casaubon and comparison of the 1634 and 1635 editions. This is not the George Long translation."
+        ],
+        "https://www.gutenberg.org/ebooks/2680",
+        "https://www.gutenberg.org/cache/epub/2680/pg2680-h.zip"
+      ],
+      attribution: "Meditations · Marcus Aurelius · Meric Casaubon (translation: Main work) · Project Gutenberg ebook 2680"
+    },
+    {
+      bookId: "odyssey",
+      editionId: "pg-1727-9328957b68516333c6c2f5618e8680f738c3f847756b777a94a5469231a9e569",
+      metadataSha256: "876db330aa71dd590bd0173cc919cfa946be16d6caa20a16df1fb130d77990d7",
+      tuple: [
+        "The Odyssey",
+        "Homer",
+        [
+          {
+            name: "Samuel Butler",
+            appliesTo: "Main work"
+          }
+        ],
+        [],
+        [],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "English prose translation. Source subtitle: Rendered into English prose for the use of those who cannot read the original."
+        ],
+        "https://www.gutenberg.org/ebooks/1727",
+        "https://www.gutenberg.org/cache/epub/1727/pg1727-h.zip"
+      ],
+      attribution: "The Odyssey · Homer · Samuel Butler (translation: Main work) · Project Gutenberg ebook 1727"
+    },
+    {
+      bookId: "relativity",
+      editionId: "pg-5001-14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+      metadataSha256: "fe375adc9ca35b766cff450804a81a0a072abb2178be753c6560e9afd0e3b25f",
+      tuple: [
+        "Relativity : the Special and General Theory",
+        "Albert Einstein",
+        [
+          {
+            name: "Robert William Lawson",
+            appliesTo: "Main work"
+          }
+        ],
+        [],
+        [
+          "Hermann Struck (portrait, credited in the ebook metadata)"
+        ],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "Gutenberg identifies the English source publication as Methuen & Co Ltd, 1920; 1916 is the original-work year.",
+          "HTML-only source package: equations and illustrations must remain local images. Gutenberg warns that some generated formats lose equations or images."
+        ],
+        "https://www.gutenberg.org/ebooks/5001",
+        "https://www.gutenberg.org/cache/epub/5001/pg5001-h.zip"
+      ],
+      attribution: "Relativity : the Special and General Theory · Albert Einstein · Robert William Lawson (translation: Main work) · Hermann Struck (portrait, credited in the ebook metadata) (illustrator) · Project Gutenberg ebook 5001"
+    },
+    {
+      bookId: "republic",
+      editionId: "pg-1497-c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f9b496dcfb4",
+      metadataSha256: "585862c5b69501dfcfe8f632fd66174339fbe6de6a32c9b91314a89ffa5d188b",
+      tuple: [
+        "The Republic",
+        "Plato",
+        [
+          {
+            name: "Benjamin Jowett",
+            appliesTo: "Main work"
+          }
+        ],
+        [],
+        [],
+        {
+          jurisdiction: "US",
+          status: "public-domain",
+          authority: "Project Gutenberg",
+          outsideUS: "not-assessed",
+          reviewedAt: "2026-11-03"
+        },
+        "https://www.gutenberg.org/policy/license.html",
+        "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+        [
+          "Gutenberg points to an improved edition, 55201. This reviewed copy intentionally retains edition 1497."
+        ],
+        "https://www.gutenberg.org/ebooks/1497",
+        "https://www.gutenberg.org/cache/epub/1497/pg1497-h.zip"
+      ],
+      attribution: "The Republic · Plato · Benjamin Jowett (translation: Main work) · Project Gutenberg ebook 1497"
+    }
+  ]
+};
+
+// platforms/shared/circle-reading.ts
+var copy6 = (value) => JSON.parse(JSON.stringify(value));
+function metadataMatches(passage) {
+  const pin = passageIndexPin(passage.reference.bookId), e = passage.metadata.edition;
+  const snapshot = reading_metadata_default.editions.find((item) => item.bookId === passage.reference.bookId && item.editionId === passage.reference.editionId);
+  const tuple = [
+    e.sourceTitle,
+    e.sourceAuthor,
+    e.translators,
+    e.editors,
+    e.illustrators,
+    e.rights,
+    e.licenseUrl,
+    e.licenseNotice,
+    e.editionNotes,
+    e.sourceCatalogUrl,
+    e.sourceArchiveUrl
+  ];
+  return Boolean(pin && reading_metadata_default.version === 1 && snapshot && snapshot.metadataSha256 === pin.metadataSha256 && JSON.stringify(tuple) === JSON.stringify(snapshot.tuple) && e.attribution === snapshot.attribution);
+}
+function createCircleReading(config) {
+  const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15000, raw = config.context;
+  const program = raw && parseReadingProgram({ version: 1, bookId: raw.bookId, editionId: raw.editionId, sessions: [{ from: raw.from, to: raw.to }] });
+  const edition = program && getReadingEdition(program.bookId, program.editionId), pin = program && passageIndexPin(program.bookId);
+  if (!program || !edition || !pin || pin.editionId !== program.editionId || pin.blockCount !== edition.blockCount || !raw || Object.keys(raw).sort().join(",") !== "bookId,editionId,from,to" || !config.owner || typeof config.owner.scope !== "function" || typeof config.owner.subscribe !== "function" || config.passageTransport !== undefined && typeof config.passageTransport !== "function" || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000 || config.initialOnline !== undefined && typeof config.initialOnline !== "boolean")
+    throw Error("An exact supported reading selection is required");
+  const context = { bookId: program.bookId, editionId: program.editionId, ...program.sessions[0] };
+  const initialBlockIndex = config.initialBlockIndex ?? context.from;
+  if (!Number.isSafeInteger(initialBlockIndex) || initialBlockIndex < context.from || initialBlockIndex > context.to)
+    throw Error("Initial reading position must be within the selected range");
+  let attached = false, closed = false, active = true, online = config.initialOnline ?? false, scope = null;
+  let generation = 0, attachment = 0, blockIndex = initialBlockIndex, busy = false;
+  let phase = "closed", passage = null, offOwner = () => {};
+  let message = config.passageTransport ? "Load this exact reading selection when ready." : "Text reading is unavailable in this connection.";
+  const listeners = new Set, requests = new Set;
+  const enabled = () => !closed && attached && active && online && scope !== null && scope === config.owner.scope() && Boolean(config.passageTransport);
+  const model = () => {
+    const usable = enabled() && !busy, validated = phase === "ready" || phase === "unsupported";
+    return {
+      connected: attached && scope !== null,
+      active,
+      online,
+      busy,
+      phase,
+      context: { ...context },
+      blockIndex,
+      passage: copy6(passage),
+      message,
+      canLoad: usable,
+      canNext: usable && validated && blockIndex < context.to,
+      canPrevious: usable && validated && blockIndex > context.from,
+      canRetry: usable && phase === "unavailable",
+      canNavigate: !busy
+    };
+  };
+  const emit = () => {
+    for (const listener of listeners) {
+      try {
+        listener(model());
+      } catch {}
+    }
+  };
+  function retire(notice) {
+    generation++;
+    for (const controller of requests)
+      controller.abort();
+    passage = null;
+    blockIndex = initialBlockIndex;
+    busy = false;
+    phase = attached ? "idle" : "closed";
+    message = notice;
+    emit();
+  }
+  function closeView(notice) {
+    if (closed)
+      return;
+    closed = true;
+    attachment++;
+    attached = false;
+    scope = null;
+    offOwner();
+    offOwner = () => {};
+    retire(notice);
+  }
+  async function load(index = blockIndex) {
+    if (!model().canLoad || !Number.isSafeInteger(index) || index < context.from || index > context.to)
+      return;
+    const g = ++generation, expected = scope, abort = new AbortController;
+    let timer;
+    const current = () => enabled() && generation === g && scope === expected && !abort.signal.aborted;
+    const reference = { version: 1, bookId: context.bookId, editionId: context.editionId, blockIndex: index, start: null, end: null };
+    const params = new URLSearchParams({ book: reference.bookId, edition: reference.editionId, block: String(index) });
+    const url = origin + "/api/great-books/passage?" + params;
+    blockIndex = index;
+    passage = null;
+    busy = true;
+    phase = "loading";
+    message = "Checking this source block and its exact edition…";
+    requests.add(abort);
+    emit();
+    try {
+      const result = await Promise.race([(async () => {
+        if (!current())
+          throw Error("Reading lifetime ended");
+        const response = await config.passageTransport(url, { method: "GET", headers: {}, cache: "no-store", redirect: "error", credentials: "omit", signal: abort.signal });
+        if (!current() || response.status !== 200 || response.redirected || response.url !== url)
+          throw Error("Reading response unavailable");
+        const parsed = parseBookPassage(await response.json());
+        if (!current() || !parsed || !samePassageReference(parsed.reference, reference) || !matchesReadingEdition(parsed.metadata, context) || !metadataMatches(parsed))
+          throw Error("Reading source not verified");
+        return parsed;
+      })(), new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          abort.abort();
+          reject(Error("Reading deadline exceeded"));
+        }, timeout);
+      })]);
+      if (!current())
+        return;
+      passage = result;
+      busy = false;
+      phase = result.reason === null ? "ready" : "unsupported";
+      message = result.reason === null ? "Verified text from the selected source edition. Line breaks are preserved." : result.reason === "table" ? "This source block contains a table. Its text is not available in this reader; nothing has been skipped." : result.reason === "non_text" ? "This source block contains an image, equation or other nontext content. It is not available in this reader; nothing has been skipped." : "This source block has no text to display. Nothing has been skipped.";
+      emit();
+    } catch {
+      if (!closed && attached && active && online && generation === g && scope === expected && config.owner.scope() === expected) {
+        passage = null;
+        busy = false;
+        phase = "unavailable";
+        message = "This exact source block could not be verified. Retry it manually; no text or reading progress is being assumed.";
+        emit();
+      }
+    } finally {
+      clearTimeout(timer);
+      requests.delete(abort);
+    }
+  }
+  return {
+    model,
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(model());
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    connect() {
+      if (attached || closed)
+        return;
+      attached = true;
+      const connectedAt = ++attachment;
+      const stop = config.owner.subscribe(() => {
+        if (!attached || closed || connectedAt !== attachment)
+          return;
+        closeView("Account changed. The reading view was closed. Check the Circle and choose its reading again.");
+      });
+      if (!attached || closed || connectedAt !== attachment) {
+        stop();
+        return;
+      }
+      offOwner = stop;
+      scope = config.owner.scope();
+      retire(!active ? "The reading view is inactive." : !online ? "Network access is unavailable. Reconnect, then load the reading manually." : config.passageTransport ? "Load this exact reading selection when ready." : "Text reading is unavailable in this connection.");
+    },
+    disconnect() {
+      attachment++;
+      attached = false;
+      scope = null;
+      offOwner();
+      offOwner = () => {};
+      retire("Reading view closed.");
+    },
+    activity(value) {
+      active = value;
+      if (!value)
+        retire("Reading view cleared while inactive. Load again when ready.");
+      else
+        emit();
+    },
+    connectivity(value) {
+      online = value;
+      if (!value)
+        retire("Reading view cleared while offline. Reconnect, then load it manually.");
+      else
+        emit();
+    },
+    load: () => load(),
+    next: () => model().canNext ? load(blockIndex + 1) : Promise.resolve(),
+    previous: () => model().canPrevious ? load(blockIndex - 1) : Promise.resolve(),
+    retry: () => model().canRetry ? load() : Promise.resolve(),
+    close() {
+      closeView("Reading view closed. Nothing loads automatically.");
+    }
+  };
+}
+// lib/circles/membership.ts
+var membershipRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var membershipText = (value, max) => typeof value === "string" && value.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value);
+var membershipInteger = (value, max = Number.MAX_SAFE_INTEGER) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= max;
+function membershipDay(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+var nullableText = (value, max) => value === null || membershipText(value, max);
+function capabilities(value) {
+  if (!membershipRecord(value) || !["canJoin", "canLeave", "canRsvp", "canComplete", "canReadConversation"].every((key) => typeof value[key] === "boolean"))
+    return null;
+  return { canJoin: value.canJoin, canLeave: value.canLeave, canRsvp: value.canRsvp, canComplete: value.canComplete, canReadConversation: value.canReadConversation };
+}
+function viewer(value) {
+  if (!membershipRecord(value) || !["signed_in", "is_member", "is_host"].every((key) => typeof value[key] === "boolean") || !value.signed_in && (value.is_member || value.is_host))
+    return null;
+  return { signed_in: value.signed_in, is_member: value.is_member, is_host: value.is_host };
+}
+function publicCircle(value) {
+  if (!membershipRecord(value) || !isUuid(value.id) || !membershipText(value.title, 200) || !value.title.trim() || !nullableText(value.description, 2000) || !["in_person", "online", "hybrid"].includes(String(value.format)) || !["format_label", "venue_label", "meeting_label", "status", "host_name", "timezone"].every((key) => membershipText(value[key], 200)) || !["forming", "active", "completed"].includes(String(value.status)) || !["city", "region", "venue_name"].every((key) => nullableText(value[key], 200)) || !membershipInteger(value.weekday, 6) || !membershipText(value.time, 5) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value.time) || !membershipDay(value.start_date) || !membershipDay(value.first_meeting) || value.next_meeting !== null && !membershipDay(value.next_meeting) || !membershipInteger(value.week) || value.week < 1 || !membershipInteger(value.member_count, 1e5) || !membershipInteger(value.max_members, 12) || value.max_members < 3 || !membershipInteger(value.spots_left, 12) || value.going_next !== null && !membershipInteger(value.going_next, 1e5) || typeof value.hidden !== "boolean")
+    return null;
+  const publicProfileId = parsePublicProfileReference(value.publicProfileId);
+  if (publicProfileId === undefined || value.hidden && publicProfileId !== null)
+    return null;
+  let reading = null;
+  const program = value.reading_program == null ? null : parseReadingProgram(value.reading_program);
+  if (value.reading_program != null && !program)
+    return null;
+  const programLength = program?.sessions.length ?? 12;
+  if (value.program_length !== undefined && value.program_length !== programLength || value.week > programLength + 1 || program && value.reading !== null)
+    return null;
+  if (value.reading !== null) {
+    const r = value.reading;
+    if (!membershipRecord(r) || !membershipInteger(r.week, 12) || r.week < 1 || r.week !== value.week || !["title", "slug", "author", "selection"].every((key) => membershipText(r[key], 1000)))
+      return null;
+    reading = { week: r.week, title: r.title, slug: r.slug, author: r.author, selection: r.selection };
+  }
+  return {
+    id: value.id.toLowerCase(),
+    title: value.title,
+    description: value.description,
+    format: value.format,
+    format_label: value.format_label,
+    city: value.city,
+    region: value.region,
+    venue_name: value.venue_name,
+    venue_label: value.venue_label,
+    meeting_label: value.meeting_label,
+    weekday: value.weekday,
+    time: value.time,
+    timezone: value.timezone,
+    start_date: value.start_date,
+    first_meeting: value.first_meeting,
+    next_meeting: value.next_meeting,
+    week: value.week,
+    reading,
+    reading_program: program,
+    program_length: programLength,
+    member_count: value.member_count,
+    max_members: value.max_members,
+    spots_left: value.spots_left,
+    status: value.status,
+    host_name: value.host_name,
+    publicProfileId,
+    going_next: value.going_next,
+    hidden: value.hidden
+  };
+}
+function summary(value) {
+  if (!membershipRecord(value) || !membershipInteger(value.revision) || typeof value.ended !== "boolean")
+    return null;
+  const circle = publicCircle(value.circle), who = viewer(value.viewer), can = capabilities(value.capabilities);
+  if (!circle || !who || !can || (value.ended || circle.hidden) && circle.next_meeting !== null || circle.spots_left !== (value.ended ? 0 : Math.max(0, circle.max_members - circle.member_count)) || circle.status === "completed" && !value.ended || circle.hidden && !who.is_member && !who.is_host || can.canJoin && (!who.signed_in || who.is_member || circle.hidden || value.ended || circle.spots_left === 0) || can.canLeave && !who.is_member || can.canRsvp && (!who.is_member || circle.hidden || value.ended) || can.canComplete && (!who.is_host || circle.status === "completed") || can.canReadConversation && (!who.is_member || circle.hidden))
+    return null;
+  return { circle, revision: value.revision, viewer: who, ended: value.ended, capabilities: can };
+}
+function parseCircleDetail(value, circleId) {
+  if (!membershipRecord(value) || value.ready !== true || !Array.isArray(value.meetings) || value.meetings.length > 4)
+    return null;
+  const base = summary(value);
+  if (!base || circleId !== undefined && base.circle.id !== circleId.toLowerCase() || (base.ended || base.circle.hidden) && value.meetings.length !== 0)
+    return null;
+  const start = new Date(`${base.circle.start_date}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() + (base.circle.weekday - start.getUTCDay() + 7) % 7);
+  if (start.toISOString().slice(0, 10) !== base.circle.first_meeting)
+    return null;
+  const first = start.getTime(), weekMs = 7 * 24 * 60 * 60 * 1000;
+  const meetings = [];
+  for (const meeting of value.meetings) {
+    if (!membershipRecord(meeting) || !membershipDay(meeting.date) || !membershipInteger(meeting.going, 1e5) || ![null, "going", "not_going"].includes(meeting.my_status) || meetings.length > 0 && meetings.at(-1).date >= meeting.date || !base.viewer.is_member && meeting.my_status !== null)
+      return null;
+    const index = (Date.parse(`${meeting.date}T00:00:00Z`) - first) / weekMs;
+    if (!Number.isInteger(index) || index < 0 || index >= base.circle.program_length)
+      return null;
+    meetings.push({ date: meeting.date, going: meeting.going, my_status: meeting.my_status });
+  }
+  if (base.circle.next_meeting !== (meetings[0]?.date ?? null))
+    return null;
+  if (base.viewer.is_member && !base.ended && !base.circle.hidden && base.circle.format !== "in_person" && value.online_url === null)
+    return null;
+  let online_url = null;
+  if (value.online_url !== null) {
+    if (!base.viewer.is_member || base.circle.hidden || base.circle.format === "in_person" || typeof value.online_url !== "string" || value.online_url.length > 2048)
+      return null;
+    try {
+      const url = new URL(value.online_url);
+      if (url.protocol !== "https:" || url.username || url.password)
+        return null;
+      online_url = base.ended ? null : url.href;
+    } catch {
+      return null;
+    }
+  }
+  return { ...base, ready: true, meetings, online_url };
+}
 export {
   MESSAGE_AI_DISCLOSURE,
   MESSAGE_AI_POLICY,
@@ -2485,9 +5262,12 @@ export {
   MESSAGE_WITHDRAWAL_PRIVACY,
   approvedOrigin,
   createCircleHost,
+  createCircleReading,
   createMemberContributions,
   createVerifiedSupabaseCircleOwner,
   discussionContentSuffix,
   memberCircleConfig,
-  safePrivateMeetingUrl
+  parseCircleDetail,
+  safePrivateMeetingUrl,
+  starterReadingContext
 };

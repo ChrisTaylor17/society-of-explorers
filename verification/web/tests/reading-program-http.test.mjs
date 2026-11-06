@@ -25,7 +25,8 @@ function fixture() {
       state: { revision: 1, isMember: true, isHost: true, hidden: false, completed: false, ended: false,
         canJoin: false, canLeave: true, canRsvp: true, canComplete: true, canReadConversation: true } } };
   } }) }));
-  return { app: a, calls, req: body => a.fakes.makeReq(body, { url: 'https://offline.invalid/api/circles', headers: { origin: 'https://offline.invalid' } }) };
+  return { app: a, calls, req: body => a.fakes.makeReq({ expectedMemberId: JULES, ...body },
+    { url: 'https://offline.invalid/api/circles', headers: { origin: 'https://offline.invalid' } }) };
 }
 
 test('program normalization preserves omitted legacy payloads and rejects explicit null, forged pins, unsafe ranges and extra keys', () => {
@@ -88,6 +89,7 @@ test('creation verifies actual local reader bytes and exact pinned TOC before in
   assert.equal(a.calls.length, 1); assert.equal(a.calls[0].name, 'soe_circle_create');
   assert.deepEqual(a.calls[0].args.p_input.readingProgram, program);
   assert.equal(a.calls[0].args.p_input.requestId, undefined);
+  assert.equal(a.calls[0].args.p_input.expectedMemberId, undefined);
 });
 
 test('changed or unavailable edition rejects before mutation, with generic errors and not_attempted outcome', async () => {

@@ -140,7 +140,7 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       </section>
       {circleId && sharedSalon ? <section aria-labelledby="quest-salon-heading">
         <h2 id="quest-salon-heading">Shared salon</h2>
-        <p>Check in to see how many Circle members are here. In the headset, choose Read Circle discussion to read or post while you’re checked in. Choose Meeting in browser to leave the count and return to the live meeting controls.</p>
+        <p>Check in to see how many Circle members are here. In the headset, you can read the current selection or join the discussion while you’re checked in. Choose Meeting in browser to leave the count and return to the live meeting controls.</p>
         <p id="quest-salon-status" role="status">Connect a member account to join the shared salon.</p>
         <button id="quest-salon-join" type="button" disabled>Join shared salon in this browser</button>
         <button id="quest-salon-leave" type="button" disabled>Leave shared salon</button>
@@ -155,7 +155,7 @@ export default function QuestCircle({ circleId, sharedSalon = false }: { circleI
       {circleId ? <>
       <section aria-labelledby="quest-immersive-heading">
         <h2 id="quest-immersive-heading">Immersive Circle discussion</h2>
-        <p>Read recent contributions and write short posts or replies in your headset. Use the trigger to check access. Point your controller at the buttons to write, review and post. Use the regular browser for the full archive, live meeting links and message actions.</p>
+        <p>Read recent contributions and write short posts or replies in your headset. Use the trigger to check access. Point your controller at the buttons to write, review and post. Choose Read selection to page through the current assignment from a supported edition. The regular browser has full editions, the archive, live meeting links and message actions.</p>
         <p>Opening the room clears the regular Circle view. Check your session when you return.</p>
         <p id="quest-immersive-status" role="status">Connect a member account to open the immersive room.</p>
         <button id="quest-immersive-enter" type="button" disabled>Enter immersive room</button>

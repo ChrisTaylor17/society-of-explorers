@@ -5,7 +5,8 @@ import { createRequire } from 'node:module';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { asRole, runSql } from '../../verification/web/tests/support/circle-live-db.mjs';
+import { asRole, rpc, runSql } from '../../verification/web/tests/support/circle-live-db.mjs';
+import { creationInput, participate } from '../../verification/web/tests/support/participation-db.mjs';
 import { installQuestXrDouble } from './quest-xr-browser-double.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -27,6 +28,9 @@ const sources = [
   'app/api/circles/[circleId]/discussion/route.ts', 'app/api/circles/[circleId]/discussion/preview/route.ts',
   'lib/circles/thread-server.ts', 'lib/circles/thread.ts',
   'docs/sql/circle-salon-presence-apply.sql', 'docs/sql/circle-salon-presence-rollback.sql',
+  'app/api/great-books/passage/route.ts', 'lib/books/passage-source.ts',
+  'content/great-books/apology/passages.json', 'content/great-books/apology/reader.html',
+  'content/great-books/apology/manifest.json', 'platforms/shared/circle-reading.ts', 'platforms/shared/reading-metadata.json',
 ];
 const hashFile = async name => sha(await readFile(resolve(root, name)));
 for (const name of sources) sourceHashes[name] = await hashFile(name);
@@ -53,10 +57,8 @@ await writeFile(evidence, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' 
 try {
   process.chdir(resolve(root, 'verification/web'));
   const { questMemberApp, QUEST_ORIGIN: origin, QUEST_TEST_MEETING: meetingUrl, TOKENS } = await import('../../verification/web/tests/support/quest-member-app.mjs');
-  const f = db = await questMemberApp({ sharedSalon: true, writing: true, meeting: true });
+  const f = db = await questMemberApp({ sharedSalon: true, writing: true, meeting: true, reading: true });
   const endpoint = '/api/circles/' + f.circleId + '/salon-presence';
-  const detailPath = '/api/circles/' + f.circleId;
-  const discussionPath = detailPath + '/discussion';
   const headers = actor => ({ origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json',
     ...(actor ? { authorization: 'Bearer ' + TOKENS[actor] } : {}) });
   const send = (actor, data, extra = {}) => f.dispatch(endpoint, { ...headers(actor), ...extra }, undefined, { body: JSON.stringify(data) });
@@ -85,9 +87,11 @@ try {
     args: ['--disable-background-networking', '--disable-component-update', '--no-first-run',
       '--host-resolver-rules=MAP * ~NOTFOUND', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   receipt.chromium = browser.version();
-  let holdReserve = null, holdDetail = null, meetingNavigations = 0;
-  async function client(actor, headset = false) {
+  let holdReserve = null, holdDetail = null, holdPassage = null, corruptPassage = false, meetingNavigations = 0;
+  async function client(actor, headset = false, { circleId = f.circleId, salon = true } = {}) {
     const context = await browser.newContext({ viewport: { width: 375, height: 844 }, serviceWorkers: 'block' });
+    const readingCircle = circleId !== f.circleId, circlePath = '/api/circles/' + circleId;
+    if (readingCircle) await context.addCookies([{ name: 'quest_fixture_cookie', value: 'test-only', url: origin }]);
     await context.addInitScript(installQuestXrDouble);
     const page = await context.newPage();
     page.setDefaultTimeout(8000);
@@ -108,35 +112,41 @@ try {
         }
         assert.equal(url.origin, origin);
         if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body:
-          `<!doctype html><html lang="en" data-circle="${f.circleId}" data-shared-salon><head><link rel="stylesheet" href="/page.css"></head><body><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
+          `<!doctype html><html lang="en" data-circle="${circleId}" ${salon ? 'data-shared-salon' : ''}><head><link rel="stylesheet" href="/page.css"></head><body><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
         if (url.pathname === '/page.mjs') return route.fulfill({ contentType: 'text/javascript', body: bundle });
         if (url.pathname === '/page.css') return route.fulfill({ contentType: 'text/css', body: css });
         const actual = await request.allHeaders();
         const account = { actor, provider: 'supabase' };
         const memberCheck = url.pathname === '/api/auth/member';
-        const detailRead = url.pathname === detailPath;
-        const presence = url.pathname === endpoint;
-        const discussion = url.pathname === discussionPath;
-        const preview = url.pathname === discussionPath + '/preview';
+        const detailRead = url.pathname === circlePath;
+        const presence = url.pathname === circlePath + '/salon-presence';
+        const discussion = url.pathname === circlePath + '/discussion';
+        const preview = url.pathname === circlePath + '/discussion/preview';
+        const passage = url.pathname === '/api/great-books/passage';
         const method = request.method();
-        assert.equal(url.search, '');
-        assert.ok(method === 'GET' && (memberCheck || detailRead || discussion) ||
+        if (passage) {
+          assert.equal(readingCircle, true);
+          assert.deepEqual([...url.searchParams.keys()], ['book', 'edition', 'block']);
+          assert.equal(url.searchParams.get('book'), 'apology');
+        } else assert.equal(url.search, '');
+        assert.ok(method === 'GET' && (memberCheck || detailRead || discussion || passage) ||
           method === 'POST' && (presence || discussion || preview), method + ' ' + url.pathname);
-        assert.equal(actual.authorization, memberCheck ? undefined : 'Bearer ' + TOKENS[actor]);
-        if (discussion || preview) {
-          assert.equal(actual.cookie, undefined);
-          assert.equal(actual.referer, undefined);
+        assert.equal(actual.authorization, memberCheck || passage ? undefined : 'Bearer ' + TOKENS[actor]);
+        if (discussion || preview || passage || (readingCircle && detailRead)) {
+          for (const field of ['cookie', 'referer', 'apikey']) assert.equal(actual[field], undefined, field);
         }
         const body = method === 'POST' ? request.postData() : undefined;
         const input = presence ? JSON.parse(body) : null;
         if (input) assert.deepEqual(Object.keys(input).sort(), ['action', 'leaseId']);
-        const response = await f.dispatch(url.pathname, actual, undefined, { body, account });
+        const response = await f.dispatch(url.pathname + url.search, actual, undefined, { body, account });
         assert.match(response.headers.get('cache-control'), /private.*no-store/);
-        const bytes = await response.text(), value = JSON.parse(bytes);
+        let bytes = await response.text();
+        const value = JSON.parse(bytes);
         if (input && response.ok) assert.deepEqual(Object.keys(value).sort(), input.action === 'sync' ? ['count', 'state'] : ['state']);
-        const action = detailRead ? 'meeting' : preview ? 'preview' :
+        const action = passage ? 'passage' : detailRead ? (readingCircle ? 'reading-detail' : 'meeting') : preview ? 'preview' :
           discussion ? (method === 'GET' ? 'archive' : 'post') : input?.action ?? 'account';
-        browserRequests.push({ actor, action, status: response.status, count: value.count ?? null });
+        browserRequests.push({ actor, action, status: response.status, count: value.count ?? null,
+          ...(passage ? { block: Number(url.searchParams.get('block')) } : {}) });
         if (input?.action === 'reserve' && holdReserve) {
           const gate = holdReserve;
           holdReserve = null;
@@ -148,6 +158,16 @@ try {
           const gate = holdDetail;
           holdDetail = null;
           assert.equal(value.online_url, meetingUrl);
+          gate.reached.resolve();
+          await gate.release.promise;
+        }
+        if (passage && corruptPassage) {
+          corruptPassage = false;
+          bytes = JSON.stringify({ ...value, reference: { ...value.reference, blockIndex: value.reference.blockIndex + 1 } });
+        }
+        if (passage && holdPassage) {
+          const gate = holdPassage;
+          holdPassage = null;
           gate.reached.resolve();
           await gate.release.promise;
         }
@@ -255,6 +275,13 @@ try {
     [f.reviewerId])).rows, [{ lease_id: headsetLease }]);
   assert.equal(await seats(), 2);
   pass('A headset member reads and posts within the same shared seat while its heartbeat continues, and the regular browser reads the saved post');
+
+  await press('Read selection');
+  await panel('no current selection from a supported edition');
+  assert.equal(browserRequests.some(entry => entry.action === 'passage'), false);
+  await press('Back to salon');
+  await panel('2 members checked in, including you.');
+  pass('A starter week without a pinned edition offers the regular Circle and keeps the shared seat');
 
   await xr.evaluate(() => window.questXrQa.miss());
   await panel('2 members checked in, including you.');
@@ -386,6 +413,117 @@ try {
   await meetingPage.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
   await reconnect.waitFor();
   pass('Focus loss retires a held link. A fresh check opens the host URL without credentials or referrer and Back requires reconnection');
+
+  const source = JSON.parse(await readFile(resolve(root, 'content/great-books/apology/passages.json')));
+  const program = { version: 1, bookId: source.bookId, editionId: source.editionId,
+    sessions: [{ from: 13, to: 15 }, { from: 16, to: 17 }] };
+  const { circleId: readingCircleId } = await rpc(f.db, 'soe_circle_create', [f.authorId, randomUUID(), await creationInput(f.db, {
+    title: 'A synthetic Apology salon', format: 'online', venueType: 'online', venueName: null, city: null, region: null,
+    onlineUrl: meetingUrl, readingProgram: program,
+  })]);
+  await participate(f.db, 'join', { actor: f.reviewerId, circle: readingCircleId });
+  const readingPage = await client('outsider', true, { circleId: readingCircleId });
+  const readingPress = (page, label) => page.evaluate(value => window.questXrQa.press(value), label);
+  const readingPanel = (page, text) => page.waitForFunction(value => window.questXrQa.panel().replace(/\s+/g, ' ').includes(value), text);
+  const readRequests = () => browserRequests.filter(value => value.action === 'reading-detail' || value.action === 'passage');
+  const requestedBlocks = () => readRequests().filter(value => value.action === 'passage').map(value => value.block);
+  const readingTrigger = page => page.evaluate(() => window.questXrQa.select());
+  await readingPage.locator('#quest-salon-headset').click();
+  await readingPanel(readingPage, 'check your signed-in account');
+  await readingTrigger(readingPage);
+  await readingPanel(readingPage, 'join the shared salon count');
+  await readingTrigger(readingPage);
+  await readingPanel(readingPage, 'Read selection');
+  assert.deepEqual(readRequests(), []);
+  const seat = () => f.db.query('SELECT lease_id FROM circle_salon_presence WHERE cohort_id=$1 AND member_id=$2', [readingCircleId, f.reviewerId])
+    .then(value => value.rows[0]?.lease_id);
+  const readingSeat = await seat();
+  assert.ok(readingSeat);
+  await readingPress(readingPage, 'Read selection');
+  await readingPanel(readingPage, 'source block contains a table');
+  await readingPanel(readingPage, 'Block 1 of 3');
+  assert.deepEqual(readRequests().map(value => [value.action, value.status]), [['reading-detail', 200], ['passage', 200]]);
+  assert.deepEqual(requestedBlocks(), [13]);
+  await readingPress(readingPage, 'Next block');
+  await readingPanel(readingPage, 'INTRODUCTION.');
+  await readingPress(readingPage, 'Source info');
+  await readingPanel(readingPage, 'Benjamin Jowett');
+  await readingPanel(readingPage, 'Rights elsewhere are unassessed.');
+  await readingPress(readingPage, 'Back to text');
+  await readingPanel(readingPage, 'INTRODUCTION.');
+  await readingPress(readingPage, 'Next block');
+  await readingPanel(readingPage, 'Block 3 of 3');
+  await readingPanel(readingPage, 'In what relation the “Apology” of Plato stands');
+  const panelImage = await readingPage.evaluate(() => window.questXrQa.image());
+  assert.match(panelImage, /^data:image\/png;base64,/);
+  const screenshot = 'platforms/evidence/quest-reading-' + run + '.png';
+  const panelBytes = Buffer.from(panelImage.split(',')[1], 'base64');
+  await writeFile(resolve(root, screenshot), panelBytes, { flag: 'wx' });
+  receipt.readingPanel = { path: screenshot, sha256: sha(panelBytes) };
+  const paragraph = [];
+  for (let index = 0; index < 30; index++) {
+    const frame = await readingPage.evaluate(() => ({ lines: window.questXrQa.panel().split('\n'), labels: window.questXrQa.labels() }));
+    const end = frame.lines.findIndex((line, index) => index > 1 && frame.labels.includes(line));
+    assert.ok(end > 2);
+    paragraph.push(...frame.lines.slice(2, end));
+    assert.equal(frame.labels.includes('Next block'), false);
+    if (!frame.labels.includes('Next page')) break;
+    await readingPress(readingPage, 'Next page');
+    await readingPanel(readingPage, `Page ${index + 2} of`);
+  }
+  assert.equal(paragraph.join('').replace(/\s+/g, ' ').trim(), source.blocks[15].text.replace(/\s+/g, ' ').trim());
+  assert.deepEqual(requestedBlocks(), [13, 14, 15]);
+  pass('The headset opens the exact current assignment without credentials on passage requests, shows a table in place, and pages through all text with edition credits');
+
+  const readingHeartbeat = () => Promise.all([readingPage.waitForResponse(response => new URL(response.url()).pathname
+    === '/api/circles/' + readingCircleId + '/salon-presence' && response.request().postDataJSON()?.action === 'sync'), poll(readingPage)]);
+  assert.equal((await readingHeartbeat())[0].status(), 200);
+  assert.equal(await seat(), readingSeat);
+  await readingPress(readingPage, 'Back to salon');
+  await readingPanel(readingPage, 'only member checked in');
+  assert.equal(await seat(), readingSeat);
+  await readingPress(readingPage, 'Read selection');
+  await readingPanel(readingPage, 'Block 1 of 3');
+  await f.db.query('DELETE FROM book_cohort_members WHERE cohort_id=$1 AND member_id=$2', [readingCircleId, f.reviewerId]);
+  assert.equal((await readingHeartbeat())[0].status(), 404);
+  await readingPage.waitForFunction(() => window.questXrQa.panel() === '' && window.questXrQa.stats().pendingFrames === 0);
+  pass('Shared check-in renews while reading and survives Back. Membership removal clears the headset reading and seat');
+
+  const standalone = await client('author', true, { circleId: readingCircleId, salon: false });
+  await standalone.locator('#quest-immersive-enter').click();
+  await readingPanel(standalone, 'check your signed-in account');
+  await readingTrigger(standalone);
+  await readingPanel(standalone, 'load recent discussion');
+  await readingTrigger(standalone);
+  await readingPanel(standalone, 'Read selection');
+  corruptPassage = true;
+  await readingPress(standalone, 'Read selection');
+  await readingPanel(standalone, 'Source block unavailable');
+  await readingPress(standalone, 'Retry block');
+  await readingPanel(standalone, 'Block 1 of 3');
+  assert.deepEqual(requestedBlocks().slice(-2), [13, 13]);
+  await f.db.query("UPDATE book_cohorts SET start_date=start_date-interval '7 days' WHERE id=$1", [readingCircleId]);
+  const beforeChangedAssignment = requestedBlocks().length;
+  await readingPress(standalone, 'Next block');
+  await readingPanel(standalone, 'The selection changed');
+  assert.equal(requestedBlocks().length, beforeChangedAssignment);
+  await readingPress(standalone, 'Back to discussion');
+  await readingPanel(standalone, 'Read selection');
+  pass('Standalone reading refuses mismatched source coordinates, retries the same block, and asks the member to reopen a changed assignment');
+
+  const passageGate = { reached: deferred(), release: deferred() };
+  gates.add(passageGate.release);
+  holdPassage = passageGate;
+  await readingPress(standalone, 'Read selection');
+  await bounded(passageGate.reached.promise, 'Held verified source');
+  assert.equal(requestedBlocks().at(-1), 16);
+  await standalone.evaluate(() => window.questXrQa.visibility('visible-blurred'));
+  await standalone.waitForFunction(() => window.questXrQa.panel() === '' && window.questXrQa.stats().pendingFrames === 0);
+  passageGate.release.resolve();
+  await bounded(Promise.allSettled([...activeRoutes]), 'Retired passage response');
+  gates.delete(passageGate.release);
+  assert.equal(await standalone.evaluate(() => window.questXrQa.panel()), '');
+  pass('A verified source response released after headset focus loss cannot repopulate the cleared panel');
 
   await f.db.query('UPDATE book_cohorts SET circle_hidden=true WHERE id=$1', [f.circleId]);
   assert.equal((await send('outsider', probe)).status, 404);

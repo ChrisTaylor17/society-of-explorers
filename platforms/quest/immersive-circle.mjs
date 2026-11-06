@@ -3,6 +3,7 @@ import { createXRSession } from './xr-session.mjs';
 import { renderXRRoom } from './xr-room.mjs';
 import { createSalonPresence } from './salon-presence.mjs';
 import { ROOM_POST_LIMIT, roomComposerPanel, roomReviewText } from './room-composer.mjs';
+import { createRoomReading } from './room-reading.mjs';
 
 const requestId = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/u;
 const control = (id, label) => ({ id, label });
@@ -51,7 +52,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     panel = prompt('Press the controller trigger to check your signed-in account.');
     if (!current) return;
     interrupted ||= current.sent;
-    for (const release of [current.off, () => current.salon?.dispose(), current.auth.retire, () => current.host?.disconnect(), current.binding.stop]) {
+    for (const release of [current.off, () => current.reading?.reader.close(), () => current.salon?.dispose(), current.auth.retire, () => current.host?.disconnect(), current.binding.stop]) {
       try { release(); } catch { /* Complete each independent retirement. */ }
     }
   }
@@ -72,7 +73,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     panel = prompt(model.message, footer);
     if (model.phase === 'present') panel.rows = [[
       ...(onMeetingRequested ? [control('meeting', 'Meeting in browser')] : []),
-      control('salon-leave', 'Leave salon'), control('salon-discussion', 'Read Circle discussion'),
+      control('salon-leave', 'Leave salon'), control('reading-open', 'Read selection'), control('salon-discussion', 'Read Circle discussion'),
     ]];
   }
   function prepare() {
@@ -89,7 +90,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
         },
       });
       const current = { auth, binding, host, salon: null, scope: null, off: () => {}, pending: false, cards: [], index: 0,
-        keyboard: null, sent: false };
+        keyboard: null, reading: null, sent: false };
       room = current;
       host.connect();
       if (view === 'salon') current.salon = createSalonPresence({
@@ -130,6 +131,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
     const more = current.index + 1 < current.cards.length;
     const actions = [...(canWrite ? [control('new', 'Write a post')] : []),
       ...(card && canWrite ? [control('reply', 'Reply')] : []), control('advance', more ? 'Next preview' : 'Refresh')];
+    if (model.archive.phase === 'ready') actions.push(control('reading-open', 'Read selection'));
     if (current.salon) {
       // Keep Back on the same side as Read, away from Leave and Meeting.
       if (actions.length === 1) actions.push(null);
@@ -163,6 +165,17 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
         return { id: message.id, heading: message.member_name, text };
       });
     showDiscussion(current);
+  }
+  async function openReading(current) {
+    const from = view;
+    const reader = createRoomReading({ origin, circleId, transport, owner: current.binding.owner,
+      isActive: () => ownsRoom(current) && view === 'reading',
+      onPanel(next) { panel = next; }, backLabel: from === 'salon' ? 'Back to salon' : 'Back to discussion' });
+    current.host.close();
+    current.cards = [];
+    current.reading = { reader, from };
+    view = 'reading';
+    await reader.open();
   }
   function showComposer(current) {
     const { archive, threadWrite } = current.host.model();
@@ -217,6 +230,17 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
       if (!current.scope) { await current.binding.check(); return; }
       current.pending = true;
       if (!ownsRoom(current)) return;
+      if (view === 'reading') {
+        const { reader, from } = current.reading;
+        if (target === 'reading-back') {
+          reader.close();
+          current.reading = null;
+          view = from;
+          if (from === 'salon') showSalon(current.salon.model());
+          else await loadDiscussion(current);
+        } else await reader.select(target);
+        return;
+      }
       if (view === 'salon') {
         const { phase } = current.salon.model();
         if (phase === 'idle' && target === null) await current.salon.join();
@@ -224,6 +248,8 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
         if (target === 'salon-discussion') {
           view = 'discussion';
           await loadDiscussion(current);
+        } else if (target === 'reading-open') {
+          await openReading(current);
         } else if (target === 'salon-leave') {
           await current.salon.leave();
         } else if (target === 'meeting' && onMeetingRequested) {
@@ -235,6 +261,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, onMod
         return;
       }
       if (current.keyboard) { await compose(current, target); return; }
+      if (target === 'reading-open' && current.host.model().archive.phase === 'ready') { await openReading(current); return; }
       if (target === 'salon-back' && current.salon) {
         current.cards = [];
         current.index = 0;

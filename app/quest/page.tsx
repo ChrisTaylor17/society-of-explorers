@@ -11,7 +11,7 @@ export default function QuestPage() {
     <h1 style={h1}>Your Circle in Quest Browser</h1>
     <p style={lead}>Read, reflect and share with your Circle from the regular Meta Quest Browser window.</p>
     <p style={body}>Choose a Circle, load current access, then choose “Open in Quest Browser.” Sign in with the same account you use on the web.</p>
-    <p style={body}>On a compatible headset, open the immersive room to read recent Circle discussion and write short posts or replies. Use the regular Circle view for live meeting links, the full discussion archive, source readings and safety controls.</p>
+    <p style={body}>On a compatible headset, open the immersive room to read recent Circle discussion and write short posts or replies. Choose Read selection for the current assignment when a supported edition is available. The regular Circle view has the full editions, discussion archive, live meeting links and safety controls.</p>
     <p><Link href={ONLINE_CIRCLES_HREF} style={button}>Find an online Circle</Link></p>
     <p><Link href="/circles/mine" style={button}>My Circles</Link></p>
     <p><Link href="/quest/contributions" style={button}>My posted messages across Circles</Link></p>

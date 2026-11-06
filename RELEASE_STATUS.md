@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+Quest members can now read the current Circle assignment inside the headset room. The reader checks the selected account and Circle, opens the exact pinned edition and stays within the assigned blocks. In the simulated shared salon, the seat renewed while reading and membership removal cleared the panel. **18 shared-salon scenarios, 20 discussion scenarios, 38 reading and route checks and three built-page checks** passed. Physical headset acceptance remains open. [Verification](docs/integration/quest-immersive-reading-verification.json)
+
 Wallet sign-in now redeems each signed challenge once before opening the member session. The old route accepted both copies of an identical request. The new route accepted one and refused the other across five browser origins. **132 account tests, two independent PostgreSQL lock tests and three built Chromium scenarios** passed. The SQL draft stores a keyed digest and expiry and must be reviewed on an isolated restore before the replacement route takes traffic. An attempt already in progress at cutover will need a fresh challenge. [Verification](docs/integration/wallet-challenge-consumption-verification.json)
 
 Canonical checkout: `/Users/christaylor/Documents/Codex/soe-release`, branch `codex/soe-first-release`. The original `/Users/christaylor/society-of-explorers` checkout was not edited; its current 681 status entries match the saved baseline exactly. A previous read briefly observed an additional `.claude/settings.local.json`; provenance is unknown and its contents were never read. Preserve all source candidates. The later account-authority folder is a security model, not the complete app.
