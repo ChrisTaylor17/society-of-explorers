@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The next account deletion step clears a departing member’s published profile fields, removes their direct messages and older book salon posts, and detaches incoming messages from the departing account after explicit review. The 53-file rehearsal verified that other authors’ copies and Circle replies are preserved and that an interrupted removal rolls back. Account providers, retention approval and hosted completion remain open. [Account deletion](docs/integration/account-deletion.md) · [Verification](docs/integration/account-erasure-contact-verification.json)
+
 The Circle erasure step removes a departing member’s post text and attribution and clears directly linked moderation copies after owner review. Existing replies keep their place under a withdrawn placeholder. A 52-file rehearsal verified late-write refusal, rollback, exact retry and restore. Older salon content, other data, retention approval and hosted completion remain open. [Account deletion](docs/integration/account-deletion.md) · [Verification](docs/integration/account-erasure-circle-posts-verification.json)
 
 A reviewed deletion request can now remove records from eight reading, Thinker memory and Practice tables on an isolated restore. It preserves other members’ data and keeps the status receipt pending. The 51-file rehearsal verified a late rollback, a concurrent write refusal, exact retry and a second restore. Shared content, provider accounts, retention and hosted completion remain open. [Account deletion](docs/integration/account-deletion.md) · [Verification](docs/integration/account-erasure-private-data-verification.json)

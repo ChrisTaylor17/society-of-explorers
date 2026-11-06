@@ -1,0 +1,38 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T14:28:45.884040+00:00",
+  "parentCommit": "d6f84f4bcabccbd75593c0c0031e5670ccb22e17",
+  "productionCleared": false,
+  "results": {
+    "orderedSqlFiles": 53,
+    "preCutoverTablesVerified": 20,
+    "checks": [
+      "The pre-cutover archive and role export restore into a separate cluster and match all 20 tables.",
+      "The restored pre-cutover fixture reproduces browser access to private answers, messages and transcripts.",
+      "The complete ordered cutover runs on the restored copy and preserves every pre-cutover row in its original columns.",
+      "The database denies a message that was waiting at the processing boundary and rejects late profile edits and direct detaches.",
+      "Only the owner can run the reviewed operation, and the two incoming sender copies require explicit detach approval.",
+      "An unexpected legacy moderation dependency or an inactive profile guard stops the phase before any change.",
+      "A forced late receipt failure rolls back the profile, post deletion and every conversation change.",
+      "The account disappears from the published profile and direct-message lookups, while exact other-author copies and Circle replies remain.",
+      "The isolated restore keeps both exact receipts, the cleared profile, and the two detached copies."
+    ],
+    "priorWebBuildInputsUnchanged": 1083
+  },
+  "scope": "Local restored PostgreSQL 17 with synthetic published profile, conversations, older salon posts, a Circle thread and a separate restored archive. Hosted and device acceptance remain pending.",
+  "remaining": [
+    "Circle hosting and the retention and retrieval policy for detached sender copies",
+    "Provider sessions, storage, other data and retention exceptions",
+    "Owner retention review, completion notice and production restore verifier"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "4c5ced30281ff7c01d019bae1ad1faee4864a4e13f82f3e71f1ec84d597a5845",
+    "docs/integration/account-deletion.md": "022ce8826d5cb1183a5c2062f9204be28c9974f7f1e08286169a4861cebac6b9",
+    "docs/sql/account-erasure-profile-and-contact-apply.sql": "e2fb1af933a9ae8ac69d0ee3fe98b666d1c3c66adc0acfb95d0a9f8cc40cb271",
+    "verification/web/scripts/rehearse-contact-erasure.py": "170c96ea612a766fd37e5c77138e785c4e8f87d512a47a6c564ce88ad5ca24f1"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-account-erasure-contact",
+  "evidenceSha256": {
+    "account-erasure-contact.json": "69a923204c401178a3e1ac96e6567bd7c1cb95dbadcdab2dec8a0a985feaf1a2"
+  }
+}
