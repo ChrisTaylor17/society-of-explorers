@@ -1,0 +1,62 @@
+{
+  "title": "What did the tilt prove?",
+  "series": "The Archivist",
+  "fieldNote": "02",
+  "fps": 25,
+  "width": 720,
+  "height": 1280,
+  "bitrate": 1180000,
+  "source": {
+    "file": "potw2643a-source.m4v",
+    "sha256": "ed3f0b8795dfbe8099da9c8360d934555b8614bbbd8a7e1fcaa9ee2720a3e772",
+    "page": "https://www.eso.org/public/videos/potw2643a/",
+    "download": "https://cdn.eso.org/videos/hd_and_apple/potw2643a.m4v",
+    "credit": "ESO/Cimolai/Apical/G. Vecchia",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "policy": "https://www.eso.org/public/outreach/copyright/",
+    "inFrame": 1,
+    "outFrame": 501,
+    "audioTracks": 1
+  },
+  "layout": {
+    "background": "#141b23",
+    "ink": "#f8efdf",
+    "accent": "#f1c883",
+    "videoRect": [40, 374, 640, 360],
+    "fontTitle": "bold 69px Georgia",
+    "fontBody": "600 35px system-ui",
+    "label": "CERRO ARMAZONES, CHILE  ·  OCTOBER 2026",
+    "modifications": "Trimmed and annotated by Society of Explorers",
+    "audio": "silent"
+  },
+  "scenes": [
+    {
+      "start": 0,
+      "end": 120,
+      "titleLines": ["Almost 2,000", "tonnes tilt."],
+      "bodyLines": ["The frame of ESO’s new", "telescope tilted in October."],
+      "transcript": "Almost 2,000 tonnes tilt. The frame of ESO’s new telescope tilted in October."
+    },
+    {
+      "start": 120,
+      "end": 250,
+      "titleLines": ["The trick?", "A film of oil."],
+      "bodyLines": ["About 120 microns thick", "in this test, says ESO."],
+      "transcript": "The trick? A film of oil. About 120 microns thick in this test, says ESO."
+    },
+    {
+      "start": 250,
+      "end": 380,
+      "titleLines": ["What did it", "prove?"],
+      "bodyLines": ["The frame can tilt on one axis.", "Sharp images take another test."],
+      "transcript": "What did it prove? The frame can tilt on one axis. Sharp images take another test."
+    },
+    {
+      "start": 380,
+      "end": 500,
+      "titleLines": ["What would", "convince you?"],
+      "bodyLines": ["Which test would you ask for?", "Bring your reason to a Circle."],
+      "transcript": "What would convince you? Which test would you ask for? Bring your reason to a Circle."
+    }
+  ]
+}

@@ -41,7 +41,8 @@ try {
     const { width, height, layout, scenes } = edit;
     const [vx, vy, vw, vh] = layout.videoRect;
     const first = edit.source.inFrame * step, last = edit.source.outFrame * step;
-    if (source.width !== vw || source.height !== vh || source.fps !== edit.fps || !source.audioTracks) throw Error('Unexpected original footage');
+    const audioMatches = edit.source.audioTracks === undefined ? source.audioTracks > 0 : source.audioTracks === edit.source.audioTracks;
+    if (source.width * vh !== source.height * vw || source.fps !== edit.fps || !audioMatches) throw Error('Unexpected original footage');
     const count = (last - first) / step;
     const canvas = new OffscreenCanvas(width, height), ctx = canvas.getContext('2d', { alpha: false });
     const overlays = scenes.map((scene, index) => {
@@ -60,7 +61,7 @@ try {
       }
       c.closePath(); c.fill();
       text(edit.series.toUpperCase(), 87, 89, '700 27px system-ui', layout.accent);
-      text('FIELD NOTE 01', 484, 89, '600 23px system-ui', '#d2c6ae');
+      text('FIELD NOTE ' + (edit.fieldNote ?? '01'), 484, 89, '600 23px system-ui', '#d2c6ae');
       rule(40, 120, 640, 2, '#77674a');
       scene.titleLines.forEach((line, i) => text(line, 53, 205 + i * 77, layout.fontTitle, layout.ink));
       text(layout.label, 53, 350, '600 23px system-ui', layout.accent);

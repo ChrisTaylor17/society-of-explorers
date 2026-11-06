@@ -1,4 +1,4 @@
-"""Render the credited Paranal edit with the cached local media runtimes."""
+"""Render a reviewed Archivist edit with the cached local media runtimes."""
 import argparse
 from hashlib import sha256
 import json
@@ -45,13 +45,16 @@ def caption_text(edit):
     return 'WEBVTT\n\n' + '\n\n'.join(cues) + '\n'
 
 
-def render(run):
+def render(run, clip):
     destination = EVIDENCE / run
     destination.mkdir(mode=0o700, exist_ok=False)
-    edit_path = CONTENT / 'night-sky-traffic-edit.json'
+    edit_path = CONTENT / f'{clip}-edit.json'
     edit = json.loads(read(edit_path))
-    source = CONTENT / 'eso2607d-source.mp4'
-    if edit['source']['file'] != source.name or sha256(read(source)).hexdigest() != edit['source']['sha256']:
+    filename = edit['source']['file']
+    if not re.fullmatch(r'[a-z0-9-]+\.(?:mp4|m4v)', filename):
+        raise ValueError('The edit must use a local publisher file')
+    source = CONTENT / filename
+    if sha256(read(source)).hexdigest() != edit['source']['sha256']:
         raise ValueError('The publisher file differs from the reviewed original')
     if (edit['width'], edit['height'], edit['fps']) != (720, 1280, 25) or edit['layout']['audio'] != 'silent' or not 800_000 <= edit['bitrate'] <= 1_300_000:
         raise ValueError('Unsupported render geometry or audio plan')
@@ -64,7 +67,7 @@ def render(run):
     av = destination / 'media-samples'
     packets = destination / 'source-samples.json'
     encoded = destination / 'encoded-samples.json'
-    asset = destination / 'night-sky-traffic.mp4'
+    asset = destination / f'{clip}.mp4'
     checked = destination / 'encoded-readback.json'
     commands = [
         ['/usr/bin/swiftc', '-suppress-warnings', '-parse-as-library', '-module-cache-path', destination / 'swift-cache',
@@ -90,7 +93,7 @@ def render(run):
     timing = json.loads(read(destination / 'render-timing.json'))
     if timing['sourceTimes'] != [i * 40_000 for i in range(edit['source']['inFrame'], edit['source']['outFrame'])]:
         raise ValueError('The decoded source time mapping changed')
-    vtt = destination / 'night-sky-traffic.vtt'
+    vtt = destination / f'{clip}.vtt'
     vtt.write_text(captions, encoding='utf-8')
     for name, digest in pins.items():
         if sha256(read(ROOT / name)).hexdigest() != digest:
@@ -113,7 +116,8 @@ def render(run):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('run')
+    parser.add_argument('--clip', choices=['night-sky-traffic', 'telescope-first-tilt'], default='night-sky-traffic')
     args = parser.parse_args()
-    if not re.fullmatch(r'reel-paranal-[a-z0-9-]{1,24}', args.run):
-        parser.error('Choose a fresh Paranal evidence run name')
-    render(args.run)
+    if not re.fullmatch(r'reel-(?:paranal|elt)-[a-z0-9-]{1,24}', args.run):
+        parser.error('Choose a fresh Archivist evidence run name')
+    render(args.run, args.clip)

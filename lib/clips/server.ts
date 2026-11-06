@@ -9,14 +9,21 @@ import { CC_BY_4_URL, clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, 
 
 const SOURCE_LIMIT = 64 * 1024 * 1024;
 const PERMISSIONS = ['display', 'excerpt', 'reencode', 'captions', 'commercial'];
-const PARANAL = {
-  page: 'https://www.eso.org/public/videos/eso2607d/',
-  media: 'https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4',
-  policy: 'https://www.eso.org/public/outreach/copyright/',
-  credit: 'B. Häußler/ESO',
-};
+const ESO_POLICY = 'https://www.eso.org/public/outreach/copyright/';
+const ESO_REELS = new Map([
+  ['https://www.eso.org/public/videos/eso2607d/', {
+    media: 'https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4',
+    credit: 'B. Häußler/ESO',
+    visualCheck: 'landscape-only',
+  }],
+  ['https://www.eso.org/public/videos/potw2643a/', {
+    media: 'https://cdn.eso.org/videos/hd_and_apple/potw2643a.m4v',
+    credit: 'ESO/Cimolai/Apical/G. Vecchia',
+    visualCheck: 'no-identifiable-person-or-eso-logo',
+  }],
+]);
 const SOURCES = new Map([
-  [PARANAL.page, new Set([PARANAL.media])],
+  ...Array.from(ESO_REELS, ([page, reel]): [string, Set<string>] => [page, new Set([reel.media])]),
   ['https://librivox.org/apology-by-plato/', new Set([
     'https://www.archive.org/download/apology_plato_bn_librivox/apology_01_plato.mp3',
     'https://www.archive.org/download/apology_plato_bn_librivox/apology_02_plato.mp3'])],
@@ -140,17 +147,17 @@ export async function verifyClip(value: unknown, context: Context, root = path.r
         || !Array.isArray(facts.rights.components) || facts.sourceStartMs !== value.review.sourceStartMs
         || facts.sourceEndMs !== value.review.sourceEndMs || !integer(facts.sourceDurationMs, value.review.sourceEndMs, 86_400_000)) return null;
       const required = value.kind === 'audio' ? ['text', 'performance'] : facts.audioTracks === 0 ? ['visuals'] : ['visuals', 'soundtrack', 'performance'];
-      const paranal = value.source.pageUrl === PARANAL.page;
+      const eso = typeof value.source.pageUrl === 'string' ? ESO_REELS.get(value.source.pageUrl) : undefined;
       for (const kind of required) {
         const component = facts.rights.components.find(c => record(c) && c.kind === kind);
         if (!record(component) || !['public-domain', 'licensed'].includes(String(component.basis))
-          || (paranal ? component.policyUrl !== PARANAL.policy || component.basis !== 'licensed' : !POLICIES.has(String(component.policyUrl)))
+          || (eso ? component.policyUrl !== ESO_POLICY || component.basis !== 'licensed' : !POLICIES.has(String(component.policyUrl)))
           || !permissions(component.permissions) || !territories(component.territories, context.territory)) return null;
       }
       if (value.source.pageUrl === 'https://svs.gsfc.nasa.gov/13326/' && (facts.audioTracks !== 0 || !checks.includes('all-audio-removed'))) return null;
-      if (paranal) {
-        if (value.kind !== 'video' || facts.audioTracks !== 0 || value.credit !== PARANAL.credit || asset.bytes > 4_000_000
-          || !['all-audio-removed', 'visible-source-credit', 'landscape-only', 'embedded-text'].every(check => checks.includes(check))
+      if (eso) {
+        if (value.kind !== 'video' || facts.audioTracks !== 0 || value.credit !== eso.credit || asset.bytes > 4_000_000
+          || !['all-audio-removed', 'visible-source-credit', eso.visualCheck, 'embedded-text'].every(check => checks.includes(check))
           || facts.rights.licenseUrl !== CC_BY_4_URL || !plain(facts.rights.edits, 240)) return null;
         attribution = { licenseUrl: CC_BY_4_URL, edits: facts.rights.edits, captionPresentation: 'embedded-text' };
       }

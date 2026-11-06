@@ -42,6 +42,29 @@
       "captionsFile": "night-sky-traffic.vtt",
       "captionsSHA256": "1cb633b7dd2b658db6933b92e1b7da836ed8d1cc7dbc3972ce93018a2d9b56cf",
       "captionsBytes": 535
+    },
+    {
+      "id": "telescope-first-tilt",
+      "resource": "soe_elt_tilt",
+      "title": "What did the tilt prove?",
+      "description": "The Archivist uses actual footage of the October 2026 telescope tilt test in Chile to ask what one successful test proves. A silent 20-second Reel.",
+      "credit": "ESO/Cimolai/Apical/G. Vecchia",
+      "sourcePage": "https://www.eso.org/public/videos/potw2643a/",
+      "attribution": {
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "edits": "Trimmed, framed vertically and annotated with AI-assisted commentary. Source audio omitted.",
+        "captionPresentation": "embedded-text"
+      },
+      "transcript": "Almost 2,000 tonnes tilt. The frame of ESO’s\nnew telescope tilted in October.\n\nThe trick? A film of oil. About 120 microns\nthick in this test, says ESO.\n\nWhat did it prove? The frame can tilt on one\naxis. Sharp images take another test.\n\nWhat would convince you? Which test would\nyou ask for? Bring your reason to a Circle.",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "telescope-first-tilt.mp4",
+      "mediaSHA256": "d059aeff2f36723ec3a3e843a16f6d4413564620a480374b79e88e2e84361168",
+      "mediaBytes": 2849740,
+      "captionsFile": "telescope-first-tilt.vtt",
+      "captionsSHA256": "5d697474a0b6dbc543b9b29397498d6d840e812afaafe22eeba376e0a6e27d36",
+      "captionsBytes": 506
     }
   ]
 }

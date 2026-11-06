@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 
 const [prefix, name, ...extra] = process.argv.slice(2);
 assert(!extra.length && /^built-shell-[a-z0-9-]+-$/.test(prefix ?? ''));
-assert(/^reel-paranal-built-[0-9]+$/.test(name ?? ''));
+assert(/^reel-(?:paranal|elt)-built-[0-9]+$/.test(name ?? ''));
 assert(process.execArgv.some(arg => arg.endsWith('/deny-build-network.cjs')));
 const evidence = resolve('verification/web/evidence'), folder = resolve(evidence, name);
 const resident = path => {
@@ -22,7 +22,13 @@ assert.match(ready.origin, /^http:\/\/127\.0\.0\.1:\d+$/);
 const origin = ready.origin;
 const require = createRequire(resident('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json'));
 const executablePath = resident('/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing');
-const title = 'Who gets the night sky?', id = 'night-sky-traffic';
+const elt = name.startsWith('reel-elt-');
+const title = elt ? 'What did the tilt prove?' : 'Who gets the night sky?';
+const id = elt ? 'telescope-first-tilt' : 'night-sky-traffic';
+const credit = elt ? 'ESO/Cimolai/Apical/G. Vecchia' : 'B. Häußler/ESO';
+const source = elt ? 'https://www.eso.org/public/videos/potw2643a/' : 'https://www.eso.org/public/videos/eso2607d/';
+const duration = elt ? 20 : 24;
+const sampleTimes = elt ? [0, 4.8, 10, 15.2, 19.8] : [0, 4.8, 10, 16, 23.8];
 const calls = [], external = [], errors = [], stories = [], snapshots = [];
 let browser, closed = false, playback = null, failure = null;
 function save(name, bytes) {
@@ -55,7 +61,7 @@ try {
   await page.getByRole('link', { name: 'Watch the Reel · ' + title }).press('Enter');
   await page.waitForURL(origin + '/clips#' + id);
   assert.equal(await page.evaluate(() => document.activeElement.id), id);
-  assert.equal(await reel.getByRole('link', { name: 'B. Häußler/ESO', exact: true }).getAttribute('href'), 'https://www.eso.org/public/videos/eso2607d/');
+  assert.equal(await reel.getByRole('link', { name: credit, exact: true }).getAttribute('href'), source);
   assert.equal(await reel.getByRole('link', { name: 'CC BY 4.0', exact: true }).getAttribute('href'), 'https://creativecommons.org/licenses/by/4.0/');
   assert.equal(await reel.getByRole('link', { name: 'Link to this Reel' }).getAttribute('href'), '/clips#' + id);
   assert.equal(await reel.getByRole('link', { name: 'Discuss in an online Circle' }).getAttribute('href'), '/circles?format=online');
@@ -75,7 +81,7 @@ try {
   ]);
   stories.push('Explicit Load retrieves exactly the pinned local media and timed text without account cookies or referrer, and waits for playback.');
 
-  playback = await video.evaluate(async element => {
+  playback = await video.evaluate(async (element, { duration, sampleTimes }) => {
     const cueTrack = element.querySelector('track'), text = element.textTracks[0];
     const cues = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(Error('Caption track did not load')), 6000);
@@ -83,11 +89,11 @@ try {
     });
     text.mode = 'hidden';
     await cues;
-    if (text.cues.length !== 4 || text.cues[3].endTime !== 24) throw Error('Unexpected timed text');
+    if (text.cues.length !== 4 || text.cues[3].endTime !== duration) throw Error('Unexpected timed text');
     const canvas = document.createElement('canvas');
     canvas.width = 720; canvas.height = 1280;
     const ctx = canvas.getContext('2d');
-    const times = [0, 4.8, 10, 16, 23.8], frames = [];
+    const times = [...sampleTimes], frames = [];
     let count = 0, frameId;
     const start = performance.now();
     const finished = new Promise((resolve, reject) => {
@@ -113,11 +119,11 @@ try {
       rate: element.playbackRate, ended: element.ended, elapsed: performance.now() - start,
       audioTracks, videoTracks, presentedFrames: count, droppedFrames: quality.droppedVideoFrames,
       totalFrames: quality.totalVideoFrames, frames, captions: text.cues.length };
-  });
-  assert.equal(playback.duration, 24);
-  assert.equal(playback.end, 24);
+  }, { duration, sampleTimes });
+  assert.equal(playback.duration, duration);
+  assert.equal(playback.end, duration);
   assert.equal(playback.rate, 1);
-  assert(playback.ended && playback.elapsed >= 23_500 && playback.presentedFrames >= 450);
+  assert(playback.ended && playback.elapsed >= (duration - .5) * 1000 && playback.presentedFrames >= duration * 18.75);
   assert.deepEqual([playback.width, playback.height, playback.audioTracks, playback.videoTracks, playback.captions], [720, 1280, 0, 1, 4]);
   assert.equal(playback.frames.length, 5);
   playback.frames = playback.frames.map(({ at, png }, index) => {
@@ -143,7 +149,7 @@ finally {
     catch (error) { failure ??= String(error); }
   }
   assert.equal(hash(readFileSync(readyPath)), hash(readyBytes));
-  writeFileSync(resolve(folder, 'browser.json'), JSON.stringify({ status: failure ? 'FAIL' : 'PASS', stories,
+  writeFileSync(resolve(folder, 'browser.json'), JSON.stringify({ status: failure ? 'FAIL' : 'PASS', clipId: id, stories,
     buildId: ready.buildId, calls, external, errors, snapshots, playback, closed, failure }, null, 2) + '\n', { flag: 'wx' });
 }
 if (failure) throw Error(failure);

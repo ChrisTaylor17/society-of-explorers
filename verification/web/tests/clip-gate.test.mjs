@@ -47,7 +47,7 @@ test('video track and NASA silent-derivative requirements bind the private inspe
  e.source.kind='third-party';e.source.pageUrl='https://svs.gsfc.nasa.gov/13326/';e.source.mediaUrl='https://svs.gsfc.nasa.gov/vis/a010000/a013300/a013326/BH_Accretion_Disk_Sim_360_1080.webm';e.review.mode='documentary-rights';Object.assign(f.facts,{sourceStartMs:0,sourceEndMs:1000,sourceDurationMs:1000});f.facts.rights={decision:'approved',sourcePage:e.source.pageUrl,sourceMedia:e.source.mediaUrl,credit:e.credit,checkedAt:e.review.checkedAt,validUntil:null,components:[{kind:'visuals',basis:'public-domain',policyUrl:'https://svs.gsfc.nasa.gov/help/',territories:['WORLDWIDE'],permissions:e.review.permissions}]};await f.inspect();e.inspection=f.entry.inspection;assert.equal(await f.server.verifyClip(e,context,f.root),null);f.facts.checks.push('all-audio-removed');await f.inspect();e.inspection=f.entry.inspection;assert.ok(await f.server.verifyClip(e,context,f.root));f.facts.audioTracks=1;await f.inspect();e.inspection=f.entry.inspection;assert.equal(await f.server.verifyClip(e,context,f.root),null);
 });
 
-test('the ESO clip needs the exact file, full credit and visible-credit evidence before public attribution', async t => {
+test('the ESO clips need exact source files, full credits and the correct visual review before public attribution', async t => {
  const f = await clipFixture(t), entry = copy(f.entry);
  entry.kind = 'video';
  entry.credit = 'B. Häußler/ESO';
@@ -76,4 +76,10 @@ test('the ESO clip needs the exact file, full credit and visible-credit evidence
  entry.credit = f.facts.rights.credit = 'B. Häußler/ESO';
  entry.source.mediaUrl = f.facts.rights.sourceMedia = 'https://cdn.eso.org/videos/medium_podcast/eso2607b.mp4';
  assert.equal(await check(), null);
+ entry.source.pageUrl = f.facts.rights.sourcePage = 'https://www.eso.org/public/videos/potw2643a/';
+ entry.source.mediaUrl = f.facts.rights.sourceMedia = 'https://cdn.eso.org/videos/hd_and_apple/potw2643a.m4v';
+ entry.credit = f.facts.rights.credit = 'ESO/Cimolai/Apical/G. Vecchia';
+ assert.equal(await check(), null, 'The Paranal visual review does not cover this footage');
+ f.facts.checks.push('no-identifiable-person-or-eso-logo');
+ assert.equal((await check()).public.credit, entry.credit);
 });

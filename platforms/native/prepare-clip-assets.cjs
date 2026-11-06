@@ -9,6 +9,7 @@ const root = fs.realpathSync(path.resolve(__dirname, '../..'));
 const selections = new Map([
   ['how-a-circle-works', 'soe_circle_intro'],
   ['night-sky-traffic', 'soe_night_sky'],
+  ['telescope-first-tilt', 'soe_elt_tilt'],
 ]);
 
 function resident(file, maximum) {

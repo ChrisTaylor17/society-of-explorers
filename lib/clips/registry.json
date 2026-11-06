@@ -104,5 +104,59 @@
       "sourceEndMs": 25600,
       "checkedAt": "2026-11-05T20:02:16.646Z"
     }
+  },
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "telescope-first-tilt",
+    "kind": "video",
+    "title": "What did the tilt prove?",
+    "description": "The Archivist uses actual footage of the October 2026 telescope tilt test in Chile to ask what one successful test proves. A silent 20-second Reel.",
+    "credit": "ESO/Cimolai/Apical/G. Vecchia",
+    "source": {
+      "kind": "third-party",
+      "path": "potw2643a-source.m4v",
+      "sha256": "ed3f0b8795dfbe8099da9c8360d934555b8614bbbd8a7e1fcaa9ee2720a3e772",
+      "bytes": 16023258,
+      "pageUrl": "https://www.eso.org/public/videos/potw2643a/",
+      "mediaUrl": "https://cdn.eso.org/videos/hd_and_apple/potw2643a.m4v"
+    },
+    "asset": {
+      "path": "telescope-first-tilt.mp4",
+      "sha256": "d059aeff2f36723ec3a3e843a16f6d4413564620a480374b79e88e2e84361168",
+      "bytes": 2849740,
+      "mime": "video/mp4",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280
+    },
+    "captions": {
+      "path": "telescope-first-tilt.vtt",
+      "sha256": "5d697474a0b6dbc543b9b29397498d6d840e812afaafe22eeba376e0a6e27d36",
+      "bytes": 506,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "telescope-first-tilt-inspection.json",
+      "sha256": "dbc0df43da705e51511e7a7ff2669fbd0e35b47177710c43fb5177d3c3a9dcb1",
+      "bytes": 2195
+    },
+    "review": {
+      "mode": "documentary-rights",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 40,
+      "sourceEndMs": 20040,
+      "checkedAt": "2026-11-06T00:38:20.521Z"
+    }
   }
 ]

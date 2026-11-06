@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T00:45:17.604567+00:00",
+  "baseCheckpoint": "3af23cab789138dfc76762f5424a54d575d681d8",
+  "status": "LOCAL_SECOND_ARCHIVIST_REEL_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "physicalPhoneVerified": false,
+  "sourceBindings": 1167,
+  "review": {
+    "path": "content/clips/telescope-first-tilt-inspection.json",
+    "sha256": "dbc0df43da705e51511e7a7ff2669fbd0e35b47177710c43fb5177d3c3a9dcb1",
+    "bytes": 2195,
+    "sourceBytes": 16023258,
+    "render": {
+      "path": "verification/web/evidence/reel-elt-review-02/render.json",
+      "sha256": "c540689a87c1049fb555a95e12b92aa71a284a7a0c5b2f64da16ca36386bf221",
+      "bytes": 1454
+    },
+    "sampledSourceFrames": 42,
+    "reviewedPortraitFrames": 5,
+    "contactSheet": {
+      "path": "verification/web/evidence/reel-elt-review-02/decoded-source-contact.png",
+      "sha256": "624aa80edeaf2a259af51dcebb61f799e05368c10639280c30e4732febb2fd16",
+      "bytes": 1825711
+    }
+  },
+  "clipChecks": {
+    "path": "verification/web/evidence/checkpoint-elt-reel/clip-checks.tap",
+    "sha256": "55016103df3f6283df70771cd6693ced4a508e9bcffa44070008bd4f7a4f23bb",
+    "bytes": 6975,
+    "passed": 27,
+    "nativeTypeCheckExitCode": 0,
+    "scopedLintExitCode": 0,
+    "iosPodspecSyntaxExitCode": 0
+  },
+  "build": {
+    "path": "verification/web/evidence/checkpoint-elt-reel/build.json",
+    "sha256": "d4ac1b3af7ebda26a767ddf319f895fef94ea9cbf50c625ef4c16f8c0307d9c4",
+    "bytes": 652,
+    "inputManifest": {
+      "path": "verification/web/evidence/checkpoint-elt-reel/build-sources.json",
+      "sha256": "116fb66ff6c428be8b38e8e1f66dcd400f3c3a75065c86bd8dd324fc0987f8c4",
+      "bytes": 129251
+    },
+    "sourceFiles": 1060,
+    "builtFiles": 2349,
+    "server": {
+      "path": "verification/web/evidence/checkpoint-elt-reel/server-stopped.json",
+      "sha256": "e0a59db37c89ac02e175d35b08e397b7854178c02f012b94dd02ca9ddbc9c6c4",
+      "bytes": 693067
+    },
+    "portClosed": true
+  },
+  "web": {
+    "telescope": {
+      "path": "verification/web/evidence/checkpoint-elt-reel/telescope-web.json",
+      "sha256": "70745f504ebc08af7f995af92d85806582d8044112684d416782fc55fa495db0",
+      "bytes": 3031,
+      "stories": 4,
+      "durationSeconds": 20,
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-elt-reel/telescope-web-320.png",
+        "sha256": "76084f7487321785c3a76c55ab44245a8963ef6af0721402acee42fd6fdaeb7b",
+        "bytes": 315216
+      }
+    },
+    "paranal": {
+      "path": "verification/web/evidence/checkpoint-elt-reel/paranal-web.json",
+      "sha256": "0eca44f3b12df7bf057cf5f14ff76aa5be90d18f4653e3de04895c814996754a",
+      "bytes": 3045,
+      "stories": 4,
+      "durationSeconds": 24,
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-elt-reel/paranal-web-320.png",
+        "sha256": "068b99d4c0eb33f8c09d59f420fd6c4ccb54cd0c9c9cf2b01d0362965749fcdf",
+        "bytes": 325919
+      }
+    }
+  },
+  "phone": {
+    "android": {
+      "path": "verification/web/evidence/checkpoint-elt-reel/android-phone.json",
+      "sha256": "d7fb18d0a573324ef6793397b2da2c5f61eed292e6395ff035f28ceaacde2a10",
+      "bytes": 132254,
+      "stories": 26,
+      "cleanup": {
+        "browser": "closed",
+        "database": "closed"
+      },
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-elt-reel/android-phone-320.png",
+        "sha256": "dbcc94a8c87ccc568005225b90a347eaac45bc053246e7a1d9b7cb17c6b1c1fa",
+        "bytes": 120208
+      }
+    },
+    "ios": {
+      "path": "verification/web/evidence/checkpoint-elt-reel/ios-phone.json",
+      "sha256": "8bd2990296db37c699a1f73c41aeef5835b07bdcb22af0dc85f1fd4618c69e8e",
+      "bytes": 35211,
+      "stories": 9,
+      "cleanup": {
+        "browser": "closed",
+        "database": "closed"
+      },
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-elt-reel/ios-phone-320.png",
+        "sha256": "dbcc94a8c87ccc568005225b90a347eaac45bc053246e7a1d9b7cb17c6b1c1fa",
+        "bytes": 120208
+      }
+    }
+  },
+  "phoneBundleManifest": {
+    "path": "verification/web/evidence/checkpoint-elt-reel/phone-bundle-sources.json",
+    "sha256": "8078d8e22c5d6ab10856cf32532e7264fd3b5f3669e88c90be2fad2177717f16",
+    "bytes": 13847
+  },
+  "drive": {
+    "path": "verification/web/evidence/reel-elt-review-02/drive-archive.json",
+    "sha256": "f96a78ecf68f38d8971007840ba73a19256f6acc001c48ec3463a1192c45f467",
+    "bytes": 1642,
+    "privateFilesVerified": 3
+  },
+  "scope": "Local web release build and simulated React Native lifecycle with real Chromium media playback. Drive metadata confirms private archival. Physical iOS and Android playback and public release remain open."
+}

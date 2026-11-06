@@ -8,6 +8,7 @@ assert(!extra.length&&(run===undefined||/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(run))&
 const ROOT=process.cwd(),output='verification/web/evidence'+(run?'/native-hosting-browser-'+run+'-'+platform:'');
 const clipMode=run?.startsWith('clips-');
 const salonMode=run?.startsWith('clips-salon-');
+const eltMode=run?.startsWith('clips-elt-');
 if(run)fs.mkdirSync(path.join(ROOT,output));
 const file=output+(run?'/browser.json':'/native-hosting-browser.json'),sha=b=>createHash('sha256').update(b).digest('hex');
 const fixtureDir='verification/web/evidence/native-hosting-fixture'+(run?'-'+run:'');
@@ -198,7 +199,9 @@ try{
  }
  if(clipMode){
    const video=p.locator('video');
-   const first=platform==='android'?clips[1]:clips[0],second=platform==='android'?clips[0]:clips[1];
+   const first=eltMode?clips.find(clip=>clip.id==='telescope-first-tilt'):platform==='android'?clips[1]:clips[0];
+   const second=platform==='android'?clips[0]:clips[1];
+   assert(first && second && first.id!==second.id);
    const open=()=>button('Explore Clips').click();
    const play=clip=>button('Play '+clip.title).click();
    const playing=async clip=>{

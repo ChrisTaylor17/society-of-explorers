@@ -17,7 +17,8 @@ def clipPackager = new File(projectRoot, 'prepare-clip-assets.cjs')
 def packageClipAssets = tasks.register('packageSoeClipAssets', Exec) {
     inputs.files(clipPackager, new File(projectRoot, 'clip-catalog.json'), new File(projectRoot, '../../lib/clips/registry.json'))
     inputs.files(fileTree(new File(projectRoot, '../../content/clips')) {
-        include 'circle-intro.*', 'night-sky-traffic.*', 'circle-intro-inspection.json', 'night-sky-traffic-inspection.json'
+        include 'circle-intro.*', 'night-sky-traffic.*', 'telescope-first-tilt.*',
+                'circle-intro-inspection.json', 'night-sky-traffic-inspection.json', 'telescope-first-tilt-inspection.json'
     })
     outputs.dir(clipResources)
     doFirst { commandLine('node', clipPackager.absolutePath, clipResources.get().dir('raw').asFile.absolutePath) }

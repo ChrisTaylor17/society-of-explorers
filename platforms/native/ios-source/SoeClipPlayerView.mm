@@ -13,6 +13,7 @@ static NSURL *SoeClipURL(NSString *clipId) {
   NSString *resource = nil;
   if ([clipId isEqualToString:@"how-a-circle-works"]) resource = @"soe_circle_intro";
   if ([clipId isEqualToString:@"night-sky-traffic"]) resource = @"soe_night_sky";
+  if ([clipId isEqualToString:@"telescope-first-tilt"]) resource = @"soe_elt_tilt";
   if (!resource) return nil;
   NSBundle *host = [NSBundle bundleForClass:SoeClipPlayerView.class];
   NSURL *bundleURL = [host URLForResource:@"SoeClipAssets" withExtension:@"bundle"]
