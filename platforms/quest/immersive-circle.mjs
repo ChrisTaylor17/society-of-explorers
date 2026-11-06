@@ -299,12 +299,18 @@ export function mountImmersiveCircle({ window: win, document: doc, config, reelS
       }
       if (view === 'reading') {
         const { reader, from } = current.reading;
-        if (target === 'reading-back') {
+        const study = target === 'reading-discuss' ? reader.studyDiscussion() : null;
+        if (target === 'reading-back' || study) {
           reader.close();
           current.reading = null;
-          view = from;
-          if (from === 'salon') showSalon(current.salon.model());
-          else await loadDiscussion(current);
+          view = study ? 'discussion' : from;
+          if (view === 'salon') showSalon(current.salon.model());
+          else {
+            await loadDiscussion(current);
+            if (study && ownsRoom(current) && current.host.model().archive.phase === 'ready' && study.draft.length <= ROOM_POST_LIMIT) {
+              startComposer(current, null, study.draft);
+            }
+          }
         } else await reader.select(target);
         return;
       }

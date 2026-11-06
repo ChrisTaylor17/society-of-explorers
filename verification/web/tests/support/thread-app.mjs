@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { passagePostApp, IDS } from './passage-post-app.mjs';
 import { requestId, rpc } from './message-db.mjs';
 export { IDS, requestId };
@@ -7,7 +6,6 @@ export { IDS, requestId };
 // PostgREST boundary are synthetic; no provider, live account or project exists.
 export async function threadApp() {
   const base = await passagePostApp();
-  await base.db.exec(await readFile(new URL('../../../../docs/sql/circle-discussion-threads.sql', import.meta.url), 'utf8'));
   let actor = IDS.reader, displayName = 'Synthetic Explorer', identities = null;
   base.app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async () => {
     const current = identities?.length ? identities.shift() : actor;

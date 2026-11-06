@@ -10,7 +10,7 @@ import { installQuestXrDouble } from '../../../platforms/tests/quest-xr-browser-
 
 const root = resolve('../..'), file = name => resolve(root, name);
 const [run, ...extra] = process.argv.slice(2);
-assert(!extra.length && /^built-shell-root-kernel-luke-[a-z0-9-]+-$/.test(run ?? ''));
+assert(!extra.length && /^built-shell-root-kernel-(?:luke|study-talk)-[a-z0-9-]+-$/.test(run ?? ''));
 assert(process.execArgv.some(value => value.endsWith('/deny-build-network.cjs')));
 const prefix = 'verification/web/evidence/' + run;
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -27,6 +27,8 @@ const editionBytes = read(sourcePath), edition = JSON.parse(editionBytes);
 assert.equal(sha(editionBytes), ready.sourceHashes[sourcePath]);
 const bookId = 'luke-good-samaritan', editionId = 'web-classic-' + sha(JSON.stringify(edition));
 const study = '/great-books/scripture/' + bookId;
+const question = "How does Jesus turn the lawyer's question around in verse 36?";
+const expectedDraft = question + '\n\n' + study + '#verse-36';
 const selection = { version: 1, bookId, editionId, sessions: [{ from: 0, to: 0 }] };
 const start = '/circles/start?' + new URLSearchParams({ book: bookId, edition: editionId, from: '0', to: '0', format: 'online' });
 const { chromium } = createRequire(process.env.SOE_PLAYWRIGHT_PACKAGE + '/package.json')('playwright');
@@ -58,13 +60,13 @@ async function fetchShell(request, url) {
   return { ...output, body: Buffer.from(output.body, 'base64') };
 }
 
-async function open(origin, { signedIn = false, headset = false, javaScriptEnabled = true } = {}) {
+async function open(origin, { signedIn = false, actor = 'author', headset = false, javaScriptEnabled = true } = {}) {
   const context = await browser.newContext({ viewport: { width: 320, height: 850 },
     serviceWorkers: 'block', hasTouch: true, javaScriptEnabled });
   if (headset) await context.addInitScript(installQuestXrDouble);
   if (signedIn) {
-    const intent = randomUUID(), selected = 'v1.' + intent + '.wallet.' + app.authorId;
-    const signed = await app.walletCookie('author') + '; soe_auth_intent=' + intent + '; soe_auth_selection_v1=' + selected;
+    const intent = randomUUID(), selected = 'v1.' + intent + '.wallet.' + app.actors[actor];
+    const signed = await app.walletCookie(actor) + '; soe_auth_intent=' + intent + '; soe_auth_selection_v1=' + selected;
     await context.addCookies(signed.split('; ').map(cookie => {
       const [name, ...parts] = cookie.split('=');
       return { name, value: parts.join('='), url: ORIGIN, secure: true, httpOnly: name !== 'soe_auth_intent' };
@@ -184,6 +186,8 @@ try {
   assert.equal(await created.getAttribute('href'), '/circles/' + circle.id);
   await created.click();
   await button(page, 'Load current Circle access').click();
+  await link(page, 'Discuss this study').waitFor();
+  assert.equal(await link(page, 'Discuss a verified source passage').count(), 0);
   const reading = link(page, 'Week 1: Complete source edition');
   await reading.waitFor();
   assert.equal(await reading.getAttribute('href'), study + '?circle=' + circle.id + '#scripture');
@@ -191,11 +195,56 @@ try {
   await page.waitForURL(ORIGIN + study + '?circle=' + circle.id + '#scripture');
   await page.locator('[data-verse-text]').first().waitFor();
   await verses(page);
-  await link(page, 'Return to Circle details').click();
-  await page.waitForURL(ORIGIN + '/circles/' + circle.id);
+  assert.equal(await link(page, 'Return to Circle details').getAttribute('href'), '/circles/' + circle.id);
+  const discussionPath = '/circles/' + circle.id + '/discussion';
+  const discussion = discussionPath + '?study=' + bookId;
+  assert.equal(await link(page, 'Discuss this study').getAttribute('href'), discussion);
+  await link(page, 'Discuss this study').click();
+  await page.waitForURL(ORIGIN + discussion);
+  const sourceQuestion = page.getByRole('region', { name: 'Question from the Scripture study' });
+  await sourceQuestion.waitFor();
+  assert.equal(await link(sourceQuestion, 'Read The Good Samaritan').getAttribute('href'), study + '#verse-36');
+  assert.equal(await sourceQuestion.locator('p').textContent(), question);
+  assert.equal(new URL(await link(page, 'Sign in or create an account').getAttribute('href'), ORIGIN).searchParams.get('next'), discussion);
+  assert.equal(await button(page, 'Use study question in a draft').count(), 0);
+  const postCount = () => result.calls.filter(call => call.path === '/api' + discussionPath && call.method === 'POST').length;
+  const originalPosts = postCount();
+  await button(page, 'Load current discussion archive').click();
+  const useQuestion = button(page, 'Use study question in a draft');
+  await useQuestion.waitFor();
+  await sourceQuestion.scrollIntoViewIfNeeded();
+  await savePreview(page, 'web-question-320');
+  await useQuestion.click();
+  const comment = page.getByLabel('Your discussion comment');
+  assert.equal(await comment.inputValue(), expectedDraft);
+  const webMessage = 'Web reflection on mercy.\n\n' + expectedDraft;
+  await comment.fill(webMessage);
+  await button(page, 'Prepare discussion preview').click();
+  const post = button(page, 'Post reviewed discussion message');
+  await post.waitFor();
+  assert(await post.isDisabled());
+  assert.equal(postCount(), originalPosts);
+  await page.getByRole('checkbox', { name: /I reviewed this exact message/ }).check();
+  await post.click();
+  await link(page, 'Open saved discussion message').waitFor();
+  assert.equal(postCount(), originalPosts + 1);
+  assert.deepEqual((await app.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1', [circle.id])).rows, [{ content: webMessage }]);
+  await page.goto(ORIGIN + discussion + '&study=philemon');
+  assert.equal(await sourceQuestion.count(), 0);
+  await page.getByText(/This discussion link has invalid/).waitFor();
   await web.context.close();
   assert(result.calls.some(row => row.path === '/api/great-books/text/' + bookId && row.status === 200));
-  result.stories.push('The compiled host form checks the signed account, verifies the edition anonymously, requires an explicit confirmation, and reopens the persisted selection and original Circle.');
+  result.stories.push('The compiled host form checks the signed account, verifies the edition anonymously, and reopens the persisted selection.');
+  result.stories.push('The checked web reader links to a source question. Fresh archive access and explicit review are required to save the edited message, and duplicate study links are rejected.');
+
+  const visitor = await open(ORIGIN, { signedIn: true, actor: 'outsider' });
+  await visitor.page.goto(ORIGIN + discussion);
+  await button(visitor.page, 'Load current discussion archive').click();
+  await visitor.page.getByText(/This discussion or message is not available/).waitFor();
+  assert.equal(await button(visitor.page, 'Use study question in a draft').count(), 0);
+  assert.equal(await visitor.page.getByText(webMessage, { exact: true }).count(), 0);
+  await visitor.context.close();
+  result.stories.push('A signed-in nonmember can see the public study question while the member archive and draft remain closed.');
 
   const headset = await open(ORIGIN, { signedIn: true, headset: true });
   const quest = headset.page;
@@ -241,10 +290,39 @@ try {
   const readingCalls = result.calls.slice(before);
   assert.deepEqual(readingCalls.filter(call => call.path.startsWith('/api/great-books/')), []);
   assert(readingCalls.some(call => call.path === '/api/circles/' + circle.id && call.status === 200));
-  await press('Back to discussion');
-  await quest.waitForFunction(() => window.questXrQa.labels().includes('Read selection'));
+  await press('Back to text');
+  await press('Use study question');
+  await panel('Write a Circle post');
+  assert.equal(postCount(), originalPosts + 1);
+  await press('Review');
+  await panel('Review your post');
+  await panel('How does Jesus turn the lawyer');
+  const checked = await frame();
+  assert.match(checked.replace(/\s+/g, ' '), /verse 36\?/);
+  const reviewImage = await quest.evaluate(() => window.questXrQa.image());
+  assert(reviewImage.startsWith('data:image/png;base64,'));
+  const reviewPath = prefix + 'headset-study-review.png';
+  const reviewPng = Buffer.from(reviewImage.split(',')[1], 'base64');
+  writeFileSync(file(reviewPath), reviewPng);
+  result.previews[reviewPath] = sha(reviewPng);
+  await press('Post');
+  await panel('Post confirmed');
+  const posts = (await app.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1', [circle.id])).rows;
+  assert.deepEqual(posts.map(row => row.content).sort(), [webMessage, expectedDraft].sort());
+  assert.equal(postCount(), originalPosts + 2);
+  await press('Read recent discussion');
+  await press('Read selection');
+  for (let i = 2; i <= count; i++) {
+    await press('Next page');
+    await panel('Luke 10:25–37 · Page ' + i + ' of ' + count);
+  }
+  await app.db.query('UPDATE book_cohorts SET circle_hidden=true WHERE id=$1', [circle.id]);
+  await press('Use study question');
+  await panel('Current Circle discussion is unavailable');
+  assert(!(await frame()).includes('Write a Circle post'));
+  assert.equal(postCount(), originalPosts + 2);
   await headset.context.close();
-  result.stories.push('A simulated headset verifies current access, reads the same bundled selection through its final verse, shows publisher credits, and returns to discussion.');
+  result.stories.push('A simulated headset reads the bundled passage, confirms the same sourced prompt through the existing writer, and refuses a new draft after the Circle becomes hidden.');
   for (const [name, hash] of Object.entries(result.sourceHashes)) assert.equal(sha(read(name)), hash, name);
   assert.deepEqual(result.refused, []);
   assert.deepEqual(result.errors, []);

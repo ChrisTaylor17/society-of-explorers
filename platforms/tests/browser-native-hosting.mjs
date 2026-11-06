@@ -169,6 +169,37 @@ try{
    assert(http.slice(beforeRead).some(row => /^\/api\/circles\/[a-f0-9-]{36}$/.test(row.path) && row.kind === 'member'));
    assert(!http.slice(beforeRead).some(row => row.path.startsWith('/api/great-books/')));
    pass('The offline study and host guide carry the exact Good Samaritan selection through phone sign-in, approved hosting and a fresh member check. Reading uses the bundled verses.');
+   const staleDiscuss = await retain('Discuss this study');
+   await button('Discuss this study').click();
+   await enabled('Open complete discussion archive');
+   assert.equal(await button('Use study question in a draft').count(), 0);
+   const circleId = (await fixture.hosted()).find(row => row.title === name).id;
+   const posts = () => http.filter(row => row.method === 'POST' && row.path === '/api/circles/' + circleId + '/discussion').length;
+   const beforePost = posts();
+   await button('Open complete discussion archive').click();
+   await enabled('Use study question in a draft');
+   await button('Use study question in a draft').click();
+   const draft = field('Your discussion comment');
+   await draft.waitFor();
+   const expected = "How does Jesus turn the lawyer's question around in verse 36?\n\n/great-books/scripture/luke-good-samaritan#verse-36";
+   assert.equal(await draft.inputValue(), expected);
+   const edited = 'Mercy changes what the question asks.\n\n' + expected;
+   await draft.fill(edited);
+   await invoke(staleDiscuss);
+   assert.equal(await draft.inputValue(), edited);
+   await button('Prepare discussion preview').click();
+   const reviewed = p.getByRole('checkbox',{name:'I reviewed this exact message and target, and want to post it to this Circle'});
+   await reviewed.waitFor();
+   assert(await button('Post reviewed discussion message').isDisabled());
+   assert.equal(posts(), beforePost);
+   await p.getByText(edited,{exact:true}).waitFor();
+   await reviewed.click();
+   await button('Post reviewed discussion message').click();
+   await enabled('Open saved discussion message');
+   assert.equal(posts(), beforePost + 1);
+   assert.deepEqual((await fixture.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1 AND member_id=$2',
+     [circleId, fixture.authorId])).rows, [{content: edited}]);
+   pass('The assigned phone reader opens the current discussion. A retained reader callback cannot replace the edited study draft. One reviewed post preserves the exact question and verse link.');
    await show();
  }
  if (inviteMode) {

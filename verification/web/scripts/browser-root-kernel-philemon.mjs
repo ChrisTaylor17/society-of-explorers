@@ -131,11 +131,14 @@ try {
   assert.equal((await mobile.page.goto(`${origin}${routePath}?circle=${circleId.toUpperCase()}#scripture`)).status(), 200);
   await back.waitFor();
   assert.equal(await back.getAttribute('href'), `/circles/${circleId}`);
-  assert((await back.boundingBox()).height >= 44);
+  const discuss = mobile.page.getByRole('link', { name: 'Discuss this study', exact: true });
+  assert.equal(await discuss.getAttribute('href'), `/circles/${circleId}/discussion?study=philemon`);
+  assert((await back.boundingBox()).height >= 44 && (await discuss.boundingBox()).height >= 44);
   await screenshot(mobile.page, 'circle-return-mobile');
   for (const query of [`circle=${circleId}&circle=${circleId}`, 'circle=https%3A%2F%2Ffixture.invalid']) {
     assert.equal((await mobile.page.goto(`${origin}${routePath}?${query}#scripture`, { waitUntil: 'networkidle' })).status(), 200);
     assert.equal(await back.count(), 0);
+    assert.equal(await discuss.count(), 0);
     await scripture(mobile.page);
   }
   await mobile.ctx.close();

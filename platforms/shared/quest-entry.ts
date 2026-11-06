@@ -13,3 +13,4 @@ export { parseCircleDetail } from '../../lib/circles/membership';
 export { starterReadingContext } from '../../lib/circles/reading-program';
 export { isPhilemonReading, philemonReadingText, PHILEMON_EDITION_METADATA } from '../../lib/root-kernel/philemon-edition';
 export { getScriptureReading, scriptureReadingText } from '../../lib/root-kernel/scripture-studies';
+export { getScriptureDiscussion } from '../../lib/circles/scripture-discussion';

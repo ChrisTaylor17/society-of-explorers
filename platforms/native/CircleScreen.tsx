@@ -9,11 +9,14 @@ import { MESSAGE_BLOCK_CONFIRMATION, MESSAGE_BLOCK_PRIVACY } from '../../lib/cir
 import { observeNativeConnectivity, type NativeConnectivityPort, type NativeConnectivityState } from './src/circles/native-connectivity';
 import { MESSAGE_REPORT_OPTIONS, MESSAGE_WITHDRAWAL_PRIVACY } from '../shared/message-safety';
 import { REEL_QUESTIONS, reelDiscussionDraft, type ReelDiscussionId } from '../../lib/clips/salon';
+import { getScriptureDiscussion } from '../../lib/circles/scripture-discussion';
+import type { ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
 
-export function CircleScreen({ config, connectivity, onClose, onBack, memberSession, reel }: {
+export function CircleScreen({ config, connectivity, onClose, onBack, memberSession, reel, study }: {
   config?: CircleHostConfig; connectivity?: NativeConnectivityPort; onClose(): void; onBack?(): void;
-  memberSession?: { model: MemberSessionModel; onCheck(): void }; reel?: ReelDiscussionId;
+  memberSession?: { model: MemberSessionModel; onCheck(): void }; reel?: ReelDiscussionId; study?: ScriptureStudyId;
 }) {
+  const scripture = getScriptureDiscussion(study);
   const connection = useMemo(() => { try { return config ? { host: createCircleHost({ ...config, initialOnline: false }), connectivity, config } : null; } catch { return null; } }, [config, connectivity]);
   const host = connection?.host;
   const [network, setNetwork] = useState<NativeConnectivityState>('unknown');
@@ -130,13 +133,14 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
     {write && !safety?.open ? <View>
       <Text accessibilityRole="header" style={styles.heading}>Your discussion message</Text>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>{write.message}</Text>
-      {reel && archivePage?.kind === 'archive' && <View style={styles.message}>
-        <Text accessibilityRole="header" style={styles.heading}>Question from the Reel</Text>
-        <Text style={styles.copy}>{REEL_QUESTIONS[reel]}</Text>
-        <Action label="Use Reel question in a draft" disabled={!write.canStart || write.phase !== 'locked' || Boolean(archive?.busy)}
+      {(scripture || reel) && archivePage?.kind === 'archive' && <View style={styles.message}>
+        <Text accessibilityRole="header" style={styles.heading}>{scripture ? 'Question from the Scripture study' : 'Question from the Reel'}</Text>
+        <Text style={styles.copy}>{scripture?.question ?? (reel && REEL_QUESTIONS[reel])}</Text>
+        <Action label={scripture ? 'Use study question in a draft' : 'Use Reel question in a draft'}
+          disabled={!write.canStart || write.phase !== 'locked' || Boolean(archive?.busy)}
           onPress={() => act(() => {
             if (host && config && host.model().threadWrite.phase === 'locked' && host.threadStart(null)) {
-              host.threadEdit(reelDiscussionDraft(reel, config.origin));
+              host.threadEdit(scripture?.draft ?? (reel ? reelDiscussionDraft(reel, config.origin) : ''));
             }
           })}/>
       </View>}

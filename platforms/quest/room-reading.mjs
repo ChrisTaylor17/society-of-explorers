@@ -1,4 +1,4 @@
-import { circleAuthorizationHeaders, createCircleReading, getScriptureReading, parseCircleDetail, scriptureReadingText,
+import { circleAuthorizationHeaders, createCircleReading, getScriptureDiscussion, getScriptureReading, parseCircleDetail, scriptureReadingText,
   starterReadingContext } from './circle-host.mjs';
 import { ROOM_TEXT_COLUMNS } from './room-composer.mjs';
 
@@ -77,6 +77,11 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
     return detail.ended ? null : selectedContext(detail);
   }
 
+  function studyDiscussion() {
+    if (!active() || !scripture || creditPage !== null || page !== pages.length - 1) return null;
+    return getScriptureDiscussion(scripture.id);
+  }
+
   function show() {
     const model = reader?.model();
     const edition = model?.passage.metadata.edition ?? scripture?.metadata.edition;
@@ -90,7 +95,7 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
     onPanel({ label, heading: reading ? edition.sourceTitle : 'Source edition and rights',
       readingLines: currentPages[position],
       rows: [[previous && control('reading-previous', previous), control('reading-credits', reading ? 'Source info' : 'Back to text'),
-        next && control('reading-next', next), back]],
+        next ? control('reading-next', next) : studyDiscussion() && control('reading-discuss', 'Use study question'), back]],
       footer: `${reading ? blockLabel : 'Source info'} · Page ${position + 1} of ${currentPages.length} · ${footer}` });
   }
 
@@ -151,6 +156,7 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
 
   return {
     open: () => load(),
+    studyDiscussion,
     async select(target) {
       if (!active()) return;
       if (target === 'reading-retry' && reader?.model().canRetry) { await load('retry'); return; }

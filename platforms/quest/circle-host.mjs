@@ -5801,6 +5801,16 @@ function parseCircleDetail(value, circleId) {
   }
   return { ...base, ready: true, meetings, online_url };
 }
+
+// lib/circles/scripture-discussion.ts
+function getScriptureDiscussion(value) {
+  const study = getScriptureStudy(value);
+  if (!study) return void 0;
+  const { before, verse, after } = study.questions[0];
+  const question = (before + "verse " + verse + after).replaceAll("\u2019", "'");
+  const href = study.href + "#verse-" + verse;
+  return { id: study.id, title: study.work.title, question, href, draft: question + "\n\n" + href };
+}
 export {
   MESSAGE_AI_DISCLOSURE,
   MESSAGE_AI_POLICY,
@@ -5818,6 +5828,7 @@ export {
   createMemberContributions,
   createVerifiedSupabaseCircleOwner,
   discussionContentSuffix,
+  getScriptureDiscussion,
   getScriptureReading,
   hasCircleAuthority,
   isPhilemonReading,

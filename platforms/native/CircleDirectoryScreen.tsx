@@ -7,7 +7,7 @@ import { formatDay } from '../../lib/circles/schedule';
 import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
-import { getScriptureReading, getScriptureStudy } from '../../lib/root-kernel/scripture-studies';
+import { getScriptureReading, getScriptureStudy, type ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
 import { PublicProfileScreen } from './PublicProfileScreen';
 import { CircleCommunityNorms } from './CircleCommunityNorms';
 import { sourceReaderAvailable } from './SourceReader';
@@ -36,8 +36,8 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
   const [q, setQ] = useState(''), [city, setCity] = useState('');
   const [format, setFormat] = useState(initialOnlineFilter ? 'online' : ''), [open, setOpen] = useState(false), [sort, setSort] = useState('next');
   const [filterError, setFilterError] = useState('');
-  const [discussion, setDiscussion] = useState<{ connection: NonNullable<typeof connection>; circleId: string } | null>(null);
-  const [reading, setReading] = useState<{ connection: NonNullable<typeof connection>; context: ReadingContext } | null>(null);
+  const [discussion, setDiscussion] = useState<{ connection: NonNullable<typeof connection>; circleId: string; study?: ScriptureStudyId } | null>(null);
+  const [reading, setReading] = useState<{ connection: NonNullable<typeof connection>; circleId: string; context: ReadingContext } | null>(null);
   const [publicProfile, setPublicProfile] = useState<{ connection: NonNullable<typeof connection>; circleId: string; memberId: string } | null>(null);
   const [readingNotice, setReadingNotice] = useState('');
   const [meetingNotice, setMeetingNotice] = useState('');
@@ -115,7 +115,9 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
   const openReading = async (context: ReadingContext, sessionIndex: number | null) => {
     const before = session?.model(), owner = config.owner.scope();
     if (!connection || !session || (!config.passageTransport && !getScriptureReading(context)) || !owner || before?.phase !== 'ready' || !before.detail || !before.canNavigate) return;
-    const attempt = ++readingLifetime.current.generation, circleId = before.selected;
+    const circleId = before.selected;
+    if (!circleId) return;
+    const attempt = ++readingLifetime.current.generation;
     setReadingNotice('');
     await session.refresh();
     if (attempt !== readingLifetime.current.generation || config.owner.scope() !== owner) return;
@@ -127,7 +129,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     if (!verified || verified.bookId !== context.bookId || verified.editionId !== context.editionId || verified.from !== context.from || verified.to !== context.to) {
       setReadingNotice('The reading plan changed. Review the current selection before opening it.'); return;
     }
-    setReading({ connection, context: { ...verified } });
+    setReading({ connection, circleId, context: { ...verified } });
   };
   const openHostProfile = async (memberId: string) => {
     const before = session?.model(), owner = config.owner.scope();
@@ -148,12 +150,20 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     return <PublicProfileScreen config={publicProfileConfig} connectivity={connectivity} onClose={close}
       onBack={() => act(() => { setPublicProfile(null); void session?.refresh(); }, true)}/>;
   }
-  if (reading && reading.connection === connection && readingConfig && m?.detail && m.connected && m.active && m.online) {
+  if (reading && reading.connection === connection && readingConfig && m?.detail && m.selected === reading.circleId && m.connected && m.active && m.online) {
+    const scripture = getScriptureReading(reading.context);
+    const leaveReader = (study?: ScriptureStudyId) => act(() => {
+      const current = session?.model();
+      if (study && (!current?.canOpenDiscussion || current.selected !== reading.circleId)) return;
+      setReading(null);
+      if (study) setDiscussion({ connection, circleId: reading.circleId, study });
+      else void session?.refresh();
+    }, !study);
     return <CircleReadingScreen config={readingConfig} connectivity={connectivity} savedReading={savedReading} onClose={close}
-      onBack={() => act(() => { setReading(null); void session?.refresh(); }, true)}/>;
+      onBack={() => leaveReader()} onDiscussStudy={scripture && m.canOpenDiscussion ? () => leaveReader(scripture.id) : undefined}/>;
   }
   if (discussion && discussion.connection === connection && m?.canOpenDiscussion && discussionConfig) {
-    return <CircleScreen config={discussionConfig} connectivity={connectivity} reel={reel} onClose={close}
+    return <CircleScreen config={discussionConfig} connectivity={connectivity} study={discussion.study} reel={discussion.study ? undefined : reel} onClose={close}
       onBack={() => act(() => { setDiscussion(null); void session?.refresh(); }, true)}/>;
   }
   const detail = m?.detail, circle = detail?.circle, management = m?.management;

@@ -35,7 +35,7 @@ export default function PhilemonStudyPage() {
       <div className={study.columns}>
         <article className={study.scripture} aria-labelledby="scripture">
           <h2 className={reading.sectionTitle} id="scripture">Scripture · Philemon 1</h2>
-          <Suspense fallback={null}><CircleReturnLink /></Suspense>
+          <Suspense fallback={null}><CircleReturnLink study="philemon" /></Suspense>
           <p className={reading.help}>{edition.edition} · Complete letter</p>
           {edition.paragraphs.map(paragraph => <p className={study.paragraph} key={paragraph[0].verse}>
             {paragraph.map(({ verse, text }, index) => {

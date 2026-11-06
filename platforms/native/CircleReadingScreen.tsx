@@ -13,12 +13,12 @@ import { getScriptureReading } from '../../lib/root-kernel/scripture-studies';
 /** Mounted only by an explicit selection from freshly checked Circle detail. */
 export type CircleReadingScreenProps = {
   config: CircleReadingConfig; connectivity?: NativeConnectivityPort; savedReading?: SavedReading; savedReadingManaged?: boolean;
-  backLabel?: string; onBack(): void; onClose(): void;
+  backLabel?: string; onBack(): void; onClose(): void; onDiscussStudy?(): void;
 };
 export function CircleReadingScreen(props: CircleReadingScreenProps) {
   const scripture = getScriptureReading(props.config.context);
   if (scripture) {
-    return <ScriptureStudyScreen study={scripture} onBack={props.onBack} onClose={props.onClose} backLabel={props.backLabel ?? 'Back to Circle reading plan'}/>;
+    return <ScriptureStudyScreen study={scripture} onBack={props.onBack} onClose={props.onClose} onDiscuss={props.onDiscussStudy} backLabel={props.backLabel ?? 'Back to Circle reading plan'}/>;
   }
   return sourceReaderAvailable() ? <SourceReadingScreen {...props}/> : <PassageReadingScreen {...props}/>;
 }

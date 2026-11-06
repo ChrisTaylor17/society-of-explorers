@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The two Scripture studies now lead into the current Circle discussion with an editable question and verse link. A fresh archive check and the existing post review protect the handoff. The web, phone simulations and simulated Quest room saved reviewed drafts. A restored PostgreSQL rehearsal preserved the Gutenberg quotation boundary. Hosted and physical-device acceptance remain open. [Study discussion verification](docs/integration/scripture-circle-discussion.md)
+
 The Good Samaritan is a second assignable study in SoE’s Root Kernel section. The public page contains Luke 10:25–37 and a 45-minute salon guide. The compiled web form, phone simulations and simulated Quest room opened the same edition from a current Circle. The isolated PostgreSQL restore preserved the assignment and detected the previous catalog. Hosted privacy repair and physical device acceptance remain open. [Study and verification](docs/integration/root-kernel-good-samaritan.md)
 
 The Quest headset room now lets members review a checked post, report it for human review, block its author or withdraw their own post. Compiled Chromium checks used simulated controller input and the current Circle routes and SQL. A lost report or block reply recovered through exact retry, and headset focus loss cleared held private replies. Physical headset acceptance remains open. [Verification](docs/integration/quest-room-message-safety-verification.json)

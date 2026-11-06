@@ -14,6 +14,8 @@ import styles from '../participation.module.css';
 import ReadingProgramSummary from '../ReadingProgramSummary';
 import PublishedProfileLink from '@/components/PublishedProfileLink';
 import { withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
+import { scriptureDiscussionHref } from '@/lib/circles/scripture-discussion';
+import { getScriptureStudy } from '@/lib/root-kernel/scripture-studies';
 
 const completionCopy = 'Close to new members and RSVPs; existing members can continue the conversation or leave. Completing a Circle does not delete messages or remove members.';
 
@@ -51,6 +53,7 @@ function CircleView({ circleId, fromOnline, reel }: { circleId: string; fromOnli
   const actionDisabled = disabled || participation.uncertain || participation.phase === 'review';
   const focusConfirmation = useCallback((element: HTMLHeadingElement | null) => element?.focus({ preventScroll: true }), []);
   const c = detail?.circle;
+  const scripture = getScriptureStudy(c?.reading_program?.bookId);
   const viewer = detail?.viewer;
   const listing = !detail && !management && preview !== 'unavailable' ? preview : null;
   const nextPath = encodeURIComponent(withReelDiscussion(circleDetailHref(circleId, fromOnline), reel));
@@ -125,7 +128,9 @@ function CircleView({ circleId, fromOnline, reel }: { circleId: string; fromOnli
         {detail.capabilities.canRsvp && <div className={styles.row} style={{ marginTop: '12px' }}><button type="button" style={meeting.my_status === 'going' ? primary : button} disabled={actionDisabled} aria-label={`Going on ${formatDay(meeting.date)}`} aria-pressed={meeting.my_status === 'going'} data-participation-trigger={`rsvp:${meeting.date}:going`} onClick={() => load({ action: 'rsvp', date: meeting.date, status: 'going' })}>Going</button><button type="button" style={button} disabled={actionDisabled} aria-label={`Cannot make it on ${formatDay(meeting.date)}`} aria-pressed={meeting.my_status === 'not_going'} data-participation-trigger={`rsvp:${meeting.date}:not_going`} onClick={() => load({ action: 'rsvp', date: meeting.date, status: 'not_going' })}>Can’t make it</button></div>}
       </li>)}</ul>
       {c.reading_program && <ReadingProgramSummary program={c.reading_program} circleId={c.id} />}
-      {detail.capabilities.canReadConversation && <><p style={body}><Link href={withReelDiscussion(`/circles/${c.id}/discussion`, reel)} prefetch={false}>{reel ? 'Open discussion with the Reel question' : 'Open discussion archive and replies'}</Link></p><p style={body}><Link href={withReelDiscussion(`/quest/${c.id}`, reel)} prefetch={false}>Open in Quest Browser</Link></p><p style={body}><Link href={`/circles/passages?circle=${c.id}`}>Discuss a verified source passage</Link></p><CircleConversation key={`${c.id}:${epoch}`} circleId={c.id} active={active && !participation.uncertain && participation.phase !== 'review'} accessEpoch={epoch} /></>}
+      {detail.capabilities.canReadConversation && <><p style={body}><Link href={withReelDiscussion(`/circles/${c.id}/discussion`, reel)} prefetch={false}>{reel ? 'Open discussion with the Reel question' : 'Open discussion archive and replies'}</Link></p><p style={body}><Link href={withReelDiscussion(`/quest/${c.id}`, reel)} prefetch={false}>Open in Quest Browser</Link></p><p style={body}>{scripture
+        ? <Link href={scriptureDiscussionHref(c.id, scripture.id)} prefetch={false}>Discuss this study</Link>
+        : <Link href={`/circles/passages?circle=${c.id}`}>Discuss a verified source passage</Link>}</p><CircleConversation key={`${c.id}:${epoch}`} circleId={c.id} active={active && !participation.uncertain && participation.phase !== 'review'} accessEpoch={epoch} /></>}
       {!c.hidden && <div style={{ marginTop: '2.5rem', borderTop: `1px solid ${gold}22`, paddingTop: '1.25rem' }}><ReportButton circleId={c.id} /></div>}
     </>}
   </div>;

@@ -33,7 +33,7 @@ export default function GoodSamaritanStudyPage() {
       <div className={styles.columns}>
         <article className={styles.scripture} aria-labelledby="scripture">
           <h2 className={reading.sectionTitle} id="scripture" tabIndex={-1}>Scripture · {range}</h2>
-          <Suspense fallback={null}><CircleReturnLink /></Suspense>
+          <Suspense fallback={null}><CircleReturnLink study={study.id} /></Suspense>
           <p className={reading.help}>{source.edition} · {study.extent}</p>
           {source.paragraphs.map(paragraph => <p className={styles.paragraph} key={paragraph[0].verse}>
             {paragraph.map(({ verse, text }, index) => <span className={styles.verse} id={`verse-${verse}`} key={verse} tabIndex={-1}>

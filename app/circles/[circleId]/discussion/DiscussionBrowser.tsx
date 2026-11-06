@@ -11,15 +11,18 @@ import type { MessageSafetyState } from '@/lib/circles/message-moderation';
 import { body, button, card, fieldLabel, h2, input, primary, small } from '@/lib/circles/ui';
 import styles from './discussion.module.css';
 import { reelHref } from '@/lib/clips/contracts';
+import { getScriptureDiscussion, scriptureDiscussionHref } from '@/lib/circles/scripture-discussion';
+import type { ScriptureStudyId } from '@/lib/root-kernel/scripture-studies';
 import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
 
 type ReadQuery = Exclude<DiscussionQuery, { kind: 'receipt' }>;
 type Pending = { body: string; request: DiscussionPostInput; content: string; rootMessageId: string | null };
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
-export default function DiscussionBrowser({ circleId, messageId, invalidIntent = false, reel }: {
-  circleId: string; messageId: string | null; invalidIntent?: boolean; reel?: ReelDiscussionId;
+export default function DiscussionBrowser({ circleId, messageId, invalidIntent = false, reel, study }: {
+  circleId: string; messageId: string | null; invalidIntent?: boolean; reel?: ReelDiscussionId; study?: ScriptureStudyId;
 }) {
+  const scripture = getScriptureDiscussion(study);
   const [page, setPage] = useState<DiscussionPage | null>(null), [readVersion, setReadVersion] = useState(0);
   const [query, setQuery] = useState<ReadQuery>(messageId ? { kind: 'thread', messageId, after: null, limit: 25 } : { kind: 'archive', before: null, limit: 25 });
   const [target, setTarget] = useState<ThreadMessage | null>(null), [writing, setWriting] = useState(false), [comment, setComment] = useState('');
@@ -31,15 +34,16 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
   useEffect(() => {
     if (errorFocus && document.visibilityState === 'visible' && document.hasFocus()) statusRef.current?.focus({ preventScroll: true });
   }, [errorFocus]);
-  const clearReview = useCallback(() => { setPreview(null); setConfirmed(false); }, []);
-  const retire = useCallback(() => {
+  function clearReview() { setPreview(null); setConfirmed(false); }
+  function retire() {
     setPage(null); setTarget(null); setWriting(false); setComment(''); setPreview(null); setConfirmed(false); setPending(null); setReceipt(null); setReadVersion(value => value + 1); sending.current = false;
     setNotice('Private discussion, comment and review cleared. A request already sent may still have been saved. Nothing will reload or retry automatically.');
-  }, []);
+  }
   const { active, busy, perform, retire: retireAccess } = useReviewAccess(retire);
   const disabled = !active || busy || Boolean(pending);
   const endpoint = `/api/circles/${circleId}/discussion`;
-  const returnHref = withReelDiscussion(discussionHref(circleId, query.kind === 'thread' ? query.messageId : null), reel);
+  const returnHref = scripture ? scriptureDiscussionHref(circleId, scripture.id)
+    : withReelDiscussion(discussionHref(circleId, query.kind === 'thread' ? query.messageId : null), reel);
   const signInHref = `/login?next=${encodeURIComponent(returnHref)}`;
   const commentLimit = discussionCommentLimit(circleId, target?.id ?? null);
   const focusHeading = useCallback((element: HTMLHeadingElement | null) => { element?.focus({ preventScroll: true }); }, []);
@@ -140,6 +144,12 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
       <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
       {page?.kind === 'archive' && <div><button type="button" style={button} disabled={disabled || writing}
         onClick={() => selectTarget(null, reelDiscussionDraft(reel, window.location.origin))}>Use Reel question in a draft</button></div>}
+    </section>}
+    {scripture && <section aria-label="Question from the Scripture study" style={card}>
+      <p style={body}>{scripture.question}</p>
+      <Link href={scripture.href} prefetch={false}>Read {scripture.title}</Link>
+      {page?.kind === 'archive' && <div><button type="button" style={button} disabled={disabled || writing}
+        onClick={() => selectTarget(null, scripture.draft)}>Use study question in a draft</button></div>}
     </section>}
     <p ref={statusRef} tabIndex={-1} role="status" aria-live="polite" style={body}>{notice}</p>
     <div className={styles.row}>

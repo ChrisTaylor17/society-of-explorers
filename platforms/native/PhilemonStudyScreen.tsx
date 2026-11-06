@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { ScriptureStudy } from '../../lib/root-kernel/scripture-studies';
 
-export function ScriptureStudyScreen({ study, onBack, onHost, onBrowse, onClose, backLabel = 'Back to account' }: {
-  study: ScriptureStudy; onBack(): void; onHost?: () => void; onBrowse?: () => void; onClose?: () => void; backLabel?: string;
+export function ScriptureStudyScreen({ study, onBack, onHost, onBrowse, onDiscuss, onClose, backLabel = 'Back to account' }: {
+  study: ScriptureStudy; onBack(): void; onHost?: () => void; onBrowse?: () => void; onDiscuss?: () => void; onClose?: () => void; backLabel?: string;
 }) {
   const sections = [
     { id: 'text', label: study.readerTab },
@@ -87,6 +87,9 @@ export function ScriptureStudyScreen({ study, onBack, onHost, onBrowse, onClose,
       </Pressable> : null}
     </ScrollView>
     <View style={styles.footer}>
+      {onDiscuss ? <Pressable accessibilityRole="button" accessibilityLabel="Discuss this study" onPress={onDiscuss} style={styles.button}>
+        <Text style={styles.buttonText}>Discuss this study</Text>
+      </Pressable> : null}
       <Pressable accessibilityRole="button" accessibilityLabel={backLabel} onPress={onBack} style={styles.button}>
         <Text style={styles.buttonText}>{backLabel}</Text>
       </Pressable>
