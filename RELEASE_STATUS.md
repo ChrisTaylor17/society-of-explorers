@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The public homepage now opens the Apology discussion guide and online salon search. The older guest chat could send text saved in the browser to a configured model. Legacy guest requests now stop before account, community or model work. The compiled build opened the verified local edition, and 39 local Thinker tests covered the guest refusal and signed-in conversation accounting. [Guest Thinker verification](docs/integration/guest-thinker-retired-verification.json)
+
 Once account deletion starts, held listing and post report requests can no longer write a report or retry receipt under the departing member. Existing reports stay available for human review. Independent PostgreSQL sessions verified that both writes wait for the account guard, and the restore preserved the refusals. The deletion process and retention decisions still need hosted approval and verification. [Verification](docs/integration/account-erasure-report-write-verification.json)
 
 An AI moderation request now checks the reviewer's sign-in again immediately before its final consent and case check. The local regression signed the reviewer out after the request was reserved and verified that no text reached the intercepted Anthropic transport. A fresh eligible session reached the transport with only the opted-in text. The compiled release build still leaves the provider disabled by default. [Verification](docs/integration/message-ai-reviewer-signout-verification.json)

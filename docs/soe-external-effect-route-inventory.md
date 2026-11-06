@@ -83,7 +83,7 @@ Current local guards: `capital:checkout-safety:smoke`, `capital:webhook-safety:s
 | `app/api/taste/route.ts` | Calls AI provider for taste output. | External provider call approval if operator-triggered. |
 | `app/api/thinker/extract-facts/route.ts` | Calls AI provider for memory extraction and writes thinker memory. | External provider call approval; signed-in self-scope or explicitly configured cron-secret scope only. |
 | `app/api/thinker/memory/route.ts` | Calls embedding provider through memory helper and writes conversation memory. | External provider call approval; signed-in self-scope only. |
-| `app/api/thinker/route.ts` | Calls AI provider for thinker conversation. | External provider call approval if operator-triggered. |
+| `app/api/thinker/route.ts` | Calls the AI provider for signed-in Thinker conversations. Legacy guest requests return 410 before provider or account work. | External provider call approval if operator-triggered. |
 | `app/api/transcribe/route.ts` | Calls transcription provider only after signed-in auth plus request transcription consent; audio is size-bounded and responses are private/no-store. | External provider call approval and consent review. |
 | `app/api/tts/route.ts` | Calls ElevenLabs TTS only after signed-in auth plus explicit voice-generation consent; text and voice ids are bounded and responses are private/no-store. | External provider call approval and consent review. |
 | `app/api/twiddle/[id]/respond/route.ts` | Calls AI provider for Twiddle response and, only after explicit voice consent in the request, can call ElevenLabs. AI-suggested actions execute only after explicit action-execution consent. | External provider call approval and consent review if operator-triggered. |

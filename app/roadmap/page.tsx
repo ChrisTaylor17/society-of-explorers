@@ -127,7 +127,7 @@ const MODULES: Array<{ name: string; status: Status; body: string; href?: string
   {
     name: 'THE COUNCIL',
     status: 'progress',
-    body: 'Six AI thinkers with streaming Council mode, memory and verdict cards. Visitors get three free exchanges with Socrates on the homepage. Branded error pages with recovery links were added on October 23, 2026. Working for signed-in members, but expect rough edges.',
+    body: 'Six AI thinkers with streaming Council mode, memory and verdict cards. Visitors can open the Apology discussion guide from the homepage. Branded error pages with recovery links were added on October 23, 2026. Working for signed-in members, but expect rough edges.',
     href: '/council',
     linkLabel: 'VISIT /COUNCIL →',
   },

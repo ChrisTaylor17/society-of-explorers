@@ -70,7 +70,7 @@ export async function rewardRows(db){return{members:(await db.query('SELECT * FR
 export async function thinkerFixture(db,{actor=A,rpcMode='normal',staleExpTokens=null}={}){
  // The existing loader stats every application source before reading it. All
  // providers are mocked before loading the actual route; its fallback fetch denies.
- const app=offlineApp(),stats={providerCalls:0,rpcCalls:[],eventInserts:0,fallbacks:0,authCalls:0};const noop=async()=>undefined;
+ const app=offlineApp(),stats={providerCalls:0,rpcCalls:[],eventInserts:0,fallbacks:0,authCalls:0,communityReads:0};const noop=async()=>undefined;
  app.setMock('@/lib/ai/anthropic',()=>({createAnthropicClient:()=>({messages:{stream:()=>{stats.providerCalls++;return{on:(kind,callback)=>{if(kind==='text')callback('Synthetic exact-body offline reply.');},finalMessage:async()=>({usage:{}})};}}}),resolveClaudeModel:()=> 'SYNTHETIC_MODEL',logClaudeUsage:()=>{}}));
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>{stats.authCalls++;if(!actor)return null;const member=(await db.query('SELECT * FROM members WHERE id=$1',[actor])).rows[0];if(staleExpTokens!==null)member.exp_tokens=staleExpTokens;return{memberId:actor,member,auth:{provider:'supabase',subject:AUTH_A}};}}));
  app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({from(){stats.fallbacks++;throw Error('Unexpected service fallback');},rpc:async(name,params)=>{
@@ -90,6 +90,6 @@ export async function thinkerFixture(db,{actor=A,rpcMode='normal',staleExpTokens
  app.setMock('@/lib/thinkerMemory',()=>({getMemory:async()=>null,recordInteraction:noop}));app.setMock('@/lib/thinkerActions',()=>({parseActions:text=>({actions:[],cleanText:text})}));
  app.setMock('@/lib/actions/executeActions',()=>({executeActionsWithResults:async()=>[]}));app.setMock('@/lib/rateLimit',()=>({limitModelCall:()=>null}));
  app.setMock('@/lib/salons/access',()=>({memberCanUseSharedSalon:async()=>false}));app.setMock('@/lib/memory/embeddings',()=>({storeConversationEmbedding:noop}));
- app.setMock('@/lib/memory/sharedMemory',()=>({getThinkerContext:async()=>null,storeEpisode:noop,extractMemory:noop}));app.setMock('@/lib/community/getCommunity',()=>({getCommunityThinkerPrompts:async()=>({})}));app.setMock('@/lib/governance/hats',()=>({checkPermission:async()=>true}));
+ app.setMock('@/lib/memory/sharedMemory',()=>({getThinkerContext:async()=>null,storeEpisode:noop,extractMemory:noop}));app.setMock('@/lib/community/getCommunity',()=>({getCommunityThinkerPrompts:async()=>{stats.communityReads++;return {};}}));app.setMock('@/lib/governance/hats',()=>({checkPermission:async()=>true}));
  const route=app.load('app/api/thinker/route.ts');return{stats,post:(body,headers={})=>route.POST(new Request('https://soe.invalid/api/thinker',{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(body)})),get:(query,headers={})=>route.GET(new Request('https://soe.invalid/api/thinker?'+query,{headers}))};
 }

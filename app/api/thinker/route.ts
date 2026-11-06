@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
-import { parseActions, type ThinkerAction } from '@/lib/thinkerActions';
+import { parseActions } from '@/lib/thinkerActions';
 import { executeActionsWithResults } from '@/lib/actions/executeActions';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { limitModelCall } from '@/lib/rateLimit';
@@ -20,11 +20,9 @@ import { parseThinkerRewardReceipt, type ThinkerRewardReceipt } from '@/lib/rewa
 
 const DIRECT_MAX_TOKENS = 600;
 const COUNCIL_MAX_TOKENS = 800;
-const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
 const HISTORY_LIMIT = 14;
-const DEMO_MESSAGE_LIMIT = 7;
 
 const COUNCIL_PROMPTS: Record<string, string> = {
   socrates: "You are Socrates — you find the question behind the question. While others give answers, you reveal what they're actually asking. Expose the ONE assumption they haven't examined, then give them the one question that would unlock everything. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
@@ -49,11 +47,6 @@ interface MemberContextProfile {
   exp_tokens?: number | null;
 }
 
-interface DemoMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 interface ThinkerRequestBody {
   requestId?: string;
   demo?: boolean;
@@ -65,7 +58,6 @@ interface ThinkerRequestBody {
   isCouncilMode?: boolean;
   councilContext?: { thinker: string; response: string }[];
   community?: string;
-  messages?: unknown;
 }
 
 async function boundedRewardCall<T>(work: PromiseLike<T>): Promise<T> {
@@ -152,12 +144,6 @@ function isArtifactRequest(message: string): boolean {
   return ARTIFACT_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-function isDemoMessage(value: unknown): value is DemoMessage {
-  if (typeof value !== 'object' || value === null) return false;
-  const row = value as Record<string, unknown>;
-  return (row.role === 'user' || row.role === 'assistant') && typeof row.content === 'string';
-}
-
 function buildMemberContext(m: MemberContextProfile): string {
   let name = 'Explorer';
   if (m.display_name && !m.display_name.startsWith('0x')) {
@@ -184,85 +170,64 @@ export async function POST(req: NextRequest) {
     if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
     const body = parsed as ThinkerRequestBody;
+    if (body.demo === true) {
+      return privateJson({ error: 'The guest Thinker chat has closed. Open the Apology guide on the homepage.' }, { status: 410 });
+    }
     let supabaseAdminClient: ReturnType<typeof getSupabaseAdmin> | null = null;
     const supabaseAdmin = () => {
       supabaseAdminClient ??= getSupabaseAdmin();
       return supabaseAdminClient;
     };
 
-    const isDemo = body.demo === true;
     const thinkerId = textField(body.thinkerId, 80) ?? textField(body.thinker, 80);
     const message = textField(body.message, 8_000);
     const isReaction = body.isReaction === true;
     const salonId = textField(body.salonId, 120) ?? 'general';
     const councilContext = normalizeCouncilContext(body.councilContext);
     const communitySlug = textField(body.community, 120) ?? 'society-of-explorers';
-    const demoMessages = Array.isArray(body.messages) ? body.messages.filter(isDemoMessage) : [];
 
     if (!thinkerId || !message) {
       return privateJson({ error: 'thinkerId and message are required' }, { status: 400 });
     }
 
-    // --- DEMO MODE: Socrates only, limited messages, no auth ---
-    if (isDemo) {
-      if (thinkerId !== 'socrates') {
-        return privateJson({ error: 'Demo only available with Socrates' }, { status: 403 });
-      }
-      if (demoMessages.length > DEMO_MESSAGE_LIMIT) {
-        return privateJson({ error: 'Demo limit reached' }, { status: 429 });
-      }
-    }
-
-    // --- AUTH + FULL PROFILE FETCH (skip for demo) ---
-    let memberId: string | null = null;
-    let memberName: string | null = null;
-    let memberContext: string | null = null;
-    let memberExpTokens: number = 0;
+    const auth = await getAuthenticatedMember(req);
+    if (!auth?.memberId) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const { memberId, member } = auth;
+    const memberName = member.display_name;
+    const memberContext = buildMemberContext(member);
+    const memberExpTokens = member.exp_tokens || 0;
     const isCouncilMode = body.isCouncilMode === true;
 
-    if (!isDemo) {
-      const auth = await getAuthenticatedMember(req);
-      if (auth) {
-        memberId = auth.memberId;
-        memberName = auth.member.display_name;
-        memberExpTokens = auth.member.exp_tokens || 0;
-        memberContext = buildMemberContext(auth.member);
-      }
-
-      if (!memberId) return privateJson({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Security fix S4: server-side rate limit before any model call. Signed-in members use their own
-    // budget; anonymous demo calls use a per-IP budget plus a global anonymous ceiling.
+    // Apply the member's server-side budget before any model call.
     const limited = limitModelCall(req, memberId);
     if (limited) return limited;
 
     // Security fix S2b: salon mode reads and writes salon history, so the salon must be the caller's own
-    // private salon, 'general', or a salon they guide or belong to. Council and demo don't touch salon history.
-    if (!isDemo && !isCouncilMode && memberId && salonId !== `private-${memberId}`) {
+    // private salon, 'general', or a salon they guide or belong to. Council doesn't touch salon history.
+    if (!isCouncilMode && salonId !== `private-${memberId}`) {
       if (salonId.startsWith('private-') || !(await memberCanUseSharedSalon(supabaseAdmin(), memberId, salonId))) {
         return privateJson({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
     // Permission check for non-default communities
-    if (memberId && communitySlug !== 'society-of-explorers' && !isDemo) {
+    if (communitySlug !== 'society-of-explorers') {
       const canUseCouncil = await checkPermission(memberId, communitySlug, 'use_council');
       if (!canUseCouncil) {
         return privateJson({ error: 'You do not have council access in this community' }, { status: 403 });
       }
     }
 
-    if (!isDemo && !isUuid(body.requestId)) {
+    if (!isUuid(body.requestId)) {
       return privateJson({ error: 'A logical requestId UUID is required' }, { status: 400 });
     }
-    const requestId = !isDemo ? body.requestId!.toLowerCase() : null;
+    const requestId = body.requestId.toLowerCase();
     const requestHash = createHash('sha256').update(JSON.stringify([
       'thinker-reward-v1', thinkerId, message, isReaction, salonId, isCouncilMode, councilContext, communitySlug,
     ])).digest('hex');
 
-    // --- SAVE USER MESSAGE (skip for demo, council mode, and system-generated prompts) ---
-    if (!isDemo && !isCouncilMode) {
+    // --- SAVE USER MESSAGE (skip for council mode and system-generated prompts) ---
+    if (!isCouncilMode) {
       const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
         message.startsWith('You have been invited into a private conversation') ||
         message.startsWith('Here are my current tasks:') ||
@@ -282,18 +247,12 @@ export async function POST(req: NextRequest) {
 
     // --- FETCH MESSAGE HISTORY ---
     // Council mode: skip history fetch — use only the current message + councilContext (injected in system prompt)
-    // Demo mode: use client-provided messages
     // Salon mode: fetch from salon_messages
     let conversationHistory: { role: 'user' | 'assistant'; content: string }[];
 
     if (isCouncilMode) {
       // Council: just the current user message. Council context is already in the system prompt.
       conversationHistory = [{ role: 'user', content: message }];
-    } else if (isDemo) {
-      conversationHistory = demoMessages;
-      if (!conversationHistory.some(m => m.content === message)) {
-        conversationHistory.push({ role: 'user', content: message });
-      }
     } else {
       const { data: history } = await supabaseAdmin()
         .from('salon_messages')
@@ -312,9 +271,9 @@ export async function POST(req: NextRequest) {
         }));
     }
 
-    // --- FETCH THINKER MEMORY (skip for demo, council, and anonymous) ---
+    // --- FETCH THINKER MEMORY (skip for council mode) ---
     let memory: string | null = null;
-    if (!isDemo && !isCouncilMode && memberId) {
+    if (!isCouncilMode) {
       try {
         memory = await getMemory(memberId, thinkerId);
       } catch {
@@ -349,9 +308,7 @@ export async function POST(req: NextRequest) {
     }
 
     let maxTokens: number;
-    if (isDemo) {
-      maxTokens = DEMO_MAX_TOKENS;
-    } else if (isReaction) {
+    if (isReaction) {
       maxTokens = REACTION_MAX_TOKENS;
     } else if (isArtifactRequest(message)) {
       maxTokens = ARTIFACT_MAX_TOKENS;
@@ -369,8 +326,6 @@ export async function POST(req: NextRequest) {
       if (memberName && !memberName.startsWith('0x')) {
         fullSystemPrompt += `\n\nThe member's name is ${memberName}.`;
       }
-    } else if (isDemo) {
-      fullSystemPrompt += '\n\nThis is a brief demo conversation. Be concise and engaging. End your response by subtly inviting deeper exploration — the full Society experience awaits.';
     } else {
       // Salon / single thinker mode: full context loading
       const contextPrefix = memberContext
@@ -389,7 +344,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 4-layer shared memory (skip for council — already fast-pathed above)
-      if (memberId && !isReaction) {
+      if (!isReaction) {
         try {
           const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: false, communitySlug });
           if (sharedContext) {
@@ -464,100 +419,72 @@ export async function POST(req: NextRequest) {
             return;
           }
 
-          // --- PARSE ACTIONS (skip for demo) ---
-          let cleanText: string;
-          let actions: ThinkerAction[] = [];
+          const parsed = parseActions(fullText);
+          const { actions } = parsed;
+          const cleanText = parsed.cleanText
+            .replace(/^\[[\w-]+\]:\s*/i, '')
+            .replace(/^\[[\w-]+\]\s*/i, '')
+            .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
+            .trim();
 
-          if (isDemo) {
-            cleanText = fullText
-              .replace(/^\[[\w-]+\]:\s*/i, '')
-              .replace(/^\[[\w-]+\]\s*/i, '')
-              .replace(/^(socrates):\s*/i, '')
-              .trim();
-          } else {
-            const parsed = parseActions(fullText);
-            actions = parsed.actions;
-            cleanText = parsed.cleanText
-              .replace(/^\[[\w-]+\]:\s*/i, '')
-              .replace(/^\[[\w-]+\]\s*/i, '')
-              .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
-              .trim();
+          const thinkerDisplayNames: Record<string, string> = {
+            socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
+            aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
+          };
+          const thinkerName = thinkerDisplayNames[thinkerId] || thinkerId;
+          if (!isCouncilMode) {
+            const { error: saveError } = await supabaseAdmin().from('salon_messages').insert({
+              salon_id: salonId,
+              sender_type: 'thinker',
+              sender_name: thinkerName,
+              thinker_id: thinkerId,
+              content: cleanText,
+            });
+            if (saveError) reportThinkerRouteFailure('thinker message save');
           }
 
-          // --- SAVE + EXP + MEMORY + ACTIONS (skip all for demo) ---
-          if (!isDemo) {
-            const thinkerDisplayNames: Record<string, string> = {
-              socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
-              aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
-            };
-            // Skip salon_messages save in council mode (each thinker manages its own context via councilContext)
-            if (!isCouncilMode) {
-              const { error: saveError } = await supabaseAdmin().from('salon_messages').insert({
-                salon_id: salonId,
-                sender_type: 'thinker',
-                sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
-                thinker_id: thinkerId,
-                content: cleanText,
-              });
-              if (saveError) reportThinkerRouteFailure('thinker message save');
-            }
-
-            // Member-specific operations (skip for anonymous council)
-            if (memberId) {
-              // Execute actions with structured results
-              if (actions.length > 0) {
-                const actionResults = await executeActionsWithResults(actions, memberId, thinkerId);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: actionResults })}\n\n`));
-              }
-
-              try {
-                const { data, error } = await boundedRewardCall(supabaseAdmin().rpc('soe_thinker_reward_award', {
-                  p_actor: memberId, p_request_id: requestId!, p_request_hash: requestHash,
-                  p_thinker_id: thinkerId, p_is_reaction: isReaction,
-                }));
-                const parsed = !error ? parseThinkerRewardReceipt(data) : null;
-                if (parsed && parsed.requestId === requestId && parsed.amount === (isReaction ? 4 : 8)) rewardReceipt = parsed;
-                else reportThinkerRouteFailure('reward confirmation');
-              } catch { reportThinkerRouteFailure('reward confirmation'); }
-
-              const thinkerNames: Record<string, string> = {
-                socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
-                aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
-              };
-              recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
-                .catch(() => reportThinkerRouteFailure('legacy memory update'));
-
-              // Store embeddings + episodes for memory (fire and forget)
-              const sessionId = `${isCouncilMode ? 'council' : 'salon'}-${salonId}-${Date.now()}`;
-              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'user', content: message }).catch(() => {});
-              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'assistant', content: cleanText }).catch(() => {});
-              storeEpisode({ memberId, thinkerId, role: 'user', content: message, sessionId, isCouncil: isCouncilMode }).catch(() => {});
-              storeEpisode({ memberId, thinkerId, role: 'assistant', content: cleanText, sessionId, isCouncil: isCouncilMode }).catch(() => {});
-
-              // Trigger memory extraction every 4 messages in council, 8 in salon
-              const extractInterval = isCouncilMode ? 4 : 8;
-              if (memberExpTokens > 0 && (memberExpTokens % extractInterval === 0)) {
-                extractMemory(memberId, [
-                  { role: 'user', content: message, thinker_id: thinkerId },
-                  { role: 'assistant', content: cleanText, thinker_id: thinkerId },
-                ]).catch(() => {});
-              }
-            }
+          if (actions.length > 0) {
+            const actionResults = await executeActionsWithResults(actions, memberId, thinkerId);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: actionResults })}\n\n`));
           }
 
-          // --- SEND DONE + ACTIONS TO CLIENT ---
-          if (!isDemo && actions.length > 0) {
+          try {
+            const { data, error } = await boundedRewardCall(supabaseAdmin().rpc('soe_thinker_reward_award', {
+              p_actor: memberId, p_request_id: requestId, p_request_hash: requestHash,
+              p_thinker_id: thinkerId, p_is_reaction: isReaction,
+            }));
+            const receipt = !error ? parseThinkerRewardReceipt(data) : null;
+            if (receipt && receipt.requestId === requestId && receipt.amount === (isReaction ? 4 : 8)) rewardReceipt = receipt;
+            else reportThinkerRouteFailure('reward confirmation');
+          } catch { reportThinkerRouteFailure('reward confirmation'); }
+
+          recordInteraction(memberId, thinkerId, thinkerName, salonId)
+            .catch(() => reportThinkerRouteFailure('legacy memory update'));
+
+          // Store embeddings and episodes for member memory after the reply.
+          const sessionId = `${isCouncilMode ? 'council' : 'salon'}-${salonId}-${Date.now()}`;
+          storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'user', content: message }).catch(() => {});
+          storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'assistant', content: cleanText }).catch(() => {});
+          storeEpisode({ memberId, thinkerId, role: 'user', content: message, sessionId, isCouncil: isCouncilMode }).catch(() => {});
+          storeEpisode({ memberId, thinkerId, role: 'assistant', content: cleanText, sessionId, isCouncil: isCouncilMode }).catch(() => {});
+
+          const extractInterval = isCouncilMode ? 4 : 8;
+          if (memberExpTokens > 0 && (memberExpTokens % extractInterval === 0)) {
+            extractMemory(memberId, [
+              { role: 'user', content: message, thinker_id: thinkerId },
+              { role: 'assistant', content: cleanText, thinker_id: thinkerId },
+            ]).catch(() => {});
+          }
+
+          if (actions.length > 0) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', actions })}\n\n`));
           }
-
           const doneData = JSON.stringify({
             done: true,
             response: cleanText,
-            ...(!isDemo && {
-              ...(rewardReceipt ? { expAwarded: rewardReceipt.replayed ? 0 : rewardReceipt.amount } : {}),
-              reward: rewardReceipt ? { status: 'confirmed', ...rewardReceipt } : { status: 'unknown', requestId },
-              actions: actions.length > 0 ? actions : undefined,
-            }),
+            ...(rewardReceipt ? { expAwarded: rewardReceipt.replayed ? 0 : rewardReceipt.amount } : {}),
+            reward: rewardReceipt ? { status: 'confirmed', ...rewardReceipt } : { status: 'unknown', requestId },
+            actions: actions.length > 0 ? actions : undefined,
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();

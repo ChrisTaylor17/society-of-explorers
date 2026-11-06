@@ -4,7 +4,7 @@ This local milestone replaces the Thinker route's separate event INSERT and incr
 
 ## Request and result contract
 
-Every authenticated `POST /api/thinker` requires a `requestId` UUID. The four current authenticated callers create a new key for each deliberate request. The demo-only homepage remains unchanged. There is no automatic POST retry. Reusing a key is permitted only for the exact same normalized request; changing the key creates a different award opportunity. This is not abuse prevention or a reward budget.
+Every authenticated `POST /api/thinker` requires a `requestId` UUID. The four current authenticated callers create a new key for each deliberate request. The public homepage opens the Apology discussion guide. Legacy guest requests receive a private HTTP 410 before account, provider or reward work. There is no automatic POST retry. Reusing a key is permitted only for the exact same normalized request; changing the key creates a different award opportunity. This is not abuse prevention or a reward budget.
 
 The route derives the member once from the verified session. It hashes the normalized thinker, message, reaction flag, salon, council mode/context and community with a version tag. Only the digest is stored in the receipt; no prompt, profile text, identity subject or provider response is persisted there. Body-supplied member IDs and amounts have no award authority.
 

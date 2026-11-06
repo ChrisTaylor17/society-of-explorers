@@ -1,10 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { track } from '@/lib/analytics/client';
-import { FREE_SIGNUP_PATH } from '@/lib/join/content';
 import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import { fetchPulse, type PulseQuestion } from '@/lib/feed/pulseClient';
 import { PhilosophicalSurvey, type PhilosophicalProjection } from '@/components/onboarding/PhilosophicalSurvey';
@@ -42,23 +41,11 @@ const THINKER_AVATARS: Record<string, string> = {
   nietzsche: 'FN', einstein: 'AE', jobs: 'SJ',
 };
 
-interface ChatMessage { role: 'user' | 'assistant'; content: string; }
 type NetworkPanel = 'survey' | 'sandbox';
-const DEMO_STORAGE_KEY = 'soe_demo_messages';
-const DEMO_LIMIT = 3;
 const HOMEPAGE_PROJECT_ID = '11111111-1111-4111-8111-111111111111';
 const HOMEPAGE_POD_KEY_STORAGE = 'soe:homepage-pod-key:v1';
 const HOMEPAGE_GRAPH_STORAGE = 'soe:homepage-explorer-graph:v1';
 const PROMPT_ATLAS_URL = 'https://prompts-mvp.vercel.app';
-
-function loadDemoMessages(): ChatMessage[] {
-  if (typeof window === 'undefined') return [];
-  try { const stored = localStorage.getItem(DEMO_STORAGE_KEY); return stored ? JSON.parse(stored) : []; } catch { return []; }
-}
-function saveDemoMessages(msgs: ChatMessage[]) {
-  try { localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(msgs)); } catch {}
-}
-function countUserMessages(msgs: ChatMessage[]): number { return msgs.filter(m => m.role === 'user').length; }
 
 export default function HomePage() {
   const [question, setQuestion] = useState<PulseQuestion | null>(null);
@@ -95,15 +82,6 @@ export default function HomePage() {
     ],
   );
 
-  // Socrates demo
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [streaming, setStreaming] = useState(false);
-  const [streamText, setStreamText] = useState('');
-  const [gated, setGated] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
   useEffect(() => {
     if (!window.location.hash) window.scrollTo(0, 0);
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -115,80 +93,6 @@ export default function HomePage() {
     void fetchPulse().then(result => { if (current && result.ok) setQuestion(result.data.todayQuestion); });
     return () => { current = false; };
   }, []);
-
-  // Socrates demo init
-  useEffect(() => {
-    queueMicrotask(() => {
-      const stored = loadDemoMessages();
-      setMessages(stored);
-      setGated(countUserMessages(stored) >= DEMO_LIMIT);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (streaming || streamText) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamText, streaming]);
-
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || streaming || gated) return;
-    const updated = [...messages, { role: 'user' as const, content: text }];
-    setMessages(updated);
-    saveDemoMessages(updated);
-    setInput('');
-    setStreaming(true);
-    setStreamText('');
-    const userCount = countUserMessages(updated);
-
-    try {
-      abortRef.current = new AbortController();
-      const res = await fetch('/api/thinker', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ demo: true, thinker: 'socrates', message: text, messages: updated }),
-        signal: abortRef.current.signal,
-      });
-      if (!res.ok || !res.body) {
-        const err = await res.json().catch(() => ({ error: 'Stream failed' }));
-        const errMsg = { role: 'assistant' as const, content: err.error || 'Socrates is silent. Try again.' };
-        const withErr = [...updated, errMsg];
-        setMessages(withErr); saveDemoMessages(withErr);
-        setStreaming(false); return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = ''; let fullResponse = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        const lines = accumulated.split('\n');
-        accumulated = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            if (parsed.delta) { fullResponse += parsed.delta; setStreamText(fullResponse); }
-            if (parsed.done && parsed.response) { fullResponse = parsed.response; setStreamText(fullResponse); }
-          } catch {}
-        }
-      }
-      if (fullResponse) {
-        const withResponse = [...updated, { role: 'assistant' as const, content: fullResponse }];
-        setMessages(withResponse); saveDemoMessages(withResponse);
-        setStreamText('');
-        if (userCount >= DEMO_LIMIT) setGated(true);
-      }
-    } catch (error) {
-      const errorName = error instanceof Error ? error.name : '';
-      if (errorName !== 'AbortError') {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Something went wrong. Try again.' }]);
-      }
-    }
-    setStreaming(false);
-  }, [input, streaming, gated, messages]);
-
-  const displayMessages = streamText ? [...messages, { role: 'assistant' as const, content: streamText }] : messages;
 
   const tId = question?.thinker_id || '';
   const tName = THINKER_NAMES[tId] || '';
@@ -370,79 +274,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SOCRATES DEMO */}
-      <section style={{ padding: '3rem 2rem 5rem' }}>
-        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>TRY IT NOW</div>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>Ask Socrates anything.</h2>
-            <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic' }}>Real AI. Real streaming. No sign-up required.</p>
-          </div>
-
-          <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d', boxShadow: '0 0 40px rgba(201,168,76,0.06)' }}>
-            <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '1.5rem' }}>
-              {displayMessages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '24px', color: gold, opacity: 0.15, marginBottom: '0.75rem' }} aria-hidden="true">{'\u03A3'}</div>
-                  <p style={{ fontSize: '14px', color: ivory85, fontStyle: 'italic' }}>What are you really asking?</p>
-                </div>
-              )}
-              {displayMessages.map((msg, i) => (
-                <div key={i} style={{ marginBottom: '1.25rem' }}>
-                  {msg.role === 'user' ? (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <div style={{ background: `${gold}15`, border: `1px solid ${gold}22`, padding: '10px 14px', maxWidth: '85%' }}>
-                        <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.7, margin: 0 }}>{msg.content}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                        <span aria-hidden="true" style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: gold }}>{'\u03A3'}</span>
-                        <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold }}>SOCRATES</span>
-                      </div>
-                      <div style={{ padding: '10px 14px', maxWidth: '90%' }}>
-                        <p style={{ fontSize: '15px', color: parchment, lineHeight: 1.9, margin: 0 }}>
-                          {msg.content}
-                          {streaming && i === displayMessages.length - 1 && <span style={{ color: gold }}>{'\u2588'}</span>}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
-            <div style={{ borderTop: `1px solid ${gold}15`, padding: '1rem 1.5rem' }}>
-              {gated ? (
-                <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
-                  <p style={{ fontSize: '14px', color: parchment, marginBottom: '1rem' }}>Socrates has more to say. Create a free account to continue.</p>
-                  <a href={FREE_SIGNUP_PATH} onClick={() => track('signup_start', { tier: 'explorer', source: 'demo_gate' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>Create Free Account</a>
-                  <button onClick={() => { localStorage.removeItem(DEMO_STORAGE_KEY); setMessages([]); setGated(false); }}
-                    style={{ display: 'block', margin: '0.75rem auto 0', fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: muted, background: 'none', border: 'none', cursor: 'pointer' }}>
-                    START OVER
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    value={input} onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                    disabled={streaming} aria-label="Your question for Socrates" placeholder="Ask anything..."
-                    style={{ flex: 1, minWidth: 0, background: '#111', border: `1px solid ${gold}18`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, boxSizing: 'border-box' }}
-                  />
-                  <button onClick={sendMessage} disabled={streaming || !input.trim()}
-                    style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', padding: '11px 20px', cursor: streaming || !input.trim() ? 'default' : 'pointer', opacity: streaming || !input.trim() ? 0.75 : 1 }}>
-                    {streaming ? '...' : 'ASK'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
-            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: muted }}>
-              {gated ? '' : `${DEMO_LIMIT - countUserMessages(messages)} FREE EXCHANGE${DEMO_LIMIT - countUserMessages(messages) !== 1 ? 'S' : ''} REMAINING`}
-            </span>
+      <section aria-labelledby="apology-guide" style={{ padding: '3rem 2rem 5rem' }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, marginBottom: '0.75rem' }}>A QUESTION FOR YOUR SALON</p>
+          <h2 id="apology-guide" style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>
+            What does it mean to examine your life?
+          </h2>
+          <p style={{ fontSize: '18px', color: ivory85, lineHeight: 1.7, marginBottom: '1.25rem' }}>
+            In Plato’s <em>Apology</em>, Socrates defends the habit of questioning what we think we know.
+            What would that habit look like in your own life?
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px' }}>
+            <Link href="/circles/path/2" prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>
+              Open the Apology discussion guide
+            </Link>
+            <Link href={ONLINE_CIRCLES_HREF} prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>
+              Find a salon online
+            </Link>
           </div>
         </div>
       </section>

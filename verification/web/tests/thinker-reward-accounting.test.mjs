@@ -83,12 +83,33 @@ test('receipt GET validates exact query/origin/auth and never accepts another ac
  const malformed=await thinkerFixture(db,{rpcMode:'malformed'});assert.equal((await malformed.get('requestId='+REQUEST)).status,503);
  assert.equal(app.stats.providerCalls,0);
 });
-test('authenticated missing/invalid request keys stop before provider, demo stays unchanged, unauthorized actor is refused first',async t=>{
+test('authenticated missing or invalid request keys stop before the provider',async t=>{
  const db=await createThinkerRewardDb(t),app=await thinkerFixture(db);
  for(const requestId of [undefined,'bad'])assert.equal((await app.post(body({requestId}))).status,400);
  assert.equal(app.stats.providerCalls,0);assert.equal(app.stats.rpcCalls.length,0);
  const unauthorized=await thinkerFixture(db,{actor:null});assert.equal((await unauthorized.post(body({requestId:undefined}))).status,401);
- const demo=await done(await unauthorized.post({demo:true,thinkerId:'socrates',message:'Demo'}));assert.equal(demo.last.done,true);assert.equal('expAwarded'in demo.last,false);assert.equal('reward'in demo.last,false);
+ assert.equal(unauthorized.stats.providerCalls,0);
+});
+test('retired guest bodies refuse before authentication, community access or model work',async t=>{
+ const db=await createThinkerRewardDb(t);
+ for(const actor of [null,A]){
+  const app=await thinkerFixture(db,{actor});
+  const guest={demo:true,thinker:'socrates',message:'Synthetic guest input',
+   messages:[{role:'user',content:'SYNTHETIC_PREVIOUS_BROWSER_TEXT'}]};
+  for(const input of [guest,{...guest,isCouncilMode:true,community:'synthetic-private-community'}]){
+   const response=await app.post(input);
+   const text=await response.text();
+   assert.equal(app.stats.providerCalls,0);
+   assert.equal(response.status,410);
+   assert.match(response.headers.get('cache-control'),/private.*no-store/);
+   assert.deepEqual(Object.keys(JSON.parse(text)),['error']);
+   assert.doesNotMatch(text,/SYNTHETIC_PREVIOUS_BROWSER_TEXT/);
+  }
+  assert.equal(app.stats.authCalls,0);
+  assert.equal(app.stats.communityReads,0);
+  assert.equal(app.stats.rpcCalls.length,0);
+  assert.equal(app.stats.fallbacks,0);
+ }
 });
 test('changed payload key yields SQL409 but the already-open actual SSE stream honestly reports unconfirmed, without new accounting effects',async t=>{
  const db=await createThinkerRewardDb(t),app=await thinkerFixture(db);await done(await app.post(body()));const prior=await rewardRows(db);
