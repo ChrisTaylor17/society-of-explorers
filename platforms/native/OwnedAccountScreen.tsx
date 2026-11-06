@@ -50,6 +50,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   const clearFields = () => { setEmail(''); setPassword(''); };
   const invalidate = () => { epoch.current++; setVersion(value => value + 1); };
   const m = snapshot?.connection === connection ? snapshot?.model : connection?.controller.model();
+  const signingOut = m?.phase === 'signing_out';
   const capturedEpoch = epoch.current;
   const validView = () => mounted.current && current.current === connection && modeRef.current === mode && epoch.current === capturedEpoch;
 
@@ -126,13 +127,16 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   }
   function close() {
     if (!validView()) return;
+    const model = connection?.controller.model();
+    if (model?.phase === 'signing_out') return;
     invalidate(); preparing.current = false;
     ++attempt.current; setConnecting(false); clearFields(); setEntered(null); setCircleChoice(null);
     const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
     setMemberContext(null);
     const old = current.current; current.current = null; old?.close(); setConnection(null); setSnapshot(null);
     modeRef.current = 'signin'; setMode('signin');
-    setNotice('Account view closed. A saved sign-in may remain on this device. Connect to restore it or clear it.');
+    setNotice(model?.phase === 'closed' || model?.phase === 'clear_unknown'
+      ? model.message : 'Account view closed. A saved sign-in may remain on this device. Connect to restore it or clear it.');
   }
   function signIn() {
     if (!validView() || mode !== 'signin') return;
@@ -143,15 +147,18 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     clearFields(); setEntered(null);
     void value.controller.signIn(submittedEmail, submittedPassword);
   }
-  function clearDevice() {
+  function endDeviceSession(onlineSignOut: boolean) {
     if (!validView() || mode !== 'signin') return;
     const value = connection;
-    if (!value?.controller.model().canClear) return;
+    if (!value) return;
+    const model = value.controller.model();
+    if (onlineSignOut ? !model.canSignOut : !model.canClear) return;
     invalidate(); setPhilemonHosting(false); setCircleChoice(null);
     clearFields(); setEntered(null);
     const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberProblem('');
     setMemberContext(null);
-    void value.controller.clearDeviceSession();
+    if (onlineSignOut) void value.controller.signOutDevice();
+    else void value.controller.clearDeviceSession();
   }
   function enterMember() {
     if (!validView() || mode !== 'signin' || !connection?.controller.model().ready) return;
@@ -165,7 +172,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     } catch { setMemberProblem('The member account view is unavailable. Close sign-in and connect again.'); }
   }
   function switchMode(next: AccountMode) {
-    if (!validView() || !connection || (next !== 'signin' && !connection.email)) return;
+    if (!validView() || !connection || connection.controller.model().phase === 'signing_out' || (next !== 'signin' && !connection.email)) return;
     invalidate(); clearFields(); setEntered(null); setMemberProblem('');
     const oldMember = memberView.current; memberView.current = null; oldMember?.view.close(); setMemberContext(null);
     connection.controller.activity(false); connection.email?.activity(false);
@@ -254,13 +261,17 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
       }}/>
       <Action label="Continue to my member account" disabled={!m?.ready} onPress={enterMember}/>
       {connection.email ? <>
-        <Action label="Create account" onPress={() => switchMode('signup')}/>
-        <Action label="Recover password" onPress={() => switchMode('recovery')}/>
+        <Action label="Create account" disabled={signingOut} onPress={() => switchMode('signup')}/>
+        <Action label="Recover password" disabled={signingOut} onPress={() => switchMode('recovery')}/>
       </> : null}
-      <Text style={styles.note}>Clearing this device removes its saved sign-in. The online session may remain valid until it expires; your account is kept.</Text>
-      <Action label="Clear sign-in from this device" disabled={!m?.canClear} onPress={clearDevice}/>
+      {m?.canSignOut || signingOut ? <>
+        <Text style={styles.note}>Sign out ends this phone’s online session and clears its saved sign-in.</Text>
+        <Action label="Sign out of this device" disabled={signingOut} onPress={() => endDeviceSession(true)}/>
+      </> : null}
+      <Text style={styles.note}>Clear the saved sign-in on this phone, even while offline. The online session can remain active.</Text>
+      <Action label="Clear sign-in from this device" disabled={!m?.canClear} onPress={() => endDeviceSession(false)}/>
       </>}
-      <Action label="Close sign-in" onPress={close}/>
+      <Action label="Close sign-in" disabled={signingOut} onPress={close}/>
     </>}
   </ScrollView></SafeAreaView>;
 }

@@ -32,7 +32,7 @@ export const SafeAreaView=box('main'),ScrollView=box('div'),View=box('div'),Text
 export const Pressable=p=>React.createElement('button',{'aria-label':p.accessibilityLabel,role:['checkbox','radio'].includes(p.accessibilityRole)?p.accessibilityRole:'button','aria-checked':['checkbox','radio'].includes(p.accessibilityRole)?p.accessibilityState?.checked:undefined,disabled:p.disabled,onClick:p.onPress,style:style([{display:'flex',flexDirection:'column',boxSizing:'border-box'},p.style])},p.children);
 export const TextInput=p=>React.createElement(p.multiline?'textarea':'input',{'aria-label':p.accessibilityLabel,type:p.secureTextEntry?'password':'text',disabled:p.editable===false,value:p.value,maxLength:p.maxLength,autoComplete:'off',onChange:e=>p.onChangeText(e.target.value),style:style([{boxSizing:'border-box',width:'100%',fontFamily:'inherit'},p.style])});
 export const UIManager={getViewManagerConfig:()=>null},codegenNativeComponent=()=>()=>null;
-export const StyleSheet={create:x=>x},Platform={OS:'android'},TurboModuleRegistry={get:()=>null};
+export const StyleSheet={create:x=>x},Platform={get OS(){return window.nativeQa?.platform??'android';}},TurboModuleRegistry={get:()=>null};
 export const AppState={get currentState(){return window.nativeQa?.appState.currentState??'active';},addEventListener(name,fn){return window.nativeQa.appState.addEventListener(name,fn);}};`;
 const result=await Bun.build({entrypoints:['platforms/tests/native-owned-auth-entry.tsx'],outdir:output,target:'browser',format:'esm',naming:'page.[ext]',define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'native-primitives-explicit-double',setup(build){
  // Native node_modules is an older linked runtime with offloaded files. Use

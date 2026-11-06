@@ -20,9 +20,11 @@ async function fixture(options={}){
  const config={origin,storageKey,providerOrigin,publishableKey,timeoutMs:options.timeoutMs??100};
  return{bridge,calls,values,config,create,load,ports:options.skip?null:await create(bridge,config),setSend:fn=>{sendHook=fn;},setBegin:fn=>{beginHook=fn;}};
 }
+const jwt = claims => 'eyJhbGciOiJIUzI1NiJ9.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.synthetic';
+const scopedBearer = jwt({ sub: '73111111-1111-4111-8111-111111111111', session_id: '44444444-4444-4444-8444-444444444444' });
 function request(operation='password',signal=new AbortController().signal){
  const endpoint={password:'/auth/v1/token?grant_type=password',refresh:'/auth/v1/token?grant_type=refresh_token',user:'/auth/v1/user',logout:'/auth/v1/logout?scope=local'}[operation];
- const method=operation==='user'?'GET':'POST',headers={apikey:publishableKey,'X-Supabase-Api-Version':'2024-01-01','X-Client-Info':'supabase-auth-js/2.99.3',...(operation==='user'||operation==='logout'?{Authorization:'Bearer NONISSUED_AUTH_TOKEN'}:{Authorization:'Bearer '+publishableKey}),...(method==='POST'?{'Content-Type':'application/json;charset=UTF-8'}:{})};
+ const method=operation==='user'?'GET':'POST',headers={apikey:publishableKey,'X-Supabase-Api-Version':'2024-01-01','X-Client-Info':'supabase-auth-js/2.99.3',Authorization:'Bearer '+(operation==='logout'?scopedBearer:operation==='user'?'NONISSUED_AUTH_TOKEN':publishableKey),...(method==='POST'?{'Content-Type':'application/json;charset=UTF-8'}:{})};
  const body=operation==='password'?JSON.stringify({email:'synthetic@example.invalid',password:'SYNTHETIC_PASSWORD',gotrue_meta_security:{}}):operation==='refresh'?JSON.stringify({refresh_token:'NONISSUED_REFRESH_TOKEN'}):undefined;
  return[providerOrigin+endpoint,{method,headers,signal,...(body===undefined?{}:{body})}];
 }
@@ -38,6 +40,13 @@ test('provider path, method, normalization and unsafe header/body inputs fail be
  for(const bad of [url+'#',url+'&x=1',url+'&grant_type=password',url.replace('grant_type','%67rant_type'),url.replace('/token','/./token'),url.replace(providerOrigin,origin),' '+url,url.replace('password','pkce'),providerOrigin+'/auth/v1/signup',providerOrigin+'/auth/v1/logout?scope=global'])await assert.rejects(f.ports.fetch(bad,good));
  for(const changed of [{method:'GET'},{credentials:'include'},{redirect:'follow'},{cache:'default'},{signal:null},{headers:{...good.headers,Cookie:'PRIVATE'}},{headers:{...good.headers,apikey:'sb_secret_PRIVATE'}},{headers:{...good.headers,Authorization:'Bearer NONISSUED_AUTH_TOKEN'}},{headers:{...good.headers,'X-Supabase-Api-Version':'forged'}},{headers:{...good.headers,'X-Client-Info':'PRIVATE\nHEADER'}},{body:'x'.repeat(16385)},{body:'{}'},{body:JSON.stringify({email:'x@y.invalid',password:'x',phone:'forged'})},{body:JSON.stringify({email:'x@y.invalid',password:'x',gotrue_meta_security:{captcha_token:'forged'}})},{body:JSON.stringify({email:'x@y.invalid',password:'x\n'})}])await assert.rejects(f.ports.fetch(url,{...good,...changed}));
  for(const operation of ['user','logout']){const[u,init]=request(operation);await assert.rejects(f.ports.fetch(u,{...init,body:'{}'}));await assert.rejects(f.ports.fetch(u,{...init,headers:{...init.headers,Authorization:'Bearer '+publishableKey}}));}
+ const [logout, local] = request('logout');
+ await assert.rejects(f.ports.fetch(logout.replace('local', 'global'), local));
+ for (const bearer of ['NONISSUED_AUTH_TOKEN', jwt({sub:'73111111-1111-4111-8111-111111111111'}),
+   jwt({sub:'73111111-1111-4111-8111-111111111111',session_id:'00000000-0000-0000-0000-000000000000'}),
+   jwt({sub:'73111111-1111-4111-8111-111111111111',session_id:'44444444-4444-4444-8444-444444444444',Session_Id:''})]) {
+   await assert.rejects(f.ports.fetch(logout, {...local,headers:{...local.headers,Authorization:'Bearer '+bearer}}));
+ }
  assert.deepEqual(f.calls,[]);f.ports.retire();
 });
 test('missing or mismatched provider capabilities and service/legacy keys cannot create auth ports',async()=>{

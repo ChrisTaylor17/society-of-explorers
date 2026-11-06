@@ -18,6 +18,9 @@ const KEY = 'synthetic-owned-auth', PUBLIC = 'sb_publishable_NONISSUED_SYNTHETIC
 const SUBJECT = '73111111-1111-4111-8111-111111111111', OTHER = '73222222-2222-4222-8222-222222222222';
 const EMAIL = 'synthetic-existing@example.invalid', PASSWORD = 'SYNTHETIC_PASSWORD_NOT_ISSUED';
 const TOKEN = 'NONISSUED_ACCESS_TOKEN', REFRESH = 'NONISSUED_REFRESH_TOKEN';
+const SESSION = '44444444-4444-4444-8444-444444444444';
+const LOGOUT = '/auth/v1/logout?scope=local';
+const jwt = (claims = {}) => 'eyJhbGciOiJIUzI1NiJ9.' + Buffer.from(JSON.stringify({ sub: SUBJECT, session_id: SESSION, ...claims })).toString('base64url') + '.synthetic';
 const epoch = n => `a0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -37,12 +40,14 @@ async function fixture(t, { saved, timeoutMs = 1000 } = {}) {
     async sendAuth(id, request) {
       check(handles.get(id)); providerCalls.push({ ...request }); calls.push('provider');
       const endpoint = request.url.slice(PROVIDER.length);
+      let status = 200;
       let body;
       if (endpoint === '/auth/v1/token?grant_type=password') body = session({ access_token: tokenValue, user: { id: user, email: EMAIL } });
       else if (endpoint === '/auth/v1/token?grant_type=refresh_token') body = session({ access_token: tokenValue, user: { id: user, email: EMAIL } });
       else if (endpoint === '/auth/v1/user') { assert.equal(request.bearer, tokenValue); body = { user: { id: user, email: EMAIL, user_metadata: { private: 'PRIVATE_PROVIDER_METADATA' } } }; }
+      else if (endpoint === LOGOUT) { assert.equal(request.bearer, tokenValue); assert.equal(request.body, undefined); status = 204; }
       else throw Error('Unexpected synthetic provider endpoint');
-      const reply = { status: 200, url: request.url, redirected: false, body: JSON.stringify(body) };
+      const reply = { status, url: request.url, redirected: false, body: status === 204 ? '' : JSON.stringify(body) };
       return hooks.provider ? hooks.provider(reply, request) : reply;
     },
     async cancel(id) { calls.push('cancel'); handles.delete(id); },
@@ -66,6 +71,103 @@ async function fixture(t, { saved, timeoutMs = 1000 } = {}) {
 }
 const login = async f => { f.enable(); await f.controller.signIn(EMAIL, PASSWORD); assert.equal(f.controller.model().ready, true); };
 const paths = f => f.providerCalls.map(call => call.url.slice(PROVIDER.length));
+
+test('only exact verified same-subject session tokens can revoke one phone session', async t => {
+  for (const value of [TOKEN, jwt({ session_id: undefined }), jwt({ session_id: '00000000-0000-0000-0000-000000000000' }),
+    jwt({ Session_Id: '' }), jwt({ '\u017fession_id': '' }), jwt({ sub: OTHER })]) {
+    const f = await fixture(t);
+    f.setToken(value);
+    await login(f);
+    assert.equal(f.controller.model().canSignOut, false);
+    await f.controller.signOutDevice();
+    assert.deepEqual(paths(f), ['/auth/v1/token?grant_type=password', '/auth/v1/user']);
+    assert.equal(f.count('reset'), 0);
+    assert.equal(f.controller.model().canClear, true);
+  }
+});
+
+test('explicit phone sign-out retires authority before sending exactly one local logout and confirms durable clearing', async t => {
+  const f = await fixture(t), pending = gate(), access = jwt();
+  f.setToken(access);
+  await login(f);
+  assert.equal(f.controller.model().canSignOut, true);
+  f.hooks.provider = (reply, request) => request.url.endsWith(LOGOUT) ? pending.promise.then(() => reply) : reply;
+  const first = f.controller.signOutDevice();
+  assert.equal(f.controller.model().phase, 'signing_out');
+  assert.equal((await f.controller.auth.getSession()).data.session, null);
+  await f.controller.signOutDevice();
+  await f.controller.resume();
+  assert.equal(f.count('reset'), 0);
+  pending.resolve();
+  await first;
+  assert.equal(paths(f).filter(path => path === LOGOUT).length, 1);
+  assert.equal(f.providerCalls.at(-1).bearer, access);
+  assert.equal(f.values.size, 0);
+  assert.equal(f.count('reset'), 1);
+  assert.match(f.controller.model().message, /^Signed out of this phone/);
+  const next = await f.prepare();
+  f.enable(next.controller);
+  await next.controller.resume();
+  assert.equal(next.controller.model().ready, false);
+  assert.equal(paths(f).length, 3);
+});
+
+test('wrong or missing provider acknowledgement still clears saved sign-in and does not claim revocation', async t => {
+  for (const transform of [reply => ({ ...reply, status: 403 }), reply => ({ ...reply, status: 200 }),
+    reply => ({ ...reply, redirected: true }), reply => ({ ...reply, url: PROVIDER + '/auth/v1/user' }),
+    () => new Promise(() => {})]) {
+    const f = await fixture(t, { timeoutMs: 200 });
+    f.setToken(jwt());
+    await login(f);
+    f.hooks.provider = (reply, request) => request.url.endsWith(LOGOUT) ? transform(reply) : reply;
+    await f.controller.signOutDevice();
+    assert.equal(paths(f).filter(path => path === LOGOUT).length, 1);
+    assert.equal(f.values.size, 0);
+    assert.equal(f.count('reset'), 1);
+    assert.equal(f.controller.model().message, 'Saved sign-in cleared. Online sign-out is unconfirmed.');
+  }
+});
+
+test('lifecycle loss before or during logout fences transmission and late acknowledgement', async t => {
+  for (const beforeSend of [true, false]) {
+    const f = await fixture(t), held = gate();
+    f.setToken(jwt());
+    await login(f);
+    let retired = false;
+    if (beforeSend) f.controller.subscribe(model => {
+      if (model.phase !== 'signing_out' || retired) return;
+      retired = true;
+      f.controller.activity(false);
+      f.controller.activity(true);
+    });
+    else f.hooks.provider = (reply, request) => request.url.endsWith(LOGOUT) ? held.promise.then(() => reply) : reply;
+    const action = f.controller.signOutDevice();
+    if (!beforeSend) {
+      while (!paths(f).includes(LOGOUT)) await tick();
+      f.controller.connectivity(false);
+    }
+    await action;
+    held.resolve();
+    await tick();
+    assert.equal(paths(f).filter(path => path === LOGOUT).length, beforeSend ? 0 : 1);
+    assert.equal(f.values.size, 0);
+    assert.equal(f.controller.model().ready, false);
+    assert.equal(f.controller.model().message, 'Saved sign-in cleared. Online sign-out is unconfirmed.');
+  }
+});
+
+test('provider acceptance with an invalid storage receipt keeps the phone outcome unconfirmed', async t => {
+  const f = await fixture(t);
+  f.setToken(jwt());
+  await login(f);
+  f.hooks.reset = receipt => ({ ...receipt, cleared: false });
+  await f.controller.signOutDevice();
+  assert.equal(f.controller.model().phase, 'clear_unknown');
+  assert.equal(f.controller.model().canResume, false);
+  assert.equal(f.controller.model().canClear, false);
+  assert.match(f.controller.model().message, /Online sign-out accepted. Device clearing is unconfirmed/);
+  assert.equal(paths(f).filter(path => path === LOGOUT).length, 1);
+});
 
 test('factory, subscription, lifecycle activation and cached sessions perform no storage or provider work', async t => {
   for (const cached of [undefined, session(), session({ expires_at: 1 }), { access_token: TOKEN, refresh_token: REFRESH, expires_at: 1 }]) {

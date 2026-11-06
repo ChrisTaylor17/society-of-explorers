@@ -1,6 +1,7 @@
 import { AuthClient } from '@supabase/auth-js';
 import { isUuid } from '../../../../lib/ids/uuid';
 import type { ExistingVerifiedAuth } from '../circles/verified-member-session';
+import { hasLocalSessionClaim } from './jwt-claims';
 
 type Storage = { getItem(key: string): Promise<string | null>; setItem(key: string, value: string): Promise<void>; removeItem(key: string): Promise<void> };
 type Client = InstanceType<typeof AuthClient>;
@@ -10,12 +11,12 @@ export type OwnedAuthPorts = {
   resetAccountStorage(): Promise<void>; retire(): void; onRetired(listener: () => void): () => void;
 };
 export type OwnedAuthModel = {
-  phase: 'idle' | 'signing_in' | 'resuming' | 'checking' | 'ready' | 'unavailable' | 'clearing' | 'clear_unknown' | 'closed';
+  phase: 'idle' | 'signing_in' | 'resuming' | 'checking' | 'ready' | 'unavailable' | 'signing_out' | 'clearing' | 'clear_unknown' | 'closed';
   busy: boolean; active: boolean; online: boolean; ready: boolean;
-  canSignIn: boolean; canResume: boolean; canClear: boolean; message: string;
+  canSignIn: boolean; canResume: boolean; canClear: boolean; canSignOut: boolean; message: string;
 };
 type Saved = { access_token: string; refresh_token: string; expires_at: number; expires_in: number; token_type: 'bearer'; user: { id: string } };
-type Verified = { access_token: string; expires_at: number; user: { id: string } };
+type Verified = { access_token: string; expires_at: number; user: { id: string }; localSignOut: boolean };
 type Operation = {
   kind: 'sign_in' | 'resume' | 'verify'; generation: number; controller: AbortController; disposed: boolean;
   used: Set<string>; expectedBody?: string; expectedToken?: string; expectedSubject?: string; writing: boolean;
@@ -25,7 +26,7 @@ const token = (value: unknown): value is string => typeof value === 'string' && 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const failure = () => Error('Member sign-in unavailable');
 const now = () => Math.floor(Date.now() / 1000);
-const fresh = (value: Verified) => value.expires_at > now() + 30;
+const fresh = (value: { expires_at: number }) => value.expires_at > now() + 30;
 function saved(value: unknown, providerReply = false): Saved | null {
   if (!record(value) || !token(value.access_token) || !token(value.refresh_token) || !record(value.user) || !isUuid(value.user.id)
     || value.token_type !== 'bearer') return null;
@@ -45,7 +46,8 @@ let clientSequence = 0;
 /** App-owned email/password sign-in. The SDK is ephemeral and has no durable
  * storage or automatic initialization. Only an explicit operation can reach the
  * provider; protected persistence follows fresh exact-token subject verification.
- * No OAuth, PKCE callback, sign-up or provider-revocation API is exposed here. */
+ * A verified phone session can request local-scope revocation before clearing
+ * protected storage. Email confirmation and recovery use their own controller. */
 export function createOwnedNativeAuth(config: { ports: OwnedAuthPorts; publishableKey: string; timeoutMs?: number; initialOnline?: boolean }) {
   const ports = config.ports, origin = provider(ports.providerOrigin), key = ports.storageKey, timeout = config.timeoutMs ?? 15000;
   if (!/^[A-Za-z0-9._-]{1,160}$/.test(key) || typeof config.publishableKey !== 'string' || !/^sb_publishable_[A-Za-z0-9_-]{20,200}$/.test(config.publishableKey)
@@ -55,6 +57,7 @@ export function createOwnedNativeAuth(config: { ports: OwnedAuthPorts; publishab
   let active = false, online = config.initialOnline ?? false, closed = false, nativeRetired = false, clearing = false, preparing = false, generation = 0;
   let phase: OwnedAuthModel['phase'] = 'idle', message = 'Sign in with an existing account, or explicitly resume the saved device session.';
   let verified: Verified | null = null, expiry: ReturnType<typeof setTimeout> | undefined, queue: Promise<unknown> = Promise.resolve();
+  let logoutRequest: AbortController | null = null;
   let offRetired = () => {};
   const pending = new Set<Operation>(), listeners = new Set<(model: OwnedAuthModel) => void>();
   const authListeners = new Set<Parameters<ExistingVerifiedAuth['onAuthStateChange']>[0]>();
@@ -62,12 +65,13 @@ export function createOwnedNativeAuth(config: { ports: OwnedAuthPorts; publishab
   const model = (): OwnedAuthModel => {
     const busy = pending.size > 0 || clearing || preparing, ready = enabled() && verified !== null && fresh(verified);
     return { phase, active, online, busy, ready, canSignIn: enabled() && !busy, canResume: enabled() && !busy,
-      canClear: !closed && !nativeRetired && !clearing, message };
+      canClear: !closed && !nativeRetired && !clearing, canSignOut: ready && !busy && verified?.localSignOut === true, message };
   };
   const emit = () => { for (const listener of listeners) { try { listener(model()); } catch { /* Independent observer. */ } } };
   const authEvent = (event: string) => { for (const listener of authListeners) { try { listener(event, null); } catch { /* Independent observer. */ } } };
   function clearMemory(text: string, next: OwnedAuthModel['phase'] = 'idle') {
     generation++; clearTimeout(expiry); verified = null;
+    logoutRequest?.abort();
     for (const operation of pending) operation.controller.abort();
     message = text; phase = next; authEvent('SIGNED_OUT'); emit();
   }
@@ -75,7 +79,8 @@ export function createOwnedNativeAuth(config: { ports: OwnedAuthPorts; publishab
   const requireCurrent = (operation: Operation) => { if (!current(operation)) throw failure(); };
   function accept(session: Saved) {
     clearTimeout(expiry);
-    verified = { access_token: session.access_token, expires_at: session.expires_at, user: { id: session.user.id } };
+    verified = { access_token: session.access_token, expires_at: session.expires_at, user: { id: session.user.id },
+      localSignOut: hasLocalSessionClaim(session.access_token, session.user.id) };
     phase = 'ready'; message = 'Your existing account is verified. Continue to check your Society of Explorers member account.';
     const expected = verified;
     const expire = () => {
@@ -226,31 +231,99 @@ export function createOwnedNativeAuth(config: { ports: OwnedAuthPorts; publishab
     },
     onAuthStateChange(listener) { authListeners.add(listener); return { data: { subscription: { unsubscribe() { authListeners.delete(listener); } } } }; },
   };
+  async function revokeCurrentSession(session: Verified, expectedGeneration: number): Promise<boolean> {
+    if (closed || nativeRetired || !active || !online || generation !== expectedGeneration || !fresh(session)) return false;
+    const endpoint = origin + '/auth/v1/logout?scope=local';
+    const controller = new AbortController();
+    logoutRequest = controller;
+    let onAbort = () => {};
+    const interrupted = new Promise<null>(resolve => {
+      onAbort = () => resolve(null);
+      controller.signal.addEventListener('abort', onAbort, { once: true });
+    });
+    const deadline = setTimeout(() => controller.abort(), timeout);
+    try {
+      const response = await Promise.race([interrupted, ports.fetch(endpoint, {
+        method: 'POST', signal: controller.signal, credentials: 'omit', cache: 'no-store', redirect: 'error',
+        headers: { apikey: config.publishableKey, Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+      })]);
+      return response !== null && !controller.signal.aborted && response.url === endpoint && response.redirected === false && response.status === 204;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(deadline);
+      controller.signal.removeEventListener('abort', onAbort);
+      logoutRequest = null;
+    }
+  }
+  async function clearSession(signOut: boolean) {
+    const state = model();
+    if (signOut ? !state.canSignOut : !state.canClear) return;
+    const session = signOut ? verified : null;
+    const expectedGeneration = generation + 1;
+    clearing = true;
+    clearMemory(signOut ? 'Signing out of this phone…' : 'Clearing the saved session from this device. This does not revoke provider sessions.',
+      signOut ? 'signing_out' : 'clearing');
+    const revoked = session ? await revokeCurrentSession(session, expectedGeneration) : false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([ports.resetAccountStorage(), new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(failure()), timeout);
+      })]);
+      if (!closed) {
+        phase = 'closed';
+        message = revoked ? 'Signed out of this phone. Its saved sign-in is cleared.'
+          : signOut ? 'Saved sign-in cleared. Online sign-out is unconfirmed.'
+            : 'Saved session cleared from this device. Provider sessions were not revoked. Reopen the account connection to sign in again.';
+      }
+    } catch {
+      if (!closed) {
+        phase = 'clear_unknown';
+        message = revoked ? 'Online sign-out accepted. Device clearing is unconfirmed. Reopen the account connection to clear this device.'
+          : signOut ? 'Device clearing and online sign-out are unconfirmed. Reopen the account connection to clear this device.'
+            : 'Device clearing could not be confirmed. Reopen the account connection and check again. Provider sessions were not revoked.';
+      }
+    } finally {
+      clearTimeout(timer);
+      clearing = false;
+      nativeRetired = true;
+      offRetired();
+      offRetired = () => {};
+      try { ports.retire(); } catch { /* Already retired. */ }
+      emit();
+    }
+  }
   offRetired = ports.onRetired(() => {
     nativeRetired = true;
-    clearMemory('The device account connection changed. Reopen it before signing in again.', clearing ? 'clearing' : 'closed');
+    if (clearing) logoutRequest?.abort();
+    else clearMemory('The device account connection changed. Reopen it before signing in again.', 'closed');
   });
   return {
     auth, model,
     subscribe(listener: (value: OwnedAuthModel) => void) { listeners.add(listener); listener(model()); return () => { listeners.delete(listener); }; },
     signIn: (email: string, password: string) => enter('sign_in', email, password), resume: () => enter('resume'),
-    activity(value: boolean) { if (closed || value === active) return; active = value; if (!value) clearMemory('Private sign-in access cleared while inactive. Saved device data may remain; resume explicitly.'); else emit(); },
-    connectivity(value: boolean) { if (closed || value === online) return; online = value; if (!value) clearMemory('Private sign-in access cleared while offline. Saved device data may remain; resume explicitly.'); else emit(); },
-    async clearDeviceSession() {
-      if (!model().canClear) return;
-      clearing = true; clearMemory('Clearing the saved session from this device. This does not revoke provider sessions.', 'clearing');
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        await Promise.race([ports.resetAccountStorage(), new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(failure()), timeout);
-        })]);
-        nativeRetired = true;
-        if (!closed) { phase = 'closed'; message = 'Saved session cleared from this device. Provider sessions were not revoked. Reopen the account connection to sign in again.'; }
-      } catch {
-        nativeRetired = true;
-        if (!closed) { phase = 'clear_unknown'; message = 'Device clearing could not be confirmed. Reopen the account connection and check again. Provider sessions were not revoked.'; }
-      } finally { clearTimeout(timer); clearing = false; offRetired(); offRetired = () => {}; try { ports.retire(); } catch { /* Already retired. */ } emit(); }
+    activity(value: boolean) {
+      if (closed || value === active) return;
+      active = value;
+      if (clearing || nativeRetired) {
+        if (clearing && !value) { generation++; logoutRequest?.abort(); }
+        emit();
+      }
+      else if (!value) clearMemory('Private sign-in access cleared while inactive. Saved device data may remain; resume explicitly.');
+      else emit();
     },
+    connectivity(value: boolean) {
+      if (closed || value === online) return;
+      online = value;
+      if (clearing || nativeRetired) {
+        if (clearing && !value) { generation++; logoutRequest?.abort(); }
+        emit();
+      }
+      else if (!value) clearMemory('Private sign-in access cleared while offline. Saved device data may remain; resume explicitly.');
+      else emit();
+    },
+    signOutDevice: () => clearSession(true),
+    clearDeviceSession: () => clearSession(false),
     close() {
       if (closed) return; closed = true; offRetired(); offRetired = () => {};
       clearMemory('Sign-in view closed. A saved device session may remain; provider sessions were not revoked.', 'closed');

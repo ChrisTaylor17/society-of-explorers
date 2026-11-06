@@ -4,6 +4,7 @@ import App from '../native/App';
 import {createOwnedNativeAuth} from '../native/src/auth/owned-auth';
 import {createNativeAuthPorts} from '../native/src/auth/native-auth-ports';
 const root=createRoot(document.getElementById('root')!);
+const platform = new URL(window.location.href).searchParams.get('platform') === 'ios' ? 'ios' : 'android';
 const origin='https://native-circle-directory.test',providerOrigin='https://native-auth-provider.test',publishableKey='sb_publishable_NONISSUED_NATIVE_OWNED_AUTH',storageKey='soe.native.owned.qa';
 type Network='online'|'offline'|'unknown';
 type Gate={path:string;promise:Promise<void>;release():void};
@@ -41,7 +42,7 @@ function createBridge(store:Disk){
   async resetAccountStorage(generation:string){resets++;assertGeneration(generation);store.slots.clear();store.generation=uuid();if(store.resetUnknown)throw Error('Synthetic reset receipt lost after local clear');return{previousGeneration:generation,generation:store.generation,cleared:true};},
  };
 }
-const qa={appState,requests,
+const qa={appState,requests,platform,
  showUnconfigured(){root.render(<React.StrictMode key={++epoch}><App/></React.StrictMode>);},
  show(network:Network='online',preserve=false){
   held?.release();held=null;heldPreparation?.release();heldPreparation=null;preparationHeld=false;online=network;appState.currentState='active';requests.length=0;prepared=0;reads=0;writes=0;resets=0;cancels=0;connectionsClosed=0;
@@ -55,7 +56,14 @@ const qa={appState,requests,
   root.render(<React.StrictMode key={++epoch}><App ownedAccountPrepare={prepare}/></React.StrictMode>);
  },
  stats:()=>({prepared,reads,writes,resets,cancels,handles,connectionsClosed,preparationHeld,storedSlots:[...disk.slots.keys()].sort(),netListeners:netListeners.size,appListeners:[...appListeners.values()].reduce((n,set)=>n+set.size,0)}),
- activity(name:string,value='active'){if(name==='change')appState.currentState=value;for(const fn of [...appListeners.get(name)??[]])fn(value);},
+ activity(name:string,value='active'){
+  if (platform === 'ios' && (name === 'blur' || name === 'focus')) {
+   value = name === 'blur' ? 'inactive' : 'active';
+   name = 'change';
+  }
+  if(name==='change')appState.currentState=value;
+  for(const fn of [...appListeners.get(name)??[]])fn(value);
+ },
  network(value:Network){online=value;for(const fn of [...netListeners])fn(value);},
  hold(path:string){let release=()=>{};const promise=new Promise<void>(resolve=>{release=resolve;});held={path,promise,release};},
  release(){held?.release();held=null;},

@@ -2,6 +2,7 @@ import { approvedOrigin, type CircleTransport } from '../circles/host';
 import { createNativeMemberPorts, type NativeMemberBridge } from '../circles/native-ports';
 import { isUuid } from '../../../../lib/ids/uuid';
 import type { NativeEmailAuthPorts, NativeEmailPending, NativeEmailClaim, NativeEmailPurpose } from './email-auth-types';
+import { hasLocalSessionClaim } from './jwt-claims';
 
 export const NATIVE_AUTH_POLICY = 'supabase-password-v1';
 const unavailable = () => Error('Native account connection unavailable');
@@ -87,7 +88,9 @@ export async function createNativeAuthPorts(bridge: NativeMemberBridge | null, c
     if (info !== null && !/^[A-Za-z0-9._/+ -]{1,160}$/.test(info) || version !== null && version !== '2024-01-01') throw unavailable();
     if (method === 'GET' ? contentType !== null || init.body !== undefined && init.body !== null
       : contentType === null || !/^application\/json(?:;\s*charset=UTF-8)?$/i.test(contentType)) throw unavailable();
-    if (operation === 'logout') { if (init.body !== undefined && init.body !== null) throw unavailable(); }
+    if (operation === 'logout') {
+      if (!bearer || !hasLocalSessionClaim(bearer) || init.body !== undefined && init.body !== null) throw unavailable();
+    }
     else if (operation !== 'user') {
       if (typeof init.body !== 'string' || bytes(init.body) > 16384) throw unavailable();
       const body: unknown = JSON.parse(init.body);

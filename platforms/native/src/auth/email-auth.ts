@@ -1,6 +1,7 @@
 import { AuthClient } from '@supabase/auth-js';
 import { isUuid } from '../../../../lib/ids/uuid';
 import type { NativeEmailAuthPorts, NativeEmailPending, NativeEmailClaim, NativeEmailPurpose } from './email-auth-types';
+import { readJwtClaims } from './jwt-claims';
 export type NativeEmailAuthModel = {
   phase: 'idle' | 'sending' | 'sent' | 'loading' | 'pending' | 'verifying' | 'confirmed' | 'ready' | 'updating' | 'accepted' | 'unknown' | 'unavailable' | 'closed';
   busy: boolean; active: boolean; online: boolean;
@@ -17,20 +18,9 @@ const token = (v: unknown): v is string => typeof v === 'string' && v.length > 0
 const validPassword = (value: unknown): value is string => typeof value === 'string' && value.length >= 8 && value.length <= 1024 && !/[\u0000-\u001f\u007f]/.test(value);
 const validEmail = (value: unknown): value is string => typeof value === 'string' && value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const seconds = () => Math.floor(Date.now() / 1000);
-// Bounded base64url/UTF-8 decoding without Buffer, atob or a crypto shim. This
-// only inspects purpose/expiry; fresh exact-token /user establishes authority.
-function claims(access: string): Record<string, unknown> | null {
-  try {
-    const parts = access.split('.'); if (parts.length !== 3 || !parts.every(p => /^[A-Za-z0-9_-]+$/.test(p))) return null;
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'; let bits = 0, accumulator = 0, encoded = '';
-    for (const character of parts[1]) { const n = alphabet.indexOf(character); if (n < 0) return null; accumulator = ((accumulator << 6) | n) & 0xffffff; bits += 6;
-      if (bits >= 8) { bits -= 8; encoded += '%' + ((accumulator >> bits) & 255).toString(16).padStart(2, '0'); } }
-    const value: unknown = JSON.parse(decodeURIComponent(encoded)); return plain(value) ? value : null;
-  } catch { return null; }
-}
 function session(value: unknown, purpose: NativeEmailPurpose): Session | null {
   if (!plain(value) || !token(value.access_token) || !token(value.refresh_token) || value.token_type !== 'bearer' || !plain(value.user) || !isUuid(value.user.id)) return null;
-  const parsed = claims(value.access_token), now = seconds(), id = value.user.id.toLowerCase();
+  const parsed = readJwtClaims(value.access_token), now = seconds(), id = value.user.id.toLowerCase();
   if (!parsed || typeof parsed.sub !== 'string' || parsed.sub.toLowerCase() !== id || !Number.isSafeInteger(parsed.exp) || (parsed.exp as number) <= now + 120 || (parsed.exp as number) > now + 31536000
     || value.expires_at !== undefined && value.expires_at !== parsed.exp || !Array.isArray(parsed.amr) || parsed.amr.length < 1 || parsed.amr.length > 8
     || !parsed.amr.every(entry => plain(entry) && (purpose === 'recovery' ? entry.method === 'recovery' : entry.method === 'email/signup')
