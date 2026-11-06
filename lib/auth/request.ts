@@ -3,10 +3,10 @@ import 'server-only';
 export function requestOrigin(url: Pick<URL, 'origin' | 'hostname' | 'port' | 'protocol'>, headers: Headers): string {
   // NextRequest rewrites loopback literals to localhost. Use the actual HTTP
   // authority for this case so the browser's distinct loopback origins stay distinct.
-  if (url.protocol === 'http:' && url.hostname === 'localhost') {
+  if ((url.protocol === 'http:' || url.protocol === 'https:') && url.hostname === 'localhost') {
     const host = headers.get('host');
     const port = url.port ? `:${url.port}` : '';
-    if (host === `127.0.0.1${port}` || host === `[::1]${port}`) return `http://${host}`;
+    if (host === `127.0.0.1${port}` || host === `[::1]${port}`) return `${url.protocol}//${host}`;
   }
   return url.origin;
 }

@@ -27,7 +27,7 @@ test('unauthenticated setup never consumes a body or accesses admin data',async(
 test('cross-site setup is refused before authentication',async()=>{
  const app=setup();assert.equal((await app.load('app/api/auth/ensure-member/route.ts').POST(request({}, {origin:'https://other.invalid'}))).status,403);assert.equal(app.authReads,0);assert.equal(app.adminCalls,0);
 });
-test('normalized HTTP loopback uses the exact incoming authority', () => {
+test('normalized HTTP and HTTPS loopback use the exact incoming authority', () => {
  const { authWriteOriginAllowed } = offlineApp().load('lib/auth/request.ts');
  const check = (url, host, origin, extra = {}) => authWriteOriginAllowed(new Request(url, {
   headers: { host, origin, 'sec-fetch-site': 'same-origin', ...extra },
@@ -41,8 +41,16 @@ test('normalized HTTP loopback uses the exact incoming authority', () => {
  assert.equal(check(internal, '127.0.0.1:3300', 'http://127.0.0.1:3300', { 'sec-fetch-site': 'cross-site' }), false);
  assert.equal(check('https://member.invalid', '127.0.0.1:3300', 'https://member.invalid'), true);
  assert.equal(check('https://member.invalid', '127.0.0.1:3300', 'http://127.0.0.1:3300'), false);
+ const secure = 'https://localhost:3300';
+ assert.equal(check(secure, '127.0.0.1:3300', 'https://127.0.0.1:3300'), true);
+ assert.equal(check(secure, '[::1]:3300', 'https://[::1]:3300'), true);
+ assert.equal(check(secure, '127.0.0.1:3300', 'http://127.0.0.1:3300'), false);
+ assert.equal(check(secure, '127.0.0.1:3300', secure), false);
+ assert.equal(check(secure, 'localhost:3300', 'https://127.0.0.1:3300', { 'x-forwarded-host': '127.0.0.1:3300' }), false);
 });
-for (const origin of ['http://127.0.0.1:3300', 'http://[::1]:3300', 'https://soe.invalid']) {
+for (const origin of [
+ 'http://127.0.0.1:3300', 'http://[::1]:3300', 'https://127.0.0.1:3300', 'https://[::1]:3300', 'https://soe.invalid',
+]) {
  test(`SIWE signs in using the browser authority at ${origin}`, async () => {
   const wallet = Wallet.createRandom();
   const app = setup({ members: [row({ wallet_address: wallet.address.toLowerCase() })] });
@@ -69,7 +77,7 @@ for (const origin of ['http://127.0.0.1:3300', 'http://[::1]:3300', 'https://soe
     body: JSON.stringify({ address: wallet.address, intent: INTENT, message, signature: await wallet.signMessage(message) }),
    }));
   }
-  const refused = await signIn('http://localhost:3300');
+  const refused = await signIn(`${new URL(origin).protocol}//localhost:3300`);
   assert.equal(refused.status, 400);
   assert.equal(refused.cookies.get('soe_wallet_id'), undefined);
   assert.equal(app.db.log.length, 0);

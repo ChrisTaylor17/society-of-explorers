@@ -1,0 +1,65 @@
+{
+  "status": "local_webkit_https_and_selected_release_acceptance_passed_hosted_pending",
+  "recordedAt": "2026-11-06T04:29:58.898532+00:00",
+  "baseCommit": "e0b75503de6cd29e15cbab31cbfb86eb947aca3e",
+  "sourceSha256": {
+    "lib/auth/request.ts": "e6a7cc17caaabeb283c175a5b497d21eea7d91ab3cce5d623be065a896d36364",
+    "verification/web/tests/account-security.test.mjs": "40f0423b63fb961bd6eff16120ef8b1a0d3f259ea512eaf9d65e1536499e4442",
+    "verification/web/scripts/webkit-release-fixture.mjs": "42f235af4c56b0d3982f7d955257646e84f8f8a8ee151fba5bf7d00cd51b6b3b",
+    "verification/web/tests/webkit-release-smoke.swift": "965647dbf24ba045e7d2fb3e3a3b5ece7d2c9ecdc3fba6266cb24a273f9dfccf"
+  },
+  "build": {
+    "id": "MN8HsmG4HvcOepoLkB8Ka",
+    "next": "16.2.9",
+    "sourceSha256": "2e5a00d5858c15778c7278c521788273a6afdc4e9abc2f1da14ac0d1bf466988",
+    "sourceFiles": 1059,
+    "seconds": 37.92,
+    "compilerWarnings": 0,
+    "typeScriptPassed": true,
+    "scopedLintPassed": true
+  },
+  "testResults": {
+    "focusedSerialTestsPassed": 116,
+    "originCasesBeforeFailed": 3,
+    "originCasesAfterPassed": 6,
+    "compiledHttpsOriginProbesPassed": 4,
+    "compiledHttpApiChecksPassed": 14,
+    "macOSWebKitScenariosPassed": 6,
+    "macOSWebKitZoomLayoutsPassed": 12,
+    "chromiumScenariosPassed": {
+      "Chromium wallet sign-in": 3,
+      "Chromium desktop zoom": 7,
+      "Chromium online salons": 7
+    }
+  },
+  "findings": [
+    "The installed NextRequest implementation normalizes numeric loopback hosts on both schemes. The fix retains the scheme and uses the exact raw numeric Host at the URL port.",
+    "The compiled HTTPS handler reaches the missing-intent response only for the expected origin. Other hostname, scheme and cross-site cases are refused.",
+    "The built login used real wallet challenge, signature and member handlers over local HTTPS. WebKit retained its HttpOnly session across reload.",
+    "Reel playback advanced at normal speed after attaching the temporary WebKit view to a window. The detached view had stalled on programmatic play."
+  ],
+  "scope": "Local macOS WKWebView with a nonpersistent store, a pinned test certificate and controlled active lifecycle. DOM actions and programmatic video playback used disposable member and Circle data. Safari application, screen-reader interaction, live providers and physical devices remain open.",
+  "cleanup": {
+    "fixtureStopped": true,
+    "httpServerStoppedWithMatchingInputs": true,
+    "ephemeralTlsKeyRemoved": true,
+    "deniedNodeNetworkOperations": 0
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/webkit-https-2026-11-05/built-shell-webkit-https-01-next-build.json": "9416a34e232b138ae41971bfcd9e6fd73a71b1a38892d466fd58270097a25ba2",
+    "verification/web/evidence/webkit-https-2026-11-05/built-shell-webkit-https-01-next-build.log": "d9f8e711b67926d356db5c77190129cf37d5566031363e3c3c2782ea080f0226",
+    "verification/web/evidence/webkit-https-2026-11-05/built-shell-webkit-http-final-01-server.json": "a03667e0743c0216b7f342b7264d2035f04eca0f227c354b2e80e61d5442831e",
+    "verification/web/evidence/webkit-https-2026-11-05/built-shell-webkit-http-final-01-release-boundary-probe.json": "0ce0302ac17706faf8bccf5105849869c53f273903e5e70443fd9c805039174f",
+    "verification/web/evidence/webkit-https-2026-11-05/webkit-https-regressions.tap": "98891beb9082079a44daf6e8e118cb046897d33652eb42b3d4283e7ef3184fb9",
+    "verification/web/evidence/webkit-https-2026-11-05/webkit-https-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/webkit-https-2026-11-05/built-shell-webkit-http-final-01-wallet-browser.json": "62d825ee174f7ce38dbd31d6649a3bcbb0685f41b2f5e732f5e87e23550d5047",
+    "verification/web/evidence/webkit-https-2026-11-05/built-shell-webkit-http-final-01-desktop-zoom.json": "83092a7cda165ce5a5ef00807d243ba8a566419ea6a6d5697e1e79cb664a84bf",
+    "verification/web/evidence/webkit-https-2026-11-05/online-salon-browser-07/browser.json": "44eb79b8f2d76e0b88e10a94ac0caeb2000e376a7e8a6f3c9fe493a60d19136f",
+    "verification/web/evidence/webkit-https-2026-11-05/webkit-smoke-04.json": "ca7e906bd88f0042f973b2c166348755f9e5f13f74596e8634523b165bcfd5e8",
+    "verification/web/evidence/webkit-https-2026-11-05/compiled-https-origin.json": "f3b32151ea2419316d1621972c23adcebe75e73d8dc2b191940b84989fda1e1c",
+    "verification/web/evidence/webkit-https-2026-11-05/fixture-stopped.json": "f70f229c19e931cfca84ab5eb970949b8f40d2332e5d261aa63ff60e6b2ca16b",
+    "verification/web/evidence/webkit-https-2026-11-05/fixture-cleanup.json": "8bb20ef468789203cca4fecb5381285ea67c33b6fc1c246e222d6bf99ba253b1",
+    "verification/web/evidence/webkit-https-2026-11-05/https-origin-before.tap": "e4a63029e67ae6bc1eea949e6288500449e0e3ee83b9b7e1c8317e2988711f99",
+    "verification/web/evidence/webkit-https-2026-11-05/https-origin-after.tap": "f9e9a7726fe43931ce1e1feb7fe9ec41f7e6b6d80992b5d173d1c6fe451b9623"
+  }
+}
