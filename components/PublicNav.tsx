@@ -30,6 +30,7 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
   const [menuOpen, setMenuOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [walletSignOutPending, setWalletSignOutPending] = useState(false);
   const mobileMenuId = useId();
   const mobileMenu = useRef<HTMLDialogElement>(null);
   const closeMenuButton = useRef<HTMLButtonElement>(null);
@@ -72,8 +73,8 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
   useEffect(() => {
     if (!checkSession) return;
     let active = true;
-    const stop = subscribeAuthProviderChanges(() => { active = false; setDisplayName(null); setAuthChecked(true); });
-    getMemberSession()
+    const stop = subscribeAuthProviderChanges(() => { active = false; setDisplayName(null); setWalletSignOutPending(false); setAuthChecked(true); });
+    getMemberSession(() => { if (active) setWalletSignOutPending(true); })
       .then(session => {
         if (active && session?.member) {
           const name = session.member.display_name || 'Account';
@@ -123,7 +124,7 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
               transition: 'opacity 0.3s',
             }}
           >{authLabel}</a>
-          <AccountSignOut available={Boolean(selectedName)} />
+          <AccountSignOut available={Boolean(selectedName)} resumeWalletSignOut={checkSession && walletSignOutPending} />
         </div>
 
         <button type="button" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls={mobileMenuId}
@@ -141,7 +142,7 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
             style={{ background: 'none', border: `1px solid ${gold}66`, color: gold, fontSize: '24px', minWidth: '44px', minHeight: '44px', cursor: 'pointer' }}>×</button>
         </div>
         <nav aria-label="Mobile navigation" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-          <AccountSignOut available={Boolean(selectedName)} />
+          <AccountSignOut available={Boolean(selectedName)} resumeWalletSignOut={checkSession && walletSignOutPending} />
           {[...visibleLinks, { l: authLabel, h: authHref }].map(lk => (
             <a key={lk.h + lk.l} href={lk.h} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', minHeight: '44px', fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}

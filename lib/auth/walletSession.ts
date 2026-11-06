@@ -8,11 +8,12 @@ export function isWellFormedUuid(value: string): boolean {
   return UUID_PATTERN.test(value);
 }
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/;
-const SESSION_VERSION = 'v2';
+const SESSION_VERSION = 'v3';
+const PREVIOUS_SESSION_VERSION = 'v2';
 const LEGACY_SESSION_VERSION = 'v1';
 const EXPIRY_PATTERN = /^[1-9][0-9]{0,11}$/;
 
-// v2 cookies carry a signed expiry that the server checks (the browser maxAge alone is not enforced).
+// New sessions carry a signed expiry and a distinct credential per sign-in.
 export const WALLET_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const CLOCK_SKEW_SECONDS = 5 * 60;
 
@@ -46,7 +47,7 @@ async function signPayload(payload: string): Promise<string | null> {
 
 /**
  * HMAC-SHA256 (hex) with the wallet-session secret, for other short-lived signed values (e.g. the SIWE nonce).
- * Callers must domain-separate their payloads; wallet-session payloads always start with "v1:" or "v2:".
+ * Callers must domain-separate their payloads. Wallet sessions use a version followed by a colon.
  */
 export async function signWithWalletSessionSecret(payload: string): Promise<string | null> {
   if (/^v[0-9]+:/.test(payload)) return null;
@@ -67,11 +68,12 @@ export async function createWalletSessionValue(memberId: string, nowMs: number =
   if (!UUID_PATTERN.test(memberId)) return null;
 
   const expiresAt = Math.floor(nowMs / 1000) + WALLET_SESSION_TTL_SECONDS;
-  const payload = `${SESSION_VERSION}:${memberId}:${expiresAt}`;
+  const sessionId = crypto.randomUUID();
+  const payload = `${SESSION_VERSION}:${memberId}:${expiresAt}:${sessionId}`;
   const signature = await signPayload(payload);
   if (!signature) return null;
 
-  return `${SESSION_VERSION}.${memberId}.${expiresAt}.${signature}`;
+  return `${SESSION_VERSION}.${memberId}.${expiresAt}.${sessionId}.${signature}`;
 }
 
 /** Test helper only: mints a pre-release v1 cookie (no expiry) to check the legacy cutoff. */
@@ -81,21 +83,25 @@ export async function createLegacyV1WalletSessionValueForTests(memberId: string)
   return signature ? `${LEGACY_SESSION_VERSION}.${memberId}.${signature}` : null;
 }
 
-export async function verifyWalletSessionValue(
+export type VerifiedWalletSession = { value: string; memberId: string; expiresAt: number };
+
+export async function readWalletSession(
   value: string | null | undefined,
   nowMs: number = Date.now(),
-): Promise<string | null> {
+): Promise<VerifiedWalletSession | null> {
   if (!value || value.length > 256) return null;
 
   const parts = value.split('.');
   const nowSeconds = Math.floor(nowMs / 1000);
 
-  if (parts.length === 4) {
-    const [version, memberId, expiresAtText, signature] = parts;
+  const [version, memberId, expiresAtText] = parts;
+  if ((version === SESSION_VERSION && parts.length === 5) || (version === PREVIOUS_SESSION_VERSION && parts.length === 4)) {
+    const sessionId = version === SESSION_VERSION ? parts[3] : null;
+    const signature = parts[parts.length - 1];
     if (
-      version !== SESSION_VERSION ||
       !UUID_PATTERN.test(memberId) ||
       !EXPIRY_PATTERN.test(expiresAtText) ||
+      (sessionId !== null && !UUID_PATTERN.test(sessionId)) ||
       !SIGNATURE_PATTERN.test(signature)
     ) {
       return null;
@@ -104,9 +110,10 @@ export async function verifyWalletSessionValue(
     if (expiresAt <= nowSeconds) return null;
     if (expiresAt > nowSeconds + WALLET_SESSION_TTL_SECONDS + CLOCK_SKEW_SECONDS) return null;
 
-    const expectedSignature = await signPayload(`${version}:${memberId}:${expiresAtText}`);
+    const suffix = sessionId === null ? '' : `:${sessionId}`;
+    const expectedSignature = await signPayload(`${version}:${memberId}:${expiresAtText}${suffix}`);
     if (!expectedSignature || !secureEqual(signature, expectedSignature)) return null;
-    return memberId;
+    return { value, memberId, expiresAt };
   }
 
   if (parts.length === 3) {
@@ -118,8 +125,12 @@ export async function verifyWalletSessionValue(
 
     const expectedSignature = await signPayload(`${version}:${memberId}`);
     if (!expectedSignature || !secureEqual(signature, expectedSignature)) return null;
-    return memberId;
+    return { value, memberId, expiresAt: Math.floor(Date.parse(LEGACY_V1_ACCEPT_UNTIL) / 1000) };
   }
 
   return null;
+}
+
+export async function verifyWalletSessionValue(value: string | null | undefined, nowMs: number = Date.now()): Promise<string | null> {
+  return (await readWalletSession(value, nowMs))?.memberId ?? null;
 }

@@ -1,7 +1,8 @@
 import { SiweMessage } from 'siwe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
-import { createWalletSessionValue, signWithWalletSessionSecret } from '@/lib/auth/walletSession'
+import { createWalletSessionValue, readWalletSession, signWithWalletSessionSecret } from '@/lib/auth/walletSession'
+import { walletSessionAccess } from '@/lib/auth/walletSessionStore'
 import { privateJson } from '@/lib/http/routeError'
 import { SIWE_NONCE_COOKIE, verifyNonceCookie } from '@/lib/auth/siweNonce'
 import { selectAuthProvider } from '@/lib/auth/provider'
@@ -105,6 +106,13 @@ export async function POST(req: NextRequest) {
     if (!walletSession) {
       logFailure('session_value_null', normalizedAddress)
       return privateJson({ error: 'Unable to create wallet session.' }, { status: 500 })
+    }
+    const next = await readWalletSession(walletSession)
+    const previous = await readWalletSession(req.cookies.get('soe_wallet_id')?.value)
+    if (!next || !await walletSessionAccess(next, 'check') ||
+        (previous && !await walletSessionAccess(previous, 'revoke'))) {
+      logFailure('wallet_session_store_unavailable', normalizedAddress)
+      return privateJson({ error: 'Sign-in is temporarily unavailable. Please try again later.' }, { status: 503 })
     }
 
     // Set cookie server-side — server Set-Cookie headers are honored by MetaMask's

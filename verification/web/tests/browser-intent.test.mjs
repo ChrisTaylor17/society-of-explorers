@@ -46,6 +46,7 @@ function fixture(t) {
       insert(row) { insert = row; return query; }, single: async () => result(), maybeSingle: async () => result() }; return query; } };
   const cookieClient = () => ({ auth: { async getUser() { state.authCalls++; const subject = state.user; if (state.authWait) await state.authWait; return { data: { user: subject ? { id: subject } : null }, error: null }; } } });
   const mock = new Map([
+    ['@/lib/auth/walletSessionStore', { walletSessionAccess: async () => true }],
     ['@/lib/supabase/server', { createClient: async () => cookieClient(), createServiceClient: () => database }],
     ['@/lib/supabase/admin', { getSupabaseAdmin: () => database }],
     ['@supabase/supabase-js', { createClient: () => ({ auth: { async getUser(token) { assert.equal(token, 'SYNTHETIC_BEARER'); state.authCalls++; return { data: { user: state.tokenUser ? { id: state.tokenUser } : null }, error: null }; } } }) }],

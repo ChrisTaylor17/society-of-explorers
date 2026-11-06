@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
+import AccountSignOut from '@/components/AccountSignOut';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { createBrowserEmailSignup, type EmailSignup, type EmailSignupModel } from '@/lib/auth/emailSignup';
@@ -157,6 +158,7 @@ export default function LoginPage() {
       <p className={styles.brand}>Society of Explorers</p>
       <h1 id="login-title" ref={headingRef} tabIndex={-1}>{mode === 'signup' ? 'Create an account' : mode === 'resend' ? 'Confirm your email' : 'Welcome back'}</h1>
       {notice && <p role="status">{notice}</p>}
+      {query.get('walletSignOut') === 'pending' && <AccountSignOut available={false} resumeWalletSignOut />}
       {ready ? mode === 'signin' ? <SignIn key="signin" nextPath={nextPath} retireRef={retireRef} /> : <EmailForm key={mode} mode={mode} nextPath={nextPath} retireRef={retireRef} /> : <p role="status">Preparing your account options…</p>}
       <div className={styles.modes} aria-label="Account options">
         {mode !== 'signin' && <button type="button" onClick={() => changeMode('signin')}>Sign in instead</button>}

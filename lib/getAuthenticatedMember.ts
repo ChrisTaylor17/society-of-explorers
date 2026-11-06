@@ -5,7 +5,8 @@ import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { AUTH_PROVIDER_COOKIE } from '@/lib/auth/provider';
 import { AUTH_INTENT_COOKIE, AUTH_SELECTION_COOKIE, browserSelectionMatches, parseBrowserIntent, parseBrowserSelection } from '@/lib/auth/browserIntent';
-import { isWellFormedUuid, verifyWalletSessionValue } from '@/lib/auth/walletSession';
+import { isWellFormedUuid, readWalletSession } from '@/lib/auth/walletSession';
+import { walletSessionAccess } from '@/lib/auth/walletSessionStore';
 
 const MEMBER_SELECT = 'id, display_name, email, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens, tier, coherence_data, total_responses, supabase_auth_id, wallet_address';
 const EDGE_MEMBER_SELECT = 'id,tier,supabase_auth_id,wallet_address';
@@ -107,9 +108,9 @@ async function resolveMember<Member extends MemberIdentity>(
   // ambient wallet/Supabase fallback across a missing or mismatched receipt.
   if (!intent || !receipt || receipt.intent !== intent || receipt.provider !== selected) return null;
   const walletIdentity = async () => {
-    const walletId = await verifyWalletSessionValue(req.cookies.get('soe_wallet_id')?.value);
-    if (!walletId || !matches('wallet', walletId)) return null;
-    const member = await getMemberByColumn<Member>('id', walletId, projection);
+    const wallet = await readWalletSession(req.cookies.get('soe_wallet_id')?.value);
+    if (!wallet || !matches('wallet', wallet.memberId) || !await walletSessionAccess(wallet, 'check')) return null;
+    const member = await getMemberByColumn<Member>('id', wallet.memberId, projection);
     return member ? { memberId: member.id, member, auth: { provider: 'wallet' as const, subject: member.id } } : null;
   };
   if (selected === 'wallet') return walletIdentity();

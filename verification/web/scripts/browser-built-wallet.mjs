@@ -19,7 +19,8 @@ assert.equal(readFileSync('.next/BUILD_ID', 'utf8').trim(), ready.buildId);
 const origin = ready.origin;
 assert.match(origin, /^http:\/\/127\.0\.0\.1:\d+$/);
 for (const path of ['app/layout.tsx', 'app/login/page.tsx', 'lib/auth/webAccount.ts',
-  'lib/auth/request.ts', 'app/api/auth/nonce/route.ts', 'app/api/auth/siwe/route.ts', 'app/api/auth/member/route.ts']) {
+  'lib/auth/request.ts', 'app/api/auth/nonce/route.ts', 'app/api/auth/siwe/route.ts', 'app/api/auth/member/route.ts',
+  'app/api/auth/logout/route.ts', 'components/AccountSignOut.tsx', 'lib/auth/walletSessionStore.ts', 'proxy.ts']) {
   assert.equal(createHash('sha256').update(readFileSync(path)).digest('hex'), ready.sourceHashes[path], path);
 }
 const require = createRequire('/Users/christaylor/.npm/_npx/420ff84f11983ee5/node_modules/playwright/package.json');
@@ -33,14 +34,27 @@ const id = '11111111-1111-4111-8111-111111111111';
 const wallet = Wallet.createRandom();
 const db = app.fakes.resetDb({ members: [{ id, display_name: 'Fixture reader', wallet_address: wallet.address.toLowerCase() }] });
 db.strictSingle = true;
+const rpc = db.rpc.bind(db), revoked = new Set();
+let revocationUnavailable = false;
+db.rpc = (name, args) => {
+  if (name !== 'soe_wallet_session_access') return rpc(name, args);
+  return { async abortSignal(signal) {
+    assert(signal instanceof AbortSignal);
+    if (args.p_revoke && revocationUnavailable) return { data: null, error: { message: 'Synthetic ledger outage' } };
+    if (args.p_revoke) revoked.add(args.p_digest);
+    return { data: args.p_revoke || !revoked.has(args.p_digest), error: null };
+  } };
+};
 app.context.process.env.NODE_ENV = 'production';
 app.setMock('next/server', () => ({ NextResponse }));
 app.setMock('@/lib/supabase/server', () => ({ createServiceClient: () => db }));
 app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => db }));
+app.setMock('@/lib/auth/walletSessionStore', () => app.load('lib/auth/walletSessionStore.ts'));
 const handlers = new Map([
   ['GET /api/auth/nonce', app.load('app/api/auth/nonce/route.ts').GET],
   ['POST /api/auth/siwe', app.load('app/api/auth/siwe/route.ts').POST],
   ['GET /api/auth/member', app.load('app/api/auth/member/route.ts').GET],
+  ['POST /api/auth/logout', app.load('app/api/auth/logout/route.ts').POST],
 ]);
 const errors = [], requests = [];
 let signatures = 0;
@@ -51,8 +65,8 @@ const browser = await require('playwright').chromium.launch({
     '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'],
 });
 try {
-  const context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: false });
-  await context.route('**/*', async route => {
+  const options = { serviceWorkers: 'block', acceptDownloads: false };
+  const intercept = context => context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
     try {
       assert.equal(url.origin, origin, 'External request refused');
@@ -73,6 +87,8 @@ try {
       await route.abort().catch(() => {});
     }
   });
+  const context = await browser.newContext(options);
+  await intercept(context);
   const page = await context.newPage();
   page.setDefaultTimeout(10_000);
   page.on('pageerror', error => errors.push(error.message));
@@ -120,13 +136,50 @@ try {
   const member = await page.evaluate(async () => (await fetch('/api/auth/member', { cache: 'no-store' })).json());
   assert.deepEqual(member.auth, { provider: 'wallet', subject: id });
   assert.equal(member.member.id, id);
+
+  const replay = await browser.newContext(options);
+  await intercept(replay);
+  await replay.addCookies(cookies);
+  const replayPage = await replay.newPage();
+  replayPage.on('pageerror', error => errors.push(error.message));
+  await replayPage.goto(origin + '/login');
+  const readMember = current => current.evaluate(async () => (await fetch('/api/auth/member', { cache: 'no-store' })).status);
+  assert.equal(await readMember(replayPage), 200);
+
+  revocationUnavailable = true;
+  await page.getByRole('button', { name: 'Sign out of this browser', exact: true }).click();
+  const retry = page.getByRole('button', { name: 'Retry browser sign-out', exact: true });
+  await retry.waitFor();
+  assert.equal(requests.filter(request => request.path === '/api/auth/logout').at(-1)?.status, 503);
+  assert.equal(await readMember(page), 401);
+  assert.equal(await readMember(replayPage), 200);
+  const protectedPath = '/dashboard?tab=profile';
+  await page.goto(origin + protectedPath);
+  assert.equal(new URL(page.url()).pathname, '/login');
+  assert.equal(new URL(page.url()).searchParams.get('next'), protectedPath);
+  assert.equal(new URL(page.url()).searchParams.get('walletSignOut'), 'pending');
+  await retry.waitFor();
+
+  revocationUnavailable = false;
+  await retry.click();
+  await page.getByText('This wallet session was revoked.', { exact: true }).waitFor();
+  assert.equal(revoked.size, 1);
+  assert.equal(await readMember(replayPage), 401);
+  const newValue = await app.load('lib/auth/walletSession.ts').createWalletSessionValue(id);
+  await replay.addCookies([{ ...cookies.find(cookie => cookie.name === 'soe_wallet_id'), value: newValue }]);
+  assert.equal(await readMember(replayPage), 200);
+  await page.reload();
+  assert.equal(new URL(page.url()).searchParams.has('walletSignOut'), false);
+  assert.equal(await retry.count(), 0);
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
 }
 const receipt = { status: 'PASS', buildId: ready.buildId, signatures, requests,
   scenarios: ['No injected wallet leaves email sign-in available', 'Injected wallet signs and verifies the numeric loopback origin',
-    'HttpOnly session survives reload and the signed challenge is cleared'],
-  scope: 'Built Chromium UI, actual auth route source and Next cookies, synthetic wallet and member database, local network only.' };
+    'HttpOnly session survives reload and the signed challenge is cleared',
+    'An unavailable revocation locks private access and a protected reload exposes the retry on the actual login page',
+    'Retry revokes the copied cookie, preserves a distinct session and clears the retry on reload'],
+  scope: 'Built Chromium UI and proxy, actual intercepted auth handlers and Next cookies, synthetic wallet and lower-level database double, local network only.' };
 writeFileSync(resolve(evidence, prefix + 'wallet-browser.json'), JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
 console.log(JSON.stringify(receipt));

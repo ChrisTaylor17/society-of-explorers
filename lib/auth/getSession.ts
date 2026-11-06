@@ -95,9 +95,8 @@ export async function getSupabaseAccessToken(): Promise<string | null> {
   return token
 }
 
-export async function getMemberSession() {
+export async function getMemberSession(onWalletSignOutPending?: () => void) {
   if (typeof window === 'undefined') return null
-  const supabase = createClient()
 
   // Display hints and anonymous table reads cannot establish a session. The
   // private endpoint verifies the actual cookie/token and returns a whitelist.
@@ -107,10 +106,16 @@ export async function getMemberSession() {
     }), 'Member session lookup')
     if (res.ok) {
       const member = memberSessionDto((await res.json()).member)
-      if (member) return { member, supabase }
+      if (member) return { member, supabase: createClient() }
       return null
     }
     if (res.status !== 401) return null
+    const denied = await res.json().catch(() => null)
+    if (denied?.browserSignedOut === true) {
+      if (denied.walletSignOutPending === true) onWalletSignOutPending?.()
+      return null
+    }
+    const supabase = createClient()
     const user = await getSupabaseUser(supabase)
     if (!user) return null
     const ensured = await withAuthLookupTimeout(fetch('/api/auth/ensure-member', {

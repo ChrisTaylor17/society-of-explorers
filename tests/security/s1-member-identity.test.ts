@@ -81,18 +81,19 @@ test('S1e fails closed when no server secret is configured, or the secret change
   expect(await auth.getAuthenticatedMember(makeReq({}, { cookies: { ...selectedCookies('wallet', ADA), soe_wallet_id: c.value } }))).toBeNull();
 });
 
-test('S1f new sessions carry a server-checked expiry (v2); expired or far-future ones are refused', async () => {
+test('S1f new sessions have a signed credential ID and server-checked expiry', async () => {
   const ws = await import('../../lib/auth/walletSession.ts');
   const v = (await ws.createWalletSessionValue(ADA))!;
-  expect(v.startsWith('v2.')).toBe(true);
+  expect(v.startsWith('v3.')).toBe(true);
   expect(await ws.verifyWalletSessionValue(v)).toBe(ADA);
   const day = 86400_000;
   const old = (await ws.createWalletSessionValue(ADA, Date.now() - 31 * day))!;
   expect(await ws.verifyWalletSessionValue(old)).toBeNull();
   // An attacker can't extend the expiry without the key.
-  const [ver, id, , sig] = v.split('.');
-  const extended = [ver, id, String(Math.floor(Date.now() / 1000) + 3650 * 86400), sig].join('.');
+  const [ver, id, expiry, sessionId, sig] = v.split('.');
+  const extended = [ver, id, String(Math.floor(Date.now() / 1000) + 3650 * 86400), sessionId, sig].join('.');
   expect(await ws.verifyWalletSessionValue(extended)).toBeNull();
+  expect(await ws.verifyWalletSessionValue([ver, id, expiry, crypto.randomUUID(), sig].join('.'))).toBeNull();
   // Extra segments are refused.
   expect(await ws.verifyWalletSessionValue(v + '.x')).toBeNull();
 });

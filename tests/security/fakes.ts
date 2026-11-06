@@ -19,6 +19,7 @@ export class FakeDb {
   // paused/deleted project): { data: null, error: { code: '', message: 'TypeError: fetch failed', ... }, status: 0 }.
   networkDown: null | { cause: string } = null;
   private usedWalletChallenges = new Set<string>();
+  revokedWalletSessions = new Set<string>();
   seq = 0;
   constructor(seed: Record<string, Row[]> = {}) {
     for (const [k, v] of Object.entries(seed)) this.tables[k] = v.map(r => ({ ...r }));
@@ -168,6 +169,15 @@ export function installMocks(extra: Record<string, () => any> = {}) {
     }
   }
   mock.module('next/server', () => ({ NextResponse, NextRequest: class {} }));
+  mock.module('@/lib/auth/walletSessionStore', () => ({
+    async walletSessionAccess(session: { value: string }, action: 'check' | 'revoke') {
+      if (action === 'revoke') {
+        db.revokedWalletSessions.add(session.value);
+        return true;
+      }
+      return !db.revokedWalletSessions.has(session.value);
+    },
+  }));
   mock.module('@supabase/supabase-js', () => ({ createClient: () => new Proxy({}, { get: (_t, p) => (db as any)[p] }) }));
   mock.module('@/lib/supabase/server', () => ({
     // Supabase-session user is controllable per test via globalThis.__authUser.

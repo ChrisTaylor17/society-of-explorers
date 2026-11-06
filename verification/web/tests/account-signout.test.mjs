@@ -40,6 +40,27 @@ test('signed-out marker refuses retained cookies and bearer tokens before any pr
 test('middleware refuses signed-out marker despite retained provider cookies and preserves safe sign-in return',()=>{
  const app=fixture(),sample=app.load('lib/http/routeError.ts').privateJson({}),N=sample.constructor;N.redirect=url=>new N(null,{status:307,headers:{location:String(url)}});N.next=()=>new N(null,{status:200});app.setMock('next/server',()=>({NextResponse:N}));const req=request({}, {},new Map([['soe_auth_provider','signed_out'],['sb-project-auth-token','synthetic-only']]));req.nextUrl=new URL('https://soe.invalid/dashboard?tab=profile');const response=app.load('proxy.ts').proxy(req),location=new URL(response.headers.get('location'));assert.equal(response.status,307);assert.equal(location.pathname,'/login');assert.equal(location.searchParams.get('next'),'/dashboard?tab=profile');
 });
+test('middleware preserves the wallet retry on protected reload and strips stale login hints', () => {
+  const app = fixture(), sample = app.load('lib/http/routeError.ts').privateJson({}), N = sample.constructor;
+  N.redirect = url => new N(null, { status: 307, headers: { location: String(url) } });
+  N.next = () => new N(null, { status: 200 });
+  app.setMock('next/server', () => ({ NextResponse: N }));
+  const { proxy } = app.load('proxy.ts');
+  const cookies = new Map([['soe_auth_provider', 'signed_out'], ['soe_wallet_id', 'synthetic-wallet']]);
+  const get = (url, jar) => proxy({ url, nextUrl: new URL(url), cookies: request({}, {}, jar).cookies });
+  const reload = get('https://soe.invalid/dashboard?tab=profile', cookies);
+  assert.equal(reload.status, 307);
+  assert.match(reload.headers.get('cache-control'), /no-store/);
+  const login = new URL(reload.headers.get('location'));
+  assert.equal(login.searchParams.get('walletSignOut'), 'pending');
+  assert.equal(login.searchParams.get('next'), '/dashboard?tab=profile');
+  assert.equal(get(login.href, cookies).status, 200);
+  assert.equal(get('https://soe.invalid/login', cookies).status, 307);
+  cookies.delete('soe_wallet_id');
+  const cleared = new URL(get(login.href, cookies).headers.get('location'));
+  assert.equal(cleared.searchParams.has('walletSignOut'), false);
+  assert.equal(cleared.searchParams.get('next'), '/dashboard?tab=profile');
+});
 test('browser logout verifies accepted marker through fresh cookie-only readback before reporting success',async()=>{
  const app=browser(),result=await app.load('lib/auth/browserSignOut.ts').signOutBrowser(app.client,KEY);assert.equal(result.confirmed,true);assert.equal(result.sdkCleanup,'completed');assert.deepEqual(app.calls.map(c=>c.url),['/api/auth/logout','/api/auth/member']);assert.ok(app.calls.every(c=>c.options.credentials==='same-origin'&&c.options.cache==='no-store'&&!c.options.headers?.Authorization));assert.equal(app.jar.get('soe_auth_provider'),'signed_out');assert.equal(app.jar.has('soe_wallet_id'),false);assert.equal(app.jar.get('unrelated'),'keep');assert.equal(app.cleanupCalls,1);
 });

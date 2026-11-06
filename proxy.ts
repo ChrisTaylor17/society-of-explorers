@@ -41,7 +41,17 @@ function applyPrivateRouteHeaders(response: NextResponse) {
 }
 
 export function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
+  const signedOut = req.cookies.get('soe_auth_provider')?.value === 'signed_out';
+  const walletId = req.cookies.get('soe_wallet_id');
+  const walletSignOutPending = signedOut && Boolean(walletId);
+
+  if (pathname === '/login' && walletSignOutPending !== (searchParams.get('walletSignOut') === 'pending')) {
+    const login = new URL(req.url);
+    if (walletSignOutPending) login.searchParams.set('walletSignOut', 'pending');
+    else login.searchParams.delete('walletSignOut');
+    return applyPrivateRouteHeaders(NextResponse.redirect(login));
+  }
 
   // Email callback URLs can carry one-time codes. Protect the document and its
   // subresource referrers before the client captures and scrubs the URL.
@@ -64,9 +74,10 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (req.cookies.get('soe_auth_provider')?.value === 'signed_out') {
+  if (signedOut) {
     const login = new URL('/login', req.url);
     login.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
+    if (walletSignOutPending) login.searchParams.set('walletSignOut', 'pending');
     return applyPrivateRouteHeaders(NextResponse.redirect(login));
   }
 
@@ -74,9 +85,6 @@ export function proxy(req: NextRequest) {
   const hasSupabaseSession = req.cookies
     .getAll()
     .some((cookie) => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token'));
-
-  // Check wallet cookie
-  const walletId = req.cookies.get('soe_wallet_id');
 
   if (!hasSupabaseSession && !walletId) {
     return applyPrivateRouteHeaders(NextResponse.redirect(new URL('/', req.url)));
