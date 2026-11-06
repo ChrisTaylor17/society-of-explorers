@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { erasureAllowsAccount } from '@/lib/account/erasure-access';
 import { createClient } from '@/lib/supabase/server';
 import { privateJson } from '@/lib/http/routeError';
 import { authWriteOriginAllowed, readAuthJson } from '@/lib/auth/request';
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return privateJson({ error: 'Unauthorized' }, { status: 401 });
     if (body.expectedSubject !== user.id) return privateJson({ error: 'Sign-in changed. Try again.' }, { status: 409 });
+    if (!await erasureAllowsAccount('supabase', user.id)) return privateJson({ error: 'Unauthorized' }, { status: 401 });
     const response = privateJson({ selected: 'supabase', subject: user.id, intent });
     selectAuthProvider(response, 'supabase', intent, user.id);
     return response;

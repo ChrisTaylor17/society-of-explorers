@@ -1,3 +1,4 @@
+import { erasureAllowsAccount } from '@/lib/account/erasure-access'
 import { SiweMessage } from 'siwe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
 
     const found = await findOrCreateWalletMember(supabase, normalizedAddress)
     if (!found.member) {
+      if (found.reason === 'insert_failed:PT403') return privateJson({ error: 'Unauthorized' }, { status: 401 })
       logFailure(found.reason, normalizedAddress)
       if (isDbUnreachable(found.reason)) {
         // The signature was fine; the member database could not be reached. Say so generically (no internals).
@@ -99,6 +101,7 @@ export async function POST(req: NextRequest) {
       return privateJson({ error: 'Unable to create wallet session.' }, { status: 500 })
     }
     const member = found.member
+    if (!await erasureAllowsAccount('wallet', member.id)) return privateJson({ error: 'Unauthorized' }, { status: 401 })
     if (found.duplicates > 1) {
       console.warn('[siwe] duplicate member rows for wallet; using the oldest', JSON.stringify({ wallet: shortAddress(normalizedAddress), rows: found.duplicates }))
     }

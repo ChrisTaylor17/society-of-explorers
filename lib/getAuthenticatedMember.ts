@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { erasureAllowsAccount } from '@/lib/account/erasure-access';
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
@@ -101,7 +102,8 @@ async function resolveMember<Member extends MemberIdentity>(
         { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
       );
       const { data: { user }, error } = await supabaseAuth.auth.getUser(token);
-      if (error || !user || (hasBrowserIntent && !matches('supabase', user.id))) return null;
+      if (error || !user || (hasBrowserIntent && !matches('supabase', user.id)) ||
+          !await erasureAllowsAccount('supabase', user.id)) return null;
       const member = await getMemberByColumn<Member>('supabase_auth_id', user.id, projection);
       return member ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
     } catch { return null; }
@@ -113,7 +115,8 @@ async function resolveMember<Member extends MemberIdentity>(
   if (!intent || !receipt || receipt.intent !== intent || receipt.provider !== selected) return null;
   const walletIdentity = async () => {
     const wallet = await readWalletSession(req.cookies.get('soe_wallet_id')?.value);
-    if (!wallet || !matches('wallet', wallet.memberId) || !await walletSessionAccess(wallet, 'check')) return null;
+    if (!wallet || !matches('wallet', wallet.memberId) || !await walletSessionAccess(wallet, 'check') ||
+        !await erasureAllowsAccount('wallet', wallet.memberId)) return null;
     const member = await getMemberByColumn<Member>('id', wallet.memberId, projection);
     return member ? { memberId: member.id, member, auth: { provider: 'wallet' as const, subject: member.id } } : null;
   };
@@ -124,7 +127,7 @@ async function resolveMember<Member extends MemberIdentity>(
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (user) {
-      if (error || !matches('supabase', user.id)) return null;
+      if (error || !matches('supabase', user.id) || !await erasureAllowsAccount('supabase', user.id)) return null;
       const member = await getMemberByColumn<Member>('supabase_auth_id', user.id, projection);
       return member ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
     }

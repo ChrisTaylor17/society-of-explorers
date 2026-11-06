@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { erasureAllowsAccount } from '@/lib/account/erasure-access';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
     if ((bearer === null || intent !== undefined) && (selected !== 'supabase' || !browserSelectionMatches(intent, receipt, 'supabase', subject))) {
       return privateJson({ error: 'Sign in again before member setup.' }, { status: 409 });
     }
+    if (!await erasureAllowsAccount('supabase', subject)) return privateJson({ error: 'Unauthorized' }, { status: 401 });
     const body = await readAuthJson(req);
     if (!body || Object.keys(body).some(key => !['supabaseAuthId', 'displayName', 'email'].includes(key)) ||
         (body.displayName !== undefined && (typeof body.displayName !== 'string' || body.displayName.length > 200)) ||
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
       supabase_auth_id: subject, display_name: displayName || 'Explorer', exp_tokens: 0, tier: 'free',
     }).select(MEMBER_SESSION_SELECT).single();
     if (inserted.error) {
+      if (inserted.error.code === 'PT403') return privateJson({ error: 'Unauthorized' }, { status: 401 });
       // Recover simultaneous creation only through the same verified subject.
       if (inserted.error.code !== '23505') return failure();
       const raced = await admin.from('members').select(MEMBER_SESSION_SELECT)

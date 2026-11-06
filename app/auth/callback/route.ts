@@ -1,3 +1,4 @@
+import { erasureAllowsAccount } from '@/lib/account/erasure-access'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { getSafeAuthRedirectPath } from '@/lib/auth/redirectPath'
@@ -50,7 +51,8 @@ export async function GET(req: NextRequest) {
     const identity = error ? null : ordinaryCallbackIdentity(data)
     if (!identity) return failed()
     const proof = await supabase.auth.getUser(identity.token)
-    if (proof.error || proof.data.user?.id !== identity.subject || !ordinaryCallbackIdentity(data)) return failed()
+    if (proof.error || proof.data.user?.id !== identity.subject || !ordinaryCallbackIdentity(data) ||
+        !await erasureAllowsAccount('supabase', identity.subject)) return failed()
 
     const completion = new URL('/auth/complete', origin)
     completion.searchParams.set('next', next)
