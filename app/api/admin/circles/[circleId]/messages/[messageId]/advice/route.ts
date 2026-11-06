@@ -15,8 +15,8 @@ const unavailable = () => privateJson({ error: 'AI advice is unavailable. Human 
 const changed = () => privateJson({ error: 'The review or consent changed. Load a fresh case.' }, { status: 409 });
 const denied = () => privateJson({ error: 'AI advice is not available for this review.' }, { status: 403 });
 
-/** No advice is stored or applied. The DB checks current author consent and
- * reviewer eligibility twice; the original server actor cannot be swapped. */
+/** Advice stays ephemeral. Recheck the original review and consent before
+ * transmission and before returning advice to the authenticated reviewer. */
 export async function POST(req: NextRequest, { params }: Context) {
   const controller = new AbortController();
   const deadlineAt = Date.now() + 12_000;
@@ -57,6 +57,9 @@ export async function POST(req: NextRequest, { params }: Context) {
     if (before instanceof Response) return before;
     if (!current()) return unavailable();
     if (before.revision !== input.expectedRevision || before.contentHash !== input.contentHash) return changed();
+    const sameCase = (value: MessageAdviceSnapshot) =>
+      value.content === before.content && value.contentHash === before.contentHash && value.revision === before.revision
+      && value.consentRevision === before.consentRevision && value.policy === before.policy;
     // Cheap per-instance throttle precedes the authoritative shared allowance.
     for (const [key, maximum] of [[`message-ai:${actorId}`, 5], ['message-ai:instance', 50]] as const) {
       const limit = rateLimit(key, maximum, 60 * 60 * 1000);
@@ -98,7 +101,18 @@ export async function POST(req: NextRequest, { params }: Context) {
     if (reservedUntil === null || !current()) return unavailable();
     // Never retry or refund a debit, even when its reply or the provider result
     // is lost. Reusing the same attempt cannot obtain another send authority.
-    const output = await requestMessageAdvice(messageText, controller.signal, Math.min(deadlineAt, reservedUntil));
+    let sendRefusal: Response | null = null;
+    let output: unknown;
+    try {
+      output = await requestMessageAdvice(messageText, controller.signal, Math.min(deadlineAt, reservedUntil), async () => {
+        const latest = await snapshot();
+        if (latest instanceof Response) sendRefusal = latest;
+        else if (!sameCase(latest)) sendRefusal = changed();
+        return sendRefusal === null && current();
+      });
+    } catch {
+      return (current() ? sendRefusal : null) ?? unavailable();
+    }
     if (!current()) return unavailable();
     const advice = parseMessageAdvice(output, messageText);
     if (!advice) return unavailable();
@@ -108,8 +122,7 @@ export async function POST(req: NextRequest, { params }: Context) {
     const after = await snapshot();
     if (after instanceof Response) return after;
     if (!current()) return unavailable();
-    if (after.content !== before.content || after.contentHash !== before.contentHash || after.revision !== before.revision
-      || after.consentRevision !== before.consentRevision || after.policy !== before.policy) return changed();
+    if (!sameCase(after)) return changed();
     return privateJson({ circleId: after.circleId, messageId: after.messageId, revision: after.revision,
       contentHash: after.contentHash, consentRevision: after.consentRevision, policy: after.policy, advice });
   }

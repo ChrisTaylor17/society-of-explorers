@@ -79,6 +79,44 @@ test('actual API+SQL: reviewer-grant revocation during generation suppresses the
  assert.equal((await advise(f)).status,403);assert.equal(f.providerCalls.length,1);
 });
 
+test('actual API, SQL and SDK: revocation after the debit commits prevents transmission', async t=>{
+ const author=await reviewFixture(t);
+ assert.equal((await consent(author,true)).status,200);
+ const outbound=[];
+ const reviewer=await messageAiApp({fixture:author,sdkFetch:async(url,init)=>{
+  assert.equal(url,'https://api.anthropic.com/v1/messages');
+  outbound.push(JSON.parse(init.body));
+  const response=Response.json({id:'msg_NONISSUED_FIXTURE',type:'message',role:'assistant',model:'claude-sonnet-4-6',
+   content:[{type:'text',text:JSON.stringify({observations:[],counterevidence:[],questions:[]})}],
+   stop_reason:'end_turn',stop_sequence:null,usage:{input_tokens:1,output_tokens:1}});
+  Object.defineProperty(response,'url',{value:url});
+  return response;
+ }});
+ let revoked=false;
+ reviewer.setRpcReply(async(name,args,result)=>{
+  if (name==='soe_circle_message_ai_reserve' && !result.error && !revoked) {
+   assert.equal((await author.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,1);
+   const withdrawal=await consent(author,false);
+   assert.equal(withdrawal.status,200);
+   assert.equal((await withdrawal.json()).allowed,false);
+   revoked=true;
+  }
+  return result;
+ });
+ const refused=await advise(reviewer);
+ assert.equal(revoked,true);
+ assert.equal(refused.status,403);
+ assert.doesNotMatch(await refused.text(),/observations|PRIVATE_REPORT_NOTE/);
+ assert.equal(outbound.length,0);
+ assert.equal((await author.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,1);
+ assert.equal((await consent(author,true)).status,200);
+ const accepted=await advise(reviewer);
+ assert.equal(accepted.status,200);
+ assert.equal((await accepted.json()).consentRevision,3);
+ assert.deepEqual(outbound.map(body=>body.messages),[[{role:'user',content:JSON.stringify({content:CONTENT})}]]);
+ assert.doesNotMatch(JSON.stringify(outbound),/PRIVATE_REPORT_NOTE|PRIVATE_AUTHOR_LABEL/);
+});
+
 test('actual API+SQL: default-off allowance denies generation even after author consent',async t=>{
  const f=await reviewFixture(t,null);await consent(f,true);
  assert.equal((await advise(f)).status,503);assert.equal(f.providerCalls.length,0);

@@ -147,6 +147,8 @@ Local acceptance at that checkpoint: **19 actual-SDK cases**, **11 callback/head
 
 ## Current message AI consent safety
 
+The advice route now checks the case and author consent again immediately before its only provider send. A local reproduction held the reply after the allowance debit committed, then revoked consent. The old route reached the intercepted transport once. The fixed route denied advice with zero sends and kept the debit. A later explicit opt-in allowed a new request under the new consent revision. AI advice remains disabled by default. [Verification](docs/integration/message-ai-send-verification.json)
+
 The moderation request now removes the app-added reply link before sending opted-in text. Advice quotations must appear in the text actually sent. A reply relationship lookup that fails stops advice before reserving a request. The regression reproduced the leak on the prior route and passed with the fix. [Behavior](docs/integration/message-ai-moderation.md) · [Verification receipt](docs/integration/message-ai-reply-privacy-verification.json)
 
 The baseline reproduced a delayed enable overriding a newer accepted keep-off decision because an unchanged value did not advance its revision. The reverse direction was also reachable. The unapplied Stage 13 successor advances every accepted author decision exactly once, including unchanged false/true choices. The API requires an exact revision-plus-one receipt. Narrow service-only functions retain the existing locks and author/hash/policy checks while direct service writes are denied. Disable-only rollback preserves data and the ordering barrier.

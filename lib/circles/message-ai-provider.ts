@@ -71,17 +71,19 @@ async function boundedBody(response: Response, signal: AbortSignal): Promise<Arr
   } finally { signal.removeEventListener('abort', cancel); reader.releaseLock(); }
 }
 
-export async function requestMessageAdvice(content: string, signal: AbortSignal, sendBefore: number): Promise<unknown> {
+export async function requestMessageAdvice(content: string, signal: AbortSignal, sendBefore: number,
+  authorizeSend: () => Promise<boolean>): Promise<unknown> {
   const startedAt = Date.now();
   if (!providerAvailable() || typeof content !== 'string' || !content.trim() || content.length > 2000 || !signal || signal.aborted
-    || !Number.isSafeInteger(sendBefore) || sendBefore <= startedAt || sendBefore > startedAt + DEADLINE_MS) {
+    || !Number.isSafeInteger(sendBefore) || sendBefore <= startedAt || sendBefore > startedAt + DEADLINE_MS
+    || typeof authorizeSend !== 'function') {
     throw new Error(UNAVAILABLE);
   }
   const apiKey = process.env.ANTHROPIC_API_KEY!;
   const controller = new AbortController();
   const deadline = Math.min(startedAt + DEADLINE_MS, sendBefore);
   return new Promise<unknown>((resolve, reject) => {
-    let finished = false, sent = false;
+    let finished = false, enteredTransport = false;
     const clean = () => { clearTimeout(timer); signal.removeEventListener('abort', fail); };
     const fail = () => {
       if (finished) return;
@@ -104,12 +106,15 @@ export async function requestMessageAdvice(content: string, signal: AbortSignal,
           fetchOptions: { redirect: 'error', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' },
           fetch: async (input, init) => {
             const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-            if (finished || sent || Date.now() >= deadline || url !== ENDPOINT || init?.method !== 'POST' || typeof init.body !== 'string') throw new Error(UNAVAILABLE);
-            sent = true;
+            if (finished || enteredTransport || Date.now() >= deadline || url !== ENDPOINT || init?.method !== 'POST' || typeof init.body !== 'string') throw new Error(UNAVAILABLE);
+            enteredTransport = true;
             const onSDKAbort = () => controller.abort();
             init.signal?.addEventListener('abort', onSDKAbort, { once: true });
             try {
-              if (init.signal?.aborted || controller.signal.aborted || Date.now() >= deadline) throw new Error(UNAVAILABLE);
+              const current = () => !finished && !init.signal?.aborted && !controller.signal.aborted && Date.now() < deadline;
+              if (!current()) throw new Error(UNAVAILABLE);
+              const permitted = await authorizeSend();
+              if (permitted !== true || !current()) throw new Error(UNAVAILABLE);
               // Rebuild headers/options: SDK ambient custom headers, cookies, profiles,
               // proxy options and request metadata are not forwarded by this adapter.
               const response = await fetch(ENDPOINT, {

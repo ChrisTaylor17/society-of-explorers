@@ -1,0 +1,84 @@
+{
+  "status": "verified_locally",
+  "recordedAt": "2026-11-06T04:49:50+00:00",
+  "startingCommit": "1b2f959b3d87de9fd1b5c49a71b49093d23ab22f",
+  "regression": {
+    "sequence": "Hold the response after a committed allowance debit. Revoke the original consent from the author instance. Release the reservation response to the reviewer instance.",
+    "baseline": {
+      "httpStatus": 403,
+      "interceptedSdkSends": 1
+    },
+    "fixed": {
+      "httpStatus": 403,
+      "interceptedSdkSends": 0,
+      "retainedDebits": 1
+    },
+    "subsequentOptIn": {
+      "httpStatus": 200,
+      "consentRevision": 3,
+      "newInterceptedSdkSends": 1
+    },
+    "scope": "Actual API handlers, current disposable SQL and the installed Anthropic SDK. The transport is intercepted before network I/O and receives synthetic data."
+  },
+  "testResults": {
+    "focusedPassed": 43,
+    "expandedPassedIncludingFocused": 99,
+    "scopedLintPassed": true,
+    "build": {
+      "exitCode": 0,
+      "seconds": 41.16,
+      "buildId": "INWfXj_Ql4zfUGpReN8cL",
+      "sourceFiles": 1059,
+      "sourceSha256": "2059cde99ca3d8c0468b9137c38b50e8216e18fe88ff887256e287c6ba0e4913",
+      "warningLines": 0
+    },
+    "compiledBoundaryProbes": 14,
+    "compiledChromiumChecks": 3,
+    "composedChromium": {
+      "stories": 8,
+      "httpRequests": 38,
+      "syntheticProviderCalls": 4,
+      "humanDecisions": 0
+    },
+    "cleanup": "Owned Chromium processes, disposable databases and compiled loopback server closed. The server reported no runtime, source or input mismatches and no denied operations."
+  },
+  "fixtureNotes": [
+    "The broader test launcher requires the verification/web working directory for its existing TypeScript loader. The root-directory launch did not resolve TypeScript.",
+    "The historical browser fixture was adapted in scratch to the current publication-aware SQL chain, esbuild CSS modules, and the current author notices and tab order. The test selects the exact message via its discussion link. The passing adapted harness is preserved with the browser receipt."
+  ],
+  "limits": [
+    "A consent or access change can still commit after the final pre-send read. Revocation cannot recall transmitted text.",
+    "Hosted authentication and database, actual provider behavior and account terms, and physical-device acceptance remain outside this verification. AI assistance is off by default."
+  ],
+  "originalCheckout": {
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "statusEntries": 681,
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts": "febd11a3331bf38c932d1567fc081d45c93358d9c7db0e991bfb7d9e28291581",
+    "lib/circles/message-ai-provider.ts": "8124c2f6630753284f301ef227be9a09ae25d44344994a5118a62402f9b432d6",
+    "verification/web/tests/message-ai-advice-api.test.mjs": "9fcc52ed4c5e008c9b552dd57ca3bc929cca00ed5da1ef9fa015d1a82e1a28d2",
+    "verification/web/tests/message-ai-integration.test.mjs": "7517679cd52b697887f0f82e284798c8719cfba0a5e9d8f840937025bf1a9724",
+    "verification/web/tests/message-ai-provider.test.mjs": "a053a0bf99e9b145b389cebb9c8c3eab28fc9a35d827e8dd643f66a74c02d32e",
+    "verification/web/tests/support/message-ai-app.mjs": "1164c3e8860528655c3d4d8f40fd74cc5cf5d9128dbbf49c50daffe5dae3ecc7"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-before-02.tap": "bc16b8b7d3a1f091b8ca429bcefd57d0176f9119431cbe21deb389bc9e2b20d6",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-focused-01.tap": "d1009fea8f42770e62f6dc2796778bfe11570f9f2588edf397d84c90e1a89e99",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-full-02.tap": "0bccb51d6d0615cfb4f2db8ce276cbfdcaef15061f8ae629b53ab36728b7ca1b",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/message-ai-send-2026-11-05/built-shell-message-ai-send-01-next-build.json": "f9f2f08215a19edeea0590abe67e4eee8a15affab35dece9add70f04a2849d05",
+    "verification/web/evidence/message-ai-send-2026-11-05/built-shell-message-ai-send-01-next-build.log": "f4cf1a2d47bb3abba8f153b6a9bc8a236519e8837e1e77730cacedfd95656073",
+    "verification/web/evidence/message-ai-send-2026-11-05/built-shell-message-ai-send-01-build-source-sha256.json": "1e39438110c8f753c08b53ec18ddcabb5d7b87fed82fa37f1a01f62461266de8",
+    "verification/web/evidence/message-ai-send-2026-11-05/built-shell-message-ai-send-01-server.json": "d3e306880ccd6aec0ef1000ab437cf9dc4e8d042230dabe292f10ef9bbbc41b8",
+    "verification/web/evidence/message-ai-send-2026-11-05/built-shell-message-ai-send-01-release-boundary-probe.json": "bf089dc95b14b0c6481bbd4063443826f08946966beb3c88907cca62ac373eb3",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-built-browser.mjs": "52cc07f6bb98cd6c1aa49016203c4bc0b6b0298a19a81f8bb8bd81317aa1ea3a",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-built-browser.json": "46915297219e794a8b08b2cd94ed13315ca7f63e3619684dc170edd2de09de23",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-bundle.mjs": "ee5ee7320e8cff9c453c84f589b25730b354e951e1fb8ccc4fd45b6f8d06f7f0",
+    "verification/web/evidence/message-ai-send-2026-11-05/source-manifest.json": "89084be08d9b70a9949ab000404b1e1fea91f5c55f9d44f1f5ea1cb63a5e7cfe",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-browser.json": "eb92331b782887b7fa2171ccf711190f097b719864528d3772773be1d6b7749b",
+    "verification/web/evidence/message-ai-send-2026-11-05/message-ai-send-browser-06.log": "7be664a6afe3ae49b829c4464861e96146de444ede427ffe2952c0c97c0ca468",
+    "verification/web/evidence/message-ai-send-2026-11-05/browser-message-ai-send.mjs": "13150d1c98e6a59474cfd11b5e96967c1a734210c7ed663c7229bb269db77f04"
+  }
+}

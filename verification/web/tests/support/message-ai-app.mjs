@@ -7,7 +7,7 @@ export { IDS, CONTENT, MESSAGE_AI_SOURCE_HASHES, MESSAGE_AI_FIXTURE_LIMITS };
 
 // Actual route modules and thirteen migration files. Only server authentication,
 // PostgREST transport and the remote model are synthetic adapters.
-export async function messageAiApp({fixture,allowance={globalLimit:50,reviewerLimit:5}}={}) {
+export async function messageAiApp({fixture,allowance={globalLimit:50,reviewerLimit:5},sdkFetch}={}) {
  const ownsDatabase=!fixture,f=fixture??await createMessageAiAllowanceDb(),app=offlineApp(),calls=[],providerCalls=[];
  if(ownsDatabase&&allowance)await activateAllowance(f.db,allowance);
  let actor=f.authorId,available=true,provider=async()=>({observations:[],counterevidence:[{excerpt:'without a personal attack',note:'The message distinguishes an idea from a person.'}],questions:['What surrounding context should the human reviewer check?']});
@@ -42,9 +42,18 @@ export async function messageAiApp({fixture,allowance={globalLimit:50,reviewerLi
    return await rpcReply(name,args,{data:await rpc(f.db,name,names.get(name).map(key=>args[key]??null)),error:null});
   }catch(error){return {data:null,error:{code:error.code??'FIXTURE_ERROR'}};}
  }})}));
- app.setMock('@/lib/circles/message-ai-provider',()=>({providerAvailable:()=>available,requestMessageAdvice:async(content,signal)=>{
-  providerCalls.push({content,signal});return provider(content,signal);
- }}));
+ if (sdkFetch) {
+  const {default:Anthropic}=await import('@anthropic-ai/sdk');
+  app.setMock('@anthropic-ai/sdk',()=>({__esModule:true,default:Anthropic}));
+  app.context.process.env.SOE_MESSAGE_AI_ENABLED='true';
+  app.context.process.env.ANTHROPIC_API_KEY='NONISSUED_MESSAGE_AI_FIXTURE';
+  app.context.fetch=sdkFetch;
+ } else {
+  app.setMock('@/lib/circles/message-ai-provider',()=>({providerAvailable:()=>available,requestMessageAdvice:async(content,signal,sendBefore,authorizeSend)=>{
+   if (await authorizeSend()!==true) throw Error('Synthetic send authorization refused');
+   providerCalls.push({content,signal});return provider(content,signal);
+  }}));
+ }
  const routes={
   contributions:app.load('app/api/circles/contributions/route.ts'),
   message:app.load('app/api/circles/[circleId]/messages/[messageId]/route.ts'),

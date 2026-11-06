@@ -21,7 +21,10 @@ function fixture() {
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>{authCalls++;return auth();}}));
  app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({rpc:async(name,args)=>{calls.push({name,args});return name==='soe_circle_message_ai_reserve'?reserve(args):rpc(++snapshots);}})}));
  app.setMock('@/lib/rateLimit',()=>({rateLimit:()=>({ok:!limited,retryAfterS:60})}));
- app.setMock('@/lib/circles/message-ai-provider',()=>({providerAvailable:()=>available,requestMessageAdvice:async(text,signal,sendBefore)=>{providerCalls.push({text,signal,sendBefore});return provider();}}));
+ app.setMock('@/lib/circles/message-ai-provider',()=>({providerAvailable:()=>available,requestMessageAdvice:async(text,signal,sendBefore,authorizeSend)=>{
+  if (await authorizeSend()!==true) throw Error('Fixture transmission refused');
+  providerCalls.push({text,signal,sendBefore});return provider();
+ }}));
  const route=app.load('app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts');
  const context={params:Promise.resolve({circleId,messageId})};
  const request=(body={expectedRevision:2,contentHash:hash},headers={},signal)=>new Request(`https://offline.invalid/api/admin/circles/${circleId}/messages/${messageId}/advice`,{method:'POST',headers:{origin:'https://offline.invalid',...headers},body:typeof body==='string'?body:JSON.stringify(body),signal});
@@ -43,8 +46,8 @@ test('actual route transmits only current consented text, rechecks actor and sna
  const f=fixture();f.setRpc(async()=>({data:{...snapshot(),member_name:'PRIVATE_NAME',reports:['PRIVATE_REPORT'],email:'PRIVATE_EMAIL'},error:null}));
  const response=await f.route.POST(f.request(),f.context);assert.equal(response.status,200);
  const result=await response.json();assert.deepEqual(result.advice,advice());assert.equal(result.consentRevision,1);
- assert.doesNotMatch(JSON.stringify(result),/PRIVATE_|"content":|attemptId|validForMs/);assert.equal(f.authCalls(),2);assert.equal(f.calls.length,3);
- for(const call of [f.calls[0],f.calls[2]]){assert.equal(call.name,'soe_circle_message_ai_snapshot');assert.deepEqual(structuredClone(call.args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId});}
+ assert.doesNotMatch(JSON.stringify(result),/PRIVATE_|"content":|attemptId|validForMs/);assert.equal(f.authCalls(),2);assert.equal(f.calls.length,4);
+ for(const call of [f.calls[0],f.calls[2],f.calls[3]]){assert.equal(call.name,'soe_circle_message_ai_snapshot');assert.deepEqual(structuredClone(call.args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId});}
  assert.equal(f.calls[1].name,'soe_circle_message_ai_reserve');
  assert.deepEqual(structuredClone(f.calls[1].args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId,p_attempt_id:f.calls[1].args.p_attempt_id,p_expected_revision:2,p_content_hash:hash,p_expected_consent_revision:1,p_policy:'anthropic-message-review-v1'});
  assert.match(f.calls[1].args.p_attempt_id,/^[0-9a-f-]{36}$/);assert.ok(f.providerCalls[0].sendBefore<=Date.now()+8000);
@@ -61,21 +64,36 @@ test('absent consent, incomplete case, stale revision and unavailable schema pre
 });
 test('revoked consent, changed evidence, new reports and revoke/re-enable invalidate an in-flight answer',async()=>{
  for(const change of [{consentRevision:3},{revision:3},{content:'A replacement message.'},{contentHash:'b'.repeat(64)},{policy:'other-policy'}]){
-  const f=fixture();f.setRpc(async n=>({data:n===1?snapshot():{...snapshot(),...change},error:null}));
+  const f=fixture();f.setRpc(async n=>({data:n<=2?snapshot():{...snapshot(),...change},error:null}));
   const r=await f.route.POST(f.request(),f.context);assert.equal(r.status,change.policy?503:409);assert.equal(f.providerCalls.length,1);assert.doesNotMatch(await r.text(),/observations|condemn/);
  }
- const f=fixture();f.setRpc(async n=>n===1?{data:snapshot(),error:null}:{data:null,error:{code:'PT403'}});
+ const f=fixture();f.setRpc(async n=>n<=2?{data:snapshot(),error:null}:{data:null,error:{code:'PT403'}});
  assert.equal((await f.route.POST(f.request(),f.context)).status,403);assert.equal(f.providerCalls.length,1);
+});
+test('the check at transmission refuses stale or unavailable evidence before sending', async()=>{
+ for (const [latest,status] of [
+  [{data:{...snapshot(),consentRevision:3},error:null},409],
+  [{data:{...snapshot(),revision:3},error:null},409],
+  [{data:null,error:{code:'PT403'}},403],
+  [{data:null,error:{code:'PT409'}},409],
+  [{data:null,error:{code:'PGRST202'}},503],
+ ]) {
+  const f=fixture();
+  f.setRpc(async n=>n===1?{data:snapshot(),error:null}:latest);
+  assert.equal((await f.route.POST(f.request(),f.context)).status,status);
+  assert.equal(f.providerCalls.length,0);
+  assert.equal(f.calls.length,3);
+ }
 });
 test('changed server identity after generation cannot obtain advice or perform the second evidence read',async()=>{
  const f=fixture();f.setProvider(async()=>{f.setActor(other);return advice();});assert.equal((await f.route.POST(f.request(),f.context)).status,403);
- assert.equal(f.calls.length,2);assert.equal(f.providerCalls.length,1);
+ assert.equal(f.calls.length,3);assert.equal(f.providerCalls.length,1);
 });
 test('fabricated citations, extra decision/action fields, invalid text and oversized suggestions fail closed',async()=>{
  for(const output of [{...advice(),action:'hide'},{...advice(),observations:[{rule:'safety',excerpt:'invented quote',note:'Claim'}]},
   {...advice(),observations:[{rule:'religion',excerpt:'I disagree',note:'Claim'}]},{...advice(),questions:['x'.repeat(301)]},
   {...advice(),counterevidence:[{excerpt:'to condemn',note:'bad\u0000note'}]},{...advice(),observations:Array(5).fill(advice().observations[0])}]){
-  const f=fixture();f.setProvider(async()=>output);const r=await f.route.POST(f.request(),f.context);assert.equal(r.status,503);assert.equal(f.calls.length,2);
+  const f=fixture();f.setProvider(async()=>output);const r=await f.route.POST(f.request(),f.context);assert.equal(r.status,503);assert.equal(f.calls.length,3);
  }
 });
 test('total deadline retires stalled authentication and does not start late database/provider work',async()=>{
@@ -94,7 +112,7 @@ test('request abort and timeout discard noncooperative provider results without 
   const f=fixture(),pending=deferred(),controller=new AbortController();f.setProvider(()=>pending.promise);
   const work=f.route.POST(f.request(undefined,{},controller.signal),f.context);await waitFor(()=>f.providerCalls.length===1);
   if(mode==='abort')controller.abort();else f.timers[0].fn();assert.equal((await work).status,503);assert.equal(f.providerCalls[0].signal.aborted,true);
-  pending.resolve(advice());await turns();assert.equal(f.calls.length,2);assert.equal(f.providerCalls.length,1);
+  pending.resolve(advice());await turns();assert.equal(f.calls.length,3);assert.equal(f.providerCalls.length,1);
  }
 });
 test('per-instance budget refuses generation after access check',async()=>{
@@ -105,7 +123,7 @@ test('elapsed deadline rejects late continuations even when the timer callback h
  f.app.context.Date=class extends Date{static now(){return now;}};
  f.setProvider(async()=>{now+=12000;return advice();});
  assert.equal((await f.route.POST(f.request(),f.context)).status,503);
- assert.equal(f.providerCalls.length,1);assert.equal(f.calls.length,2);assert.equal(f.authCalls(),1);
+ assert.equal(f.providerCalls.length,1);assert.equal(f.calls.length,3);assert.equal(f.authCalls(),1);
 });
 
 test('shared allowance refusal, absent schema and ambiguous debit never send or retry',async()=>{

@@ -46,7 +46,8 @@ function fixture({ enabled = 'true', key = 'NONISSUED_LOCAL_ONLY', transport = (
   app.context.clearTimeout = timer => { timer.cleared = true; };
   const provider = app.load('lib/circles/message-ai-provider.ts');
   return { app, provider, calls, constructors, timers, logs, request: (content = 'selected message', signal = new AbortController().signal,
-    sendBefore = (app.context.Date?.now() ?? Date.now()) + 8000) => provider.requestMessageAdvice(content, signal, sendBefore) };
+    sendBefore = (app.context.Date?.now() ?? Date.now()) + 8000, authorizeSend = async () => true) =>
+    provider.requestMessageAdvice(content, signal, sendBefore, authorizeSend) };
 }
 const flush = async () => { for (let n = 0; n < 30; n++) await Promise.resolve(); };
 const waitFor = async predicate => { for (let n = 0; n < 200 && !predicate(); n++) await new Promise(resolve => setImmediate(resolve)); assert.ok(predicate(), 'fixture work started'); };
@@ -186,9 +187,48 @@ test('a delayed completion past wall-clock deadline cannot win even before the t
 test('missing, expired or oversized send authority never constructs the SDK', async () => {
   const f = fixture();
   for (const deadline of [undefined, null, NaN, Infinity, Date.now() - 1, Date.now() + 9000]) {
-    await unavailable(f.provider.requestMessageAdvice('selected message', new AbortController().signal, deadline));
+    await unavailable(f.provider.requestMessageAdvice('selected message', new AbortController().signal, deadline, async () => true));
   }
   assert.equal(f.calls.length, 0); assert.equal(f.constructors.length, 0);
+});
+
+test('missing final authorization never constructs the SDK', async () => {
+  const f = fixture();
+  await unavailable(f.provider.requestMessageAdvice('selected message', new AbortController().signal, Date.now() + 8000));
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.constructors.length, 0);
+});
+
+test('the installed SDK asks for final authorization after preparing the request', async () => {
+  let prepared, checks = 0, permitted = true;
+  const f = fixture({ beforeCreate: () => new Promise(resolve => { prepared = resolve; }) });
+  const pending = f.request(undefined, undefined, undefined, async () => { checks++; return permitted; });
+  await waitFor(() => prepared);
+  assert.equal(checks, 0);
+  permitted = false;
+  const rejected = unavailable(pending);
+  prepared();
+  await rejected;
+  assert.equal(checks, 1);
+  assert.equal(f.calls.length, 0);
+});
+
+test('cancellation or expiry during final authorization fences a late approval', async () => {
+  for (const mode of ['cancel', 'expiry']) {
+    let release, now = 100000;
+    const f = fixture(), controller = new AbortController();
+    f.app.context.Date = class extends Date { static now() { return now; } };
+    const pending = f.request(undefined, controller.signal, now + 100, () => new Promise(resolve => { release = resolve; }));
+    await waitFor(() => release);
+    const rejected = unavailable(pending);
+    if (mode === 'cancel') controller.abort();
+    else now += 101;
+    release(true);
+    await rejected;
+    await flush();
+    assert.equal(f.calls.length, 0);
+    assert.equal(f.timers[0].cleared, true);
+  }
 });
 
 test('reservation expiry during actual SDK preparation prevents its first fetch even before timers fire', async () => {
