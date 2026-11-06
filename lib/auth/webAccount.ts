@@ -2,6 +2,7 @@ import { AuthClient } from '@supabase/auth-js';
 import { createStorageFromOptions } from '@supabase/ssr/dist/module/cookies';
 import { parseCookieHeader, serializeCookieHeader, type CookieOptions } from '@supabase/ssr';
 import { isUuid } from '../ids/uuid';
+import { ACCOUNT_DELETION_PATH, parseDeletionOwner } from '../account/deletion-contract';
 import { getSafeAuthRedirectPath } from './redirectPath';
 import { memberSessionDto } from './memberDto';
 import { beginBrowserAuthIntent, isCurrentBrowserAuthIntent, retireBrowserAuthIntent, AUTH_PKCE_INTENT_COOKIE } from './browserIntent';
@@ -168,16 +169,24 @@ export function createWebAccount(config: WebAccountConfig) {
     const body = await boundedJson(response); requireCurrent(operation); return { response, body };
   }
   async function finishMember(operation: Operation, providerName: 'supabase' | 'wallet', subject: string) {
-    let proof = await request(operation, '/api/auth/member');
-    if (proof.response.status === 401 && providerName === 'supabase') {
-      // Provisioning is only part of this deliberate, verified sign-in.
-      const setup = await request(operation, '/api/auth/ensure-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ supabaseAuthId: subject, displayName: 'Explorer' }) });
-      if (!setup.response.ok) throw unavailable();
-      proof = await request(operation, '/api/auth/member');
+    if (nextPath === ACCOUNT_DELETION_PATH) {
+      // A sign-in can exist before a member record. Do not create a record
+      // merely to let this person ask to remove their account.
+      const proof = await request(operation, '/api/account/deletion');
+      const owner = record(proof.body) ? parseDeletionOwner(proof.body.owner) : null;
+      if (!proof.response.ok || owner?.provider !== providerName || owner.subject !== subject) throw unavailable();
+    } else {
+      let proof = await request(operation, '/api/auth/member');
+      if (proof.response.status === 401 && providerName === 'supabase') {
+        // Provisioning is only part of this deliberate, verified sign-in.
+        const setup = await request(operation, '/api/auth/ensure-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ supabaseAuthId: subject, displayName: 'Explorer' }) });
+        if (!setup.response.ok) throw unavailable();
+        proof = await request(operation, '/api/auth/member');
+      }
+      const member = record(proof.body) ? memberSessionDto(proof.body.member) : null;
+      if (!proof.response.ok || !record(proof.body) || !record(proof.body.auth) || proof.body.auth.provider !== providerName || proof.body.auth.subject !== subject || !member
+        || (providerName === 'wallet' ? member.id !== subject : member.supabase_auth_id !== subject)) throw unavailable();
     }
-    const member = record(proof.body) ? memberSessionDto(proof.body.member) : null;
-    if (!proof.response.ok || !record(proof.body) || !record(proof.body.auth) || proof.body.auth.provider !== providerName || proof.body.auth.subject !== subject || !member
-      || (providerName === 'wallet' ? member.id !== subject : member.supabase_auth_id !== subject)) throw unavailable();
     requireCurrent(operation); phase = 'accepted'; message = 'Signed in. Opening your account…'; op = null; dispose(operation); notify(); emit();
     // No await after the final ownership check; unmount keeps this accepted intent.
     if (enabled() && phase === 'accepted' && config.intent.current(operation.intent)) config.navigate(nextPath);

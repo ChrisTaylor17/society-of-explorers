@@ -13,6 +13,7 @@ import { CircleHostingScreen } from './CircleHostingScreen';
 import { createCircleHosting, type CircleHosting } from '../shared/circle-hosting';
 import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
+import { openAccountDeletionPage } from './src/auth/account-deletion';
 import { createMemberAccountSession } from '../shared/account-session';
 import { PhilemonStudyScreen } from './PhilemonStudyScreen';
 import { ClipsScreen } from './ClipsScreen';
@@ -155,6 +156,13 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
       setProfileNotice(''); setEntered({ connection, destination: 'profile' });
     } catch { setProfileNotice('Profile editing is unavailable. Check your member account and try again.'); }
   });
+  const openDeletion = () => act(() => {
+    if (!connection || connection.binding.model().phase !== 'ready') return;
+    setProfileNotice('');
+    void openAccountDeletionPage(config.origin).catch(() => act(() => {
+      setProfileNotice('The browser could not open. Try opening account deletion again.');
+    }));
+  });
   const openReadingDestination = (destination: 'saved' | 'discover' | 'mine', options?: { onlinePreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId }) => act(() => {
     const current = connection?.account.model();
     if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
@@ -235,6 +243,7 @@ export function MemberCircleScreen({ config, connectivity, retained, philemonHos
         onPress={() => act(() => { setEntered(null); void connection?.account.prepare(); })}/>
     </View> : null}
     <Action label="My profile" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.profileTransport} onPress={openProfile}/>
+    <Action label="Delete account on the website" disabled={model?.phase !== 'ready'} onPress={openDeletion}/>
     <Action label="Saved reading" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.savedReadingTransport} onPress={() => openReadingDestination('saved')}/>
     {sharedReel && <>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>A shared Reel is ready to open.</Text>

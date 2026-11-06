@@ -57,6 +57,10 @@ export function proxy(req: NextRequest) {
   // subresource referrers before the client captures and scrubs the URL.
   if (pathname === '/auth/recovery' || pathname === '/auth/confirm' || pathname === '/auth/complete' || pathname === '/login') return applyPrivateRouteHeaders(NextResponse.next());
 
+  // Keep request receipts out of caches. The public instructions remain
+  // available before sign-in and after an account is removed.
+  if (pathname === '/account/delete' || pathname === '/account/profile') return applyPrivateRouteHeaders(NextResponse.next());
+
   // Protected routes
   const protectedRoutes = [
     '/dashboard',
@@ -96,6 +100,8 @@ export function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     '/login',
+    '/account/delete',
+    '/account/profile',
     '/auth/confirm',
     '/auth/complete',
     '/auth/recovery',

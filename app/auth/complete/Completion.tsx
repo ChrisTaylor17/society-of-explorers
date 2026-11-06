@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { notifyAuthProviderChanged, subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import { isCurrentBrowserAuthIntent, parseBrowserIntent } from '@/lib/auth/browserIntent';
+import { ACCOUNT_DELETION_PATH, parseDeletionOwner } from '@/lib/account/deletion-contract';
 import { memberSessionDto } from '@/lib/auth/memberDto';
 import { isUuid } from '@/lib/ids/uuid';
 import { getSafeAuthRedirectPath } from '@/lib/auth/redirectPath';
@@ -20,8 +21,11 @@ async function readJson(response: Response): Promise<unknown> {
 }
 
 export default function Completion({ nextPath, intent }: { nextPath: string; intent: string | null }) {
+  const forDeletion = nextPath === ACCOUNT_DELETION_PATH;
   const router = useRouter(), state = useRef({ mounted: false, active: false, online: false, busy: false, epoch: 0, notifying: false, operation: null as AbortController | null });
-  const [enabled, setEnabled] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState('Continue to verify your Google sign-in and open your member profile.');
+  const [enabled, setEnabled] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState(forDeletion
+    ? 'Continue to verify your Google sign-in and open the account deletion page.'
+    : 'Continue to verify your Google sign-in and open your member profile.');
   useEffect(() => {
     const owner = state.current; owner.mounted = true;
     const refresh = () => setEnabled(owner.mounted && owner.active && owner.online && !owner.busy && !!intent && isCurrentBrowserAuthIntent(intent));
@@ -59,14 +63,19 @@ export default function Completion({ nextPath, intent }: { nextPath: string; int
       const body = await readJson(response); check(); return { response, body };
     }
     try {
-      let proof = await request('/api/auth/member');
-      if (proof.response.status === 401) {
-        const setup = await request('/api/auth/ensure-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayName: 'Explorer' }) });
-        if (!setup.response.ok) throw new Error('Sign-in unavailable');
-        proof = await request('/api/auth/member');
+      if (forDeletion) {
+        const proof = await request('/api/account/deletion');
+        if (!proof.response.ok || !record(proof.body) || parseDeletionOwner(proof.body.owner)?.provider !== 'supabase') throw new Error('Sign-in unavailable');
+      } else {
+        let proof = await request('/api/auth/member');
+        if (proof.response.status === 401) {
+          const setup = await request('/api/auth/ensure-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayName: 'Explorer' }) });
+          if (!setup.response.ok) throw new Error('Sign-in unavailable');
+          proof = await request('/api/auth/member');
+        }
+        const member = record(proof.body) ? memberSessionDto(proof.body.member) : null;
+        if (!proof.response.ok || !record(proof.body) || !record(proof.body.auth) || proof.body.auth.provider !== 'supabase' || !isUuid(proof.body.auth.subject) || !member || member.supabase_auth_id !== proof.body.auth.subject) throw new Error('Sign-in unavailable');
       }
-      const member = record(proof.body) ? memberSessionDto(proof.body.member) : null;
-      if (!proof.response.ok || !record(proof.body) || !record(proof.body.auth) || proof.body.auth.provider !== 'supabase' || !isUuid(proof.body.auth.subject) || !member || member.supabase_auth_id !== proof.body.auth.subject) throw new Error('Sign-in unavailable');
       check(); owner.notifying = true;
       try { notifyAuthProviderChanged(); } finally { owner.notifying = false; }
       check(); setMessage('Signed in. Opening your account…'); router.replace(getSafeAuthRedirectPath(nextPath));

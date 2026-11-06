@@ -14,6 +14,7 @@ import { REEL_QUESTIONS, type ReelDiscussionId } from '../../lib/clips/salon';
 import { PublicCirclesScreen } from './PublicCirclesScreen';
 import type { PublicCircleChoice } from '../shared/circle-directory';
 import type { PublicCircleDiscoveryConnection } from './src/circles/installed-member';
+import { openAccountDeletionPage } from './src/auth/account-deletion';
 import { observePublicReelLinks } from './src/circles/public-reel-links';
 
 export type OwnedAccountConnection = {
@@ -185,6 +186,13 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     if (onlineSignOut) void value.controller.signOutDevice();
     else void value.controller.clearDeviceSession();
   }
+  function openDeletion() {
+    if (!validView() || !active.current || !connection || connection.controller.model().phase === 'signing_out') return;
+    clearFields(); setMemberProblem('');
+    void openAccountDeletionPage(connection.config.origin).catch(() => {
+      if (validView() && active.current) setMemberProblem('The browser could not open. Try opening account deletion again.');
+    });
+  }
   function enterMember() {
     if (!validView() || mode !== 'signin' || !connection?.controller.model().ready) return;
     invalidate();
@@ -312,6 +320,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
       <Text style={styles.note}>Clear the saved sign-in on this phone, even while offline. The online session can remain active.</Text>
       <Action label="Clear sign-in from this device" disabled={!m?.canClear} onPress={() => endDeviceSession(false)}/>
       </>}
+      <Action label="Delete account on the website" disabled={signingOut || !active.current} onPress={openDeletion}/>
       <Action label="Close sign-in" disabled={signingOut} onPress={close}/>
     </>}
   </ScrollView></SafeAreaView>;

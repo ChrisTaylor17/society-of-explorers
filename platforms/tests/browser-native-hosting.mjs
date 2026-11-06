@@ -579,6 +579,36 @@ try{
 
  await start();await fill();await review();await confirm();await created();assert(!String(await text()).includes('Active Circles at your last hosting check'));assert(!String(await text()).includes('Active Circles you host:'));await screenshot('native-hosting-created-320.png',true);
  }
+ if(run?.startsWith('account-deletion-')){
+   const deletionLabel='Delete account on the website';
+   const deletionUrl=ORIGIN+'/account/delete';
+   const opened=()=>p.evaluate(()=>[...window.nativeQa.openedMeetings]);
+   await show();
+   await button('Connect my account').click();
+   await enabled(deletionLabel);
+   const beforePublic=http.length;
+   await button(deletionLabel).click();
+   await p.waitForFunction(()=>window.nativeQa.openedMeetings.length===1);
+   assert.deepEqual(await opened(),[deletionUrl]);
+   assert.equal(http.length,beforePublic);
+   pass('the connected sign-in screen opens only the public account deletion page before member setup, with no native account request');
+
+   await show();
+   await signIn();
+   await account();
+   await enabled(deletionLabel);
+   const oldDeletion=await retain(deletionLabel),beforeMember=http.length;
+   await button(deletionLabel).click();
+   await p.waitForFunction(()=>window.nativeQa.openedMeetings.length===1);
+   assert.deepEqual(await opened(),[deletionUrl]);
+   assert.equal(http.length,beforeMember);
+   await p.evaluate(()=>window.nativeQa.activity('change','background'));
+   await invoke(oldDeletion);
+   await settle();
+   assert.deepEqual(await opened(),[deletionUrl]);
+   assert.equal(http.length,beforeMember);
+   pass('the verified member screen hands off only the public website address, and a retired callback cannot reopen it from the background');
+ }
  assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.evaluate(()=>window.nativeQa.unmount());await settle();stats=(await state()).stats;assert.equal(stats.netListeners,0);assert.equal(stats.appListeners,0);assert.equal(stats.linkListeners,0);assert.equal(stats.handles,0);assert.equal(stats.retainedCallbacks,0);assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);for(const[n,h]of Object.entries(sourceHashes))assert.equal(sha(read(n)),h,'Changed source during proof '+n);
  pass('the composed 320px screen fits without horizontal overflow and terminal unmount releases native handles, subscriptions and retained callbacks, with no unexpected network or browser errors');
 }catch(error){failure=error.stack||String(error);console.error(failure);}
