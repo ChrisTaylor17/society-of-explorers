@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The account deletion draft now covers private member blocks. Existing blocks protect older messages and Circle posts until those records are cleared. The local PostgreSQL rehearsal verified concurrent writes, overlapping deletion requests, exact retries and a 67-table restore that detects missing receipts. Hosted recovery and the retention decision are pending. [Verification](docs/integration/member-block-erasure-verification.json)
+
 Members can review and remove their own blocks from the phone member menu and regular Quest Browser. The list requires a current account check and clears on backgrounding, account changes or entering VR. A lost reply can be retried with the same request. The web build, signed Quest Browser, simulated iPhone and Android screens, and Swift request policy passed local checks. Hosted rollout, installed phone builds and headset testing remain open. [Verification](docs/integration/member-block-management-verification.json)
 
 Members can block an author from a checked Circle post on the web, in the phone source and in Quest Browser. The shared block hides posts and stops direct replies and messages in both directions. Other members’ replies and assigned review evidence remain available. A separate PostgreSQL connection waited for the block and then refused the old reply. The 66-table restore requires the new safety routines. Hosted rollout, installed phone builds and headset testing remain open. [Verification](docs/integration/circle-member-blocking-verification.json)

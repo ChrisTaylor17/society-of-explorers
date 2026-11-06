@@ -40,6 +40,10 @@
 \else
   \set soe_restore_include_waddle_erasure off
 \endif
+\if :{?soe_restore_include_member_block_erasure}
+\else
+  \set soe_restore_include_member_block_erasure off
+\endif
 \if :{?soe_restore_include_circle_member_blocks}
 \else
   \set soe_restore_include_circle_member_blocks off
@@ -47,6 +51,9 @@
 \if :{?soe_restore_include_member_safety}
 \else
   \set soe_restore_include_member_safety off
+\endif
+\if :soe_restore_include_member_block_erasure
+  \set soe_restore_include_circle_member_blocks on
 \endif
 \if :soe_restore_include_circle_member_blocks
   \set soe_restore_include_member_safety on
@@ -164,6 +171,9 @@ deletion_relations(schema_name, name, evidence_name) AS (
     , ('soe_account_deletion_private', 'waddle_erasure_receipts', 'soe_account_deletion_private.waddle_erasure_receipts')
 \if :soe_restore_include_member_safety
     , ('soe_member_safety_private', 'member_blocks', 'soe_member_safety_private.member_blocks')
+\endif
+\if :soe_restore_include_member_block_erasure
+    , ('soe_account_deletion_private', 'member_block_erasure_receipts', 'soe_account_deletion_private.member_block_erasure_receipts')
 \endif
 \endif
 ),
@@ -363,6 +373,10 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'soe_member_safety_private.member_blocks', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY soe_member_safety_private.member_blocks t
 \endif
+\if :soe_restore_include_member_block_erasure
+  UNION ALL SELECT 'soe_account_deletion_private.member_block_erasure_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.member_block_erasure_receipts t
+\endif
 \endif
 \endif
 ),
@@ -472,6 +486,15 @@ deletion_routine_requirements(signature) AS (
     , ('verify_waddle_erasure(uuid,uuid)')
     , ('waddle_erasure_audio_key(text,uuid,text)')
     , ('waddle_erasure_snapshot(uuid,uuid,text)')
+\endif
+\if :soe_restore_include_member_block_erasure
+    , ('check_member_block_erasure_shape()')
+    , ('erase_member_blocks(uuid,uuid,uuid,jsonb,boolean)')
+    , ('guard_member_block_erasure_write()')
+    , ('member_block_erasure_scope(uuid,uuid)')
+    , ('preview_member_block_erasure(uuid,uuid,uuid)')
+    , ('require_writable_member_block_pair(uuid,uuid)')
+    , ('verify_member_block_erasure(uuid,uuid)')
 \endif
   ) AS internal(name)
   UNION ALL VALUES
@@ -707,6 +730,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_member_block_erasure'::boolean THEN 'soe-privacy-restore-v17'
     WHEN :'soe_restore_include_circle_member_blocks'::boolean THEN 'soe-privacy-restore-v16'
     WHEN :'soe_restore_include_member_safety'::boolean THEN 'soe-privacy-restore-v15'
     WHEN :'soe_restore_include_waddle_erasure'::boolean THEN 'soe-privacy-restore-v14'

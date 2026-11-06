@@ -24,6 +24,8 @@ After direct-message containment, pair the [member blocking draft](../sql/direct
 
 After the direct-message block and Circle public-profile drafts, stage [Circle member blocks](../sql/circle-member-blocks-apply.sql) with the matching app. Verify both directions, held replies, independent replies, private review evidence and owner unblock. Use the 66-table `--include-circle-member-blocks` restore scope after this stage.
 
+After Waddle erasure and Circle member blocks, stage [member block erasure](../sql/account-erasure-member-blocks-apply.sql) on the reviewed restore. The account freeze must be active. Reconcile existing processing requests and verify that older messages and posts stay hidden until their erasure phases have passed. Use the 67-table `--include-member-block-erasure` scope for later backups. Keep intake closed until retention and hosted recovery have been approved. [Owner procedure](account-deletion.md#remove-private-member-blocks)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.

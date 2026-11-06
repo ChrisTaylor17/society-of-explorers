@@ -123,9 +123,13 @@ At the Waddle containment stage with the earlier account erasure drafts, set `so
 
 After the [Waddle erasure draft](../sql/account-erasure-waddle-apply.sql), use `soe_restore_include_waddle_erasure=on` in the read-only reference capture and `--include-waddle-erasure` by itself for the isolated verifier. This compares 65 tables and requires the new owner routines. Keep the pending file list in the private restore only. Compare the Storage bytes separately and reconcile removals recorded after the snapshot before reopening media access. [Voice erasure verification](account-erasure-waddle-verification.json)
 
+## Verify private member blocks and their erasure receipts
+
 After the [direct-message blocking draft](../sql/direct-message-blocks-apply.sql), capture with `soe_restore_include_member_safety=on` and compare with `--include-member-safety` by itself. This adds private block records and the messaging routines to the 66-table scope. Check current block enforcement on the restored app before reopening messages. [Block recovery verification](direct-message-blocking-verification.json)
 
 After the [Circle member blocks draft](../sql/circle-member-blocks-apply.sql), capture with `soe_restore_include_circle_member_blocks=on` and compare with `--include-circle-member-blocks` by itself. This still compares 66 tables. It also requires the Circle block write and the private revision check. The previous scope can match a restore missing the private function. Use this scope for backups after the Circle block stage.
+
+After the [member block erasure draft](../sql/account-erasure-member-blocks-apply.sql), capture with `soe_restore_include_member_block_erasure=on` and compare with `--include-member-block-erasure` by itself. The `soe-privacy-restore-v17` reference compares 67 tables and requires the owner erasure routines. The rehearsal restored two archives from one snapshot. The 66-table scope matched the archive with missing block erasure receipt rows. The 67-table scope identified that omission and matched the complete archive. Verify an exact retry and an unrelated retained block on the isolated copy before reopening account intake. [Verification](member-block-erasure-verification.json)
 
 ## Verify the separate audio archive
 
