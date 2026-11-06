@@ -20,6 +20,14 @@
 \else
   \set soe_restore_include_circles off
 \endif
+\if :{?soe_restore_include_circle_release_state}
+\else
+  \set soe_restore_include_circle_release_state off
+\endif
+\if :soe_restore_include_circle_release_state
+  \set soe_restore_include_circles on
+  \set soe_restore_include_wallet_state on
+\endif
 \if :soe_restore_include_wallet_state
   \set soe_restore_include_auth on
   \set soe_restore_include_direct_messages on
@@ -75,6 +83,28 @@ relations(schema_name, name, evidence_name) AS (
 \if :soe_restore_include_circles
     ('book_cohorts'), ('book_cohort_members'), ('seminar_messages'),
 \endif
+\if :soe_restore_include_circle_release_state
+    ('circle_discussion_post_receipts'),
+    ('circle_message_ai_allowance'),
+    ('circle_message_ai_attempts'),
+    ('circle_message_ai_consents'),
+    ('circle_message_decisions'),
+    ('circle_message_receipts'),
+    ('circle_message_reply_links'),
+    ('circle_message_reports'),
+    ('circle_message_states'),
+    ('circle_participation_receipts'),
+    ('circle_passage_post_receipts'),
+    ('circle_private'),
+    ('circle_report_receipts'),
+    ('circle_reports'),
+    ('circle_review_coverage_pages'),
+    ('circle_review_coverage_sessions'),
+    ('circle_review_decisions'),
+    ('circle_reviewer_grants'),
+    ('circle_rsvps'),
+    ('circle_salon_presence'),
+\endif
     ('members'), ('reading_progress'), ('book_highlights'),
     ('great_books_progress'), ('great_books_highlights'), ('book_reflections'), ('thinker_memory'),
     ('daily_questions'), ('matched_conversations'), ('practice_reflections'), ('question_responses')
@@ -119,6 +149,48 @@ row_hashes(name, digest) AS (
   UNION ALL SELECT 'book_cohort_members', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.book_cohort_members t
   UNION ALL SELECT 'seminar_messages', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.seminar_messages t
 \endif
+\if :soe_restore_include_circle_release_state
+  UNION ALL SELECT 'circle_discussion_post_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_discussion_post_receipts t
+  UNION ALL SELECT 'circle_message_ai_allowance', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_ai_allowance t
+  UNION ALL SELECT 'circle_message_ai_attempts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_ai_attempts t
+  UNION ALL SELECT 'circle_message_ai_consents', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_ai_consents t
+  UNION ALL SELECT 'circle_message_decisions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_decisions t
+  UNION ALL SELECT 'circle_message_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_receipts t
+  UNION ALL SELECT 'circle_message_reply_links', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_reply_links t
+  UNION ALL SELECT 'circle_message_reports', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_reports t
+  UNION ALL SELECT 'circle_message_states', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_message_states t
+  UNION ALL SELECT 'circle_participation_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_participation_receipts t
+  UNION ALL SELECT 'circle_passage_post_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_passage_post_receipts t
+  UNION ALL SELECT 'circle_private', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_private t
+  UNION ALL SELECT 'circle_report_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_report_receipts t
+  UNION ALL SELECT 'circle_reports', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_reports t
+  UNION ALL SELECT 'circle_review_coverage_pages', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_review_coverage_pages t
+  UNION ALL SELECT 'circle_review_coverage_sessions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_review_coverage_sessions t
+  UNION ALL SELECT 'circle_review_decisions', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_review_decisions t
+  UNION ALL SELECT 'circle_reviewer_grants', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_reviewer_grants t
+  UNION ALL SELECT 'circle_rsvps', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_rsvps t
+  UNION ALL SELECT 'circle_salon_presence', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY public.circle_salon_presence t
+\endif
 \if :soe_restore_include_auth
   UNION ALL SELECT 'auth.users', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.users t
   UNION ALL SELECT 'auth.identities', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.identities t
@@ -154,6 +226,13 @@ wallet_routines AS (
   )
 ),
 \endif
+\if :soe_restore_include_circle_release_state
+circle_routines AS (
+  SELECT p.oid, p.proname, p.proowner, p.proacl, pg_get_function_identity_arguments(p.oid) AS arguments
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.prokind = 'f' AND p.proname ~ '^_?soe_circle_'
+),
+\endif
 acl_sources(kind, object, column_no, permissions) AS (
   SELECT 'relation', oid, 0, coalesce(relacl, acldefault('r', relowner)) FROM scoped
   UNION ALL
@@ -164,6 +243,10 @@ acl_sources(kind, object, column_no, permissions) AS (
 \if :soe_restore_include_wallet_state
   UNION ALL
   SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM wallet_routines
+\endif
+\if :soe_restore_include_circle_release_state
+  UNION ALL
+  SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM circle_routines
 \endif
 ),
 acl_entries AS (
@@ -187,6 +270,15 @@ wallet_routine_evidence AS (
   FROM wallet_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
 ),
 \endif
+\if :soe_restore_include_circle_release_state
+circle_routine_evidence AS (
+  SELECT encode(sha256(convert_to(jsonb_agg(jsonb_build_array(
+    p.proname, p.arguments, pg_get_userbyid(p.proowner), pg_get_functiondef(p.oid),
+    obj_description(p.oid, 'pg_proc'), a.entries
+  ) ORDER BY p.proname COLLATE "C", p.arguments COLLATE "C")::text, 'UTF8')), 'hex') AS digest
+  FROM circle_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
+),
+\endif
 table_evidence AS (
   SELECT c.evidence_name AS name, jsonb_build_object(
     'owner', pg_get_userbyid(c.relowner),
@@ -201,7 +293,10 @@ table_evidence AS (
       WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped),
     'policies', (SELECT jsonb_agg(to_jsonb(p) ORDER BY p.policyname COLLATE "C")
       FROM pg_policies p WHERE p.schemaname = c.schema_name AND p.tablename = c.relname),
-    'constraints', (SELECT jsonb_agg(jsonb_build_array(k.conname, k.convalidated, pg_get_constraintdef(k.oid))
+    -- A restored CHECK can have flatter AND/OR grouping than the original.
+    -- Use the deparser's minimal parentheses for CHECKs in the new scope.
+    'constraints', (SELECT jsonb_agg(jsonb_build_array(k.conname, k.convalidated,
+      pg_get_constraintdef(k.oid, :'soe_restore_include_circle_release_state'::boolean AND k.contype = 'c'))
       ORDER BY k.conname COLLATE "C") FROM pg_constraint k WHERE k.conrelid = c.oid),
     'indexes', (SELECT jsonb_agg(jsonb_build_array(pg_get_indexdef(i.indexrelid), i.indisvalid, i.indisready)
       ORDER BY idx.relname COLLATE "C") FROM pg_index i JOIN pg_class idx ON idx.oid = i.indexrelid
@@ -209,7 +304,8 @@ table_evidence AS (
     'triggers', (SELECT jsonb_agg(jsonb_build_array(pg_get_triggerdef(t.oid), t.tgenabled)
       ORDER BY t.tgname COLLATE "C") FROM pg_trigger t WHERE t.tgrelid = c.oid AND NOT t.tgisinternal)
   ) || CASE WHEN c.evidence_name IN ('direct_messages', 'book_cohorts', 'book_cohort_members', 'seminar_messages')
-    OR c.schema_name = 'soe_wallet_private' THEN jsonb_build_object(
+    OR c.schema_name = 'soe_wallet_private'
+    OR (:'soe_restore_include_circle_release_state'::boolean AND c.relname ~ '^circle_') THEN jsonb_build_object(
     'replicaIdentity', c.relreplident,
     'replicaIdentityIndex', (SELECT idx.relname FROM pg_index i JOIN pg_class idx ON idx.oid = i.indexrelid
       WHERE i.indrelid = c.oid AND i.indisreplident),
@@ -221,7 +317,13 @@ table_evidence AS (
     ) ORDER BY p.pubname COLLATE "C")
       FROM pg_publication_tables t JOIN pg_publication p ON p.pubname = t.pubname
       WHERE t.schemaname = c.schema_name AND t.tablename = c.relname)
-  ) ELSE '{}'::jsonb END AS definition
+  ) ELSE '{}'::jsonb END
+\if :soe_restore_include_circle_release_state
+  || CASE WHEN c.evidence_name IN ('book_cohorts', 'book_cohort_members', 'seminar_messages')
+    OR c.relname ~ '^circle_' THEN jsonb_build_object('comment', obj_description(c.oid, 'pg_class'))
+    ELSE '{}'::jsonb END
+\endif
+  AS definition
   FROM scoped c
 ),
 principals AS (
@@ -236,6 +338,11 @@ role_roots(oid) AS (
   UNION SELECT nspowner FROM schemas WHERE nspname = 'soe_wallet_private'
   UNION SELECT relowner FROM scoped WHERE schema_name = 'soe_wallet_private'
   UNION SELECT proowner FROM wallet_routines
+\endif
+\if :soe_restore_include_circle_release_state
+  UNION SELECT relowner FROM scoped
+    WHERE evidence_name IN ('book_cohorts', 'book_cohort_members', 'seminar_messages') OR relname ~ '^circle_'
+  UNION SELECT proowner FROM circle_routines
 \endif
 ),
 role_tree(oid) AS (
@@ -268,6 +375,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_circle_release_state'::boolean THEN 'soe-privacy-restore-v9'
     WHEN :'soe_restore_include_circles'::boolean AND :'soe_restore_include_wallet_state'::boolean THEN 'soe-privacy-restore-v8'
     WHEN :'soe_restore_include_circles'::boolean THEN 'soe-privacy-restore-v7'
     WHEN :'soe_restore_include_wallet_state'::boolean THEN 'soe-privacy-restore-v6'
@@ -288,5 +396,8 @@ SELECT jsonb_build_object(
 )
 \if :soe_restore_include_wallet_state
   || jsonb_build_object('walletRoutines', (SELECT digest FROM wallet_routine_evidence))
+\endif
+\if :soe_restore_include_circle_release_state
+  || jsonb_build_object('circleRoutines', (SELECT digest FROM circle_routine_evidence))
 \endif
 ;

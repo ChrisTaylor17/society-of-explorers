@@ -153,7 +153,7 @@ def seed_circles(source, database):
 
 
 def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, include_direct=False,
-           include_wallet=False, include_circles=False, **overrides):
+           include_wallet=False, include_circles=False, include_circle_release=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
@@ -170,6 +170,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
         argv.append('--include-wallet-state')
     if include_circles:
         argv.append('--include-circles')
+    if include_circle_release:
+        argv.append('--include-circle-release-state')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={

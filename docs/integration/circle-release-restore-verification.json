@@ -1,0 +1,120 @@
+{
+  "status": "PASS_LOCAL",
+  "productionRestoreVerified": false,
+  "checkedAt": "2026-11-06T11:39:00+00:00",
+  "baseCommit": "fe4f32eedf4a768471b5df2eba3b7280c32fde97",
+  "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+  "scope": "soe-privacy-restore-v9",
+  "orderedReleaseFixtureMigrations": 44,
+  "comparisons": {
+    "oldScopeOmitted": {
+      "scope": "soe-privacy-restore-v8",
+      "status": "MATCH",
+      "tablesCompared": 22,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "releaseScopeOmitted": {
+      "scope": "soe-privacy-restore-v9",
+      "status": "MISMATCH",
+      "tablesCompared": 42,
+      "rowsDiffer": [
+        "circle_discussion_post_receipts",
+        "circle_message_ai_allowance",
+        "circle_message_ai_attempts",
+        "circle_message_ai_consents",
+        "circle_message_decisions",
+        "circle_message_receipts",
+        "circle_message_reply_links",
+        "circle_message_reports",
+        "circle_message_states",
+        "circle_participation_receipts",
+        "circle_passage_post_receipts",
+        "circle_private",
+        "circle_report_receipts",
+        "circle_reports",
+        "circle_review_coverage_pages",
+        "circle_review_coverage_sessions",
+        "circle_review_decisions",
+        "circle_reviewer_grants",
+        "circle_rsvps",
+        "circle_salon_presence"
+      ],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "releaseScopeComplete": {
+      "scope": "soe-privacy-restore-v9",
+      "status": "MATCH",
+      "tablesCompared": 42,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "releaseScopeDefinitionDrift": {
+      "scope": "soe-privacy-restore-v9",
+      "status": "MISMATCH",
+      "tablesCompared": 42,
+      "rowsDiffer": [],
+      "definitionsDiffer": [
+        "circle_message_ai_allowance",
+        "circle_message_ai_consents",
+        "circle_message_decisions",
+        "circle_salon_presence"
+      ],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": false,
+      "productionCleared": false
+    }
+  },
+  "releaseChecks": [
+    "The actual release SQL writes state into all 20 new Circle tables.",
+    "The existing 22-table check matches a restored archive that omitted all 20 new Circle row sets.",
+    "The release scope detects every omitted row set with definitions and routines intact.",
+    "The complete archive matches the reference across 42 tables and both routine groups.",
+    "Restored routes retain member-only meeting access, exact RSVP and review replay, hidden text, revoked consent and the spent AI attempt.",
+    "Both browser roles remain denied raw Circle tables, columns and routines after restore.",
+    "A changed check constraint, a migration comment, a browser column grant, a Realtime publication and a routine grant are detected without row drift.",
+    "A missing table or an older reference cannot satisfy the release scope."
+  ],
+  "priorRestoreChecksPassed": 43,
+  "cutoverPrerequisiteChecksPassed": 8,
+  "oldReferenceCompatibility": "The revised verifier accepted the previous 22-table reference captured with the query from the base commit.",
+  "definitionNormalization": "The new scope uses the PostgreSQL deparser for minimal CHECK parentheses. A changed CHECK still fails. Older reference formats retain their original representation.",
+  "limits": [
+    "Two disposable socket-only PostgreSQL clusters. The actual Circle and wallet migration SQL ran on fictional records.",
+    "Auth, Direct Messages, Daily Practice and Live Council have minimal prerequisite tables in the new rehearsal. The separate 43-check rehearsal covers their existing fixtures.",
+    "The rehearsal creates one synthetic AI request debit without an AI provider and captures the disabled allowance.",
+    "A match proves the scoped snapshot. Reconcile later membership, moderation, consent and allowance changes separately before restoring access.",
+    "The initial production export, isolated production-data restore and hosted acceptance remain open."
+  ],
+  "evidenceDirectory": "verification/web/evidence/circle-release-restore-2026-11-06",
+  "evidenceSha256": {
+    "circle-definition-diagnostic.json": "4c478a48eb5f79ca2f8bc1378375b791518470b4e2c366f9fce03b5c60cecf83",
+    "circle-release-restore.json": "a42beccfeda647a4473d21e78af5363cbb075196d599a3e53e5ca0c86db46889",
+    "diagnose-old-reference-compatibility.py": "24ff8452419950d3437aa9878fcb258b600840a3138009354118f569dfa8d02c",
+    "native-cutover-prerequisite.json": "e0aca57333f210926354b1969210816e2e8f84cf6ee0b6790c6db2deb76c3be8",
+    "previous-privacy-restore-reference.sql": "10e4e7ecc0bceefc6158e18638f176c6eeb583f4d053809f548cb296e9cfcda5",
+    "previous-reference-compatibility.json": "f0c46fce507a467a06504099dc467d6b970b5691019fae7b08938b307d3b87c0",
+    "privacy-restore-regression.json": "2b58224165aa96618a89b747cbaa06a8c311a54f0bcf59c80057b3339cef3c5f"
+  },
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "955fd98bd62cf6450f9b3f82ac9d2be7584bc38882216f57023681485bd49da0",
+    "docs/integration/privacy-restore-check.md": "dfc7e73acefd7860e439fe03e0d81a08bfeb47c1bdd48a115de77c096cc1d733",
+    "docs/integration/production-migration-plan.md": "9df39abc52917a7abc15489c89ae09c1049250a749d3e0875424f13a242472f7",
+    "docs/sql/privacy-restore-reference.sql": "9f350f36f85fac159b80827dd20b3a94e260890ca273c52e5f9514e43c3f454a",
+    "verification/web/scripts/test-circle-release-restore.py": "fddd6f1fc48d26c1941b2946112b9289ac7be00a606384f8dcfce468e619b453",
+    "verification/web/scripts/test-privacy-restore-check.py": "95fe615f1045edd992238f174e6de0d89572d0860a60b36795b9dc5ab3d9a0e3",
+    "verification/web/scripts/verify-privacy-restore.py": "553a9512d35e1aa38120e96dc407c098effb24c6a61658b0e6c948f5ac00b610"
+  }
+}
