@@ -1,4 +1,4 @@
-import {createCircleHost,MESSAGE_REPORT_OPTIONS,MESSAGE_WITHDRAWAL_PRIVACY} from './circle-host.mjs';
+import {createCircleHost,MESSAGE_REPORT_OPTIONS,MESSAGE_WITHDRAWAL_PRIVACY,MESSAGE_BLOCK_CONFIRMATION,MESSAGE_BLOCK_PRIVACY} from './circle-host.mjs';
 
 const required=['circle-host-status','circle-read-status','circle-title','circle-refresh','circle-close','circle-conversation','circle-messages','circle-draft','circle-remaining','circle-write-status','circle-post','circle-clear','circle-new','circle-composer','circle-archive-open','circle-archive','circle-archive-status','circle-archive-messages','circle-archive-next'];
 // Older configured pages retain read/flat-composer support. The keyed writer
@@ -10,8 +10,8 @@ export function assertCircleMarkup(doc) {
   const present=threadControls.filter(id=>doc.getElementById(id)).length;
   if(present&&present!==threadControls.length)throw Error('Discussion writing controls unavailable');
   const safetyPresent=safetyControls.filter(id=>doc.getElementById(id)).length;
-  if(safetyPresent&&safetyPresent!==safetyControls.length)throw Error('Message safety controls unavailable');
-  if(typeof doc.querySelectorAll==='function'&&[...required,...threadControls,...safetyControls].some(id=>doc.querySelectorAll(`[id="${id}"]`).length>1))throw Error('Duplicate Circle controls unavailable');
+  if((safetyPresent||doc.getElementById('circle-safety-block'))&&safetyPresent!==safetyControls.length)throw Error('Message safety controls unavailable');
+  if(typeof doc.querySelectorAll==='function'&&[...required,...threadControls,...safetyControls,'circle-safety-block'].some(id=>doc.querySelectorAll(`[id="${id}"]`).length>1))throw Error('Duplicate Circle controls unavailable');
 }
 
 /** Existing authenticated application code supplies config. No token input,
@@ -19,6 +19,7 @@ export function assertCircleMarkup(doc) {
 export function mountCirclePage({window:win,document:doc,config,reelStarter}) {
   assertCircleMarkup(doc);
   const $=id=>doc.getElementById(id),hasThreadWriter=threadControls.every(id=>$(id)),hasSafety=safetyControls.every(id=>$(id));
+  const blockButton=$('circle-safety-block');
   const reelButton=reelStarter?$('circle-thread-reel'):null;
   if(reelStarter&&(!hasThreadWriter||!reelButton||doc.querySelectorAll('#circle-thread-reel').length!==1))throw Error('Reel draft control unavailable');
   let safetyWasOpen=false,safetyMessage=null;
@@ -118,15 +119,18 @@ export function mountCirclePage({window:win,document:doc,config,reelStarter}) {
       $('circle-safety-reason').value=safety?.reason??'';$('circle-safety-reason').disabled=!safety?.canEditReport;
       $('circle-safety-note').value=safety?.note??'';$('circle-safety-note').disabled=!safety?.canEditReport;
       $('circle-safety-remaining').textContent=`${Math.max(0,1000-(safety?.note.length??0))} characters remaining`;
-      $('circle-safety-privacy').textContent=MESSAGE_WITHDRAWAL_PRIVACY;$('circle-safety-privacy').hidden=!state?.canWithdraw;
+      const showBlock=Boolean(blockButton&&state?.blockReview);
+      $('circle-safety-privacy').textContent=showBlock?MESSAGE_BLOCK_PRIVACY:MESSAGE_WITHDRAWAL_PRIVACY;
+      $('circle-safety-privacy').hidden=!showBlock&&!state?.canWithdraw;
+      if(blockButton){blockButton.hidden=!showBlock;blockButton.disabled=!safety?.canBlock;}
       $('circle-safety-confirm').checked=Boolean(safety?.confirmed);$('circle-safety-confirm').disabled=!safety?.canConfirm;
-      $('circle-safety-confirm-label').textContent=state?.canWithdraw?'I understand withdrawal removes this message from member views and cannot be undone here.':'I checked this message and want to send this report for private human review.';
-      if($('circle-safety-confirm').parentElement)$('circle-safety-confirm').parentElement.hidden=!state?.canReport&&!state?.canWithdraw;
+      $('circle-safety-confirm-label').textContent=state?.canWithdraw?'I understand withdrawal removes this message from member views and cannot be undone here.':showBlock?MESSAGE_BLOCK_CONFIRMATION:'I checked this message and want to send this report for private human review.';
+      if($('circle-safety-confirm').parentElement)$('circle-safety-confirm').parentElement.hidden=!showBlock&&!state?.canReport&&!state?.canWithdraw;
       $('circle-safety-report').hidden=!state?.canReport;$('circle-safety-report').disabled=!safety?.canReport;
       $('circle-safety-withdraw').hidden=!state?.canWithdraw;$('circle-safety-withdraw').disabled=!safety?.canWithdraw;
       $('circle-safety-refresh').disabled=!safety?.canCheck;
       $('circle-safety-retry').hidden=!safety?.canRetry;$('circle-safety-retry').disabled=!safety?.canRetry;
-      $('circle-safety-retry').textContent=safety?.pendingAction==='withdraw'?'Retry exact withdrawal':'Retry exact report';
+      $('circle-safety-retry').textContent=safety?.pendingAction==='block'?'Retry exact block':safety?.pendingAction==='withdraw'?'Retry exact withdrawal':'Retry exact report';
       $('circle-safety-close').disabled=!safety?.canClose;
       if(safety?.open&&(!safetyWasOpen||safetyMessage!==safety.messageId))$('circle-safety-heading').focus();
       safetyWasOpen=Boolean(safety?.open);safetyMessage=safety?.messageId??null;
@@ -182,6 +186,7 @@ export function mountCirclePage({window:win,document:doc,config,reelStarter}) {
     listen($('circle-safety-confirm'),'change',()=>host?.messageConfirm($('circle-safety-confirm').checked));
     listen($('circle-safety-report'),'click',()=>void host?.messageSubmit('report'));
     listen($('circle-safety-withdraw'),'click',()=>void host?.messageSubmit('withdraw'));
+    if(blockButton)listen(blockButton,'click',()=>void host?.messageSubmit('block'));
     listen($('circle-safety-refresh'),'click',()=>void host?.messageRefresh());
     listen($('circle-safety-retry'),'click',()=>void host?.messageRetry());
     listen($('circle-safety-close'),'click',()=>{host?.messageClose();$('circle-archive-open').focus();});

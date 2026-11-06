@@ -8,7 +8,7 @@ import { rateLimit } from '@/lib/rateLimit';
 import { MESSAGE_SAFETY_LIMIT } from './message-moderation';
 
 export type MessageSafetyRpcName = 'soe_circle_message_state' | 'soe_circle_message_action' | 'soe_circle_message_contributions'
-  | 'soe_circle_message_review_queue' | 'soe_circle_message_review_detail' | 'soe_circle_message_review_decide' | 'soe_circle_message_ai_consent_state' | 'soe_circle_message_ai_consent_set';
+  | 'soe_circle_message_block' | 'soe_circle_message_review_queue' | 'soe_circle_message_review_detail' | 'soe_circle_message_review_decide' | 'soe_circle_message_ai_consent_state' | 'soe_circle_message_ai_consent_set';
 type Result<T> = { ok: true; value: T } | { ok: false; response: Response };
 type Args = Record<string, string | number | boolean | null>;
 export function messageSafetyUnavailable(): Response {
@@ -26,10 +26,13 @@ function failure(error: unknown): Response {
 }
 /** Every call binds only canonical server identity. Missing schema/grants fail closed. */
 export async function messageSafetyRpc<T>(req: NextRequest, name: MessageSafetyRpcName, args: Args,
-  parse: (value: unknown) => T | null, options: { report?: boolean } = {}): Promise<Result<T>> {
+  parse: (value: unknown, memberId: string) => T | null, options: { report?: boolean; expectedMemberId?: string } = {}): Promise<Result<T>> {
   try {
     const actor = await getAuthenticatedMember(req);
     if (!actor || !isUuid(actor.memberId)) return { ok: false, response: privateJson({ error: 'Sign in to use post safety controls.' }, { status: 401 }) };
+    if (options.expectedMemberId && !sameMessageId(actor.memberId, options.expectedMemberId)) {
+      return { ok: false, response: privateJson({ error: 'Check the message again with your current account.' }, { status: 401 }) };
+    }
     if (options.report) {
       const budget = rateLimit(`circle-message-report:${actor.memberId}`, 10, 60 * 60 * 1000);
       if (!budget.ok) return { ok: false, response: privateJson({ error: 'Reporting is temporarily limited. Try again later.' }, { status: 429, headers: { 'Retry-After': String(budget.retryAfterS) } }) };
@@ -37,7 +40,7 @@ export async function messageSafetyRpc<T>(req: NextRequest, name: MessageSafetyR
     const { data, error } = await getSupabaseAdmin().rpc(name === 'soe_circle_message_state' ? 'soe_circle_message_state_profiles' : name, { ...args, p_actor: actor.memberId });
     if (error) return { ok: false, response: failure(error) };
     if (name === 'soe_circle_message_state' && (!data || typeof data !== 'object' || !('message' in data) || !hasPublicProfileReference(data.message))) return { ok: false, response: messageSafetyUnavailable() };
-    const value = parse(data);
+    const value = parse(data, actor.memberId);
     return value === null ? { ok: false, response: messageSafetyUnavailable() } : { ok: true, value };
   } catch { return { ok: false, response: messageSafetyUnavailable() }; }
 }

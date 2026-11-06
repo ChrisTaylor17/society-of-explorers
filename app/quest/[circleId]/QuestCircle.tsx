@@ -213,7 +213,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
           </section>
           <button id="circle-thread-check" type="button" hidden>Check saved contribution</button><button id="circle-thread-retry" type="button" hidden>Retry exact contribution</button>
           <button id="circle-thread-cancel" type="button" disabled>Clear contribution</button><button id="circle-thread-saved" type="button" hidden>Open saved thread</button>
-          <p>Replies link to the selected contribution. Check message actions to report or withdraw, or use its regular-view link. A missing receipt does not prove that an earlier request failed; only check or retry the same contribution.</p>
+          <p>Replies link to the selected contribution. Check message actions to report, block an author, or withdraw your own post. A missing receipt does not prove that an earlier request failed; only check or retry the same contribution.</p>
         </section>
       </section>
       <section id="circle-safety" aria-labelledby="circle-safety-heading" hidden>
@@ -227,6 +227,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
         <p id="circle-safety-privacy" hidden />
         <label style={{ minHeight: 44, padding: '8px 0' }} hidden><input id="circle-safety-confirm" type="checkbox" disabled /> <span id="circle-safety-confirm-label" /></label>
         <button id="circle-safety-report" type="button" disabled hidden>Send private report</button><button id="circle-safety-withdraw" type="button" disabled hidden aria-describedby="circle-safety-privacy">Withdraw my message</button>
+        <button id="circle-safety-block" type="button" disabled hidden aria-describedby="circle-safety-privacy">Block author</button>
         <button id="circle-safety-refresh" type="button" disabled>Check current message</button><button id="circle-safety-retry" type="button" hidden>Retry exact action</button><button id="circle-safety-close" type="button" disabled>Close message actions</button>
         <p>Checking the current message does not confirm a previous request. A sent request may still complete. Nothing retries automatically. Message AI consent is separate and is not changed by these actions.</p>
       </section>

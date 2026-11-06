@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--build-prefix', required=True)
 parser.add_argument('--evidence-prefix', required=True)
 parser.add_argument('--port', required=True, type=int)
+parser.add_argument('--member-public-fixture', action='store_true')
 options = parser.parse_args()
 for prefix in [options.build_prefix, options.evidence_prefix]:
     assert re.fullmatch(r'built-shell-[a-z0-9-]{1,48}-', prefix), 'Use a fresh built-shell-prefixed name ending in a hyphen'
@@ -31,7 +32,8 @@ build_name = 'verification/web/evidence/' + options.build_prefix + 'next-build.j
 source_name = 'verification/web/evidence/' + options.build_prefix + 'build-source-sha256.json'
 build = json.loads(read(build_name)); sources = json.loads(read(source_name))
 assert build['status'] == 'completed' and build['exitCode'] == 0 and build['sourceUnchangedDuringBuild']
-assert build['publicBuildConfig'] == 'invalid offline placeholders' and not build['privateOrIssuedCredentialsSupplied']
+expected_config = 'nonissued member browser fixture' if options.member_public_fixture else 'invalid offline placeholders'
+assert build['publicBuildConfig'] == expected_config and not build['privateOrIssuedCredentialsSupplied']
 assert len(sources) == build['sourceFiles'] and sources
 assert hashlib.sha256(json.dumps(sources, separators=(',', ':')).encode()).hexdigest() == build['sourceSha256']
 def current_sources():
@@ -61,7 +63,7 @@ for base, dirs, files in os.walk(ROOT / '.next', followlinks=False):
         relative = str(file.relative_to(ROOT)); built[relative] = digest(file)
 assert '.next/BUILD_ID' in built and '.next/required-server-files.json' in built
 with socket.socket() as probe: probe.bind(('127.0.0.1', PORT))
-report = {'status': 'STARTING', 'origin': ORIGIN, 'port': PORT, 'startedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'wrapperPid': os.getpid(), 'buildId': read('.next/BUILD_ID').decode().strip(), 'buildReceipt': build_name, 'sourceHashes': sources, 'inputHashes': inputs, 'builtHashes': built, 'excludedNonRuntimeBuildPaths': ['.next/cache', '.next/types', '.next/diagnostics', '.next/trace', '.next/trace-build'], 'runtimeReceipt': str(RUNTIME.relative_to(ROOT)), 'serverLog': str(LOG.relative_to(ROOT)), 'scope': 'Actual existing Next build. Clean environment, invalid public configuration, Node external-network denial with only this exact HTTP loopback listener/client allowed. Not an OS firewall. Browser tests must separately deny non-loopback traffic. No database/provider/issued credentials or deployment.', 'cleanup': 'pending'}
+report = {'status': 'STARTING', 'origin': ORIGIN, 'port': PORT, 'startedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'wrapperPid': os.getpid(), 'buildId': read('.next/BUILD_ID').decode().strip(), 'buildReceipt': build_name, 'publicBuildConfig': expected_config, 'sourceHashes': sources, 'inputHashes': inputs, 'builtHashes': built, 'excludedNonRuntimeBuildPaths': ['.next/cache', '.next/types', '.next/diagnostics', '.next/trace', '.next/trace-build'], 'runtimeReceipt': str(RUNTIME.relative_to(ROOT)), 'serverLog': str(LOG.relative_to(ROOT)), 'scope': 'Actual existing Next build. Clean environment, invalid public configuration, Node external-network denial with only this exact HTTP loopback listener/client allowed. Not an OS firewall. Browser tests must separately deny non-loopback traffic. No database/provider/issued credentials or deployment.', 'cleanup': 'pending'}
 save()
 env = {'PATH': '/opt/homebrew/bin:/usr/bin:/bin', 'HOME': '/Users/christaylor', 'CI': '1', 'NODE_ENV': 'production', 'NEXT_TELEMETRY_DISABLED': '1', 'NO_COLOR': '1', 'SOE_BUILT_SHELL_PORT': str(PORT), 'SOE_BUILT_SHELL_RUNTIME_RECEIPT': str(RUNTIME), 'NEXT_PUBLIC_SUPABASE_URL': 'https://offline.invalid', 'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'OFFLINE_PUBLIC_BUILD_PLACEHOLDER_NOT_A_CREDENTIAL'}
 child = None; stopping = False

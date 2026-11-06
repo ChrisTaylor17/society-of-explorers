@@ -76,10 +76,10 @@ export default function DirectMessageBlocks({ headersFor, onBack }: Props) {
     <section className={styles.blockList} aria-labelledby="blocked-members-heading" aria-busy={working}>
       <button className={styles.safetyButton} type="button" onClick={onBack}>Back to conversations</button>
       <h1 id="blocked-members-heading">Blocked members</h1>
-      <p>These blocks apply to direct messages. Only you can remove a block you set.</p>
+      <p>Blocks apply to direct messages and Circle discussions. Only you can remove a block you set.</p>
       <p role="status">{notice}</p>
       <button className={styles.safetyButton} type="button" disabled={working} onClick={() => void run(null)}>Load blocked members</button>
-      {page?.items.length === 0 && <p>{cursor ? 'No more blocked members on this page.' : 'You have no direct-message blocks.'}</p>}
+      {page?.items.length === 0 && <p>{cursor ? 'No more blocked members on this page.' : 'You have no blocked members.'}</p>}
       {!!page?.items.length && (
         <ul>
           {page.items.map(item => (

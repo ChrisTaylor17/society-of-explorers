@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReviewAccess } from '@/lib/circles/useReviewAccess';
+import { MESSAGE_BLOCK_UNCONFIRMED } from '@/lib/circles/message-moderation';
 import { circleDetailHref } from '@/lib/circles/discovery';
 import { discussionCommentLimit, discussionHref, discussionSearchParams, parseDiscussionLookup, parseDiscussionPage, parseDiscussionPreview, parseDiscussionReceipt, type DiscussionPage, type DiscussionPostInput, type DiscussionPreview, type DiscussionQuery, type DiscussionReceipt, type ThreadMessage } from '@/lib/circles/thread';
 import MessageActions from '../../messages/MessageActions';
@@ -35,7 +36,7 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
     setPage(null); setTarget(null); setWriting(false); setComment(''); setPreview(null); setConfirmed(false); setPending(null); setReceipt(null); setReadVersion(value => value + 1); sending.current = false;
     setNotice('Private discussion, comment and review cleared. A request already sent may still have been saved. Nothing will reload or retry automatically.');
   }, []);
-  const { active, busy, perform } = useReviewAccess(retire);
+  const { active, busy, perform, retire: retireAccess } = useReviewAccess(retire);
   const disabled = !active || busy || Boolean(pending);
   const endpoint = `/api/circles/${circleId}/discussion`;
   const returnHref = withReelDiscussion(discussionHref(circleId, query.kind === 'thread' ? query.messageId : null), reel);
@@ -46,6 +47,11 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
     setErrorFocus(value => value + 1);
     setPage(null); setTarget(null); setWriting(false); setComment(''); clearReview(); setReceipt(null);
     setNotice(status === 401 ? 'Sign in, then load this discussion to check current access.' : status === 403 || status === 404 ? 'This discussion or message is not available for this account. Check your current Circle membership.' : status === 429 ? 'Too many requests. Wait, then load the discussion manually.' : 'The current discussion could not be verified. No empty archive or successful change is being assumed.');
+  }
+  function blockChanged(confirmed: boolean) {
+    retireAccess();
+    setNotice(confirmed ? 'Member blocked. Load the current discussion to continue.' : MESSAGE_BLOCK_UNCONFIRMED);
+    setErrorFocus(value => value + 1);
   }
   function load(next: ReadQuery = query) {
     if (disabled || sending.current) return;
@@ -123,7 +129,7 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
         <div className={styles.row}><Link href={discussionHref(circleId, message.id)} prefetch={false}>Open this message’s thread</Link>{message.parentMessageId && <Link href={discussionHref(circleId, message.parentMessageId)} prefetch={false}>Open parent message</Link>}{message.parentMessageId && message.rootMessageId !== message.parentMessageId && <Link href={discussionHref(circleId, message.rootMessageId)} prefetch={false}>Open thread root</Link>}</div>
         <p style={small}>{message.parentMessageId ? 'Reply relationship verified by the current discussion response.' : 'This message starts a thread.'}</p>
       </div>
-      {message.visibility !== 'unavailable' && message.created_at !== null ? <MessageActions circleId={circleId} message={{ id: message.id, member_name: message.member_name, publicProfileId: message.visibility === 'visible' ? message.publicProfileId : null, content: message.content ?? (message.visibility === 'withdrawn' ? 'Message withdrawn by its author.' : 'Message hidden from member views.'), created_at: message.created_at, is_mine: message.is_mine }} active={active} onAccessDenied={unavailable} onCurrentState={checkedState} /> : <article style={card}><p style={small}>{message.member_name} · {message.created_at === null ? 'Date unavailable' : <time dateTime={message.created_at}>{new Date(message.created_at).toUTCString()}</time>}</p><p style={body}>{message.visibility === 'withdrawn' ? 'Message withdrawn by its author.' : message.visibility === 'unavailable' ? 'This legacy message could not be displayed.' : 'Message hidden from member views.'}</p></article>}
+      {message.visibility !== 'unavailable' && message.created_at !== null ? <MessageActions circleId={circleId} message={{ id: message.id, member_name: message.member_name, publicProfileId: message.visibility === 'visible' ? message.publicProfileId : null, content: message.content ?? (message.visibility === 'withdrawn' ? 'Message withdrawn by its author.' : 'Message hidden from member views.'), created_at: message.created_at, is_mine: message.is_mine }} active={active} onAccessDenied={unavailable} onCurrentState={checkedState} onBlockChange={blockChanged} /> : <article style={card}><p style={small}>{message.member_name} · {message.created_at === null ? 'Date unavailable' : <time dateTime={message.created_at}>{new Date(message.created_at).toUTCString()}</time>}</p><p style={body}>{message.visibility === 'withdrawn' ? 'Message withdrawn by its author.' : message.visibility === 'unavailable' ? 'This message is unavailable.' : 'Message hidden from member views.'}</p></article>}
       {message.visibility === 'visible' && <button type="button" style={button} disabled={disabled} onClick={() => selectTarget(message)}>Reply to this message</button>}
     </div>;
   }

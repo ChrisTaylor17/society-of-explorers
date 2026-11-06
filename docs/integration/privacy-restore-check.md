@@ -125,6 +125,8 @@ After the [Waddle erasure draft](../sql/account-erasure-waddle-apply.sql), use `
 
 After the [direct-message blocking draft](../sql/direct-message-blocks-apply.sql), capture with `soe_restore_include_member_safety=on` and compare with `--include-member-safety` by itself. This adds private block records and the messaging routines to the 66-table scope. Check current block enforcement on the restored app before reopening messages. [Block recovery verification](direct-message-blocking-verification.json)
 
+After the [Circle member blocks draft](../sql/circle-member-blocks-apply.sql), capture with `soe_restore_include_circle_member_blocks=on` and compare with `--include-circle-member-blocks` by itself. This still compares 66 tables. It also requires the Circle block write and the private revision check. The previous scope can match a restore missing the private function. Use this scope for backups after the Circle block stage.
+
 ## Verify the separate audio archive
 
 The `waddles` bucket also holds older Twiddle objects. Preserve every inventoried object, including ones with no current app reference. Use the same approved capture window for the database and media, with writes to the shared bucket held for the capture. In the export transaction, direct the output of `docs/sql/voice-storage-inventory.sql` to a private `inventory.json`. Repeat on the isolated Storage target after import. The inventory contains private object keys and captures the bucket settings and recorded media metadata. Keep both inventories and the files in the owner's private recovery directory. [Supabase database backup scope](https://supabase.com/docs/guides/platform/backups)

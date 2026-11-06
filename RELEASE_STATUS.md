@@ -2,7 +2,9 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
-Members can now block direct messages in both directions and manage their own blocks. The database refuses a send waiting behind a block, hides the existing conversation and excludes it from unread counts. The web checks covered a delayed reply and the owner’s unblock flow at phone width. The new 66-table restore scope catches missing blocks. Circle-wide controls, hosted rollout and installed device checks remain open. [Verification](docs/integration/direct-message-blocking-verification.json)
+Members can block an author from a checked Circle post on the web, in the phone source and in Quest Browser. The shared block hides posts and stops direct replies and messages in both directions. Other members’ replies and assigned review evidence remain available. A separate PostgreSQL connection waited for the block and then refused the old reply. The 66-table restore requires the new safety routines. Hosted rollout, installed phone builds and headset testing remain open. [Verification](docs/integration/circle-member-blocking-verification.json)
+
+Members can now block direct messages in both directions and manage their own blocks. The database refuses a send waiting behind a block, hides the existing conversation and excludes it from unread counts. The web checks covered a delayed reply and the owner’s unblock flow at phone width. The new 66-table restore scope catches missing blocks. Hosted rollout and installed device checks remain open. [Verification](docs/integration/direct-message-blocking-verification.json)
 
 The account deletion draft now hides a departing member’s Waddle posts before reviewing their audio files. It includes unlinked uploads under that member’s folder and clears the transcripts only after exact file readback and a catalog check. The local restore test detected missing voice-removal receipts that the older 64-table check accepted. Hosted Storage removal, backup approval and device acceptance remain open. [Voice erasure verification](docs/integration/account-erasure-waddle-verification.json)
 

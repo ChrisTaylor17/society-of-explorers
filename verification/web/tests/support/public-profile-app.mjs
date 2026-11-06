@@ -26,7 +26,7 @@ export async function publicProfileAppHashes(){
  }
  for(const name of SOURCES)await bind(name);return hashes;
 }
-export async function createPublicProfileApp(){
+export async function createPublicProfileApp({memberBlocks=false}={}){
  await publicProfileAppHashes();const f=await base.createCircleHostingApp(),app=offlineApp(),sql=[],provider=[],http=[];
  let closed=false,httpHook=null,beforeHook=null,dbHook=null,cookieActor=null,lane=Promise.resolve();
  const serial=fn=>{const task=lane.then(fn);lane=task.catch(()=>{});return task;};
@@ -38,6 +38,18 @@ export async function createPublicProfileApp(){
    assert.equal((await f.db.query("SELECT count(*)::int AS n FROM members WHERE profile_visibility IS DISTINCT FROM 'private'")).rows[0].n,0);
    await f.db.exec('ALTER TABLE members DROP COLUMN profile_visibility');
    for(const name of ['member-profile-preflight.sql','member-profile-apply.sql','member-profile-intent-preflight.sql','member-profile-intent-apply.sql','circle-public-profiles-preflight.sql','circle-public-profiles-apply.sql'])await f.db.exec((await contributionSource('docs/sql/'+name)).toString());
+  if (memberBlocks) {
+    await f.db.exec(`CREATE TABLE public.direct_messages (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(), sender_id uuid, recipient_id uuid,
+      content text, created_at timestamptz NOT NULL DEFAULT clock_timestamp(), read boolean DEFAULT false
+    );
+    ALTER TABLE public.direct_messages ENABLE ROW LEVEL SECURITY;
+    REVOKE ALL ON public.direct_messages FROM PUBLIC,anon,authenticated;
+    GRANT ALL ON public.direct_messages TO service_role;`);
+    for (const name of ['wallet-challenge-consumption-apply.sql','wallet-session-revocation-apply.sql','direct-message-blocks-apply.sql','circle-member-blocks-apply.sql']) {
+      await f.db.exec((await contributionSource('docs/sql/'+name)).toString());
+    }
+  }
   app.context.process.env.WALLET_SESSION_SECRET='SYNTHETIC_ATTENDANCE_WALLET_SECRET_NOT_A_REAL_CREDENTIAL_2026';app.context.process.env.NEXT_PUBLIC_SUPABASE_URL=PROVIDER;app.context.process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY=PUBLIC_KEY;
   app.setMock('@/lib/supabase/server',()=>({createClient:async()=>({auth:{getUser:async()=>({data:{user:cookieActor?{id:SUBJECTS[cookieActor]}:null},error:cookieActor?null:{name:'AuthSessionMissingError'}})}})}));
   app.setMock('@supabase/supabase-js',()=>({createClient:(url,key,options)=>{
@@ -48,6 +60,7 @@ export async function createPublicProfileApp(){
   }}));
   const columns=new Set(['id','supabase_auth_id','display_name','email','bio','discipline','skills','project_description','seeking','philosophy','exp_tokens','tier','coherence_data','total_responses','wallet_address','profile_visibility','profile_revision']);
   const rpcNames=new Set(['soe_circle_detail_profiles','soe_circle_messages_read_profiles','soe_circle_discussion_read_profiles','soe_circle_discussion_thread_profiles','soe_circle_discussion_receipt_profiles','soe_circle_message_state_profiles','soe_circle_discussion_target','soe_circle_discussion_post','soe_circle_messages_post','soe_circle_message_action','soe_member_profile_update','soe_circle_start','soe_circle_create','soe_circle_detail','soe_circle_membership_state','soe_circle_join','soe_circle_leave','soe_circle_rsvp','soe_circle_complete']),argumentsByName=new Map();
+  if(memberBlocks)rpcNames.add('soe_circle_message_block');
   app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({
     from(table){assert(['members','book_cohorts'].includes(table));let projection;const filters=[];
      const query={select(value){assert(table==='members'?value.split(',').every(v=>columns.has(v.trim())):value==='id,book_id,title,description,max_members,start_date,thinker_id,status,created_at');projection=value;return query;},
@@ -58,7 +71,21 @@ export async function createPublicProfileApp(){
       return dbHook?dbHook({kind:'select',table,result}):result;
      });}return query;
     },
-   rpc(name,args){assert(rpcNames.has(name));return serial(async()=>{if(!argumentsByName.has(name))argumentsByName.set(name,(await f.db.query("SELECT proargnames FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace",[name])).rows[0].proargnames);
+   rpc(name,args){
+    if (memberBlocks && name==='soe_wallet_session_access') {
+      return { abortSignal(signal) { return serial(async () => {
+        signal.throwIfAborted();
+        assert.deepEqual(Object.keys(args).sort(), ['p_digest','p_expires_at','p_revoke']);
+        try {
+          await f.db.exec('SET ROLE service_role');
+          const result = await f.db.query('SELECT public.soe_wallet_session_access($1,$2,$3) AS result',
+            [args.p_digest,args.p_expires_at,args.p_revoke]);
+          return {data:result.rows[0].result,error:null};
+        } catch(error) { return {data:null,error:{code:error.code??'FIXTURE_ERROR'}}; }
+        finally { await f.db.exec('RESET ROLE'); }
+      }); } };
+    }
+    assert(rpcNames.has(name));return serial(async()=>{if(!argumentsByName.has(name))argumentsByName.set(name,(await f.db.query("SELECT proargnames FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace",[name])).rows[0].proargnames);
     const keys=argumentsByName.get(name);assert.deepEqual(Object.keys(args).sort(),[...keys].sort());sql.push({kind:'rpc',name,args:structuredClone(args)});let result;
     try{await f.db.exec('SET ROLE service_role');result={data:(await f.db.query(`SELECT public.${name}(${keys.map((_,i)=>'$'+(i+1)).join(',')}) AS result`,keys.map(k=>args[k]))).rows[0].result,error:null};}
     catch(error){result={data:null,error:{code:error.code??'FIXTURE_ERROR'}};}finally{await f.db.exec('RESET ROLE');}

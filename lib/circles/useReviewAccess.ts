@@ -125,5 +125,5 @@ export function useReviewAccess(onRetire: () => void) {
     else onResult(result);
   }, []);
 
-  return { active, busy, perform };
+  return { active, busy, perform, retire };
 }

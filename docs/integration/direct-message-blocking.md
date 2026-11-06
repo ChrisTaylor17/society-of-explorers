@@ -14,4 +14,4 @@ Deploy the matching `/api/message` routes with the database change and verify th
 
 Once the draft is installed, use the 66-table member-safety scope and check that the isolated restore preserves the private block, previously stored messages and the service-only routines. The rehearsal detected a backup with omitted block rows that passed the preceding reference. [Restore procedure](privacy-restore-check.md) · [Verification](direct-message-blocking-verification.json)
 
-Circle-wide behavior, installed phone controls, Quest controls and third-party meeting interactions are separate release work.
+The later Circle draft extends this same block to Circle posts and direct replies. Installed phone, physical Quest and third-party meeting acceptance remain separate. [Circle blocking](circle-member-blocking.md)

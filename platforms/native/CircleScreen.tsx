@@ -5,6 +5,7 @@ import { PublicProfileScreen } from './PublicProfileScreen';
 import type { MemberSessionModel } from './src/circles/verified-member-session';
 import { createCircleHost, type CircleHostConfig } from './src/circles/host';
 import type { ThreadMessage } from '../../lib/circles/thread';
+import { MESSAGE_BLOCK_CONFIRMATION, MESSAGE_BLOCK_PRIVACY } from '../../lib/circles/message-moderation';
 import { observeNativeConnectivity, type NativeConnectivityPort, type NativeConnectivityState } from './src/circles/native-connectivity';
 import { MESSAGE_REPORT_OPTIONS, MESSAGE_WITHDRAWAL_PRIVACY } from '../shared/message-safety';
 import { REEL_QUESTIONS, reelDiscussionDraft, type ReelDiscussionId } from '../../lib/clips/salon';
@@ -211,19 +212,21 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
             style={[styles.input, !safety.canEditReport && styles.disabled]}/>
         </> : null}
         {safety.state.canWithdraw ? <Text style={styles.note}>{MESSAGE_WITHDRAWAL_PRIVACY}</Text> : null}
-        {safety.state.canReport || safety.state.canWithdraw ? <Pressable accessibilityRole="checkbox"
-          accessibilityLabel={safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here' : 'I checked this message and want to send this report for private human review'}
+        {safety.state.blockReview ? <Text style={styles.note}>{MESSAGE_BLOCK_PRIVACY}</Text> : null}
+        {safety.state.canReport || safety.state.canWithdraw || safety.state.blockReview ? <Pressable accessibilityRole="checkbox"
+          accessibilityLabel={safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here' : safety.state.blockReview ? MESSAGE_BLOCK_CONFIRMATION : 'I checked this message and want to send this report for private human review'}
           accessibilityState={{ checked: safety.confirmed, disabled: !safety.canConfirm }} disabled={!safety.canConfirm}
           onPress={() => act(() => host?.messageConfirm(!safety.confirmed))} style={[styles.button, !safety.canConfirm && styles.disabled]}>
-          <Text style={styles.buttonText}>{safety.confirmed ? '✓ ' : '□ '}{safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here.' : 'I checked this message and want to send this report for private human review.'}</Text>
-        </Pressable> : <Text style={styles.note}>No report or withdrawal action is available for this message.</Text>}
+          <Text style={styles.buttonText}>{safety.confirmed ? '✓ ' : '□ '}{safety.state.canWithdraw ? 'I understand withdrawal removes this message from member views and cannot be undone here.' : safety.state.blockReview ? MESSAGE_BLOCK_CONFIRMATION : 'I checked this message and want to send this report for private human review.'}</Text>
+        </Pressable> : <Text style={styles.note}>No message action is available for this message.</Text>}
         {safety.state.canReport ? <Action label="Send private report" disabled={!safety.canReport} onPress={() => act(() => void host?.messageSubmit('report'))}/> : null}
+        {safety.state.blockReview ? <Action label="Block author" disabled={!safety.canBlock} onPress={() => act(() => void host?.messageSubmit('block'))}/> : null}
         {safety.state.canWithdraw ? <Action label="Withdraw my message" disabled={!safety.canWithdraw} onPress={() => act(() => void host?.messageSubmit('withdraw'))}/> : null}
       </> : null}
       <Action label="Check current message state" disabled={!safety.canCheck} onPress={() => act(() => void host?.messageRefresh())}/>
       {safety.pendingRequestId ? <>
         <Text style={styles.note}>The result is unconfirmed. Checking current state does not confirm that this request was received. Retry only the same request manually. Leaving clears its local retry details; a request already sent may still complete.</Text>
-        <Action label={safety.pendingAction === 'withdraw' ? 'Retry exact withdrawal' : 'Retry exact report'} disabled={!safety.canRetry} onPress={() => act(() => void host?.messageRetry())}/>
+        <Action label={safety.pendingAction === 'block' ? 'Retry exact block' : safety.pendingAction === 'withdraw' ? 'Retry exact withdrawal' : 'Retry exact report'} disabled={!safety.canRetry} onPress={() => act(() => void host?.messageRetry())}/>
       </> : null}
       <Action label="Close message actions" disabled={!safety.canClose} onPress={() => act(() => host?.messageClose())}/>
     </View> : null}

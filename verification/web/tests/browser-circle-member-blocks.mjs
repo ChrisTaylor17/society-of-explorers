@@ -1,0 +1,209 @@
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
+import { lstatSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+import { promisify } from 'node:util';
+import { createCircleMemberBlocksApp, text } from './support/circle-member-blocks-app.mjs';
+import { installQuestXrDouble } from '../../../platforms/tests/quest-xr-browser-double.mjs';
+
+const ROOT = resolve('../..');
+const files = name => resolve(ROOT, name);
+const evidence = 'verification/web/evidence/';
+const prefix = evidence + 'built-shell-circle-blocks-final-browser-';
+const resultPath = files(prefix + 'stories.json');
+const readyPath = files(prefix + 'server-ready.json');
+const read = path => {
+  const info = lstatSync(path);
+  assert(info.isFile() && !info.isSymbolicLink() && info.blocks, path);
+  return readFileSync(path);
+};
+const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const readyBytes = read(readyPath), ready = JSON.parse(readyBytes);
+assert.equal(ready.status, 'READY');
+assert.match(ready.origin, /^http:\/\/127\.0\.0\.1:\d+$/);
+assert(process.execArgv.some(value => value.endsWith('/deny-build-network.cjs')));
+
+const { chromium } = createRequire(process.env.SOE_PLAYWRIGHT_PACKAGE + '/package.json')('playwright');
+const exec = promisify(execFile);
+const guard = files('verification/web/scripts/built-shell-network-guard.cjs');
+const report = { status: 'RUNNING', buildId: ready.buildId, readySha256: hash(readyBytes),
+  stories: [], faults: [], blockedOrigins: [], calls: [], sourceHashes: {}, cleanup: {} };
+let app, browser, loseNext = false;
+const save = () => writeFileSync(resultPath, JSON.stringify(report, null, 2) + '\n');
+const button = (page, label) => page.getByRole('button', { name: label, exact: true });
+async function shell(request, url) {
+  assert.equal(request.method(), 'GET');
+  const forwarded = ['accept', 'rsc', 'next-router-prefetch', 'next-router-state-tree', 'next-url', 'next-router-segment-prefetch'];
+  const headers = Object.fromEntries(Object.entries(request.headers()).filter(([key]) => forwarded.includes(key)));
+  const { stdout } = await exec(process.execPath, ['--require', guard, '-e', `
+    (async () => {
+      const gate = globalThis.__soeBuiltShellGuard;
+      const url = new URL(process.argv[1], gate.origin);
+      if (url.origin !== gate.origin) throw Error('Invalid test shell address');
+      const response = await fetch(url, { headers: JSON.parse(process.argv[2]), redirect: 'manual' });
+      const headers = Object.fromEntries(response.headers);
+      for (const key of ['content-encoding','content-length','transfer-encoding','connection','set-cookie']) delete headers[key];
+      const body = Buffer.from(await response.arrayBuffer());
+      if (gate.denied.length || body.length > 8000000) throw Error('Shell guard refused the response');
+      process.stdout.write(JSON.stringify({ status: response.status, headers, body: body.toString('base64') }));
+    })().catch(error => { console.error(error.message); process.exitCode = 1; });`, url.pathname + url.search, JSON.stringify(headers)],
+  { env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin', HOME: '/Users/christaylor', SOE_BUILT_SHELL_PORT: new URL(ready.origin).port },
+    timeout: 7000, maxBuffer: 12000000 });
+  const output = JSON.parse(stdout);
+  return { ...output, body: Buffer.from(output.body, 'base64') };
+}
+
+async function open(path) {
+  const context = await browser.newContext({ viewport: { width: 320, height: 850 }, serviceWorkers: 'block', hasTouch: true });
+  if (path.startsWith('/quest/')) await context.addInitScript(installQuestXrDouble);
+  const intent = randomUUID();
+  const signed = await app.walletCookie('author') + '; soe_auth_intent=' + intent
+    + '; soe_auth_selection_v1=v1.' + intent + '.wallet.' + app.viewerId;
+  await context.addCookies(signed.split('; ').map(cookie => {
+    const [name, ...parts] = cookie.split('=');
+    return { name, value: parts.join('='), url: app.ORIGIN, secure: true, httpOnly: name !== 'soe_auth_intent' };
+  }));
+  await context.route('**/*', async route => {
+    const request = route.request(), url = new URL(request.url());
+    try {
+      if (url.origin !== app.ORIGIN) { report.blockedOrigins.push(url.origin); await route.abort(); return; }
+      if (!url.pathname.startsWith('/api/')) { await route.fulfill(await shell(request, url)); return; }
+      assert(/^\/api\/(?:auth\/(?:member|provider)|book-salons\/[a-f0-9-]+|circles\/[a-f0-9-]+(?:\/(?:discussion(?:\/preview)?|messages\/[a-f0-9-]+))?)$/.test(url.pathname), url.pathname);
+      const method = request.method(), body = request.postData() ?? undefined;
+      const response = await app.dispatch(url.pathname + url.search, { method, headers: await request.allHeaders(), body });
+      const block = method === 'POST' && body !== undefined && JSON.parse(body).action === 'block';
+      report.calls.push({ method, path: url.pathname, status: response.status, block });
+      if (block && loseNext) {
+        assert.equal(response.status, 200);
+        loseNext = false;
+        await route.abort('failed');
+        return;
+      }
+      await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
+    } catch (error) {
+      report.faults.push(String(error));
+      await route.abort().catch(() => {});
+    }
+  });
+  const page = await context.newPage();
+  page.on('pageerror', error => report.faults.push(String(error)));
+  page.setDefaultTimeout(10000);
+  await page.bringToFront();
+  assert.equal((await page.goto(app.ORIGIN + path)).status(), 200);
+  return { page, context };
+}
+async function contains(page, content) { await page.getByText(content, { exact: true }).first().waitFor(); }
+async function absent(page, ...contents) {
+  for (const content of contents) assert.equal(await page.getByText(content, { exact: true }).count(), 0, content);
+}
+async function archiveWeb(page) {
+  await button(page, 'Load current discussion archive').click();
+  await page.getByRole('heading', { name: 'Discussion archive', exact: true }).waitFor();
+}
+async function blockWeb(page) {
+  const post = page.locator('[data-discussion-message="' + app.postId + '"]');
+  await post.getByRole('button', { name: 'Check message actions', exact: true }).click();
+  const block = post.getByRole('button', { name: 'Block author', exact: true });
+  await block.waitFor();
+  assert(await block.isDisabled());
+  await post.getByRole('checkbox', { name: 'I checked this message and will choose an action below.', exact: true }).check();
+  await block.click();
+}
+
+try {
+  for (const name of [
+    'platforms/tests/quest-xr-browser-double.mjs', 'verification/web/tests/browser-circle-member-blocks.mjs', 'verification/web/tests/support/circle-member-blocks-app.mjs',
+    'verification/web/tests/support/public-profile-app.mjs', 'docs/sql/circle-member-blocks-apply.sql',
+    'docs/sql/direct-message-blocks-apply.sql', 'docs/sql/wallet-challenge-consumption-apply.sql',
+    'docs/sql/wallet-session-revocation-apply.sql', 'app/circles/[circleId]/discussion/DiscussionBrowser.tsx',
+    'app/circles/messages/MessageActions.tsx', 'app/quest/[circleId]/QuestCircle.tsx', 'platforms/quest/circle-host.mjs',
+    'platforms/quest/circle-view.mjs', 'lib/circles/message-moderation.ts',
+  ]) {
+    report.sourceHashes[name] = hash(read(files(name)));
+    if (ready.sourceHashes[name]) assert.equal(report.sourceHashes[name], ready.sourceHashes[name], name);
+  }
+  app = await createCircleMemberBlocksApp();
+  browser = await chromium.launch({ executablePath: process.env.SOE_CHROMIUM_EXECUTABLE, headless: true, timeout: 15000,
+    args: ['--disable-background-networking','--disable-component-update','--no-first-run','--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
+  const path = '/circles/' + app.circleId + '/discussion';
+  const web = await open(path);
+  await archiveWeb(web.page);
+  await contains(web.page, text.target);
+  await contains(web.page, text.targetOther);
+  await web.page.locator('[data-discussion-message="' + app.postId + '"]').getByRole('button', { name: 'Reply to this message' }).click();
+  const draft = web.page.locator('textarea').first();
+  await draft.fill('SYNTHETIC_DRAFT_CLEARED_ON_BLOCK');
+  await blockWeb(web.page);
+  await contains(web.page, 'Member blocked. Load the current discussion to continue.');
+  assert.equal(await web.page.locator('textarea').count(), 0);
+  await absent(web.page, text.target, text.targetOther, text.independent);
+  assert(await app.ownedBlock());
+  await archiveWeb(web.page);
+  await absent(web.page, text.target, text.targetOther);
+  await contains(web.page, text.independent);
+  assert.equal(await web.page.getByText('This message is unavailable.', { exact: true }).count(), 2);
+  report.stories.push('The compiled phone-width web archive clears the draft and every old card on confirmation. Reload preserves the third member’s reply.');
+  await web.page.screenshot({ path: files(prefix + 'web-320.png') });
+
+  await app.unblock();
+  await archiveWeb(web.page);
+  await contains(web.page, text.target);
+  loseNext = true;
+  await blockWeb(web.page);
+  await contains(web.page, 'Block unconfirmed. Check Members → Chat → Blocked members before deciding again.');
+  assert.equal(loseNext, false);
+  await absent(web.page, text.target, text.targetOther);
+  assert(await app.ownedBlock());
+  report.stories.push('The compiled browser clears old content after a lost reply and leaves the result unconfirmed even though SQL saved the block.');
+  await web.context.close();
+
+  await app.unblock();
+  const quest = await open('/quest/' + app.circleId);
+  await quest.page.evaluate(() => window.questXrQa.enable());
+  await button(quest.page, 'Connect signed-in account').click();
+  await quest.page.getByText('Account connection opened.', { exact: false }).waitFor();
+  const questArchive = quest.page.locator('#circle-archive-open');
+  if (await questArchive.isDisabled() && await quest.page.locator('#member-session-check').isEnabled()) {
+    await quest.page.locator('#member-session-check').click();
+  }
+  await questArchive.click();
+  const post = quest.page.locator('#circle-archive-messages article').filter({ hasText: text.target });
+  await post.getByRole('button', { name: 'Check message actions', exact: true }).click();
+  const block = quest.page.locator('#circle-safety-block');
+  await block.waitFor();
+  assert(await block.isDisabled());
+  await quest.page.locator('#circle-safety-confirm').check();
+  await block.click();
+  await quest.page.waitForFunction(() => document.getElementById('circle-safety-status').textContent.includes('Member blocked.'));
+  await absent(quest.page, text.target, text.targetOther);
+  await questArchive.click();
+  await contains(quest.page, text.independent);
+  await absent(quest.page, text.target, text.targetOther);
+  assert(await app.ownedBlock());
+  report.stories.push('The compiled Quest Browser connects the signed fixture wallet, checks the selected author, and reloads the same blocked thread.');
+  await quest.page.screenshot({ path: files(prefix + 'quest-320.png') });
+  const seePanel = value => quest.page.waitForFunction(text => window.questXrQa.panel().replace(/\s+/g, ' ').includes(text), value);
+  const trigger = () => quest.page.evaluate(() => window.questXrQa.select());
+  await quest.page.locator('#quest-immersive-enter').click();
+  await seePanel('Press the controller trigger to check your signed-in account.');
+  await trigger();
+  await seePanel('Press the trigger to check Circle access and load recent discussion.');
+  await trigger();
+  await seePanel(text.independent);
+  const panel = await quest.page.evaluate(() => ({ text: window.questXrQa.panel(), ...window.questXrQa.stats() }));
+  assert(!panel.text.includes(text.target) && !panel.text.includes(text.targetOther));
+  assert(panel.draws > 0);
+  assert.deepEqual(panel.errors, []);
+  await quest.page.locator('#quest-immersive-exit').click();
+  report.stories.push('The compiled Quest room renders the independent reply in simulated WebXR after the same member block.');
+  await quest.context.close();
+  assert.deepEqual(report.faults, []);
+  assert.equal(report.calls.filter(call => call.block && call.status === 200).length, 3);
+  report.status = 'PASS';
+} finally {
+  try { await browser?.close(); report.cleanup.browser = true; }
+  finally { await app?.close(); report.cleanup.database = true; save(); }
+}
+console.log(JSON.stringify({ status: report.status, stories: report.stories.length, requests: report.calls.length }));

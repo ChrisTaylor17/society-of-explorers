@@ -26,6 +26,7 @@ VOICE_ARCHIVE_FORMAT = 'soe-privacy-restore-v12'
 VOICE_RELEASE_FORMAT = 'soe-privacy-restore-v13'
 WADDLE_ERASURE_FORMAT = 'soe-privacy-restore-v14'
 MEMBER_SAFETY_FORMAT = 'soe-privacy-restore-v15'
+CIRCLE_MEMBER_BLOCKS_FORMAT = 'soe-privacy-restore-v16'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -89,8 +90,10 @@ TABLES_BY_SCOPE = {
     | {'soe_account_deletion_private.waddle_erasure_receipts'},
 }
 TABLES_BY_SCOPE[MEMBER_SAFETY_FORMAT] = TABLES_BY_SCOPE[WADDLE_ERASURE_FORMAT] | {'soe_member_safety_private.member_blocks'}
-DELETION_SCOPES = {ACCOUNT_DELETION_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT, MEMBER_SAFETY_FORMAT}
-VOICE_SCOPES = {VOICE_ARCHIVE_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT, MEMBER_SAFETY_FORMAT}
+TABLES_BY_SCOPE[CIRCLE_MEMBER_BLOCKS_FORMAT] = TABLES_BY_SCOPE[MEMBER_SAFETY_FORMAT]
+MEMBER_SAFETY_SCOPES = {MEMBER_SAFETY_FORMAT, CIRCLE_MEMBER_BLOCKS_FORMAT}
+DELETION_SCOPES = {ACCOUNT_DELETION_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT} | MEMBER_SAFETY_SCOPES
+VOICE_SCOPES = {VOICE_ARCHIVE_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT} | MEMBER_SAFETY_SCOPES
 FIRST_RELEASE_SCOPES = {FIRST_RELEASE_FORMAT} | DELETION_SCOPES
 CIRCLE_RELEASE_SCOPES = {CIRCLE_RELEASE_FORMAT} | FIRST_RELEASE_SCOPES
 WALLET_SCOPES = {WALLET_FORMAT, CIRCLES_WALLET_FORMAT} | CIRCLE_RELEASE_SCOPES
@@ -215,8 +218,9 @@ def read_target(args):
         include_first_release = 'on' if args.scope in FIRST_RELEASE_SCOPES else 'off'
         include_account_deletion = 'on' if args.scope in DELETION_SCOPES else 'off'
         include_voice_archive = 'on' if args.scope in VOICE_SCOPES else 'off'
-        include_waddle_erasure = 'on' if args.scope in {WADDLE_ERASURE_FORMAT, MEMBER_SAFETY_FORMAT} else 'off'
-        include_member_safety = 'on' if args.scope == MEMBER_SAFETY_FORMAT else 'off'
+        include_waddle_erasure = 'on' if args.scope in {WADDLE_ERASURE_FORMAT} | MEMBER_SAFETY_SCOPES else 'off'
+        include_member_safety = 'on' if args.scope in MEMBER_SAFETY_SCOPES else 'off'
+        include_circle_member_blocks = 'on' if args.scope == CIRCLE_MEMBER_BLOCKS_FORMAT else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
@@ -229,6 +233,7 @@ def read_target(args):
              '-v', f'soe_restore_include_voice_archive={include_voice_archive}',
              '-v', f'soe_restore_include_waddle_erasure={include_waddle_erasure}',
              '-v', f'soe_restore_include_member_safety={include_member_safety}',
+             '-v', f'soe_restore_include_circle_member_blocks={include_circle_member_blocks}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -308,17 +313,26 @@ def main():
                         help='Compare the 65-table release reference including Waddle removal receipts.')
     parser.add_argument('--include-member-safety', action='store_true',
                         help='Compare the 66-table release reference including private member blocks.')
+    parser.add_argument('--include-circle-member-blocks', action='store_true',
+                        help='Compare the 66-table release reference with the Circle block routines.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
-    if args.include_member_safety or args.include_waddle_erasure:
+    member_scopes = [
+        scope for selected, scope in (
+            (args.include_waddle_erasure, WADDLE_ERASURE_FORMAT),
+            (args.include_member_safety, MEMBER_SAFETY_FORMAT),
+            (args.include_circle_member_blocks, CIRCLE_MEMBER_BLOCKS_FORMAT),
+        ) if selected
+    ]
+    if member_scopes:
         if args.scope != FORMAT or any((
             args.include_direct_messages, args.include_wallet_state, args.include_circles,
             args.include_circle_release_state, args.include_first_release_state,
             args.include_account_deletion_state, args.include_voice_archive,
-            args.include_member_safety and args.include_waddle_erasure,
+            len(member_scopes) != 1,
         )):
-            parser.error('Use --include-member-safety or --include-waddle-erasure by itself.')
-        args.scope = MEMBER_SAFETY_FORMAT if args.include_member_safety else WADDLE_ERASURE_FORMAT
+            parser.error('Use one of --include-circle-member-blocks, --include-member-safety, or --include-waddle-erasure by itself.')
+        args.scope = member_scopes[0]
     elif args.include_voice_archive:
         if (args.scope == CORE_PRACTICE_FORMAT or args.include_wallet_state
                 or args.include_circle_release_state or args.include_first_release_state):

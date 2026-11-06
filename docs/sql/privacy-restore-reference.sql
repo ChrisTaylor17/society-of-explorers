@@ -40,9 +40,16 @@
 \else
   \set soe_restore_include_waddle_erasure off
 \endif
+\if :{?soe_restore_include_circle_member_blocks}
+\else
+  \set soe_restore_include_circle_member_blocks off
+\endif
 \if :{?soe_restore_include_member_safety}
 \else
   \set soe_restore_include_member_safety off
+\endif
+\if :soe_restore_include_circle_member_blocks
+  \set soe_restore_include_member_safety on
 \endif
 \if :soe_restore_include_member_safety
   \set soe_restore_include_waddle_erasure on
@@ -483,6 +490,10 @@ deletion_routine_requirements(signature) AS (
     , ('soe_member_safety_private.lock_pair(uuid,uuid)')
     , ('soe_member_safety_private.contact_blocked(uuid,uuid)')
 \endif
+\if :soe_restore_include_circle_member_blocks
+    , ('soe_member_safety_private.own_block_revision(uuid,uuid)')
+    , ('public.soe_circle_message_block(uuid,uuid,uuid,bigint,text,bigint,uuid)')
+\endif
 ),
 deletion_routines AS (
   SELECT p.oid, n.nspname, p.proname, p.proowner, p.proacl, pg_get_function_identity_arguments(p.oid) AS arguments
@@ -696,6 +707,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_circle_member_blocks'::boolean THEN 'soe-privacy-restore-v16'
     WHEN :'soe_restore_include_member_safety'::boolean THEN 'soe-privacy-restore-v15'
     WHEN :'soe_restore_include_waddle_erasure'::boolean THEN 'soe-privacy-restore-v14'
     WHEN :'soe_restore_include_voice_archive'::boolean AND :'soe_restore_include_account_deletion_state'::boolean

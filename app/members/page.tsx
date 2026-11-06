@@ -534,7 +534,7 @@ export default function MembersPage() {
 
                   {blockReview && <section className={styles.review} aria-label="Review direct-message block">
                     <p>{blockReview.blockedByMe ? `Remove your block for ${displayName(selectedMember)}?`
-                      : `Block direct messages with ${displayName(selectedMember)} and hide the conversation?`}</p>
+                      : `Block ${displayName(selectedMember)}? This hides the direct conversation and their Circle posts and stops direct replies between you.`}</p>
                     <button type="button" className={styles.safetyButton} onClick={() => void confirmBlock()}>
                       {blockReview.blockedByMe ? 'Confirm unblock' : 'Confirm block'}
                     </button>

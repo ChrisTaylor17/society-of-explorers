@@ -950,6 +950,8 @@ var REPORT_LABELS = {
 
 // lib/circles/message-moderation.ts
 var MESSAGE_SAFETY_LIMIT = 25;
+var MESSAGE_BLOCK_CONFIRMATION = "I checked this message and will choose an action below.";
+var MESSAGE_BLOCK_PRIVACY = "Blocking hides this member\u2019s Circle posts and stops direct messages and direct replies between you. Manage your blocks under Members \u2192 Chat \u2192 Blocked members on the web.";
 var record3 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 var integer = (value) => Number.isSafeInteger(value) && value >= 0;
 var plain2 = (value, min, max) => typeof value === "string" && value.length <= max && value.trim().length >= min && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value);
@@ -970,6 +972,12 @@ function parseMessageSafetyState(value) {
   if (!isUuid(m.id) || !plain2(m.member_name, 0, 200) || !timestamp2(m.created_at) || typeof m.is_mine !== "boolean" || !visibility(m.visibility) || (m.visibility === "visible" ? !plain2(m.content, 1, 2e3) : m.content !== null) || (m.is_mine || m.visibility === "visible" ? !hash2(value.contentHash) : value.contentHash !== null) || value.canReport && (m.is_mine || m.visibility !== "visible") || value.canWithdraw && (!m.is_mine || m.visibility === "withdrawn")) return null;
   const publicProfileId = parsePublicProfileReference(m.publicProfileId);
   if (publicProfileId === void 0 || m.visibility !== "visible" && publicProfileId !== null) return null;
+  const block = value.blockReview;
+  let blockReview;
+  if (block !== void 0) {
+    if (!record3(block) || !isUuid(block.memberId) || !integer(block.revision) || block.revision >= Number.MAX_SAFE_INTEGER || m.is_mine || m.visibility !== "visible") return null;
+    blockReview = { memberId: block.memberId.toLowerCase(), revision: block.revision };
+  }
   const explanations = value.explanations.map(explanation);
   if (explanations.some((item) => item === null) || !m.is_mine && explanations.length > 0) return null;
   const valid2 = explanations;
@@ -981,7 +989,8 @@ function parseMessageSafetyState(value) {
     contentHash: value.contentHash,
     canReport: value.canReport,
     canWithdraw: value.canWithdraw,
-    explanations: valid2
+    explanations: valid2,
+    ...blockReview ? { blockReview } : {}
   };
 }
 function parseMessageContributions(value) {
@@ -1003,6 +1012,39 @@ function parseMessageActionReceipt(value) {
     state,
     replayed: value.replayed,
     ...value.received === true ? { received: true } : { withdrawn: true }
+  };
+}
+function parseMessageBlockInput(value) {
+  if (!record3(value) || Object.keys(value).length !== 6 || value.action !== "block" || !isUuid(value.expectedMemberId) || !integer(value.expectedBlockRevision) || value.expectedBlockRevision >= Number.MAX_SAFE_INTEGER || !integer(value.expectedRevision) || !hash2(value.contentHash) || !isUuid(value.requestId)) return null;
+  return {
+    action: "block",
+    expectedMemberId: value.expectedMemberId.toLowerCase(),
+    expectedBlockRevision: value.expectedBlockRevision,
+    expectedRevision: value.expectedRevision,
+    contentHash: value.contentHash,
+    requestId: value.requestId.toLowerCase()
+  };
+}
+function messageBlockInput(state, requestId) {
+  if (!state.blockReview) return null;
+  return parseMessageBlockInput({
+    action: "block",
+    expectedMemberId: state.blockReview.memberId,
+    expectedBlockRevision: state.blockReview.revision,
+    expectedRevision: state.revision,
+    contentHash: state.contentHash,
+    requestId
+  });
+}
+function parseMessageBlockReceipt(value, input, circleId, messageId) {
+  if (!record3(value) || value.requestId !== input.requestId || value.circleId !== circleId.toLowerCase() || value.messageId !== messageId.toLowerCase() || value.blockedByMe !== true || value.revision !== input.expectedBlockRevision + 1 || !isUuid(value.blockId)) return null;
+  return {
+    requestId: input.requestId,
+    circleId: value.circleId,
+    messageId: value.messageId,
+    blockedByMe: true,
+    revision: value.revision,
+    blockId: value.blockId
   };
 }
 function validateMessageActionInput(value) {
@@ -1047,10 +1089,13 @@ function createMessageSafety(request, circleId, newRequestId) {
       receipt,
       message,
       canEditReport: ready && Boolean(state?.canReport),
-      canConfirm: ready && Boolean(state?.canReport || state?.canWithdraw),
+      canConfirm: ready && Boolean(state?.canReport || state?.canWithdraw || state?.blockReview),
       canReport: ready && Boolean(state?.canReport && state.contentHash) && reason2 !== "" && confirmed,
       canWithdraw: ready && Boolean(state?.canWithdraw && state.contentHash) && confirmed,
-      canCheck: active && open && !busy && messageId !== null,
+      canBlock: ready && Boolean(state?.blockReview && state.contentHash) && confirmed,
+      // A committed block makes state return 404. Preserve the pending exact
+      // retry without asking the host to reopen the old private post.
+      canCheck: active && open && !busy && messageId !== null && pending?.input.action !== "block" && (phase !== "confirmed" || state !== null),
       canRetry: active && open && !busy && pending !== null,
       canClose: open && !busy && pending === null,
       canNavigate: !busy && pending === null
@@ -1107,8 +1152,20 @@ function createMessageSafety(request, circleId, newRequestId) {
     emit();
   }
   function accept(value, exact3) {
-    const parsed = parseMessageActionReceipt(value), id2 = messageId;
-    if (!parsed || !id2 || !same2(parsed.requestId, exact3.input.requestId) || !same2(parsed.circleId, circle) || !same2(parsed.messageId, id2) || !same2(parsed.state.circleId, circle) || !same2(parsed.state.message.id, id2) || parsed.state.revision < exact3.input.expectedRevision || parsed.state.contentHash !== null && parsed.state.contentHash !== exact3.input.contentHash || parsed.state.message.is_mine !== exact3.isMine || parsed.state.message.visibility === "visible" && exact3.content !== null && parsed.state.message.content !== exact3.content || (exact3.input.action === "withdraw" ? parsed.withdrawn !== true || parsed.state.message.visibility !== "withdrawn" : parsed.received !== true)) return false;
+    const id2 = messageId;
+    if (!id2) return false;
+    if (exact3.input.action === "block") {
+      if (!parseMessageBlockReceipt(value, exact3.input, circle, id2)) return false;
+      state = null;
+      receipt = null;
+      pending = null;
+      busy = false;
+      phase = "confirmed";
+      message = "Member blocked. Open the current discussion to continue. Manage your blocks under Members \u2192 Chat \u2192 Blocked members on the web.";
+      return true;
+    }
+    const parsed = parseMessageActionReceipt(value);
+    if (!parsed || !same2(parsed.requestId, exact3.input.requestId) || !same2(parsed.circleId, circle) || !same2(parsed.messageId, id2) || !same2(parsed.state.circleId, circle) || !same2(parsed.state.message.id, id2) || parsed.state.revision < exact3.input.expectedRevision || parsed.state.contentHash !== null && parsed.state.contentHash !== exact3.input.contentHash || parsed.state.message.is_mine !== exact3.isMine || parsed.state.message.visibility === "visible" && exact3.content !== null && parsed.state.message.content !== exact3.content || (exact3.input.action === "withdraw" ? parsed.withdrawn !== true || parsed.state.message.visibility !== "withdrawn" : parsed.received !== true)) return false;
     state = parsed.state;
     receipt = parsed;
     pending = null;
@@ -1128,12 +1185,20 @@ function createMessageSafety(request, circleId, newRequestId) {
     confirmed = false;
     busy = true;
     phase = "sending";
-    message = exact3.input.action === "withdraw" ? "Sending the exact reviewed withdrawal\u2026" : "Sending the exact private report for human review\u2026";
+    message = exact3.input.action === "block" ? "Sending the reviewed block\u2026" : exact3.input.action === "withdraw" ? "Sending the exact reviewed withdrawal\u2026" : "Sending the exact private report for human review\u2026";
     emit();
     try {
       const result = await request(endpoint(), { method: "POST", cache: "no-store", redirect: "error", body: exact3.body }, () => current(g));
       if (!current(g)) return;
       if (result.http === 200 && accept(result.body, exact3)) {
+        emit();
+        return;
+      }
+      if (exact3.input.action === "block" && [400, 401, 403, 404, 409].includes(result.http)) {
+        pending = null;
+        busy = false;
+        phase = "unavailable";
+        message = "Block unconfirmed. Check the current discussion and your blocked members before deciding again.";
         emit();
         return;
       }
@@ -1183,7 +1248,8 @@ function createMessageSafety(request, circleId, newRequestId) {
       }
     },
     async submit(action) {
-      if (!state || !newRequestId || (action === "report" ? !model().canReport : action === "withdraw" ? !model().canWithdraw : true)) return;
+      const { canReport, canWithdraw, canBlock } = model();
+      if (!state || !newRequestId || !{ report: canReport, withdraw: canWithdraw, block: canBlock }[action]) return;
       const checked = state, chosenReason = reason2, chosenNote = note, g = ++generation;
       busy = true;
       phase = "sending";
@@ -1198,6 +1264,13 @@ function createMessageSafety(request, circleId, newRequestId) {
         const key = await newRequestId();
         if (!current(g)) return;
         if (!isUuid(key)) throw Error("Request key unavailable");
+        if (action === "block") {
+          const input2 = messageBlockInput(checked, key);
+          if (!input2) throw Error("Block unavailable");
+          busy = false;
+          await send({ input: input2, body: JSON.stringify(input2), content: null, isMine: false });
+          return;
+        }
         const parsed = validateMessageActionInput({
           action,
           expectedRevision: checked.revision,
@@ -5233,6 +5306,8 @@ export {
   MESSAGE_AI_DISCLOSURE,
   MESSAGE_AI_POLICY,
   MESSAGE_AI_POLICY_HREF,
+  MESSAGE_BLOCK_CONFIRMATION,
+  MESSAGE_BLOCK_PRIVACY,
   MESSAGE_REPORT_OPTIONS,
   MESSAGE_WITHDRAWAL_PRIVACY,
   PHILEMON_EDITION_METADATA,

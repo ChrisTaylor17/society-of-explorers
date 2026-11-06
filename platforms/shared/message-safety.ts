@@ -1,20 +1,21 @@
-import { parseMessageActionReceipt, parseMessageSafetyState, validateMessageActionInput,
-  type MessageActionInput, type MessageActionReceipt, type MessageSafetyState } from '../../lib/circles/message-moderation';
+import { messageBlockInput, parseMessageActionReceipt, parseMessageBlockReceipt, parseMessageSafetyState, validateMessageActionInput,
+  type MessageActionInput, type MessageActionReceipt, type MessageBlockInput, type MessageSafetyState } from '../../lib/circles/message-moderation';
 import { REPORT_LABELS, REPORT_REASONS, type ReportReason } from '../../lib/circles/report';
 import { isUuid } from '../../lib/ids/uuid';
 import type { CircleSessionRequest } from '../native/src/circles/participation-session';
 
 export const MESSAGE_REPORT_OPTIONS = REPORT_REASONS.map(value => ({ value, label: value === 'misleading' ? 'Misleading content' : REPORT_LABELS[value] }));
 export const MESSAGE_WITHDRAWAL_PRIVACY = 'Withdrawal removes the message from member views. It is not physical erasure: restricted evidence may remain for safety review. The retention policy is not yet finalized.';
+type SafetyAction = 'report' | 'withdraw' | 'block';
 export type MessageSafetyModel = {
   active: boolean; available: boolean; open: boolean; busy: boolean;
   phase: 'closed' | 'loading' | 'ready' | 'sending' | 'unknown' | 'confirmed' | 'unavailable';
   messageId: string | null; state: MessageSafetyState | null; reason: ReportReason | ''; note: string; confirmed: boolean;
-  pendingRequestId: string | null; pendingAction: 'report' | 'withdraw' | null; receipt: MessageActionReceipt | null; message: string;
-  canEditReport: boolean; canConfirm: boolean; canReport: boolean; canWithdraw: boolean;
+  pendingRequestId: string | null; pendingAction: SafetyAction | null; receipt: MessageActionReceipt | null; message: string;
+  canEditReport: boolean; canConfirm: boolean; canReport: boolean; canWithdraw: boolean; canBlock: boolean;
   canCheck: boolean; canRetry: boolean; canClose: boolean; canNavigate: boolean;
 };
-type Pending = { input: MessageActionInput; body: string; content: string | null; isMine: boolean };
+type Pending = { input: MessageActionInput | MessageBlockInput; body: string; content: string | null; isMine: boolean };
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
@@ -34,10 +35,15 @@ export function createMessageSafety(request: CircleSessionRequest, circleId: str
     const ready = active && available && open && !busy && !pending && state !== null && ['ready', 'confirmed'].includes(phase);
     return copy({ active, available, open, busy, phase, messageId, state, reason, note, confirmed,
       pendingRequestId: pending?.input.requestId ?? null, pendingAction: pending?.input.action ?? null, receipt, message,
-      canEditReport: ready && Boolean(state?.canReport), canConfirm: ready && Boolean(state?.canReport || state?.canWithdraw),
+      canEditReport: ready && Boolean(state?.canReport), canConfirm: ready && Boolean(state?.canReport || state?.canWithdraw || state?.blockReview),
       canReport: ready && Boolean(state?.canReport && state.contentHash) && reason !== '' && confirmed,
       canWithdraw: ready && Boolean(state?.canWithdraw && state.contentHash) && confirmed,
-      canCheck: active && open && !busy && messageId !== null, canRetry: active && open && !busy && pending !== null,
+      canBlock: ready && Boolean(state?.blockReview && state.contentHash) && confirmed,
+      // A committed block makes state return 404. Preserve the pending exact
+      // retry without asking the host to reopen the old private post.
+      canCheck: active && open && !busy && messageId !== null && pending?.input.action !== 'block'
+        && (phase !== 'confirmed' || state !== null),
+      canRetry: active && open && !busy && pending !== null,
       canClose: open && !busy && pending === null, canNavigate: !busy && pending === null });
   };
   const emit = () => { for (const listener of listeners) listener(model()); };
@@ -67,8 +73,16 @@ export function createMessageSafety(request: CircleSessionRequest, circleId: str
       : 'Current message information could not be verified. No action has been assumed.'; emit();
   }
   function accept(value: unknown, exact: Pending) {
-    const parsed = parseMessageActionReceipt(value), id = messageId;
-    if (!parsed || !id || !same(parsed.requestId, exact.input.requestId) || !same(parsed.circleId, circle) || !same(parsed.messageId, id)
+    const id = messageId;
+    if (!id) return false;
+    if (exact.input.action === 'block') {
+      if (!parseMessageBlockReceipt(value, exact.input, circle, id)) return false;
+      state = null; receipt = null; pending = null; busy = false; phase = 'confirmed';
+      message = 'Member blocked. Open the current discussion to continue. Manage your blocks under Members → Chat → Blocked members on the web.';
+      return true;
+    }
+    const parsed = parseMessageActionReceipt(value);
+    if (!parsed || !same(parsed.requestId, exact.input.requestId) || !same(parsed.circleId, circle) || !same(parsed.messageId, id)
       || !same(parsed.state.circleId, circle) || !same(parsed.state.message.id, id) || parsed.state.revision < exact.input.expectedRevision
       || parsed.state.contentHash !== null && parsed.state.contentHash !== exact.input.contentHash
       || parsed.state.message.is_mine !== exact.isMine
@@ -82,11 +96,17 @@ export function createMessageSafety(request: CircleSessionRequest, circleId: str
   async function send(exact: Pending) {
     if (!active || !open || busy || !messageId) return;
     const g = ++generation; pending = exact; state = null; receipt = null; reason = ''; note = ''; confirmed = false; busy = true; phase = 'sending';
-    message = exact.input.action === 'withdraw' ? 'Sending the exact reviewed withdrawal…' : 'Sending the exact private report for human review…'; emit();
+    message = exact.input.action === 'block' ? 'Sending the reviewed block…'
+      : exact.input.action === 'withdraw' ? 'Sending the exact reviewed withdrawal…' : 'Sending the exact private report for human review…'; emit();
     try {
       const result = await request(endpoint(), { method: 'POST', cache: 'no-store', redirect: 'error', body: exact.body }, () => current(g));
       if (!current(g)) return;
       if (result.http === 200 && accept(result.body, exact)) { emit(); return; }
+      if (exact.input.action === 'block' && [400, 401, 403, 404, 409].includes(result.http)) {
+        pending = null; busy = false; phase = 'unavailable';
+        message = 'Block unconfirmed. Check the current discussion and your blocked members before deciding again.';
+        emit(); return;
+      }
     } catch { if (!current(g)) return; }
     busy = false; phase = 'unknown';
     message = 'The action is unconfirmed and may have been saved. Only a manual retry of this exact request can confirm its receipt. Checking current state does not prove its outcome.'; emit();
@@ -110,8 +130,9 @@ export function createMessageSafety(request: CircleSessionRequest, circleId: str
       note = value; confirmed = false; emit(); return true;
     },
     confirm(value: boolean) { if (model().canConfirm) { confirmed = value === true; emit(); } },
-    async submit(action: 'report' | 'withdraw') {
-      if (!state || !newRequestId || (action === 'report' ? !model().canReport : action === 'withdraw' ? !model().canWithdraw : true)) return;
+    async submit(action: SafetyAction) {
+      const { canReport, canWithdraw, canBlock } = model();
+      if (!state || !newRequestId || !({ report: canReport, withdraw: canWithdraw, block: canBlock })[action]) return;
       const checked = state, chosenReason = reason, chosenNote = note, g = ++generation;
       busy = true; phase = 'sending'; state = null; receipt = null; reason = ''; note = ''; confirmed = false;
       message = 'Preparing this exact confirmed action. No request has been sent yet…'; emit();
@@ -119,6 +140,13 @@ export function createMessageSafety(request: CircleSessionRequest, circleId: str
         const key = await newRequestId();
         if (!current(g)) return;
         if (!isUuid(key)) throw Error('Request key unavailable');
+        if (action === 'block') {
+          const input = messageBlockInput(checked, key);
+          if (!input) throw Error('Block unavailable');
+          busy = false;
+          await send({ input, body: JSON.stringify(input), content: null, isMine: false });
+          return;
+        }
         const parsed = validateMessageActionInput({ action, expectedRevision: checked.revision, contentHash: checked.contentHash, requestId: key.toLowerCase(),
           ...(action === 'report' ? { reason: chosenReason, note: chosenNote.trim() || null } : {}) });
         if (!parsed.ok) throw Error('Action unavailable');

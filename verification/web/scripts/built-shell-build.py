@@ -35,7 +35,15 @@ env={k:os.environ[k] for k in ['PATH','HOME','USER','SHELL','TMPDIR','LANG','LC_
 env.update({'CI':'1','NEXT_TELEMETRY_DISABLED':'1','NODE_OPTIONS':'--require '+str(ROOT/'scripts/deny-build-network.cjs'),'NO_COLOR':'1'})
 webpack='--webpack' in sys.argv
 fixture='--fixture-public-config' in sys.argv
-if fixture:env.update({'NEXT_PUBLIC_SUPABASE_URL':'https://offline.invalid','NEXT_PUBLIC_SUPABASE_ANON_KEY':'OFFLINE_PUBLIC_BUILD_PLACEHOLDER_NOT_A_CREDENTIAL'})
+member_fixture='--fixture-member-public-config' in sys.argv
+assert not (fixture and member_fixture), 'Choose one fixture configuration'
+public_config='not supplied'
+if fixture:
+ env.update({'NEXT_PUBLIC_SUPABASE_URL':'https://offline.invalid','NEXT_PUBLIC_SUPABASE_ANON_KEY':'OFFLINE_PUBLIC_BUILD_PLACEHOLDER_NOT_A_CREDENTIAL'})
+ public_config='invalid offline placeholders'
+if member_fixture:
+ env.update({'NEXT_PUBLIC_SUPABASE_URL':'https://synthetic-member-provider.test','NEXT_PUBLIC_SUPABASE_ANON_KEY':'NONISSUED_MEMBER_BROWSER_FIXTURE'})
+ public_config='nonissued member browser fixture'
 args=['node','node_modules/next/dist/bin/next','build']+(['--webpack'] if webpack else []);start=time.time()
 print(json.dumps({'stage':'locked-offline-build','externalNetworkBlocked':True,'providerCredentialsNotPassed':True}),flush=True)
 p=subprocess.Popen(args,cwd=APP,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,start_new_session=True)
@@ -50,7 +58,7 @@ after=source_snapshot()
 source_changed=before!=after
 if source_changed:status='source_changed_during_build'
 
-report={'argv':args,'cwd':str(APP),'status':status,'exitCode':p.returncode,'seconds':round(time.time()-start,2),'externalNetworkBlocked':True,'providerCredentialsNotPassed':True,'compiler':'webpack' if webpack else 'turbopack','publicBuildConfig':'invalid offline placeholders' if fixture else 'not supplied','privateOrIssuedCredentialsSupplied':False,'deploymentOrServerLaunch':False,'sourceFiles':len(before),'sourceSha256':hashlib.sha256(json.dumps(before,separators=(',',':')).encode()).hexdigest(),'sourceUnchangedDuringBuild':not source_changed,'log':'evidence/'+prefix+'next-build.log'}
+report={'argv':args,'cwd':str(APP),'status':status,'exitCode':p.returncode,'seconds':round(time.time()-start,2),'externalNetworkBlocked':True,'providerCredentialsNotPassed':True,'compiler':'webpack' if webpack else 'turbopack','publicBuildConfig':public_config,'privateOrIssuedCredentialsSupplied':False,'deploymentOrServerLaunch':False,'sourceFiles':len(before),'sourceSha256':hashlib.sha256(json.dumps(before,separators=(',',':')).encode()).hexdigest(),'sourceUnchangedDuringBuild':not source_changed,'log':'evidence/'+prefix+'next-build.log'}
 (ROOT/('evidence/'+prefix+'next-build.json')).write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)
 
 raise SystemExit(0 if status == "completed" and p.returncode == 0 else 1)

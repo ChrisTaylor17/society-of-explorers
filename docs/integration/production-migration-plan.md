@@ -22,6 +22,8 @@ After Waddle containment, verified private Storage and archived Twiddle erasure,
 
 After direct-message containment, pair the [member blocking draft](../sql/direct-message-blocks-apply.sql) with the replacement app routes. Verify the old service-table reads are closed and the service-only routes preserve an unrelated conversation. Protect legacy aliases before opening the app. Use the 66-table `--include-member-safety` scope for later backups. [Direct-message blocking](direct-message-blocking.md)
 
+After the direct-message block and Circle public-profile drafts, stage [Circle member blocks](../sql/circle-member-blocks-apply.sql) with the matching app. Verify both directions, held replies, independent replies, private review evidence and owner unblock. Use the 66-table `--include-circle-member-blocks` restore scope after this stage.
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.

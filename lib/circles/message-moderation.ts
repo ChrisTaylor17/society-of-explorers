@@ -4,6 +4,9 @@ import { REPORT_REASONS, type ReportReason } from './report';
 import { REVIEW_REPORT_COUNT_MAX } from './review-coverage';
 
 export const MESSAGE_SAFETY_LIMIT = 25;
+export const MESSAGE_BLOCK_CONFIRMATION = 'I checked this message and will choose an action below.';
+export const MESSAGE_BLOCK_UNCONFIRMED = 'Block unconfirmed. Check Members → Chat → Blocked members before deciding again.';
+export const MESSAGE_BLOCK_PRIVACY = 'Blocking hides this member’s Circle posts and stops direct messages and direct replies between you. Manage your blocks under Members → Chat → Blocked members on the web.';
 export type MessageVisibility = 'visible' | 'hidden' | 'withdrawn';
 export type MessageDecisionReason = 'safety' | 'harassment' | 'spam' | 'misleading' | 'inappropriate' | 'no_violation' | 'insufficient_evidence' | 'resolved';
 export type MessageExplanation = { id: string; action: 'hide' | 'restore'; reason: MessageDecisionReason; summary: string; created_at: string };
@@ -12,10 +15,14 @@ export type MessageSafetyState = {
   circleId: string;
   message: { id: string; member_name: string; publicProfileId?: string | null; content: string | null; created_at: string; is_mine: boolean; visibility: MessageVisibility };
   revision: number; contentHash: string | null; canReport: boolean; canWithdraw: boolean; explanations: MessageExplanation[];
+  blockReview?: { memberId: string; revision: number };
 };
 export type MessageContributions = { items: MessageSafetyState[]; nextCursor: string | null };
 export type MessageActionInput = { expectedRevision: number; contentHash: string; requestId: string } &
   ({ action: 'withdraw' } | { action: 'report'; reason: ReportReason; note: string | null });
+export type MessageBlockInput = {
+  action: 'block'; expectedMemberId: string; expectedBlockRevision: number; expectedRevision: number; contentHash: string; requestId: string;
+};
 export type MessageActionReceipt = { requestId: string; circleId: string; messageId: string; state: MessageSafetyState; replayed: boolean } &
   ({ received: true; withdrawn?: never } | { withdrawn: true; received?: never });
 export type MessageReviewQueueItem = { circleId: string; messageId: string; circleTitle: string; visibility: MessageVisibility; openReports: number; revision: number };
@@ -65,12 +72,20 @@ export function parseMessageSafetyState(value: unknown): MessageSafetyState | nu
     || (value.canReport && (m.is_mine || m.visibility !== 'visible')) || (value.canWithdraw && (!m.is_mine || m.visibility === 'withdrawn'))) return null;
   const publicProfileId = parsePublicProfileReference(m.publicProfileId);
   if (publicProfileId === undefined || (m.visibility !== 'visible' && publicProfileId !== null)) return null;
+  const block = value.blockReview;
+  let blockReview: MessageSafetyState['blockReview'];
+  if (block !== undefined) {
+    if (!record(block) || !isUuid(block.memberId) || !integer(block.revision)
+      || block.revision >= Number.MAX_SAFE_INTEGER || m.is_mine || m.visibility !== 'visible') return null;
+    blockReview = { memberId: block.memberId.toLowerCase(), revision: block.revision };
+  }
   const explanations = value.explanations.map(explanation);
   if (explanations.some((item) => item === null) || (!m.is_mine && explanations.length > 0)) return null;
   const valid = explanations as MessageExplanation[];
   if (!unique(valid.map((item) => item.id))) return null;
   return { circleId: value.circleId, message: { id: m.id, member_name: m.member_name, publicProfileId, content: m.content as string | null, created_at: m.created_at, is_mine: m.is_mine, visibility: m.visibility },
-    revision: value.revision, contentHash: value.contentHash as string | null, canReport: value.canReport, canWithdraw: value.canWithdraw, explanations: valid };
+    revision: value.revision, contentHash: value.contentHash as string | null, canReport: value.canReport, canWithdraw: value.canWithdraw, explanations: valid,
+    ...(blockReview ? { blockReview } : {}) };
 }
 export function parseMessageContributions(value: unknown): MessageContributions | null {
   if (!record(value) || !Array.isArray(value.items) || value.items.length > MESSAGE_SAFETY_LIMIT || !cursor(value.nextCursor)) return null;
@@ -126,6 +141,26 @@ export function parseMessageDecisionReceipt(value: unknown): MessageDecisionRece
 }
 
 type Valid<T> = { ok: true; value: T } | { ok: false; error: string };
+export function parseMessageBlockInput(value: unknown): MessageBlockInput | null {
+  if (!record(value) || Object.keys(value).length !== 6 || value.action !== 'block'
+    || !isUuid(value.expectedMemberId) || !integer(value.expectedBlockRevision)
+    || value.expectedBlockRevision >= Number.MAX_SAFE_INTEGER || !integer(value.expectedRevision)
+    || !hash(value.contentHash) || !isUuid(value.requestId)) return null;
+  return { action: 'block', expectedMemberId: value.expectedMemberId.toLowerCase(), expectedBlockRevision: value.expectedBlockRevision,
+    expectedRevision: value.expectedRevision, contentHash: value.contentHash, requestId: value.requestId.toLowerCase() };
+}
+export function messageBlockInput(state: MessageSafetyState, requestId: string): MessageBlockInput | null {
+  if (!state.blockReview) return null;
+  return parseMessageBlockInput({ action: 'block', expectedMemberId: state.blockReview.memberId, expectedBlockRevision: state.blockReview.revision,
+    expectedRevision: state.revision, contentHash: state.contentHash, requestId });
+}
+export function parseMessageBlockReceipt(value: unknown, input: MessageBlockInput, circleId: string, messageId: string) {
+  if (!record(value) || value.requestId !== input.requestId || value.circleId !== circleId.toLowerCase()
+    || value.messageId !== messageId.toLowerCase() || value.blockedByMe !== true
+    || value.revision !== input.expectedBlockRevision + 1 || !isUuid(value.blockId)) return null;
+  return { requestId: input.requestId, circleId: value.circleId, messageId: value.messageId,
+    blockedByMe: true, revision: value.revision, blockId: value.blockId };
+}
 export function validateMessageActionInput(value: unknown): Valid<MessageActionInput> {
   const invalid = { ok: false as const, error: 'Use a valid post action and refresh its current state.' };
   if (!record(value) || Object.keys(value).some((key) => !['action', 'expectedRevision', 'contentHash', 'requestId', 'reason', 'note'].includes(key))

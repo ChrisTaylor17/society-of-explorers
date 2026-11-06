@@ -159,7 +159,7 @@ def exercise(original, staged, database, temp, release, harness, kit, checker, r
     checks.append('The isolated restore preserves private blocks, old history, exact retry and the raw-table access denial.')
 
 
-def main():
+def main(next_stage=None):
     os.umask(0o077)
     release=runpy.run_path(str(SCRIPT.with_name('test-circle-release-restore.py')))
     harness=runpy.run_path(str(release['RESTORE_TEST']))
@@ -186,6 +186,8 @@ def main():
             twiddle['exercise'](staged,original,kit['SOURCE_DB'],kit['OWNER'],temp,release,harness,kit,previous,identity,drafts,report)
             waddle['exercise'](original,staged,kit['SOURCE_DB'],kit['OWNER'],temp,release,harness,kit,checker,previous,report)
             exercise(original,staged,kit['SOURCE_DB'],temp,release,harness,kit,checker,report)
+            if next_stage:
+                next_stage(original,staged,kit['SOURCE_DB'],temp,release,harness,kit,checker,report)
         finally:
             try:
                 staged.stop()
