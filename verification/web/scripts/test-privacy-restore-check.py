@@ -44,6 +44,10 @@ FIRST_MESSAGE = '20000000-0000-4000-8000-000000000001'
 OTHER_MESSAGE = '20000000-0000-4000-8000-000000000003'
 FIRST_MEMBER = '11111111-1111-4111-8111-111111111111'
 SECOND_MEMBER = '22222222-2222-4222-8222-222222222222'
+CIRCLE_TABLES = ('book_cohort_members', 'book_cohorts', 'seminar_messages')
+CIRCLE_ID = '30000000-0000-4000-8000-000000000023'
+CIRCLE_TITLE = 'PRIVATE_SYNTHETIC_SALON_TITLE'
+CIRCLE_TEXT = 'PRIVATE_SYNTHETIC_SALON_POST'
 
 
 def resident(path):
@@ -125,8 +129,31 @@ def seed(source, database):
     """)
 
 
+def seed_circles(source, database):
+    source.query(database, f"""
+      CREATE TABLE public.book_cohorts (
+        id uuid PRIMARY KEY, book_id text NOT NULL, thinker_id text NOT NULL, title text, created_by uuid
+      );
+      CREATE TABLE public.book_cohort_members (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        cohort_id uuid REFERENCES public.book_cohorts(id), member_id uuid NOT NULL,
+        current_section integer DEFAULT 1, UNIQUE (cohort_id, member_id)
+      );
+      CREATE TABLE public.seminar_messages (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(), cohort_id uuid REFERENCES public.book_cohorts(id),
+        member_id uuid, sender_type text NOT NULL, sender_name text, content text NOT NULL
+      );
+      GRANT ALL ON public.book_cohorts, public.book_cohort_members, public.seminar_messages
+        TO anon, authenticated, service_role;
+      INSERT INTO public.book_cohorts VALUES ('{CIRCLE_ID}', 'soe-circles-path', 'socrates', '{CIRCLE_TITLE}', '{FIRST_MEMBER}');
+      INSERT INTO public.book_cohort_members(cohort_id, member_id) VALUES ('{CIRCLE_ID}', '{FIRST_MEMBER}'), ('{CIRCLE_ID}', '{SECOND_MEMBER}');
+      INSERT INTO public.seminar_messages(cohort_id, member_id, sender_type, sender_name, content)
+        VALUES ('{CIRCLE_ID}', '{SECOND_MEMBER}', 'member', 'Synthetic member', '{CIRCLE_TEXT}');
+    """)
+
+
 def verify(reference, target, fixture, *, core_practice_only=False, include_auth=False, include_direct=False,
-           include_wallet=False, **overrides):
+           include_wallet=False, include_circles=False, **overrides):
     options = {
         'reference': reference, 'socket-dir': target.socket, 'port': fixture['PORT'],
         'database': fixture['RESTORED_DB'], 'user': fixture['OWNER'], 'psql': fixture['BIN'] / 'psql',
@@ -141,6 +168,8 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
         argv.append('--include-direct-messages')
     if include_wallet:
         argv.append('--include-wallet-state')
+    if include_circles:
+        argv.append('--include-circles')
     for key, value in options.items():
         argv.extend((f'--{key}', str(value)))
     result = subprocess.run(argv, capture_output=True, text=True, timeout=15, env={
@@ -151,6 +180,7 @@ def verify(reference, target, fixture, *, core_practice_only=False, include_auth
     assert PRIVATE_TEXT not in result.stdout
     assert PRIVATE_TRANSCRIPT not in result.stdout
     assert DIRECT_TEXT not in result.stdout and FIRST_MESSAGE not in result.stdout
+    assert all(value not in result.stdout for value in (CIRCLE_ID, CIRCLE_TITLE, CIRCLE_TEXT))
     assert 'https://soe-fixture.daily.co' not in result.stdout
     assert all(value not in result.stdout for value in
                (AUTH_SUBJECT, SECOND_AUTH_SUBJECT, PASSWORD_MARKER, IDENTITY_MARKER, '@fixture.invalid'))
@@ -439,8 +469,9 @@ def exercise_wallet_restore(temp, target, database, fixture, checker, checks):
 
     previous_reference = temp / 'post-wallet-app-auth-dm-reference.json'
     wallet_reference = temp / 'wallet-state-reference.json'
+    circles_wallet_reference = temp / 'circles-and-wallet-state-reference.json'
     complete_archive = temp / 'complete-post-wallet.pgcustom'
-    omitted_archive = temp / 'without-wallet-security-data.pgcustom'
+    omitted_archive = temp / 'without-circles-or-wallet-data.pgcustom'
     with export_snapshot(target, fixture, database=database, user=owner) as snapshot:
         transaction = f"{checker['BEGIN']} SET TRANSACTION SNAPSHOT '{snapshot}';"
         capture = (*target.psql(database, owner), '-c', transaction, '-f', REFERENCE, '-c', 'ROLLBACK;')
@@ -449,13 +480,18 @@ def exercise_wallet_restore(temp, target, database, fixture, checker, checks):
         wallet_reference.write_text(fixture['run'](
             'psql', '-v', 'soe_restore_include_wallet_state=on', *capture
         ) + '\n')
+        circles_wallet_reference.write_text(fixture['run'](
+            'psql', '-v', 'soe_restore_include_wallet_state=on', '-v', 'soe_restore_include_circles=on', *capture
+        ) + '\n')
         assert target.query(database, service + access('5', True), owner) == 't'
         dump = (*target.connection(owner), '--format=custom', '--snapshot', snapshot, '-d', database)
         fixture['run']('pg_dump', *dump, '--file', complete_archive)
         fixture['run']('pg_dump', *dump, '--exclude-table-data=' + WALLET_CHALLENGES_TABLE,
-                       '--exclude-table-data=' + WALLET_REVOCATIONS_TABLE, '--file', omitted_archive)
+                       '--exclude-table-data=' + WALLET_REVOCATIONS_TABLE,
+                       *(f'--exclude-table-data=public.{table}' for table in CIRCLE_TABLES),
+                       '--file', omitted_archive)
 
-    restored, omitted = 'soe_complete_wallet', 'soe_without_wallet_data'
+    restored, omitted = 'soe_complete_wallet', 'soe_without_circles_or_wallet'
     target.restore(restored, complete_archive)
     target.restore(omitted, omitted_archive)
 
@@ -489,6 +525,15 @@ def exercise_wallet_restore(temp, target, database, fixture, checker, checks):
         target.query(restored, f'SET ROLE service_role; SELECT count(*) FROM {table}', owner, '42501')
     checks.append('The complete same-snapshot archive matches all 19 tables, preserves both replay refusals, admits a distinct credential and keeps the service-only RPC and raw table boundaries.')
     checks.append('A later source revocation falls outside the archived snapshot and needs separate recovery coverage.')
+
+    complete = verify(circles_wallet_reference, target, fixture, include_wallet=True, include_circles=True, database=restored)
+    assert complete['status'] == 'MATCH' and complete['tablesCompared'] == 22
+    assert complete['scope'] == checker['CIRCLES_WALLET_FORMAT'] and complete['walletRoutinesMatch']
+    missing = verify(circles_wallet_reference, target, fixture, include_wallet=True, include_circles=True, database=omitted)
+    assert missing['status'] == 'MISMATCH' and missing['tablesCompared'] == 22
+    assert missing['rowsDiffer'] == sorted(checker['WALLET_TABLES'] | set(CIRCLE_TABLES))
+    assert missing['definitionsDiffer'] == [] and missing['roleAndSchemaAccessMatch'] and missing['walletRoutinesMatch']
+    checks.append('After the wallet changes, one 22-table comparison matches the complete archive and flags all five missing Circle and wallet row sets in the incomplete archive.')
 
     assert compare_wallet(reference=previous_reference)['check'] == 'private_reference_invalid'
     assert verify(wallet_reference, target, fixture, include_auth=True, include_direct=True,
@@ -542,6 +587,66 @@ def exercise_wallet_restore(temp, target, database, fixture, checker, checks):
     checks.append('A missing wallet routine prevents any successful report and keeps database diagnostics private.')
 
 
+def exercise_circle_restore(source, target, database, omitted, previous, reference, fixture, checks):
+    source_db, owner = fixture['SOURCE_DB'], fixture['OWNER']
+    older = verify(previous, target, fixture, include_auth=True, include_direct=True, database=omitted)
+    assert older['status'] == 'MATCH' and older['tablesCompared'] == 17
+    for table in CIRCLE_TABLES:
+        assert target.query(omitted, f'SELECT count(*) FROM public.{table}', owner) == '0'
+    checks.append('The 17-table scope matches an archive missing all listings, memberships and posts from the three legacy Circle tables.')
+
+    def compare_circle(database=database, reference=reference):
+        return verify(reference, target, fixture, include_circles=True, database=database)
+
+    missing = compare_circle(database=omitted)
+    assert missing['status'] == 'MISMATCH' and missing['tablesCompared'] == 20
+    assert missing['rowsDiffer'] == list(CIRCLE_TABLES) and missing['definitionsDiffer'] == []
+    assert missing['roleAndSchemaAccessMatch']
+    checks.append('The 20-table Circle scope identifies all three missing row sets in the same incomplete archive.')
+
+    complete = compare_circle()
+    assert complete['status'] == 'MATCH' and complete['tablesCompared'] == 20
+    assert source.query(source_db, "SELECT count(*) FROM seminar_messages WHERE content='LATER_SYNTHETIC_CIRCLE_POST'") == '1'
+    assert target.query(database, f"SELECT count(*) FROM seminar_messages WHERE content='{CIRCLE_TEXT}'", owner) == '1'
+    checks.append('The complete 20-table archive matches the same snapshot and preserves the original post despite a later source edit.')
+
+    target.query(database, """
+      UPDATE public.book_cohorts SET title = 'CHANGED_SYNTHETIC_CIRCLE_TITLE';
+      UPDATE public.book_cohort_members SET current_section = 2;
+      UPDATE public.seminar_messages SET content = 'CHANGED_SYNTHETIC_CIRCLE_POST';
+    """, owner)
+    changed = compare_circle()
+    assert changed['rowsDiffer'] == list(CIRCLE_TABLES) and changed['definitionsDiffer'] == []
+    target.query(database, f"""
+      UPDATE public.book_cohorts SET title = '{CIRCLE_TITLE}';
+      UPDATE public.book_cohort_members SET current_section = 1;
+      UPDATE public.seminar_messages SET content = '{CIRCLE_TEXT}';
+    """, owner)
+    checks.append('Edits to a listing, membership and post are detected even when all row counts match.')
+
+    target.query(database, """
+      ALTER TABLE public.book_cohorts ENABLE ROW LEVEL SECURITY;
+      REVOKE SELECT ON public.book_cohort_members FROM authenticated;
+      ALTER PUBLICATION supabase_realtime ADD TABLE ONLY public.seminar_messages;
+    """, owner)
+    changed = compare_circle()
+    assert changed['definitionsDiffer'] == list(CIRCLE_TABLES) and changed['rowsDiffer'] == []
+    target.query(database, """
+      ALTER PUBLICATION supabase_realtime DROP TABLE ONLY public.seminar_messages;
+      GRANT SELECT ON public.book_cohort_members TO authenticated;
+      ALTER TABLE public.book_cohorts DISABLE ROW LEVEL SECURITY;
+    """, owner)
+    checks.append('The Circle scope detects changed row-security flags, browser grants and Realtime publication membership with the rows intact.')
+
+    assert compare_circle(reference=previous)['check'] == 'private_reference_invalid'
+    assert verify(reference, target, fixture, include_auth=True, include_direct=True)['check'] == 'private_reference_invalid'
+    target.query(database, 'ALTER TABLE public.seminar_messages RENAME TO missing_seminar_messages', owner)
+    assert compare_circle()['check'] == 'local_snapshot_unavailable'
+    target.query(database, 'ALTER TABLE public.missing_seminar_messages RENAME TO seminar_messages', owner)
+    assert compare_circle() == complete
+    checks.append('The verifier requires the exact Circle scope and fails closed when a required Circle table is absent.')
+
+
 def exercise(temp, fixture, checker, result):
     source = fixture['Cluster'](temp / 'source', fixture['OWNER'])
     target = fixture['Cluster'](temp / 'target', fixture['RESTORE_ADMIN'])
@@ -555,6 +660,9 @@ def exercise(temp, fixture, checker, result):
     full_reference = temp / 'auth-and-direct-message-reference.json'
     omitted_direct_archive = temp / 'without-direct-message-data.pgcustom'
     omitted_direct_database = 'soe_without_direct_message_data'
+    circle_reference = temp / 'with-circle-reference.json'
+    omitted_circle_archive = temp / 'without-circle-data.pgcustom'
+    omitted_circle_database = 'soe_without_circle_data'
     checks = result['checks']
     try:
         source.start()
@@ -563,6 +671,7 @@ def exercise(temp, fixture, checker, result):
         source.file(source_db, fixture['BASELINE'])
         seed(source, source_db)
         source.file(source_db, DIRECT_FIXTURE)
+        seed_circles(source, source_db)
         source.file(source_db, REFERENCE, sqlstate='P0001')
         checks.append('The reference query refuses to run outside a repeatable-read, read-only snapshot.')
         with export_snapshot(source, fixture) as snapshot:
@@ -580,11 +689,13 @@ def exercise(temp, fixture, checker, result):
             direct_capture = ('-v', 'soe_restore_include_direct_messages=on', *capture)
             direct_reference.write_text(fixture['run']('psql', *direct_capture) + '\n')
             full_reference.write_text(fixture['run']('psql', '-v', 'soe_restore_include_auth=on', *direct_capture) + '\n')
+            circle_reference.write_text(fixture['run']('psql', '-v', 'soe_restore_include_circles=on', *capture) + '\n')
             source.query(source_db, """
               UPDATE question_responses SET response_text = 'LATER_SOURCE_WRITE';
               UPDATE room_transcripts SET content = 'LATER_SOURCE_TRANSCRIPT';
               UPDATE auth.users SET encrypted_password = 'LATER_SOURCE_PASSWORD';
               UPDATE direct_messages SET content = 'LATER_SOURCE_DIRECT_MESSAGE';
+              UPDATE seminar_messages SET content = 'LATER_SYNTHETIC_CIRCLE_POST';
             """)
             fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
                            '--file', archive, '-d', source_db)
@@ -593,10 +704,16 @@ def exercise(temp, fixture, checker, result):
                            '--file', omitted_archive, '-d', source_db)
             fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
                            '--exclude-table-data=public.direct_messages', '--file', omitted_direct_archive, '-d', source_db)
+            fixture['run']('pg_dump', *source.connection(), '--format=custom', '--snapshot', snapshot,
+                           *(f'--exclude-table-data=public.{table}' for table in CIRCLE_TABLES),
+                           '--file', omitted_circle_archive, '-d', source_db)
         fixture['run']('pg_dumpall', *source.connection(), '--roles-only', '--no-role-passwords',
                        '-l', 'postgres', '-f', roles)
         target.file('postgres', roles)
         target.restore(target_db, archive)
+        target.restore(omitted_circle_database, omitted_circle_archive)
+        exercise_circle_restore(source, target, target_db, omitted_circle_database,
+                                full_reference, circle_reference, fixture, checks)
         target.restore(omitted_database, omitted_archive)
         assert target.query(omitted_database, 'SELECT count(*) FROM auth.users', owner) == '0'
         assert target.query(omitted_database, 'SELECT count(*) FROM auth.identities', owner) == '0'

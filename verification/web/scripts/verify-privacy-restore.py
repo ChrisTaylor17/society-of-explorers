@@ -17,6 +17,8 @@ AUTH_FORMAT = 'soe-privacy-restore-v3'
 DIRECT_FORMAT = 'soe-privacy-restore-v4'
 AUTH_DIRECT_FORMAT = 'soe-privacy-restore-v5'
 WALLET_FORMAT = 'soe-privacy-restore-v6'
+CIRCLES_FORMAT = 'soe-privacy-restore-v7'
+CIRCLES_WALLET_FORMAT = 'soe-privacy-restore-v8'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -28,6 +30,7 @@ TABLES = CORE_PRACTICE_TABLES | ROOM_TABLES
 AUTH_TABLES = frozenset({'auth.users', 'auth.identities'})
 DIRECT_TABLES = frozenset({'direct_messages'})
 WALLET_TABLES = frozenset({'soe_wallet_private.used_challenges', 'soe_wallet_private.revoked_sessions'})
+CIRCLE_TABLES = frozenset({'book_cohorts', 'book_cohort_members', 'seminar_messages'})
 TABLES_BY_SCOPE = {
     CORE_PRACTICE_FORMAT: CORE_PRACTICE_TABLES,
     FORMAT: TABLES,
@@ -35,9 +38,13 @@ TABLES_BY_SCOPE = {
     DIRECT_FORMAT: TABLES | DIRECT_TABLES,
     AUTH_DIRECT_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES,
     WALLET_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES | WALLET_TABLES,
+    CIRCLES_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES | CIRCLE_TABLES,
+    CIRCLES_WALLET_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES | CIRCLE_TABLES | WALLET_TABLES,
 }
-AUTH_SCOPES = {AUTH_FORMAT, AUTH_DIRECT_FORMAT, WALLET_FORMAT}
-DIRECT_SCOPES = {DIRECT_FORMAT, AUTH_DIRECT_FORMAT, WALLET_FORMAT}
+WALLET_SCOPES = {WALLET_FORMAT, CIRCLES_WALLET_FORMAT}
+CIRCLE_SCOPES = {CIRCLES_FORMAT, CIRCLES_WALLET_FORMAT}
+AUTH_SCOPES = {AUTH_FORMAT, AUTH_DIRECT_FORMAT} | WALLET_SCOPES | CIRCLE_SCOPES
+DIRECT_SCOPES = {DIRECT_FORMAT, AUTH_DIRECT_FORMAT} | WALLET_SCOPES | CIRCLE_SCOPES
 PRINCIPALS = ['anon', 'authenticated', 'service_role']
 AUTH_PRINCIPALS = [*PRINCIPALS, 'supabase_auth_admin']
 MAX_REFERENCE_BYTES = 16384
@@ -70,7 +77,7 @@ def decode_reference(raw, scope=FORMAT):
     value = json.loads(raw, object_pairs_hook=unique_object)
     principals = AUTH_PRINCIPALS if scope in AUTH_SCOPES else PRINCIPALS
     keys = {'format', 'serverMajor', 'principals', 'roles', 'tables'}
-    if scope == WALLET_FORMAT:
+    if scope in WALLET_SCOPES:
         keys.add('walletRoutines')
     if (not isinstance(value, dict)
             or set(value) != keys
@@ -79,7 +86,7 @@ def decode_reference(raw, scope=FORMAT):
             or not valid_digest(value['roles'])
             or not isinstance(value['tables'], dict) or set(value['tables']) != TABLES_BY_SCOPE[scope]):
         raise ValueError('Reference shape')
-    if scope == WALLET_FORMAT and not valid_digest(value['walletRoutines']):
+    if scope in WALLET_SCOPES and not valid_digest(value['walletRoutines']):
         raise ValueError('Wallet routine evidence')
     for entry in value['tables'].values():
         if (not isinstance(entry, dict) or set(entry) != {'rows', 'data', 'definition'}
@@ -138,12 +145,14 @@ def read_target(args):
         include_rooms = 'off' if args.scope == CORE_PRACTICE_FORMAT else 'on'
         include_auth = 'on' if args.scope in AUTH_SCOPES else 'off'
         include_direct = 'on' if args.scope in DIRECT_SCOPES else 'off'
-        include_wallet = 'on' if args.scope == WALLET_FORMAT else 'off'
+        include_wallet = 'on' if args.scope in WALLET_SCOPES else 'off'
+        include_circles = 'on' if args.scope in CIRCLE_SCOPES else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
              '-v', f'soe_restore_include_direct_messages={include_direct}',
              '-v', f'soe_restore_include_wallet_state={include_wallet}',
+             '-v', f'soe_restore_include_circles={include_circles}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -178,7 +187,7 @@ def compare(reference, restored):
         'rowsDiffer': data_drift,
         'definitionsDiffer': definition_drift,
         'roleAndSchemaAccessMatch': role_match,
-        **({'walletRoutinesMatch': wallet_match} if reference['format'] == WALLET_FORMAT else {}),
+        **({'walletRoutinesMatch': wallet_match} if reference['format'] in WALLET_SCOPES else {}),
     }
 
 
@@ -199,9 +208,16 @@ def main():
                         help='Include direct messages and their publication metadata, with Auth when requested.')
     parser.add_argument('--include-wallet-state', action='store_true',
                         help='Compare a 19-table reference including Auth, direct messages and both wallet stores and their routines.')
+    parser.add_argument('--include-circles', action='store_true',
+                        help='Compare a 20-table reference including Auth, direct messages and the three legacy Circle tables. '
+                             'With --include-wallet-state, compare 22 tables and the wallet routines.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
-    if args.include_wallet_state:
+    if args.include_circles:
+        if args.scope == CORE_PRACTICE_FORMAT:
+            parser.error('Use the full restore scope to include Circles.')
+        args.scope = CIRCLES_WALLET_FORMAT if args.include_wallet_state else CIRCLES_FORMAT
+    elif args.include_wallet_state:
         if args.scope == CORE_PRACTICE_FORMAT:
             parser.error('Use the full restore scope to include wallet state.')
         args.scope = WALLET_FORMAT

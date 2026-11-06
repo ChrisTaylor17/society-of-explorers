@@ -16,7 +16,14 @@
 \else
   \set soe_restore_include_wallet_state off
 \endif
+\if :{?soe_restore_include_circles}
+\else
+  \set soe_restore_include_circles off
+\endif
 \if :soe_restore_include_wallet_state
+  \set soe_restore_include_auth on
+  \set soe_restore_include_direct_messages on
+\elif :soe_restore_include_circles
   \set soe_restore_include_auth on
   \set soe_restore_include_direct_messages on
 \endif
@@ -65,6 +72,9 @@ relations(schema_name, name, evidence_name) AS (
 \if :soe_restore_include_direct_messages
     ('direct_messages'),
 \endif
+\if :soe_restore_include_circles
+    ('book_cohorts'), ('book_cohort_members'), ('seminar_messages'),
+\endif
     ('members'), ('reading_progress'), ('book_highlights'),
     ('great_books_progress'), ('great_books_highlights'), ('book_reflections'), ('thinker_memory'),
     ('daily_questions'), ('matched_conversations'), ('practice_reflections'), ('question_responses')
@@ -103,6 +113,11 @@ row_hashes(name, digest) AS (
 \endif
 \if :soe_restore_include_direct_messages
   UNION ALL SELECT 'direct_messages', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.direct_messages t
+\endif
+\if :soe_restore_include_circles
+  UNION ALL SELECT 'book_cohorts', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.book_cohorts t
+  UNION ALL SELECT 'book_cohort_members', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.book_cohort_members t
+  UNION ALL SELECT 'seminar_messages', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY public.seminar_messages t
 \endif
 \if :soe_restore_include_auth
   UNION ALL SELECT 'auth.users', sha256(convert_to(to_jsonb(t)::text, 'UTF8')) FROM ONLY auth.users t
@@ -193,7 +208,8 @@ table_evidence AS (
       WHERE i.indrelid = c.oid),
     'triggers', (SELECT jsonb_agg(jsonb_build_array(pg_get_triggerdef(t.oid), t.tgenabled)
       ORDER BY t.tgname COLLATE "C") FROM pg_trigger t WHERE t.tgrelid = c.oid AND NOT t.tgisinternal)
-  ) || CASE WHEN c.evidence_name = 'direct_messages' OR c.schema_name = 'soe_wallet_private' THEN jsonb_build_object(
+  ) || CASE WHEN c.evidence_name IN ('direct_messages', 'book_cohorts', 'book_cohort_members', 'seminar_messages')
+    OR c.schema_name = 'soe_wallet_private' THEN jsonb_build_object(
     'replicaIdentity', c.relreplident,
     'replicaIdentityIndex', (SELECT idx.relname FROM pg_index i JOIN pg_class idx ON idx.oid = i.indexrelid
       WHERE i.indrelid = c.oid AND i.indisreplident),
@@ -252,6 +268,8 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_circles'::boolean AND :'soe_restore_include_wallet_state'::boolean THEN 'soe-privacy-restore-v8'
+    WHEN :'soe_restore_include_circles'::boolean THEN 'soe-privacy-restore-v7'
     WHEN :'soe_restore_include_wallet_state'::boolean THEN 'soe-privacy-restore-v6'
     WHEN :'soe_restore_include_auth'::boolean AND :'soe_restore_include_direct_messages'::boolean
       THEN 'soe-privacy-restore-v5'
