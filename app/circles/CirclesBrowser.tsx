@@ -39,11 +39,16 @@ export default function CirclesBrowser() {
   const focusResults = useRef(false);
 
   useEffect(() => {
+    let appliedSearch: string | undefined;
     const restore = (event?: Event) => {
+      const currentSearch = window.location.search;
+      // A fragment link can fire popstate while the search stays the same.
+      if (event?.type === 'popstate' && currentSearch === appliedSearch) return;
+      appliedSearch = currentSearch;
       generation.current += 1;
       focusResults.current = Boolean(event);
       pending.current?.abort();
-      const params = new URLSearchParams(window.location.search), parsed = parseDiscoveryPageRequest(params);
+      const params = new URLSearchParams(currentSearch), parsed = parseDiscoveryPageRequest(params);
       setDraft(parseDiscoveryQuery(params));
       if (!parsed.ok) { setState({ status: 'invalid' }); setSearch(null); return; }
       setState({ status: 'loading' });
@@ -168,7 +173,7 @@ export default function CirclesBrowser() {
           The reading path, guides, host toolkit and norms are ready now. <Link href="/circles/path/1" style={{ color: gold }}>Begin with week 1</Link>.
         </p><button type="button" style={{ ...button, marginTop: '12px' }} onClick={() => apply(query, request.cursor, false)}>Check listings again</button></div>}
         {state.status === 'ok' && <>
-          <h3 style={{ ...small, color: parchment }} tabIndex={-1} ref={element => { if (element && focusResults.current) { element.focus({ preventScroll: true }); focusResults.current = false; } }}>Current results page</h3>
+          <h3 style={{ ...small, color: parchment }} tabIndex={-1} ref={element => { if (element && focusResults.current) { element.focus(); focusResults.current = false; } }}>Current results page</h3>
           <p style={{ ...small, marginBottom: '12px' }}>Live page checked at <time dateTime={state.result.page.asOf}>{state.result.page.asOf}</time>. Each page checks current listings. Seats and schedules may change; joining checks current access again.</p>
           <nav className={styles.row} aria-label="Search result pages" style={{ marginBottom: '12px' }}>
             <button type="button" style={button} onClick={() => apply(query)}>First page of results</button>

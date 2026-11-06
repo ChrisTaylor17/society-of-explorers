@@ -141,7 +141,7 @@ export default function LoginPage() {
   const [chosenMode, setMode] = useState<Mode | null>(null), [noticeDismissed, setNoticeDismissed] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    if (chosenMode !== null && document.visibilityState === 'visible' && document.hasFocus()) headingRef.current?.focus({ preventScroll: true });
+    if (chosenMode !== null && document.visibilityState === 'visible' && document.hasFocus()) headingRef.current?.focus();
   }, [chosenMode]);
   const retireRef = useRef<(() => void) | null>(null), query = new URLSearchParams(search ?? '');
   const mode: Mode = chosenMode ?? (query.get('mode') === 'signup' ? 'signup' : query.get('mode') === 'resend' ? 'resend' : 'signin');
@@ -151,6 +151,7 @@ export default function LoginPage() {
       : query.get('recovery') === '1' ? 'Sign in with your chosen password to continue.' : '';
   const changeMode = (next: Mode) => { retireRef.current?.(); retireRef.current = null; setNoticeDismissed(true); setMode(next); };
   return <div className={styles.page}>
+    <a href="#login-title" className="soe-skip-link">Skip to content</a>
     <PublicNav checkSession={false} />
     <main className={styles.main}><section className={styles.card} aria-labelledby="login-title">
       <p className={styles.brand}>Society of Explorers</p>

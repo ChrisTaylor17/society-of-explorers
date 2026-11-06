@@ -30,7 +30,7 @@ export default async function CirclesPage({ searchParams }: { searchParams?: Pro
   return (
     <div style={page}>
       <CircleSafetyNav />
-      <main id="main" className={styles.scope} style={{ ...main, paddingTop: '2.5rem' }}>
+      <main id="main" tabIndex={-1} className={styles.scope} style={{ ...main, paddingTop: '2.5rem' }}>
         <p style={label}>SoE Circles</p>
         <h1 style={h1}>Read together in a weekly salon</h1>
         <p style={lead}>

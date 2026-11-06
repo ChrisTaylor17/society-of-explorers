@@ -17,3 +17,11 @@ The first clean-build preparation encountered offloaded numbered duplicate outpu
 Evidence is bound by [the checkpoint receipt](built-web-keyboard-privacy-verification.json). The local `verification/web/evidence/` folder preserves initial diagnostic runs and exact harnesses, including member-fixture corrections, Back navigation event handling, modal browser-chrome traversal and the asynchronous expanded-state observation. Those harness failures are not reported as product defects. The previous listing checkpoint and its 374 evidence files remain archived under `checkpoint-cf03f71`.
 
 This checkpoint is local browser acceptance within the stated seams. Actual desktop zoom, screen readers, real provider/account transitions, independently hosted Data API/RLS, native compilation and physical iOS/Android/Quest behavior remain release gates. Production clearance remains false.
+
+## Desktop zoom follow-up
+
+The compiled sign-in page kept keyboard focus under the fixed header at 200% and 400%. Switching account mode and submitting a Circle search also focused headings outside the visible area. The shared header now reserves space when the browser scrolls a focused control into view. Account mode changes and Circle search bring the focused heading into view. [W3C focus visibility technique](https://www.w3.org/WAI/WCAG22/Techniques/css/C43)
+
+Sign-in, Circles and Clips put the content shortcut first in the tab order. Following the Circle shortcut keeps the current search and focuses the main content. Search and Back still load their requested results. [W3C bypass technique](https://www.w3.org/WAI/WCAG22/Techniques/general/G1)
+
+The desktop check uses Chromium tab zoom at 100%, 200% and 400%. A 1,280 CSS-pixel window at 100% becomes a 320 CSS-pixel viewport at 400%. It samples real keyboard focus and the Chromium accessibility tree. It uses a temporary browser profile and a disposable database for public Circle requests. Screen-reader interaction, Safari and hosted acceptance remain open. [Desktop zoom verification](web-desktop-zoom-verification.json) · [W3C reflow guidance](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)

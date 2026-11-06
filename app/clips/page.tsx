@@ -9,9 +9,10 @@ export const dynamic = 'force-dynamic';
 export default async function ClipsPage() {
   const catalog = await clipCatalog();
   const reels = catalog.media.filter(clip => clip.attribution);
-  return <div className={styles.page}><main className={styles.main}>
+  return <><a href="#clips-title" className="soe-skip-link">Skip to content</a>
+  <div className={styles.page}><main className={styles.main}>
     <nav className={styles.nav} aria-label="Reading and community"><Link href="/">Society of Explorers</Link><Link href="/great-books">Great Books</Link><Link href="/circles">Circles</Link></nav>
-    <h1>Clips &amp; passages</h1>
+    <h1 id="clips-title" tabIndex={-1}>Clips &amp; passages</h1>
     <p className={styles.lead}>A short reading or a carefully credited clip can open a thoughtful conversation. Start with the source, make room for questions, and welcome a different point of view.</p>
     {reels.length > 0 && <nav className={styles.controls} aria-label="Archivist Reels">
       {reels.map(reel => <a key={reel.id} href={`#${reel.id}`}>Watch the Reel · {reel.title}</a>)}
@@ -31,5 +32,5 @@ export default async function ClipsPage() {
         : <div className={styles.grid}>{catalog.media.map(clip => <ClipPlayer key={`${clip.id}:${clip.media.sha256}`} clip={clip} />)}</div>}
     </section>
     <footer><p>Original community media and source excerpts have their own credits. A short clip does not replace its full context.</p><Link href="/great-books">Keep reading</Link> · <Link href={ONLINE_CIRCLES_HREF}>Find an online Circle</Link></footer>
-  </main></div>;
+  </main></div></>;
 }

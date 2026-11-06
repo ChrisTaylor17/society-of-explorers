@@ -24,7 +24,7 @@ export default async function CirclePage({ params, searchParams }: {
   return (
     <div style={page}>
       <CircleSafetyNav signInHref={`/login?next=${encodeURIComponent(circleDetailHref(id, fromOnline))}`} />
-      <main id="main" style={{ ...main, paddingTop: '2.5rem' }}>
+      <main id="main" tabIndex={-1} style={{ ...main, paddingTop: '2.5rem' }}>
         <CircleDetail circleId={id} fromOnline={fromOnline} />
       </main>
       <PublicFooter />

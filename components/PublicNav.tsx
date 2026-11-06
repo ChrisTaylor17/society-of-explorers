@@ -100,8 +100,8 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
 
   return (
     <>
-      <nav aria-label="Primary navigation" style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, padding: '0 2rem', height: '56px',
+      <nav aria-label="Primary navigation" className="soe-public-nav" style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, padding: '0 2rem', height: 'var(--soe-public-nav-height, 56px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: scrolled ? 'rgba(10,10,10,0.95)' : 'transparent',
         backdropFilter: scrolled ? 'blur(8px)' : 'none',

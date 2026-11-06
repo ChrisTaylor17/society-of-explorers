@@ -1,0 +1,79 @@
+{
+  "status": "local_desktop_zoom_and_selected_release_acceptance_passed_hosted_pending",
+  "recordedAt": "2026-11-06T04:08:27.121509+00:00",
+  "baseCommit": "642cb318fa11a90dc64b1d19115375ae3c9a4f2e",
+  "sourceSha256": {
+    "app/globals.css": "e8c010e9c76775a333863d9c157fdcd0ac6e4edeced9556f0fb1aa203602d5b3",
+    "components/PublicNav.tsx": "f3257a40aa0b1d1005be79187ebe596f60715a3beb6dc0e1f7bc06bd0b5ac06b",
+    "app/login/page.tsx": "22c65f213551e3037af9660cb6881f2b027e69a1693785c88d9d323925c43a3b",
+    "app/clips/page.tsx": "07b52288492ff1e7df337cb599d8b36597d22db803085fe6d69f937a41dc69c9",
+    "app/circles/page.tsx": "425594ddca8a4dcfc3569a6f94048552542a186f041d64feb3da646ec1d0a5ed",
+    "app/circles/[circleId]/page.tsx": "dc157f8fe47f8574b6e76dd0dd4ac2dbe66736397026196fd3fbc58880ca5b79",
+    "app/circles/CirclesBrowser.tsx": "2b9dabcf98963759f69fd2189b81eb39936d12c281f0b55f1caaa5cd278798d2",
+    "app/circles/messages/CircleSafetyNav.tsx": "ded2136c98c8a7a0d24dce1232df4f184f10539d868372b24e07a49148d8f585",
+    "verification/web/scripts/browser-desktop-zoom.mjs": "6ec13a9ca781efbe35304819a03ccdecf6c3c1e52230fc5a0fe0665b998e91e0"
+  },
+  "before": {
+    "buildId": "WL99sFE9nSYkZou8ibvty",
+    "obscuredLoginControlsAtZoomPercent": {
+      "200": [
+        "Connect wallet",
+        "Forgot your password?"
+      ],
+      "400": [
+        "Connect wallet",
+        "Create account",
+        "login-password",
+        "Connect wallet"
+      ]
+    },
+    "offscreenAfterAction": [
+      "login-title",
+      "Current results page"
+    ],
+    "fragmentReplay": "The browser focused main, then a redundant directory request moved focus to the results."
+  },
+  "build": {
+    "id": "-CGbQ_9sHss3uXVA_IwXk",
+    "next": "16.2.9",
+    "sourceSha256": "b91d41b1ab7e274631253f9a7c4d11f0bd2d5987133fd9fc6bdad19d3cbe94ad",
+    "sourceFiles": 1059,
+    "seconds": 37.67,
+    "typeScriptPassed": true,
+    "scopedLintPassed": true,
+    "compilerWarnings": 0,
+    "serverStoppedWithMatchingInputs": true
+  },
+  "testResults": {
+    "selectedSerialRegressionTestsPassed": 157,
+    "compiledApiChecksPassed": 14,
+    "distinctZoomLayoutsChecked": 12,
+    "chromiumScenariosPassed": {
+      "Desktop zoom and keyboard": 7,
+      "Online salons and account selection": 7,
+      "Wallet sign-in": 3,
+      "Quest Browser": 3,
+      "Paranal Reel": 4,
+      "Telescope tilt Reel": 4
+    }
+  },
+  "scope": "Actual Chromium tab zoom at 100%, 200% and 400%, keyboard input and the Chromium accessibility tree. Browser Circle requests use actual local handlers with disposable SQL. Synthetic accounts and meeting destinations. Screen-reader interaction, Safari, hosted acceptance and physical devices remain open.",
+  "evidenceSha256": {
+    "verification/web/evidence/desktop-zoom-2026-11-05/built-shell-desktop-zoom-02-next-build.json": "c3f2bea934d7956cf4c006f2be1f56bde3041c494876769cc7781457ffdf4dcd",
+    "verification/web/evidence/desktop-zoom-2026-11-05/built-shell-desktop-zoom-02-next-build.log": "18a77a253a0d534d043866c7e58f8a23ee5d35119d7bfca485de30d6b2d46fdd",
+    "verification/web/evidence/desktop-zoom-2026-11-05/built-shell-zoom-final-02-server.json": "3aaf849ed1bd18d26a840d327e64010b03a4e68eca72a95bb58472a6a5c05622",
+    "verification/web/evidence/desktop-zoom-2026-11-05/built-shell-zoom-final-02-release-boundary-probe.json": "4ef447c967a5ffea5f742473b6b4385cfc7264450501f6181f50976fa6c6fc0f",
+    "verification/web/evidence/desktop-zoom-2026-11-05/desktop-zoom-regressions-02.tap": "0203ace5fbb46b2f7cda99e0764cda8e1f9718b65d531c8768bcfc9b9a9a3218",
+    "verification/web/evidence/desktop-zoom-2026-11-05/desktop-zoom-lint-02.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/desktop-zoom-2026-11-05/built-shell-zoom-final-02-desktop-zoom.json": "dfe2dcf053d2d7560c4d358ccefa6fcba3c7c1b74b06b7918e6bed236d328aa0",
+    "verification/web/evidence/desktop-zoom-2026-11-05/online-salon-browser-06/browser.json": "9635dadd25ea05e7599c5efd6c7d569a41d534004fca67b2f6da9b0a144a0ef6",
+    "verification/web/evidence/desktop-zoom-2026-11-05/built-shell-zoom-final-02-wallet-browser.json": "0fb4fef37eaf78cedaca35cff2ed94b80256130790e7b37c32954e84ab495378",
+    "verification/web/evidence/desktop-zoom-2026-11-05/quest-immersive-built-06/browser.json": "2d2ae07850c23d8a74235191f969eb7ffeff604e03c9c05e0914fb91f5dc3814",
+    "verification/web/evidence/desktop-zoom-2026-11-05/reel-paranal-built-06/browser.json": "1b89c496216d19f431e75d54d5ab60260b63c358af321531b27e32dcf5770503",
+    "verification/web/evidence/desktop-zoom-2026-11-05/reel-elt-built-06/browser.json": "1c3f02629baff1606f9387d9870a11434b86d2a304f759b2de7589f4a2415d11",
+    "verification/web/evidence/desktop-zoom-2026-11-05/zoom-before.json": "a0fbfbb7ed7f6b426126bdf0e9c7e4746f3cb0294d1cb3a9681b45495c54d281",
+    "verification/web/evidence/desktop-zoom-2026-11-05/action-focus-before.json": "e18ffd71e77f4618178f75e85e5240de3c5a96237e55d54872ce25cce51848fc",
+    "verification/web/evidence/desktop-zoom-2026-11-05/fragment-replay-before.json": "5b496b505c796ae74e3baec9c372d1e2fc2e4efd8b298ca7c565b540dc9ffbb7"
+  },
+  "scratchPath": "/private/tmp/soe-web-locked.HVd9JZvE"
+}
