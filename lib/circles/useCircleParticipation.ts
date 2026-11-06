@@ -122,6 +122,13 @@ export function useCircleParticipation(circleId: string) {
         }
         if (!current()) return;
         const response = await fetch(path + (management ? '/membership' : ''), { headers, credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal: controller.signal });
+        // A confirmed leave can remove the caller's last relationship and make
+        // the self-only controls unavailable. The matching receipt still stands.
+        if (current() && management && pending?.intent.action === 'leave' && receiptRevision !== null && response.status === 404) {
+          core.pending = null;
+          publish({ phase: 'ready', notice: 'Leave request confirmed. Membership controls are no longer available for this Circle.' });
+          return;
+        }
         if (!current() || response.status !== 200) throw Error('Current Circle unavailable');
         const value = await response.json(); if (!current()) return;
         const detail = management ? null : parseCircleDetail(value, circleId), controls = management ? parseCircleManagement(value, circleId) : null;

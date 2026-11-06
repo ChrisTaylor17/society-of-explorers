@@ -7,13 +7,14 @@ const OTHER = '44444444-4444-4444-8444-444444444444';
 const KEY = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001';
 const ORIGIN = 'https://offline.invalid';
 const DATE = '2026-11-03';
+const SUBJECT = '55555555-5555-4555-8555-555555555555';
 const plain = value => JSON.parse(JSON.stringify(value));
 const context = id => ({ params: Promise.resolve({ circleId: id }) });
 const capabilities = (extra = {}) => ({ canJoin: false, canLeave: true, canRsvp: true, canComplete: false, canReadConversation: true, ...extra });
 const createBody = (extra = {}) => ({ expectedMemberId: '22222222-2222-4222-8222-222222222222', requestId: KEY, title: 'Fictional Readers', description: null, format: 'hybrid', city: 'Boston', region: 'MA', venueName: 'Main Library', venueType: 'library', weekday: 2, time: '19:00', timezone: 'America/New_York', startDate: DATE, maxMembers: 8, onlineUrl: 'https://meet.example.test/fictional', ...extra });
 const snapshot = (extra = {}) => ({ kind: 'circle', circle: { id: CIRCLE, title: 'Fictional Readers', description: null, max_members: 8, start_date: `${DATE}T00:00:00+00:00`, status: 'forming', created_at: `${DATE}T00:00:00Z`,
   circle_format: 'hybrid', circle_city: 'Boston', circle_region: 'MA', circle_venue_name: 'Main Library', circle_venue_type: 'library', circle_weekday: 2, circle_time: '19:00', circle_timezone: 'America/New_York', circle_hidden: false, circle_reading_program: null },
-  memberCount: 2, hostName: 'Fictional Host', revision: 3, ended: false, nextMeeting: DATE,
+  memberCount: 2, hostName: 'Fictional Host', publicProfileId: null, revision: 3, ended: false, nextMeeting: DATE,
   meetings: [{ date: DATE, going: 1, my_status: 'going' }], online_url: 'https://meet.example.test/fictional',
   viewer: { signed_in: true, is_member: true, is_host: false }, capabilities: capabilities(), ...extra });
 const management = (extra = {}) => ({ kind: 'management', circle: { id: CIRCLE, title: 'Fictional Readers', hidden: false }, revision: 3,
@@ -25,14 +26,17 @@ const receipt = (action = 'join', extra = {}) => ({ requestId: KEY, circleId: CI
 
 function fixture() {
   const app = offlineApp(), { ADA, JULES } = app.fakes;
-  app.setUser({ id: 'fixture-jules', user_metadata: { role: 'admin', memberId: ADA } });
-  const db = app.fakes.resetDb({ members: [{ id: JULES, supabase_auth_id: 'fixture-jules', display_name: 'Jules' }, { id: ADA, display_name: 'Ada' }],
+  const { selectedCookies } = app.load('tests/security/auth-request.ts');
+  const cookies = selectedCookies('supabase', SUBJECT);
+  app.setUser({ id: SUBJECT, user_metadata: { role: 'admin', memberId: ADA } });
+  const db = app.fakes.resetDb({ members: [{ id: JULES, supabase_auth_id: SUBJECT, display_name: 'Jules' }, { id: ADA, display_name: 'Ada' }],
     book_cohorts: [{ id: CIRCLE, book_id: 'soe-circles-path', title: 'Fictional Readers', status: 'forming', max_members: 8 }], book_cohort_members: [], circle_rsvps: [], circle_private: [] });
   const calls = [];
   const a = { app, db, ADA, JULES, calls, respond: () => ({ data: null, error: null }) };
   db.rpc = async (name, args) => { calls.push({ name, args: plain(args) }); return a.respond(name, args); };
   a.load = name => app.load(`app/api/circles/${name ? name + '/' : ''}route.ts`);
-  a.request = (body, path = '/api/circles', headers = { origin: ORIGIN }) => app.fakes.makeReq(body, { url: ORIGIN + path, headers });
+  a.request = (body, path = '/api/circles', headers = { origin: ORIGIN }, selection = cookies) =>
+    app.fakes.makeReq(body, { url: ORIGIN + path, headers, cookies: selection });
   return a;
 }
 function privateHeaders(response) {
@@ -47,6 +51,9 @@ test('hosting eligibility is canonical, explicit, bounded and private', async ()
   assert.equal(response.status, 200); privateHeaders(response);
   assert.deepEqual(await response.json(), { memberId: a.JULES, canCreate: true, activeHosted: 1, maxActiveHosted: 3 });
   assert.deepEqual(a.calls, [{ name: 'soe_circle_start', args: { p_actor: a.JULES } }]);
+  const retained = a.request(undefined, '/api/circles/start', undefined, { soe_auth_provider: 'supabase' });
+  assert.equal((await a.load('start').GET(retained)).status, 401);
+  assert.equal(a.calls.length, 1);
   a.app.setUser(null); assert.equal((await a.load('start').GET(a.request(undefined))).status, 401);
 });
 
@@ -140,7 +147,7 @@ test('detail projects a consistent RPC snapshot and never exposes other member I
   assert.equal(response.status, 200); privateHeaders(response); const value = await response.json();
   assert.equal(value.circle.next_meeting, DATE); assert.equal(value.circle.reading.week, 1); assert.equal(value.online_url, 'https://meet.example.test/fictional');
   assert.doesNotMatch(JSON.stringify(value), /created_by|roster|PRIVATE_REPORT/); assert.equal(JSON.stringify(value).includes(a.ADA), false);
-  assert.deepEqual(a.calls[0], { name: 'soe_circle_detail', args: { p_actor: a.JULES, p_circle_id: CIRCLE } });
+  assert.deepEqual(a.calls[0], { name: 'soe_circle_detail_profiles', args: { p_actor: a.JULES, p_circle_id: CIRCLE } });
   assert.equal(a.db.log.some(row => row.table !== 'members'), false);
 });
 
@@ -173,7 +180,8 @@ test('completed/ended member detail has no future meetings but preserves convers
   const a = fixture(); const data = snapshot({ ended: true, nextMeeting: null, meetings: [], capabilities: capabilities({ canRsvp: false }) }); data.circle.status = 'completed';
   a.respond = () => ({ data, error: null });
   const response = await a.load('[circleId]').GET(a.request(undefined), context(CIRCLE));
-  assert.equal(response.status, 200); const value = await response.json(); assert.equal(value.circle.next_meeting, null); assert.equal(value.capabilities.canReadConversation, true); assert.equal(value.circle.spots_left, 0);
+  assert.equal(response.status, 200); const value = await response.json(); assert.equal(value.circle.next_meeting, null); assert.equal(value.online_url, null);
+  assert.equal(value.capabilities.canReadConversation, true); assert.equal(value.circle.spots_left, 0);
 });
 
 test('malformed detail and infrastructure failure cannot become empty membership, no RSVP or missing URL', async () => {
@@ -243,6 +251,7 @@ test('legacy join delegates Circles to the same receipt/revision RPC and keeps o
   assert.equal((await join.POST(a.request({ cohortId: CIRCLE, requestId: KEY, expectedRevision: 3 }))).status, 200);
   assert.equal(a.calls[0].name, 'soe_circle_join'); assert.equal(a.db.rows('book_cohort_members').length, 0);
   a.db.rows('book_cohorts')[0].book_id = 'hamlet';
-  const ordinary = await join.POST(a.request({ cohortId: CIRCLE }, '/api/book-salons/join', {}));
+  assert.equal((await join.POST(a.request({ cohortId: CIRCLE }, '/api/book-salons/join', {}))).status, 403);
+  const ordinary = await join.POST(a.request({ cohortId: CIRCLE }, '/api/book-salons/join'));
   assert.equal(ordinary.status, 200); assert.deepEqual(await ordinary.json(), { joined: true }); assert.equal(a.db.rows('book_cohort_members')[0].member_id, a.JULES);
 });

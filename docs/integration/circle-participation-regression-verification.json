@@ -1,0 +1,84 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T15:13:51.115848+00:00",
+  "parentCommit": "c649f9b162fd20b4d28f940e15ba401f2748d128",
+  "productionCleared": false,
+  "results": {
+    "testBatches": {
+      "originalWeb": {
+        "passed": 50,
+        "failed": 0
+      },
+      "dependentWeb": {
+        "passed": 60,
+        "failed": 0
+      },
+      "phoneDirectoryController": {
+        "passed": 27,
+        "failed": 0
+      }
+    },
+    "restoredDeparture": {
+      "orderedSqlFiles": 54,
+      "checks": 11,
+      "archiveHttp": {
+        "status": 200,
+        "realDatabaseQueries": 1,
+        "canReadConversation": true,
+        "hasMeetingLink": false
+      }
+    },
+    "scopedLint": "PASS",
+    "offlineWebBuild": {
+      "sourceFiles": 1083,
+      "sourceSha256": "24ed6523bd0c17c39fdf5659ee8a17ed76e5d2a9ee2a509edac0c03879b207fc",
+      "exitCode": 0
+    },
+    "compiledBrowser": {
+      "status": "PASS",
+      "verifiedLeaveWrites": 1,
+      "membershipReadbackStatus": 404,
+      "pageErrors": 0,
+      "cleanedUp": {
+        "browser": true,
+        "database": true,
+        "server": true
+      }
+    }
+  },
+  "scope": "Current Circle browser sign-in with synthetic provider transport, actual route handlers and isolated SQL. React covers exact review and retry, a confirmed leave with no remaining controls, and host completion. Chromium exercised the clean Next build with actual Circle handlers and disposable SQL under a synthetic member session. The shared phone controller ran with synthetic transport.",
+  "testRuntime": {
+    "node": "22.22.2",
+    "jsdom": "30.1.3",
+    "temporaryToolingOverlay": true,
+    "nodeArchiveSha256": "db4b275b83736df67533529a18cc55de2549a8329ace6c7bcc68f8d22d3c9000"
+  },
+  "remaining": [
+    "Provider erasure and retention review",
+    "Owner-approved hosted restore and privacy verification",
+    "Signed iOS and Android builds and physical phone and Quest acceptance"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "e6209ab86d0fbdb6a3fd8d26fa8b6166f1c771594df88b569b1a0d5a283a501c",
+    "lib/circles/useCircleParticipation.ts": "89c8c92a8795614c39688f75a3d83e96ecee6b43e39acdfd879df0f417bb68a9",
+    "verification/web/tests/participation-http.test.mjs": "df7fb809ba9118218c3fb849e46a3d0ca13ff3e3126386d5ecc9116e8362b80c",
+    "verification/web/tests/participation-ui.test.mjs": "8f476fdde8d59459cbac3e3345a8cc086a3c12e162a5649049aa1a8f0c86a6f4",
+    "verification/web/tests/support/participation-app.mjs": "89a12798df45ccd59a33e91880feb3d405032a1bbdd44dd05891274116788e27",
+    "verification/web/tests/support/passage-post-app.mjs": "85b65ac67e6ae808724f1a19e808c196af85c679539305cf14f45c91b560dc7c"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-participation-fixtures",
+  "evidenceSha256": {
+    "built-shell-participation-leave-clean-next-build.json": "333bed0420d5c0fa96f255e250388ff3bf2204520c32ffd41baed35902666283",
+    "built-shell-participation-leave-clean-build-source-sha256.json": "85ff98878882f5ebd0afc8bcd17a3204eff6d9fe97ac5f61c51ad6d6f3fcff14",
+    "built-shell-participation-leave-clean-next-build.log": "1caddebaf3b1a7b648952a5d3aa1be30e6c5f4e4a2db7b8440617cecc76f4593",
+    "participation-circle-departure-regression.json": "023d14bda2b18cc4c6979f5755be71d1f8aaf362c48c049c72a91853f49d31b8",
+    "participation-leave-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "participation-compiled-leave.json": "25e19f67b110b56d96bdfedf14f8a599f261deab3a647c74c70ec88a66579697",
+    "participation-compiled-leave.png": "35b5a7b6291cad2b2f4651374df2ad7d9b3e8cf54ab444d19fc9ddd9a1ee03b8",
+    "participation-compiled-leave-smoke.mjs": "146d78bc36fb6fc6568b8db1f54feb8acf7899f3ab507cd297a382868c634e84",
+    "participation-ui-runtime-package-lock.json": "44ed85048ae7ce97b21906c1b4762d576fead83fc30b41f4ea0d182d4a20a115",
+    "participation-release-fixed-original-batch.log": "097c64b2577ae910547a829c040b027c10f5eee87673df3f812bd0f27dcabbb8",
+    "participation-release-fixed-dependent-batch.log": "5ab655160e6463726d2852cdc373e09cc58c3093847ca7dca45437dbb4ab66ab",
+    "participation-native-directory.log": "5e776391337919bfd2d799e7c595541ecc3bd3e7eefb23f3580848261f17eed2"
+  }
+}

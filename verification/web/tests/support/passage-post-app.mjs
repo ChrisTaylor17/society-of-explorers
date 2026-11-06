@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { participationApp, IDS } from './participation-app.mjs';
 export { IDS };
 
@@ -6,7 +5,6 @@ export { IDS };
 // identity and the PostgREST boundary are fixtures; no SDK/provider is imported.
 export async function passagePostApp() {
   const base = await participationApp();
-  await base.db.exec(await readFile(new URL('../../../../docs/sql/circle-passage-posts.sql', import.meta.url), 'utf8'));
   base.setActor(IDS.reader);
   let actor = IDS.reader, displayName = 'Synthetic Explorer';
   base.app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async () => actor

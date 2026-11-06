@@ -8,10 +8,26 @@ export { IDS };
 // runs as the disposable service role, not as the database owner.
 export async function participationApp() {
   const db = await createDb(), app = offlineApp();
-  // New discovery is a required service RPC. Existing actual-HTTP fixtures
-  // apply the same two additive candidates; prior SQL bytes stay unchanged.
-  for (const name of ['circle-discovery-unicode.sql', 'circle-discovery-search.sql', 'circle-attendance-preflight.sql', 'circle-attendance-apply.sql', 'circle-membership-intent-preflight.sql', 'circle-membership-intent-apply.sql']) {
-    await db.exec(await readFile(new URL('../../../../docs/sql/' + name, import.meta.url), 'utf8'));
+  try {
+    // Add the contained legacy profile fields required by the real publication
+    // migrations. The Circle detail route reads their actual RPC projection.
+    await db.exec(`ALTER TABLE public.members ADD COLUMN bio text, ADD COLUMN discipline text,
+      ADD COLUMN skills text[], ADD COLUMN project_description text, ADD COLUMN seeking text, ADD COLUMN philosophy text;
+      ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
+      GRANT SELECT,INSERT,UPDATE,DELETE ON public.members TO service_role;`);
+    for (const name of [
+      'member-profile-preflight.sql', 'member-profile-apply.sql',
+      'circle-passage-posts.sql', 'circle-discussion-threads.sql',
+      'circle-discovery-unicode.sql', 'circle-discovery-search.sql',
+      'circle-attendance-preflight.sql', 'circle-attendance-apply.sql',
+      'circle-membership-intent-preflight.sql', 'circle-membership-intent-apply.sql',
+      'circle-public-profiles-preflight.sql', 'circle-public-profiles-apply.sql',
+    ]) {
+      await db.exec(await readFile(new URL('../../../../docs/sql/' + name, import.meta.url), 'utf8'));
+    }
+  } catch (error) {
+    await db.close();
+    throw error;
   }
   let actor = IDS.host;
   const calls = [], argumentsByName = new Map();
