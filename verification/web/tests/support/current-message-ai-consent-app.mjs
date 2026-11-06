@@ -14,8 +14,8 @@ export async function currentConsentSourceHashes() {
  for (const name of ['verification/web/tests/support/current-message-ai-consent-app.mjs', 'verification/web/tests/support/message-ai-app.mjs', 'app/api/circles/contributions/route.ts', 'app/api/circles/[circleId]/messages/[messageId]/ai-consent/route.ts', 'lib/circles/message-ai-consent.ts', 'lib/circles/message-moderation-server.ts']) hashes[name] = createHash('sha256').update(await allowanceSource(name)).digest('hex');
  return hashes;
 }
-export async function currentMessageAiApp({ allowance = null } = {}) {
- const f = await createPublicProfileApp();
+export async function currentMessageAiApp({ allowance = null, profileApp } = {}) {
+ const f = profileApp ?? await createPublicProfileApp();
  try {
   // The current coverage/publication chain already installed original consent
   // and allowance. Never reinstall or alter those historical migrations.

@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { NextRequest, NextResponse } from 'next/server.js';
 import { messageAiApp } from './support/message-ai-app.mjs';
 import { rpc } from './support/message-ai-allowance-db.mjs';
 import { currentMessageAiApp, CONTENT } from './support/current-message-ai-consent-app.mjs';
+import { createPublicProfileApp } from './support/public-profile-app.mjs';
 
 async function reviewFixture(t,allowance={globalLimit:50,reviewerLimit:5}){
  const f=await currentMessageAiApp({allowance});t.after(()=>f.close());
@@ -15,6 +17,17 @@ async function consent(f,allowed){
 async function advise(f){
  f.setActor(f.reviewerId);const detail=await(await f.dispatch(f.reviewPath)).json();
  return f.dispatch(f.reviewPath+'/advice','POST',{expectedRevision:detail.revision,contentHash:detail.contentHash});
+}
+function captureAdviceFetch(outbound){
+ return async(url,init)=>{
+  assert.equal(url,'https://api.anthropic.com/v1/messages');
+  outbound.push(JSON.parse(init.body));
+  const response=Response.json({id:'msg_NONISSUED_FIXTURE',type:'message',role:'assistant',model:'claude-sonnet-4-6',
+   content:[{type:'text',text:JSON.stringify({observations:[],counterevidence:[],questions:[]})}],
+   stop_reason:'end_turn',stop_sequence:null,usage:{input_tokens:1,output_tokens:1}});
+  Object.defineProperty(response,'url',{value:url});
+  return response;
+ };
 }
 test('actual API+SQL: consent→single-message advice→revoke, without model-made decisions or report leakage',async t=>{
  const f=await reviewFixture(t);
@@ -83,15 +96,7 @@ test('actual API, SQL and SDK: revocation after the debit commits prevents trans
  const author=await reviewFixture(t);
  assert.equal((await consent(author,true)).status,200);
  const outbound=[];
- const reviewer=await messageAiApp({fixture:author,sdkFetch:async(url,init)=>{
-  assert.equal(url,'https://api.anthropic.com/v1/messages');
-  outbound.push(JSON.parse(init.body));
-  const response=Response.json({id:'msg_NONISSUED_FIXTURE',type:'message',role:'assistant',model:'claude-sonnet-4-6',
-   content:[{type:'text',text:JSON.stringify({observations:[],counterevidence:[],questions:[]})}],
-   stop_reason:'end_turn',stop_sequence:null,usage:{input_tokens:1,output_tokens:1}});
-  Object.defineProperty(response,'url',{value:url});
-  return response;
- }});
+ const reviewer=await messageAiApp({fixture:author,sdkFetch:captureAdviceFetch(outbound)});
  let revoked=false;
  reviewer.setRpcReply(async(name,args,result)=>{
   if (name==='soe_circle_message_ai_reserve' && !result.error && !revoked) {
@@ -113,6 +118,59 @@ test('actual API, SQL and SDK: revocation after the debit commits prevents trans
  const accepted=await advise(reviewer);
  assert.equal(accepted.status,200);
  assert.equal((await accepted.json()).consentRevision,3);
+ assert.deepEqual(outbound.map(body=>body.messages),[[{role:'user',content:JSON.stringify({content:CONTENT})}]]);
+ assert.doesNotMatch(JSON.stringify(outbound),/PRIVATE_REPORT_NOTE|PRIVATE_AUTHOR_LABEL/);
+});
+
+test('actual sign-out and wallet revocation after the debit stop advice before any provider send', async t=>{
+ const profile=await createPublicProfileApp({memberBlocks:true});
+ profile.app.setMock('next/server',()=>({NextResponse}));
+ const author=await currentMessageAiApp({profileApp:profile,allowance:{globalLimit:3,reviewerLimit:3}});
+ t.after(()=>author.close());
+ assert.equal((await consent(author,true)).status,200);
+ author.setActor(author.reviewerId);
+ const review=await author.dispatch(author.reviewPath);
+ assert.equal(review.status,200);
+ const detail=await review.json(), outbound=[];
+ const authenticate=profile.app.load('lib/getAuthenticatedMember.ts').getAuthenticatedMember;
+ const reviewer=await messageAiApp({fixture:author,authenticate,sdkFetch:captureAdviceFetch(outbound)});
+ const advice=reviewer.app.load('app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts');
+ const logout=profile.app.load('app/api/auth/logout/route.ts');
+ async function headersForSession(){
+  const intent=crypto.randomUUID();
+  const cookie=await profile.walletCookie(author.reviewerId)
+   + '; soe_auth_intent=' + intent + '; soe_auth_selection_v1=v1.' + intent + '.wallet.' + author.reviewerId;
+  return {cookie,origin:profile.ORIGIN,'content-type':'application/json',
+   'x-soe-auth-intent':intent,'x-soe-expected-member':author.reviewerId};
+ }
+ function adviseWith(headers){
+  const request=new NextRequest(profile.ORIGIN+reviewer.reviewPath+'/advice',{method:'POST',headers,
+   body:JSON.stringify({expectedRevision:detail.revision,contentHash:detail.contentHash})});
+  return advice.POST(request,{params:Promise.resolve({circleId:author.circleId,messageId:author.messageId})});
+ }
+ const first=await headersForSession();
+ const sessionRead=new NextRequest(profile.ORIGIN+'/api/auth/member',{headers:first});
+ assert.equal((await authenticate(sessionRead))?.memberId,author.reviewerId);
+ let revoked=false;
+ reviewer.setRpcReply(async(name,args,result)=>{
+  if(name==='soe_circle_message_ai_reserve'&&!result.error&&!revoked){
+   const request=new NextRequest(profile.ORIGIN+'/api/auth/logout',{method:'POST',headers:first,
+    body:JSON.stringify({scope:'browser',requestId:crypto.randomUUID()})});
+   const receipt=await logout.POST(request);
+   assert.equal(receipt.status,200);
+   assert.equal((await receipt.json()).remoteRevocation,'wallet_session_revoked');
+   revoked=true;
+  }
+  return result;
+ });
+ const refused=await adviseWith(first);
+ assert.equal(revoked,true);
+ assert.equal(refused.status,403);
+ assert.equal(await authenticate(sessionRead),null);
+ assert.equal(outbound.length,0);
+ assert.equal((await author.db.query('SELECT count(*)::int n FROM circle_message_ai_attempts')).rows[0].n,1);
+ const accepted=await adviseWith(await headersForSession());
+ assert.equal(accepted.status,200);
  assert.deepEqual(outbound.map(body=>body.messages),[[{role:'user',content:JSON.stringify({content:CONTENT})}]]);
  assert.doesNotMatch(JSON.stringify(outbound),/PRIVATE_REPORT_NOTE|PRIVATE_AUTHOR_LABEL/);
 });

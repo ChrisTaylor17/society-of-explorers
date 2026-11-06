@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+An AI moderation request now checks the reviewer's sign-in again immediately before its final consent and case check. The local regression signed the reviewer out after the request was reserved and verified that no text reached the intercepted Anthropic transport. A fresh eligible session reached the transport with only the opted-in text. The compiled release build still leaves the provider disabled by default. [Verification](docs/integration/message-ai-reviewer-signout-verification.json)
+
 The homepage has a keyboard shortcut to its main content, and the survey summary wraps on narrow screens. Clip loading, cancelling and unloading keep focus on the same control. Circle search results and account options have accessible names. The compiled build passed the sampled phone-width automated scan, keyboard flows at up to 400% browser zoom, Reel playback and cancellation, and the test-account journey into Circle discussion. Manual screen-reader and physical-device acceptance remain open. [Verification](docs/integration/core-accessibility-verification.json)
 
 The fourth Archivist Reel uses credited footage of a September NOAA dive and links to the separate November trial. Its question carries from the Reel to online Circle discovery and into an editable discussion draft. The compiled web build and both phone simulations played the clip at normal speed. The Circle question also reached Quest Browser in the compiled web test. The rendered video, captions and reuse note were verified in the private media library. [Reel and verification](docs/integration/new-species-reel.md)

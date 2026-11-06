@@ -105,6 +105,12 @@ export async function POST(req: NextRequest, { params }: Context) {
     let output: unknown;
     try {
       output = await requestMessageAdvice(messageText, controller.signal, Math.min(deadlineAt, reservedUntil), async () => {
+        const sendActor = await getAuthenticatedMember(req);
+        if (!current()) return false;
+        if (!sendActor || sendActor.memberId !== actorId) {
+          sendRefusal = denied();
+          return false;
+        }
         const latest = await snapshot();
         if (latest instanceof Response) sendRefusal = latest;
         else if (!sameCase(latest)) sendRefusal = changed();

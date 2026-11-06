@@ -46,7 +46,7 @@ test('actual route transmits only current consented text, rechecks actor and sna
  const f=fixture();f.setRpc(async()=>({data:{...snapshot(),member_name:'PRIVATE_NAME',reports:['PRIVATE_REPORT'],email:'PRIVATE_EMAIL'},error:null}));
  const response=await f.route.POST(f.request(),f.context);assert.equal(response.status,200);
  const result=await response.json();assert.deepEqual(result.advice,advice());assert.equal(result.consentRevision,1);
- assert.doesNotMatch(JSON.stringify(result),/PRIVATE_|"content":|attemptId|validForMs/);assert.equal(f.authCalls(),2);assert.equal(f.calls.length,4);
+ assert.doesNotMatch(JSON.stringify(result),/PRIVATE_|"content":|attemptId|validForMs/);assert.equal(f.authCalls(),3);assert.equal(f.calls.length,4);
  for(const call of [f.calls[0],f.calls[2],f.calls[3]]){assert.equal(call.name,'soe_circle_message_ai_snapshot');assert.deepEqual(structuredClone(call.args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId});}
  assert.equal(f.calls[1].name,'soe_circle_message_ai_reserve');
  assert.deepEqual(structuredClone(f.calls[1].args),{p_actor:actorId,p_circle_id:circleId,p_message_id:messageId,p_attempt_id:f.calls[1].args.p_attempt_id,p_expected_revision:2,p_content_hash:hash,p_expected_consent_revision:1,p_policy:'anthropic-message-review-v1'});
@@ -84,6 +84,30 @@ test('the check at transmission refuses stale or unavailable evidence before sen
   assert.equal(f.providerCalls.length,0);
   assert.equal(f.calls.length,3);
  }
+});
+test('a revoked or different account at the last sign-in check cannot transmit', async()=>{
+ for(const next of [null,other]){
+  const f=fixture();
+  f.setReserve(async args=>{f.setActor(next);return {data:f.permit(args),error:null};});
+  const response=await f.route.POST(f.request(),f.context);
+  assert.equal(response.status,403);
+  assert.equal(f.authCalls(),2);
+  assert.equal(f.calls.length,2);
+  assert.equal(f.providerCalls.length,0);
+  assert.doesNotMatch(await response.text(),/observations|condemn/);
+ }
+});
+test('a late sign-in recheck cannot transmit after the request is retired', async()=>{
+ const f=fixture(),pending=deferred();
+ f.setAuth(async()=>f.authCalls()===1?{memberId:actorId}:pending.promise);
+ const work=f.route.POST(f.request(),f.context);
+ await waitFor(()=>f.authCalls()===2);
+ f.timers[0].fn();
+ assert.equal((await work).status,503);
+ pending.resolve({memberId:actorId});
+ await turns();
+ assert.equal(f.calls.length,2);
+ assert.equal(f.providerCalls.length,0);
 });
 test('changed server identity after generation cannot obtain advice or perform the second evidence read',async()=>{
  const f=fixture();f.setProvider(async()=>{f.setActor(other);return advice();});assert.equal((await f.route.POST(f.request(),f.context)).status,403);
@@ -123,7 +147,7 @@ test('elapsed deadline rejects late continuations even when the timer callback h
  f.app.context.Date=class extends Date{static now(){return now;}};
  f.setProvider(async()=>{now+=12000;return advice();});
  assert.equal((await f.route.POST(f.request(),f.context)).status,503);
- assert.equal(f.providerCalls.length,1);assert.equal(f.calls.length,3);assert.equal(f.authCalls(),1);
+ assert.equal(f.providerCalls.length,1);assert.equal(f.calls.length,3);assert.equal(f.authCalls(),2);
 });
 
 test('shared allowance refusal, absent schema and ambiguous debit never send or retry',async()=>{

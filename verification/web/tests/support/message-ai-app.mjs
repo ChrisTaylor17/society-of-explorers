@@ -7,7 +7,7 @@ export { IDS, CONTENT, MESSAGE_AI_SOURCE_HASHES, MESSAGE_AI_FIXTURE_LIMITS };
 
 // Actual route modules and thirteen migration files. Only server authentication,
 // PostgREST transport and the remote model are synthetic adapters.
-export async function messageAiApp({fixture,allowance={globalLimit:50,reviewerLimit:5},sdkFetch}={}) {
+export async function messageAiApp({fixture,allowance={globalLimit:50,reviewerLimit:5},sdkFetch,authenticate}={}) {
  const ownsDatabase=!fixture,f=fixture??await createMessageAiAllowanceDb(),app=offlineApp(),calls=[],providerCalls=[];
  if(ownsDatabase&&allowance)await activateAllowance(f.db,allowance);
  let actor=f.authorId,available=true,provider=async()=>({observations:[],counterevidence:[{excerpt:'without a personal attack',note:'The message distinguishes an idea from a person.'}],questions:['What surrounding context should the human reviewer check?']});
@@ -30,7 +30,7 @@ export async function messageAiApp({fixture,allowance={globalLimit:50,reviewerLi
    return Response.json(rows);
   }},
  });
- app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>actor?{memberId:actor}:null}));
+ app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:authenticate??(async()=>actor?{memberId:actor}:null)}));
  app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({from:rest.from.bind(rest),rpc:async(name,args)=>{
   calls.push({name,args:structuredClone(args)});
   try {
