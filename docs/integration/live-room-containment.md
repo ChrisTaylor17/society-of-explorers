@@ -8,7 +8,9 @@ The [SQL draft](../sql/live-room-containment-apply.sql) removes browser and PUBL
 
 ## Local verification
 
-The PostgreSQL 17 rehearsal restored the three synthetic tables, kept their rows and service access, and blocked raw browser reads and writes. A join on a separate connection waited behind a concurrent close and then recorded no attendance. Seven API checks and five Chromium stories used the actual route code, Supabase SDK and disposable PostgreSQL. The browser ran the current React page with navigation and account adapters. Scoped TypeScript and lint passed. The current full build stopped on offloaded dependency inputs. [Verification receipt](live-room-containment-verification.json)
+The PostgreSQL 17 rehearsal restored the three synthetic tables, kept their rows and service access, and blocked raw browser reads and writes. A join on a separate connection waited behind a concurrent close and then recorded no attendance. Seven API checks and five initial Chromium stories used the actual route code, Supabase SDK and disposable PostgreSQL. The first full build stopped on offloaded dependencies. [Verification receipt](live-room-containment-verification.json)
+
+The isolated, lockfile-verified build passed. The five stories then passed against the compiled Live Council page. Direct compiled API probes verified that the HTTP loopback address reaches the sign-in check and that an origin for the distinct `localhost` address, a forwarded host and a foreign site are refused. The meeting destination and accounts were synthetic. [Built verification receipt](web-locked-build-verification.json)
 
 Run the three checks from `verification/web` using the existing offline runtimes. The built browser runner accepts the completed local server's `built-shell-live-room-<number>-` prefix in place of `--component 01`.
 
@@ -17,6 +19,8 @@ python3 -B scripts/test-live-room-containment.py
 node --require ./scripts/deny-build-network.cjs --test tests/live-room-boundary.test.mjs
 node --require ./scripts/deny-build-network.cjs scripts/browser-live-room.mjs --component 01
 ```
+
+Run `python3 -B scripts/probe-built-release-boundaries.py <prefix>` against the running guarded build for the direct API probes.
 
 ## Before a hosted cutover
 

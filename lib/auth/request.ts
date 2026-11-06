@@ -1,10 +1,21 @@
 import 'server-only';
 
+export function requestOrigin(url: Pick<URL, 'origin' | 'hostname' | 'port' | 'protocol'>, headers: Headers): string {
+  // NextRequest rewrites loopback literals to localhost. Use the actual HTTP
+  // authority for this case so the browser's distinct loopback origins stay distinct.
+  if (url.protocol === 'http:' && url.hostname === 'localhost') {
+    const host = headers.get('host');
+    const port = url.port ? `:${url.port}` : '';
+    if (host === `127.0.0.1${port}` || host === `[::1]${port}`) return `http://${host}`;
+  }
+  return url.origin;
+}
+
 export function authWriteOriginAllowed(req: Request): boolean {
   if (req.headers.get('sec-fetch-site') === 'cross-site') return false;
   const origin = req.headers.get('origin');
   if (!origin) return true;
-  try { return new URL(origin).origin === new URL(req.url).origin; } catch { return false; }
+  try { return new URL(origin).origin === requestOrigin(new URL(req.url), req.headers); } catch { return false; }
 }
 
 export async function readAuthJson(req: Request): Promise<Record<string, unknown> | null> {

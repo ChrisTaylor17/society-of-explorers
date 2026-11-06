@@ -24,6 +24,21 @@ test('unauthenticated setup never consumes a body or accesses admin data',async(
 test('cross-site setup is refused before authentication',async()=>{
  const app=setup();assert.equal((await app.load('app/api/auth/ensure-member/route.ts').POST(request({}, {origin:'https://other.invalid'}))).status,403);assert.equal(app.authReads,0);assert.equal(app.adminCalls,0);
 });
+test('normalized HTTP loopback uses the exact incoming authority', () => {
+ const { authWriteOriginAllowed } = offlineApp().load('lib/auth/request.ts');
+ const check = (url, host, origin, extra = {}) => authWriteOriginAllowed(new Request(url, {
+  headers: { host, origin, 'sec-fetch-site': 'same-origin', ...extra },
+ }));
+ const internal = 'http://localhost:3300';
+ assert.equal(check(internal, '127.0.0.1:3300', 'http://127.0.0.1:3300'), true);
+ assert.equal(check(internal, '[::1]:3300', 'http://[::1]:3300'), true);
+ assert.equal(check(internal, '127.0.0.1:3300', internal), false);
+ assert.equal(check(internal, '127.0.0.1:3400', 'http://127.0.0.1:3400'), false);
+ assert.equal(check(internal, '127.0.0.1:3300', internal, { 'x-forwarded-host': 'localhost:3300' }), false);
+ assert.equal(check(internal, '127.0.0.1:3300', 'http://127.0.0.1:3300', { 'sec-fetch-site': 'cross-site' }), false);
+ assert.equal(check('https://member.invalid', '127.0.0.1:3300', 'https://member.invalid'), true);
+ assert.equal(check('https://member.invalid', '127.0.0.1:3300', 'http://127.0.0.1:3300'), false);
+});
 test('forged auth subject is refused before member queries',async()=>{
  const app=setup();assert.equal((await app.load('app/api/auth/ensure-member/route.ts').POST(request({supabaseAuthId:OTHER}))).status,403);assert.equal(app.db.log.length,0);
 });

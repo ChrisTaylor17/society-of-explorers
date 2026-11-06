@@ -1,10 +1,12 @@
 import test,{after,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {createCircleHostingApp,TOKENS,ORIGIN} from './support/circle-hosting-app.mjs';
+import {createPublicProfileApp,TOKENS,ORIGIN,SUBJECTS} from './support/public-profile-app.mjs';
 import {createCircleAttendanceApp} from './support/circle-attendance-app.mjs';
 import {contributionSource,rpc} from './support/member-contributions-app.mjs';
 let f,contract;
 const headers=(who='author')=>({authorization:'Bearer '+TOKENS[who]});
+const intent='c1000000-0000-4000-8000-000000000001';
+const selectedCookies=(provider,subject)=>`soe_auth_provider=${provider}; soe_auth_intent=${intent}; soe_auth_selection_v1=v1.${intent}.${provider}.${subject}`;
 const json=async(response,status=200)=>{assert.equal(response.status,status,await response.clone().text());return response.json();};
 const post=(body,h=headers())=>f.dispatch('/api/circles',{method:'POST',headers:h,body});
 const complete=(id,body,h=headers())=>f.dispatch(`/api/circles/${id}/complete`,{method:'POST',headers:h,body});
@@ -15,7 +17,7 @@ const membership=revision=>({requestId:crypto.randomUUID(),expectedRevision:revi
 async function script(db,name){await db.exec('SET ROLE postgres');await db.exec((await contributionSource('docs/sql/circle-membership-intent-'+name+'.sql')).toString());}
 const deferred=()=>{let resolve;return{promise:new Promise(r=>resolve=r),resolve};};
 function hold(key){const arrived=deferred(),release=deferred();f.beforeHttp(async call=>{if(call.method==='POST'&&JSON.parse(call.body).requestId===key){arrived.resolve();await release.promise;}});return{arrived:arrived.promise,release:release.resolve};}
-beforeEach(async()=>{await f?.close();f=await createCircleHostingApp();contract=f.app.load('lib/circles/hosting.ts');});
+beforeEach(async()=>{await f?.close();f=await createPublicProfileApp();contract=f.app.load('lib/circles/hosting.ts');});
 after(async()=>{await f?.close();});
 
 test('create parser uses exact normalized field types and canonical wire order',async()=>{
@@ -37,7 +39,8 @@ test('all eight edition metadata replies execute the real materialized source re
 });
 test('hosting access is owner-aware and stale optional header refuses a switched cookie before RPC',async()=>{
  const response=await f.dispatch('/api/circles/start',{headers:headers()}),value=await json(response);assert.equal(value.memberId,f.authorId);assert(contract.parseCircleHostingAccess(value,f.authorId));assert.equal(contract.parseCircleHostingAccess(value,f.actors.other),null);
- assert.equal(contract.parseCircleHostingAccess({...value,email:'private'},f.authorId),null);f.sql.length=0;f.setCookieActor('other');await json(await f.dispatch('/api/circles/start',{headers:{'x-soe-expected-member':f.authorId}}),409);assert.equal(f.sql.filter(x=>x.kind==='rpc').length,0);
+ assert.equal(contract.parseCircleHostingAccess({...value,email:'private'},f.authorId),null);f.sql.length=0;f.setCookieActor('other');
+ await json(await f.dispatch('/api/circles/start',{headers:{cookie:selectedCookies('supabase',SUBJECTS.other),'x-soe-expected-member':f.authorId}}),409);assert.equal(f.sql.filter(x=>x.kind==='rpc').length,0);
 });
 test('create rejects old unowned injected malformed and conflicting bodies before side effects',async()=>{
  const body=await f.createBody();const {expectedMemberId:unused,...old}=body;void unused;
@@ -63,11 +66,18 @@ test('same create key with a changed listing conflicts without creating another 
  const body=await f.createBody();await json(await post(body));await json(await post({...body,title:'Different synthetic listing'}),409);assert.equal((await f.hosted()).length,1);
 });
 test('cookie and actual signed-wallet owner changes cannot create under the wrong reviewed account',async()=>{
- const body=await f.createBody();f.setCookieActor('other');await json(await post(body,{origin:ORIGIN}),409);f.setCookieActor(null);
- await json(await post(body,{origin:ORIGIN,cookie:await f.walletCookie('other')}),409);assert.equal((await f.hosted('author')).length,0);
+ const body=await f.createBody();f.setCookieActor('other');
+ await json(await post(body,{origin:ORIGIN,cookie:selectedCookies('supabase',SUBJECTS.other)}),409);f.setCookieActor(null);
+ const walletSession=(await f.walletCookie('other')).split('; ').find(value=>value.startsWith('soe_wallet_id='));
+ assert(walletSession);
+ const wallet=selectedCookies('wallet',f.actors.other)+'; '+walletSession;
+ await json(await post(body,{origin:ORIGIN,cookie:wallet}),409);assert.equal((await f.hosted('author')).length,0);
 });
 test('invalid explicit bearer cannot borrow valid hosting cookie authority and cross-origin writes are refused',async()=>{
- f.setCookieActor('author');const body=await f.createBody();await json(await post(body,{authorization:'Bearer invalid',origin:ORIGIN}),401);await json(await post(body,{...headers(),origin:'https://foreign.invalid'}),403);assert.equal(f.sql.filter(x=>x.name==='soe_circle_create').length,0);
+ f.setCookieActor('author');const body=await f.createBody(),cookie=selectedCookies('supabase',SUBJECTS.author);
+ assert.equal((await json(await f.dispatch('/api/auth/member',{headers:{cookie}}))).member.id,f.authorId);
+ await json(await post(body,{authorization:'Bearer invalid',origin:ORIGIN,cookie}),401);
+ await json(await post(body,{...headers(),origin:'https://foreign.invalid'}),403);assert.equal(f.sql.filter(x=>x.name==='soe_circle_create').length,0);
 });
 test('host quotas still apply after owner-bound validation',async()=>{
  for(let i=0;i<3;i++)await json(await post(await f.createBody({title:'Synthetic listing '+i})));await json(await post(await f.createBody()),409);const current=await json(await f.dispatch('/api/circles/start',{headers:headers()}));assert.equal(current.canCreate,false);assert.equal(current.activeHosted,3);

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { requestOrigin } from '@/lib/auth/request';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { isUuid } from '@/lib/ids/uuid';
@@ -48,7 +49,7 @@ export async function circleReviewRpc<T>(req: NextRequest, name: RpcName, args: 
 /** Block browser-origin forgery before reading or applying a mutation. */
 export function circleWriteOrigin(req: NextRequest, anonymous = false): Response | null {
   try {
-    const ownOrigin = (req.nextUrl ?? new URL(req.url)).origin;
+    const ownOrigin = requestOrigin(req.nextUrl ?? new URL(req.url), req.headers);
     const origin = req.headers.get('origin');
     const site = req.headers.get('sec-fetch-site')?.toLowerCase();
     if ((origin !== null && origin !== ownOrigin) || (site && site !== 'same-origin' && site !== 'none')) {

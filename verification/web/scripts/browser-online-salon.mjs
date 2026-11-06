@@ -157,10 +157,13 @@ try {
   const saved = () => page.getByText('Request confirmed. Current state is shown below; an earlier receipt does not override later changes.', { exact: true }).waitFor();
   const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   const go = async path => assert.equal((await page.goto(origin + path)).status(), 200);
-  const browse = async (name, path) => {
+  const browse = async (name, path, clipTitle) => {
     await go(path);
-    assert.equal(await link(name).getAttribute('href'), onlineHref);
-    await link(name).click();
+    const target = clipTitle
+      ? page.getByLabel(clipTitle, { exact: true }).getByRole('link', { name, exact: true })
+      : link(name);
+    assert.equal(await target.getAttribute('href'), onlineHref);
+    await target.click();
     await page.waitForURL(origin + onlineHref);
     await link(title).waitFor();
   };
@@ -170,11 +173,13 @@ try {
   assert.equal(await fits(), true);
   await browse('FIND AN ONLINE CIRCLE', '/');
   await browse('Find an online reading Circle', '/great-books/scripture/philemon');
-  await browse('Discuss in an online Circle', '/clips');
+  for (const reel of ['Who gets the night sky?', 'What did the tilt prove?']) {
+    await browse('Discuss in an online Circle', '/clips', reel);
+  }
   await link(hybridTitle).waitFor();
   assert.equal(await link('Local-only salon').count(), 0);
   assert.equal(await link('Hidden salon').count(), 0);
-  pass('Homepage, Philemon study and Reel open the same online and hybrid search in the built site.');
+  pass('Homepage, Philemon study and both Reels open the same online and hybrid search in the built site.');
 
   const prePreview = requests.length;
   await link(title).click();
