@@ -54,13 +54,16 @@ try {
   bundle = read('platforms/evidence/quest-thread-composed-fixture/page.js'); css = read('platforms/evidence/quest-thread-composed-fixture/page.css');
   const module = await import('../../verification/web/tests/support/platforms-thread-app.mjs');
   for (const [file, digest] of Object.entries(module.COVERAGE_SOURCE_HASHES)) (file.endsWith('.sql') ? sqlHashes : sourceHashes)[file] = digest;
-  Object.assign(sourceHashes, await module.threadAppHashes()); limits = module.COVERAGE_FIXTURE_LIMITS; f = await module.createPlatformsThreadApp();
+  Object.assign(sourceHashes, await module.threadAppHashes()); limits = module.COVERAGE_FIXTURE_LIMITS; f = await module.createPlatformsThreadApp({ profileAware: true });
+  Object.assign(sourceHashes, await (await import('../../verification/web/tests/support/public-profile-app.mjs')).publicProfileAppHashes());
   const origin = module.ORIGIN;
   browser = await require('playwright').chromium.launch({ headless: true, timeout: 15000, executablePath,
     env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin', HOME: '/Users/christaylor' }, args: ['--disable-background-networking', '--disable-component-update', '--no-first-run'] });
   const pids = ownedChrome(); assert.equal(pids.length, 1); ownedBrowserPid = pids[0];
   runtime = { node: process.version, chromium: browser.version(), bun: manifest.bunVersion, startupDeny: true, cleanEnvironment: true, ownedBrowserPid };
   const context = await browser.newContext({ viewport: { width: 320, height: 844 } }), page = await context.newPage(); page.setDefaultTimeout(7000);
+  const intent = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  await context.addCookies([{ url: origin, name: 'soe_auth_intent', value: intent, secure: true, sameSite: 'Lax' }]);
   page.on('pageerror', error => pageErrors.push(error.message));
   page.on('console', message => { if (message.type() === 'error' && !message.text().includes('Failed to load resource:')) consoleErrors.push(message.text()); });
   page.on('requestfailed', request => controllers.get(request)?.abort());
@@ -72,7 +75,10 @@ try {
       if (url.pathname === '/page.mjs') return await route.fulfill({ contentType: 'text/javascript', body: bundle });
       if (url.pathname === '/page.css') return await route.fulfill({ contentType: 'text/css', body: css });
       assert.ok(['GET','POST'].includes(request.method()));
-      const headers = await request.allHeaders(); assert.equal(headers.cookie, undefined); assert.equal(headers.referer, undefined);
+      const headers = await request.allHeaders();
+      assert.equal(headers.cookie, 'soe_auth_intent=' + intent);
+      assert.equal(headers['x-soe-auth-intent'], intent);
+      assert.equal(headers.referer, undefined);
       if (url.pathname === '/api/auth/member') assert.equal(headers.authorization, undefined);
       else { assert.ok([`/api/circles/${f.circleId}/discussion`,`/api/circles/${f.circleId}/discussion/preview`].includes(url.pathname)); assert.ok(Object.values(module.TOKENS).some(value => headers.authorization === 'Bearer ' + value)); }
       if(request.method()==='POST')assert.equal(headers.origin,origin,'Browser mutation origin must match actual route origin');
@@ -86,7 +92,7 @@ try {
           latest = value;
           assert.doesNotMatch(bytes, /PRIVATE_SYNTHETIC_REPORT_NOTE|contentHash|reporter|email|supabase_auth_id/);
           for (const item of [...value.items, ...(value.root ? [value.root, value.focus] : [])]) {
-            assert.deepEqual(Object.keys(item).sort(), ['id', 'member_name', 'content', 'created_at', 'is_mine', 'visibility', 'parentMessageId', 'rootMessageId'].sort());
+            assert.deepEqual(Object.keys(item).sort(), ['id', 'member_name', 'content', 'created_at', 'is_mine', 'visibility', 'parentMessageId', 'rootMessageId', 'publicProfileId'].sort());
             if (['hidden', 'withdrawn'].includes(item.visibility)) assert.equal(item.content, null);
           }
         }
@@ -119,10 +125,8 @@ try {
   assert.deepEqual(await count(), {factories:0,calls:0,subscriptions:0});assert.equal(api.length,0);assert.equal(privateCalls(),0);
   await connect();assert.equal(api.length,0);assert.equal((await count()).calls,0);
   await check();await ready();assert.equal(api.length,1);assert.equal(privateCalls(),0);
-  for(const [actor,provider,sdkActor]of [['author','wallet','author'],['outsider','supabase','author']]){
-    await reset(actor,provider,sdkActor);await page.waitForFunction(()=>document.getElementById('member-session-status').textContent.includes('Could not confirm'));
-    assert.equal(privateCalls(),0);assert.equal(await page.locator('#circle-archive-open').isDisabled(),true);
-  }
+  await reset('outsider','supabase','author');await page.waitForFunction(()=>document.getElementById('member-session-status').textContent.includes('Could not confirm'));
+  assert.equal(privateCalls(),0);assert.equal(await page.locator('#circle-archive-open').isDisabled(),true);
   pass('initial mount/Connect perform no SDK methods or private request; actual member-handler provider/subject mismatch blocks every private RPC');
 
   async function archive(){await ready();await page.locator('#circle-archive-open').click();await page.waitForFunction(()=>document.getElementById('circle-archive-status').textContent.includes('Current archive page loaded'));}

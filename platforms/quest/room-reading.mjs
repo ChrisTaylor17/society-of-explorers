@@ -1,4 +1,4 @@
-import { createCircleReading, isPhilemonReading, parseCircleDetail, philemonReadingText,
+import { circleAuthorizationHeaders, createCircleReading, isPhilemonReading, parseCircleDetail, philemonReadingText,
   PHILEMON_EDITION_METADATA, starterReadingContext } from './circle-host.mjs';
 import { ROOM_TEXT_COLUMNS } from './room-composer.mjs';
 
@@ -61,10 +61,10 @@ export function createRoomReading({ origin, circleId, owner, transport, isActive
 
   async function checkSelection() {
     const signal = AbortSignal.any([lifetime.signal, AbortSignal.timeout(DEADLINE_MS)]);
-    const bearer = await owner.bearer(scope);
-    if (!active() || !bearer) throw Error('Circle access ended');
+    const headers = await circleAuthorizationHeaders(owner, scope);
+    if (!active() || !headers) throw Error('Circle access ended');
     signal.throwIfAborted();
-    const response = await transport(endpoint, { method: 'GET', headers: { Authorization: 'Bearer ' + bearer },
+    const response = await transport(endpoint, { method: 'GET', headers,
       cache: 'no-store', credentials: 'omit', redirect: 'error', signal });
     signal.throwIfAborted();
     if (!active()) throw Error('Circle access ended');

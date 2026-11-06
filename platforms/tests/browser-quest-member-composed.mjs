@@ -76,7 +76,10 @@ try {
       const method = request.method(), endpoint = `/api/circles/${f.circleId}/discussion`;
       const isPost = method === 'POST' && url.pathname === endpoint, isPreview = method === 'POST' && url.pathname === endpoint + '/preview';
       assert.ok(method === 'GET' || run && (isPost || isPreview));
-      const headers = await request.allHeaders(); assert.equal(headers.cookie, undefined); assert.equal(headers.referer, undefined);
+      const headers = await request.allHeaders();
+      assert.match(headers.cookie ?? '', /^soe_auth_intent=[0-9a-f-]{36}$/);
+      assert.equal(headers['x-soe-auth-intent'], headers.cookie.slice('soe_auth_intent='.length));
+      assert.equal(headers.referer, undefined);
       if (url.pathname === '/api/auth/member') { assert.equal(method, 'GET'); assert.equal(headers.authorization, undefined); }
       else { assert.ok(url.pathname === endpoint || isPreview); assert.ok(Object.values(fixtureApp.TOKENS).some(value => headers.authorization === 'Bearer ' + value)); }
       if (method === 'POST') assert.equal(headers.origin, origin);
@@ -129,12 +132,15 @@ try {
   await check(); await ready(); assert.equal(api.length, 1); assert.equal(api[0].path, '/api/auth/member'); assert.equal(privateCalls(), 0);
   pass('mount and Connect perform no provider method/private request; manual Check executes the actual cookie-only member handler without a Circle RPC');
 
-  for (const [actor, provider, sdkActor] of [['author', 'wallet', 'author'], ['outsider', 'supabase', 'author']]) {
-    await reset(actor, provider, sdkActor);
-    await page.waitForFunction(() => document.getElementById('member-session-status').textContent.includes('Could not confirm'));
-    assert.equal(await page.locator('#circle-archive-open').isDisabled(), true); assert.equal(privateCalls(), 0);
-  }
-  pass('actual member metadata wallet/provider and subject mismatches stop the retained SDK identity before any private RPC');
+  const sdkCalls = (await count()).calls;
+  await reset('author', 'wallet', 'outsider'); await ready();
+  assert.equal((await count()).calls, sdkCalls);
+  assert.equal(privateCalls(), 0);
+  pass('wallet member metadata connects without using a retained SDK identity or reading the Circle');
+  await reset('outsider', 'supabase', 'author');
+  await page.waitForFunction(() => document.getElementById('member-session-status').textContent.includes('Could not confirm'));
+  assert.equal(await page.locator('#circle-archive-open').isDisabled(), true); assert.equal(privateCalls(), 0);
+  pass('a verified browser member and a different retained SDK subject stop before any private RPC');
 
   await reset('outsider'); await ready(); await page.locator('#circle-archive-open').click();
   await bounded(async () => { while (!api.some(entry => entry.status === 403)) await new Promise(resolve => setImmediate(resolve)); }); await settle();
@@ -210,13 +216,13 @@ try {
     assert.equal((await device()).requests, 0);
     pass('the unsupported headset state preserves the verified browser archive and never requests device permission');
 
-    async function rebind(actor = 'author', provider = 'supabase') {
+    async function rebind(actor = 'author', provider = 'supabase', sdkActor = actor) {
       f.select(actor, provider);
       await page.evaluate(value => {
         window.questXrQa.enable();
         window.questComposedQa.providerChanged();
         window.questComposedQa.actor(value);
-      }, actor);
+      }, sdkActor);
       await connect();
       await page.waitForFunction(() => !document.getElementById('quest-immersive-enter').disabled);
     }
@@ -279,12 +285,12 @@ try {
     await exit.click(); await page.waitForFunction(() => !document.getElementById('quest-immersive-enter').disabled);
     pass('an otherwise verified nonmember gets actual SQL denial and no private headset content');
 
-    await rebind('author', 'wallet'); await openRoom();
+    await rebind('outsider', 'supabase', 'author'); await openRoom();
     const beforeMismatch = privateCalls();
     await trigger(); await see('Sign in through the regular browser if needed.');
     assert.equal(privateCalls(), beforeMismatch);
     await exit.click();
-    pass('a selected-wallet mismatch fails the cookie-only identity check before any Circle read');
+    pass('a selected member that differs from the retained SDK subject prevents a Circle read');
 
     await rebind(); await openRoom(); await checkInRoom();
     holdNext = true; held = null;

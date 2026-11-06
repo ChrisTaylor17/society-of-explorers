@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { AUTH_PROVIDER_COOKIE } from '@/lib/auth/provider';
-import { AUTH_INTENT_COOKIE, AUTH_INTENT_HEADER, AUTH_SELECTION_COOKIE, browserSelectionMatches, parseBrowserIntent, parseBrowserSelection } from '@/lib/auth/browserIntent';
+import { AUTH_INTENT_COOKIE, AUTH_INTENT_HEADER, AUTH_SELECTION_COOKIE, EXPECTED_MEMBER_HEADER, browserSelectionMatches, parseBrowserIntent, parseBrowserSelection } from '@/lib/auth/browserIntent';
 import { isWellFormedUuid, readWalletSession } from '@/lib/auth/walletSession';
 import { walletSessionAccess } from '@/lib/auth/walletSessionStore';
 
@@ -81,16 +81,17 @@ async function resolveMember<Member extends MemberIdentity>(
   const intentValue = req.cookies.get(AUTH_INTENT_COOKIE)?.value;
   const receiptValue = req.cookies.get(AUTH_SELECTION_COOKIE)?.value;
   const matches = (provider: 'supabase' | 'wallet', subject: string) => browserSelectionMatches(intentValue, receiptValue, provider, subject);
+  const expectedIntent = req.headers.get(AUTH_INTENT_HEADER);
+  if (expectedIntent !== null && (!parseBrowserIntent(expectedIntent) || expectedIntent !== intentValue)) return null;
+  const expectedMember = expectedIntent === null ? null : req.headers.get(EXPECTED_MEMBER_HEADER);
+  if (expectedMember !== null && !isWellFormedUuid(expectedMember)) return null;
+  const matchesMember = (id: string) => expectedMember === null || id.toLowerCase() === expectedMember.toLowerCase();
 
   // An explicit bearer is one authority choice. Invalid/unprovisioned bearer
   // credentials must never fall through to somebody else's browser cookies.
   const authHeader = req.headers.get('authorization');
   if (authHeader !== null) {
     if (!/^Bearer [^\s]+$/.test(authHeader) || authHeader.length > 16_384) return null;
-    const expectedIntent = req.headers.get(AUTH_INTENT_HEADER);
-    // A bearer sent by a browser-bound view requires the same browser choice
-    // at dispatch. A missing cookie cannot fall through to native bearer auth.
-    if (expectedIntent !== null && (!parseBrowserIntent(expectedIntent) || expectedIntent !== intentValue)) return null;
     const hasBrowserIntent = intentValue !== undefined;
     if (hasBrowserIntent && selected !== 'supabase') return null;
     try {
@@ -105,17 +106,19 @@ async function resolveMember<Member extends MemberIdentity>(
       if (error || !user || (hasBrowserIntent && !matches('supabase', user.id)) ||
           !await erasureAllowsAccount('supabase', user.id)) return null;
       const member = await getMemberByColumn<Member>('supabase_auth_id', user.id, projection);
-      return member ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
+      return member && matchesMember(member.id) ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
     } catch { return null; }
   }
 
+  // A browser-bound cookie read may discover the member only at the session endpoint.
+  if (expectedIntent !== null && expectedMember === null && new URL(req.url).pathname !== '/api/auth/member') return null;
   const intent = parseBrowserIntent(intentValue), receipt = parseBrowserSelection(receiptValue);
   // Legacy cookie-only sessions require a deliberate new sign-in. There is no
   // ambient wallet/Supabase fallback across a missing or mismatched receipt.
   if (!intent || !receipt || receipt.intent !== intent || receipt.provider !== selected) return null;
   const walletIdentity = async () => {
     const wallet = await readWalletSession(req.cookies.get('soe_wallet_id')?.value);
-    if (!wallet || !matches('wallet', wallet.memberId) || !await walletSessionAccess(wallet, 'check') ||
+    if (!wallet || !matchesMember(wallet.memberId) || !matches('wallet', wallet.memberId) || !await walletSessionAccess(wallet, 'check') ||
         !await erasureAllowsAccount('wallet', wallet.memberId)) return null;
     const member = await getMemberByColumn<Member>('id', wallet.memberId, projection);
     return member ? { memberId: member.id, member, auth: { provider: 'wallet' as const, subject: member.id } } : null;
@@ -129,7 +132,7 @@ async function resolveMember<Member extends MemberIdentity>(
     if (user) {
       if (error || !matches('supabase', user.id) || !await erasureAllowsAccount('supabase', user.id)) return null;
       const member = await getMemberByColumn<Member>('supabase_auth_id', user.id, projection);
-      return member ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
+      return member && matchesMember(member.id) ? { memberId: member.id, member, auth: { provider: 'supabase' as const, subject: user.id } } : null;
     }
   } catch { return null; }
   return null;

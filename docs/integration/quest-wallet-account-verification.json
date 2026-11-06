@@ -1,0 +1,148 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T18:27:07.373045+00:00",
+  "parentCommit": "90baf12edceb229bdaf1909a26e760e556990aef",
+  "productionCleared": false,
+  "results": {
+    "webBuild": {
+      "sourceFiles": 1089,
+      "sourceDigest": "edc1a24f77fc6c7a9120feef34c6291be460f40840dfa40ad9eb0340c41b7c15",
+      "builtQuestStories": 4
+    },
+    "focusedRegressionTests": 61,
+    "nativeControllerRegressionTests": 84,
+    "questAuthAndUiTypeChecks": "passed",
+    "browserStories": {
+      "member": 21,
+      "salon": 20,
+      "contributions": 8,
+      "thread": 8,
+      "message-actions": 8,
+      "ai-consent": 10,
+      "page": 7
+    },
+    "wallet": {
+      "status": "PASS",
+      "reads": [
+        {
+          "status": 401,
+          "browserIntent": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "includedMarker": true,
+          "isWallet": false
+        },
+        {
+          "status": 200,
+          "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "includedMarker": false,
+          "isWallet": false
+        },
+        {
+          "status": 401,
+          "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "includedMarker": true,
+          "isWallet": false
+        },
+        {
+          "status": 200,
+          "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "includedMarker": false,
+          "isWallet": true
+        },
+        {
+          "status": 401,
+          "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "includedMarker": false,
+          "isWallet": true
+        },
+        {
+          "status": 200,
+          "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "includedMarker": false,
+          "isWallet": true
+        }
+      ],
+      "writes": [
+        {
+          "status": 200,
+          "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "includedMarker": false,
+          "isWallet": true
+        },
+        {
+          "status": 200,
+          "browserIntent": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          "includedMarker": false,
+          "isWallet": true
+        }
+      ],
+      "rotationBeforeDispatchRefused": true,
+      "staleIntentAndMissingCookiesRefused": true,
+      "nativeBearerAccepted": true,
+      "immersiveWebGl": true,
+      "walletSwitchBeforeSqlRefused": true,
+      "walletSdkCalls": 0,
+      "scope": "Actual Quest UI, request cookies, canonical member resolver, discussion handler and disposable SQL. Identity provider and headset input use synthetic fixtures."
+    }
+  },
+  "scope": "Actual browser and immersive component, canonical member resolution, discussion endpoints and disposable SQL. Credentials, external providers and headset input are synthetic. Native tests verify shared controllers. Installed phones, physical Quest and hosted acceptance remain open.",
+  "buildTools": "The resident esbuild 0.28.1 compiled the shared Quest output and fixtures. The normal local Bun executable was offloaded. The guarded Next production build used webpack.",
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "5edaa66a1066212cb023be31e606182f02aa3d8b1b423534421f00b16af24122",
+    "app/quest/[circleId]/QuestCircle.tsx": "1bea2958cb329ead25b29327548ad44ce3005c9225f822e4d740b353e68d6de5",
+    "docs/integration/quest-member-composition.md": "2ca3bf922c8ca2a626bba04771afff9ae1b09fc43381c160b7866c0aca8975f9",
+    "docs/integration/quest-own-contributions.md": "b11aa2db8d4356378fa2ea7afa002303600c727df471f5b658f3b4ea9cf34e63",
+    "lib/auth/browserIntent.ts": "6f68070fbcacccae063fdb140c73d95f8d079fa47c7eed65b6371e50dc76318d",
+    "lib/circles/quest-member-auth.ts": "860726636c3892863b8e450f146fd4dcf3c8eef25a44a8e22ecb960c15489ee1",
+    "lib/getAuthenticatedMember.ts": "db06410e33111bff9b58ddf64ee9bd5f22f409ff774476784842d690330a109c",
+    "platforms/native/src/circles/host.ts": "3778f65fc4821db92cda88547ace868b0d2ad95483d3779ea08c9e85afe4def5",
+    "platforms/native/src/circles/supabase-owner.ts": "0f806503c6930ec76ecf29eb80db160b6315e370f09517f7195b4520443812c8",
+    "platforms/native/src/circles/verified-member-session.ts": "ad1a5048b953fb892bc81fd30cdf766e63f6d84855a9746dcc57ffbca092dc2e",
+    "platforms/quest/circle-host.mjs": "0f42207915694dec9e85891f5eced9e43456134d338876873896f477428a55cd",
+    "platforms/quest/immersive-circle.mjs": "d24a57dfedafe3f1d15b4b32221b5cac8344bac59fa7adc7247928723a7100fc",
+    "platforms/quest/meeting.mjs": "ae724f3736ddc9f8eb54b70fccae8907147fca0e54c6b84d63ec29c2d311d3db",
+    "platforms/quest/member-circle-page.mjs": "c1ed37f4ac5a987981a1a4950fc52ebebd9f8331565da41e1582c9e970e22ee1",
+    "platforms/quest/room-reading.mjs": "5c0a94b2535a459fde955964a85f7cbe78f4057db08e168a4cc1e83cf1a0660c",
+    "platforms/quest/salon-presence.mjs": "ca1a4b661ae71cd6f578e4387a2004698291511a00288e64fbff9e52be036e79",
+    "platforms/shared/circle-directory.ts": "540b0efcc1972748fb45319a0b3222737d253f63491310883a42497418cfb6fa",
+    "platforms/shared/circle-reviews.ts": "7d135e2302a3f970695ec548bb4ec9339a575d3147923f1686713d17de54751c",
+    "platforms/shared/member-contributions.ts": "895ea03bc2792a360bb53adc5cfde16d5c208863125959899169d4e7b2bc0bd9",
+    "platforms/shared/message-reviews.ts": "d374492b170461482a004577c1b12f8ef0e772628ddea5e9e7ca5071a1b2dd05",
+    "platforms/shared/quest-entry.ts": "feb684d468a60f4c1653d9456c3b49c98137d4c798a6e22c0b964e0092158e7c",
+    "platforms/tests/browser-quest-account-boundary.mjs": "f3351f250e8ce20e3337b734055a01e8f3ca92e6baa7c615bbcb61a6713fbd13",
+    "platforms/tests/browser-quest-ai-consent.mjs": "ce079be2d63b3f09014054ee5a1dd21891ee1b326f0c6912863e640992b9a2a0",
+    "platforms/tests/browser-quest-contributions-composed.mjs": "792717ad528039212cdaf6903b1c505372470b734edc2c7767dc0b3b15219fb6",
+    "platforms/tests/browser-quest-member-composed.mjs": "a57688998741117294a6b9b2d71cd0094eedf58af544741e482bb5d2dbc47a1f",
+    "platforms/tests/browser-quest-message-actions-composed.mjs": "368b84bde2932ed486344fd880d4530e6956fb1167505a36352fb89324679ecf",
+    "platforms/tests/browser-quest-page.mjs": "717fdd65ec5bb6f8addbdda968fcc65527f8680b603855009a492d126e7ffe6b",
+    "platforms/tests/browser-quest-thread-composed.mjs": "c61155a53edb8bffc0bac0eff019507682ead04251e9728cdab2a1b051dd3612",
+    "platforms/tests/quest-member-auth.test.mjs": "b31ba4d3109086ebca3b7f341e09fd31c198947b6f2f0c1b958634793d2992bb",
+    "platforms/tests/quest-member-composed-entry.tsx": "5de5879c1d4d7361371b27e92124dfd153f09edde11c4f27d8c835ef7e18e7fd",
+    "verification/web/tests/support/member-contributions-app.mjs": "a058a83f2ab1e3c94803699810aea28b2cac9954b3bd5dfb1238dea708a8fd73",
+    "verification/web/tests/support/platforms-message-actions-app.mjs": "db22e4d70ee57241daa7ab605eec2c689c0cb110ab35beed2b80644fa17d67d5",
+    "verification/web/tests/support/platforms-thread-app.mjs": "0113267972428c8db2edffe899692be3a104910023c6ba7f7ae6ad520d3940d1",
+    "verification/web/tests/support/quest-member-app.mjs": "5f56d6843a17e0f2c7ff6ada1373fbe10ef4b4e3ee11838bdba7a7fc7c2fca41"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-quest-wallet-account",
+  "evidenceSha256": {
+    "built-shell-quest-wallet-next-build.json": "bbb5b537bb937dcdc6827fa0521152bd648eb3bba4cda7f7caea4a57f9770afb",
+    "built-shell-quest-wallet-next-build.log": "d2120c1bebdcf02fdee76d553a50a601962d8eae7d2a98803fa1828537f83020",
+    "built-shell-quest-wallet-build-source-sha256.json": "51403757c65ae081be657c93d2f1752e0409c77d40aa9a19a091df612904a93f",
+    "built-shell-quest-wallet-check-server.json": "c161e1eaf4b0f3daf3547dd249c54a0bee3d44277d97b180c4cafb6958f04a33",
+    "built-shell-quest-wallet-check-server-runtime.json": "6080a62be70e01f3ad71d9ad2c6a84cc6157d2a86a2eab163b54f9ce69a2338d",
+    "quest-wallet-final-account-boundary.log": "4e390e29a44224c652704f2a42a35036c8ba59019b13dafb2d4c88b29b01f0b6",
+    "quest-wallet-regression-1.tap": "75555bf1890eaf160bf8dfa38b8451fc8fc93427c46de5adab5349dfc5f92d5b",
+    "quest-wallet-native-regression.tap": "ac0a5b13cec508eb5e19a3e78a8d4848614852d00a60e26e389ffcaa87f0e96e",
+    "quest-member-composed-immersive-wallet-checkpoint.json": "5e7868736517c1dea230f9fe9c0712abda056525fcbff5a86d04c537eaa71f7f",
+    "quest-salon-immersive-salon-wallet-final.json": "5d29ff1d64e65d26c857ccce9e64f2b4d5a4537fb20830f261aa1d498b2e9340",
+    "quest-contributions-composed.json": "7b25f444617c0fe60c6ed47f30494ec0e781e14507fdc96c2281cd6ac41193b8",
+    "quest-thread-composed.json": "6d305029ff43b61d3cb8b7acc3edeb92b2d14bf545d3c7904fded8f66cab80f3",
+    "quest-message-actions-composed.json": "5cbbfeca5bf7fbe2cf0e96e17c4324051b46aa16dc69b7e150540bc25ce355b4",
+    "quest-ai-consent-browser.json": "0fc0f6053cc0991c0eb267866f6df66233ca0c1f03e37ead5f16969a155edc8e",
+    "quest-page-browser.json": "390fc21afad7fe9a6b3553b7b4a0932a7aab1b6a609e19d87fd83d9574f5112a",
+    "built-quest-browser.json": "4522216bbae1e6588c71529c402015d82cbfcdb123ac617745af00b6aea4e436",
+    "quest-simulated-discussion.png": "70666c69057e0853d7fcbbf520f57c7219dcdefa70943e81303dcb39a33ea0ef",
+    "quest-wallet-esbuild.mjs": "1125b5f1a2d925e62ac03184c598ae3835cc720e22041ccee0221660a8b04344",
+    "quest-wallet-shared-esbuild.json": "270b146dba768ad65291543abb83c0f2b2b5d47ee1fe9ef06134929b35c8f31c",
+    "quest-browser-bundle-source-manifest.json": "c814cb580200c50a25f64ac44001a9b25413dae15dbd8e5071f392395b87ee65"
+  }
+}

@@ -1,4 +1,4 @@
-import type { CircleOwner } from './host';
+import type { BearerCircleOwner } from './host';
 /** Adapter for an EXISTING authenticated client, never a new sign-in/client/key.
  * The server still verifies the bearer and membership on every operation. */
 type ExistingSession = { access_token: string; user: { id: string } };
@@ -13,7 +13,7 @@ export function createExistingSupabaseCircleOwner(auth: ExistingAuth) {
   function adopt(session: ExistingSession | null) {
     generation++; subject = session?.user.id || null; scope = subject ? `existing-owner-${generation}` : null; emit();
   }
-  const owner: CircleOwner = {
+  const owner: BearerCircleOwner = {
     scope: () => scope,
     subscribe(listener) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     async bearer(expected) {

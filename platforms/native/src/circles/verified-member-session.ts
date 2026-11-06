@@ -1,4 +1,4 @@
-import type { CircleHostConfig, CircleOwner } from './host';
+import type { BearerCircleOwner, CircleHostConfig } from './host';
 type ExistingSession = { access_token: string; user: { id: string } };
 export type ExistingVerifiedAuth = {
   getSession(): Promise<{ data: { session: ExistingSession | null }; error?: unknown }>;
@@ -11,7 +11,7 @@ export type MemberSessionModel = {
 };
 export type ExistingMemberAccountConfig = Omit<CircleHostConfig, 'owner' | 'circleId'> & { circleId?: string; aiConsent?: boolean; reviewerTransport?: CircleHostConfig['transport']; circleReviewerTransport?: CircleHostConfig['transport']; auth: ExistingVerifiedAuth; verificationTimeoutMs?: number; publicTransport?: CircleHostConfig['transport']; passageTransport?: CircleHostConfig['transport']; profileTransport?: CircleHostConfig['transport']; publicProfileTransport?: CircleHostConfig['transport']; savedReadingTransport?: CircleHostConfig['transport']; attendanceTransport?: CircleHostConfig['transport']; hostingTransport?: CircleHostConfig['transport']; editionTransport?: CircleHostConfig['transport'] };
 export type ExistingMemberCircleConfig = ExistingMemberAccountConfig & { circleId: string };
-export type VerifiedAccountOwner = CircleOwner & {
+export type VerifiedAccountOwner = BearerCircleOwner & {
   credentials(expectedScope: string): Promise<{ bearer: string; subject: string } | null>;
 };
 const identity = (x: unknown): x is string => typeof x === 'string' && /^[A-Za-z0-9._:-]{1,200}$/.test(x);
@@ -19,12 +19,10 @@ const token = (x: unknown): x is string => typeof x === 'string' && x.length > 0
 const sessionValid = (s: ExistingSession | null): s is ExistingSession => !!s && token(s.access_token) && identity(s.user?.id);
 const VERIFY_EVENTS = new Set(['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED', 'MFA_CHALLENGE_VERIFIED']);
 
-/** Read-only adapter for an already-created/authenticated SDK client. Cached
- * session data supplies a credential; getUser(theExactToken) must confirm its
- * subject. Circle membership remains a separate server read. No login, member
- * provisioning, persistence, logout or auto-refresh ownership is introduced. */
-export function createVerifiedSupabaseCircleOwner(auth: ExistingVerifiedAuth, { timeoutMs = 5000 }: { timeoutMs?: number } = {}) {
-  if (!auth || typeof auth.getSession !== 'function' || typeof auth.getUser !== 'function' || typeof auth.onAuthStateChange !== 'function') throw Error('Existing verifying auth client required');
+export function createVerifiedMemberSession<Credentials>(source: {
+  verify(current: () => boolean, expectedSubject?: string): Promise<{ subject: string; credentials: Credentials } | null>;
+  onAuthStateChange(listener: (event: string) => void): ReturnType<ExistingVerifiedAuth['onAuthStateChange']>;
+}, { timeoutMs = 5000 }: { timeoutMs?: number } = {}) {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60000) throw Error('Invalid verification deadline');
   let started = false, active = true, inAuthCallback = false, lifetime = 0, generation = 0, sequence = 0;
   let subject: string | null = null, scope: string | null = null, operation: number | null = null;
@@ -47,7 +45,7 @@ export function createVerifiedSupabaseCircleOwner(auth: ExistingVerifiedAuth, { 
     if (unsubscribe) return true;
     const run = lifetime;
     try {
-      const result = auth.onAuthStateChange(event => {
+      const result = source.onAuthStateChange(event => {
         if (!started || lifetime !== run) return;
         const wasInAuthCallback = inAuthCallback;
         inAuthCallback = true;
@@ -81,47 +79,29 @@ export function createVerifiedSupabaseCircleOwner(auth: ExistingVerifiedAuth, { 
     const g = clear('checking', 'Checking the existing member session. Circle membership still requires a fresh read.', true);
     if (!current(g)) return;
     try {
-      const verified = await deadline(async () => {
-        const result = await auth.getSession();
-        if (!current(g)) return null;
-        if (result.error) throw Error('Session unavailable');
-        if (!result.data.session) return { signedOut: true as const };
-        const s = result.data.session;
-        if (!sessionValid(s)) throw Error('Session unavailable');
-        const checkedToken = s.access_token, checkedSubject = s.user.id;
-        const reply = await auth.getUser(checkedToken);
-        if (!current(g)) return null;
-        if (s.access_token !== checkedToken || s.user?.id !== checkedSubject || reply.error || !identity(reply.data.user?.id) || reply.data.user.id !== checkedSubject) throw Error('Identity not confirmed');
-        return { subject: checkedSubject };
-      });
-      if (!current(g) || !verified) return;
+      const verified = await deadline(() => source.verify(() => current(g)));
+      if (!current(g)) return;
       operation = null;
-      if ('signedOut' in verified) { clear('signed_out', 'No active member session. Use the existing app sign-in, then check again.'); return; }
+      if (!verified) { clear('signed_out', 'No active member session. Use the existing app sign-in, then check again.'); return; }
+      if (!identity(verified.subject)) throw Error('Identity not confirmed');
       subject = verified.subject; scope = `verified-owner-${++sequence}`; phase = 'ready';
       message = 'Provider session checked. Refresh Circle access to confirm current membership.'; notify();
     } catch {
       if (current(g)) clear('unavailable', 'Could not confirm the existing member session. Check again when available.');
     }
   }
-  const owner: VerifiedAccountOwner = {
+  const owner = {
     scope: () => scope,
-    subscribe(listener) { ownerListeners.add(listener); return () => { ownerListeners.delete(listener); }; },
-    async bearer(expected) { return (await owner.credentials(expected))?.bearer ?? null; },
-    async credentials(expected) {
+    subscribe(listener: () => void) { ownerListeners.add(listener); return () => { ownerListeners.delete(listener); }; },
+    async credentials(expected: string): Promise<Credentials | null> {
       const g = generation, expectedSubject = subject;
       if (!current(g) || !scope || expected !== scope || !expectedSubject || phase !== 'ready') return null;
       try {
-        return await deadline(async () => {
-          const result = await auth.getSession();
-          if (!current(g) || scope !== expected) return null;
-          const s = result.data.session;
-          if (result.error || !sessionValid(s) || s.user.id !== expectedSubject) throw Error('Session changed');
-          const checkedToken = s.access_token;
-          const reply = await auth.getUser(checkedToken);
-          if (!current(g) || scope !== expected) return null;
-          if (s.access_token !== checkedToken || s.user?.id !== expectedSubject || reply.error || reply.data.user?.id !== expectedSubject) throw Error('Identity not confirmed');
-          return { bearer: checkedToken, subject: expectedSubject };
-        });
+        const valid = () => current(g) && scope === expected;
+        const verified = await deadline(() => source.verify(valid, expectedSubject));
+        if (!valid()) return null;
+        if (verified?.subject !== expectedSubject) throw Error('Session changed');
+        return verified.credentials;
       } catch {
         if (current(g) && scope === expected) clear('unavailable', 'Session access could not be confirmed. Check the existing session before continuing.');
         return null;
@@ -149,4 +129,30 @@ export function createVerifiedSupabaseCircleOwner(auth: ExistingVerifiedAuth, { 
     },
   };
 }
+
+/** An existing native SDK supplies the token and confirms that exact token.
+ * Circle membership is still decided by the application server. */
+export function createVerifiedSupabaseCircleOwner(auth: ExistingVerifiedAuth, options?: { timeoutMs?: number }) {
+  if (!auth || typeof auth.getSession !== 'function' || typeof auth.getUser !== 'function' || typeof auth.onAuthStateChange !== 'function') throw Error('Existing verifying auth client required');
+  const binding = createVerifiedMemberSession({
+    async verify(current, expectedSubject) {
+      const result = await auth.getSession();
+      if (!current() || result.error) throw Error('Session unavailable');
+      const session = result.data.session;
+      if (!session) return null;
+      if (!sessionValid(session) || expectedSubject && session.user.id !== expectedSubject) throw Error('Session unavailable');
+      const bearer = session.access_token, subject = session.user.id;
+      const reply = await auth.getUser(bearer);
+      if (!current() || session.access_token !== bearer || session.user?.id !== subject
+          || reply.error || reply.data.user?.id !== subject) throw Error('Identity not confirmed');
+      return { subject, credentials: { bearer, subject } };
+    },
+    onAuthStateChange: listener => auth.onAuthStateChange(listener),
+  }, options);
+  const owner: VerifiedAccountOwner = { ...binding.owner,
+    async bearer(expected) { return (await binding.owner.credentials(expected))?.bearer ?? null; },
+  };
+  return { ...binding, owner };
+}
+
 export type VerifiedMemberSession = ReturnType<typeof createVerifiedSupabaseCircleOwner>;

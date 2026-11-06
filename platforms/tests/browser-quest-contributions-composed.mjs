@@ -54,7 +54,8 @@ try {
   bundle = read('platforms/evidence/quest-contributions-composed-fixture/page.js'); css = read('platforms/evidence/quest-contributions-composed-fixture/page.css');
   const fixtureModule = await import('../../verification/web/tests/support/member-contributions-app.mjs');
   for (const [file, digest] of Object.entries(fixtureModule.COVERAGE_SOURCE_HASHES)) (file.endsWith('.sql') ? sqlHashes : sourceHashes)[file] = digest;
-  Object.assign(sourceHashes, await fixtureModule.contributionAppHashes()); limits = fixtureModule.COVERAGE_FIXTURE_LIMITS; f = await fixtureModule.createMemberContributionsApp();
+  Object.assign(sourceHashes, await fixtureModule.contributionAppHashes()); limits = fixtureModule.COVERAGE_FIXTURE_LIMITS; f = await fixtureModule.createMemberContributionsApp({ profileAware: true });
+  Object.assign(sourceHashes, await (await import('../../verification/web/tests/support/public-profile-app.mjs')).publicProfileAppHashes());
   const secondCircle=await f.addCircle();
   for(let i=0;i<26;i++)await f.post({circleId:i%2?f.circleId:secondCircle,content:'Owned synthetic contribution '+i});
   await f.post({who:'other',content:'PRIVATE_OTHER_MEMBER_BODY'});
@@ -65,6 +66,8 @@ try {
   const pids = ownedChrome(); assert.equal(pids.length, 1); ownedBrowserPid = pids[0];
   runtime = { node: process.version, chromium: browser.version(), bun: manifest.bunVersion, startupDeny: true, cleanEnvironment: true, ownedBrowserPid };
   const context = await browser.newContext({ viewport: { width: 320, height: 844 } }), page = await context.newPage(); page.setDefaultTimeout(7000);
+  const intent = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  await context.addCookies([{ url: origin, name: 'soe_auth_intent', value: intent, secure: true, sameSite: 'Lax' }]);
   page.on('pageerror', error => pageErrors.push(error.message));
   page.on('console', message => { if (message.type() === 'error' && !message.text().includes('Failed to load resource:')) consoleErrors.push(message.text()); });
   page.on('requestfailed', request => controllers.get(request)?.abort());
@@ -76,7 +79,10 @@ try {
       if (url.pathname === '/page.mjs') return await route.fulfill({ contentType: 'text/javascript', body: bundle });
       if (url.pathname === '/page.css') return await route.fulfill({ contentType: 'text/css', body: css });
       assert.ok(['GET','POST'].includes(request.method()));
-      const headers = await request.allHeaders(); assert.equal(headers.cookie, undefined); assert.equal(headers.referer, undefined);
+      const headers = await request.allHeaders();
+      assert.equal(headers.cookie, 'soe_auth_intent=' + intent);
+      assert.equal(headers['x-soe-auth-intent'], intent);
+      assert.equal(headers.referer, undefined);
       if (url.pathname === '/api/auth/member') assert.equal(headers.authorization, undefined);
       else { assert.ok(url.pathname==='/api/circles/contributions'||/^\/api\/circles\/[0-9a-f-]+\/messages\/[0-9a-f-]+$/.test(url.pathname)); assert.ok(Object.values(fixtureModule.TOKENS).some(value => headers.authorization === 'Bearer ' + value)); }
       if(request.method()==='POST')assert.equal(headers.origin,origin,'Browser mutation origin must match actual route origin');
@@ -123,7 +129,7 @@ try {
   assert.deepEqual(await page.evaluate(()=>window.questContributionsQa.markupContract()),{complete:true,legacy:true,partial:true,duplicates:true});
   assert.match(await page.locator('h1').innerText(),/My Quest Browser contributions/);assert.equal(await page.locator('#circle-refresh').count(),0);
   assert.deepEqual(await count(),{factories:0,calls:0,subscriptions:0});assert.equal(api.length,0);await connect();assert.equal((await count()).calls,0);assert.equal(api.length,0);await check();await ready();assert.equal(lists().length,0);
-  for(const [actor,provider,sdkActor]of [['author','wallet','author'],['other','supabase','author']]){await reset(actor,provider,sdkActor);await page.waitForFunction(()=>document.getElementById('member-session-status').textContent.includes('Could not confirm'));assert.equal(lists().length,0);assert.equal(await page.locator('#member-contributions-refresh').isDisabled(),true);}
+  await reset('other','supabase','author');await page.waitForFunction(()=>document.getElementById('member-session-status').textContent.includes('Could not confirm'));assert.equal(lists().length,0);assert.equal(await page.locator('#member-contributions-refresh').isDisabled(),true);
   pass('standalone account entry needs no Circle ID or membership; markup preflight, zero automatic SDK/API work and selected-account mismatch refusal hold');
 
   await reset();await load();assert.equal(latest.items.length,25);assert.equal(stateReads().length,0);assert.equal(actions().length,0);

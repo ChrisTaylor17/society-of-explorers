@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { createQuestMemberAuth } from '@/lib/circles/quest-member-auth';
-import { AUTH_INTENT_HEADER, currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
+import { AUTH_INTENT_HEADER, EXPECTED_MEMBER_HEADER, currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import { reelHref } from '@/lib/clips/contracts';
 import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
+import { isUuid } from '@/lib/ids/uuid';
 import styles from './quest.module.css';
 
 type Connection = { dispose(): void; invalidate(): void };
@@ -62,8 +63,9 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
     if (!providerConfigured()) {
       setNotice(circleId ? 'Member sign-in is unavailable for this view. Use the regular Circle view.' : 'Member sign-in is unavailable for this view. Use your regular posted messages page.'); return;
     }
-    const generation = ++lifetime.current.generation;
     const intent = currentBrowserAuthIntent();
+    if (!intent) { setNotice('Sign in to your account, then connect this Quest view.'); return; }
+    const generation = ++lifetime.current.generation;
     const current = () => lifetime.current.mounted && lifetime.current.generation === generation &&
       navigator.onLine !== false && currentBrowserAuthIntent() === intent;
     setPhase('connecting'); setNotice('Connecting your existing account…');
@@ -85,22 +87,23 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
           throw Error('Circle request retired');
         }
         const headers = new Headers(init.headers);
-        const authenticated = headers.has('authorization');
-        if (authenticated) headers.set(AUTH_INTENT_HEADER, intent ?? '');
+        const authenticated = headers.has(AUTH_INTENT_HEADER);
+        if (authenticated ? headers.get(AUTH_INTENT_HEADER) !== intent || !isUuid(headers.get(EXPECTED_MEMBER_HEADER))
+          : headers.has('authorization') || headers.has(EXPECTED_MEMBER_HEADER)) throw Error('Circle authority unavailable');
         return window.fetch(url, { ...init, headers, cache: 'no-store', mode: 'same-origin',
           credentials: authenticated ? 'same-origin' : 'omit', redirect: 'error', referrerPolicy: 'no-referrer' });
       };
       const sdk = createClient().auth;
-      const verifiedAuth = (active: () => boolean) => createQuestMemberAuth(sdk, { origin,
+      const verifiedAuth = (active: () => boolean) => createQuestMemberAuth(sdk, { origin, intent,
         request: (url, init) => window.fetch(url, init),
         isCurrent: () => current() && active(),
       });
       const memberAuth = verifiedAuth(() => document.visibilityState === 'visible' && document.hasFocus());
       try {
         const view = circleId
-          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, transport, auth: memberAuth.auth, aiConsent: true, sharedSalon, meeting: true,
+          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, transport, browserBinding: memberAuth.binding, aiConsent: true, sharedSalon, meeting: true,
             immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate }, reelStarter } })
-          : mountExistingMemberContributions({ window, document, config: { origin, transport, auth: memberAuth.auth, aiConsent: true } });
+          : mountExistingMemberContributions({ window, document, config: { origin, transport, browserBinding: memberAuth.binding, aiConsent: true } });
         connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
       } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
       setPhase('connected'); setNotice(circleId ? 'Account connection opened. Check the member-session and Circle-access messages below.' : 'Account connection opened. Check the member session, then load your own posted messages when ready.');
@@ -118,7 +121,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
   return <main id="main" className={styles.scope}>
     <section><p>READ. REFLECT. SHARE.</p><h1>{circleId ? 'Quest Browser Circle' : 'My Quest Browser contributions'}</h1>
       <p>This view uses your existing web account. It opens in the regular browser window.</p>
-      <p>Use email or Google sign-in for this view. For a wallet-only account, use the regular {circleId ? 'Circle view' : 'posted messages page'}.</p>
+      <p>Connect the email, Google, or wallet account you selected in this browser.</p>
       <p>{circleId ? <><Link href={withReelDiscussion(`/circles/${circleId}`, reel)}>Regular Circle view and safety controls</Link>{' · '}<Link href={withReelDiscussion(`/circles/${circleId}/discussion`, reel)}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
       <p><Link href={`/login?next=${encodeURIComponent(circleId ? withReelDiscussion(`/quest/${circleId}`, reel) : '/quest/contributions')}`}>Sign in to your account</Link></p>
       <p role="status">{notice}</p>

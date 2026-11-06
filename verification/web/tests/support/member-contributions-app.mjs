@@ -16,12 +16,15 @@ export const CONTRIBUTION_APP_SOURCES=Object.freeze(['app/api/auth/member/route.
  'lib/circles/message-moderation-server.ts','lib/circles/message-moderation.ts','lib/circles/report.ts','lib/circles/review-coverage.ts','lib/http/routeError.ts','lib/auth/memberDto.ts','lib/auth/provider.ts','lib/ids/uuid.ts',
  'verification/web/tests/support/offline-app.mjs','tests/security/fakes.ts','verification/web/tests/support/member-contributions-app.mjs']);
 export async function contributionAppHashes(){return{...COVERAGE_SOURCE_HASHES,...Object.fromEntries(await Promise.all(CONTRIBUTION_APP_SOURCES.map(async name=>[name,createHash('sha256').update(await contributionSource(name)).digest('hex')])))};}
-export async function createMemberContributionsApp({actor='author'}={}){
- const f=await createReviewCoverageDb({reportCount:0}),app=offlineApp(),calls=[],http=[],names=new Map(),actors={author:f.authorId,other:IDS.host,outsider:IDS.outsider};
+export async function createMemberContributionsApp({actor='author',profileAware=false}={}){
+ const f=profileAware
+  ? await (await import('./public-profile-app.mjs')).createPublicProfileApp()
+  : await createReviewCoverageDb({reportCount:0});
+ const app=offlineApp(),calls=[],http=[],names=new Map(),actors={author:f.authorId,other:IDS.host,outsider:IDS.outsider};
  let selected={actor,provider:'supabase'},closed=false,rpcHook=null,httpHook=null;
  assert.ok(Object.hasOwn(actors,actor));
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async req=>{const bearer=req.headers.get('authorization'),who=bearer?Object.keys(TOKENS).find(key=>bearer==='Bearer '+TOKENS[key]):selected?.actor;if(!who)return null;const provider=bearer?'supabase':selected.provider;return{memberId:actors[who],member:{id:actors[who],supabase_auth_id:SUBJECTS[who],display_name:'Synthetic contribution member'},auth:{provider,subject:provider==='supabase'?SUBJECTS[who]:actors[who]}};}}));
- const allowed=['soe_circle_message_contributions','soe_circle_message_state','soe_circle_message_action'];
+ const allowed=['soe_circle_message_contributions',profileAware?'soe_circle_message_state_profiles':'soe_circle_message_state','soe_circle_message_action'];
  app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({rpc:async(name,args)=>{
   assert.ok(allowed.includes(name),'Unexpected contributions RPC '+name);const call={name,args:structuredClone(args),status:'pending'};calls.push(call);let result;
   try{if(!names.has(name)){const rows=(await f.db.query("SELECT proargnames FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace",[name])).rows;assert.equal(rows.length,1);names.set(name,rows[0].proargnames);}const keys=names.get(name);assert.deepEqual(Object.keys(args).sort(),[...keys].sort());result={data:await rpc(f.db,name,keys.map(key=>args[key])),error:null};call.status='ok';}

@@ -5,7 +5,7 @@ import { parseReviewCoveragePage, REVIEW_COVERAGE_PAGE_SIZE, type ReviewCoverage
 import { parseMessageAdviceReceipt, type MessageAdvice } from '../../lib/circles/message-ai';
 import { validateMessageReviewRequest, messageReviewDecisionBody, messageReviewCoverageStartBody,
   messageReviewCoverageAckBody, messageReviewAdviceBody } from '../../lib/circles/message-review-wire';
-import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
+import { approvedOrigin, type BearerCircleOwner, type CircleTransport } from '../native/src/circles/host';
 
 export type MessageReviewAction = {
   contextRevision: number; interactionRevision: number; circleId: string | null; messageId: string | null;
@@ -25,7 +25,7 @@ export type MessageReviewsModel = {
   canLoadQueue: boolean; canNextQueue: boolean; canSelect: boolean; canRefreshCase: boolean; canBack: boolean; canEditDraft: boolean;
   canConfirm: boolean; canSubmit: boolean; canRetry: boolean; canRequestAdvice: boolean; canNavigate: boolean; action: MessageReviewAction;
 };
-type Config = { owner: CircleOwner; origin: string; reviewerTransport: CircleTransport; newRequestId: () => Promise<string>; timeoutMs?: number; initialOnline?: boolean };
+type Config = { owner: BearerCircleOwner; origin: string; reviewerTransport: CircleTransport; newRequestId: () => Promise<string>; timeoutMs?: number; initialOnline?: boolean };
 type Pending = { path: string; body: string; input: MessageDecisionInput; sessionId?: string; reportCount: number };
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const lowerUuid = (value: unknown): value is string => isUuid(value) && value === value.toLowerCase();
@@ -38,7 +38,7 @@ class ReviewFailure extends Error { constructor(public sent = false) { super('Re
  * All authority comes from fresh canonical server checks, with no durable drafts. */
 export function createMessageReviews(config: Config) {
   const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15000;
-  if (!config.owner || !['scope', 'bearer', 'subscribe'].every(key => typeof config.owner[key as keyof CircleOwner] === 'function')
+  if (!config.owner || !['scope', 'bearer', 'subscribe'].every(key => typeof config.owner[key as keyof BearerCircleOwner] === 'function')
     || typeof config.reviewerTransport !== 'function' || typeof config.newRequestId !== 'function'
     || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000
     || config.initialOnline !== undefined && typeof config.initialOnline !== 'boolean') throw Error('Verified reviewer connection required');

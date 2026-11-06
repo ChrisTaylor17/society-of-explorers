@@ -1,6 +1,6 @@
 import { parseMessageContributions, parseMessageSafetyState, parseMessageActionReceipt, type MessageSafetyState } from '../../lib/circles/message-moderation';
 import { isUuid } from '../../lib/ids/uuid';
-import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
+import { approvedOrigin, circleAuthorizationHeaders, hasCircleAuthority, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
 import type { CircleSessionRequest } from '../native/src/circles/participation-session';
 import { createMessageSafety, type MessageSafety, type MessageSafetyModel } from './message-safety';
 import { parseMessageAiConsent, parseMessageAiConsentInput } from '../../lib/circles/message-ai-consent';
@@ -23,7 +23,7 @@ const listPath = '/api/circles/contributions';
  * current author authority always comes from a separate canonical message GET. */
 export function createMemberContributions(config: Config) {
   const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15000;
-  if (!config.owner || !['scope', 'bearer', 'subscribe'].every(key => typeof config.owner[key as keyof CircleOwner] === 'function')
+  if (!hasCircleAuthority(config.owner)
     || typeof config.transport !== 'function' || !Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000
     || config.initialOnline !== undefined && typeof config.initialOnline !== 'boolean'
     || config.aiConsent !== undefined && typeof config.aiConsent !== 'boolean'
@@ -95,10 +95,10 @@ export function createMemberContributions(config: Config) {
     requests.add(abort); let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       return await Promise.race([(async () => {
-        const bearer = await config.owner.bearer(expected);
-        if (!current() || !bearer || bearer.length > 16384 || /[\s\u0000-\u001f\u007f]/.test(bearer)) throw Error('Contribution session changed');
+        const headers = await circleAuthorizationHeaders(config.owner, expected);
+        if (!current() || !headers) throw Error('Contribution session changed');
         const response = await config.transport(origin + path, { ...options, credentials: 'omit', signal: abort.signal,
-          headers: { Authorization: `Bearer ${bearer}`, ...(options.method === 'POST' ? { 'Content-Type': 'application/json' } : {}) } });
+          headers: { ...headers, ...(options.method === 'POST' ? { 'Content-Type': 'application/json' } : {}) } });
         if (!current() || response.redirected || response.url !== origin + path) throw Error('Contribution response refused');
         if ([401, 403, 404].includes(response.status)) {
           retire('Contribution access changed. Private history and action details cleared. A previously sent action may still have completed.');

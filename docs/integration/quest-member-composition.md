@@ -2,9 +2,9 @@
 
 ## Current browser account check
 
-The Quest Circle and contributions pages remember the selected sign-in attempt at Connect. Each private request in the browser or immersive room carries that attempt and the same-origin session cookies. The server checks that the attempt still matches and that the bearer belongs to the selected account. A browser sign-out, missing cookie or changed attempt closes access. Public source passages still open without account cookies or a bearer. A host’s meeting opens through the existing browser handoff. [Fetch credentials and request modes](https://fetch.spec.whatwg.org/#concept-request-credentials-mode)
+The Quest Circle and contributions pages capture the selected browser sign-in when the member chooses Connect. Each private request verifies the current member and sends the selected attempt, member ID and same-origin session cookies. A wallet uses its signed HttpOnly session. Email and Google also verify the exact SDK token. Public source passages use a separate request without account credentials. The host’s meeting opens through the existing browser handoff.
 
-The regression changes the HttpOnly sign-in marker after the member check. The earlier browser request reached discussion SQL and returned the private archive. The replacement returns 401 before a Circle query in the regular browser and simulated headset. A fresh connection loads the archive, and a cookie-free native bearer still authenticates through the same route. The isolated database runs the actual Circle SQL with synthetic members and provider credentials. [Verification](quest-browser-account-verification.json)
+The browser regression uses the actual member resolver and Circle handlers. A signed test wallet opens the archive, reviews and posts a reply, then reads the saved text in simulated immersion. Replacing the wallet cookie and selection receipt under the same sign-in attempt rejects the old member’s request before any Circle query. The prior sign-out and stale-attempt denials, public passage checks and cookie-free native bearer acceptance still pass. [Verification](quest-wallet-account-verification.json)
 
 ## Earlier archive composition
 

@@ -1,3 +1,5 @@
+import { circleAuthorizationHeaders } from './circle-host.mjs';
+
 const POLL_MS = 10_000;
 const REQUEST_TIMEOUT_MS = 9_000;
 const invitation = 'Join when you are ready to appear in the shared salon count.';
@@ -17,11 +19,11 @@ export function createSalonPresence({ window: win, origin, circleId, owner, tran
 
   async function request(seat, action) {
     const signal = AbortSignal.any([seat.controller.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]);
-    const bearer = await owner.bearer(seat.scope);
-    if (!bearer || !current(seat) || signal.aborted) throw Error('Salon request retired');
+    const headers = await circleAuthorizationHeaders(owner, seat.scope);
+    if (!headers || !current(seat) || signal.aborted) throw Error('Salon request retired');
     const response = await transport(endpoint, {
       method: 'POST', cache: 'no-store', credentials: 'same-origin', redirect: 'error', signal,
-      headers: { Authorization: 'Bearer ' + bearer, 'Content-Type': 'application/json' },
+      headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, leaseId: seat.id }),
     });
     if (!response.ok) return { status: response.status };

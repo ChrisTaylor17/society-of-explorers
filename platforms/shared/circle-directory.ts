@@ -5,9 +5,9 @@ import { parseCircleDetail, parseCircleManagement, parseCircleMembershipReceipt,
   type CircleDetail, type CircleManagement, type MyCircles } from '../../lib/circles/membership';
 import { isUuid } from '../../lib/ids/uuid';
 import { parseCircleCompleteMutation, circleCompleteMutationBody, parseOwnedCircleCompleteReceipt } from '../../lib/circles/hosting';
-import { approvedOrigin, type CircleOwner, type CircleTransport } from '../native/src/circles/host';
+import { approvedOrigin, type BearerCircleOwner, type CircleTransport } from '../native/src/circles/host';
 
-export type CircleDirectoryConfig = { origin: string; owner: CircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport; publicProfileTransport?: CircleTransport;
+export type CircleDirectoryConfig = { origin: string; owner: BearerCircleOwner; transport: CircleTransport; publicTransport?: CircleTransport; passageTransport?: CircleTransport; publicProfileTransport?: CircleTransport;
   memberId?: string; attendanceTransport?: CircleTransport; hostingTransport?: CircleTransport;
   timeoutMs?: number; initialOnline?: boolean; newRequestId?: () => Promise<string>; previewCircleId?: string };
 export type PublicCircleChoice = { id: string; title: string };
@@ -32,7 +32,7 @@ const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
  * revision-bound writes and a new readback establish participation authority. */
 export function createCircleDirectory(config: CircleDirectoryConfig) {
   const origin = approvedOrigin(config.origin), timeout = config.timeoutMs ?? 15000;
-  if (!config.owner || !['scope', 'bearer', 'subscribe'].every(key => typeof config.owner[key as keyof CircleOwner] === 'function')
+  if (!config.owner || !['scope', 'bearer', 'subscribe'].every(key => typeof config.owner[key as keyof BearerCircleOwner] === 'function')
     || typeof config.transport !== 'function' || config.publicTransport !== undefined && typeof config.publicTransport !== 'function'
     || config.attendanceTransport !== undefined && typeof config.attendanceTransport !== 'function'
     || config.hostingTransport !== undefined && typeof config.hostingTransport !== 'function'

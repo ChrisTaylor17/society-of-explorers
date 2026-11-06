@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import QuestCircle from '../../app/quest/[circleId]/QuestCircle';
+import { AUTH_INTENT_COOKIE, currentBrowserAuthIntent } from '../../lib/auth/browserIntent';
 import { notifyAuthProviderChanged } from '../../lib/auth/providerSelection';
 import { reelDiscussionId } from '../../lib/clips/salon';
 
@@ -13,6 +14,11 @@ const auth = {
   async getUser(jwt: string) { calls++; if (jwt !== tokens[actor]) throw Error('Synthetic exact-token mismatch'); return { data: { user: { id: subjects[actor] } } }; },
   onAuthStateChange(listener: (event: string, session: null) => void) { listeners.add(listener); return { data: { subscription: { unsubscribe() { listeners.delete(listener); } } } }; },
 };
+// Non-authority fixtures double the signed-in account. The real resolver tests
+// install all cookies themselves and can exercise an absent readable intent.
+if (!document.documentElement.hasAttribute('data-real-authority') && !currentBrowserAuthIntent()) {
+  document.cookie = AUTH_INTENT_COOKIE + '=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa; Path=/; SameSite=Lax; Secure';
+}
 const root = createRoot(document.getElementById('root')!);
 const qa = { factory() { factories++; return { auth }; }, counts: () => ({ factories, calls, subscriptions: listeners.size }),
   actor(value: keyof typeof subjects) { actor = value; }, providerChanged: notifyAuthProviderChanged,

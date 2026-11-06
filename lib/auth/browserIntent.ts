@@ -3,6 +3,7 @@
 // move the browser's current choice back to an older identity.
 export const AUTH_INTENT_COOKIE = 'soe_auth_intent';
 export const AUTH_INTENT_HEADER = 'x-soe-auth-intent';
+export const EXPECTED_MEMBER_HEADER = 'x-soe-expected-member';
 export const AUTH_SELECTION_COOKIE = 'soe_auth_selection_v1';
 export const AUTH_PKCE_INTENT_COOKIE = 'soe_auth_pkce_intent';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

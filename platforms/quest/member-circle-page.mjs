@@ -1,4 +1,4 @@
-import {createVerifiedSupabaseCircleOwner,memberCircleConfig,approvedOrigin} from './circle-host.mjs';
+import {createVerifiedSupabaseCircleOwner,memberCircleConfig,approvedOrigin,hasCircleAuthority} from './circle-host.mjs';
 import {mountCirclePage,browserCircleTransport,assertCircleMarkup} from './circle-view.mjs';
 import {assertContributionsMarkup,mountMemberContributions} from './member-contributions-view.mjs';
 import {immersiveControls,mountImmersiveCircle} from './immersive-circle.mjs';
@@ -26,11 +26,13 @@ function mount({window:win,document:doc,config},withCircle) {
   if(!button||!status)throw Error('Member session controls unavailable');
   const newRequestId=typeof win.crypto?.randomUUID==='function'?async()=>win.crypto.randomUUID():undefined;
   const transport=config?.transport??browserCircleTransport(win);
-  const approved=withCircle?memberCircleConfig({...config,newRequestId,transport})
+  const browserBinding=config?.browserBinding;
+  if(browserBinding&&(!hasCircleAuthority(browserBinding.owner)||typeof config.transport!=='function'||config.auth!==undefined))throw Error('Browser authority unavailable');
+  const approved=withCircle&&!browserBinding?memberCircleConfig({...config,newRequestId,transport})
     : {...config,origin:approvedOrigin(config?.origin),newRequestId,transport};
   if(!approved)throw Error('Member Circle configuration unavailable');
-  const {auth,verificationTimeoutMs,...hostConfig}=approved;
-  const binding=createVerifiedSupabaseCircleOwner(auth,{timeoutMs:verificationTimeoutMs});
+  const {auth,browserBinding:ownedBrowser,verificationTimeoutMs,...hostConfig}=approved;
+  const binding=ownedBrowser??createVerifiedSupabaseCircleOwner(auth,{timeoutMs:verificationTimeoutMs});
   let visible=doc.visibilityState==='visible',focused=doc.hasFocus(),online=win.navigator.onLine!==false,disposed=false,started=false,screen=null,contributions=null,off=()=>{},room=null,immersiveOpen=false,browserSalon=null,browserMeeting=null;
   const regularActive=()=>!disposed&&visible&&focused&&online&&!immersiveOpen;
   const handlers=[];

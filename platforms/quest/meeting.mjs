@@ -1,4 +1,4 @@
-import { safePrivateMeetingUrl } from './circle-host.mjs';
+import { circleAuthorizationHeaders, safePrivateMeetingUrl } from './circle-host.mjs';
 
 const checkSession = 'Check your member session to open the live meeting.';
 const readyMessage = 'Ready to check current Circle access and open the host’s meeting in this tab.';
@@ -57,11 +57,11 @@ export function mountBrowserMeeting(doc, { window: win, origin, circleId, owner,
     message = 'Checking current Circle access…';
     render();
     try {
-      const bearer = await owner.bearer(scope);
+      const headers = await circleAuthorizationHeaders(owner, scope);
       if (!current()) return;
-      if (!bearer) throw Error('Meeting credential unavailable');
+      if (!headers) throw Error('Meeting credential unavailable');
       const response = await transport(endpoint, { method: 'GET', cache: 'no-store', credentials: 'same-origin',
-        redirect: 'error', signal: controller.signal, headers: { Authorization: 'Bearer ' + bearer } });
+        redirect: 'error', signal: controller.signal, headers });
       if (!current()) return;
       if (response.status !== 200 || response.redirected || response.url !== endpoint) throw Error('Meeting response unavailable');
       const detail = await response.json();

@@ -104,6 +104,13 @@ export async function questMemberApp({ sharedSalon = false, writing = false, mee
     assert.equal(expectedArchiveIds.length, 108);
     return { ...f, calls, replies, expectedArchiveIds, root: f.messageId,
       select(actor = 'author', provider = 'supabase') { assert.ok(['author', 'outsider'].includes(actor)); assert.ok(['supabase', 'wallet'].includes(provider)); selected = { actor, provider }; },
+      async walletSelection(actor) {
+        assert.ok(realAuthority && Object.hasOwn(SUBJECTS, actor));
+        const id = memberId(actor);
+        const value = await app.load('lib/auth/walletSession.ts').createWalletSessionValue(id);
+        assert.ok(value, 'Synthetic wallet session required');
+        return { id, value };
+      },
       async receiptCount() { return (await f.db.query('SELECT count(*)::int AS n FROM circle_discussion_post_receipts')).rows[0].n; },
       async leave() {
         const result = await f.db.query('SELECT circle_participation_revision FROM book_cohorts WHERE id=$1', [f.circleId]);

@@ -12,6 +12,7 @@ const html='<!doctype html><html lang="en"><meta name="viewport" content="width=
 const browser=await chromium.launch({headless:true,executablePath:'/Users/christaylor/Library/Caches/ms-playwright/chromium-1228/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',env:{PATH:'/opt/homebrew/bin:/usr/bin:/bin',HOME:'/Users/christaylor'},args:['--disable-background-networking','--disable-component-update','--no-first-run']});
 try{
  const page=await browser.newPage({viewport:{width:390,height:844}});page.on('pageerror',e=>errors.push(e.message));
+ await page.context().addCookies([{url:origin,name:'soe_auth_intent',value:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',secure:true,sameSite:'Lax'}]);
  await page.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());
   if(url.origin!==origin){unexpected.push(request.url());await route.abort();return;}
@@ -37,7 +38,11 @@ try{
  await check();await page.waitForFunction(()=>!document.getElementById('circle-archive-open').disabled);assert.equal(requests.filter(r=>r.kind==='archive').length,0);assert.equal(requests.filter(r=>r.kind==='member').length,1);stories.push('manual Check requires matching selected-cookie metadata before Circle controls enable');
  await page.locator('#circle-archive-open').click();await page.waitForFunction(()=>document.querySelectorAll('#circle-archive-messages article').length===25);await page.locator('#circle-archive-next').click();await page.getByText('OLDER_PRIVATE_CONTRIBUTION',{exact:true}).waitFor();assert.equal(requests.filter(r=>r.kind==='archive').length,2);stories.push('actual component and platform host load archive 25 then older cursor page after renewed subject verification');
  const cleared=await page.evaluate(()=>{window.questQa.providerChanged();return document.getElementById('circle-archive-messages').textContent===''&&document.getElementById('circle-draft').value==='';});assert.equal(cleared,true);assert.equal(await page.evaluate(()=>window.questQa.subscriptions()),0);stories.push('actual shared account-selection event synchronously clears private DOM and detaches SDK observation');
- selected='wallet';await connect();await check();await page.waitForFunction(()=>document.getElementById('member-session-status').textContent.includes('Could not confirm'));assert.equal(await page.locator('#circle-archive-open').isDisabled(),true);assert.equal(requests.filter(r=>r.kind==='archive').length,2);stories.push('selected wallet refuses the retained Google SDK subject before any private Circle request');
+ const callsBeforeWallet=await page.evaluate(()=>window.questQa.providerCalls());
+ selected='wallet';await connect();await check();await page.waitForFunction(()=>!document.getElementById('circle-archive-open').disabled);
+ assert.equal(await page.evaluate(()=>window.questQa.providerCalls()),callsBeforeWallet);
+ assert.equal(requests.filter(r=>r.kind==='archive').length,2);
+ stories.push('wallet selection confirms the current member without a retained Google SDK token or an automatic Circle read');
  await page.evaluate(()=>window.questQa.providerChanged());selected='supabase';await connect();await check();await page.waitForFunction(()=>!document.getElementById('circle-archive-open').disabled);
  hold=true;await page.locator('#circle-archive-open').click({noWaitAfter:true});for(let i=0;i<100&&!held;i++)await new Promise(r=>setTimeout(r,5));assert.equal(held,true);
  await page.evaluate(()=>window.questQa.providerChanged());release();await page.waitForTimeout(50);assert.equal(await page.locator('#circle-archive-messages').innerText(),'');assert.doesNotMatch(await page.locator('body').innerText(),/STALE_PRIVATE_RESPONSE_MUST_STAY_CLEARED/);assert.equal(await page.evaluate(()=>window.questQa.subscriptions()),0);stories.push('account retirement while an actual fetch is held fences its late private response');

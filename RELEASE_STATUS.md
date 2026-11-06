@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The Quest Browser and immersive Circle room now accept the wallet selected in the web app. Chromium used a signed test wallet to review and post a reply, then read it in the simulated room. Switching wallets after the account check refused the old request before it reached Circle SQL. Email and Google still require the selected account's verified token. Native builds, hosted sign-in and a physical Quest session still need acceptance. [Verification](docs/integration/quest-wallet-account-verification.json)
+
 Members can now open their assigned Philemon study and return to the exact Circle for a fresh access check. Discussion controls wait for browser account checks to initialize. A local macOS WebKit run followed the guest listing through wallet sign-in, reviewed joining, reading, a saved reply and sign-out. Chromium separately checked the public study, online Circle journey and private reviewer views. Hosted and physical-device acceptance remain open. [Verification](docs/integration/philemon-circle-return-verification.json)
 
 The pre-cutover restore check now covers 24 tables, including Waddle and the archived Twiddle tables. The 64-table release check also verifies Waddle publication consent. Both flagged incomplete archives accepted by the older checks. A separate audio rehearsal caught missing files despite intact Storage catalog rows, as well as altered bytes and a public target bucket. The hosted export and independent Storage readback still await approval. [Recovery verification](docs/integration/voice-archive-restore-verification.json)
@@ -323,6 +325,8 @@ The preceding profile/navigation milestone's **68 evidence files** and original 
 ## Time-sensitive API credit request
 
 The user asked to use the Pro API benefit within 5–6 days. The initial official account preview on November 4 showed **$46 claimable**; later live previews showed **$45**, then **$44 claimable** as the remaining period shortened. The advertised benefit is $200 for a full monthly period, with the current offer expiring **November 11 at 7:52pm Eastern** (`2026-11-12T00:52:40Z`). Personal was the available API organization. The required secure organization confirmation returned **not_approved**; linking was not attempted and no credits were activated or used. The separate secure API-key setup choice returned **not_selected**; the supported local check found no configured key, and none was issued. Do not bypass or repeat that decision without new user authorization.
+
+The owner later shared the Platform confirmation that Personal was linked. Grant posting and the separate secure key setup still need verification. The local SoE preview runs without a key.
 
 After secure confirmation, finish the supported linking/key setup and use bounded credits for useful SoE public/synthetic evaluation before November 10. Verify the remaining grant and cost controls first; no paid overage or private member text is authorized. Existing Anthropic member consent does not cover OpenAI. These credits do not increase signed-in Codex limits or cover Codex usage through API keys. [Official benefit terms](https://developers.openai.com/api/docs/guides/chatgpt-api-credits).
 

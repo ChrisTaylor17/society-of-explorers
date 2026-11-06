@@ -19,8 +19,11 @@ export const SAFETY_APP_SOURCES=Object.freeze([
  'verification/web/tests/support/offline-app.mjs','tests/security/fakes.ts','verification/web/tests/support/platforms-message-actions-app.mjs',
 ]);
 export async function safetyAppHashes(){return{...COVERAGE_SOURCE_HASHES,...Object.fromEntries(await Promise.all(SAFETY_APP_SOURCES.map(async name=>[name,createHash('sha256').update(await safetySource(name)).digest('hex')])))};}
-export async function createPlatformsMessageActionsApp({actor='author'}={}){
- const f=await createReviewCoverageDb({reportCount:0}),app=offlineApp(),calls=[],http=[],names=new Map(),actors={author:f.authorId,reporter:IDS.host,outsider:f.reviewerId};
+export async function createPlatformsMessageActionsApp({actor='author',profileAware=false}={}){
+ const f=profileAware
+  ? await (await import('./public-profile-app.mjs')).createPublicProfileApp()
+  : await createReviewCoverageDb({reportCount:0});
+ const app=offlineApp(),calls=[],http=[],names=new Map(),actors={author:f.authorId,reporter:IDS.host,outsider:f.reviewerId};
  let selected={actor,provider:'supabase'},closed=false,rpcHook=null,httpHook=null;
  assert.ok(Object.hasOwn(actors,actor));
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async req=>{
@@ -28,7 +31,7 @@ export async function createPlatformsMessageActionsApp({actor='author'}={}){
   if(!who)return null;const provider=bearer?'supabase':selected.provider;
   return{memberId:actors[who],member:{id:actors[who],supabase_auth_id:SUBJECTS[who],display_name:'Synthetic safety member'},auth:{provider,subject:provider==='supabase'?SUBJECTS[who]:actors[who]}};
  }}));
- const allowed=['soe_circle_discussion_read','soe_circle_discussion_thread','soe_circle_message_state','soe_circle_message_action'];
+ const allowed=[profileAware?'soe_circle_discussion_read_profiles':'soe_circle_discussion_read',profileAware?'soe_circle_discussion_thread_profiles':'soe_circle_discussion_thread',profileAware?'soe_circle_message_state_profiles':'soe_circle_message_state','soe_circle_message_action'];
  app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({rpc:async(name,args)=>{
   assert.ok(allowed.includes(name),'Unexpected safety RPC '+name);const call={name,args:structuredClone(args),status:'pending'};calls.push(call);let result;
   try{

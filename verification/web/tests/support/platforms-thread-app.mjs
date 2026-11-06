@@ -20,8 +20,11 @@ export const THREAD_APP_SOURCES=Object.freeze([
 ]);
 export async function threadAppHashes(){return{...COVERAGE_SOURCE_HASHES,...Object.fromEntries(await Promise.all(THREAD_APP_SOURCES.map(async name=>[name,createHash('sha256').update(await threadSource(name)).digest('hex')])))};}
 
-export async function createPlatformsThreadApp(){
- const f=await createReviewCoverageDb({reportCount:0}),app=offlineApp(),calls=[],http=[],names=new Map();
+export async function createPlatformsThreadApp({profileAware=false}={}){
+ const f=profileAware
+  ? await (await import('./public-profile-app.mjs')).createPublicProfileApp()
+  : await createReviewCoverageDb({reportCount:0});
+ const app=offlineApp(),calls=[],http=[],names=new Map();
  let selected={actor:'author',provider:'supabase'},closed=false,identitySequence=null,rpcHook=null,httpHook=null;
  const actors={author:f.authorId,outsider:f.reviewerId};
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async req=>{
@@ -31,7 +34,7 @@ export async function createPlatformsThreadApp(){
   const provider=bearer?'supabase':selected.provider;
   return{memberId:actors[actor],member:{id:actors[actor],supabase_auth_id:SUBJECTS[actor],display_name:'Synthetic own-session author'},auth:{provider,subject:provider==='supabase'?SUBJECTS[actor]:actors[actor]}};
  }}));
- const allowed=['soe_circle_discussion_read','soe_circle_discussion_thread','soe_circle_discussion_target','soe_circle_discussion_receipt','soe_circle_discussion_post'];
+ const allowed=[profileAware?'soe_circle_discussion_read_profiles':'soe_circle_discussion_read',profileAware?'soe_circle_discussion_thread_profiles':'soe_circle_discussion_thread','soe_circle_discussion_target',profileAware?'soe_circle_discussion_receipt_profiles':'soe_circle_discussion_receipt','soe_circle_discussion_post'];
  app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({rpc:async(name,args)=>{
   assert.ok(allowed.includes(name),'Unexpected platform RPC '+name);
   const call={name,args:structuredClone(args),status:'pending'};calls.push(call);

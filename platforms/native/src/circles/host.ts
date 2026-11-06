@@ -4,13 +4,39 @@ import { createThreadWriter, type ThreadWriteModel } from '../../../shared/threa
 import { createMessageSafety, type MessageSafetyModel } from '../../../shared/message-safety';
 import { parseDiscussionQuery } from '../../../../lib/circles/thread';
 import { isUuid } from '../../../../lib/ids/uuid';
+import { AUTH_INTENT_HEADER, EXPECTED_MEMBER_HEADER, parseBrowserIntent } from '../../../../lib/auth/browserIntent';
 
 /** Opaque scope changes on account/session replacement. No token enters a view. */
-export type CircleOwner = {
+type CircleIdentity = {
   scope(): string | null;
-  bearer(expectedScope: string): Promise<string | null>;
   subscribe(listener: () => void): () => void;
 };
+export type BearerCircleOwner = CircleIdentity & { bearer(expectedScope: string): Promise<string | null>; browserAuthority?: never };
+export type BrowserCircleAuthority = { intent: string; memberId: string; bearer?: string };
+export type CircleOwner = BearerCircleOwner | (CircleIdentity & {
+  browserAuthority(expectedScope: string): Promise<BrowserCircleAuthority | null>;
+  bearer?: never;
+});
+
+export function hasCircleAuthority(owner: CircleOwner | undefined): owner is CircleOwner {
+  return typeof owner?.scope === 'function' && typeof owner.subscribe === 'function'
+    && (typeof owner.bearer === 'function') !== (typeof owner.browserAuthority === 'function');
+}
+
+const validBearer = (value: unknown): value is string => typeof value === 'string' && value.length > 0
+  && value.length <= 16384 && !/[\s\u0000-\u001f\u007f]/.test(value);
+
+export async function circleAuthorizationHeaders(owner: CircleOwner, expectedScope: string): Promise<Record<string, string> | null> {
+  if (owner.browserAuthority) {
+    const value = await owner.browserAuthority(expectedScope);
+    if (!value || !parseBrowserIntent(value.intent) || !isUuid(value.memberId)
+        || value.bearer !== undefined && !validBearer(value.bearer)) return null;
+    return { [AUTH_INTENT_HEADER]: value.intent, [EXPECTED_MEMBER_HEADER]: value.memberId,
+      ...(value.bearer ? { Authorization: `Bearer ${value.bearer}` } : {}) };
+  }
+  const bearer = await owner.bearer(expectedScope);
+  return validBearer(bearer) ? { Authorization: `Bearer ${bearer}` } : null;
+}
 export type CircleTransport = (url: string, init: {
   method: 'GET' | 'POST'; headers: Record<string, string>; body?: string;
   cache: 'no-store'; redirect: 'error'; credentials: 'omit'; signal: AbortSignal;
@@ -25,7 +51,7 @@ export function approvedOrigin(value: string) {
   return url.origin;
 }
 export function createCircleHost(config: CircleHostConfig) {
-  if (!isUuid(config?.circleId) || typeof config?.owner?.scope !== 'function' || typeof config.owner.bearer !== 'function' || typeof config.owner.subscribe !== 'function' || typeof config.transport !== 'function') throw Error('Existing session owner and approved transport required');
+  if (!isUuid(config?.circleId) || !hasCircleAuthority(config.owner) || typeof config.transport !== 'function') throw Error('Existing session owner and approved transport required');
   const circleId = config.circleId.toLowerCase();
   const origin = approvedOrigin(config.origin);
   const timeout = config.timeoutMs ?? 15000;
@@ -55,10 +81,10 @@ export function createCircleHost(config: CircleHostConfig) {
     const deadline = new Promise<never>((_, reject) => { timer = setTimeout(() => { abort.abort(); reject(Error('Circle deadline exceeded')); }, timeout); });
     try {
       return await Promise.race([deadline, (async () => {
-        const bearer = await config.owner.bearer(expected);
-        if (!bearer || bearer.length > 16384 || /[\s\u0000-\u001f\u007f]/.test(bearer) || abort.signal.aborted || !current(expected) || !mayTransmit()) throw Error('Circle session changed');
+        const headers = await circleAuthorizationHeaders(config.owner, expected);
+        if (!headers || abort.signal.aborted || !current(expected) || !mayTransmit()) throw Error('Circle session changed');
         const response = await config.transport(origin + path, { ...options, credentials: 'omit', signal: abort.signal,
-          headers: { Authorization: `Bearer ${bearer}`, ...(options.method === 'POST' ? { 'Content-Type': 'application/json' } : {}) } });
+          headers: { ...headers, ...(options.method === 'POST' ? { 'Content-Type': 'application/json' } : {}) } });
         // Rejecting the reply is additional validation, not a substitute for a
         // native transport's pre-forwarding redirect policy.
         if (response.redirected || response.url !== origin + path) throw Error('Unexpected Circle response origin');

@@ -79,7 +79,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, reelS
   function prepare() {
     const auth = immersive.createAuth(active);
     try {
-      const binding = createVerifiedSupabaseCircleOwner(auth.auth);
+      const binding = auth.binding ?? createVerifiedSupabaseCircleOwner(auth.auth);
       const host = createCircleHost({ origin, circleId, owner: binding.owner, newRequestId,
         transport(url, init) {
           const read = init.method === 'GET' && (url === discussion ||
