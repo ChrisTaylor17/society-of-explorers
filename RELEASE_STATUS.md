@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+The account deletion draft now hides a departing member’s Waddle posts before reviewing their audio files. It includes unlinked uploads under that member’s folder and clears the transcripts only after exact file readback and a catalog check. The local restore test detected missing voice-removal receipts that the older 64-table check accepted. Hosted Storage removal, backup approval and device acceptance remain open. [Voice erasure verification](docs/integration/account-erasure-waddle-verification.json)
+
 The Quest Browser and immersive Circle room now accept the wallet selected in the web app. Chromium used a signed test wallet to review and post a reply, then read it in the simulated room. Switching wallets after the account check refused the old request before it reached Circle SQL. Email and Google still require the selected account's verified token. Native builds, hosted sign-in and a physical Quest session still need acceptance. [Verification](docs/integration/quest-wallet-account-verification.json)
 
 Members can now open their assigned Philemon study and return to the exact Circle for a fresh access check. Discussion controls wait for browser account checks to initialize. A local macOS WebKit run followed the guest listing through wallet sign-in, reviewed joining, reading, a saved reply and sign-out. Chromium separately checked the public study, online Circle journey and private reviewer views. Hosted and physical-device acceptance remain open. [Verification](docs/integration/philemon-circle-return-verification.json)

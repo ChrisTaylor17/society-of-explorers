@@ -4,7 +4,7 @@ Web account settings and the connected phone account screens lead to `/account/d
 
 The person checks the account, saves a private status code and types `DELETE`. Submission uses the reviewed account and one code. An exact retry returns the original receipt. Linked wallet and provider sign-ins see the same pending request. The code works without a sign-in and reveals only the request reference and dates. The private queue stores the code's digest. Website service routines can read receipts and accept requests. Direct table access is restricted to its owner.
 
-The current receipt confirms that the request was received and that deletion is pending. It shows the review date. The owner must choose a review deadline from 1 to 30 days. The erasure and completion procedures remain pending.
+The current receipt confirms that the request was received and that deletion is pending. It shows the review date. The owner must choose a review deadline from 1 to 30 days. The owner still needs to approve retention and verify the hosted erasure process before opening intake.
 
 ## Start processing a reviewed request
 
@@ -58,9 +58,21 @@ For the exact processing request, the owner calls `preview_twiddle_erasure` with
 
 The owner passes the exact review and explicit approval to `erase_twiddle_data`. It removes the author, text and attached fields from the departing account’s posts, leaves the thread anchors, and removes the account’s collaboration and reaction links. It preserves the other authors’ records and entries without a recorded owner. The owner-only receipt verifies the withdrawn anchors and detects a new linked record or known copy. The private status code continues to show that deletion is pending. [Verification](account-erasure-twiddle-verification.json)
 
+## Remove Waddle voice posts
+
+Stage the [Waddle erasure draft](../sql/account-erasure-waddle-apply.sql) after the Twiddle draft, Waddle table containment and the private Storage cutover. Keep the account freeze active. Drain in-flight voice publishing and storage uploads before preparing a review, including requests admitted by older app revisions. Keep the same account and storage controls active through final readback.
+
+The database owner calls `preview_waddle_erasure(request_id, member_id, auth_user_id, storage_origin)`. Use the exact HTTPS origin of the active Storage project. The review includes current and legacy audio keys, transcripts without audio, and orphan uploads in the member’s own folder. It reports shared references, unsupported paths, minted records, foreign ownership and version history separately. Resolve those cases through a separate review. While a file is under review, the owner can withdraw the verified member’s publication consent and hide the posts. Request a fresh scope after that change. Save the review in the private recovery workspace.
+
+Pass the exact scope digest and explicit approval to `prepare_waddle_erasure`. It clears public consent, hides the posts and records the approved file list. Re-run the preview after preparation. It shows the original keys, current catalog entries and keys that were already unlisted. The app’s feed and audio routes stop serving the withdrawn posts before file removal. Another member’s voice remains available.
+
+Use the approved Storage API removal in the exact project and bucket for the reviewed keys. Confirm each exact key is absent through authorized provider readback. For a key that lacked a catalog row at preparation, resolve underlying file absence with the provider before confirming that key. An incomplete inventory, access error, ambiguous result or unresolved file keeps the request pending. On a lost reply, read back the exact keys and recheck the prepared scope before retrying. [Supabase object removal](https://supabase.com/docs/guides/storage/management/delete-objects)
+
+Pass the reviewed digest and the ordered array of independently confirmed absent keys to `clear_waddle_erasure`. The transaction also verifies the current catalog, removes the reviewed posts and transcripts, and drops the raw file list from the receipt. Exact retries return the original time. A new voice record or catalog key under that member blocks identity verification. The member’s private status still shows pending while the other deletion steps are reviewed. [Verification](account-erasure-waddle-verification.json)
+
 ## Remove sign-in identities
 
-The owner calls `preview_identity_removal` with the exact processing request, member ID and Supabase subject. Use a null member ID for a provider-only account or a null provider subject for a wallet-only member. The preview rechecks the earlier erasure phases, including archived Twiddle, and shows linked Auth records, storage ownership and other database references. The owner resolves applicable storage through the provider’s Storage tools and reviews other app records before proceeding. [Supabase Storage ownership](https://supabase.com/docs/guides/storage/security/ownership)
+The owner calls `preview_identity_removal` with the exact processing request, member ID and Supabase subject. Use a null member ID for a provider-only account or a null provider subject for a wallet-only member. The preview rechecks the earlier erasure phases, including archived Twiddle and Waddle voice posts, and shows linked Auth records, storage ownership and other database references. The owner resolves applicable storage through the provider’s Storage tools and reviews other app records before proceeding. [Supabase Storage ownership](https://supabase.com/docs/guides/storage/security/ownership)
 
 The owner passes the exact reviewed snapshot and explicit approval to `prepare_identity_removal`. It clears the Supabase link and wallet address together and records the preparation. The hosted Supabase link cascades from `auth.users` to `members`, so complete preparation before any provider deletion. The app access fence stays active for the original identities across all reachable builds.
 

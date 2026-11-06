@@ -7,12 +7,15 @@ import { offlineApp } from './offline-app.mjs';
 const [psql, socket, port, database, owner, memberId, mode, ...extra] = process.argv.slice(2);
 assert.equal(extra.length, 0);
 assert.equal(psql, '/opt/homebrew/opt/postgresql@17/bin/psql');
-assert.match(realpathSync(socket), /^\/private\/tmp\/soe-waddle-privacy-[a-z0-9_]+\/db\/socket$/);
+const erasure = ['read-erasure-before', 'read-erasure-hidden', 'read-erasure-restored'].includes(mode);
+assert.match(realpathSync(socket), erasure
+  ? /^\/private\/tmp\/soe-circle-departure-[a-z0-9_]+\/(staged|original)\/socket$/
+  : /^\/private\/tmp\/soe-waddle-privacy-[a-z0-9_]+\/db\/socket$/);
 assert.match(port, /^\d{4,5}$/);
-assert.match(database, /^soe_waddle_(stage|restored)$/);
+assert.match(database, erasure ? /^(soe_source|soe_waddle_erasure_restored)$/ : /^soe_waddle_(stage|restored)$/);
 assert.equal(owner, 'soe_fixture_owner');
 assert.match(memberId, /^[0-9a-f-]{36}$/);
-assert(['write-and-read', 'read-restored', 'read-before-review'].includes(mode));
+assert(erasure || ['write-and-read', 'read-restored', 'read-before-review'].includes(mode));
 assert(process.execArgv.some(arg => arg.endsWith('/deny-build-network.cjs')));
 
 const origin = 'https://waddle-fixture.invalid';
@@ -176,6 +179,30 @@ function play(id, method = 'GET', headers = {}) {
 
 function idFor(title) {
   return query(`SELECT to_jsonb(id) FROM public.waddles WHERE transcription='${title}'`);
+}
+
+if (erasure) {
+  const departing = '79000000-0000-4000-8000-000000000001';
+  const retained = '79000000-0000-4000-8000-000000000004';
+  const visible = mode === 'read-erasure-before';
+  objectKeys.add(query(`SELECT to_jsonb(audio_url) FROM public.waddles WHERE id='${retained}'`));
+  const feed = await route.GET();
+  assert.equal(feed.status, 200);
+  const { waddles } = await feed.json();
+  assert.equal(waddles.some(row => row.id === departing), visible);
+  assert.equal(waddles.some(row => row.id === retained), true);
+  const mark = requests.length;
+  const removed = await play(departing);
+  assert.equal(removed.status, visible ? 200 : 404);
+  if (visible) assert.deepEqual(new Uint8Array(await removed.arrayBuffer()), audioBytes);
+  else assert.deepEqual(requests.slice(mark), ['lookup']);
+  const other = await play(retained);
+  assert.equal(other.status, 200);
+  assert.deepEqual(new Uint8Array(await other.arrayBuffer()), audioBytes);
+  await new Promise(resolve => process.stdout.write(JSON.stringify({
+    mode, departingPlayback: removed.status, retainedPlayback: other.status, requests,
+  }) + '\n', resolve));
+  process.exit(0);
 }
 
 if (mode === 'write-and-read') {

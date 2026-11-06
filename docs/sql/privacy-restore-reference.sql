@@ -36,6 +36,14 @@
 \else
   \set soe_restore_include_voice_archive off
 \endif
+\if :{?soe_restore_include_waddle_erasure}
+\else
+  \set soe_restore_include_waddle_erasure off
+\endif
+\if :soe_restore_include_waddle_erasure
+  \set soe_restore_include_account_deletion_state on
+  \set soe_restore_include_voice_archive on
+\endif
 \set soe_restore_include_twiddle_archive :soe_restore_include_account_deletion_state
 \if :soe_restore_include_voice_archive
   \set soe_restore_include_twiddle_archive on
@@ -135,6 +143,9 @@ deletion_relations(schema_name, name, evidence_name) AS (
     ('soe_account_deletion_private', 'identity_removal_context', 'soe_account_deletion_private.identity_removal_context'),
     ('soe_account_deletion_private', 'twiddle_erasure_receipts', 'soe_account_deletion_private.twiddle_erasure_receipts'),
     ('soe_account_deletion_private', 'twiddle_erasure_targets', 'soe_account_deletion_private.twiddle_erasure_targets')
+\if :soe_restore_include_waddle_erasure
+    , ('soe_account_deletion_private', 'waddle_erasure_receipts', 'soe_account_deletion_private.waddle_erasure_receipts')
+\endif
 ),
 \endif
 relations(schema_name, name, evidence_name) AS (
@@ -325,6 +336,10 @@ row_hashes(name, digest) AS (
     FROM ONLY soe_account_deletion_private.twiddle_erasure_receipts t
   UNION ALL SELECT 'soe_account_deletion_private.twiddle_erasure_targets', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
     FROM ONLY soe_account_deletion_private.twiddle_erasure_targets t
+\if :soe_restore_include_waddle_erasure
+  UNION ALL SELECT 'soe_account_deletion_private.waddle_erasure_receipts', sha256(convert_to(to_jsonb(t)::text, 'UTF8'))
+    FROM ONLY soe_account_deletion_private.waddle_erasure_receipts t
+\endif
 \endif
 ),
 numbered AS (
@@ -424,6 +439,16 @@ deletion_routine_requirements(signature) AS (
     ('verify_contact_erasure(uuid)'),
     ('verify_identity_removal(uuid,uuid,uuid)'),
     ('verify_twiddle_erasure(uuid,uuid)')
+\if :soe_restore_include_waddle_erasure
+    , ('check_waddle_erasure_shape()')
+    , ('clear_waddle_erasure(uuid,uuid,uuid,text,text[])')
+    , ('guard_waddle_erasure_write()')
+    , ('prepare_waddle_erasure(uuid,uuid,uuid,text,text,boolean)')
+    , ('preview_waddle_erasure(uuid,uuid,uuid,text)')
+    , ('verify_waddle_erasure(uuid,uuid)')
+    , ('waddle_erasure_audio_key(text,uuid,text)')
+    , ('waddle_erasure_snapshot(uuid,uuid,text)')
+\endif
   ) AS internal(name)
   UNION ALL VALUES
     ('public._soe_circle_message_immutable()'),
@@ -639,6 +664,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_waddle_erasure'::boolean THEN 'soe-privacy-restore-v14'
     WHEN :'soe_restore_include_voice_archive'::boolean AND :'soe_restore_include_account_deletion_state'::boolean
       THEN 'soe-privacy-restore-v13'
     WHEN :'soe_restore_include_voice_archive'::boolean THEN 'soe-privacy-restore-v12'

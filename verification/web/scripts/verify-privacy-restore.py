@@ -24,6 +24,7 @@ FIRST_RELEASE_FORMAT = 'soe-privacy-restore-v10'
 ACCOUNT_DELETION_FORMAT = 'soe-privacy-restore-v11'
 VOICE_ARCHIVE_FORMAT = 'soe-privacy-restore-v12'
 VOICE_RELEASE_FORMAT = 'soe-privacy-restore-v13'
+WADDLE_ERASURE_FORMAT = 'soe-privacy-restore-v14'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -83,9 +84,11 @@ TABLES_BY_SCOPE = {
     ACCOUNT_DELETION_FORMAT: RELEASE_TABLES | DELETION_TABLES,
     VOICE_ARCHIVE_FORMAT: TABLES | AUTH_TABLES | DIRECT_TABLES | CIRCLE_TABLES | VOICE_ARCHIVE_TABLES,
     VOICE_RELEASE_FORMAT: RELEASE_TABLES | DELETION_TABLES | VOICE_ARCHIVE_TABLES,
+    WADDLE_ERASURE_FORMAT: RELEASE_TABLES | DELETION_TABLES | VOICE_ARCHIVE_TABLES
+    | {'soe_account_deletion_private.waddle_erasure_receipts'},
 }
-DELETION_SCOPES = {ACCOUNT_DELETION_FORMAT, VOICE_RELEASE_FORMAT}
-VOICE_SCOPES = {VOICE_ARCHIVE_FORMAT, VOICE_RELEASE_FORMAT}
+DELETION_SCOPES = {ACCOUNT_DELETION_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT}
+VOICE_SCOPES = {VOICE_ARCHIVE_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT}
 FIRST_RELEASE_SCOPES = {FIRST_RELEASE_FORMAT} | DELETION_SCOPES
 CIRCLE_RELEASE_SCOPES = {CIRCLE_RELEASE_FORMAT} | FIRST_RELEASE_SCOPES
 WALLET_SCOPES = {WALLET_FORMAT, CIRCLES_WALLET_FORMAT} | CIRCLE_RELEASE_SCOPES
@@ -210,6 +213,7 @@ def read_target(args):
         include_first_release = 'on' if args.scope in FIRST_RELEASE_SCOPES else 'off'
         include_account_deletion = 'on' if args.scope in DELETION_SCOPES else 'off'
         include_voice_archive = 'on' if args.scope in VOICE_SCOPES else 'off'
+        include_waddle_erasure = 'on' if args.scope == WADDLE_ERASURE_FORMAT else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
@@ -220,6 +224,7 @@ def read_target(args):
              '-v', f'soe_restore_include_first_release_state={include_first_release}',
              '-v', f'soe_restore_include_account_deletion_state={include_account_deletion}',
              '-v', f'soe_restore_include_voice_archive={include_voice_archive}',
+             '-v', f'soe_restore_include_waddle_erasure={include_waddle_erasure}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -295,9 +300,19 @@ def main():
     parser.add_argument('--include-voice-archive', action='store_true',
                         help='Compare the 24-table pre-cutover reference including Waddle and Twiddle. '
                              'Combine with --include-account-deletion-state for the 64-table release reference.')
+    parser.add_argument('--include-waddle-erasure', action='store_true',
+                        help='Compare the 65-table release reference including Waddle removal receipts.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
-    if args.include_voice_archive:
+    if args.include_waddle_erasure:
+        if args.scope != FORMAT or any((
+            args.include_direct_messages, args.include_wallet_state, args.include_circles,
+            args.include_circle_release_state, args.include_first_release_state,
+            args.include_account_deletion_state, args.include_voice_archive,
+        )):
+            parser.error('Use --include-waddle-erasure by itself.')
+        args.scope = WADDLE_ERASURE_FORMAT
+    elif args.include_voice_archive:
         if (args.scope == CORE_PRACTICE_FORMAT or args.include_wallet_state
                 or args.include_circle_release_state or args.include_first_release_state):
             parser.error('Use --include-voice-archive alone or with --include-account-deletion-state.')

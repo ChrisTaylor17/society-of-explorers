@@ -18,6 +18,8 @@ For backups taken after the account erasure drafts, use `--include-account-delet
 
 Review Waddle’s raw database grants and file access separately. Before changing access, verify the 24-table pre-cutover reference and a separate restore of the recorded bytes from the shared `waddles` bucket. Pair the owner-reviewed table draft with the replacement consent, feed and playback routes and protect older builds. After the Waddle and account erasure drafts, use the 64-table reference for subsequent backups. [Waddle review](waddle-privacy.md) · [Recovery procedure](privacy-restore-check.md#verify-waddle-and-archived-twiddle-recovery)
 
+After Waddle containment, verified private Storage and archived Twiddle erasure, stage the [owner voice-erasure draft](../sql/account-erasure-waddle-apply.sql). Use the 65-table `--include-waddle-erasure` check for later backups. Drain in-flight uploads before processing a request and require separate provider removal and readback for its exact keys before clearing the database posts. Verify a synthetic removal on the reviewed hosted candidate before opening account-deletion intake. [Voice erasure procedure](account-deletion.md#remove-waddle-voice-posts)
+
 ## Stage 0: choose the saved-reading policy baseline
 
 Stage 1 preserves existing policies. The tracked legacy Great Books schema installs `Progress open` on `reading_progress` and `Highlights open` on `book_highlights`. In the disposable rehearsal, that legacy state passed core containment but failed the Stage 9 preflight, which requires a policy-free `reading_progress` table.
