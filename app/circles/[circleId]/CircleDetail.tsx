@@ -5,7 +5,6 @@ import { useCircleParticipation } from '@/lib/circles/useCircleParticipation';
 import { formatDay } from '@/lib/circles/schedule';
 import { isUuid } from '@/lib/ids/uuid';
 import { body, button, card, gold, h1, h2, label, lead, parchment, primary, small } from '@/lib/circles/ui';
-import { safePrivateMeetingUrl } from '@/lib/circles/discussion-reader';
 import { circleDetailHref, ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import { parseCircleListing, type CircleListing } from '@/lib/circles/membership';
 import ReportButton from '../ReportButton';
@@ -53,7 +52,6 @@ function CircleView({ circleId, fromOnline }: { circleId: string; fromOnline: bo
   const viewer = detail?.viewer;
   const listing = !detail && !management && preview !== 'unavailable' ? preview : null;
   const nextPath = encodeURIComponent(circleDetailHref(circleId, fromOnline));
-  const meetingUrl = detail && viewer?.is_member && !c?.hidden ? safePrivateMeetingUrl(detail.online_url) : null;
   const confirmLabel = participation.retry ? 'Confirm exact participation retry' : intent?.action === 'join' ? 'Confirm join' : intent?.action === 'leave' ? 'Confirm leave' : intent?.action === 'complete' ? 'Confirm Circle completion' : 'Confirm RSVP';
   return <div ref={scopeRef} className={styles.scope} onClickCapture={event => {
     const trigger = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-participation-trigger]');
@@ -99,7 +97,13 @@ function CircleView({ circleId, fromOnline }: { circleId: string; fromOnline: bo
         <p style={body}><strong style={{ color: parchment }}>Members:</strong> {c.member_count} of {c.max_members}{c.spots_left === 0 ? ' (full)' : ''}</p>
         <p style={small}>{viewer.is_member ? 'You are currently a member.' : 'You are not currently a member.'}{viewer.is_host ? ' You are the host; leaving membership does not transfer hosting.' : ''}</p>
         {c.description && <p style={{ ...body, whiteSpace: 'pre-wrap' }}>{c.description}</p>}
-        {meetingUrl && <p style={body}><strong>Video link (members only):</strong> <a href={meetingUrl} target="_blank" rel="noopener noreferrer">Open the online meeting</a></p>}
+        {detail.online_url && <div>
+          <p style={small}>Open the host’s meeting in this tab. Current Circle access is checked first.</p>
+          <button type="button" style={button} disabled={actionDisabled} onClick={() => {
+            statusRef.current?.focus({ preventScroll: true });
+            participation.openMeeting();
+          }}>Open the online meeting</button>
+        </div>}
       </div>
       <div className={styles.row} style={{ margin: '1rem 0' }}>
         {detail.capabilities.canJoin && <button type="button" style={primary} disabled={actionDisabled} data-participation-trigger="join" onClick={() => load({ action: 'join' })}>Join this Circle</button>}

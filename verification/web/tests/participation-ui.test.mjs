@@ -81,7 +81,7 @@ test('join rechecks fresh state, requires confirmation, binds receipt and then r
     assert.equal(document.activeElement.textContent, 'Review participation change'); assert.equal(a.button('Confirm join').disabled, true);
     await a.confirm(); const confirmation = a.button('Confirm join'); await a.act(async () => { confirmation.click(); confirmation.click(); });
     const posts = a.requests.filter(request => request.options.method === 'POST'); assert.equal(posts.length, 1); const sent = JSON.parse(posts[0].options.body); assert.equal(sent.expectedRevision, 3); assert.match(sent.requestId, /^[0-9a-f-]{36}$/);
-    assert.equal(a.requests.at(-1).options.method, 'GET'); assert.match(a.text(), /You are currently a member/); assert.ok(document.querySelector('a[href*=PRIVATE_MEETING]')); assert.match(a.text(), /Request confirmed/);
+    assert.equal(a.requests.at(-1).options.method, 'GET'); assert.match(a.text(), /You are currently a member/); assert.ok(a.button('Open the online meeting')); assert.equal(document.querySelector('a[href*=PRIVATE_MEETING]'), null); assert.match(a.text(), /Request confirmed/);
   } finally { await a.cleanup(); }
 });
 

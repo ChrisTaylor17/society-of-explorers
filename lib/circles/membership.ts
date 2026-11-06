@@ -134,11 +134,11 @@ export function parseCircleDetail(value: unknown, circleId?: string): CircleDeta
     meetings.push({ date: meeting.date, going: meeting.going, my_status: meeting.my_status as CircleRsvpStatus | null });
   }
   if (base.circle.next_meeting !== (meetings[0]?.date ?? null)) return null;
-  if (base.viewer.is_member && !base.circle.hidden && base.circle.format !== 'in_person' && value.online_url === null) return null;
+  if (base.viewer.is_member && !base.ended && !base.circle.hidden && base.circle.format !== 'in_person' && value.online_url === null) return null;
   let online_url: string | null = null;
   if (value.online_url !== null) {
     if (!base.viewer.is_member || base.circle.hidden || base.circle.format === 'in_person' || typeof value.online_url !== 'string' || value.online_url.length > 2048) return null;
-    try { const url = new URL(value.online_url); if (url.protocol !== 'https:' || url.username || url.password) return null; online_url = url.href; }
+    try { const url = new URL(value.online_url); if (url.protocol !== 'https:' || url.username || url.password) return null; online_url = base.ended ? null : url.href; }
     catch { return null; }
   }
   return { ...base, ready: true, meetings, online_url };

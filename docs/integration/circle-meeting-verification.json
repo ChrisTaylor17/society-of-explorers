@@ -1,0 +1,74 @@
+{
+  "status": "verified_locally",
+  "recordedAt": "2026-11-06T05:16:14+00:00",
+  "baseCommit": "90c7d969356bbef6f15d694d527fd91d6f0d9267",
+  "priorBuild": {
+    "buildId": "INWfXj_Ql4zfUGpReN8cL",
+    "staleNavigationsAfterRemoval": 1,
+    "freshDetailReads": 0
+  },
+  "verifiedBehavior": [
+    "The compiled member page checks the same canonical member and fetches Circle detail before navigating in the same tab.",
+    "The intercepted meeting request includes no app credentials or referrer. Back requires another access check.",
+    "Remote removal, focus loss during a held read and host completion prevent navigation from the previously available action.",
+    "The ended Circle response omits the live URL and retains discussion. The shared parser also accepts valid ended responses from earlier servers while dropping their meeting URLs."
+  ],
+  "testResults": {
+    "portablePhoneControllerCases": 78,
+    "apiAndDatabaseCases": 26,
+    "scopedLintPassed": true,
+    "compiledBoundaryProbes": 14,
+    "webBrowserStories": 11,
+    "webBrowserRequests": 106,
+    "composedIosStories": 15,
+    "composedAndroidStories": 32,
+    "compiledQuestStories": 3,
+    "composedQuestStories": 11,
+    "questSharedBundleSha256": "8277c988fed609d20bf97a59049759889212d865413f1d6e41a65bc000975b73",
+    "questSharedBundleByteIdentical": true,
+    "build": {
+      "buildId": "YWcP-zp1iL-YhIKgKvQ5e",
+      "seconds": 39.66,
+      "sourceFiles": 1059,
+      "sourceSha256": "64d9d2983acfe4fe0f313e97b19b4fb3a52614fc10d3013178f39d998e16102d",
+      "existingNextEdgeWarning": "⚠ Using edge runtime on a page currently disables static generation for that page"
+    },
+    "cleanup": "Owned browser, database and loopback server processes closed. Both server receipts have zero source, build, input and runtime mismatches."
+  },
+  "verificationNotes": [
+    "The legacy DOM assertion was updated and syntax checked. Its cached jsdom runtime was offloaded. The compiled browser run exercises the updated join and meeting-control assertion.",
+    "One tracked Quest module was materialized during inspection. Its bytes matched the starting Git object."
+  ],
+  "limits": [
+    "The browser ran against synthetic accounts, disposable SQL and an intercepted meeting destination. Installed phone, physical Quest and hosted meeting-provider acceptance remain open.",
+    "A previously shared external URL is controlled by the host and its meeting provider. This app check verifies access at its own handoff."
+  ],
+  "sourceSha256": {
+    "app/circles/[circleId]/CircleDetail.tsx": "8a27f7d47f74a2ffcb090480be5e62d4a50a1e45c94eb9a6e148309303b7689c",
+    "lib/circles/useCircleParticipation.ts": "cde9ba740a08e3fc2ba2260752a28ffba261687497866451a218147c23b82c21",
+    "lib/circles/membership.ts": "b8520da6bee22ea92b15ce070da1e8ba3f0b015a99887d52c0ed5d8d3fad724f",
+    "lib/circles/membership-server.ts": "130a2b946b5aa56d9c3aa1eed32318f0d121bfe32314f4ef0da675df5b716cf9",
+    "platforms/tests/circle-directory.test.mjs": "81d07c78d7d93e7e99ca792f8d2e61d7d7d724b7da95165405a0fbc7aecd64b1",
+    "verification/web/scripts/browser-online-salon.mjs": "9d84124f58b62d794325e23da057dbac3112c4e26241dc80f2e68d918cc70fd2",
+    "verification/web/tests/participation-ui.test.mjs": "0ba6967696391414d6f02c6c81460da23a11bd9a20473887beca7ba0bf98c10a"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/circle-meeting-2026-11-06/prior-browser.json": "9d31fbebd221ee4348cb473d9644d3d81f26b75d5f08cf706d364a05f8d972c6",
+    "verification/web/evidence/circle-meeting-2026-11-06/current-browser.json": "6466f469bf3c9321b4f278169ba94f1efa179b378f632df6f391775f7568b162",
+    "verification/web/evidence/circle-meeting-2026-11-06/ios-browser.json": "41920f39c40282fd7d10615a036e87715d159c8d718c14989c0fffd6b5e09dbc",
+    "verification/web/evidence/circle-meeting-2026-11-06/android-browser.json": "c4dbfa312c06c34af614e3adbe32fbb63d5eb4776f1853cbc8265a1a4e12bae3",
+    "verification/web/evidence/circle-meeting-2026-11-06/quest-shell.json": "1fe7a27b0748bb341379fef253f4716656e2d26cd38783dc3d0f1ffbee29922c",
+    "verification/web/evidence/circle-meeting-2026-11-06/quest-composed.json": "c3570d167f99ae7def72a116221c5c924b7e0bb041eae76dfcd693c2adcceba9",
+    "verification/web/evidence/circle-meeting-2026-11-06/quest-shared-source-manifest.json": "b54192293e5763930f9720c6364cc17b44999318fbbca657e0b0192d83bd25ba",
+    "verification/web/evidence/circle-meeting-2026-11-06/prior-browser-runner.mjs": "c7ab22cf048c557c49a923fbbdde99c40b3ceaecf8ab0ad9851925d45240b010",
+    "verification/web/evidence/circle-meeting-2026-11-06/quest-shell-runner.mjs": "6ccc5713eafd5a032188bf9fd2e0e7900d8d8adba59c48ed3a3e6d5a745df819",
+    "verification/web/evidence/circle-meeting-2026-11-06/built-shell-online-salon-meeting-02-next-build.json": "a80d7163621ee9e28e59d8db5867130100259b5d0aba3e0eaed96fd01d134300",
+    "verification/web/evidence/circle-meeting-2026-11-06/built-shell-online-salon-meeting-02-next-build.log": "e74fde60dde6525209ea4722e3531d90cbe6a04c8b9d2a5f35fccfabab81fdb5",
+    "verification/web/evidence/circle-meeting-2026-11-06/built-shell-online-salon-meeting-02-server.json": "9386bf8b97656b7f5f78fee2a45d07e76d14db607d226f3aae61f0aa81f9d02b",
+    "verification/web/evidence/circle-meeting-2026-11-06/built-shell-online-salon-meeting-before-server.json": "12845adf76544c525ad55065f5970ffb4121a5b72dec077aed8993eeace908ad",
+    "verification/web/evidence/circle-meeting-2026-11-06/built-shell-online-salon-meeting-02-release-boundary-probe.json": "61a84eb99dbc6ecdb915f3e839ec3acdbcf8c2507fff75d96936fd21a74d4c46",
+    "verification/web/evidence/circle-meeting-2026-11-06/online-salon-meeting-native-01.tap": "bfd8cafe341be9236b3607196560604fd1b9c8c38f5d0c95608488a100a1bf16",
+    "verification/web/evidence/circle-meeting-2026-11-06/online-salon-meeting-http-01.tap": "d62012ec0fb6bc0f03079131bfc14718a3d39e1d9f98537b3afa504fe08614d6",
+    "verification/web/evidence/circle-meeting-2026-11-06/online-salon-meeting-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

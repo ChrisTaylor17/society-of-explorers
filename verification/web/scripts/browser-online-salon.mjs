@@ -22,7 +22,8 @@ const ready = JSON.parse(read(`verification/web/evidence/${prefix}server-ready.j
 read('verification/web/scripts/browser-online-salon.mjs');
 assert.equal(ready.status, 'READY');
 for (const path of ['app/HomePageClient.tsx', 'app/circles/CirclesBrowser.tsx', 'app/circles/[circleId]/CircleDetail.tsx', 'app/circles/messages/CircleSafetyNav.tsx',
-  'app/circles/[circleId]/page.tsx', 'app/clips/ClipPlayer.tsx', 'app/great-books/scripture/philemon/page.tsx', 'app/login/page.tsx']) {
+  'app/circles/[circleId]/page.tsx', 'app/clips/ClipPlayer.tsx', 'app/great-books/scripture/philemon/page.tsx', 'app/login/page.tsx',
+  'lib/circles/useCircleParticipation.ts', 'lib/circles/membership.ts', 'lib/circles/membership-server.ts']) {
   read(path);
   assert.equal(sourceHashes[path], ready.sourceHashes[path], path);
 }
@@ -76,6 +77,7 @@ try {
   let bearerProofs = 0;
   fixture.app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({ auth: { async getUser(token) {
     bearerProofs++;
+    if (token === fixture.TOKENS.other) return { data: { user: { id: SUBJECTS.other } }, error: null };
     assert.equal(token, access);
     return { data: { user }, error: null };
   } } }) }));
@@ -98,11 +100,18 @@ try {
     env: { PATH: '/opt/homebrew/bin:/usr/bin:/bin', HOME: '/Users/christaylor' },
     args: ['--disable-background-networking', '--disable-component-update', '--no-first-run', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'] });
   const context = await browser.newContext({ viewport: { width: 320, height: 900 }, serviceWorkers: 'block', acceptDownloads: false });
+  let meetingNavigations = 0, holdDetail = null;
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url()), method = request.method();
     try {
       if (url.origin === origin && !url.pathname.startsWith('/api/')) return await route.continue();
       const headers = await request.allHeaders();
+      if (url.href === meeting) {
+        assert(request.isNavigationRequest() && method === 'GET');
+        for (const name of ['referer', 'cookie', 'authorization']) assert(!headers[name], name);
+        meetingNavigations++;
+        return await route.fulfill({ status: 200, contentType: 'text/plain', body: 'Synthetic live meeting' });
+      }
       let response;
       if (url.origin === providerOrigin) {
         assert(!headers.cookie);
@@ -137,7 +146,15 @@ try {
           response = await fixture.dispatch(url.pathname + url.search, { method, headers, body: request.postData() ?? undefined });
         }
       }
-      requests.push({ path: url.pathname, query: url.search, method, status: response.status });
+      const currentDetail = url.origin === origin && url.pathname === apiPath && !url.search;
+      requests.push({ path: url.pathname, query: url.search, method, status: response.status,
+        ...(currentDetail ? { memberBound: headers['x-soe-expected-member'] === member } : {}) });
+      if (currentDetail && holdDetail) {
+        const held = holdDetail;
+        holdDetail = null;
+        held.entered();
+        await held.release;
+      }
       const delivery = Object.fromEntries(response.headers);
       if (response.cookies?.jar?.size) delivery['set-cookie'] = [...response.cookies.jar].map(([name, { value, opts }]) =>
         `${name}=${value}; Path=/; SameSite=Lax${opts?.httpOnly ? '; HttpOnly' : ''}`).join('\n');
@@ -152,6 +169,12 @@ try {
   page.on('pageerror', error => errors.push(redact(error.stack || error)));
   const button = name => page.getByRole('button', { name, exact: true });
   const link = name => page.getByRole('link', { name, exact: true });
+  const meetingButton = button('Open the online meeting');
+  const meetingUnavailable = page.getByText('The meeting is unavailable for your current Circle access.', { exact: true });
+  const checkFreshDetail = since => {
+    const read = requests.slice(since).filter(call => call.path === apiPath && !call.query);
+    assert.deepEqual(read.map(call => [call.method, call.status, call.memberBound]), [['GET', 200, true]]);
+  };
   const accountLink = name => page.locator('main').getByRole('link', { name, exact: true });
   const navSignIn = page.getByRole('navigation', { name: 'Circle safety navigation' }).getByRole('link', { name: 'Sign in', exact: true });
   const saved = () => page.getByText('Request confirmed. Current state is shown below; an earlier receipt does not override later changes.', { exact: true }).waitFor();
@@ -188,7 +211,7 @@ try {
   await preview.getByText('Synthetic public description.').waitFor();
   assert.match(await preview.innerText(), /Online.*hosted by.*Next meeting/s);
   assert.equal(await fits(), true);
-  assert.equal(await link('Open the online meeting').count(), 0);
+  assert.equal(await meetingButton.count(), 0);
   assert.equal(await button('Join this Circle').count(), 0);
   assert.deepEqual(requests.slice(prePreview).map(({ path, query }) => path + query), [apiPath + '?view=listing']);
   for (const name of ['Sign in', 'Create a free account']) assert.equal(new URL(await accountLink(name).getAttribute('href'), origin).searchParams.get('next'), detailPath);
@@ -203,7 +226,7 @@ try {
   await button('Sign in').click();
   await page.waitForURL(origin + detailPath);
   await preview.waitFor();
-  assert.equal(await link('Open the online meeting').count(), 0);
+  assert.equal(await meetingButton.count(), 0);
   assert.equal(await link('Online Circles').getAttribute('href'), onlineHref);
   assert((await context.cookies()).some(cookie => cookie.name === 'soe_auth_selection_v1' && cookie.httpOnly));
   assert(requests.some(call => call.path === '/api/auth/provider' && call.status === 200));
@@ -213,14 +236,74 @@ try {
   await button('Join this Circle').click();
   await button('Confirm join').waitFor();
   assert.equal(await button('Confirm join').isDisabled(), true);
-  assert.equal(await link('Open the online meeting').count(), 0);
+  assert.equal(await meetingButton.count(), 0);
   assert(!requests.some(call => call.method === 'POST' && call.path.endsWith('/join')));
   await page.getByRole('checkbox', { name: /I read the community norms/ }).check();
   await button('Confirm join').click();
   await saved();
-  assert.equal(await link('Open the online meeting').getAttribute('href'), meeting);
+  await meetingButton.waitFor();
+  assert.equal(await page.locator('a[href*="private-meeting-do-not-expose"]').count(), 0);
   assert.equal(await fits(), true);
-  pass('A verified nonmember reviews the norms and confirms membership before the private link appears.');
+  pass('A verified nonmember reviews the norms and confirms membership before the private meeting control appears.');
+
+  let since = requests.length;
+  await meetingButton.click();
+  await page.waitForURL(meeting);
+  await page.getByText('Synthetic live meeting', { exact: true }).waitFor();
+  assert.equal(context.pages().length, 1);
+  assert.equal(meetingNavigations, 1);
+  checkFreshDetail(since);
+  await page.goBack();
+  await page.waitForURL(origin + detailPath);
+  await button('Load current Circle access').waitFor();
+  assert.equal(await meetingButton.count(), 0);
+  await button('Load current Circle access').click();
+  await meetingButton.waitFor();
+  pass('The current member opens the fresh link in the same tab without app credentials or a referrer. Back needs a new access check.');
+
+  let entered, release;
+  const started = new Promise(resolve => { entered = resolve; });
+  holdDetail = { entered, release: new Promise(resolve => { release = resolve; }) };
+  let timer;
+  try {
+    await meetingButton.click();
+    await Promise.race([started, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(Error('Meeting detail did not reach the hold point')), 10_000);
+    })]);
+    const cancelled = page.waitForEvent('requestfailed', {
+      predicate: request => request.url() === origin + apiPath, timeout: 10_000,
+    });
+    await Promise.all([cancelled, page.evaluate(() => window.dispatchEvent(new Event('blur')))]);
+    await page.getByText(/Private Circle details, conversation and action drafts cleared/).waitFor();
+    assert.equal(await meetingButton.count(), 0);
+  } finally {
+    clearTimeout(timer);
+    holdDetail = null;
+    release();
+  }
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await button('Load current Circle access').click();
+  await meetingButton.waitFor();
+  assert.equal(meetingNavigations, 1);
+  pass('Losing focus during a held meeting check aborts the read and retires the opening action.');
+
+  const removed = await fixture.db.query('DELETE FROM public.book_cohort_members WHERE cohort_id=$1 AND member_id=$2 RETURNING member_id', [circleId, member]);
+  assert.equal(removed.rows[0]?.member_id, member);
+  since = requests.length;
+  await meetingButton.click();
+  await meetingUnavailable.waitFor();
+  checkFreshDetail(since);
+  assert.equal(meetingNavigations, 1);
+  assert.equal(await meetingButton.count(), 0);
+  const joinAgain = async () => {
+    await button('Join this Circle').click();
+    await page.getByRole('checkbox', { name: /I read the community norms/ }).check();
+    await button('Confirm join').click();
+    await saved();
+    await meetingButton.waitFor();
+  };
+  await joinAgain();
+  pass('A member removed after loading Circle details cannot open the cached meeting. The current nonmember view is shown.');
 
   await page.getByRole('button', { name: /^Going on / }).first().click();
   await page.getByRole('checkbox', { name: /I reviewed this change/ }).check();
@@ -232,8 +315,32 @@ try {
   await button('Confirm leave').click();
   await saved();
   assert.equal(await fixture.rsvpRow(circleId, projection.next_meeting, 'outsider'), null);
-  assert.equal(await link('Open the online meeting').count(), 0);
-  pass('The reviewed RSVP is stored in SQL. Leaving removes it and takes the meeting link out of the view.');
+  assert.equal(await meetingButton.count(), 0);
+  pass('The reviewed RSVP is stored in SQL. Leaving removes it and takes the meeting control out of the view.');
+
+  await joinAgain();
+  const host = fixture.actors.other;
+  const hostHeaders = { authorization: 'Bearer ' + fixture.TOKENS.other, origin: ORIGIN, 'x-soe-expected-member': host };
+  const hostDetail = await fixture.dispatch(apiPath, { headers: hostHeaders });
+  assert.equal(hostDetail.status, 200);
+  const { revision } = await hostDetail.json();
+  const completion = await fixture.dispatch(apiPath + '/complete', { method: 'POST', headers: hostHeaders,
+    body: { expectedMemberId: host, expectedRevision: revision, requestId: crypto.randomUUID() } });
+  assert.equal(completion.status, 200, (await completion.json()).error);
+  since = requests.length;
+  await meetingButton.click();
+  await meetingUnavailable.waitFor();
+  checkFreshDetail(since);
+  assert.equal(meetingNavigations, 1);
+  assert.equal(await meetingButton.count(), 0);
+  await link('Open discussion archive and replies').waitFor();
+  const ended = await fixture.dispatch(apiPath, { headers: { authorization: 'Bearer ' + access, 'x-soe-expected-member': member } });
+  assert.equal(ended.status, 200);
+  const endedDetail = await ended.json();
+  assert.equal(endedDetail.ended, true);
+  assert.equal(endedDetail.online_url, null);
+  assert.equal(endedDetail.capabilities.canReadConversation, true);
+  pass('Host completion removes the private URL from the API and blocks cached meeting actions while preserving discussion.');
 
   await go(`/circles/${hidden}?from=online`);
   await page.getByText('The public Circle preview is unavailable.', { exact: true }).waitFor();

@@ -101,7 +101,7 @@ function projectSnapshot(value: unknown, detail: boolean): Record<string, unknow
     going_next: detail && Array.isArray(value.meetings) && membershipRecord(value.meetings[0]) ? value.meetings[0].going : null,
     hidden: c.circle_hidden, publicProfileId: detail ? parsePublicProfileReference(value.publicProfileId) : null };
   return { circle, revision: value.revision, viewer: value.viewer, ended: value.ended, capabilities: value.capabilities,
-    ...(detail ? { ready: true, meetings: value.meetings, online_url: value.online_url } : {}) };
+    ...(detail ? { ready: true, meetings: value.meetings, online_url: value.ended ? null : value.online_url } : {}) };
 }
 
 function projectDetail(value: unknown, circleId: string) {

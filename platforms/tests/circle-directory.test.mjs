@@ -11,6 +11,23 @@ const origin='https://directory.invalid',id='11111111-1111-4111-8111-11111111111
 const clone=x=>JSON.parse(JSON.stringify(x)),tick=()=>new Promise(r=>setTimeout(r,0)),deferred=()=>{let resolve;return{promise:new Promise(r=>resolve=r),resolve};};
 const publicCircle=(circleId=id)=>({id:circleId,title:'Synthetic reading circle',description:null,format:'in_person',format_label:'In person',city:'Fictional City',region:null,venue_name:'Public library',venue_label:'Library',meeting_label:'Tuesday',weekday:2,time:'19:00',timezone:'UTC',start_date:'2030-01-01',first_meeting:'2030-01-01',next_meeting:'2030-01-01',week:1,reading:{week:1,title:'Synthetic reading',slug:'synthetic-reading',author:'Synthetic author',selection:'Synthetic selection'},reading_program:null,program_length:12,member_count:1,max_members:8,spots_left:7,status:'forming',host_name:'Synthetic host',going_next:null,phase:'upcoming'});
 function detail(member=false,revision=0){return{ready:true,circle:{...publicCircle(),hidden:false},revision,viewer:{signed_in:true,is_member:member,is_host:false},ended:false,capabilities:{canJoin:!member,canLeave:member,canRsvp:member,canComplete:false,canReadConversation:member},meetings:[{date:'2030-01-01',going:0,my_status:null}],online_url:null};}
+test('Ended online Circles retain discussion and suppress both current and legacy meeting URLs', () => {
+ const {parseCircleDetail}=load('lib/circles/membership.ts');
+ const base=detail(true);
+ const online={...base.circle,format:'online',format_label:'Online',city:null,venue_name:null,venue_label:'Online'};
+ const link='https://meeting.invalid/private-fixture';
+ for(const status of ['active','completed']){
+  for(const online_url of [null,link]){
+   const ended=parseCircleDetail({...base,ended:true,online_url,meetings:[],circle:{
+    ...online,status,next_meeting:null,spots_left:0,week:13,reading:null,
+   },capabilities:{...base.capabilities,canRsvp:false}},id);
+   assert.equal(ended?.online_url,null);
+   assert.equal(ended?.capabilities.canReadConversation,true);
+  }
+ }
+ assert.equal(parseCircleDetail({...base,circle:online,online_url:link},id)?.online_url,link);
+ assert.equal(parseCircleDetail({...base,circle:online},id),null);
+});
 function management(revision=0){return{kind:'management',circle:{id,title:'Synthetic hidden circle',hidden:true},revision,viewer:{signed_in:true,is_member:true,is_host:false},capabilities:{canLeave:true,canComplete:false}};}
 function fixture({timeoutMs=100,newRequestId=async()=>key,publicLane=true}={}){
  let scope='owner-1',member=false,revision=0,publicHook=null,privateHook=null,bearerHook=null,jsonHook=null;const owners=new Set(),calls=[],receipts=new Map();let bearers=0,keys=0;

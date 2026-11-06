@@ -19,6 +19,7 @@ type View = { active: boolean; phase: 'idle' | 'loading' | 'ready' | 'review' | 
 const initial = (): View => ({ active: true, phase: 'idle', detail: null, management: null, intent: null, confirmed: false, retry: false,
   notice: 'Load this Circle to check current membership, meeting details and available actions.' });
 const refused = new Set([400, 401, 403, 404, 409, 413, 415, 429]);
+const meetingUnavailable = 'The meeting is unavailable for your current Circle access.';
 const allowed = (detail: CircleDetail | null, management: CircleManagement | null, intent: ParticipationIntent) => {
   const capabilities = detail?.capabilities ?? management?.capabilities;
   return intent.action === 'join' ? Boolean(detail?.capabilities.canJoin)
@@ -67,14 +68,16 @@ export function useCircleParticipation(circleId: string) {
 
   const epoch = core.epoch;
   const valid = () => core.mounted && core.observing && core.active && !core.busy && core.epoch === epoch;
-  async function run(management: boolean, requested: ParticipationIntent | null = null, confirm = false) {
+  async function run(management: boolean, requested: ParticipationIntent | null = null, confirm = false,
+    meetingOwner: string | null = null) {
     if (!valid() || requested && core.pending?.sent) return;
     const pending = confirm ? core.pending : null, earlierUnknown = pending?.sent === true;
     if (confirm && (!pending || core.view.phase !== 'review' || !core.view.confirmed)) return;
     if (!confirm && !core.pending?.sent) core.pending = null;
     core.busy = true; const generation = ++core.generation, controller = new AbortController(); core.controller = controller;
     publish({ phase: confirm ? 'sending' : 'loading', detail: null, management: null, intent: null, confirmed: false, retry: false,
-      notice: confirm ? 'Checking the current account and saving the reviewed participation request…' : 'Checking current Circle state…' });
+      notice: confirm ? 'Checking the current account and saving the reviewed participation request…'
+        : meetingOwner ? 'Checking current Circle access for the meeting…' : 'Checking current Circle state…' });
     const current = () => core.mounted && core.active && core.generation === generation && !controller.signal.aborted;
     let posted = false, postStatus: number | null = null, receiptRevision: number | null = null;
     const aborted = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(Error('Circle request retired')), { once: true }));
@@ -95,6 +98,7 @@ export function useCircleParticipation(circleId: string) {
         } else if (actorResponse.status !== 401) throw Error('Canonical member unavailable');
         if (core.pending && core.pending.memberId !== memberId) { core.pending = null; if (pending) throw Error('Account changed before confirmation'); }
         core.owner = memberId;
+        if (meetingOwner && memberId !== meetingOwner) throw Error('Meeting account changed');
         if ((requested || confirm || management || core.pending) && !memberId) throw Error('Current member required');
         if (pending && (core.pending !== pending || pending.memberId !== memberId)) throw Error('Review owner changed');
         if (memberId) headers.set('X-Soe-Expected-Member', memberId);
@@ -123,6 +127,25 @@ export function useCircleParticipation(circleId: string) {
         const detail = management ? null : parseCircleDetail(value, circleId), controls = management ? parseCircleManagement(value, circleId) : null;
         const state = detail ?? controls;
         if (!state || state.viewer.signed_in !== (memberId !== null) || state.revision < (receiptRevision ?? 0)) throw Error('Current Circle state invalid');
+        if (meetingOwner) {
+          const href = detail?.online_url;
+          if (!href || document.visibilityState !== 'visible' || !document.hasFocus() || navigator.onLine === false) {
+            publish({ detail, phase: 'ready', notice: meetingUnavailable });
+            return;
+          }
+          const link = document.createElement('a');
+          link.href = href;
+          link.target = '_self';
+          link.rel = 'noopener noreferrer';
+          link.referrerPolicy = 'no-referrer';
+          link.hidden = true;
+          document.body.append(link);
+          try {
+            if (current()) link.click();
+          } finally { link.remove(); }
+          if (current()) publish({ detail, phase: 'ready', notice: 'Opening the live meeting in this tab. Use Back to return.' });
+          return;
+        }
         const held = core.pending;
         if (held && state.revision < held.expectedRevision) throw Error('Circle revision regressed');
         if (pending && receiptRevision !== null) {
@@ -151,7 +174,7 @@ export function useCircleParticipation(circleId: string) {
         const uncertain = Boolean(core.pending?.sent);
         publish({ phase: uncertain ? 'unknown' : 'idle', detail: null, management: null, intent: null, confirmed: false, retry: false, notice: uncertain
           ? 'The reply could not be confirmed. This change may have been saved. Load current access before reviewing an exact retry.'
-          : 'Current Circle access or this change could not be verified. Check your sign-in and load current access. No saved change or available seat is being assumed.' });
+          : meetingOwner ? meetingUnavailable : 'Current Circle access or this change could not be verified. Check your sign-in and load current access. No saved change or available seat is being assumed.' });
       }
     } finally { clearTimeout(timer); if (core.generation === generation) { core.busy = false; core.controller = null; if (core.mounted) setView({ ...core.view }); } }
   }
@@ -159,6 +182,11 @@ export function useCircleParticipation(circleId: string) {
     canRetry: view.phase === 'unknown' && Boolean(view.detail || view.management) && core.owner === core.pending?.memberId,
     load: (intent: ParticipationIntent | null = null) => { if (valid() && core.view.phase !== 'review') void run(false, intent); },
     loadMembership: (intent: ParticipationIntent | null = null) => { if (valid() && core.view.phase !== 'review') void run(true, intent); },
+    openMeeting: () => {
+      if (valid() && core.view.phase === 'ready' && !core.pending && core.owner && core.view.detail?.online_url) {
+        void run(false, null, false, core.owner);
+      }
+    },
     confirm: () => { if (valid()) void run(core.pending?.management ?? false, null, true); },
     check: (value: boolean) => { if (valid() && core.view.phase === 'review') publish({ confirmed: value }); },
     retryRequest: () => { if (valid() && core.view.phase === 'unknown' && core.pending?.sent && core.owner === core.pending.memberId && (core.view.detail || core.view.management)) {
