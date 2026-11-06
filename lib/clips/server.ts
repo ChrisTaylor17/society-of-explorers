@@ -3,6 +3,7 @@ import { constants } from 'node:fs';
 import { open, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { byteRange } from '@/lib/http/byteRange';
 import registry from './registry.json';
 import { CC_BY_4_URL, KILAUEA_REPORT_URL, PEXELS_LICENSE_URL, clipHref, integer, isClipId, isSha256, MAX_CAPTION_BYTES, MAX_CLIP_BYTES, MAX_CLIP_DURATION_MS,
   parsePublicMediaClip, plain, record, type PublicMediaClip } from './contracts';
@@ -226,14 +227,6 @@ export async function approvedReel(id: string, entries: unknown = registry, root
 export function clipHeaders(mime: string): Headers {
   return new Headers({ 'Content-Type': mime, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Cross-Origin-Resource-Policy': 'same-origin' });
-}
-export function byteRange(value: string | null, length: number): [number, number] | null | 'invalid' {
-  if (value === null) return null;
-  const match = /^bytes=(0|[1-9]\d*)?-(0|[1-9]\d*)?$/u.exec(value);
-  if (!match || !match[1] && !match[2]) return 'invalid';
-  const first = match[1] === undefined ? Math.max(0, length - Number(match[2])) : Number(match[1]);
-  const last = match[1] === undefined || match[2] === undefined ? length - 1 : Math.min(Number(match[2]), length - 1);
-  return !Number.isSafeInteger(first) || !Number.isSafeInteger(last) || first >= length || first > last || match[1] === undefined && Number(match[2]) === 0 ? 'invalid' : [first, last];
 }
 export async function clipResource(request: Request, id: string, kind: 'media' | 'captions', entries: unknown = registry, root?: string): Promise<Response> {
   const headers = clipHeaders('text/plain; charset=utf-8');

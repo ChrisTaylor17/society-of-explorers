@@ -2,6 +2,8 @@
 
 Updated 2026-11-06. **First release remains HOLD. Production clearance is false.**
 
+Waddle playback now uses an app address that checks recorded publication consent and streams only the author's WebM from private storage. The restore rehearsal verified the old and new file paths, byte ranges and the refusal after consent withdrawal. Chromium decoded a synthetic recording through the published player. The hosted bucket is still public and awaits the approved backup and cutover. [Playback verification](docs/integration/waddle-private-audio-verification.json)
+
 Waddle now shows a local recording preview before the member chooses OpenAI transcription. Publishing the recording and transcript is a separate action tied to the current account. The feed requires recorded publication consent, so older records are preserved without appearing automatically. The database draft passed an isolated restore and Chromium verified the consent flow. Hosted table grants and the public audio bucket still need an approved cutover. [Waddle review](docs/integration/waddle-privacy.md)
 
 The post-erasure restore check now covers 63 tables and the account deletion routines. The 42-table check matched a deliberately incomplete archive that lost request receipts and reopened a frozen test account. The new check flagged 17 missing row sets, and the complete restore preserved the receipts and access block. Hosted backup and acceptance remain open. [Restore procedure](docs/integration/privacy-restore-check.md#verify-a-backup-after-the-account-erasure-drafts) · [Verification](docs/integration/account-erasure-restore-verification.json)

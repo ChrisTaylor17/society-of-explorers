@@ -4,15 +4,20 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let supabaseAdmin: SupabaseClient | null = null;
 
+export function getSupabaseAdminConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRoleKey) {
+    throw new Error('Missing Supabase admin environment variables');
+  }
+
+  return { url, serviceRoleKey };
+}
+
 export function getSupabaseAdmin(): SupabaseClient {
   if (!supabaseAdmin) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!url || !serviceRoleKey) {
-      throw new Error('Missing Supabase admin environment variables');
-    }
-
+    const { url, serviceRoleKey } = getSupabaseAdminConfig();
     supabaseAdmin = createClient(url, serviceRoleKey);
   }
 

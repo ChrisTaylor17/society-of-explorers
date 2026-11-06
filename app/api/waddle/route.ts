@@ -4,11 +4,21 @@ import { circleWriteOrigin } from '@/lib/circles/moderation-server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { hasPrivateWaddleBucket, MAX_AUDIO_BYTES, WADDLE_AUDIO_MIME, WADDLE_BUCKET, waddleAudioHref } from '@/lib/waddle/media';
 
-const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 const MAX_TRANSCRIPTION_CHARS = 4_000;
 const MAX_REACTION_CHARS = 2_000;
-const PUBLIC_WADDLE_FIELDS = 'id,audio_url,transcription,thinker_id,thinker_reaction,created_at';
+const WADDLE_FEED_FIELDS = 'id,audio_url,transcription,thinker_id,thinker_reaction,created_at,member_id';
+
+type WaddleFeedRow = {
+  id: string;
+  audio_url: string | null;
+  transcription: string | null;
+  thinker_id: string | null;
+  thinker_reaction: string | null;
+  created_at: string | null;
+  member_id: string | null;
+};
 
 function optionalText(value: FormDataEntryValue | null, maxLength: number): string | null {
   if (typeof value !== 'string') return null;
@@ -17,29 +27,15 @@ function optionalText(value: FormDataEntryValue | null, maxLength: number): stri
   return trimmed.slice(0, maxLength);
 }
 
-function publishedAudioUrl(value: unknown): string | null {
-  if (typeof value !== 'string' || !value) return null;
-  try {
-    const bucket = new URL('/storage/v1/object/public/waddles/', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    const asset = new URL(value);
-    if (asset.origin === bucket.origin && asset.pathname.startsWith(bucket.pathname) &&
-        !asset.username && !asset.password && !asset.search && !asset.hash) {
-      const parts = asset.pathname.slice(bucket.pathname.length).split('/').map(decodeURIComponent);
-      if (parts.every(part => part && part !== '.' && part !== '..' && !/[/\\%\u0000-\u001f\u007f]/.test(part))) {
-        return asset.href;
-      }
-    }
-  } catch {
-    // Historic rows can contain unrecognized links.
-  }
-  return null;
+function publicWaddle({ id, audio_url, transcription, thinker_id, thinker_reaction, created_at, member_id }: WaddleFeedRow) {
+  return { id, audio_url: waddleAudioHref(id, audio_url, member_id), transcription, thinker_id, thinker_reaction, created_at };
 }
 
 export async function GET() {
   const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('waddles')
-    .select(PUBLIC_WADDLE_FIELDS)
+    .select(WADDLE_FEED_FIELDS)
     .eq('is_public', true)
     .not('public_consent_at', 'is', null)
     .order('created_at', { ascending: false })
@@ -47,9 +43,7 @@ export async function GET() {
 
   if (error) return privateJson({ error: 'Failed to load Waddles' }, { status: 500 });
 
-  return privateJson({ waddles: (data || []).map(({ id, audio_url, transcription, thinker_id, thinker_reaction, created_at }) => ({
-    id, audio_url: publishedAudioUrl(audio_url), transcription, thinker_id, thinker_reaction, created_at,
-  })) });
+  return privateJson({ waddles: (data || []).map(publicWaddle) });
 }
 
 export async function POST(req: NextRequest) {
@@ -75,7 +69,7 @@ export async function POST(req: NextRequest) {
     if (audio && audio.size > MAX_AUDIO_BYTES) {
       return privateJson({ error: 'Audio file too large' }, { status: 413 });
     }
-    if (audio && (audio.size === 0 || audio.type.split(';', 1)[0] !== 'audio/webm')) {
+    if (audio && (audio.size === 0 || audio.type.split(';', 1)[0] !== WADDLE_AUDIO_MIME)) {
       return privateJson({ error: 'Use a WebM audio recording.' }, { status: 400 });
     }
 
@@ -83,37 +77,40 @@ export async function POST(req: NextRequest) {
       return privateJson({ error: 'Audio or transcription required' }, { status: 400 });
     }
 
-    let audioUrl = '';
+    let audioObject = '';
     const supabaseAdmin = getSupabaseAdmin();
 
-    // Upload audio to Supabase storage
-    if (audio && audio.size > 0) {
-      const filename = `${auth.memberId}/${Date.now()}-${randomUUID()}.webm`;
+    if (audio) {
       const arrayBuffer = await audio.arrayBuffer();
-      const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-        .from('waddles')
-        .upload(filename, arrayBuffer, { contentType: 'audio/webm' });
-
-      if (uploadError) return privateJson({ error: 'Failed to store Waddle audio' }, { status: 500 });
-
-      if (uploadData) {
-        const { data: urlData } = supabaseAdmin.storage.from('waddles').getPublicUrl(filename);
-        audioUrl = urlData.publicUrl;
+      if (arrayBuffer.byteLength < 5 || new DataView(arrayBuffer).getUint32(0) !== 0x1a45dfa3) {
+        return privateJson({ error: 'Use a WebM audio recording.' }, { status: 400 });
       }
+      if (!await hasPrivateWaddleBucket(supabaseAdmin.storage)) {
+        return privateJson({ error: 'Waddle audio storage is unavailable.' }, { status: 503 });
+      }
+      const filename = `${auth.memberId}/${Date.now()}-${randomUUID()}.webm`;
+      const { data: uploaded, error: uploadError } = await supabaseAdmin.storage
+        .from(WADDLE_BUCKET)
+        .upload(filename, arrayBuffer, { contentType: WADDLE_AUDIO_MIME, cacheControl: '0' });
+
+      if (uploadError || uploaded?.fullPath !== `${WADDLE_BUCKET}/${filename}`) {
+        return privateJson({ error: 'Failed to store Waddle audio' }, { status: 500 });
+      }
+      audioObject = filename;
     }
 
     const { data: waddle, error } = await supabaseAdmin.from('waddles').insert({
       member_id: auth.memberId,
-      audio_url: audioUrl,
+      audio_url: audioObject,
       transcription: transcription || '',
       thinker_id: thinkerId || null,
       thinker_reaction: thinkerReaction || null,
       is_public: true,
       public_consent_at: new Date().toISOString(),
-    }).select(PUBLIC_WADDLE_FIELDS).single();
+    }).select(WADDLE_FEED_FIELDS).single();
 
-    if (error) return privateJson({ error: 'Failed to save Waddle' }, { status: 500 });
-    return privateJson({ waddle });
+    if (error || !waddle) return privateJson({ error: 'Failed to save Waddle' }, { status: 500 });
+    return privateJson({ waddle: publicWaddle(waddle) });
   } catch {
     return privateJson({ error: 'Failed to save Waddle' }, { status: 500 });
   }

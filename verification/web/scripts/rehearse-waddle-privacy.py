@@ -10,6 +10,7 @@ SCRIPT = Path(__file__).resolve()
 ROOT = SCRIPT.parents[3]
 DRAFT = ROOT / 'docs/sql/waddle-data-containment-apply.sql'
 AUTHOR = '77000000-0000-4000-8000-000000000001'
+OTHER = '77000000-0000-4000-8000-000000000002'
 
 FIXTURE = f"""
 CREATE TABLE public.waddles (
@@ -20,15 +21,18 @@ GRANT ALL ON public.waddles TO anon,authenticated,service_role;
 GRANT SELECT(transcription) ON public.waddles TO PUBLIC;
 GRANT UPDATE(transcription) ON public.waddles TO anon;
 INSERT INTO public.waddles(member_id,audio_url,transcription,is_public,nft_token_id,created_at) VALUES
-  ('{AUTHOR}','https://waddle-fixture.invalid/storage/v1/object/public/waddles/{AUTHOR}/recording.webm',
+  ('{AUTHOR}','https://waddle-fixture.invalid/storage/v1/object/public/waddles/{AUTHOR}/1793960000000.webm',
    'Synthetic public recording',true,'INTERNAL_FIXTURE_TOKEN','2026-11-06 10:00:00Z'),
   ('{AUTHOR}','https://unrelated.invalid/foreign.webm','Synthetic public external link',true,NULL,'2026-11-06 10:01:00Z'),
   ('{AUTHOR}','https://waddle-fixture.invalid/storage/v1/object/public/waddles/x%2Fy.webm',
    'Synthetic public escaped path',true,NULL,'2026-11-06 10:02:00Z'),
-  ('{AUTHOR}','https://waddle-fixture.invalid/storage/v1/object/public/waddles/fixture-private.webm',
+  ('{AUTHOR}','https://waddle-fixture.invalid/storage/v1/object/public/waddles/{OTHER}/1793960000001.webm',
+   'Synthetic public other owner',true,NULL,'2026-11-06 10:02:30Z'),
+  ('{AUTHOR}','{AUTHOR}/1793960000001.wav','Synthetic archived Twiddle audio',true,NULL,'2026-11-06 10:02:45Z'),
+  ('{AUTHOR}','{AUTHOR}/1793960000001.webm',
    'SYNTHETIC_PRIVATE_WADDLE',false,NULL,'2026-11-06 10:03:00Z'),
   (NULL,NULL,'SYNTHETIC_UNMARKED_WADDLE',NULL,NULL,'2026-11-06 10:04:00Z'),
-  (NULL,NULL,'SYNTHETIC_PUBLIC_UNREVIEWED',true,NULL,'2026-11-06 10:05:00Z');
+  ('{AUTHOR}','{AUTHOR}/1793960000002.webm','SYNTHETIC_PUBLIC_UNREVIEWED',true,NULL,'2026-11-06 10:05:00Z');
 """
 
 
@@ -73,7 +77,7 @@ def exercise(cluster, temp, kit, report):
     query(target,'CREATE VIEW public.fixture_waddle_view AS SELECT transcription FROM public.waddles')
     apply(sqlstate='PT409')
     query(target,'DROP VIEW public.fixture_waddle_view')
-    assert query(target,'SELECT count(*) FROM public.waddles',role='anon') == '6'
+    assert query(target,'SELECT count(*) FROM public.waddles',role='anon') == '8'
     apply()
     apply()
     assert rows(target) == before
@@ -91,9 +95,10 @@ def exercise(cluster, temp, kit, report):
     http(target,'read-before-review')
     query(target,"UPDATE public.waddles SET public_consent_at='2026-11-06T10:06:00Z' "
           "WHERE transcription IN ('Synthetic public recording','Synthetic public external link',"
-          "'Synthetic public escaped path','SYNTHETIC_PRIVATE_WADDLE')")
+          "'Synthetic public escaped path','Synthetic public other owner','Synthetic archived Twiddle audio',"
+          "'SYNTHETIC_PRIVATE_WADDLE')")
     http(target,'write-and-read')
-    assert query(target,f"SELECT count(*) FROM public.waddles WHERE member_id='{AUTHOR}'",role='service_role') == '5'
+    assert query(target,f"SELECT count(*) FROM public.waddles WHERE member_id='{AUTHOR}'",role='service_role') == '9'
     checks.append('Existing flags supply no publication consent. The actual route returns only consented rows and writes only after exact account checks.')
     sealed = temp/'sealed.dump'
     cluster.dump(target,sealed)

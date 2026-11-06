@@ -77,6 +77,12 @@ export function privateEventStreamHeaders(init: HeadersInit = {}) {
   return headers;
 }
 
+export function privateResourceHeaders(init: HeadersInit) {
+  const headers = new Headers(init);
+  applyPrivateHeaders(headers);
+  return headers;
+}
+
 function applyPrivateHeaders(target: NextResponse | Headers) {
   const headers = target instanceof Headers ? target : target.headers;
 

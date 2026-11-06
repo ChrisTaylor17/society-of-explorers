@@ -23,15 +23,19 @@ const browser = await require('playwright').chromium.launch({
     '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'],
 });
 const memberId = '77000000-0000-4000-8000-000000000001';
+const waddleId = '77000000-0000-4000-8000-000000000003';
+const audioPath = `/api/waddle/${waddleId}/audio`;
+const invalidAudioPath = '/api/waddle/bad-id/audio';
 const transcript = 'A synthetic voice for the local recording test.';
 const report = { status: 'FAIL', buildId: ready.buildId, transcriptionRequests: 0, publicationRequests: 0,
-  externalBrowserRequests: [], pageErrors: [], fixtureErrors: [], checks: [], browserClosed: false };
+  playbackRequests: 0, externalBrowserRequests: [], pageErrors: [], fixtureErrors: [], checks: [], browserClosed: false };
 try {
   const context = await browser.newContext({
     serviceWorkers: 'block', acceptDownloads: false, viewport: { width: 390, height: 820 },
   });
   await context.grantPermissions(['microphone'], { origin });
   let published = false;
+  let recordedBytes;
   await context.route('**/*', async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -40,13 +44,32 @@ try {
         report.externalBrowserRequests.push(url.origin);
         return route.abort();
       }
+      if ([audioPath, invalidAudioPath].includes(url.pathname) && request.headers()['x-compiled-fixture-check'] === 'true') {
+        return route.continue();
+      }
       if (url.pathname === '/api/auth/member') return route.fulfill({ json: {
         member: { id: memberId, display_name: 'Synthetic member', tier: 'seeker' },
         auth: { provider: 'wallet', subject: memberId },
       } });
       if (url.pathname === '/api/waddle' && request.method() === 'GET') return route.fulfill({ json: {
-        waddles: published ? [{ id: memberId, transcription: transcript, created_at: '2026-11-06T12:00:00Z' }] : [],
+        waddles: published ? [{ id: waddleId, audio_url: audioPath, transcription: transcript, created_at: '2026-11-06T12:00:00Z' }] : [],
       } });
+      if (url.pathname === audioPath) {
+        assert(published && recordedBytes);
+        assert.equal(request.method(), 'GET');
+        report.playbackRequests++;
+        const length = recordedBytes.byteLength;
+        const range = request.headers().range;
+        const match = range ? /^bytes=(\d+)-(\d*)$/.exec(range) : null;
+        if (range) assert(match);
+        const start = match ? Number(match[1]) : 0;
+        const end = match?.[2] ? Math.min(length - 1, Number(match[2])) : length - 1;
+        const body = recordedBytes.subarray(start, end + 1);
+        const headers = { 'content-type': 'audio/webm', 'content-length': String(body.byteLength),
+          'cache-control': 'private, no-store', 'accept-ranges': 'bytes' };
+        if (match) headers['content-range'] = `bytes ${start}-${end}/${length}`;
+        return route.fulfill({ body, headers, status: match ? 206 : 200 });
+      }
       if (url.pathname === '/api/transcribe' || url.pathname === '/api/waddle') {
         assert.equal(request.method(), 'POST');
         const body = request.postDataBuffer();
@@ -92,8 +115,8 @@ try {
   await transcribe.waitFor();
   const preview = page.locator('audio[src^="blob:"]');
   assert.equal(await preview.count(), 1);
-  const bytes = await preview.evaluate(async audio => (await (await fetch(audio.src)).arrayBuffer()).byteLength);
-  assert(bytes > 100);
+  recordedBytes = Buffer.from(await preview.evaluate(async audio => [...new Uint8Array(await (await fetch(audio.src)).arrayBuffer())]));
+  assert(recordedBytes.byteLength > 100);
   assert.equal(report.transcriptionRequests, 0);
   assert.equal(report.publicationRequests, 0);
   report.checks.push('The real recorder produces a local playback preview without contacting a provider.');
@@ -122,6 +145,30 @@ try {
   await page.getByText(transcript, { exact: true }).last().waitFor();
   assert.equal(await page.getByText(transcript, { exact: true }).count(), 2);
   report.checks.push('Explicit publication carries the reviewed account and recovers after a refusal before showing success.');
+
+  const publicPlayer = page.locator(`audio[src="${audioPath}"]`);
+  await publicPlayer.waitFor();
+  assert.equal(report.playbackRequests, 0);
+  await publicPlayer.evaluate(audio => { audio.preload = 'auto'; audio.load(); });
+  await page.waitForFunction(path => document.querySelector(`audio[src="${path}"]`)?.readyState >= 2, audioPath);
+  assert(report.playbackRequests > 0);
+  await publicPlayer.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: evidence + 'published-player.png' });
+  report.checks.push('The public feed player decodes the browser recording over the app origin after publication.');
+
+  const compiled = await page.evaluate(async ({ audioPath, invalidAudioPath }) => {
+    const headers = { 'x-compiled-fixture-check': 'true' };
+    const rejected = await fetch(invalidAudioPath, { method: 'HEAD', headers });
+    const offline = await fetch(audioPath, { headers });
+    return { invalidStatus: rejected.status, invalidCache: rejected.headers.get('cache-control'),
+      offlineStatus: offline.status, offlineBody: await offline.text(), redirected: offline.redirected };
+  }, { audioPath, invalidAudioPath });
+  assert.equal(compiled.invalidStatus, 404);
+  assert.match(compiled.invalidCache, /private.*no-store/);
+  assert.equal(compiled.offlineStatus, 503);
+  assert.equal(compiled.offlineBody, '');
+  assert.equal(compiled.redirected, false);
+  report.checks.push('The built playback handler rejects invalid IDs and unavailable storage without a redirect or body.');
   assert.deepEqual(report.externalBrowserRequests, []);
   assert.deepEqual(report.pageErrors, []);
   assert.deepEqual(report.fixtureErrors, []);
