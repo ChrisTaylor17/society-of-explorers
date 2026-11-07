@@ -1,3 +1,5 @@
+import { PRIVACY_CONTACT, PRIVACY_POLICY_PATH } from '@/lib/account/privacy-policy';
+
 const gold = '#c9a84c';
 const muted = '#9a8f7a';
 
@@ -10,8 +12,9 @@ export default function PublicFooter() {
           {[{ l: 'Council', h: '/council' }, { l: 'Practice', h: '/practice' }, { l: 'Roadmap', h: '/roadmap' }, { l: 'Live', h: '/live' }, { l: 'Join', h: '/join' }].map(lk => (
             <a key={lk.h} href={lk.h} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: muted, textDecoration: 'none' }}>{lk.l.toUpperCase()}</a>
           ))}
+          <a href={PRIVACY_POLICY_PATH} style={{ color: muted }}>Privacy policy</a>
         </div>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: muted }}>chris@societyofexplorers.com</div>
+        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '13px', color: muted }}>{PRIVACY_CONTACT}</div>
       </div>
       <div style={{ textAlign: 'center', marginTop: '1.5rem', fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, opacity: 0.8 }}>92B SOUTH ST · DOWNTOWN BOSTON · CONSILIENCE SYSTEMS</div>
     </footer>

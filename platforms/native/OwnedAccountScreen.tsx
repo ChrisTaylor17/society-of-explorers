@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import * as ReactNative from 'react-native';
-import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { AppState, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MemberCircleScreen, createMemberViewConnection, type MemberViewConnection } from './MemberCircleScreen';
 import type { createOwnedNativeAuth } from './src/auth/owned-auth';
 import { prepareInstalledOwnedAccount } from './src/auth/installed-owned-account';
@@ -17,6 +17,7 @@ import type { PublicCircleChoice } from '../shared/circle-directory';
 import type { PublicCircleDiscoveryConnection } from './src/circles/installed-member';
 import { openAccountDeletionPage } from './src/auth/account-deletion';
 import { observePublicAppLinks, type PublicAppLink } from './src/circles/public-reel-links';
+import { PRIVACY_CONTACT, PRIVACY_POLICY_SECTIONS, PRIVACY_POLICY_STATUS } from '../../lib/account/privacy-policy';
 
 export type OwnedAccountConnection = {
   controller: ReturnType<typeof createOwnedNativeAuth>;
@@ -44,6 +45,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   const [entered, setEntered] = useState<OwnedAccountConnection | null>(null);
   const [memberProblem, setMemberProblem] = useState('');
   const [studyOpen, setStudyOpen] = useState<ScriptureStudyId | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [clipsOpen, setClipsOpen] = useState<{ reel?: ReelDiscussionId } | null>(null);
   const [sharedLink, setSharedLink] = useState<PublicAppLink | null>(null);
   const sharedReel = sharedLink?.kind === 'reel' ? sharedLink : null;
@@ -196,6 +198,10 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
       if (validView() && active.current) setMemberProblem('The browser could not open. Try opening account deletion again.');
     });
   }
+  function showPrivacy(open: boolean) {
+    if (!validView() || !active.current || preparing.current || current.current?.controller.model().phase === 'signing_out') return;
+    invalidate(); clearFields(); setPrivacyOpen(open);
+  }
   function enterMember() {
     if (!validView() || mode !== 'signin' || !connection?.controller.model().ready) return;
     invalidate();
@@ -264,6 +270,16 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     invalidate(); setPublicCircles(null);
     if (choice) { setClipsOpen(null); setStudyOpen(null); setStudyHosting(null); setCircleChoice({ ...choice, reel: publicCircles.reel }); }
   }
+  if (privacyOpen) return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
+    <Text accessibilityRole="header" style={styles.title}>Privacy policy</Text>
+    <Action label="Back to account" onPress={() => showPrivacy(false)}/>
+    <Text style={styles.note}>{PRIVACY_POLICY_STATUS}</Text>
+    {PRIVACY_POLICY_SECTIONS.map(({ title, text }) => <View key={title} style={styles.policySection}>
+      <Text accessibilityRole="header" style={styles.policyHeading}>{title}</Text>
+      <Text style={styles.copy}>{text}</Text>
+    </View>)}
+    <Text selectable style={styles.copy}>{PRIVACY_CONTACT}</Text>
+  </ScrollView></SafeAreaView>;
   if (publicCircles) return <PublicCirclesScreen key={publicCircles.inviteId ?? 'directory'} prepare={publicCirclesPrepare}
     reel={publicCircles.reel} inviteId={publicCircles.inviteId} onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
   if (clipsOpen) return <ClipsScreen reel={clipsOpen.reel} onBack={() => closeClips(false)} onRead={() => closeClips(true)}
@@ -283,6 +299,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>Your account, on this device</Text>
     <Text style={styles.copy}>Read deeply. Share thoughtfully. A Great Books community rooted in Christian and American traditions, open to everyone willing to explore in good faith.</Text>
+    <Action label="Privacy policy" disabled={connecting || signingOut} onPress={() => showPrivacy(true)}/>
     {sharedInvite && mode === 'signin' && <>
       <Text accessibilityLiveRegion="polite" style={styles.note}>A shared salon invitation is ready to review.</Text>
       <Action label="Open shared salon invitation" disabled={connecting || !active.current || m?.busy} onPress={openSharedInvite}/>
@@ -352,6 +369,7 @@ function Action({ label, disabled = false, onPress }: { label: string; disabled?
 }
 const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: '#101d1a' }, content: { padding: 24, gap: 18 },
   eyebrow: { color: '#e8cb8d', fontSize: 13, letterSpacing: 1.4 }, title: { color: '#f4f2e5', fontSize: 32, lineHeight: 40 },
+  policySection: { gap: 6 }, policyHeading: { color: '#f4f2e5', fontSize: 21, lineHeight: 28 },
   copy: { color: '#e9eadf', fontSize: 17, lineHeight: 26 }, label: { color: '#e9eadf', fontSize: 16 }, note: { color: '#c0cbbf', fontSize: 15, lineHeight: 23 },
   input: { color: '#f4f2e5', backgroundColor: '#172b24', borderWidth: 1, borderColor: '#b1c1b5', borderRadius: 8, padding: 14, fontSize: 17, minHeight: 48 },
   button: { backgroundColor: '#294e3c', borderWidth: 1, borderColor: '#b1c1b5', borderRadius: 8, padding: 14, minHeight: 48 }, disabled: { opacity: 0.5 } });

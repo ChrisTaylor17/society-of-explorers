@@ -92,6 +92,8 @@ This phase keeps the private status code and the pending member receipt. It veri
 
 ## Release steps
 
+The public privacy policy draft at `/privacy` links directly to the deletion page. The registered phone account screen includes the same disclosure before sign-in. Replace the preview retention language with the approved policy and verify the hosted URL before submitting store metadata. [Local policy verification](privacy-policy-verification.json)
+
 1. Review which records to erase and which records must be retained. Cover sign-in and wallet associations, private and published profiles, reading, Circle posts and moderation, direct messages, practice and council, uploads, notifications, billing and rewards, and data in backups and provider systems. Review shared content and define the handling for public blockchain records. Set the retention window for the minimal receipt.
 2. Implement the erasure procedure with durable progress and safe retries. Verify account access revocation for password, Google and wallet, including replay from other devices. Test account-owned data removal, any approved exceptions and a completion notice on an isolated restore. Verify handling for someone who can no longer sign in, including how to prove account ownership.
 3. Use the restore scope for the installed drafts. After the member block erasure draft, the 67-table scope covers the queue, processing state, internal receipts, archived anchors and private blocks. Add the eventual completion state to the backup check before enabling intake. [Post-erasure restore procedure](privacy-restore-check.md#verify-private-member-blocks-and-their-erasure-receipts)

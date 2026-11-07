@@ -79,6 +79,18 @@ try{
  async function signIn(){await fill();await button('Sign in').click();await enabled('Continue to my member account');await settle();}
  async function account(){await button('Continue to my member account').click();await enabled('Check my member account');await button('Check my member account').click();await enabled('View my contributions');}
  async function contributions(){await button('View my contributions').click();await enabled('Load my posted messages');await button('Load my posted messages').click();await button('Check this contribution').first().waitFor();}
+ await show({network:'offline'});
+ const beforePrivacy = await state(), beforePrivacyHttp = http.length;
+ await button('Privacy policy').click();
+ await p.getByText('Privacy policy',{exact:true}).waitFor();
+ await p.getByText('Your choices and account deletion',{exact:true}).waitFor();
+ await p.getByText('chris@societyofexplorers.com',{exact:true}).waitFor();
+ await settle();
+ assert.deepEqual(await state(),beforePrivacy);
+ assert.equal(http.length,beforePrivacyHttp);
+ await button('Back to account').click();
+ await button('Connect my account').waitFor();
+ pass('the registered app opens the bundled privacy policy offline without connecting an account, accessing session storage or opening the browser');
  await p.evaluate(()=>window.nativeQa.showUnconfigured());await button('Connect my account').click();await p.getByText('Sign-in is unavailable in this build. Your account has not been connected.',{exact:true}).waitFor();assert.equal((await state()).stats.prepared,0);assert.equal((await state()).stats.reads,0);assert.equal((await state()).requests.length,0);assert.equal(await field('Password').count(),0);
  pass('registered default factory refuses an absent native module without invented configuration, SDK storage access or provider/member requests');
  for(const retirement of ['blur','unmount']){
