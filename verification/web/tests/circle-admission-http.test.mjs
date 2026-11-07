@@ -22,7 +22,9 @@ test('actual admission HTTP routes bind host approval to one account and preserv
   const created=await f.create({host}),circle=created.circleId;
   const path=suffix=>'/api/circles/'+circle+'/'+suffix;
   const post=(suffix,body,headers={})=>f.dispatchAdmission(path(suffix),{body,headers});
-  const reviewBody={expectedMemberId:host,targetMemberId:recipient};
+  const code=async member=>{f.setActor(member);const r=await post('recipient-code',{expectedMemberId:member,shareConsent:true});assert.equal(r.status,200);f.setActor(host);return(await r.json()).recipientCode;};
+  const recipientCode=await code(recipient);
+  const reviewBody={expectedMemberId:host,recipientCode};
   let reviewed,invitation,join;
   const counts=async()=>(await f.db.query('SELECT count(*)::int n FROM book_cohort_members WHERE cohort_id=$1',[circle])).rows[0].n;
   const originalRpc=f.admin.rpc;
@@ -41,7 +43,7 @@ test('actual admission HTTP routes bind host approval to one account and preserv
    assert.equal(reviewed.circleId,circle);assert.equal(reviewed.invitationRevision,1);assert.ok(Date.parse(reviewed.expiresAt)>Date.now());
    assert.equal(reviewed.targetLabel.includes('@'),false);assert.equal(JSON.stringify(reviewed).includes('PRIVATE_SYNTHETIC_ROOM'),false);
   });
-  function issueInput(overrides={}){return{expectedMemberId:host,targetMemberId:recipient,requestId:requestId(),expectedRevision:reviewed.circleRevision,
+  function issueInput(overrides={}){return{expectedMemberId:host,recipientCode,targetMemberId:recipient,requestId:requestId(),expectedRevision:reviewed.circleRevision,
    expectedInvitationRevision:reviewed.invitationRevision,expectedTargetLabel:reviewed.targetLabel,expiresAt:reviewed.expiresAt,...overrides};}
   await t.test('changed target/expiry and a sign-out while review is held issue no token',async()=>{
    const changed=await post('invitations',issueInput({expectedTargetLabel:'A different reviewed person'}));assert.equal(changed.status,409);assert.equal('invitationToken' in await changed.json(),false);
@@ -117,11 +119,11 @@ test('actual admission HTTP routes bind host approval to one account and preserv
    f.admin.rpc=originalRpc;const recovery=await post('join-invited',body);assert.equal(recovery.status,200);assert.equal((await recovery.json()).replayed,true);
   });
   await t.test('missing signing configuration refuses issuance without a membership write',async()=>{
-   f.setActor(host);const otherBody={expectedMemberId:host,targetMemberId:outsider};
+   f.setActor(host);const otherCode=await code(outsider);const otherBody={expectedMemberId:host,recipientCode:otherCode};
    const response=await post('invitation-review',otherBody);assert.equal(response.status,200);const other=await response.json();
    const originalSecret=f.app.context.process.env.NEXTAUTH_SECRET;f.app.context.process.env.NEXTAUTH_SECRET='';
    try{
-    const result=await post('invitations',{expectedMemberId:host,targetMemberId:outsider,requestId:requestId(),expectedRevision:other.circleRevision,
+    const result=await post('invitations',{expectedMemberId:host,recipientCode:otherCode,targetMemberId:outsider,requestId:requestId(),expectedRevision:other.circleRevision,
      expectedInvitationRevision:other.invitationRevision,expectedTargetLabel:other.targetLabel,expiresAt:other.expiresAt});
     assert.equal(result.status,503);const data=await result.json();assert.equal(data.outcome,'not_attempted');assert.equal('invitationToken' in data,false);assert.equal(await counts(),2);
    }finally{f.app.context.process.env.NEXTAUTH_SECRET=originalSecret;}

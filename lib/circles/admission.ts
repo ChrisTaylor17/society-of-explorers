@@ -6,8 +6,8 @@ export const CIRCLE_INVITATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
 export const CIRCLE_INVITATION_MAX_LENGTH = 1600;
 export type CircleInvitationReview = { memberId: string; circleId: string; circleRevision: number; invitationRevision: number;
   targetMemberId: string; targetLabel: string; expiresAt: string };
-export type CircleInvitationReviewInput = { expectedMemberId: string; targetMemberId: string };
-export type CircleInvitationIssueInput = CircleInvitationReviewInput & { requestId: string; expectedRevision: number;
+export type CircleInvitationReviewInput = { expectedMemberId: string; recipientCode: string };
+export type CircleInvitationIssueInput = CircleInvitationReviewInput & { targetMemberId: string; requestId: string; expectedRevision: number;
   expectedInvitationRevision: number; expectedTargetLabel: string; expiresAt: string };
 export type CircleInvitedJoinInput = { expectedMemberId: string; requestId: string; expectedRevision: number; invitationToken: string };
 export type CircleInvitationRevokeInput = { expectedMemberId: string; requestId: string; expectedRevision: number; expectedInvitationRevision: number };
@@ -32,16 +32,16 @@ export function parseCircleInvitationReview(value: unknown, memberId: string, ci
     targetLabel: value.targetLabel, expiresAt: value.expiresAt };
 }
 export function parseCircleInvitationReviewInput(value: unknown): CircleInvitationReviewInput | null {
-  return membershipRecord(value) && exactAdmissionKeys(value, ['expectedMemberId', 'targetMemberId'])
-    && canonicalAdmissionUuid(value.expectedMemberId) && canonicalAdmissionUuid(value.targetMemberId)
-    ? { expectedMemberId: value.expectedMemberId, targetMemberId: value.targetMemberId } : null;
+  return membershipRecord(value) && exactAdmissionKeys(value, ['expectedMemberId', 'recipientCode'])
+    && canonicalAdmissionUuid(value.expectedMemberId) && isCircleRecipientCode(value.recipientCode)
+    ? { expectedMemberId: value.expectedMemberId, recipientCode: value.recipientCode } : null;
 }
 export function parseCircleInvitationIssueInput(value: unknown): CircleInvitationIssueInput | null {
-  if (!membershipRecord(value) || !exactAdmissionKeys(value, ['expectedMemberId', 'targetMemberId', 'requestId', 'expectedRevision', 'expectedInvitationRevision', 'expectedTargetLabel', 'expiresAt'])
-    || !canonicalAdmissionUuid(value.expectedMemberId) || !canonicalAdmissionUuid(value.targetMemberId) || !canonicalAdmissionUuid(value.requestId)
+  if (!membershipRecord(value) || !exactAdmissionKeys(value, ['expectedMemberId', 'recipientCode', 'targetMemberId', 'requestId', 'expectedRevision', 'expectedInvitationRevision', 'expectedTargetLabel', 'expiresAt'])
+    || !isCircleRecipientCode(value.recipientCode) || !canonicalAdmissionUuid(value.expectedMemberId) || !canonicalAdmissionUuid(value.targetMemberId) || !canonicalAdmissionUuid(value.requestId)
     || !membershipInteger(value.expectedRevision) || !membershipInteger(value.expectedInvitationRevision) || value.expectedInvitationRevision < 1
     || !targetLabel(value.expectedTargetLabel) || !admissionTime(value.expiresAt)) return null;
-  return { expectedMemberId: value.expectedMemberId, targetMemberId: value.targetMemberId, requestId: value.requestId,
+  return { expectedMemberId: value.expectedMemberId, recipientCode: value.recipientCode, targetMemberId: value.targetMemberId, requestId: value.requestId,
     expectedRevision: value.expectedRevision, expectedInvitationRevision: value.expectedInvitationRevision,
     expectedTargetLabel: value.expectedTargetLabel, expiresAt: value.expiresAt };
 }
@@ -68,4 +68,28 @@ export function parseCircleInvitedJoinReceipt(value: unknown, input: CircleInvit
   return parsed && parsed.state.revision > input.expectedRevision
     && (parsed.replayed || parsed.state.revision === input.expectedRevision + 1)
     ? { memberId: input.expectedMemberId, ...parsed } : null;
+}
+
+export const CIRCLE_RECIPIENT_CODE_LIFETIME_MS = 60 * 60 * 1000;
+export const isCircleRecipientCode = (v: unknown): v is string => typeof v === 'string' && v.length <= 1000 && /^soe-cr1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(v);
+export const isCircleApprovalCode = (v: unknown): v is string => typeof v === 'string' && v.length <= CIRCLE_INVITATION_MAX_LENGTH && /^soe-ci1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(v);
+export type CircleAdmissionAccess = { memberId: string; circleId: string; title: string; revision: number; invitationRevision: number;
+  admissionMode: 'open' | 'host_approval'; isHost: boolean; isMember: boolean; canIssue: boolean; canRevoke: boolean; canJoin: boolean };
+export type CircleInvitationCheck = CircleAdmissionAccess & { approvalNonce: string; proofHash: string; expiresAt: string };
+export type CircleInvitationRecovery = { expectedMemberId: string; requestId: string; expectedRevision: number; approvalNonce: string; proofHash: string };
+export function parseCircleInvitationRecovery(v: unknown): CircleInvitationRecovery | null {
+  return membershipRecord(v) && exactAdmissionKeys(v,['expectedMemberId','requestId','expectedRevision','approvalNonce','proofHash'])
+    && canonicalAdmissionUuid(v.expectedMemberId) && canonicalAdmissionUuid(v.requestId) && canonicalAdmissionUuid(v.approvalNonce)
+    && membershipInteger(v.expectedRevision) && typeof v.proofHash==='string' && /^[a-f0-9]{64}$/.test(v.proofHash)
+    ? {expectedMemberId:v.expectedMemberId,requestId:v.requestId,expectedRevision:v.expectedRevision,approvalNonce:v.approvalNonce,proofHash:v.proofHash} : null;
+}
+export function parseCircleAdmissionAccess(v: unknown, memberId: string, circleId: string, check=false): CircleAdmissionAccess | CircleInvitationCheck | null {
+  if(!membershipRecord(v) || !exactAdmissionKeys(v,['memberId','circleId','title','revision','invitationRevision','admissionMode','isHost','isMember','canIssue','canRevoke','canJoin',...(check?['approvalNonce','proofHash','expiresAt']:[])])
+    || v.memberId!==memberId || v.circleId!==circleId || !canonicalAdmissionUuid(memberId) || !canonicalAdmissionUuid(circleId)
+    || !membershipText(v.title,200) || !v.title.trim() || !membershipInteger(v.revision) || !membershipInteger(v.invitationRevision) || v.invitationRevision<1
+    || !['open','host_approval'].includes(String(v.admissionMode)) || ['isHost','isMember','canIssue','canRevoke','canJoin'].some(k=>typeof v[k]!=='boolean')
+    || v.canIssue && (!v.isHost || v.admissionMode!=='host_approval') || v.canRevoke && (!v.isHost || v.admissionMode!=='host_approval')
+    || v.canJoin && (v.isMember || v.admissionMode!=='host_approval')) return null;
+  if(check && (!canonicalAdmissionUuid(v.approvalNonce) || typeof v.proofHash!=='string' || !/^[a-f0-9]{64}$/.test(v.proofHash) || !admissionTime(v.expiresAt))) return null;
+  return v as unknown as CircleAdmissionAccess | CircleInvitationCheck;
 }

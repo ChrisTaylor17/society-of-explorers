@@ -11,7 +11,7 @@ import ReadingProgramSummary from '../ReadingProgramSummary';
 import styles from '../participation.module.css';
 
 const PUBLIC_VENUES = VENUE_TYPES.filter(value => value !== 'online');
-const emptyDraft = (format: CircleFormat) => ({ title: '', description: '', format, city: '', region: '', venueName: '', venueType: 'library', weekday: '2', time: '19:00', timezone: 'America/New_York', startDate: '', maxMembers: '8', onlineUrl: '' });
+const emptyDraft = (format: CircleFormat) => ({ title: '', description: '', admissionMode: 'open', format, city: '', region: '', venueName: '', venueType: 'library', weekday: '2', time: '19:00', timezone: 'America/New_York', startDate: '', maxMembers: '8', onlineUrl: '' });
 export default function StartCircleForm({ initialContext = null, invalidContext = false, onlinePreset = false }: { initialContext?: ReadingContext | null; invalidContext?: boolean; onlinePreset?: boolean } = {}) {
   const defaultFormat = onlinePreset ? 'online' : 'in_person';
   const [draft, setDraft] = useState(() => emptyDraft(defaultFormat));
@@ -35,7 +35,8 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
       if (!agreed) { hosting.invalid('Agree to the community norms before reviewing your listing.'); return; }
       const maxMembers = Number(draft.maxMembers);
       if (!Number.isInteger(maxMembers) || maxMembers < CIRCLE_MIN_MEMBERS || maxMembers > CIRCLE_MAX_MEMBERS) { hosting.invalid(`Choose a Circle size between ${CIRCLE_MIN_MEMBERS} and ${CIRCLE_MAX_MEMBERS}.`); return; }
-      const parsed = validateCircleInput({ ...draft, weekday: Number(draft.weekday), maxMembers });
+      const {admissionMode,...listing}=draft;
+      const parsed = validateCircleInput({ ...listing, ...(admissionMode==='host_approval'?{admissionMode}:{}), weekday: Number(draft.weekday), maxMembers });
       if (!parsed.ok) { hosting.invalid(parsed.error); return; }
       const program = programDraft.custom ? parseReadingProgram(programDraft.program) : null;
       if (programDraft.custom && (!program || !programDraft.metadata || !matchesReadingEdition(programDraft.metadata, program))) { hosting.invalid('Load and verify a pinned edition, then choose valid weekly reading ranges before reviewing this Circle.'); return; }
@@ -62,6 +63,7 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
       <h2 style={{ ...h2, margin: 0 }} ref={focusPreview} tabIndex={-1}>Review your Circle listing</h2>
       <p style={body}><strong>{preview.title}</strong></p>
       <p style={body}>{preview.format === 'online' ? 'Online' : `${preview.venueName}, ${preview.city}${preview.region ? `, ${preview.region}` : ''}`}. {WEEKDAYS[preview.weekday]}s at {preview.time} ({preview.timezone}). First meeting {firstMeeting(preview.startDate, preview.weekday)}; first week starts {preview.startDate}. Up to {preview.maxMembers} members.</p>
+      <p style={body}>{preview.admissionMode==='host_approval'?'Only people you approve can join. The listing stays public; video-room entry remains the host’s responsibility.':'Members may join through the regular open-joining controls.'}</p>
       {preview.description && <p style={{ ...body, whiteSpace: 'pre-wrap' }}>{preview.description}</p>}
       {preview.onlineUrl && <p style={{ ...small, overflowWrap: 'anywhere' }}>Private video link, shared only with eligible members: {preview.onlineUrl}</p>}
       {preview.readingProgram ? <>
@@ -75,6 +77,8 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
     {hosting.phase === 'editing' && hosting.access?.canCreate && <form onSubmit={review} style={card} noValidate>
       <fieldset disabled={disabled} className={styles.stack} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
         <legend style={h2}>Your Circle details</legend>
+        <Field id="circle-admission-mode" label="Who can join"><select id="circle-admission-mode" value={draft.admissionMode} onChange={event=>edit('admissionMode',event.target.value)} style={input}><option value="open">Open joining</option><option value="host_approval">Host approval required</option></select></Field>
+        <p style={small}>The salon name, description and schedule remain public. Host approval controls membership. Video-room entry must be managed separately by the host.</p>
         <ReadingProgramEditor key={editorEpoch} value={programDraft} context={initialContext} disabled={disabled} onChange={value => hosting.guardEdit(() => { draftGeneration.current++; setProgramDraft(value); })} />
         <Field id="circle-title" label="Circle name"><input id="circle-title" required minLength={4} maxLength={120} value={draft.title} onChange={event => edit('title', event.target.value)} style={input} autoComplete="off" /></Field>
         <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend style={fieldLabel}>Where do you meet?</legend><div className={styles.row}>{([['in_person', 'In person'], ['online', 'Online'], ['hybrid', 'Both']] as const).map(([value, name]) => <label className={styles.check} key={value}><input type="radio" name="circle-format" value={value} checked={draft.format === value} onChange={() => edit('format', value)} />{name}</label>)}</div></fieldset>

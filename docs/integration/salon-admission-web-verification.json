@@ -1,0 +1,328 @@
+{
+  "status": "PASS_LOCAL_CANDIDATE",
+  "recordedAt": "2026-11-07T23:16:17.995294+00:00",
+  "baseCommit": "5c8f0ec5a1e9aa01f301bc16f0c30c50de0b3540",
+  "productionCleared": false,
+  "hostedSqlAccessCredentialChanges": false,
+  "newInstallOrSpending": false,
+  "surface": "/circles/:id/admission; host-approval option in Circle creation",
+  "behavior": [
+    "Explicit per-code recipient consent; signed one-hour code binds the current account and salon. Raw member identifiers cannot request a host preview.",
+    "Host review/issue rechecks consent expiry after asynchronous work; expired consent returns neither recipient label nor approval.",
+    "Host reviews the recipient, salon and expiry; approval is bounded to24h and creates no membership.",
+    "Recipient pastes a code privately, checks the current account and salon, then separately confirms joining. Codes do not travel in URLs.",
+    "Raw codes and reviews clear on blur, identity change, background/offline or closing the view. No browser storage.",
+    "A sent join retains only its owner-bound receipt reference in the open view. A read-only check confirms the historical event without the raw approval or signing key; it cannot join or rejoin.",
+    "A missing receipt stays uncertain. Account changes hide recovery; explicit close forgets the reference without cancelling a sent write.",
+    "Lost revocation retries the original reviewed request on explicit confirmation, advances once and preserves members."
+  ],
+  "verification": {
+    "selectedTests": {
+      "status": "PASS",
+      "reportedTests": 83,
+      "reportedFailures": 0,
+      "countIncludesGroupedTests": true,
+      "files": [
+        "circle-admission-db",
+        "circle-admission-http",
+        "circle-admission-web-http",
+        "circle-hosting-backend",
+        "participation-public",
+        "participation-http",
+        "participation-integration",
+        "participation-recovery-http"
+      ],
+      "sourceUnchanged": true,
+      "elapsedSeconds": 57.91
+    },
+    "browser": {
+      "status": "PASS",
+      "stories": [
+        "Actual hosting screen reviews public disclosure and creates a host-approved salon only after explicit confirmation.",
+        "Recipient sharing requires opt-in, grants no membership, and clears the raw code on blur.",
+        "Host reviews the code owner and issues an account-bound approval without admitting them.",
+        "A forwarded approval is refused before any membership write.",
+        "Blur clears an unconfirmed approval; a retained stale confirm callback transmits nothing.",
+        "Lost post-commit reply stays uncertain, hides recovery from another account, and recovers with no token, signing key or second join.",
+        "Lost revocation uses the exact original request on explicit retry, advances once and preserves members.",
+        "320px controls fit, browser storage stays empty, and all requests remain on intercepted local fixture paths.",
+        "Keyboard opens the review, cancellation restores focus to status, and desktop controls fit."
+      ],
+      "viewports": [
+        320,
+        1280
+      ],
+      "cleanup": {
+        "browser": true,
+        "database": true
+      },
+      "errors": [],
+      "unexpectedRequests": [],
+      "sourceSha256": {
+        "verification/web/tests/support/circle-admission-web-entry.tsx": "6f46fb1e14e139522a7ae4b1ba1de7af3f0331bc2c21d6b2a23b38cf141a8b49",
+        "app/circles/start/StartCircleForm.tsx": "b6f7997ebafcb0dcb9fc2c5b920390340172c6b0f1800964c0bda3cf01195c7a",
+        "app/circles/[circleId]/CircleAdmission.tsx": "061f76fca4888f987398b61f009914c84a091451e8bd2fec5292b2d8a94daaee",
+        "app/circles/participation.module.css": "c3125bf6138432108e747e6ff66da14808d93e231a2dd14c90a9560535df378c",
+        "app/circles/ReadingProgramEditor.tsx": "6ff5f37326b03b66d6750623f452faf8fa1c6896a259a404dff5840573874017",
+        "app/circles/ReadingProgramSummary.tsx": "8f14daed7fd2e5f5a60907e9fc4939f342d44bc3ebed0252cc189f6c8b4dd9e3",
+        "app/circles/reading-program.module.css": "584ec1349c01569dc974f9abee3b2aab16b98e6d9076ba53d7a51d24dd558b86",
+        "verification/web/tests/support/admission-web-doubles.tsx": "fc473e6510ebd38ea71bf49ba452e189d02c319a8741d8abf74e553deccf8066",
+        "lib/circles/useCircleHosting.ts": "3221cb8f9df88937ba2b56ba5e4c576029c331ce5f9653679c95d9cc054ee3d5",
+        "lib/circles/ui.ts": "740f6ac519d49f7005697a070ef1716ccbde5c69ff157f0afc6d8a6ffeec9ca5",
+        "lib/circles/useCircleAdmission.ts": "e7b2cb8155a0e39d272f38beece2741e20baa391a5b6a7a4ab8d524af844d72c",
+        "lib/circles/reading-program.ts": "881a274d120affb7723995123267114458828dfdc49f8e7e29e46cd8e04c934f",
+        "lib/circles/schedule.ts": "92f2f21f702aa6928755b1680e3ddbe8ad8a958babb54c35bea8373ad76f6407",
+        "lib/circles/admission.ts": "1a7ab9e81474e86eeb2a7af0363d01e2d7905337bbe076d2cacc8d95c2e74c09",
+        "lib/root-kernel/scripture-studies.ts": "636188d59a6844fc3cff16bf9adb08c9f2a7f927afb1ead055cf38143ad4a3d0",
+        "lib/circles/membership.ts": "b8520da6bee22ea92b15ce070da1e8ba3f0b015a99887d52c0ed5d8d3fad724f",
+        "lib/circles/hosting.ts": "bac1e56249bf16cbf7dda0324a72f8c8881db7fea013c9155274c44eda797755",
+        "lib/circles/browser-access.ts": "7beaa885c07c5db00c8112b7afabcf3ce6896a45a8c1b802099a2f316930d051",
+        "lib/circles/reading-program-editions.json": "e8f8088f5bbcd72fefaa7c4514ae40dde050e393d132c3bb3957eb04f71747b6",
+        "lib/root-kernel/philemon-study.ts": "f3861fae0171620b9001ad16213499a786fe35b49e1bce139bde4f6bfcaa6a64",
+        "lib/root-kernel/luke-good-samaritan.ts": "daf71d08aae34a6ec5a6164a32fca717efc1e2000098c749addf6bbc0cf1b656",
+        "lib/root-kernel/philemon-edition.ts": "1305581ca5d0b7233c55a8cd5cf0d35f21314fb9cef72225af9f79147abc5a0f",
+        "lib/auth/memberDto.ts": "b3a750c2841642c7782d31edd5f623c10b3cec543f9288ae3a05c7d21ce7f936",
+        "lib/books/bookmarks.ts": "1c9d8fff7a2081d5cc5ad714fdd102835336a4309b645e7d1a037dd901d41ade",
+        "lib/books/catalog.ts": "bb07ef2d0cce2b0e2fe841c9b91ad0c7b81fe3e09397c374721ffc5f9466ecf8",
+        "lib/ids/uuid.ts": "4f488c3d13c0f7585dc46e620b61fa3d64bc39b912922245994672f8550e0ec3",
+        "content/root-kernel/philemon.web-classic.json": "13fa48b22414dba11a2cf659699b1bc9ea7beda0f6996911bd24f6ab91c0934a",
+        "content/root-kernel/luke-good-samaritan.web-classic.json": "6fd6dd97eb56590d3e7b9402039e6d80df49bfaa503bdc4fb6b28be9b3f9f3d3",
+        "lib/auth/providerSelection.ts": "6d73b2e1767eb033b62460a3b5f7750762c3b9e83f32b516dfca37b8aa50a6d7",
+        "lib/members/public-reference.ts": "f9f2590345e2041694a2d972d6c6be1773017c2931b99f2035caafaf1d44772b",
+        "package.json": "a6ae70e5d649b66a060c788f54003811e4d82ff40814169d5f120a9cbfdb9935",
+        "verification/web/scripts/admission-fixture-loader.cjs": "2ee97cea4f64285ce4d81648322ad885c914ba2dd2111a0336fc0b0d537dd649",
+        "verification/web/scripts/bundle-circle-admission-web.mjs": "c69adc810a386b882fe28133f3c455b4e4c1d129f304577d828a452adbe79897",
+        "verification/web/scripts/browser-circle-admission-web.mjs": "2bfd88b46d05c1d901fb3bbf4d056b553cdd4eb2f0183239cb48cf3759f55f09"
+      }
+    },
+    "build": {
+      "argv": [
+        "node",
+        "node_modules/next/dist/bin/next",
+        "build",
+        "--webpack"
+      ],
+      "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+      "status": "completed",
+      "exitCode": 0,
+      "seconds": 52.99,
+      "externalNetworkBlocked": true,
+      "providerCredentialsNotPassed": true,
+      "compiler": "webpack",
+      "publicBuildConfig": "invalid offline placeholders",
+      "privateOrIssuedCredentialsSupplied": false,
+      "deploymentOrServerLaunch": false,
+      "sourceFiles": 1205,
+      "sourceSha256": "24de716a3a740c86018e04cd12f20012bfa6b870667f3f729c9f2111aa561f96",
+      "sourceUnchangedDuringBuild": true,
+      "log": "evidence/salon-admission-web-final-next-build.log"
+    },
+    "scopedLint": {
+      "status": "PASS",
+      "files": 12,
+      "warnings": 0,
+      "errors": 0
+    },
+    "compiledHttp": {
+      "status": "PASS",
+      "checks": [
+        {
+          "case": "signed-out review",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitation-review",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "signed-out issue",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitations",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "signed-out redeem",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/join-invited",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "signed-out revoke",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitations/revoke",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "cross-origin review",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitation-review",
+          "method": "POST",
+          "status": 403,
+          "responseSha256": "9b37a4fac081689c0f75764425d0462c5fb75105e12277dbe0d61639002a392e",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "extra review authority",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitation-review",
+          "method": "POST",
+          "status": 400,
+          "responseSha256": "a9ab6d14c822f211c19ab3fef4ffdb25cb0ba6b19b5ec09cdcfc5916093a5fd9",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "incomplete issue",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitations",
+          "method": "POST",
+          "status": 400,
+          "responseSha256": "6e71dcf30b77944966d2d456015469178ba41e088b619d75fd443bef9d7e01b3",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "invalid Circle",
+          "path": "/api/circles/not-a-circle/invitation-review",
+          "method": "POST",
+          "status": 400,
+          "responseSha256": "70360bbab36a02de0564a6f93e9020e5e3f851b9dda98070dbf3f9248b767260",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "signed-out legacy join",
+          "path": "/api/book-salons/join",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "3be5b8e53fdc8b0a2996590589456db33504977f3d1ce9bb75016c8a707e1a71",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "issue has no GET action",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitations",
+          "method": "GET",
+          "status": 405,
+          "responseSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "cacheControl": null
+        },
+        {
+          "case": "public pilot plan",
+          "path": "/salons/pilot",
+          "method": "GET",
+          "status": 200,
+          "responseSha256": "94678f28a8709692bfb083aee5deff09d9d6c478eebc0355ccd00a1d9658b392",
+          "cacheControl": "s-maxage=31536000"
+        },
+        {
+          "case": "signed-out sharing code",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/recipient-code",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "signed-out invitation access",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/admission-access",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "signed-out approval check",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitation-check",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "signed-out own receipt",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitation-receipt",
+          "method": "POST",
+          "status": 401,
+          "responseSha256": "924831e0bff35c6ddf75ff531b3bcd03fa4de930c18a010329521e58966a40d0",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "sharing requires consent",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/recipient-code",
+          "method": "POST",
+          "status": 400,
+          "responseSha256": "460eee1dc7c85d361d7a2d3381529783edb7079f74ba4ceb4bb720d23d2369bf",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "typed member identifier refused",
+          "path": "/api/circles/33333333-3333-4333-8333-333333333333/invitation-review",
+          "method": "POST",
+          "status": 400,
+          "responseSha256": "a9ab6d14c822f211c19ab3fef4ffdb25cb0ba6b19b5ec09cdcfc5916093a5fd9",
+          "cacheControl": "private, no-store, no-cache, max-age=0, must-revalidate"
+        },
+        {
+          "case": "private invitation controls",
+          "path": "/circles/33333333-3333-4333-8333-333333333333/admission",
+          "method": "GET",
+          "status": 200,
+          "responseSha256": "11333a0e8565306f773efd70f0331839f6285b56c5bbc7632867f50417a75034",
+          "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate"
+        }
+      ],
+      "cookiesBearersOrIssuedCredentials": false
+    },
+    "server": {
+      "status": "STOPPED",
+      "cleanup": "owned-process-stopped",
+      "serverExitCode": 143,
+      "sourceMismatches": [],
+      "builtMismatches": [],
+      "inputMismatches": [],
+      "runtimeMismatches": [],
+      "deniedOperations": []
+    }
+  },
+  "verifiedSourceSha256": {
+    "lib/circles/admission.ts": "1a7ab9e81474e86eeb2a7af0363d01e2d7905337bbe076d2cacc8d95c2e74c09",
+    "lib/circles/admission-token-server.ts": "485ca7959488535580d6febdfb18ec32faf012369f460a0e6292ee5991638406",
+    "lib/circles/admission-server.ts": "35478bcb852c2a9200b75338e07ae87f99c453989e46bdf9a57c637e4ce3f619",
+    "lib/circles/useCircleAdmission.ts": "e7b2cb8155a0e39d272f38beece2741e20baa391a5b6a7a4ab8d524af844d72c",
+    "app/api/circles/[circleId]/recipient-code/route.ts": "9fd3d93b1a314131899a52f7b236f913eab612337b7252c32735ca73f77c7326",
+    "app/api/circles/[circleId]/admission-access/route.ts": "5fc3b7d78e05cf9b2fd78e2b7b48a96f198ddd529a24d90f3ffeac4db5e2b89c",
+    "app/api/circles/[circleId]/invitation-check/route.ts": "fab7b926eda03313a728636d8ccf7c04ecbeda957c68d4da4800edafe8723743",
+    "app/api/circles/[circleId]/invitation-receipt/route.ts": "580aa4db166d57d2e1604cb0d9d09d35760039a60369c0ca6a1bb3b35ca5adab",
+    "app/circles/[circleId]/CircleAdmission.tsx": "061f76fca4888f987398b61f009914c84a091451e8bd2fec5292b2d8a94daaee",
+    "app/circles/[circleId]/admission/page.tsx": "c3f4f39b5dd837e96906f1db7952b59e550220b1ac13cf2124edc0ff4ee4f733",
+    "app/circles/[circleId]/CircleDetail.tsx": "c29777c0a0921755cafee14e2341013f78b65eb2c13f26096931bd53c19402d3",
+    "app/circles/start/StartCircleForm.tsx": "b6f7997ebafcb0dcb9fc2c5b920390340172c6b0f1800964c0bda3cf01195c7a",
+    "verification/web/tests/circle-admission-http.test.mjs": "85a7d5c730f1a065cbf4b86469e0887ad40ebe39c2fed6021cbe2000b64fd962",
+    "verification/web/tests/circle-admission-web-http.test.mjs": "cde75a90d387e41cb2833547e79de15f476e34a70647f436db1512a4c9d17e6e",
+    "verification/web/tests/support/participation-app.mjs": "4a617cc4e4804dabf846678dc25f146b6dbf0dc9d5170a5fe969f472775ab48a",
+    "verification/web/tests/support/circle-admission-app.mjs": "bcb262370f9cd0ad9a55bc8e70c541ae9eddd650a20297a786100e4a4ff9a241",
+    "verification/web/tests/support/circle-admission-web-entry.tsx": "6f46fb1e14e139522a7ae4b1ba1de7af3f0331bc2c21d6b2a23b38cf141a8b49",
+    "verification/web/tests/support/admission-web-doubles.tsx": "fc473e6510ebd38ea71bf49ba452e189d02c319a8741d8abf74e553deccf8066",
+    "verification/web/scripts/admission-fixture-loader.cjs": "2ee97cea4f64285ce4d81648322ad885c914ba2dd2111a0336fc0b0d537dd649",
+    "verification/web/scripts/bundle-circle-admission-web.mjs": "c69adc810a386b882fe28133f3c455b4e4c1d129f304577d828a452adbe79897",
+    "verification/web/scripts/browser-circle-admission-web.mjs": "2bfd88b46d05c1d901fb3bbf4d056b553cdd4eb2f0183239cb48cf3759f55f09",
+    "verification/web/scripts/check-admission-compiled-http.py": "aaf35d301dfa87f3186c3d23abd59c3ea63dd0bbfb2e9c369199f75e871d17b2"
+  },
+  "privateEvidence": {
+    "apiTests": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission-web/selected-final-tests.json",
+    "browser": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/circle-admission-web-browser-final.json",
+    "build": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/salon-admission-web-final-next-build.json",
+    "compiledHttp": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/built-shell-admission-web-final-http.json",
+    "server": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/built-shell-admission-web-final-api-server.json"
+  },
+  "limits": [
+    "Browser credentials/account response, canonical route identity, PostgREST transport and Next Link are explicit doubles. Tests use actual handlers and SQL in PGlite, not a real provider account or hosted database.",
+    "Compiled HTTP verifies the actual Next build with signed-out requests, invalid public placeholders and no issued credentials; it does not prove successful hosted sign-in.",
+    "This change adds no SQL, function, grant or table. The prior full PostgreSQL v18 restore evidence remains a separate synthetic milestone.",
+    "The receipt read is independent of the signing configuration. Actual secret rotation/session reauthentication has not been performed or verified.",
+    "Recovery metadata exists only in the open view. Closing the page loses its lookup reference; callers must check current membership and cannot treat a missing receipt as failed admission.",
+    "New invitation screens have Chromium evidence. Safari/WebKit, installed phone delivery/builds, physical Quest and immersive entry have not been accepted.",
+    "Unused codes require a new host approval after signing-key changes; no credentials were changed.",
+    "Hosted97-table source capture, privacy repair, sign-in/recovery and owner approvals remain release gates. No real member invitation or pilot intake occurred."
+  ]
+}

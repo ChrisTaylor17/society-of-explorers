@@ -37,7 +37,7 @@ export async function participationApp() {
   const calls = [], argumentsByName = new Map();
   app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async () => actor
     ? { memberId: actor, member: { id: actor, display_name: 'Synthetic Explorer' } } : null }));
-  const tables = ['book_cohorts', 'book_cohort_members', 'circle_rsvps', 'circle_reports', 'circle_private', 'members', 'seminar_messages'];
+  const tables = ['book_cohorts', 'book_cohort_members', 'circle_rsvps', 'circle_reports', 'circle_private', 'circle_participation_receipts', 'members', 'seminar_messages'];
   const identifier = value => { if (!/^[a-z_][a-z_0-9]*$/.test(value)) throw Error('Unexpected fixture identifier'); return value; };
   function from(table) {
     if (!tables.includes(table)) throw Error('Unexpected fixture table: ' + table);

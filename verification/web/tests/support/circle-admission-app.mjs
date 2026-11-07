@@ -13,7 +13,7 @@ export async function admissionApp(){
    await f.db.exec(await readFile(new URL('../../../../docs/sql/'+name,import.meta.url),'utf8'));
   const handlers=new Map();
   async function dispatch(path,{method='POST',body,headers={}}={}){
-   const match=/^\/api\/circles\/([a-f0-9-]+)\/(invitation-review|invitations|join-invited|invitations\/revoke|discussion)$/.exec(path);
+   const match=/^\/api\/circles\/([a-f0-9-]+)\/(recipient-code|admission-access|invitation-check|invitation-receipt|invitation-review|invitations|join-invited|invitations\/revoke|discussion)$/.exec(path);
    assert.ok(match,'Only exact admission/test discussion paths are allowed');
    const file='app/api/circles/[circleId]/'+match[2]+'/route.ts';
    if(!handlers.has(file))handlers.set(file,f.app.load(file));

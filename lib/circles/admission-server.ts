@@ -1,4 +1,8 @@
 import 'server-only';
+import { randomUUID } from 'node:crypto';
+import { parseCircleDetail } from './membership';
+import { circleDetail } from './membership-server';
+import { parseCircleAdmissionAccess, parseCircleInvitationRecovery, isCircleApprovalCode, type CircleAdmissionAccess } from './admission';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
@@ -10,7 +14,7 @@ import { canonicalAdmissionUuid, exactAdmissionKeys, parseCircleInvitationReview
   parseCircleInvitationReviewInput, parseCircleInvitationIssueInput, parseCircleInvitedJoinInput,
   parseCircleInvitedJoinReceipt, parseCircleInvitationRevokeInput, CIRCLE_INVITATION_LIFETIME_MS,
   type CircleInvitationReview } from './admission';
-import { circleInvitationProofHash, signCircleInvitation, verifyCircleInvitation } from './admission-token-server';
+import { circleInvitationProofHash, signCircleInvitation, verifyCircleInvitation, signCircleRecipientCode, verifyCircleRecipientCode } from './admission-token-server';
 
 type Result<T> = { ok: true; value: T } | { ok: false; response: Response };
 const refuse = (error: string, status: number, outcome = 'not_attempted') => privateJson({ error, outcome }, { status });
@@ -60,9 +64,12 @@ export async function circleInvitationReview(req: NextRequest, circleId: string)
     if (!body) return refuse('Use only the reviewed account and recipient member code.', 400);
     const current = await actor(req, body.expectedMemberId); if (!current.ok) return current.response;
     if (!budget(current.value)) return refuse('Too many invitation checks. Try again later.', 429);
-    const result = await review(current.value, circleId, body.targetMemberId);
+    const target = verifyCircleRecipientCode(body.recipientCode, circleId);
+    if(!target) return refuse('Ask the recipient for a current sharing code for this salon.',403);
+    const result = await review(current.value, circleId, target);
     if (!result.ok) return result.response;
     const fresh = await actor(req, body.expectedMemberId); if (!fresh.ok) return fresh.response;
+    if(verifyCircleRecipientCode(body.recipientCode,circleId)!==target)return refuse('Ask the recipient for a new sharing code.',403);
     return privateJson(result.value);
   } catch { return unavailable(); }
 }
@@ -73,6 +80,8 @@ export async function circleInvitationIssue(req: NextRequest, circleId: string):
     if (!body) return refuse('Use a complete reviewed recipient, salon and expiry.', 400);
     const current = await actor(req, body.expectedMemberId); if (!current.ok) return current.response;
     if (!budget(current.value)) return refuse('Too many invitation requests. Try again later.', 429);
+    const target = verifyCircleRecipientCode(body.recipientCode, circleId);
+    if(!target || target!==body.targetMemberId) return refuse('Ask the recipient for a current sharing code for this salon.',403);
     const result = await review(current.value, circleId, body.targetMemberId, body.expiresAt);
     if (!result.ok) return result.response;
     const now = Date.now(), expires = Date.parse(body.expiresAt);
@@ -81,6 +90,7 @@ export async function circleInvitationIssue(req: NextRequest, circleId: string):
       return refuse('The recipient, salon or expiry changed. Review the invitation again.', 409);
     }
     const fresh = await actor(req, body.expectedMemberId); if (!fresh.ok) return fresh.response;
+    if(verifyCircleRecipientCode(body.recipientCode,circleId)!==body.targetMemberId)return refuse('Ask the recipient for a new sharing code.',403);
     const invitationToken = signCircleInvitation({ circleId, memberId: body.targetMemberId, hostMemberId: fresh.value,
       invitationRevision: body.expectedInvitationRevision, nonce: body.requestId, issuedAt: new Date().toISOString(), expiresAt: body.expiresAt });
     return privateJson({ memberId: fresh.value, requestId: body.requestId, circleId, targetMemberId: body.targetMemberId,
@@ -144,4 +154,71 @@ export async function circleInvitationRevoke(req: NextRequest, circleId: string)
     if (!fresh.ok) return refuse('Your account changed while revocation was being checked. The result needs an exact retry.', fresh.response.status, 'unknown');
     return privateJson({ memberId: current.value, ...data });
   } catch { return unavailable(sent); }
+}
+
+async function access(req:NextRequest,memberId:string,circleId:string):Promise<Result<CircleAdmissionAccess>> {
+  const admin=getSupabaseAdmin();
+  const response=await circleDetail(req,circleId);if(response.status!==200)return {ok:false,response};
+  const detail=parseCircleDetail(await response.json(),circleId);if(!detail || !detail.viewer.signed_in)return {ok:false,response:unavailable()};
+  const row=await admin.from('book_cohorts').select('id,created_by,circle_admission_mode,circle_invitation_revision,circle_participation_revision').eq('id',circleId).maybeSingle();
+  if(row.error || !row.data || row.data.id!==circleId || row.data.circle_participation_revision!==detail.revision
+    || (row.data.created_by===memberId)!==detail.viewer.is_host)return {ok:false,response:unavailable()};
+  const approved=row.data.circle_admission_mode==='host_approval',host=detail.viewer.is_host,available=!detail.ended && !detail.circle.hidden;
+  const value=parseCircleAdmissionAccess({memberId,circleId,title:detail.circle.title,revision:detail.revision,invitationRevision:row.data.circle_invitation_revision,
+    admissionMode:row.data.circle_admission_mode,isHost:host,isMember:detail.viewer.is_member,canIssue:host&&approved&&available,
+    canRevoke:host&&approved,canJoin:approved&&available&&!detail.viewer.is_member&&detail.circle.spots_left>0},memberId,circleId);
+  return value?{ok:true,value}:{ok:false,response:unavailable()};
+}
+export async function circleAdmissionAccess(req:NextRequest,circleId:string):Promise<Response>{
+ try{
+  const read=await input(req,circleId);if(!read.ok)return read.response;
+  const v=read.value;if(!membershipRecord(v)||!exactAdmissionKeys(v,['expectedMemberId'])||!canonicalAdmissionUuid(v.expectedMemberId))return refuse('Check your current account.',400);
+  const current=await actor(req,v.expectedMemberId);if(!current.ok)return current.response;if(!budget(current.value))return refuse('Try again later.',429);
+  const result=await access(req,current.value,circleId);if(!result.ok)return result.response;
+  const fresh=await actor(req,current.value);return fresh.ok?privateJson(result.value):fresh.response;
+ }catch{return unavailable();}
+}
+export async function circleRecipientCode(req:NextRequest,circleId:string):Promise<Response>{
+ try{
+  const read=await input(req,circleId);if(!read.ok)return read.response;
+  const v=read.value;if(!membershipRecord(v)||!exactAdmissionKeys(v,['expectedMemberId','shareConsent'])||!canonicalAdmissionUuid(v.expectedMemberId)||v.shareConsent!==true)return refuse('Confirm sharing your member name with this salon host.',400);
+  const current=await actor(req,v.expectedMemberId);if(!current.ok)return current.response;if(!budget(current.value))return refuse('Try again later.',429);
+  const fresh=await actor(req,current.value);if(!fresh.ok)return fresh.response;
+  return privateJson({memberId:current.value,circleId,...signCircleRecipientCode(circleId,current.value,randomUUID())});
+ }catch{return unavailable();}
+}
+export async function circleInvitationCheck(req:NextRequest,circleId:string):Promise<Response>{
+ try{
+  const read=await input(req,circleId);if(!read.ok)return read.response;
+  const v=read.value;if(!membershipRecord(v)||!exactAdmissionKeys(v,['expectedMemberId','invitationToken'])||!canonicalAdmissionUuid(v.expectedMemberId)||!isCircleApprovalCode(v.invitationToken))return refuse('Use a host approval code.',400);
+  const current=await actor(req,v.expectedMemberId);if(!current.ok)return current.response;
+  const token=verifyCircleInvitation(v.invitationToken,circleId,current.value);if(!token)return refuse('This approval is not for your account and salon.',403);
+  if(!budget(current.value))return refuse('Try again later.',429);
+  const result=await access(req,current.value,circleId);if(!result.ok)return result.response;
+  const row=await getSupabaseAdmin().from('book_cohorts').select('id,created_by,circle_invitation_revision,circle_participation_revision').eq('id',circleId).maybeSingle();
+  if(row.error||!row.data||row.data.id!==circleId||row.data.circle_participation_revision!==result.value.revision||row.data.created_by!==token.hostMemberId
+    ||row.data.circle_invitation_revision!==token.invitationRevision||Date.parse(token.expiresAt)<=Date.now()||result.value.admissionMode!=='host_approval')return refuse('This approval changed or expired. Ask the host for a new one.',409);
+  const fresh=await actor(req,current.value);if(!fresh.ok)return fresh.response;
+  return privateJson({...result.value,approvalNonce:token.nonce,proofHash:circleInvitationProofHash(v.invitationToken),expiresAt:token.expiresAt});
+ }catch{return unavailable();}
+}
+/** Read only. A not-yet-visible row does not prove a sent join failed. The
+ * signing key and raw approval are deliberately unnecessary for recovery. */
+export async function circleInvitationReceipt(req:NextRequest,circleId:string):Promise<Response>{
+ try{
+  const read=await input(req,circleId);if(!read.ok)return read.response;
+  const v=parseCircleInvitationRecovery(read.value);if(!v)return refuse('Use your exact private recovery reference.',400);
+  const current=await actor(req,v.expectedMemberId);if(!current.ok)return current.response;if(!budget(current.value))return refuse('Try again later.',429);
+  const {data,error}=await getSupabaseAdmin().from('circle_participation_receipts').select('actor_member_id,request_id,cohort_id,payload,receipt')
+    .eq('actor_member_id',current.value).eq('request_id',v.requestId).eq('cohort_id',circleId).maybeSingle();
+  if(error)return unavailable();
+  if(data){
+   const p=data.payload,r=data.receipt;
+   if(data.actor_member_id!==current.value||data.request_id!==v.requestId||data.cohort_id!==circleId||!membershipRecord(p)||!exactAdmissionKeys(p,['action','circleId','expectedRevision','approvalNonce','proofHash'])
+    ||p.action!=='join_invited'||p.circleId!==circleId||p.expectedRevision!==v.expectedRevision||p.approvalNonce!==v.approvalNonce||p.proofHash!==v.proofHash
+    ||!membershipRecord(r)||!exactAdmissionKeys(r,['action','joined','completed','date','status'])||r.action!=='join'||r.joined!==true||r.completed!==false||r.date!==null||r.status!==null)return refuse('This recovery reference does not match your recorded request.',409);
+  }
+  const fresh=await actor(req,current.value);if(!fresh.ok)return fresh.response;
+  return privateJson({memberId:current.value,circleId,requestId:v.requestId,approvalNonce:v.approvalNonce,proofHash:v.proofHash,expectedRevision:v.expectedRevision,recorded:Boolean(data)});
+ }catch{return unavailable();}
 }

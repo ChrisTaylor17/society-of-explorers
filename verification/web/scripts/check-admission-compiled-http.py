@@ -28,8 +28,8 @@ target = '22222222-2222-4222-8222-222222222222'
 circle = '33333333-3333-4333-8333-333333333333'
 key = '44444444-4444-4444-8444-444444444444'
 base = '/api/circles/' + circle
-review = {'expectedMemberId': member, 'targetMemberId': target}
-issue = {**review, 'requestId': key, 'expectedRevision': 1, 'expectedInvitationRevision': 1,
+review = {'expectedMemberId': member, 'recipientCode': 'soe-cr1.e30.' + 'A' * 43}
+issue = {**review, 'targetMemberId': target, 'requestId': key, 'expectedRevision': 1, 'expectedInvitationRevision': 1,
          'expectedTargetLabel': 'Fictional reader', 'expiresAt': '2026-11-08T12:00:00.000Z'}
 join = {'expectedMemberId': member, 'requestId': key, 'expectedRevision': 1,
         'invitationToken': 'soe-ci1.e30.' + 'A' * 43}
@@ -46,6 +46,14 @@ cases = [
     ('signed-out legacy join', '/api/book-salons/join', 'POST', {'cohortId': circle}, origin, 401),
     ('issue has no GET action', base + '/invitations', 'GET', None, origin, 405),
     ('public pilot plan', '/salons/pilot', 'GET', None, origin, 200),
+    ('signed-out sharing code', base + '/recipient-code', 'POST', {'expectedMemberId': member, 'shareConsent': True}, origin, 401),
+    ('signed-out invitation access', base + '/admission-access', 'POST', {'expectedMemberId': member}, origin, 401),
+    ('signed-out approval check', base + '/invitation-check', 'POST', {'expectedMemberId': member, 'invitationToken': join['invitationToken']}, origin, 401),
+    ('signed-out own receipt', base + '/invitation-receipt', 'POST', {'expectedMemberId': member, 'requestId': key, 'expectedRevision': 1, 'approvalNonce': target, 'proofHash': 'a' * 64}, origin, 401),
+    ('sharing requires consent', base + '/recipient-code', 'POST', {'expectedMemberId': member, 'shareConsent': False}, origin, 400),
+    ('typed member identifier refused', base + '/invitation-review', 'POST', {'expectedMemberId': member, 'targetMemberId': target}, origin, 400),
+    ('private invitation controls', '/circles/' + circle + '/admission', 'GET', None, origin, 200),
+
 ]
 checks = []
 for label, path, method, body, request_origin, expected in cases:
@@ -65,6 +73,8 @@ for label, path, method, body, request_origin, expected in cases:
             assert 'error' in data and 'invitationToken' not in data and 'targetMemberId' not in data, label
         if label == 'public pilot plan':
             assert b'Four weeks,' in payload and b'Host and dates to be confirmed.' in payload
+        if label == 'private invitation controls':
+            assert b'Salon invitations' in payload and b'Check invitation access' in payload and b'no-referrer' in payload
         checks.append({'case': label, 'path': path, 'method': method, 'status': response.status,
                        'responseSha256': hashlib.sha256(payload).hexdigest(),
                        'cacheControl': response.headers.get('cache-control')})
