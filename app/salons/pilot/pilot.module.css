@@ -62,11 +62,19 @@
   .page h1 { font-size: 28pt; }
   .page h2 { font-size: 20pt; }
   .page h3 { font-size: 14pt; }
+  .page h2, .page h3, .section > .eyebrow { break-after: avoid; page-break-after: avoid; }
   .page p, .page li, .page dd { font-size: 10pt; line-height: 1.4; }
   .page a, .page .eyebrow, .page .status, .page .reference, .page .weekNumber, .page .sourceNote, .readings span, .agenda .time, .atAGlance dt { color: #111; }
   .section { padding: 1rem 0; }
-  .week, .atAGlance { background: white; padding: 1rem; break-inside: avoid; }
-  .agenda li { padding: .7rem 0; break-inside: avoid; }
-  .hostNotes { padding: 0; }
+  .section[id='host-guide'] { break-before: page; page-break-before: always; }
+  .weeks { display: block; }
+  .week, .atAGlance { background: white; padding: 1rem; break-inside: avoid; page-break-inside: avoid; }
+  .week { display: block; margin-bottom: .75rem; }
+  .week p { margin-bottom: .6rem; }
+  .week a { display: inline-block; min-height: 0; margin-top: .25rem; }
+  .agenda li { display: block; padding: .7rem 0; break-inside: avoid; page-break-inside: avoid; }
+  .agenda .time { display: block; margin-bottom: .3rem; }
+  .hostNotes { display: block; padding: 0; }
+  .hostNotes > section { margin-bottom: 1rem; break-inside: avoid; page-break-inside: avoid; }
   .seal { display: none; }
 }
