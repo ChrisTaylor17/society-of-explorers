@@ -2,6 +2,40 @@
 
 Prepared 2026-11-04 from canonical source at checkpoint `e1fbb2d`, named local metadata and current official documentation. This is an installation/build proposal, not a native build, bridge, device or release acceptance receipt. Only this document was added during this continuation.
 
+## November 7 owner review: no installation or spending authorized
+
+The owner requested a secure password-entry option, a read-only phone-tool/storage review, and continued independent web pilot work. Do not delete existing files, install tools, accept vendor licenses or spend money without asking first. The earlier recovery setup approval does not authorize a native tool acquisition.
+
+Current named-path checks find no full Xcode, Android SDK, Android Studio or JDK in the usual installation directories. macOS command-line tools and the existing Node runtime are present. The locked native Expo CLI is **58.1.10**, nested at `expo/node_modules/@expo/cli`; its correct `bin/cli.js` and the Codegen entry point are offloaded placeholders. They are not a usable dependency installation. Do not repair the older shared cache in place. The current app already declares a local iOS bundle identifier and includes the iOS host/member implementation; contrary statements in the original November 4 inventory below are historical.
+
+The Mac has **13,373,452,288 bytes free (12.46 GiB / 13.37 GB)** at this check. No files were deleted, moved or changed to reclaim capacity. No tool or package archive was downloaded. Metadata reads alone do not reserve space or prove an installation will fit.
+
+| Option | Proposed cost and capacity | Assessment before owner approval |
+| --- | --- | --- |
+| Continue the web pilot | $0 new tooling; use the existing verified web runtime | Recommended now. Build the public reading/host-plan preview and test it locally. Hosted member admission, recovery and private-data access still require their separate gates. |
+| Android first, existing Mac | Free build tools; plan for **25–35 GiB of available working space** | Use only an arm64 JDK17, exact locked native JavaScript packages, Gradle9.4.1, SDK37 family, Build Tools37.0.0, NDK27.1.12297006 and the CMake version actually required by the resolved graph. Omit Android Studio and emulator images for the first APK compilation. A later physical Android check avoids an emulator download if an owned compatible phone is available. |
+| iOS later, existing Mac | Xcode is free; plan for **40–50 GiB of available working space** | The official App Store metadata reports Xcode27.2, macOS minimum26.6 and a3,119,586,528-byte app download. That is not the installed application plus iOS SDKs, optional simulator runtime, Pods, caches and build output. Install only after a capacity/installation decision; a simulator runtime is a separate acquisition. |
+| Both local platforms | Free tools; plan for **60–80 GiB of available working space** | These are conservative planning allowances, not vendor minima, measured installed sizes or guarantees. Stage the work and check actual use before proceeding. Use an already owned, suitable local SSD or another already provisioned Mac if available; no purchase or file move is assumed. |
+| Expo cloud feasibility test | Public Free plan currently advertises15 Android and15 iOS builds, low-priority queue | An option if local capacity cannot be resolved. Actual account allowance and exact custom native/toolchain compatibility are unverified. It would upload reviewed source to Expo; inspect the exact upload exclusions and obtain approval before connecting an account or submitting a build. Do not add a paid plan or assume free usage is available. |
+
+Google Drive storage is useful for a source archive; it is not equivalent to free local SDK and build-cache space. The web runtime is already local and can be reused without installing anything. Existing tools and cached native source are preserved.
+
+### Exact metadata inspected, without acquiring packages
+
+The official Android repository currently names the stable platform package `platforms;android-37.0`. Confirm the effective AGP platform resolution for the project's integer compileSdk37 before selecting its installation path; do not assume the old shorthand package name is accepted. The repository also lists the current mac-arm64 CLI package. Metadata-only compressed sizes are:
+
+- SDK37.0 platform:67,281,901bytes.
+- Build Tools37.0.0 for macOS:81,933,386bytes.
+- NDK27.1.12297006 for macOS:836,151,734bytes.
+- Current mac-arm64 command-line tools:155,384,151bytes.
+- Platform Tools37.0.2 for macOS:16,516,152bytes, relevant to later device work.
+
+These archives alone total about1.16GB compressed. They exclude the JDK, Gradle, JavaScript packages, Maven dependencies, any required CMake, decompression peaks and native build output. The old37.985GiB availability below is superseded by today's measurement. No installation size is inferred from an archive size.
+
+Sources checked November7: [Android repository metadata](https://dl.google.com/android/repository/repository2-3.xml), [Android command-line tools](https://developer.android.com/tools), [Android Studio requirements](https://developer.android.com/studio/install), [AGP9.2 compatibility](https://developer.android.com/build/releases/agp-9-2-0-release-notes), [Apple host matrix](https://developer.apple.com/xcode/system-requirements/), [Xcode listing](https://apps.apple.com/us/app/xcode/id497799835), [Expo pricing](https://expo.dev/pricing).
+
+Local APK compilation and an iOS simulator build do not require buying store enrollment. Signing for a physical iPhone, TestFlight, App Store/Play distribution and physical Quest acceptance remain later separate steps. No enrollment, account, cloud build, native installation, license acceptance or charge occurred in this review.
+
 ## Current machine and installation evidence
 
 | Check | Observed result | Meaning |
