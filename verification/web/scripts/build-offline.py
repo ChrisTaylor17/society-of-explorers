@@ -34,7 +34,7 @@ before=source_snapshot()
 (ROOT/('evidence/'+prefix+'build-source-sha256.json')).write_text(json.dumps(before,indent=2)+'\n')
 assert not any((APP/name).exists() for name in ['.env','.env.local','.env.production','.env.production.local']), 'Runtime dotenv must not enter an offline build'
 env={k:os.environ[k] for k in ['PATH','HOME','USER','SHELL','TMPDIR','LANG','LC_ALL'] if k in os.environ}
-env.update({'CI':'1','NEXT_TELEMETRY_DISABLED':'1','NODE_OPTIONS':'--require '+str(ROOT/'scripts/deny-build-network.cjs'),'NO_COLOR':'1'})
+env.update({'CI':'1','NEXT_TELEMETRY_DISABLED':'1','NODE_OPTIONS':'--require '+json.dumps(str(ROOT/'scripts/deny-build-network.cjs')),'NO_COLOR':'1'})
 webpack='--webpack' in sys.argv
 fixture='--fixture-public-config' in sys.argv
 if fixture:env.update({'NEXT_PUBLIC_SUPABASE_URL':'https://offline.invalid','NEXT_PUBLIC_SUPABASE_ANON_KEY':'OFFLINE_PUBLIC_BUILD_PLACEHOLDER_NOT_A_CREDENTIAL'})

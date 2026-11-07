@@ -22,6 +22,10 @@ export async function participationApp() {
       'circle-attendance-preflight.sql', 'circle-attendance-apply.sql',
       'circle-membership-intent-preflight.sql', 'circle-membership-intent-apply.sql',
       'circle-public-profiles-preflight.sql', 'circle-public-profiles-apply.sql',
+      // Discovery validates the complete current source catalog; the canonical
+      // app also ships this reviewed tenth edition, rather than the older nine.
+      'circle-luke-good-samaritan-edition-apply.sql',
+      'circle-legacy-salon-membership.sql',
     ]) {
       await db.exec(await readFile(new URL('../../../../docs/sql/' + name, import.meta.url), 'utf8'));
     }

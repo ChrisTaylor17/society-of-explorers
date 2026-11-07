@@ -57,6 +57,7 @@ export interface CircleInput {
   maxMembers: number;
   onlineUrl: string | null;
   readingProgram?: ReadingProgram;
+  admissionMode?: 'open' | 'host_approval';
 }
 
 type Result = { ok: true; value: CircleInput } | { ok: false; error: string };
@@ -139,6 +140,10 @@ export function validateCircleInput(body: Record<string, unknown>, now: Date = n
   const rawMax = typeof body.maxMembers === 'number' ? body.maxMembers : Number(body.maxMembers);
   const maxMembers = Number.isFinite(rawMax) ? Math.max(CIRCLE_MIN_MEMBERS, Math.min(CIRCLE_MAX_MEMBERS, Math.round(rawMax))) : 8;
   const hasProgram = Object.hasOwn(body, 'readingProgram');
+  const hasAdmission = Object.hasOwn(body, 'admissionMode');
+  if (hasAdmission && body.admissionMode !== 'open' && body.admissionMode !== 'host_approval') {
+    return { ok: false, error: 'Choose open membership or host-approved invitations.' };
+  }
   const readingProgram = hasProgram ? parseReadingProgram(body.readingProgram) : null;
   if (hasProgram && !readingProgram) return { ok: false, error: 'Choose a supported source edition and valid reading positions.' };
 
@@ -159,6 +164,7 @@ export function validateCircleInput(body: Record<string, unknown>, now: Date = n
       maxMembers,
       onlineUrl: format === 'in_person' ? null : onlineUrl,
       ...(readingProgram ? { readingProgram } : {}),
+      ...(hasAdmission ? { admissionMode: body.admissionMode as 'open' | 'host_approval' } : {}),
     },
   };
 }

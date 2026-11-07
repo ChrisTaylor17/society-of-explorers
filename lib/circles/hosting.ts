@@ -17,7 +17,7 @@ const fields = ['title', 'description', 'format', 'city', 'region', 'venueName',
  * normalization so an exact retry does not expire before SQL receipt lookup. */
 export function parseCircleCreateMutation(value: unknown): CircleCreateMutation | null {
   if (!membershipRecord(value) || !canonicalUuid(value.expectedMemberId) || !canonicalUuid(value.requestId)
-    || !membershipDay(value.startDate) || typeof value.timezone !== 'string' || !Object.hasOwn(TIMEZONES, value.timezone) || !exact(value, ['expectedMemberId', 'requestId', ...fields, ...(Object.hasOwn(value, 'readingProgram') ? ['readingProgram'] : [])])) return null;
+    || !membershipDay(value.startDate) || typeof value.timezone !== 'string' || !Object.hasOwn(TIMEZONES, value.timezone) || !exact(value, ['expectedMemberId', 'requestId', ...fields, ...(Object.hasOwn(value, 'readingProgram') ? ['readingProgram'] : []), ...(Object.hasOwn(value, 'admissionMode') ? ['admissionMode'] : [])])) return null;
   const parsed = validateCircleInput(value, new Date(`${value.startDate}T12:00:00Z`));
   if (!parsed.ok || fields.some(key => parsed.value[key] !== value[key])) return null;
   if (Object.hasOwn(value, 'readingProgram')) {
@@ -32,7 +32,8 @@ export function parseCircleCreateMutation(value: unknown): CircleCreateMutation 
     title: parsed.value.title, description: parsed.value.description, format: parsed.value.format, city: parsed.value.city,
     region: parsed.value.region, venueName: parsed.value.venueName, venueType: parsed.value.venueType, weekday: parsed.value.weekday,
     time: parsed.value.time, timezone: parsed.value.timezone, startDate: parsed.value.startDate, maxMembers: parsed.value.maxMembers,
-    onlineUrl: parsed.value.onlineUrl, ...(parsed.value.readingProgram ? { readingProgram: parsed.value.readingProgram } : {}) };
+    onlineUrl: parsed.value.onlineUrl, ...(parsed.value.readingProgram ? { readingProgram: parsed.value.readingProgram } : {}),
+    ...(parsed.value.admissionMode ? { admissionMode: parsed.value.admissionMode } : {}) };
 }
 export function circleCreateMutationBody(value: CircleCreateMutation): string {
   const parsed = parseCircleCreateMutation(value);

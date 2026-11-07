@@ -252,6 +252,10 @@ test('legacy join delegates Circles to the same receipt/revision RPC and keeps o
   assert.equal(a.calls[0].name, 'soe_circle_join'); assert.equal(a.db.rows('book_cohort_members').length, 0);
   a.db.rows('book_cohorts')[0].book_id = 'hamlet';
   assert.equal((await join.POST(a.request({ cohortId: CIRCLE }, '/api/book-salons/join', {}))).status, 403);
+  a.respond = () => ({ data: { joined: true }, error: null });
   const ordinary = await join.POST(a.request({ cohortId: CIRCLE }, '/api/book-salons/join'));
-  assert.equal(ordinary.status, 200); assert.deepEqual(await ordinary.json(), { joined: true }); assert.equal(a.db.rows('book_cohort_members')[0].member_id, a.JULES);
+  assert.equal(ordinary.status, 200); assert.deepEqual(await ordinary.json(), { joined: true });
+  assert.equal(a.calls.at(-1).name, 'soe_circle_legacy_salon_join');
+  assert.deepEqual(a.calls.at(-1).args, { p_actor: a.JULES, p_cohort_id: CIRCLE });
+  assert.equal(a.db.rows('book_cohort_members').length, 0);
 });
