@@ -38,7 +38,7 @@ assert len(sources) == build['sourceFiles'] and sources
 assert hashlib.sha256(json.dumps(sources, separators=(',', ':')).encode()).hexdigest() == build['sourceSha256']
 def current_sources():
     found = {}
-    for name in ['app', 'components', 'lib', 'public', 'content', 'styles', 'platforms/quest', 'platforms/shared', 'platforms/native/src/circles']:
+    for name in ['app', 'components', 'lib', 'public', 'content', 'styles', 'scripts', 'platforms/quest', 'platforms/shared', 'platforms/native/src/circles']:
         folder = ROOT / name
         if not folder.exists(): continue
         for base, dirs, files in os.walk(folder, followlinks=False):
@@ -48,6 +48,10 @@ def current_sources():
                 if not file.is_symlink(): found[str(file.relative_to(ROOT))] = digest(file)
     for name in ['package.json', 'package-lock.json', 'next.config.ts', 'proxy.ts', 'tsconfig.json', 'postcss.config.mjs']:
         if (ROOT / name).exists(): found[name] = digest(name)
+    for file in ROOT.glob('*.d.ts'):
+        if file.name == 'next-env.d.ts': continue
+        assert not file.is_symlink(), 'Linked root type declaration'
+        found[file.name] = digest(file)
     return dict(sorted(found.items()))
 assert current_sources() == sources, 'Current source differs from built source, including added/removed files'
 for name in ['.env', '.env.local', '.env.production', '.env.production.local']:

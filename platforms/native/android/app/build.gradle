@@ -15,13 +15,18 @@ tasks.configureEach { task -> if (task.name == 'preBuild') task.dependsOn(packag
 def clipResources = layout.buildDirectory.dir('generated/soeClipResources')
 def clipPackager = new File(projectRoot, 'prepare-clip-assets.cjs')
 def packageClipAssets = tasks.register('packageSoeClipAssets', Exec) {
-    inputs.files(clipPackager, new File(projectRoot, 'clip-catalog.json'), new File(projectRoot, '../../lib/clips/registry.json'))
+    inputs.files(clipPackager, new File(projectRoot, 'clip-catalog.json'), new File(projectRoot, '../../lib/clips/registry.json'),
+        new File(projectRoot, '../../lib/clips/review-policy.cjs'))
     inputs.files(fileTree(new File(projectRoot, '../../content/clips')) {
         include 'circle-intro.*', 'night-sky-traffic.*', 'telescope-first-tilt.*', 'which-height.*', 'new-species.*',
                 'circle-intro-inspection.json', 'night-sky-traffic-inspection.json', 'telescope-first-tilt-inspection.json',
-                'which-height-inspection.json', 'new-species-inspection.json'
+                'which-height-inspection.json', 'new-species-inspection.json', 'circle-intro-source.html',
+                'eso2607d-source.mp4', 'potw2643a-source.m4v'
     })
     outputs.dir(clipResources)
+    // Review dates and withdrawals must be checked on every build invocation.
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
     doFirst { commandLine('node', clipPackager.absolutePath, clipResources.get().dir('raw').asFile.absolutePath) }
 }
 tasks.configureEach { task -> if (task.name == 'preBuild') task.dependsOn(packageClipAssets) }

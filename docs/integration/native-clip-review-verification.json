@@ -1,0 +1,160 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "ca26bbc73be0138608db0ac1ff9cd27957430f54",
+  "recordedAtUtc": "2026-11-07T18:29:08.448844+00:00",
+  "problem": "The phone packager accepted eight repinned review mutations that the web gate refused.",
+  "change": "Shared source/rights/inspection/caption policy; native original-source pins, non-expiring bundled reviews, duplicate-ID refusal and per-invocation Android packaging checks.",
+  "policyBypassesReproduced": 8,
+  "policyBypassesRefusedAfterFix": 8,
+  "focusedTests": 49,
+  "calibration": {
+    "wrongTypeFixture": "TS2322",
+    "projectLintFixture": "prefer-const"
+  },
+  "nativeCommand": {
+    "status": "PASS_LOCAL",
+    "positiveCommandExitCode": 0,
+    "pinnedResourcesCompared": 5,
+    "withdrawnReviewCommandExitCode": 1,
+    "existingResourceHashesPreserved": true,
+    "scope": "Actual Node packaging command used by Android; shared synchronous function also used by the iOS plugin. Not a platform compilation or installed-device test.",
+    "productionCleared": false
+  },
+  "compiledWebBuild": {
+    "exitCode": 0,
+    "seconds": 38.02,
+    "sourceFiles": 1189,
+    "sourceSha256": "f2dab614b5c15a5f8b93918861cddde9e6f119764b875d1c363a892b75886709",
+    "sourceUnchangedDuringBuild": true,
+    "externalNetworkBlocked": true,
+    "privateOrIssuedCredentialsSupplied": false
+  },
+  "compiledHttp": {
+    "status": "PASS_COMPILED_LOCAL",
+    "origin": "http://127.0.0.1:63540",
+    "publicVideoClips": 5,
+    "checkedTextPassages": 3,
+    "clips": [
+      {
+        "id": "how-a-circle-works",
+        "head": 200,
+        "range": 206,
+        "captions": 200,
+        "staleDigest": 409,
+        "multiRange": 416
+      },
+      {
+        "id": "night-sky-traffic",
+        "head": 200,
+        "range": 206,
+        "captions": 200,
+        "staleDigest": 409,
+        "multiRange": 416
+      },
+      {
+        "id": "telescope-first-tilt",
+        "head": 200,
+        "range": 206,
+        "captions": 200,
+        "staleDigest": 409,
+        "multiRange": 416
+      },
+      {
+        "id": "which-height",
+        "head": 200,
+        "range": 206,
+        "captions": 200,
+        "staleDigest": 409,
+        "multiRange": 416
+      },
+      {
+        "id": "new-species",
+        "head": 200,
+        "range": 206,
+        "captions": 200,
+        "staleDigest": 409,
+        "multiRange": 416
+      }
+    ],
+    "sourceAndReviewDetailsExcluded": true,
+    "scope": "Actual production Next build over loopback, public fixture configuration, no live provider, member data or physical-device acceptance",
+    "productionCleared": false
+  },
+  "browser": {
+    "stories": 8,
+    "clip": "night-sky-traffic",
+    "durationSeconds": 24,
+    "presentedFrames": 599,
+    "droppedFrames": 0,
+    "captionCues": 4,
+    "audioTracks": 0,
+    "closed": true,
+    "externalRequests": 0,
+    "pageErrors": 0
+  },
+  "serverCleanup": {
+    "status": "STOPPED",
+    "sourceMismatches": [],
+    "builtMismatches": [],
+    "inputMismatches": [],
+    "runtimeMismatches": []
+  },
+  "sourceCoverage": [
+    "Application/content/platform sources",
+    "Root type declarations except generated next-env.d.ts",
+    "scripts/ inputs included by the web TypeScript configuration"
+  ],
+  "generatedTypeInputs": {
+    "next-env.d.ts": "7b550dda9686c16f36a17bf9051d5dbf31e98555b30d114ac49fc49a1e712651",
+    ".next/types/routes.d.ts": "72a984f0c59d9f86c411d5fb07a3d0f37f0b81ccf1fca36d9f183f87acf3de1c"
+  },
+  "runtimeRecovery": {
+    "status": "PASS_LOCAL_RUNTIME",
+    "lockedInstalledPackagesMatched": 472,
+    "regularFilesResident": 56843,
+    "bytes": 734538891,
+    "internalLinks": 27,
+    "missingRequiredPackages": [],
+    "versionMismatches": [],
+    "lockSha256": "c2ea9fdc6811a666a57e794755dd770e12ae116a049c3a78650ea4d51afb9968"
+  },
+  "evidenceRoot": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-native-clip-rights",
+  "screenshot": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-native-clip-rights/candidate/verification/web/evidence/reel-paranal-built-20261107/reel-320.png",
+  "runnerAdaptations": "Only the private runner uses a no-space preload wrapper and a longer timeout. Canonical and tested source_snapshot functions match. No application checks or compiler/type checks were disabled.",
+  "limitations": [
+    "Hosted database/file restore, privacy repair, sign-in and private admission remain unverified.",
+    "Native platform compilation/signing, physical iPhone/Android/Quest and screen-reader acceptance remain open.",
+    "Android task wiring is source-reviewed; no Gradle execution is claimed without its toolchain."
+  ],
+  "sourceEditsSha256": {
+    "lib/clips/review-policy.cjs": "097b5eddd4f18d983ac1bb2274cd4cdac4a41f3b0510d1a36c78885816cc1301",
+    "lib/clips/review-policy.d.cts": "87bc0c9ac2ab8bbf4e3e39b161e860aa911eb3abe1f1567456ff0c96ddf0aac9",
+    "lib/clips/server.ts": "c11fc92267c48d39205c3637fd5622d35cf7d48ab7ea543ca2b5cc6f0db92f8d",
+    "platforms/native/prepare-clip-assets.cjs": "8b7f85e290879c44d230cdbd8f1caa852e524aa0fbdde34ad5c04fda0ff50108",
+    "platforms/native/android/app/build.gradle": "d6aba5d13075bca5e06c326c84d962d4b812d51b76e22466ac1bf27b65f7dda7",
+    "verification/web/tests/native-clip-assets.test.mjs": "21accca93103d54c89355630c27c1f5e87dfdf83270e577dd3ea8da48b9133f1",
+    "verification/web/scripts/build-offline.py": "08fae880d8455fd88c1bd554d87f60fce425677c42f7f6a206111061a5154aae",
+    "verification/web/scripts/built-shell-server.py": "d295e7f1840ce637476685d1599044969f3044063f6162705fce3bc4dcf6d657",
+    "RELEASE_STATUS.md": "0498353e7d822f268d025e9e95f47a08a0d657f00f8eb1b6fd8e39ef0d0b136b",
+    "docs/integration/native-clips.md": "a75fd00c4f3c861296bb3939ca7627ff3137a87b0990eb52e2de640763fa2edd"
+  },
+  "evidenceSha256": {
+    "baseline-gap.json": "c746abfa2edb7f0787418fc7e48bd8eeb8a789368beca13feccba10d00fa5015",
+    "after-fix-rights.json": "ad1e8107a2c9d86ca3c316b2be3ee9c3d190dceb191736f59391730092e19a13",
+    "focused-local.log": "0200d1746f2c4a54ccc9cdadb51554da513cf9629bd24e0d05bd77a6709cba3e",
+    "types-local.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lint-local.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "typecheck-calibrated.json": "c939d18d38c7eaa5e87468e65191fd8811ceee000a74671dfb216ad13d73d52d",
+    "lint-calibration.json": "6c40204293df6c337c9b79c3b62ff0bb214ad41c1f978382920f99c259ac6311",
+    "native-command-verification.json": "a71a754825db0163a856da061a565476978e4f6eaeeedccb4026e5613600a531",
+    "runtime-locked-restore.json": "30452bc6e5ce42af41e14520ae875e6ddcbb9f7089c8028fb50f5a434045a5e8",
+    "runtime-locked-identity.json": "e3d6e0289fbcebb986bae86be604833abab14de9c7bbbed49db1e1411892d599",
+    "compiled-clip-http.json": "722d39b14ff9fd5e2b5c51d2b7d9f06051db0a143a74913135f825606a271a12",
+    "candidate/verification/web/evidence/clip-review-complete-next-build.json": "b06094665109c4a8f4a069a1c3bdab4e7cc4c213dfcc2428acde88dbb4d0affe",
+    "candidate/verification/web/evidence/clip-review-complete-build-source-sha256.json": "103bcb055a60c81fb731342ab81e18da4cb1583193c755491617b9ca863a1862",
+    "candidate/verification/web/evidence/built-shell-clip-review-check-server.json": "d89f4c17d0d2ce38327e7036f9e031d9864c8c08878c742dc7bdfb66460b98d5",
+    "candidate/verification/web/evidence/reel-paranal-built-20261107/browser.json": "30139e9834e281648425e28b22d30c35f16d31fa4f02354760a1d5019faeecb2"
+  },
+  "statusRefreshedAtUtc": "2026-11-07T18:38:24.453758+00:00"
+}

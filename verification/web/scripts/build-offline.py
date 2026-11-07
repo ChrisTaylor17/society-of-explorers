@@ -12,7 +12,7 @@ def materialized_bytes(file):
  return file.read_bytes()
 def source_snapshot():
  result={}
- directories=['app','components','lib','public','content','styles','platforms/quest','platforms/shared','platforms/native/src/circles']
+ directories=['app','components','lib','public','content','styles','scripts','platforms/quest','platforms/shared','platforms/native/src/circles']
  for name in directories:
   folder=APP/name
   if not folder.exists():continue
@@ -24,6 +24,10 @@ def source_snapshot():
  for name in ['package.json','package-lock.json','next.config.ts','proxy.ts','tsconfig.json','postcss.config.mjs']:
   file=APP/name
   if file.exists():result[name]=hashlib.sha256(materialized_bytes(file)).hexdigest()
+ for file in APP.glob('*.d.ts'):
+  if file.name == 'next-env.d.ts': continue
+  if file.is_symlink(): raise RuntimeError('Linked root type declaration')
+  result[file.name]=hashlib.sha256(materialized_bytes(file)).hexdigest()
  return dict(sorted(result.items()))
 
 before=source_snapshot()

@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
+const { captionTranscript, mimeMatches, reviewInspection, reviewSource } = require('../../lib/clips/review-policy.cjs');
 
 const root = fs.realpathSync(path.resolve(__dirname, '../..'));
 const selections = new Map([
@@ -25,7 +26,7 @@ function resident(file, maximum) {
 }
 
 function pinned(filename, bytes, sha256, maximum) {
-  if (typeof filename !== 'string' || !/^[a-z0-9-]+\.(?:mp4|vtt|json)$/.test(filename)) throw Error('Invalid SoE clip filename');
+  if (typeof filename !== 'string' || !/^[a-z0-9-]+\.(?:mp4|m4v|vtt|json|html)$/.test(filename)) throw Error('Invalid SoE clip filename');
   const data = resident(path.join(root, 'content/clips', filename), maximum);
   if (data.length !== bytes || createHash('sha256').update(data).digest('hex') !== sha256) throw Error('SoE clip bytes changed');
   return data;
@@ -34,12 +35,14 @@ function pinned(filename, bytes, sha256, maximum) {
 function packageClipAssets(destination) {
   const registry = JSON.parse(resident(path.join(root, 'lib/clips/registry.json'), 65536));
   const catalog = JSON.parse(resident(path.join(root, 'platforms/native/clip-catalog.json'), 65536));
-  if (catalog.version !== 1 || !Array.isArray(catalog.videos) || catalog.videos.length !== selections.size) throw Error('Invalid SoE clip catalog');
+  if (!Array.isArray(registry) || registry.length > 12 || catalog.version !== 1 || !Array.isArray(catalog.videos)
+      || catalog.videos.length !== selections.size) throw Error('Invalid SoE clip catalog');
   const assets = Array.from(selections, ([id, resource]) => {
-    const clip = catalog.videos.find(item => item.id === id);
-    const entry = registry.find(item => item.id === id);
-    if (!clip || !entry || entry.status !== 'catalog-approved' || entry.publishable !== true || entry.asset.mime !== 'video/mp4'
-        || !entry.review.territories.includes('WORLDWIDE') || !['display', 'commercial', 'captions'].every(value => entry.review.permissions.includes(value))
+    const clips = catalog.videos.filter(item => item?.id === id), entries = registry.filter(item => item?.id === id);
+    const clip = clips[0], entry = entries[0];
+    const context = { territory: null, requireNonExpiring: true };
+    const reviewed = reviewSource(entry, context);
+    if (clips.length !== 1 || entries.length !== 1 || !reviewed || entry.kind !== 'video' || entry.asset.mime !== 'video/mp4'
         || clip.resource !== resource || clip.mediaFile !== entry.asset.path || clip.mediaBytes !== entry.asset.bytes
         || clip.mediaSHA256 !== entry.asset.sha256 || clip.captionsFile !== entry.captions.path
         || clip.captionsBytes !== entry.captions.bytes || clip.captionsSHA256 !== entry.captions.sha256
@@ -47,22 +50,21 @@ function packageClipAssets(destination) {
         || clip.durationMs !== entry.asset.durationMs || clip.width !== entry.asset.width || clip.height !== entry.asset.height) {
       throw Error('SoE clip review does not match the phone catalog');
     }
+    if (!reviewed.archiveSource) pinned(entry.source.path, entry.source.bytes, entry.source.sha256, 64 * 1024 * 1024);
     const inspection = JSON.parse(pinned(entry.inspection.path, entry.inspection.bytes, entry.inspection.sha256, 65536));
-    const rights = inspection.rights;
-    if (inspection.audioTracks !== 0 || (entry.source.kind === 'first-party' ? clip.sourcePage !== null || clip.attribution !== null
-        : !rights || clip.sourcePage !== entry.source.pageUrl || clip.attribution?.licenseUrl !== rights.licenseUrl
-          || clip.attribution?.edits !== rights.edits || clip.attribution?.referenceUrl !== rights.referenceUrl
+    const inspected = reviewInspection(entry, inspection, context);
+    if (!inspected || inspection.audioTracks !== 0 || (reviewed.firstParty ? clip.sourcePage !== null || clip.attribution !== null
+        : clip.sourcePage !== entry.source.pageUrl || !inspected.attribution || clip.attribution?.licenseUrl !== inspected.attribution.licenseUrl
+          || clip.attribution?.edits !== inspected.attribution.edits || clip.attribution?.referenceUrl !== inspected.attribution.referenceUrl
           || clip.attribution?.captionPresentation !== 'embedded-text')) {
       throw Error('SoE clip attribution is incomplete');
     }
-    const captions = pinned(clip.captionsFile, clip.captionsBytes, clip.captionsSHA256, 65536).toString('utf8');
-    const transcript = captions.replace(/\r\n/g, '\n').slice(8).trim().split(/\n{2,}/)
-      .map(cue => {
-        const lines = cue.split('\n');
-        return lines.slice(lines[0].includes('-->') ? 1 : 2).join('\n');
-      }).join('\n\n');
-    if (transcript !== clip.transcript) throw Error('SoE clip transcript changed');
-    return { name: resource + '.mp4', bytes: pinned(clip.mediaFile, clip.mediaBytes, clip.mediaSHA256, 4_000_000) };
+    const captions = pinned(clip.captionsFile, clip.captionsBytes, clip.captionsSHA256, 65536);
+    const transcript = captionTranscript(captions, reviewed.durationMs);
+    if (!transcript || transcript !== clip.transcript) throw Error('SoE clip transcript changed');
+    const bytes = pinned(clip.mediaFile, clip.mediaBytes, clip.mediaSHA256, 4_000_000);
+    if (!mimeMatches(bytes, entry.asset.mime) || !reviewInspection(entry, inspection, context)) throw Error('SoE clip review is unavailable');
+    return { name: resource + '.mp4', bytes };
   });
   const target = path.resolve(destination);
   fs.mkdirSync(target, { recursive: true });
