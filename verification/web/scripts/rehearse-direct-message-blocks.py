@@ -1,4 +1,5 @@
 """Rehearse contained DM cutover, pair-lock races and block recovery on PostgreSQL."""
+from contextlib import nullcontext
 import json
 import os
 from pathlib import Path
@@ -159,7 +160,7 @@ def exercise(original, staged, database, temp, release, harness, kit, checker, r
     checks.append('The isolated restore preserves private blocks, old history, exact retry and the raw-table access denial.')
 
 
-def main(next_stage=None):
+def main(next_stage=None, *, rehearsal_directory=None):
     os.umask(0o077)
     release=runpy.run_path(str(SCRIPT.with_name('test-circle-release-restore.py')))
     harness=runpy.run_path(str(release['RESTORE_TEST']))
@@ -172,7 +173,9 @@ def main(next_stage=None):
     drafts=[*contact['DRAFTS'],ROOT/'docs/sql/account-erasure-circle-relationships-apply.sql']
     report={'blockChecks':[],'checks':[],'productionCleared':False,'providerSdk':[],
             'closedRoleOperations':0,'waddleChecks':[],'waddleHttp':[]}
-    with TemporaryDirectory(prefix='soe-circle-departure-',dir='/private/tmp') as directory:
+    directory_context = (nullcontext(str(rehearsal_directory)) if rehearsal_directory is not None else
+                         TemporaryDirectory(prefix='soe-circle-departure-',dir='/private/tmp'))
+    with directory_context as directory:
         temp=Path(directory)
         original,staged=[kit['Cluster'](temp/name,kit['OWNER']) for name in ('original','staged')]
         try:

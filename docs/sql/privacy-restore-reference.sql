@@ -40,6 +40,10 @@
 \else
   \set soe_restore_include_waddle_erasure off
 \endif
+\if :{?soe_restore_include_circle_admission}
+\else
+  \set soe_restore_include_circle_admission off
+\endif
 \if :{?soe_restore_include_member_block_erasure}
 \else
   \set soe_restore_include_member_block_erasure off
@@ -51,6 +55,9 @@
 \if :{?soe_restore_include_member_safety}
 \else
   \set soe_restore_include_member_safety off
+\endif
+\if :soe_restore_include_circle_admission
+  \set soe_restore_include_member_block_erasure on
 \endif
 \if :soe_restore_include_member_block_erasure
   \set soe_restore_include_circle_member_blocks on
@@ -121,6 +128,53 @@ $waddle$;
 \endif
 \endif
 
+-- A public-wrapper-only reference must never attest the admission backend.
+-- This also refuses capturing an incomplete source as a matching baseline.
+\if :soe_restore_include_circle_admission
+DO $admission$
+DECLARE signature text;
+BEGIN
+  IF to_regnamespace('soe_circle_admission_private') IS NULL OR (
+    SELECT count(*) FROM pg_attribute WHERE attrelid='public.book_cohorts'::regclass
+      AND attname IN ('circle_admission_mode','circle_invitation_revision') AND attnum>0 AND NOT attisdropped
+  )<>2 THEN
+    RAISE EXCEPTION 'The admission restore scope requires the complete admission schema.';
+  END IF;
+  FOREACH signature IN ARRAY ARRAY[
+    'soe_circle_admission_private.enabled()',
+    'soe_circle_admission_private.require_actor(uuid)',
+    'soe_circle_admission_private.legacy_salon_join(uuid,uuid)',
+    'soe_circle_admission_private.create_circle(uuid,uuid,jsonb)',
+    'soe_circle_admission_private.join_open(uuid,uuid,bigint,uuid)',
+    'soe_circle_admission_private.review_invitation(uuid,uuid,uuid)',
+    'soe_circle_admission_private.join_invited(uuid,uuid,bigint,uuid,uuid,bigint,uuid,text,timestamp with time zone)',
+    'soe_circle_admission_private.revoke_invitations(uuid,uuid,bigint,bigint,uuid)',
+    'public.soe_circle_create(uuid,uuid,jsonb)',
+    'public.soe_circle_join(uuid,uuid,bigint,uuid)',
+    'public.soe_circle_legacy_salon_join(uuid,uuid)',
+    'public.soe_circle_invitation_review(uuid,uuid,uuid)',
+    'public.soe_circle_join_invited(uuid,uuid,bigint,uuid,uuid,bigint,uuid,text,timestamp with time zone)',
+    'public.soe_circle_invitation_revoke(uuid,uuid,bigint,bigint,uuid)'
+  ] LOOP
+    IF to_regprocedure(signature) IS NULL THEN
+      RAISE EXCEPTION 'The admission restore scope requires every admission routine.';
+    END IF;
+  END LOOP;
+END;
+$admission$;
+\else
+DO $admission_scope$
+BEGIN
+  IF to_regnamespace('soe_circle_admission_private') IS NOT NULL OR EXISTS (
+    SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('public.book_cohorts')
+      AND attname IN ('circle_admission_mode','circle_invitation_revision') AND attnum>0 AND NOT attisdropped
+  ) THEN
+    RAISE EXCEPTION 'Use the complete circle-admission restore scope for this database.';
+  END IF;
+END;
+$admission_scope$;
+\endif
+
 SET LOCAL row_security = off;
 SET LOCAL timezone = 'UTC';
 SET LOCAL datestyle = 'ISO, YMD';
@@ -144,6 +198,9 @@ WITH RECURSIVE schemas AS (
 \endif
 \if :soe_restore_include_member_safety
     OR nspname = 'soe_member_safety_private'
+\endif
+\if :soe_restore_include_circle_admission
+    OR nspname = 'soe_circle_admission_private'
 \endif
 ),
 \if :soe_restore_include_account_deletion_state
@@ -411,6 +468,13 @@ circle_routines AS (
   WHERE n.nspname = 'public' AND p.prokind = 'f' AND p.proname ~ '^_?soe_circle_'
 ),
 \endif
+\if :soe_restore_include_circle_admission
+admission_routines AS (
+  SELECT p.oid,p.proname,p.proowner,p.proacl,pg_get_function_identity_arguments(p.oid) AS arguments
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='soe_circle_admission_private' AND p.prokind='f'
+),
+\endif
 \if :soe_restore_include_first_release_state
 release_service_routines AS (
   SELECT p.oid, p.proname, p.proowner, p.proacl
@@ -540,6 +604,9 @@ acl_sources(kind, object, column_no, permissions) AS (
 \if :soe_restore_include_circle_release_state
   UNION ALL
   SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM circle_routines
+\if :soe_restore_include_circle_admission
+  UNION ALL SELECT 'routine', oid, 0, coalesce(proacl, acldefault('f', proowner)) FROM admission_routines
+\endif
 \endif
 \if :soe_restore_include_first_release_state
   UNION ALL
@@ -579,6 +646,15 @@ circle_routine_evidence AS (
     obj_description(p.oid, 'pg_proc'), a.entries
   ) ORDER BY p.proname COLLATE "C", p.arguments COLLATE "C")::text, 'UTF8')), 'hex') AS digest
   FROM circle_routines p LEFT JOIN acls a ON a.kind = 'routine' AND a.object = p.oid
+),
+\endif
+\if :soe_restore_include_circle_admission
+admission_routine_evidence AS (
+  SELECT encode(sha256(convert_to(jsonb_agg(jsonb_build_array(
+    p.proname,p.arguments,pg_get_userbyid(p.proowner),pg_get_functiondef(p.oid),
+    obj_description(p.oid,'pg_proc'),a.entries
+  ) ORDER BY p.proname COLLATE "C",p.arguments COLLATE "C")::text,'UTF8')),'hex') AS digest
+  FROM admission_routines p LEFT JOIN acls a ON a.kind='routine' AND a.object=p.oid
 ),
 \endif
 \if :soe_restore_include_first_release_state
@@ -681,6 +757,10 @@ role_roots(oid) AS (
   UNION SELECT relowner FROM scoped
     WHERE evidence_name IN ('book_cohorts', 'book_cohort_members', 'seminar_messages') OR relname ~ '^circle_'
   UNION SELECT proowner FROM circle_routines
+\if :soe_restore_include_circle_admission
+  UNION SELECT nspowner FROM schemas WHERE nspname='soe_circle_admission_private'
+  UNION SELECT proowner FROM admission_routines
+\endif
 \endif
 \if :soe_restore_include_first_release_state
   UNION SELECT proowner FROM release_service_routines
@@ -718,6 +798,9 @@ role_evidence AS (
 \if :soe_restore_include_member_safety
     'memberSafetySchema', (SELECT definition FROM schema_evidence WHERE nspname = 'soe_member_safety_private'),
 \endif
+\if :soe_restore_include_circle_admission
+    'circleAdmissionSchema', (SELECT definition FROM schema_evidence WHERE nspname='soe_circle_admission_private'),
+\endif
     'roles', (SELECT jsonb_agg(jsonb_build_array(r.rolname, r.rolsuper, r.rolinherit,
       r.rolbypassrls, r.rolcanlogin, r.rolcreaterole, r.rolcreatedb, r.rolreplication)
       ORDER BY r.rolname COLLATE "C") FROM role_tree t JOIN pg_roles r ON r.oid = t.oid),
@@ -730,6 +813,7 @@ role_evidence AS (
 )
 SELECT jsonb_build_object(
   'format', CASE
+    WHEN :'soe_restore_include_circle_admission'::boolean THEN 'soe-privacy-restore-v18'
     WHEN :'soe_restore_include_member_block_erasure'::boolean THEN 'soe-privacy-restore-v17'
     WHEN :'soe_restore_include_circle_member_blocks'::boolean THEN 'soe-privacy-restore-v16'
     WHEN :'soe_restore_include_member_safety'::boolean THEN 'soe-privacy-restore-v15'
@@ -763,6 +847,9 @@ SELECT jsonb_build_object(
 \endif
 \if :soe_restore_include_circle_release_state
   || jsonb_build_object('circleRoutines', (SELECT digest FROM circle_routine_evidence))
+\endif
+\if :soe_restore_include_circle_admission
+  || jsonb_build_object('circleAdmissionRoutines', (SELECT digest FROM admission_routine_evidence))
 \endif
 \if :soe_restore_include_first_release_state
   || jsonb_build_object('releaseServiceRoutines', (SELECT digest FROM release_service_routine_evidence))

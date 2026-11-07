@@ -28,6 +28,7 @@ WADDLE_ERASURE_FORMAT = 'soe-privacy-restore-v14'
 MEMBER_SAFETY_FORMAT = 'soe-privacy-restore-v15'
 CIRCLE_MEMBER_BLOCKS_FORMAT = 'soe-privacy-restore-v16'
 MEMBER_BLOCK_ERASURE_FORMAT = 'soe-privacy-restore-v17'
+CIRCLE_ADMISSION_FORMAT = 'soe-privacy-restore-v18'
 CORE_PRACTICE_FORMAT = 'soe-privacy-restore-v1'
 CORE_PRACTICE_TABLES = frozenset({
     'members', 'reading_progress', 'book_highlights', 'great_books_progress',
@@ -95,7 +96,9 @@ TABLES_BY_SCOPE[CIRCLE_MEMBER_BLOCKS_FORMAT] = TABLES_BY_SCOPE[MEMBER_SAFETY_FOR
 TABLES_BY_SCOPE[MEMBER_BLOCK_ERASURE_FORMAT] = TABLES_BY_SCOPE[CIRCLE_MEMBER_BLOCKS_FORMAT] | {
     'soe_account_deletion_private.member_block_erasure_receipts',
 }
-CIRCLE_MEMBER_BLOCK_SCOPES = {CIRCLE_MEMBER_BLOCKS_FORMAT, MEMBER_BLOCK_ERASURE_FORMAT}
+TABLES_BY_SCOPE[CIRCLE_ADMISSION_FORMAT] = TABLES_BY_SCOPE[MEMBER_BLOCK_ERASURE_FORMAT]
+MEMBER_BLOCK_ERASURE_SCOPES = {MEMBER_BLOCK_ERASURE_FORMAT, CIRCLE_ADMISSION_FORMAT}
+CIRCLE_MEMBER_BLOCK_SCOPES = {CIRCLE_MEMBER_BLOCKS_FORMAT} | MEMBER_BLOCK_ERASURE_SCOPES
 MEMBER_SAFETY_SCOPES = {MEMBER_SAFETY_FORMAT} | CIRCLE_MEMBER_BLOCK_SCOPES
 DELETION_SCOPES = {ACCOUNT_DELETION_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT} | MEMBER_SAFETY_SCOPES
 VOICE_SCOPES = {VOICE_ARCHIVE_FORMAT, VOICE_RELEASE_FORMAT, WADDLE_ERASURE_FORMAT} | MEMBER_SAFETY_SCOPES
@@ -141,6 +144,8 @@ def decode_reference(raw, scope=FORMAT):
         keys.add('walletRoutines')
     if scope in CIRCLE_RELEASE_SCOPES:
         keys.add('circleRoutines')
+    if scope == CIRCLE_ADMISSION_FORMAT:
+        keys.add('circleAdmissionRoutines')
     if scope in FIRST_RELEASE_SCOPES:
         keys.add('releaseServiceRoutines')
     if scope in DELETION_SCOPES:
@@ -156,6 +161,8 @@ def decode_reference(raw, scope=FORMAT):
         raise ValueError('Wallet routine evidence')
     if scope in CIRCLE_RELEASE_SCOPES and not valid_digest(value['circleRoutines']):
         raise ValueError('Circle routine evidence')
+    if scope == CIRCLE_ADMISSION_FORMAT and not valid_digest(value['circleAdmissionRoutines']):
+        raise ValueError('Circle admission routine evidence')
     if scope in FIRST_RELEASE_SCOPES and not valid_digest(value['releaseServiceRoutines']):
         raise ValueError('Release service routine evidence')
     if scope in DELETION_SCOPES and not valid_digest(value['accountDeletionRoutines']):
@@ -226,7 +233,8 @@ def read_target(args):
         include_waddle_erasure = 'on' if args.scope in {WADDLE_ERASURE_FORMAT} | MEMBER_SAFETY_SCOPES else 'off'
         include_member_safety = 'on' if args.scope in MEMBER_SAFETY_SCOPES else 'off'
         include_circle_member_blocks = 'on' if args.scope in CIRCLE_MEMBER_BLOCK_SCOPES else 'off'
-        include_member_block_erasure = 'on' if args.scope == MEMBER_BLOCK_ERASURE_FORMAT else 'off'
+        include_member_block_erasure = 'on' if args.scope in MEMBER_BLOCK_ERASURE_SCOPES else 'off'
+        include_circle_admission = 'on' if args.scope == CIRCLE_ADMISSION_FORMAT else 'off'
         result = subprocess.run(
             [str(args.psql), '-X', '-qAtw', '-v', 'ON_ERROR_STOP=1',
              '-v', f'soe_restore_include_rooms={include_rooms}', '-v', f'soe_restore_include_auth={include_auth}',
@@ -241,6 +249,7 @@ def read_target(args):
              '-v', f'soe_restore_include_member_safety={include_member_safety}',
              '-v', f'soe_restore_include_circle_member_blocks={include_circle_member_blocks}',
              '-v', f'soe_restore_include_member_block_erasure={include_member_block_erasure}',
+             '-v', f'soe_restore_include_circle_admission={include_circle_admission}',
              '-h', str(args.socket_dir),
              '-p', str(args.port), '-d', args.database, '-U', args.user, '-f', '-'],
             input=query.encode('utf-8'), capture_output=True, timeout=110,
@@ -270,10 +279,11 @@ def compare(reference, restored):
     role_match = reference['roles'] == restored['roles']
     wallet_match = reference.get('walletRoutines') == restored.get('walletRoutines')
     circle_match = reference.get('circleRoutines') == restored.get('circleRoutines')
+    admission_match = reference.get('circleAdmissionRoutines') == restored.get('circleAdmissionRoutines')
     service_match = reference.get('releaseServiceRoutines') == restored.get('releaseServiceRoutines')
     deletion_match = reference.get('accountDeletionRoutines') == restored.get('accountDeletionRoutines')
     matched = (not data_drift and not definition_drift and role_match and wallet_match
-               and circle_match and service_match and deletion_match)
+               and circle_match and admission_match and service_match and deletion_match)
     return {
         'status': 'MATCH' if matched else 'MISMATCH',
         'tablesCompared': len(reference['tables']),
@@ -282,6 +292,7 @@ def compare(reference, restored):
         'roleAndSchemaAccessMatch': role_match,
         **({'walletRoutinesMatch': wallet_match} if reference['format'] in WALLET_SCOPES else {}),
         **({'circleRoutinesMatch': circle_match} if reference['format'] in CIRCLE_RELEASE_SCOPES else {}),
+        **({'circleAdmissionRoutinesMatch': admission_match} if reference['format'] == CIRCLE_ADMISSION_FORMAT else {}),
         **({'releaseServiceRoutinesMatch': service_match} if reference['format'] in FIRST_RELEASE_SCOPES else {}),
         **({'accountDeletionRoutinesMatch': deletion_match} if reference['format'] in DELETION_SCOPES else {}),
     }
@@ -324,6 +335,8 @@ def main():
                         help='Compare the 66-table release reference with the Circle block routines.')
     parser.add_argument('--include-member-block-erasure', action='store_true',
                         help='Compare the 67-table release reference including member block removal receipts.')
+    parser.add_argument('--include-circle-admission', action='store_true',
+                        help='Compare all 67 release tables, private invitation routines, schema access and grants.')
     parser.set_defaults(scope=FORMAT)
     args = parser.parse_args()
     member_scopes = [
@@ -332,6 +345,7 @@ def main():
             (args.include_member_safety, MEMBER_SAFETY_FORMAT),
             (args.include_circle_member_blocks, CIRCLE_MEMBER_BLOCKS_FORMAT),
             (args.include_member_block_erasure, MEMBER_BLOCK_ERASURE_FORMAT),
+            (args.include_circle_admission, CIRCLE_ADMISSION_FORMAT),
         ) if selected
     ]
     if member_scopes:
@@ -341,7 +355,7 @@ def main():
             args.include_account_deletion_state, args.include_voice_archive,
             len(member_scopes) != 1,
         )):
-            parser.error('Use one of --include-member-block-erasure, --include-circle-member-blocks, '
+            parser.error('Use one of --include-circle-admission, --include-member-block-erasure, --include-circle-member-blocks, '
                          '--include-member-safety, or --include-waddle-erasure by itself.')
         args.scope = member_scopes[0]
     elif args.include_voice_archive:
