@@ -197,7 +197,7 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
         onBrowse={() => openReadingDestination('discover', { onlinePreset: true })}/>;
     }
     if (entered.destination === 'hosting' && hostingConnection && hostingConnection.memberId === account.member?.id) {
-      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} connectivity={connection.connectivity} scripturePreset={entered.scripturePreset}
+      return <CircleHostingScreen session={hostingConnection.session} config={connection.host} hostApprovalAvailable={Boolean(connection.host.admissionTransport)} connectivity={connection.connectivity} scripturePreset={entered.scripturePreset}
         onBack={back} onMyCircles={() => openReadingDestination('mine')} onClose={close}/>;
     }
     if (entered.destination === 'saved' && savedReadingConnection && savedReadingConnection.memberId === account.member?.id) {

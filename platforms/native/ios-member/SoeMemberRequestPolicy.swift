@@ -131,6 +131,9 @@ internal struct SoeMemberRequestPolicy: Sendable {
             try check(equalBytes(raw, encode(fields)) || equalBytes(raw, encode(fields.reversed())))
         } else if let m = captures(path, "/api/circles/" + lower + "/rsvp") {
             try check(uuid(m[0]) && !get && query == nil); try attendance(try body(i, maximum: 256))
+        } else if let m = captures(path, "/api/circles/" + lower + "/(admission-access|recipient-code|invitation-review|invitations|invitation-check|join-invited|invitation-receipt|invitations/revoke)") {
+            try check(uuid(m[0]) && !get && query == nil)
+            try admission(try body(i, maximum: 4096), action: m[1])
         } else if let m = captures(path, "/api/circles/" + lower + "/complete") {
             try check(uuid(m[0]) && !get && query == nil)
             let raw = try body(i, maximum: 160), o = try object(raw, keys: ["expectedMemberId", "requestId", "expectedRevision"])
@@ -309,10 +312,43 @@ internal struct SoeMemberRequestPolicy: Sendable {
         let wire = encode([("expectedMemberId", o["expectedMemberId"]!), ("expectedRevision", o["expectedRevision"]!), ("patch", .object(order.map { ($0, patch[$0]!) }))])
         try check(equalBytes(raw, wire))
     }
+    private static func admission(_ raw: String, action: String) throws {
+        let fields: [String]
+        switch action {
+        case "admission-access": fields = ["expectedMemberId"]
+        case "recipient-code": fields = ["expectedMemberId", "shareConsent"]
+        case "invitation-review": fields = ["expectedMemberId", "recipientCode"]
+        case "invitations": fields = ["expectedMemberId", "recipientCode", "targetMemberId", "requestId", "expectedRevision", "expectedInvitationRevision", "expectedTargetLabel", "expiresAt"]
+        case "invitation-check": fields = ["expectedMemberId", "invitationToken"]
+        case "join-invited": fields = ["expectedMemberId", "requestId", "expectedRevision", "invitationToken"]
+        case "invitation-receipt": fields = ["expectedMemberId", "requestId", "expectedRevision", "approvalNonce", "proofHash"]
+        case "invitations/revoke": fields = ["expectedMemberId", "requestId", "expectedRevision", "expectedInvitationRevision"]
+        default: throw SoeMemberRequestPolicyError.rejected
+        }
+        let o = try object(raw, keys: fields)
+        for key in ["expectedMemberId", "targetMemberId", "requestId", "approvalNonce"] where o[key] != nil { try check(uuid(try string(o, key))) }
+        if o["shareConsent"] != nil { try check(try boolean(o, "shareConsent")) }
+        if o["expectedRevision"] != nil { _ = try integer(o, "expectedRevision") }
+        if o["expectedInvitationRevision"] != nil { _ = try integer(o, "expectedInvitationRevision", minimum: 1) }
+        if o["recipientCode"] != nil { let v = try string(o, "recipientCode"); try check(v.utf8.count <= 1000 && matches(v, #"soe-cr1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}"#)) }
+        if o["invitationToken"] != nil { let v = try string(o, "invitationToken"); try check(v.utf8.count <= 1600 && matches(v, #"soe-ci1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}"#)) }
+        if o["proofHash"] != nil { try check(matches(try string(o, "proofHash"), "[a-f0-9]{64}")) }
+        if o["expectedTargetLabel"] != nil { let v = try string(o, "expectedTargetLabel"); try text(v, minimum: 1, maximum: 40, singleLine: true); try check(!v.contains("@")) }
+        if o["expiresAt"] != nil {
+            let v = try string(o, "expiresAt"), f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            guard let d = f.date(from: v) else { throw SoeMemberRequestPolicyError.rejected }
+            try check(matches(v, #"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z"#) && f.string(from: d) == v)
+        }
+        try canonical(raw, o, order: fields)
+    }
+
     private static func creation(_ raw: String) throws {
         let o = try parsedObject(raw)
         var order = ["expectedMemberId", "requestId", "title", "description", "format", "city", "region", "venueName", "venueType", "weekday", "time", "timezone", "startDate", "maxMembers", "onlineUrl"]
-        if o["readingProgram"] != nil { order.append("readingProgram") }; try keys(o, order)
+        if o["readingProgram"] != nil { order.append("readingProgram") }
+        if o["admissionMode"] != nil { order.append("admissionMode"); try check(["open", "host_approval"].contains(try string(o, "admissionMode"))) }
+        try keys(o, order)
         try check(uuid(try string(o, "expectedMemberId")) && uuid(try string(o, "requestId")))
         func field(_ name: String, _ maximum: Int, nullable: Bool = false) throws -> String? {
             if nullable && o[name] == .null { return nil }; let value = try string(o, name)
@@ -334,7 +370,7 @@ internal struct SoeMemberRequestPolicy: Sendable {
         else {
             guard let online else { throw SoeMemberRequestPolicyError.rejected }; try meetingURL(online)
         }
-        var fields = order.filter { $0 != "readingProgram" }.map { ($0, o[$0]!) }
+        var fields = order.filter { $0 != "readingProgram" && $0 != "admissionMode" }.map { ($0, o[$0]!) }
         if let value = o["readingProgram"] {
             let p = try dictionary(value); try keys(p, ["version", "bookId", "editionId", "sessions"])
             try check(try integer(p, "version", minimum: 1, maximum: 1) == 1)
@@ -349,6 +385,7 @@ internal struct SoeMemberRequestPolicy: Sendable {
             }
             fields.append(("readingProgram", .object([("version", .number("1")), ("bookId", p["bookId"]!), ("editionId", p["editionId"]!), ("sessions", .array(rows))])))
         }
+        if let mode = o["admissionMode"] { fields.append(("admissionMode", mode)) }
         try check(equalBytes(raw, encode(fields)))
     }
 

@@ -9,15 +9,15 @@ import { observeNativeConnectivity, type NativeConnectivityPort } from './src/ci
 import { CircleCommunityNorms } from './CircleCommunityNorms';
 import { CircleReadingScreen } from './CircleReadingScreen';
 
-const emptyDraft = (onlinePreset = false) => ({ title: '', description: '', format: onlinePreset ? 'online' : 'in_person', city: '', region: '', venueName: '', venueType: 'library',
+const emptyDraft = (onlinePreset = false) => ({ title: '', description: '', admissionMode: 'open', format: onlinePreset ? 'online' : 'in_person', city: '', region: '', venueName: '', venueType: 'library',
   weekday: '2', time: '19:00', timezone: 'America/New_York', startDate: '', maxMembers: '8', onlineUrl: '' });
 type Draft = ReturnType<typeof emptyDraft>;
 type Range = { from: string; to: string };
 
 /** The parent retains only the owned controller. Unsent fields are cleared on
  * retirement; a sent, unresolved request survives privately for exact retry. */
-export function CircleHostingScreen({ session, config, connectivity, scripturePreset, onBack, onMyCircles, onClose }: {
-  session: CircleHosting; config: Omit<CircleReadingConfig, 'context'>; connectivity?: NativeConnectivityPort; scripturePreset?: ScriptureStudyId;
+export function CircleHostingScreen({ session, config, connectivity, scripturePreset, hostApprovalAvailable = false, onBack, onMyCircles, onClose }: {
+  session: CircleHosting; config: Omit<CircleReadingConfig, 'context'>; connectivity?: NativeConnectivityPort; scripturePreset?: ScriptureStudyId; hostApprovalAvailable?: boolean;
   onBack(): void; onMyCircles(): void; onClose(): void;
 }) {
   const [snapshot, setSnapshot] = useState(() => ({ session, model: session.model() }));
@@ -62,7 +62,7 @@ export function CircleHostingScreen({ session, config, connectivity, scripturePr
   }, [session, connectivity, clearDraft]);
   // A callback from an earlier form render cannot review an older listing or
   // open a reading range after the member has changed that local intent.
-  useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [reading, draft, norms, custom, bookId, ranges]);
+  useLayoutEffect(() => { setViewEpoch(++viewLife.current.epoch); }, [reading, draft, norms, custom, bookId, ranges, hostApprovalAvailable]);
   const act = (work: () => void, allowInactive = false) => {
     const life = viewLife.current;
     if (life.mounted && life.epoch === viewEpoch && (allowInactive || life.enabled)) work();
@@ -77,7 +77,9 @@ export function CircleHostingScreen({ session, config, connectivity, scripturePr
     if (!/^([3-9]|1[0-2])$/.test(draft.maxMembers)) { setRangeNotice('Choose a whole group size from 3 to 12, including you.'); return; }
     const program = custom ? rangeProgram() : null;
     if (custom && !program) { setRangeNotice('Load the chosen edition, then enter 1–12 weekly ranges within its reading positions. Each end must follow or equal its start.'); return; }
-    setRangeNotice(''); void session.review({ ...draft, weekday: Number(draft.weekday), maxMembers: Number(draft.maxMembers),
+    if(draft.admissionMode==='host_approval'&&!hostApprovalAvailable){setRangeNotice('Update this app before choosing host approval.');return;}
+    const {admissionMode,...listing}=draft;
+    setRangeNotice(''); void session.review({ ...listing, ...(admissionMode==='host_approval'?{admissionMode}:{}), weekday: Number(draft.weekday), maxMembers: Number(draft.maxMembers),
       ...(program ? { readingProgram: program } : {}) }, norms);
   });
   const preview = (index: number) => act(() => {
@@ -98,6 +100,13 @@ export function CircleHostingScreen({ session, config, connectivity, scripturePr
     <Action label="Check hosting access" disabled={!m.canCheck} onPress={() => act(() => void session.check())}/>
     {m.eligibility && !m.created ? <Text style={styles.note}>Active Circles at your last hosting check: {m.eligibility.activeHosted} of {m.eligibility.maxActiveHosted}. A separate daily creation limit also applies.</Text> : null}
     {m.phase === 'editing' && m.eligibility?.canCreate ? <View style={styles.list}>
+      <Text accessibilityRole="header" style={styles.heading}>Who can join</Text>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Salon admission" style={styles.list}>
+        <Choice label="Open joining" checked={draft.admissionMode==='open'} disabled={!m.canEdit} onPress={()=>setField('admissionMode','open')}/>
+        <Choice label="Host approval required" checked={draft.admissionMode==='host_approval'} disabled={!m.canEdit||!hostApprovalAvailable} onPress={()=>setField('admissionMode','host_approval')}/>
+      </View>
+      <Text style={styles.note}>The salon name, description and schedule stay public. Host approval controls membership; video-room entry must be managed separately by the host.</Text>
+      {!hostApprovalAvailable?<Text style={styles.note}>Update this app for host approval. Open joining is available.</Text>:null}
       {field('title', 'Circle name', 120)}
       {field('description', 'Description (optional)', 600, true)}
       <Text accessibilityRole="header" style={styles.heading}>Where you meet</Text>
@@ -195,6 +204,7 @@ function ListingReview({ input }: { input: CircleInput }) {
   const first = firstMeeting(input.startDate, input.weekday), program = input.readingProgram;
   return <View style={styles.list}>
     <Text style={styles.copy}>{input.title}</Text>
+    <Text style={styles.copy}>{input.admissionMode==='host_approval'?'Only people you approve can join. The listing stays public; the host manages video-room entry.':'Members can use the regular open-joining controls.'}</Text>
     {input.description ? <Text style={styles.copy}>{input.description}</Text> : null}
     <Text style={styles.copy}>{FORMAT_LABELS[input.format]} · {VENUE_LABELS[input.venueType]}</Text>
     {input.venueName ? <Text style={styles.copy}>{input.venueName}</Text> : null}

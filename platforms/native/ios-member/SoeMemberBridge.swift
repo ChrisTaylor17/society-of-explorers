@@ -150,6 +150,7 @@ public final class SoeMemberBridge: NSObject, @unchecked Sendable {
                 "memberBlocksPolicy": .text("owner-member-blocks-v1"),
                 "publicProfilePolicy": .text("published-profile-v1"), "savedReadingPolicy": .text("owner-reading-v1"),
                 "attendancePolicy": .text("circle-rsvp-v1"), "hostingPolicy": .text("circle-host-v1"),
+                "circleAdmissionPolicy": .text("member-bound-circle-admission-v1"),
                 "messageAiConsentPolicy": .text("author-message-ai-consent-v1"),
                 "messageReviewPolicy": .text("assigned-message-review-v1"),
                 "circleReviewPolicy": .text("assigned-circle-review-v1")

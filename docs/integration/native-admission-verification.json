@@ -1,0 +1,201 @@
+{
+  "status": "local-source-milestone-verified",
+  "verifiedAtUtc": "2026-11-07T23:56:43.730248+00:00",
+  "baseCommit": "d6278d2901b9793cbe607b6547f9afdb9208a7be",
+  "productionClearance": false,
+  "summary": "Optional narrowly validated native admission transport, host-approved native creation and exact private-mode retry. Incoming native/Quest admission UI remains unfinished.",
+  "capability": "member-bound-circle-admission-v1",
+  "sourceSha256": {
+    "lib/circles/admission-wire.ts": "1e90a23f19169f685a6e1ed1dec66baebe6e72a7dc359cd26963f37b3179d8fa",
+    "platforms/native/src/circles/native-ports.ts": "98a51ab93cbe6cf3519069b3115be385fd6bf67da064b557349833db91da32ee",
+    "platforms/native/src/auth/native-auth-ports.ts": "41c2c1890cb61ad0f5aa4ec89e8b51b875758a28651ea22ce664488e4bf34b72",
+    "platforms/native/src/circles/verified-member-session.ts": "d64953e3d79fe603610557224c1baa9a7da4a983bbdb81dd2a6fce7018ef500e",
+    "platforms/native/src/circles/installed-member.ts": "ddabadfb6a0480434f89c7d182b9e0a787b953419364eb854ba649445bf67822",
+    "platforms/native/specs/NativeSoeMember.ts": "0d38a49056a549fa404bc393c8b06ce6c4fb7d0c24482c382dc4041ef6bdbcda",
+    "platforms/native/ios-member/SoeMemberBridge.swift": "bf7231b0837d4dacec88e640a2db392af2727a5224abc5b0036780a6bf6d9282",
+    "platforms/native/ios-member/SoeMemberRequestPolicy.swift": "604c268f2b77befdd729c9c375af426081b286631e16ae55300e664cfbde3ec1",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/NativeSoeMemberModule.kt": "da3f7b23bf550191673a684f3d1e2fa39219ec72eb1636b4a569df140c7b9478",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberTransport.kt": "cd4a4d776798d0f27e10d817021384442c73bd2377ca79d4a21a6c92f105100b",
+    "platforms/shared/circle-hosting.ts": "4e62f16747e3f8120c818354ebd7ec7adfd4cea5edb69592adfd16f408b54512",
+    "platforms/native/CircleHostingScreen.tsx": "8ee72b3a427a0b7f707628d6c42fba5f652f078e3550fb7e27a8b28eb6957a47",
+    "platforms/native/MemberCircleScreen.tsx": "2d2392064163fecc97c8bc8532c03c2872401af1309bd23d17da188cc1357446",
+    "platforms/tests/native-admission-policy.test.mjs": "23f2a7210ac83aa61feae7a38b66a25c10ca8ef8cfe678ca17fc7fa90a59d3e2",
+    "platforms/tests/circle-hosting.test.mjs": "b8eea82f079c9cd27581266232a8cdf82cbf3b56c83ee7c4cfad259a6a054aaa",
+    "platforms/tests/native-admission-primitives.tsx": "4b408f418d76a24d57a81fe22c51b72af201c8615028d7bf4beead3c1e117fcf",
+    "platforms/tests/native-admission-hosting-entry.tsx": "4f1721af6303e364ac794f3372c4698cf20bbbec0562c5749911884c019739ed",
+    "platforms/tests/bundle-native-admission-hosting.mjs": "7d0c08895cb421437d0b6409f0f7e0360ce273af71c1537ca5250e2cb7e0faf5",
+    "platforms/tests/browser-native-admission-hosting.mjs": "09b24c4fe8b07ccba1a61d53720f4fdf41611f290cd1bdfece572f1776a7675f",
+    "verification/native-ios/SoeMemberAdmissionPolicyTests.swift": "286d767c8aee708aeeec06c7cb9920f360c8a08667226ee58978f52d9197f552",
+    "verification/web/tests/native-admission-integration.test.mjs": "bbb411d7d0d4cc805d78f0ace10a09d8fb091de5bdb8e10b54f7123edc7a76f0"
+  },
+  "privateEvidence": [
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission-native/source-final-checks.json",
+      "sha256": "05ad751b1e86ed538fb6feaa3cdcb24270033ebbb8976890939d81b6e2cefa89"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/native-admission-source-final-next-build.json",
+      "sha256": "b00c614f91dba44359026a84a5d07b62872babb0338487794f25e873f1a07a96"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/native-admission-hosting-browser-final.json",
+      "sha256": "780ffcce735f46765723841a02e8ab28569d508ae4eb451c9893ec4e73e206a3"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/native-admission-hosting-fixture-final/source-manifest.json",
+      "sha256": "36220e841d8dc01cb8a89f3e2bcdb393b55553ad059754058f3ff00d19c7f27a"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/native-ios-admission-production-source/receipt.json",
+      "sha256": "8fbd86ba4acf1d70972cc31dedf138fb36dc253fdf572aabffe3beaff484325e"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission-native/preserved-generated-output.json",
+      "sha256": "6e1ce1d318671b0dc34a7816d70d3f7b3015aebb29d65d010fb556bdf75460a1"
+    }
+  ],
+  "nativeChecks": {
+    "status": "PASS",
+    "tests": 96,
+    "integrationTests": 1,
+    "sourceInputs": 582,
+    "sourceUnchanged": true,
+    "steps": [
+      {
+        "name": "native-tests",
+        "exitCode": 0,
+        "seconds": 15.42,
+        "argv": [
+          "/opt/homebrew/bin/node",
+          "--require",
+          "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+          "--test",
+          "--test-concurrency=1",
+          "platforms/tests/native-admission-policy.test.mjs",
+          "platforms/tests/native-hosting-policy.test.mjs",
+          "platforms/tests/circle-hosting.test.mjs",
+          "platforms/tests/native-auth-ports.test.mjs",
+          "platforms/tests/native-durable-ports.test.mjs"
+        ],
+        "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission-native/native-tests-source-final.log"
+      },
+      {
+        "name": "canonical-integration",
+        "exitCode": 0,
+        "seconds": 2.22,
+        "argv": [
+          "/opt/homebrew/bin/node",
+          "--require",
+          "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+          "--test",
+          "--test-concurrency=1",
+          "tests/native-admission-integration.test.mjs"
+        ],
+        "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission-native/canonical-integration-source-final.log"
+      },
+      {
+        "name": "registered-native-contract",
+        "exitCode": 0,
+        "seconds": 1.94,
+        "argv": [
+          "/opt/homebrew/bin/node",
+          "--require",
+          "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+          "node_modules/typescript/bin/tsc",
+          "--noEmit",
+          "--project",
+          "platforms/tests/tsconfig.native-installed-account.json",
+          "--pretty",
+          "false"
+        ],
+        "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission-native/registered-native-contract-source-final.log"
+      },
+      {
+        "name": "scoped-lint",
+        "exitCode": 0,
+        "seconds": 3.07,
+        "argv": [
+          "/opt/homebrew/bin/node",
+          "--require",
+          "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+          "node_modules/eslint/bin/eslint.js",
+          "lib/circles/admission-wire.ts",
+          "platforms/native/src/circles/native-ports.ts",
+          "platforms/native/src/circles/installed-member.ts",
+          "platforms/native/src/circles/verified-member-session.ts",
+          "platforms/native/src/auth/native-auth-ports.ts",
+          "platforms/native/specs/NativeSoeMember.ts",
+          "platforms/shared/circle-hosting.ts",
+          "platforms/native/CircleHostingScreen.tsx",
+          "platforms/native/MemberCircleScreen.tsx"
+        ],
+        "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission-native/scoped-lint-source-final.log"
+      }
+    ]
+  },
+  "browserChecks": {
+    "status": "PASS",
+    "stories": [
+      "ios simulated native screen preserves private mode through review/background retirement/stale callback/lost reply/exact retry, creates once and fits390px.",
+      "android simulated native screen preserves private mode through review/background retirement/stale callback/lost reply/exact retry, creates once and fits390px.",
+      "Older native capability keeps host approval disabled while open joining remains available."
+    ],
+    "sourceInputs": 70,
+    "allSourcesStillMatch": true,
+    "errors": [],
+    "unexpectedRequests": [],
+    "cleanup": {
+      "browser": true,
+      "database": true
+    },
+    "scope": "Actual CircleHostingScreen/shared hosting controller/native JS bridge ports in React DOM/Chromium. iOS/Android names select explicit React Native primitives/AppState/platform/bridge/owner doubles. Actual canonical route handlers and current PGlite SQL; no installed app, provider or native network/storage acceptance."
+  },
+  "swiftChecks": {
+    "status": "PASS",
+    "policyChecks": 101,
+    "target": "arm64-apple-macosx14.0",
+    "productionAndTestSourceInputs": 14,
+    "selectedRuntimeInputs": 16,
+    "inputsUnchanged": true,
+    "runtimeUnchanged": true,
+    "scope": "Actual resident Swift compile and synthetic Mac execution under an OS profile denying all network access. Selected SDK/tool bindings, not an iOS app, device or Keychain acceptance test."
+  },
+  "webBuild": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 54.42,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1206,
+    "sourceSha256": "d154ced3149a56119d4c4dcab217edd6a52c311f34b251c92a6dba5bc24c4a62",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/native-admission-source-final-next-build.log"
+  },
+  "preservedSetupFailure": "The first type-contract run had a missing exported parent config and emitted 104 untracked JavaScript siblings in the private candidate. These generated files were moved intact to a private preservation folder and independently hashed. The corrected explicit --noEmit run and full web build both passed. The canonical checkout was not affected.",
+  "evidenceLimits": [
+    "Browser React Native primitives, identity, bridge and HTTP are explicit doubles; current routes and SQL are actual candidate code.",
+    "No installed iOS/Android app, device, Hermes, native HTTP, secure store or real-provider acceptance is claimed.",
+    "Swift compiled and ran on Mac, not iOS. Android Kotlin was reviewed and checked as source only.",
+    "Incoming native and Quest admission screens/controllers, native signing/builds, physical Quest testing, hosted backup/restore, privacy repairs and real sign-in/recovery are pending."
+  ],
+  "actions": {
+    "credentialChanges": false,
+    "hostedChanges": false,
+    "migrationApplied": false,
+    "deployment": false,
+    "toolsInstalled": false,
+    "cleanupDeletion": false,
+    "spending": false
+  }
+}

@@ -119,7 +119,7 @@ export async function prepareInstalledAuthPorts() {
     requestIdPolicy: 'os-random-uuid', emailAuthPolicy: 'supabase-email-pkce-v1', publicPolicy: 'circle-discovery-v1', circleInvitePolicy: 'public-circle-invite-v1',
     readingPolicy: 'pinned-passage-v1', profilePolicy: 'owner-profile-v1', publicProfilePolicy: 'published-profile-v1',
     memberBlocksPolicy: 'owner-member-blocks-v1',
-    savedReadingPolicy: 'owner-reading-v1', attendancePolicy: 'circle-rsvp-v1', hostingPolicy: 'circle-host-v1',
+    savedReadingPolicy: 'owner-reading-v1', attendancePolicy: 'circle-rsvp-v1', hostingPolicy: 'circle-host-v1', circleAdmissionPolicy: 'member-bound-circle-admission-v1',
     messageAiConsentPolicy: 'author-message-ai-consent-v1', messageReviewPolicy: 'assigned-message-review-v1',
     circleReviewPolicy: 'assigned-circle-review-v1',
   } as const;

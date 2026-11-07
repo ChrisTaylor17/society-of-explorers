@@ -65,6 +65,7 @@ class NativeSoeMemberModule(private val context: ReactApplicationContext) : Nati
       putString("savedReadingPolicy", "owner-reading-v1")
       putString("attendancePolicy", "circle-rsvp-v1")
       putString("hostingPolicy", "circle-host-v1")
+      putString("circleAdmissionPolicy", "member-bound-circle-admission-v1")
       putString("messageAiConsentPolicy", "author-message-ai-consent-v1")
       putString("messageReviewPolicy", "assigned-message-review-v1")
       putString("circleReviewPolicy", "assigned-circle-review-v1")

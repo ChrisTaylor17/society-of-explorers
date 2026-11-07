@@ -468,10 +468,12 @@ internal class MemberTransport(
     val participation = Regex("/api/circles/([0-9a-fA-F-]{36})/(join|leave)").matchEntire(url.encodedPath)
     val attendance = Regex("/api/circles/([0-9a-f-]{36})/rsvp").matchEntire(url.encodedPath)
     val completion = Regex("/api/circles/([0-9a-f-]{36})/complete").matchEntire(url.encodedPath)
+    val admission = Regex("/api/circles/([0-9a-f-]{36})/(admission-access|recipient-code|invitation-review|invitations|invitation-check|join-invited|invitation-receipt|invitations/revoke)").matchEntire(url.encodedPath)
     if (url.encodedPath == "/api/auth/member") { require(input.method == "GET" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/auth/ensure-member") { require(input.method == "POST" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/circles/start") { require(input.method == "GET" && url.encodedQuery == null) }
     else if (url.encodedPath == "/api/circles") { require(input.method == "POST" && url.encodedQuery == null); validateCreationBody(input.body ?: throw IllegalArgumentException()) }
+    else if (admission != null) { require(uuid(admission.groupValues[1]) && input.method == "POST" && url.encodedQuery == null); validateAdmissionBody(input.body ?: throw IllegalArgumentException(), admission.groupValues[2]) }
     else if (completion != null) { require(uuid(completion.groupValues[1]) && input.method == "POST" && url.encodedQuery == null); validateCompletionBody(input.body ?: throw IllegalArgumentException()) }
     else if (url.encodedPath == "/api/members/profile") {
       require(url.encodedQuery == null)
@@ -621,11 +623,53 @@ internal class MemberTransport(
   }
   /** Native structural/size/encoding boundary. The shared canonical parser and
    * server independently validate current source pins and calendar eligibility. */
+  /** Narrow admission envelopes. Signature, current consent and membership
+   * checks remain on the server; a well-shaped code grants no authority here. */
+  private fun validateAdmissionBody(body: String, action: String) {
+    require(body.toByteArray(Charsets.UTF_8).size <= 4096)
+    val fields = when (action) {
+      "admission-access" -> listOf("expectedMemberId")
+      "recipient-code" -> listOf("expectedMemberId", "shareConsent")
+      "invitation-review" -> listOf("expectedMemberId", "recipientCode")
+      "invitations" -> listOf("expectedMemberId", "recipientCode", "targetMemberId", "requestId", "expectedRevision", "expectedInvitationRevision", "expectedTargetLabel", "expiresAt")
+      "invitation-check" -> listOf("expectedMemberId", "invitationToken")
+      "join-invited" -> listOf("expectedMemberId", "requestId", "expectedRevision", "invitationToken")
+      "invitation-receipt" -> listOf("expectedMemberId", "requestId", "expectedRevision", "approvalNonce", "proofHash")
+      "invitations/revoke" -> listOf("expectedMemberId", "requestId", "expectedRevision", "expectedInvitationRevision")
+      else -> throw IllegalArgumentException()
+    }
+    val value = JSONObject(body)
+    require(value.keys().asSequence().toSet() == fields.toSet())
+    for (name in listOf("expectedMemberId", "targetMemberId", "requestId", "approvalNonce")) if (value.has(name)) {
+      val raw = value.get(name); require(raw is String && uuid(raw) && raw == raw.lowercase())
+    }
+    if (value.has("shareConsent")) require(value.get("shareConsent") == true)
+    for (name in listOf("expectedRevision", "expectedInvitationRevision")) if (value.has(name)) {
+      val raw = value.get(name); require(raw is Int || raw is Long)
+      require((raw as Number).toLong() in (if (name == "expectedInvitationRevision") 1L else 0L)..9007199254740991L)
+    }
+    for ((name, prefix, maximum) in listOf(Triple("recipientCode", "soe-cr1", 1000), Triple("invitationToken", "soe-ci1", 1600))) if (value.has(name)) {
+      val raw = value.get(name); require(raw is String && raw.length <= maximum && Regex("$prefix\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]{43}").matches(raw))
+    }
+    if (value.has("proofHash")) { val raw = value.get("proofHash"); require(raw is String && Regex("[a-f0-9]{64}").matches(raw)) }
+    if (value.has("expectedTargetLabel")) {
+      val raw = value.get("expectedTargetLabel"); require(raw is String && raw.isNotBlank() && raw.length <= 40 && !raw.contains('@') && raw == raw.trim() && raw.all { it.code >= 32 && it.code != 127 })
+    }
+    if (value.has("expiresAt")) {
+      val raw = value.get("expiresAt"); require(raw is String && Regex("[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z").matches(raw) && attendanceDay(raw.take(10)))
+    }
+    val canonical = fields.joinToString(",", "{", "}") { name ->
+      val raw = value.get(name)
+      profileQuote(name) + ":" + when (raw) { is String -> profileQuote(raw); is Boolean -> raw.toString(); is Int, is Long -> raw.toString(); else -> throw IllegalArgumentException() }
+    }
+    require(body == canonical)
+  }
+
   private fun validateCreationBody(body: String) {
     require(body.toByteArray(Charsets.UTF_8).size <= 12000)
     val value = JSONObject(body)
     val fields = listOf("expectedMemberId", "requestId", "title", "description", "format", "city", "region", "venueName", "venueType", "weekday", "time", "timezone", "startDate", "maxMembers", "onlineUrl")
-    require(value.keys().asSequence().toSet() == (fields + if (value.has("readingProgram")) listOf("readingProgram") else emptyList()).toSet())
+    require(value.keys().asSequence().toSet() == (fields + (if (value.has("readingProgram")) listOf("readingProgram") else emptyList()) + (if (value.has("admissionMode")) listOf("admissionMode") else emptyList())).toSet())
     val member = value.get("expectedMemberId"); val key = value.get("requestId")
     require(member is String && uuid(member) && member == member.lowercase() && key is String && uuid(key) && key == key.lowercase())
     fun text(name: String, maximum: Int, nullable: Boolean = false): String? {
@@ -669,6 +713,7 @@ internal class MemberTransport(
       }
       canonical += ",\"readingProgram\":{\"version\":1,\"bookId\":" + quote(book) + ",\"editionId\":" + quote(edition) + ",\"sessions\":" + rows + "}"
     }
+    if (value.has("admissionMode")) { val mode = value.get("admissionMode"); require(mode is String && mode in setOf("open", "host_approval")); canonical += ",\"admissionMode\":" + quote(mode) }
     require(body == canonical + "}")
   }
   private fun readingEdition(book: String, edition: String) =

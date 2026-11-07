@@ -102,3 +102,10 @@ test('canonical capacity normalization is visible before confirmation',async()=>
 test('retirement across edition helper continuations never restores hidden metadata',async()=>{
  for(let depth=0;depth<=10;depth++){const f=fixture();try{await f.session.check();f.hook((u,o,l,n)=>{const r=n();if(l==='edition'){let p=Promise.resolve();for(let i=0;i<depth;i++)p=p.then(()=>{});void p.then(()=>f.session.activity(false));}return r;});await f.session.loadEdition('hamlet');await tick();f.session.activity(true);assert.equal(f.session.model().edition,null,`microtask depth ${depth}`);assert.equal(f.session.model().review,null);assert.equal(posts(f).length,0);}finally{f.close();}}
 });
+
+test('host-approved creation keeps admission mode in review and the exact request body',async()=>{
+ const f=fixture();try{
+  await review(f,listing({admissionMode:'host_approval'}));assert.equal(f.session.model().review.admissionMode,'host_approval');
+  await create(f);assert.equal(JSON.parse(posts(f)[0].options.body).admissionMode,'host_approval');assert.equal(f.session.model().phase,'created');
+ }finally{f.close();}
+});

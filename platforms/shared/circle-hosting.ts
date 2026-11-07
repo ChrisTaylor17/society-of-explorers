@@ -25,7 +25,7 @@ const presentation = (v: CircleCreateMutation): CircleInput => {
   return copy({ title: v.title, description: v.description, format: v.format, city: v.city, region: v.region,
     venueName: v.venueName, venueType: v.venueType, weekday: v.weekday, time: v.time, timezone: v.timezone,
     startDate: v.startDate, maxMembers: v.maxMembers, onlineUrl: v.onlineUrl,
-    ...(v.readingProgram ? { readingProgram: v.readingProgram } : {}) });
+    ...(v.readingProgram ? { readingProgram: v.readingProgram } : {}), ...(v.admissionMode ? { admissionMode: v.admissionMode } : {}) });
 };
 
 /** A verified member owns one retained creation attempt. Lifecycle retirement
