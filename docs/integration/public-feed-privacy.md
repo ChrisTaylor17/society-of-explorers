@@ -28,3 +28,7 @@ SQL transport, identities and content are synthetic. The bounded PostgREST trans
 Five product files and four verification files change; two evidence documents and the release status accompany them. No schema migration, credential, hosted permission, native app, publication or paid service changed. The exact starting source and failed test attempts are preserved privately.
 
 A local source revert is possible after checking dependent work. Do not deploy a rollback that restores the old raw feed: that would reintroduce disclosure. A future cutover must contain direct access, review old clients/caches and keep a safe disabled route or forward fix available. No automatic legacy-public backfill is authorized.
+
+## Later verification checkpoint
+
+The four broad failures above record this change’s original result. A later [route-guard audit](route-guard-audit.md) traced them to outdated expectations, repaired the test setups and verified the current controls. Two separate product gaps were reproduced and remain open. The original feed receipt is preserved; hosted clearance is still false.

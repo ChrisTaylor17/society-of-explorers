@@ -21,6 +21,16 @@ async function fixture() {
     book_cohorts: [{ id: cohortId, book_id: 'apology', title: 'Existing salon', max_members: 8, status: 'forming' }],
     book_cohort_members: [],
   });
+  // The origin fixture checks the HTTP authority handoff. Actual locked join
+  // behavior and raw-grant denial execute in circle-admission-db.test.mjs.
+  const rpcCalls = [], originalRpc = db.rpc.bind(db);
+  db.rpc = (name, args) => {
+    if (name !== 'soe_circle_legacy_salon_join') return originalRpc(name, args);
+    const copy = JSON.parse(JSON.stringify(args));
+    assert.deepEqual(copy, { p_actor: JULES, p_cohort_id: cohortId });
+    rpcCalls.push({ name, args: copy });
+    return Promise.resolve({ data: { joined: true }, error: null });
+  };
   app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => db }));
   app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({
     auth: { getUser: async token => ({
@@ -34,7 +44,7 @@ async function fixture() {
     `soe_auth_selection_v1=v1.${intent}.wallet.${JULES}`, `soe_wallet_id=${signed}`,
   ].join('; ');
   return {
-    db, cookie, memberId: JULES,
+    db, cookie, rpcCalls, memberId: JULES,
     handlers: {
       create: app.load('app/api/book-salons/route.ts').POST,
       join: app.load('app/api/book-salons/join/route.ts').POST,
@@ -99,8 +109,9 @@ test('same-origin wallet creation and a verified cookie-free bearer join still w
   }, JSON.stringify({ cohortId })));
   assert.equal(joined.status, 200);
   assert.deepEqual(await joined.json(), { joined: true });
-  const member = f.db.rows('book_cohort_members').find(row => row.cohort_id === cohortId);
-  assert.equal(member.member_id, f.memberId);
+  assert.deepEqual(f.rpcCalls, [{ name: 'soe_circle_legacy_salon_join', args: { p_actor: f.memberId, p_cohort_id: cohortId } }]);
+  assert.equal(f.db.rows('book_cohort_members').some(row => row.cohort_id === cohortId), false,
+    'The HTTP handler must not bypass the controlled join with a raw membership write');
   privateHeaders(joined);
 });
 

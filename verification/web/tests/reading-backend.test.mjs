@@ -11,6 +11,9 @@ async function materialized(file){const s=await lstat(file);assert(s.isFile()&&!
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const actor = '11111111-1111-4111-8111-111111111111', other = '22222222-2222-4222-8222-222222222222';
 const files = ['package.json','lib/books/catalog.ts','lib/books/bookmarks.ts','lib/books/reading-progress.ts','lib/books/editions.ts','lib/http/routeError.ts','tests/security/fakes.ts',
+  'lib/auth/request.ts','lib/circles/public-circle.ts','lib/circles/reading-edition-server.ts','lib/root-kernel/scripture-studies.ts',
+  'lib/root-kernel/philemon-edition.ts','lib/root-kernel/philemon-study.ts','lib/root-kernel/luke-good-samaritan.ts',
+  'content/root-kernel/philemon.web-classic.json','content/root-kernel/luke-good-samaritan.web-classic.json',
   'lib/circles/moderation-server.ts','lib/circles/moderation.ts','lib/circles/review-coverage.ts','lib/circles/http.ts','lib/circles/report.ts','lib/circles/server.ts','lib/circles/path.ts','lib/circles/schedule.ts','lib/circles/reading-program.ts','lib/circles/reading-program-editions.json','lib/ids/uuid.ts','lib/rateLimit.ts',
   'app/api/great-books/text/[bookId]/route.ts','app/api/great-books/edition/[bookId]/route.ts',
   'app/api/great-books/edition/[bookId]/assets/[...asset]/route.ts','app/api/great-books/edition/[bookId]/download/route.ts','app/api/great-books/progress/route.ts'];

@@ -172,6 +172,8 @@ const helpers = {
   memoryEpisodes: read('lib/memory/episodes.ts'),
   movementAccess: read('lib/movement/access.ts'),
   movementScriptgen: read('lib/movement/scriptgen.ts'),
+  directMessageServer: read('lib/members/direct-message-server.ts'),
+  readingEditionServer: read('lib/circles/reading-edition-server.ts'),
   routeError: read('lib/http/routeError.ts'),
   actionExecution: read('lib/actions/executeActions.ts'),
   activityFeed: read('lib/feed/activityFeed.ts'),
@@ -718,8 +720,11 @@ const checks = [
       routes.bookSalons.includes('member_id: auth.memberId') &&
       routes.bookSalons.indexOf('Missing fields') < routes.bookSalons.indexOf('getAuthenticatedMember(req)') &&
       routes.bookSalons.indexOf('getAuthenticatedMember(req)') < routes.bookSalons.lastIndexOf('getSupabaseAdmin()') &&
-      routes.bookSalonJoin.includes(".eq('member_id', auth.memberId)") &&
-      routes.bookSalonJoin.includes('member_id: auth.memberId') &&
+      // Admission containment removed raw membership writes. The service-only
+      // legacy join rechecks ordinary-salon kind and capacity under a lock.
+      routes.bookSalonJoin.includes("rpc('soe_circle_legacy_salon_join', { p_actor: auth.memberId, p_cohort_id: cohortId })") &&
+      routes.bookSalonJoin.includes("if (cohort.book_id === CIRCLE_BOOK_ID) return circleMutation(req, cohortId, 'join', body)") &&
+      !routes.bookSalonJoin.includes("from('book_cohort_members')") &&
       routes.bookSalonJoin.indexOf('getAuthenticatedMember(req)') < routes.bookSalonJoin.indexOf('getSupabaseAdmin()') &&
       [routes.bookSalons, routes.bookSalonJoin, routes.bookSalonDetail].every(source => {
         const post = source.slice(source.indexOf('export async function POST'));
@@ -1921,21 +1926,31 @@ const checks = [
   {
     name: 'DM route is signed-in, sender/read-scoped, lazy, and private',
     ok:
-      lacksModuleScopeClients(routes.message) &&
+      [routes.message, helpers.directMessageServer].every(lacksModuleScopeClients) &&
       routes.message.includes('export async function GET') &&
-      routes.message.includes('getAuthenticatedMember(req)') &&
-      routes.message.includes('getSupabaseAdmin()') &&
+      routes.message.includes('const auth = await messageOwner(req)') &&
+      routes.message.includes("if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 })") &&
       routes.message.includes('privateJson') &&
-      routes.message.includes('safeRequestJson(req)') &&
-      routes.message.includes('sender_id: auth.memberId') &&
-      routes.message.includes("select('id')") &&
-      routes.message.includes("select('id', { count: 'exact', head: true })") &&
-      routes.message.includes("req.nextUrl.searchParams.get('peerId')") &&
-      routes.message.includes('.update({ read: true })') &&
-      routes.message.includes(".eq('recipient_id', auth.memberId)") &&
-      routes.message.includes(".eq('sender_id', peerId)") &&
-      routes.message.indexOf('getAuthenticatedMember(req)') < routes.message.indexOf('safeRequestJson(req)') &&
-      routes.message.indexOf("select('id')") < routes.message.indexOf("from('direct_messages').insert") &&
+      // The HTTP helper authenticates, bounds the body and only then opens a
+      // lazy service client. SQL functions own participant and block checks.
+      helpers.directMessageServer.includes('const auth = await getAuthenticatedMember(req)') &&
+      helpers.directMessageServer.includes('expected === null || expected === auth?.memberId ? auth : null') &&
+      precedes(helpers.directMessageServer, 'circleWriteOrigin(req)', 'const auth = await messageOwner(req)') &&
+      precedes(helpers.directMessageServer, 'const auth = await messageOwner(req)', 'readCircleReviewJson(req,') &&
+      helpers.directMessageServer.includes('if (!auth) return { ok: false, response: privateJson') &&
+      helpers.directMessageServer.includes('return { ok: true, memberId: auth.memberId, body: parsed.value }') &&
+      helpers.directMessageServer.includes('await getSupabaseAdmin().rpc(name, args)') &&
+      helpers.directMessageServer.includes('return privateJson(value)') &&
+      (routes.message.match(/const request = await messageWrite\(req\)/g) || []).length === 3 &&
+      (routes.message.match(/if \(!request.ok\) return request.response/g) || []).length === 3 &&
+      routes.message.includes("query.get('peerId')") &&
+      routes.message.includes("'soe_direct_message_read', { p_actor: auth.memberId, p_peer: peerId }") &&
+      routes.message.includes('parseDirectMessageThread(value, auth.memberId, peerId)') &&
+      routes.message.includes("'soe_direct_message_send', { p_actor: memberId, p_peer: recipientId, p_content: content }") &&
+      routes.message.includes("directMessageReply('soe_direct_message_ack'") &&
+      routes.message.includes('p_actor: memberId, p_peer: peerId, p_ids: ids.map') &&
+      routes.message.includes('req.headers.get(DIRECT_MESSAGE_OWNER_HEADER) !== request.memberId') &&
+      [routes.message, helpers.directMessageServer].every(source => !source.includes("from('direct_messages')")) &&
       !routes.message.includes('createServiceClient') &&
       !routes.message.includes('NextResponse') &&
       !routes.message.includes('senderId') &&
@@ -1943,7 +1958,9 @@ const checks = [
       pages.members.includes('getAuthHeaders(true)') &&
       pages.members.includes('getSupabaseAccessToken()') &&
       pages.members.includes("fetch('/api/message', { headers, cache: 'no-store' })") &&
-      pages.members.includes('fetch(`/api/message?peerId=${encodeURIComponent(selectedMemberId)}`') &&
+      pages.members.includes('fetch(`/api/message?peerId=${encodeURIComponent(scope.peerId)}`') &&
+      pages.members.includes('generation === authorityEpoch.current && chatScope.current === scope') &&
+      pages.members.includes('parseDirectMessageThread(await res.json(), currentMemberId, scope.peerId)') &&
       pages.members.includes("cache: 'no-store'") &&
       !pages.members.includes('senderId: currentMember.id') &&
       !pages.members.includes("fetch('/api/notify/dm'") &&
@@ -2353,8 +2370,11 @@ const checks = [
     name: 'Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls',
     ok:
       [routes.greatBooksText, routes.greatBooksProgress].every(lacksModuleScopeClients) &&
-      routes.greatBooksText.includes('readBookEdition(bookId)') &&
-      !routes.greatBooksText.includes('getSupabaseAdmin') && !routes.greatBooksText.includes('fetch(') &&
+      routes.greatBooksText.includes('readCircleReadingEdition(bookId)') &&
+      helpers.readingEditionServer.includes('if (!scripture) return readBookEdition(bookId)') &&
+      helpers.readingEditionServer.includes('sourceSha256 !== scripture.metadata.sourceSha256') &&
+      helpers.readingEditionServer.includes('throw new EditionUnavailable()') &&
+      [routes.greatBooksText, helpers.readingEditionServer].every(source => !source.includes('getSupabaseAdmin') && !source.includes('fetch(')) &&
       routes.greatBooksProgress.includes('getSupabaseAdmin()') && routes.greatBooksProgress.includes('privateJson') &&
       routes.greatBooksProgress.includes('getAuthenticatedMember(req)') &&
       routes.greatBooksProgress.includes(".eq('member_id', auth.memberId)") &&
@@ -2575,7 +2595,8 @@ const checks = [
       routes.thinker.includes('const supabaseAdmin = () =>') &&
       routes.thinker.includes('safeRequestJson(req)') &&
       routes.thinker.includes('privateSseHeaders()') &&
-      routes.thinker.includes('memberId = auth.memberId') &&
+      routes.thinker.includes('const { memberId, member } = auth;') &&
+      precedes(routes.thinker.slice(routes.thinker.indexOf('export async function POST')), 'getAuthenticatedMember(req)', 'const { memberId, member } = auth;') &&
       routes.thinker.includes('reportThinkerRouteFailure') &&
       routes.thinker.indexOf('getAuthenticatedMember(req)') < routes.thinker.indexOf('supabaseAdmin().from') &&
       routes.thinker.indexOf('getAuthenticatedMember(req)') < routes.thinker.indexOf('createAnthropicClient()') &&
@@ -2597,7 +2618,11 @@ const checks = [
       pages.council.includes('Authorization') &&
       !pages.council.includes('walletMemberId: memberId') &&
       !pages.council.includes('memberId,\n          walletMemberId') &&
-      pages.members.includes("fetch('/api/thinker'") &&
+      // Private conversations offer a local prepared question, not a model
+      // request containing somebody else's message history.
+      !pages.members.includes("fetch('/api/thinker'") &&
+      pages.members.includes('Add a prepared question to your draft.') &&
+      pages.members.includes('t.question') &&
       pages.members.includes('Authorization: `Bearer ${accessToken}`') &&
       !pages.members.includes('walletMemberId: currentMember.id') &&
       pages.waddle.includes("fetch('/api/thinker'") &&

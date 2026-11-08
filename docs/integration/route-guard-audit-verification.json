@@ -1,0 +1,136 @@
+{
+  "status": "VERIFIED_LOCAL_GUARD_RECONCILIATION_WITH_PRODUCT_GAPS",
+  "at": "2026-11-08T08:04:29.236202+00:00",
+  "baseCommit": "47ae0246a263b803216229b62113b11e7adbff19",
+  "productSourceUnchanged": true,
+  "sqlUnchanged": true,
+  "baseTrackedFilesVerified": 2853,
+  "changedVerificationHashes": {
+    "scripts/external-effect-lazy-clients-smoke.mjs": "b7c5ad0265cebb0f6f13d3838dcd459bb0f0dc05eb54d14365c802b19874ddf0",
+    "verification/web/tests/book-salon-origin.test.mjs": "f52c1e9b029508f1b4f2cc823e4102ef436b875abd42453d73feabbbb4bcaad6",
+    "verification/web/tests/reading-backend.test.mjs": "1a51322830b2793b9bcd7d4923c8a6d5e241156de0ffa66a3180a0e6de306cd7",
+    "verification/web/tests/route-guard-regression.test.mjs": "f2c60bc9238fa28377430ffebb67b46d0238ed2c49a5df095d7759cc6726ab4f"
+  },
+  "staticChecksPassed": 73,
+  "behaviorCasesPassed": 62,
+  "guardRegressionCasesPassed": 11,
+  "testScope": "Final per-case result across current-source scoped runs. Initial missing-dependency/RPC-fixture failures retained; actual HTTP/SQL checks use fictional identities and offline transports. In-memory guard mutations are structural regression checks, not hosted authorization proof.",
+  "productGaps": {
+    "status": "CONFIRMED_LOCAL_PRODUCT_GAPS",
+    "sourceHashes": {
+      "app/api/book-salons/route.ts": "df09752badd3ddf4372d8d55497a449a1537c755ce9fb158db27c0df63f81257",
+      "app/members/page.tsx": "2b74690b4985721f22debc445366260293211264ba7a2ca4cfc67e07b0e49d94",
+      "app/api/match/route.ts": "384bbd0814a442875df91121cb95429d60ff4f574e114dde57e0a3f6a67d8366"
+    },
+    "ordinarySalonCreation": {
+      "responseStatus": 200,
+      "persistedCohorts": 1,
+      "creatorMemberships": 0,
+      "membershipInsertDenied": 1,
+      "scope": "Actual route with authenticated synthetic identity and FakeDb injecting permission denied. Existing admission SQL behavior test separately verifies raw service-role membership INSERT is denied after cutover. This probe is not a hosted integration or a fix."
+    },
+    "memberMatching": {
+      "responseStatus": 400,
+      "error": "Missing projection payload.",
+      "databaseCalls": 0,
+      "scope": "Actual match route, mocked verified edge identity, and the exact current member-page request shape populated with fictional values. No provider or database call."
+    },
+    "hostedChanged": false,
+    "spendingUsd": 0
+  },
+  "lint": "PASS, zero warnings",
+  "fullBuild": "Not repeated: only verification and documentation changed; preceding source-bound web build remains evidence for unchanged application code.",
+  "sourceBinding": "All unchanged archived tracked files hashed against the exact clean Git base. Canonical changed-file preimages matched before copying. Unavailable cloud originals were not forced open.",
+  "allOwnedProcessesTerminal": true,
+  "storage": {
+    "minimumSampledFreeBytes": 19784790016,
+    "maximumSampledPrivateAllocatedBytes": 15935950848
+  },
+  "receipts": [
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-route-guard-audit/PREPARATION.json",
+      "sha256": "56c1b9cdbf73cdeb7ccba4d0096edd225c0f1a216f85fe9adbf0b0865b289670"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-route-guard-audit/INPUTS.json",
+      "sha256": "39cd8a15d3cefae6967767698d0c12e757060ec64d1070c7de359efaef75e534"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-route-guard-audit/RUNTIME_PREPARATION.json",
+      "sha256": "0e0ae37385e5e0045bd0896e9c541c82d6deaaf5dd4d55f30379095f244da406"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-route-guard-audit/diagnostic.json",
+      "sha256": "47b05aefb2ab0af510336a3247295489100185f01ecc9920f836558113cc78a2"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-route-guard-audit/TEST_RECONCILIATION.json",
+      "sha256": "4fe4a756e2c8ee32b23fa9be090f9d141973fd9696d581306849ef10ee1e9dfe"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-route-guard-audit/PRODUCT_GAPS.json",
+      "sha256": "bf8a60e2ad9e9fdc1b2e36efd0067f7e7af6bf8453bf6ebb558b1291540844d2"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-route-guard-audit/probe-gaps.mjs",
+      "sha256": "9b808cde8f37b7b207ff7a151b282c09a7ffa1f1be224e252f96da06cc493c9f"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-behavior-01.json",
+      "sha256": "374ad648b75c38662abacdbde1e372bb9bbc6e84949bc88b251cbab8f625c157"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-behavior-01.log",
+      "sha256": "fa04d74372b607805090edad7b2071b0ac0efb1f4ce15c444df2879262da0772"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-fixture-repair-02.json",
+      "sha256": "0b4c84e9baf58ace546fea4ab4625f09366ee84d268e07446cdef3a2c94d40b7"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-fixture-repair-02.log",
+      "sha256": "79a733621a2564f8738013e72a7546f25943f9eb6d766c228ac51504d33e7656"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-fixture-repair-03.json",
+      "sha256": "eb0330cd69b4faf3f4ec4d028a67bbfb251f15f9727de9d35df618eb023f792f"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-fixture-repair-03.log",
+      "sha256": "929f6b8b17f5b3d9d299c8c8b2c1f5bc80a5a2776f3d35514088ebe17208dfd4"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-static-01.json",
+      "sha256": "3ea1e1b24c719de07aa98cd75b1fbfea6b8569069960794529e0b665c41ce0aa"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-static-01.log",
+      "sha256": "345e2429e76142122aaca445aa12107b1c44afe623aa6dec251ab632cdd5d4db"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-lint-01.json",
+      "sha256": "5d12d0e82158e94e11317493c3fcf262a1d3be532e8741eb51d39e57a3563100"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-lint-01.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-product-gaps-02.json",
+      "sha256": "845baa19f7dd63ad7f7208bc9e19e111730bff13c83b5b724f31655f465c470c"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/route-guard-product-gaps-02.log",
+      "sha256": "d4ab94730df0981bbed1e754f88334ba125059819b80132c3dd7a3b819174338"
+    }
+  ],
+  "spendingUsd": 0,
+  "productionCleared": false,
+  "hostedChanged": false,
+  "next": [
+    "Repair ordinary salon creation and creator membership atomically without reopening raw grants",
+    "Reconcile collaborator matching with explicit consent and actual request/result/error contracts",
+    "Continue full hosted access/recovery and real-provider/device acceptance; owner-present hidden entry remains pending"
+  ],
+  "rollback": "Revert local verification/documentation commit after dependency review. No product, SQL or data migration. Preserve older evidence and recovery pins."
+}
