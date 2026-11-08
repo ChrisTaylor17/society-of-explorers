@@ -4,7 +4,7 @@ import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import CheckoutWelcome from '@/components/CheckoutWelcome';
-import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { useGuideProgram } from '@/lib/salons/useGuideProgram';
 import { isUuid } from '@/lib/ids/uuid';
 import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 
@@ -49,75 +49,28 @@ function SalonChoices() {
   </nav>;
 }
 
-type SalonSummary = {
-  id: string;
-  title: string;
-  status?: string | null;
-};
-
-type SalonSession = {
-  id: string;
-  session_date: string;
-  session_number: number;
-  status?: string | null;
-  track?: string | null;
-  topic?: string | null;
-  led_by_name?: string | null;
-};
-
-type SalonMember = {
-  id: string;
-  role?: string | null;
-  sessions_attended?: number | null;
-  sessions_led?: number | null;
-  is_guide_candidate?: boolean | null;
-  members?: {
-    display_name?: string | null;
-  } | null;
-};
-
-type SalonStats = {
-  current_week: number;
-};
-
-type SalonGuide = {
-  display_name: string;
-  guide_level: number;
-};
-
-type MyMembership = {
-  sessions_attended?: number | null;
-  sessions_led?: number | null;
-  is_guide_candidate?: boolean | null;
-};
-
 export default function SalonPage() {
-  const [memberId, setMemberId] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-  const [mySalon, setMySalon] = useState<SalonSummary | null>(null);
+  const account = useGuideProgram();
+  const { program, joining } = account;
+  const mySalon = program?.salon;
+  const sessions = program?.sessions ?? [];
+  const members = program?.members ?? [];
+  const stats = program?.stats;
+  const guide = program?.guide;
+  const myMembership = program?.myMembership;
   const [recruiting, setRecruiting] = useState<RecruitingSalon[]>([]);
-  const [sessions, setSessions] = useState<SalonSession[]>([]);
-  const [members, setMembers] = useState<SalonMember[]>([]);
-  const [stats, setStats] = useState<SalonStats | null>(null);
-  const [guide, setGuide] = useState<SalonGuide | null>(null);
-  const [myMembership, setMyMembership] = useState<MyMembership | null>(null);
   const [loading, setLoading] = useState(true);
   const [listingError, setListingError] = useState(false);
   const [listingAttempt, setListingAttempt] = useState(0);
-  const [joining, setJoining] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const session = await getMemberSession();
-        if (session?.member) setMemberId(session.member.id);
-        const accessToken = await getSupabaseAccessToken();
-        if (accessToken) setAuthToken(accessToken);
-      } catch {}
-
-    }
-    void load();
-  }, []);
+  const checking = account.phase === 'loading' || account.phase === 'joining';
+  const accountNotice = <section aria-label="Your program access" style={{ maxWidth: 600, margin: '1.5rem auto', textAlign: 'center' }}>
+    <p role="status">{account.notice}</p>
+    <button type="button" disabled={!account.active || checking} onClick={() => void account.load()}
+      style={{ minHeight: 44, padding: '8px 16px', color: gold, border: `1px solid ${gold}`, background: 'transparent' }}>
+      Check current access
+    </button>
+    {(account.phase === 'signed-out' || account.phase === 'unavailable') && <p><Link href="/login?next=%2Fsalon" prefetch={false} style={{ color: gold }}>Sign in to your program</Link></p>}
+  </section>;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -143,49 +96,6 @@ export default function SalonPage() {
     void loadListings();
     return () => { current = false; window.clearTimeout(timeout); controller.abort(); };
   }, [listingAttempt]);
-
-  // Check if member is in a salon
-  useEffect(() => {
-    if (!authToken) return;
-    fetch('/api/salons/my-salon', { headers: { 'Authorization': `Bearer ${authToken}` }, cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => {
-        if (d.salon) {
-          setMySalon(d.salon);
-          setMembers(d.members || []);
-          setSessions(d.sessions || []);
-          setStats(d.stats);
-          setGuide(d.guide);
-          setMyMembership(d.myMembership);
-        }
-      }).catch(() => {});
-  }, [authToken]);
-
-  async function joinSalon(salonId: string) {
-    if (!memberId) { window.location.assign('/login'); return; }
-    setJoining(salonId);
-    try {
-      const res = await fetch(`/api/salons/${salonId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
-        body: JSON.stringify({ action: 'join' }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        const detail = await fetch(`/api/salons/${salonId}`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
-          cache: 'no-store',
-        }).then(r => r.json());
-        setMySalon(detail.salon);
-        setMembers(detail.members || []);
-        setSessions(detail.sessions || []);
-        setStats(detail.stats);
-        setGuide(detail.guide);
-        setMyMembership(detail.myMembership);
-      }
-    } catch {}
-    setJoining(null);
-  }
 
   // IN A SALON VIEW
   if (mySalon) {
@@ -213,6 +123,7 @@ export default function SalonPage() {
               </p>
             )}
             <SalonChoices />
+            {accountNotice}
 
             {/* Week progress */}
             {stats && (
@@ -274,7 +185,7 @@ export default function SalonPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '15px', color: parchment }}>{s.topic || `Session ${s.session_number}`}</div>
-                      {s.led_by_name && <div style={{ fontSize: '12px', color: muted }}>Led by {s.led_by_name}</div>}
+
                     </div>
                     {s.track && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: TRACK_COLORS[s.track] || gold, border: `1px solid ${TRACK_COLORS[s.track] || gold}44`, padding: '2px 8px', borderRadius: '10px' }}>{s.track.toUpperCase()}</span>}
                     <span style={{ fontSize: '12px', color: s.status === 'completed' ? '#4CAF50' : s.status === 'live' ? '#FF6B35' : muted }}>
@@ -343,6 +254,7 @@ export default function SalonPage() {
             This program is designed around seven weeks of discussion and shared leadership. The four-week fellowship pilot has its own reading plan, with a host and dates still to be confirmed.
           </p>
           <SalonChoices />
+          {accountNotice}
         </div>
       </section>
 
@@ -423,8 +335,8 @@ export default function SalonPage() {
                         <div style={{ height: '100%', width: `${(s.member_count / s.max_members) * 100}%`, background: s.member_count >= s.max_members ? '#4CAF50' : gold, borderRadius: '2px', transition: 'width 0.3s ease' }} />
                       </div>
                     </div>
-                    <button onClick={() => joinSalon(s.id)} disabled={joining === s.id || s.member_count >= s.max_members}
-                      style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', padding: '0 20px', cursor: 'pointer', borderRadius: 0, opacity: (joining === s.id || s.member_count >= s.max_members) ? 0.4 : 1, transition: 'opacity 0.2s' }}>
+                    <button onClick={() => void account.join(s.id)} disabled={!account.canJoin || joining !== null || s.member_count >= s.max_members}
+                      style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', padding: '0 20px', cursor: 'pointer', borderRadius: 0, opacity: (!account.canJoin || joining !== null || s.member_count >= s.max_members) ? 0.4 : 1, transition: 'opacity 0.2s' }}>
                       {joining === s.id ? 'JOINING...' : s.member_count >= s.max_members ? 'FULL' : 'JOIN'}
                     </button>
                   </div>

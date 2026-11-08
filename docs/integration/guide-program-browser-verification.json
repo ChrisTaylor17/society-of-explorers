@@ -1,0 +1,56 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-11-08T13:15:17.481435+00:00",
+  "baseCommit": "5b1f669b075a2da76c52b43f3ff3b0374753ec3c",
+  "sourceHashes": {
+    "app/salon/page.tsx": "df2d8151b55bc7baaf95c682274cf8239e1096365451058ef1ab622e6ff17d31",
+    "lib/salons/browser-program.ts": "483c29a9e9412b48590086cd11f2e14e46102a813e6641553239c6d6382fdaec",
+    "lib/salons/useGuideProgram.ts": "2c3aa085fdd59b179d604515fbc726d7dae227adaf773c1e38cd3eb44606216a",
+    "verification/web/tests/guide-program-browser.test.mjs": "c26165aae352f1363f65e38057f547f865e92abde1752ee84163d45593aafaba",
+    "verification/web/scripts/browser-guide-program.mjs": "d5cc59ecd9e6eebc43e5028db85b1c5c3da83c0b490d2ecb4e29c0bc9e22bbcd"
+  },
+  "canonicalInputCount": 1239,
+  "canonicalInputMismatches": [],
+  "checks": {
+    "controllerAndActualRouteTests": 17,
+    "compiledLifecycleStories": 9,
+    "existingSalonJourneyStories": 8,
+    "fullBuildAndTypecheck": true,
+    "scopedLint": true
+  },
+  "privateEvidenceDirectory": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-program-browser",
+  "stageReceipts": [
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-browser-build-04.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-browser-tests-03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-browser-lint-03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-browser-ui-03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-browser-journeys-05.json"
+  ],
+  "buildInputEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-program-browser/CANONICAL_BUILD_INPUTS.json",
+  "browserRuns": [
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-program-browser/BROWSER_RUN_03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-program-browser/BROWSER_RUN_05.json"
+  ],
+  "preservedServerAndIdentityEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-program-browser/PRESERVED_OPERATIONS.json",
+  "serverHandlersChanged": false,
+  "hostedCalls": false,
+  "productionClearance": false,
+  "deployment": false,
+  "spentUsd": 0,
+  "minimumSampledFreeBytes": 15702372352,
+  "maximumSampledPrivateAllocatedBytes": 19058577408,
+  "limitations": [
+    "Synthetic browser account and program responses; no issued provider session.",
+    "One case composes the actual personal-program handler with disposable SQL; authentication is explicitly mocked.",
+    "All browser joins and analytics intercepted; no hosted writes.",
+    "Uncertain join retention lasts only for the page lifetime; server atomicity and durable idempotency remain open.",
+    "No physical phone, headset or production acceptance."
+  ],
+  "priorAttempts": [
+    "Build 01 failed TypeScript narrowing; corrected membership guard intersection before final build.",
+    "Build 02 preceded required browser-intent fencing; build 03 included it; final build 04 additionally removes whitespace.",
+    "Browser UI 01/02 passed; final UI03 disables animations for stable visual inspection. Earlier screenshots captured the entrance fade."
+  ],
+  "allOwnedServersStopped": true,
+  "allOwnedPortsClosed": true
+}
