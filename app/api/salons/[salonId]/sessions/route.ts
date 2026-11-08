@@ -243,8 +243,11 @@ export async function PATCH(req: NextRequest, { params }: SessionRouteContext) {
   if (body.exp_awarded_total !== undefined) updates.exp_awarded_total = boundedInteger(body.exp_awarded_total, MAX_EXP_AWARDED);
 
   if (Object.keys(updates).length === 1) return privateJson({ error: 'No updates' }, { status: 400 });
+  if (!isUuid(salonId)) return privateJson({ error: 'Not found' }, { status: 404 });
 
   const supabase = getSupabaseAdmin();
+  const denied = await authorizeGuideProgramRead(supabase, auth.memberId, salonId);
+  if (denied) return denied;
   const access = await canManageSalonSession(supabase, salonId, sessionId, auth.memberId);
   if (access.missing) return privateJson({ error: 'Not found' }, { status: 404 });
   if (!access.ok) return privateJson({ error: 'Forbidden' }, { status: 403 });

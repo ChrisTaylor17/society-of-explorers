@@ -637,9 +637,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ sal
   const body = await safeRequestJson(req);
   const action = normalizedAction(body?.action);
   if (!body || !action) return privateJson({ error: 'Unknown action' }, { status: 400 });
+  if (!isUuid(salonId)) return privateJson({ error: 'Not found' }, { status: 404 });
 
   const supabase = getSupabaseAdmin();
   if (action === 'join') return handleJoinSalon(supabase, salonId, auth);
+  // A retained session-leader ID is not current participation authority.
+  // Apply the same membership/assigned-guide boundary as private reads before
+  // any attendance, completion or graduation work. Transactional revocation
+  // races remain a separate writer-contract requirement.
+  const denied = await authorizeGuideProgramRead(supabase, auth.memberId, salonId);
+  if (denied) return denied;
   if (action === 'attend') return handleAttendSalonSession(supabase, salonId, auth, body);
   if (action === 'complete_session') return handleCompleteSalonSession(supabase, salonId, auth, body);
   if (action === 'graduate') return handleGraduateSalonMembers(supabase, salonId, auth, body);
