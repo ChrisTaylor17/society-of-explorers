@@ -11,10 +11,12 @@ import { MESSAGE_REPORT_OPTIONS, MESSAGE_WITHDRAWAL_PRIVACY } from '../shared/me
 import { REEL_QUESTIONS, reelDiscussionDraft, type ReelDiscussionId } from '../../lib/clips/salon';
 import { getScriptureDiscussion } from '../../lib/circles/scripture-discussion';
 import type { ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
+import { FellowshipQuestion } from './FellowshipQuestion';
+import type { FellowshipTopicId } from '../../lib/fellowship/topics';
 
-export function CircleScreen({ config, connectivity, onClose, onBack, memberSession, reel, study }: {
+export function CircleScreen({ config, connectivity, onClose, onBack, memberSession, reel, study, fellowship }: {
   config?: CircleHostConfig; connectivity?: NativeConnectivityPort; onClose(): void; onBack?(): void;
-  memberSession?: { model: MemberSessionModel; onCheck(): void }; reel?: ReelDiscussionId; study?: ScriptureStudyId;
+  memberSession?: { model: MemberSessionModel; onCheck(): void }; reel?: ReelDiscussionId; study?: ScriptureStudyId; fellowship?: FellowshipTopicId;
 }) {
   const scripture = getScriptureDiscussion(study);
   const connection = useMemo(() => { try { return config ? { host: createCircleHost({ ...config, initialOnline: false }), connectivity, config } : null; } catch { return null; } }, [config, connectivity]);
@@ -81,6 +83,7 @@ export function CircleScreen({ config, connectivity, onClose, onBack, memberSess
   return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS · CIRCLES</Text>
     <Text accessibilityRole="header" style={styles.title}>{read?.conversation?.title ?? 'A conversation worth having.'}</Text>
+    <FellowshipQuestion topic={fellowship}/>
     <Text style={styles.copy}>Read, reflect and share with your circle. Only a current member session can open the conversation.</Text>
     <Text accessibilityLiveRegion="polite" style={styles.note}>{network === 'online' ? 'Network available. Check the member session and refresh Circle access.' : network === 'offline' ? 'Offline. Private Circle views and drafts are cleared.' : 'Network availability is unknown. Private Circle access stays closed.'}</Text>
     {memberSession ? <View>

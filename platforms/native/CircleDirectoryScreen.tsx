@@ -7,6 +7,8 @@ import { formatDay } from '../../lib/circles/schedule';
 import type { CirclePublicSummary } from '../../lib/circles/membership';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { CircleScreen } from './CircleScreen';
+import { FellowshipQuestion } from './FellowshipQuestion';
+import type { FellowshipTopicId } from '../../lib/fellowship/topics';
 import { getScriptureReading, getScriptureStudy, type ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
 import { PublicProfileScreen } from './PublicProfileScreen';
 import { CircleCommunityNorms } from './CircleCommunityNorms';
@@ -21,9 +23,9 @@ function meetingHref(model: CircleDirectoryModel | undefined) {
     ? safePrivateMeetingUrl(model.detail.online_url) : null;
 }
 
-export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', initialOnlineFilter = false, initialCircle, reel, savedReading, onInvitations, onBack, onClose }: {
+export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', initialOnlineFilter = false, initialCircle, reel, fellowship, savedReading, onInvitations, onBack, onClose }: {
   config: CircleDirectoryConfig; connectivity?: NativeConnectivityPort; initialMode?: 'discover' | 'mine'; initialOnlineFilter?: boolean;
-  initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId; savedReading?: SavedReading; onInvitations?(circleId: string): void; onBack(): void; onClose(): void;
+  initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId; fellowship?: FellowshipTopicId; savedReading?: SavedReading; onInvitations?(circleId: string): void; onBack(): void; onClose(): void;
 }) {
   const previewCircleId = initialCircle?.id;
   const connection = useMemo(() => {
@@ -163,7 +165,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
       onBack={() => leaveReader()} onDiscussStudy={scripture && m.canOpenDiscussion ? () => leaveReader(scripture.id) : undefined}/>;
   }
   if (discussion && discussion.connection === connection && m?.canOpenDiscussion && discussionConfig) {
-    return <CircleScreen config={discussionConfig} connectivity={connectivity} study={discussion.study} reel={discussion.study ? undefined : reel} onClose={close}
+    return <CircleScreen config={discussionConfig} connectivity={connectivity} study={discussion.study} reel={discussion.study ? undefined : reel} fellowship={discussion.study ? undefined : fellowship} onClose={close}
       onBack={() => act(() => { setDiscussion(null); void session?.refresh(); }, true)}/>;
   }
   const detail = m?.detail, circle = detail?.circle, management = m?.management;
@@ -171,6 +173,7 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS · CIRCLES</Text>
     <Text accessibilityRole="header" style={styles.title}>{m?.selected ? circle?.title ?? management?.circle.title ?? 'Your Circle' : mode === 'mine' ? 'My Circles' : 'Discover Circles'}</Text>
     <Text accessibilityLiveRegion="polite" style={styles.copy}>{m?.message ?? 'The Circle connection is unavailable. Return to your member account and check again.'}</Text>
+    <FellowshipQuestion topic={fellowship}/>
     {reel && <View style={styles.card}>
       <Text accessibilityRole="header" style={styles.heading}>Question from the Reel</Text>
       <Text style={styles.copy}>{REEL_QUESTIONS[reel]}</Text>

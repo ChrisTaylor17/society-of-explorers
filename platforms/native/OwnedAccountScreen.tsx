@@ -11,6 +11,9 @@ import { NativeEmailAccountForm } from './NativeEmailAccountForm';
 import { ScriptureStudyScreen } from './PhilemonStudyScreen';
 import { getScriptureStudy, SCRIPTURE_STUDIES, type ScriptureStudyId } from '../../lib/root-kernel/scripture-studies';
 import { ClipsScreen } from './ClipsScreen';
+import { FellowshipScreen } from './FellowshipScreen';
+import { FellowshipQuestion } from './FellowshipQuestion';
+import type { FellowshipTopicId } from '../../lib/fellowship/topics';
 import { REEL_QUESTIONS, type ReelDiscussionId } from '../../lib/clips/salon';
 import { PublicCirclesScreen } from './PublicCirclesScreen';
 import type { PublicCircleChoice } from '../shared/circle-directory';
@@ -46,12 +49,13 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   const [memberProblem, setMemberProblem] = useState('');
   const [studyOpen, setStudyOpen] = useState<ScriptureStudyId | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [fellowshipOpen, setFellowshipOpen] = useState<FellowshipTopicId | null>(null);
   const [clipsOpen, setClipsOpen] = useState<{ reel?: ReelDiscussionId } | null>(null);
   const [sharedLink, setSharedLink] = useState<PublicAppLink | null>(null);
   const sharedReel = sharedLink?.kind === 'reel' ? sharedLink : null;
   const sharedInvite = sharedLink?.kind === 'circle' ? sharedLink : null;
-  const [publicCircles, setPublicCircles] = useState<{ reel?: ReelDiscussionId; inviteId?: string } | null>(null);
-  const [circleChoice, setCircleChoice] = useState<(PublicCircleChoice & { reel?: ReelDiscussionId }) | null>(null);
+  const [publicCircles, setPublicCircles] = useState<{ reel?: ReelDiscussionId; inviteId?: string; fellowship?: FellowshipTopicId } | null>(null);
+  const [circleChoice, setCircleChoice] = useState<(PublicCircleChoice & { reel?: ReelDiscussionId; fellowship?: FellowshipTopicId }) | null>(null);
   const [studyHosting, setStudyHosting] = useState<ScriptureStudyId | null>(null);
   const [memberContext, setMemberContext] = useState<{ connection: OwnedAccountConnection; view: MemberViewConnection } | null>(null);
   const mounted = useRef(false), active = useRef(false), attempt = useRef(0);
@@ -236,7 +240,7 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   function closeStudy(prepareHosting: boolean) {
     if (!validView() || !studyOpen || current.current) return;
     invalidate(); setStudyOpen(null);
-    if (prepareHosting) { setStudyHosting(studyOpen); setCircleChoice(null); }
+    if (prepareHosting) { setStudyHosting(studyOpen); setFellowshipOpen(null); setCircleChoice(null); }
   }
   function consumeSharedLink(link: PublicAppLink | null) {
     if (!link || pendingLink.current !== link) return false;
@@ -263,15 +267,24 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     invalidate(); setClipsOpen(null);
     if (read) setStudyOpen('philemon');
   }
-  function openPublicCircles(reel?: ReelDiscussionId) {
+  function openFellowship() {
+    if (!validView() || !active.current || current.current || preparing.current) return;
+    invalidate(); clearFields(); setFellowshipOpen('psalm-22');
+  }
+  function closeFellowship() {
+    if (!validView() || !active.current || !fellowshipOpen || current.current) return;
+    invalidate(); setFellowshipOpen(null);
+  }
+  function openPublicCircles(reel?: ReelDiscussionId, fellowship?: FellowshipTopicId) {
     if (!validView() || !active.current || current.current || preparing.current || publicCircles) return;
-    invalidate(); setPublicCircles({ reel });
+    invalidate(); setPublicCircles({ reel, fellowship });
+    if (fellowship) setFellowshipOpen(fellowship);
   }
   function closePublicCircles(choice?: PublicCircleChoice) {
     if (!validView() || !publicCircles || current.current && !publicCircles.inviteId
       || choice && (!active.current || publicCircles.inviteId && choice.id !== publicCircles.inviteId)) return;
     invalidate(); setPublicCircles(null);
-    if (choice) { setClipsOpen(null); setStudyOpen(null); setStudyHosting(null); setCircleChoice({ ...choice, reel: publicCircles.reel }); }
+    if (choice) { setClipsOpen(null); setStudyOpen(null); setStudyHosting(null); setFellowshipOpen(null); setCircleChoice({ ...choice, reel: publicCircles.reel, fellowship: publicCircles.fellowship }); }
   }
   if (privacyOpen) return <SafeAreaView style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <Text accessibilityRole="header" style={styles.title}>Privacy policy</Text>
@@ -284,12 +297,15 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
     <Text selectable style={styles.copy}>{PRIVACY_CONTACT}</Text>
   </ScrollView></SafeAreaView>;
   if (publicCircles) return <PublicCirclesScreen key={publicCircles.inviteId ?? 'directory'} prepare={publicCirclesPrepare}
-    reel={publicCircles.reel} inviteId={publicCircles.inviteId} onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
+    reel={publicCircles.reel} fellowship={publicCircles.fellowship} inviteId={publicCircles.inviteId} onBack={() => closePublicCircles()} onChoose={closePublicCircles}/>;
   if (clipsOpen) return <ClipsScreen reel={clipsOpen.reel} onBack={() => closeClips(false)} onRead={() => closeClips(true)}
     onBrowse={openPublicCircles} preparePublicCircles={publicCirclesPrepare}/>;
   const scripture = getScriptureStudy(studyOpen);
   if (scripture) return <ScriptureStudyScreen key={scripture.id} study={scripture} onBack={() => closeStudy(false)}
+    backLabel={fellowshipOpen ? 'Back to Fellowship' : undefined}
     onHost={() => closeStudy(true)} onBrowse={() => openPublicCircles()}/>;
+  if (fellowshipOpen) return <FellowshipScreen initialTopic={fellowshipOpen} onBack={closeFellowship}
+    onBrowse={topic => openPublicCircles(undefined, topic)} onReadStudy={openStudy}/>;
   if (connection && entered === connection && m?.ready && memberContext?.connection === connection) return <MemberCircleScreen config={connection.config}
     retained={memberContext.view} connectivity={connection.connectivity} studyHosting={studyHosting ?? undefined} circleChoice={circleChoice ?? undefined}
     sharedReel={sharedReel ? { reel: sharedReel.reel, consume: consumeSharedReel } : undefined}
@@ -314,12 +330,14 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
         <Action label="Open shared Reel" disabled={connecting || !active.current} onPress={() => openClips(true)}/>
         <Action label="Dismiss shared Reel" onPress={() => { if (validView()) consumeSharedReel(); }}/>
       </>}
+      <Action label="Christian fellowship" disabled={connecting} onPress={openFellowship}/>
       <Action label="Find an online Circle" disabled={connecting} onPress={() => openPublicCircles()}/>
       <Action label="Explore Clips" disabled={connecting} onPress={() => openClips()}/>
       {SCRIPTURE_STUDIES.map(study => <Action key={study.id} label={study.readAction} disabled={connecting} onPress={() => openStudy(study.id)}/>)}
     </> : null}
     {circleChoice ? <>
       <Text style={styles.note}>{m?.ready ? 'Continue' : 'Sign in to continue'} with {circleChoice.title}.</Text>
+      <FellowshipQuestion topic={circleChoice.fellowship}/>
       {circleChoice.reel && <Text style={styles.note}>{REEL_QUESTIONS[circleChoice.reel]}</Text>}
       <Action label="Clear selected Circle" onPress={() => {
         if (!validView()) return;

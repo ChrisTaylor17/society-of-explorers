@@ -1,0 +1,1 @@
+module.exports=function(source){const ts=require(require.resolve('typescript',{paths:[this.rootContext]}));return ts.transpileModule(source,{fileName:this.resourcePath,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;};

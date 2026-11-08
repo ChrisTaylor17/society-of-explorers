@@ -6,6 +6,9 @@ import { BlockedMembersScreen } from './BlockedMembersScreen';
 import { MessageReviewsScreen } from './MessageReviewsScreen';
 import { CircleReviewsScreen } from './CircleReviewsScreen';
 import { CircleDirectoryScreen } from './CircleDirectoryScreen';
+import { FellowshipScreen } from './FellowshipScreen';
+import { FellowshipQuestion } from './FellowshipQuestion';
+import type { FellowshipTopicId } from '../../lib/fellowship/topics';
 import { MemberProfileScreen } from './MemberProfileScreen';
 import { createMemberProfile, type MemberProfile } from '../shared/member-profile';
 import { createSavedReading, type SavedReading } from '../shared/saved-reading';
@@ -99,7 +102,7 @@ export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>
  * screen does not create an auth client, sign in or choose an account. */
 export function MemberCircleScreen({ config, connectivity, retained, studyHosting, circleChoice, sharedReel, sharedInvite, onClose }: {
   config: ExistingMemberAccountConfig; connectivity?: NativeConnectivityPort; retained?: MemberViewConnection;
-  studyHosting?: ScriptureStudyId; circleChoice?: PublicCircleChoice & { reel?: ReelDiscussionId }; onClose(): void;
+  studyHosting?: ScriptureStudyId; circleChoice?: PublicCircleChoice & { reel?: ReelDiscussionId; fellowship?: FellowshipTopicId }; onClose(): void;
   sharedReel?: { reel: ReelDiscussionId; consume(): boolean };
   sharedInvite?: { open(): void; dismiss(): void };
 }) {
@@ -111,8 +114,8 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
   }, [config, connectivity, retained]);
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
-  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; scripturePreset?: ScriptureStudyId; studyId?: ScriptureStudyId; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
-    circleId?: string; destination: 'circle' | 'contributions' | 'blocks' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'admission' | 'scripture' | 'clips' } | null>(null);
+  const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; scripturePreset?: ScriptureStudyId; studyId?: ScriptureStudyId; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId; fellowship?: FellowshipTopicId;
+    circleId?: string; destination: 'circle' | 'contributions' | 'blocks' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'admission' | 'scripture' | 'clips' | 'fellowship' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -187,7 +190,7 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
       setProfileNotice('The browser could not open. Try opening account deletion again.');
     }));
   });
-  const openReadingDestination = (destination: 'saved' | 'discover' | 'mine', options?: { onlinePreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId }) => act(() => {
+  const openReadingDestination = (destination: 'saved' | 'discover' | 'mine', options?: { onlinePreset?: boolean; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId; fellowship?: FellowshipTopicId }) => act(() => {
     const current = connection?.account.model();
     if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
     try {
@@ -215,6 +218,9 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
   });
   const hostingAvailable = Boolean(connection?.host.hostingTransport && connection.host.newRequestId);
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
+    if (entered.destination === 'fellowship') return <FellowshipScreen onBack={back}
+      onBrowse={fellowship => openReadingDestination('discover', { onlinePreset: true, fellowship })}
+      onReadStudy={studyId => act(() => setEntered({ connection, destination: 'scripture', studyId }))}/>;
     if (entered.destination === 'clips') return <ClipsScreen onBack={back} appOrigin={connection.host.origin} reel={entered.reel}
       onRead={() => act(() => setEntered({ connection, destination: 'scripture', studyId: 'philemon' }))}
       onBrowse={reel => openReadingDestination('discover', { onlinePreset: true, reel })}/>;
@@ -240,7 +246,7 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
         publicAvailable={Boolean(connection.host.publicProfileTransport)} onBack={back} onClose={close}/>;
     }
     if ((entered.destination === 'discover' || entered.destination === 'mine') && directoryConfig) return <CircleDirectoryScreen config={directoryConfig} connectivity={connection.connectivity}
-      initialMode={entered.destination} initialOnlineFilter={entered.onlinePreset} initialCircle={entered.initialCircle} reel={entered.reel}
+      initialMode={entered.destination} initialOnlineFilter={entered.onlinePreset} initialCircle={entered.initialCircle} reel={entered.reel} fellowship={entered.fellowship}
       savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined}
       onInvitations={admissionAvailable ? openAdmission : undefined} onBack={back} onClose={close}/>;
     if (entered.destination === 'blocks' && memberId && blocksConfig) return <BlockedMembersScreen config={blocksConfig} memberId={memberId}
@@ -268,8 +274,9 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
       onPress={() => act(() => { setEntered(null); void connection?.account.check(); })}/>
     {circleChoice ? <>
       <Text style={styles.copy}>Selected Circle · {circleChoice.title}</Text>
+      <FellowshipQuestion topic={circleChoice.fellowship}/>
       <Action label="Open selected Circle" disabled={!account?.canOpenCircle || model?.phase !== 'ready'}
-        onPress={() => openReadingDestination('discover', { onlinePreset: true, initialCircle: circleChoice, reel: circleChoice.reel })}/>
+        onPress={() => openReadingDestination('discover', { onlinePreset: true, initialCircle: circleChoice, reel: circleChoice.reel, fellowship: circleChoice.fellowship })}/>
     </> : null}
     {account?.canConfirm || account?.confirmed ? <View style={styles.setup}>
       <Text style={styles.copy}>{account.phase === 'unknown'
@@ -305,6 +312,9 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
       })}/>
       <Action label="Dismiss shared Reel" onPress={() => act(() => { sharedReel.consume(); })}/>
     </>}
+    <Action label="Christian fellowship" disabled={!account?.canOpenCircle || model?.phase !== 'ready'} onPress={() => act(() => {
+      if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'fellowship' });
+    })}/>
     <Action label="Explore Clips" disabled={!account?.canOpenCircle || model?.phase !== 'ready'} onPress={() => act(() => {
       if (connection?.account.model().canOpenCircle && connection.binding.model().phase === 'ready') setEntered({ connection, destination: 'clips' });
     })}/>

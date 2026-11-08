@@ -5,13 +5,15 @@ import { formatDay } from '../../lib/circles/schedule';
 import { createPublicCircleDirectory, type CircleDirectoryModel, type PublicCircleChoice } from '../shared/circle-directory';
 import { prepareInstalledPublicCircles, type PublicCircleDiscoveryConnection } from './src/circles/installed-member';
 import { observeNativeConnectivity } from './src/circles/native-connectivity';
+import { FellowshipQuestion } from './FellowshipQuestion';
+import type { FellowshipTopicId } from '../../lib/fellowship/topics';
 import { REEL_QUESTIONS, type ReelDiscussionId } from '../../lib/clips/salon';
 
 type Directory = ReturnType<typeof createPublicCircleDirectory>;
 type ViewState = { directory: Directory; model: CircleDirectoryModel };
 
-export function PublicCirclesScreen({ prepare = prepareInstalledPublicCircles, reel, inviteId, onBack, onChoose }: {
-  prepare?: () => Promise<PublicCircleDiscoveryConnection>; reel?: ReelDiscussionId; inviteId?: string;
+export function PublicCirclesScreen({ prepare = prepareInstalledPublicCircles, reel, fellowship, inviteId, onBack, onChoose }: {
+  prepare?: () => Promise<PublicCircleDiscoveryConnection>; reel?: ReelDiscussionId; fellowship?: FellowshipTopicId; inviteId?: string;
   onBack(): void; onChoose(circle: PublicCircleChoice): void;
 }) {
   const [view, setView] = useState<ViewState | null>(null);
@@ -61,6 +63,7 @@ export function PublicCirclesScreen({ prepare = prepareInstalledPublicCircles, r
     <Text style={styles.eyebrow}>SOCIETY OF EXPLORERS</Text>
     <Text accessibilityRole="header" style={styles.title}>{inviteId ? 'Salon invitation' : 'Online Circles'}</Text>
     <Text style={styles.copy}>Find a small weekly salon for Scripture, Great Books and honest conversation.</Text>
+    <FellowshipQuestion topic={fellowship}/>
     {reel && <View style={styles.card}>
       <Text accessibilityRole="header" style={styles.heading}>Question from the Reel</Text>
       <Text style={styles.copy}>{REEL_QUESTIONS[reel]}</Text>
