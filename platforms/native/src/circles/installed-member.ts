@@ -79,7 +79,7 @@ export async function prepareInstalledMemberBinding(options: {
   origin: string; storageKey: string; timeoutMs?: number;
 }) {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw unavailable();
-  const { bridge, connectivity } = createInstalledMemberAdapter(NativeSoeMember);
+  const { bridge, connectivity } = createInstalledMemberAdapter(NativeSoeMember ?? null);
   const binding = await prepareNativeMemberBinding({ ...options, bridge });
   return { ...binding, connectivity };
 }
@@ -92,7 +92,7 @@ async function installedCapabilities(bridge: NativeMemberBridge) {
 }
 
 /** Reuse the anonymous native request policy without creating an account client. */
-export async function prepareInstalledPublicCircles(module: Spec | null = NativeSoeMember): Promise<PublicCircleDiscoveryConnection> {
+export async function prepareInstalledPublicCircles(module: Spec | null = NativeSoeMember ?? null): Promise<PublicCircleDiscoveryConnection> {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw unavailable();
   const { bridge, connectivity } = createInstalledMemberAdapter(module);
   const caps = await installedCapabilities(bridge);
@@ -107,7 +107,7 @@ export async function prepareInstalledPublicCircles(module: Spec | null = Native
  * extras, environment, global credential or invented Circle is consulted. */
 export async function prepareInstalledAuthPorts() {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') throw unavailable();
-  const { bridge, connectivity } = createInstalledMemberAdapter(NativeSoeMember);
+  const { bridge, connectivity } = createInstalledMemberAdapter(NativeSoeMember ?? null);
   const caps = await installedCapabilities(bridge);
   if (!caps || typeof caps !== 'object' || Array.isArray(caps) || caps.version !== 2
     || caps.redirectPolicy !== 'reject-before-send' || caps.storagePolicy !== 'os-protected' || !isUuid(caps.storageGeneration)

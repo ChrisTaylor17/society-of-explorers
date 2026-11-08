@@ -1,0 +1,213 @@
+{
+  "status": "VERIFIED_LOCAL_ANDROID_COMPATIBILITY",
+  "recordedAt": "2026-11-08T06:36:01.004121+00:00",
+  "baseCommit": "1287f748219aea90c09aa5bf24e7699a3dcf12fa",
+  "verifiedSourceSha256": {
+    "lib/circles/discovery-page.ts": "da71efffc42665afa47fac07cd327f8ae1ce01f54ae23e05cccb3005ec12488e",
+    "lib/circles/discovery.ts": "252949ccc25f2b7864a3287da135e43dcb344055d47b29e506e59d02098fe2db",
+    "lib/circles/public-circle.ts": "71e5c4ef0a3abb04ac60edbf55ac8d3571d74b3a9c587084a8ee0e2369909dfa",
+    "lib/circles/server.ts": "c8d5aedc370721133ed412c2c596f89a41911ebc59b9de6555d5741b0fc1f1e9",
+    "platforms/native/OwnedAccountScreen.tsx": "2c7c3650baa57d3892e3fc628f74766ddce7f218e75fdc581ea147d75ce5d996",
+    "platforms/native/android/app/build.gradle": "149aa6b4015f58bb09afc3607bbbdbac6922837d830a4f8b8f2d24c3d57569b8",
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberSecureStore.kt": "5b5423b2228d859965e44a784850566adb1c6f8b52a021a8c0051bc493dbe6be",
+    "platforms/native/android/build.gradle": "0e294f6c3fd4063660c1b73aedf06a36be7335b7197046f060ab58bc65e9535c",
+    "platforms/native/android/gradle.properties": "cbe94ade7577477f64b29b37611efacff72de50199028f4bfd2c455834438e57",
+    "platforms/native/index.ts": "92d243e33f0ee942bcbd2834619fa79cdaa76d328c745e91a5093894368eca51",
+    "platforms/native/src/circles/installed-member.ts": "56fb16fbd6469941c3606286ec3815c4d104b5acecbdd5259b611d299aff75d6",
+    "platforms/native/tsconfig.json": "586cb1803c4bac834e0b9bb473d62fca3a6c40bffba9228663277c00acc737cb"
+  },
+  "sourceFiles": 12,
+  "publicCircleMappingCopiedUnchanged": true,
+  "finalReviewAdjustment": "Removed unused local toPublicCircle import; the unchanged public re-export remains. Scoped lint found this warning.",
+  "nativeTypecheck": "PASS with locked installed dependencies",
+  "focusedTests": 98,
+  "testCounts": {
+    "canonical-native-regressions-03": 35,
+    "canonical-web-regressions-03": 53,
+    "canonical-android-policy-01": 10,
+    "canonical-projection-final-01": 24
+  },
+  "lastProjectionRecheck": 24,
+  "scopedLint": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "webBuild": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build/canonical-integration-01/source",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 42.19,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1223,
+    "sourceSha256": "fb63a15730bcf77d3036115d59603688c637a153cccc9f0be54ac9484979e448",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/canonical-android-integration-final-next-build.log"
+  },
+  "android": {
+    "status": "PASS_CURRENT_SOURCE_TEST_APK",
+    "checkedAt": "2026-11-08T06:34:16.410744+00:00",
+    "sourceHead": "1287f748219aea90c09aa5bf24e7699a3dcf12fa",
+    "patchAppliedToCandidate": true,
+    "apk": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build/canonical-integration-01/source/platforms/native/android/app/build/outputs/apk/synthetic/app-synthetic.apk",
+    "bytes": 64354742,
+    "sha256": "55e53a073041b6b128ba729f1fd2f9c7ac80061f7667f56f6f62cdd1e57ab53d",
+    "package": "com.anonymous.soesyntheticdemo.embedded",
+    "minimumSdk": 24,
+    "targetSdk": 36,
+    "architecture": "arm64-v8a",
+    "signature": "v2 verified; Android Debug certificate",
+    "debuggable": true,
+    "backupAllowed": false,
+    "cleartextAllowed": false,
+    "generatedLiveConfigurationBlank": true,
+    "nativeDefinedClassesVerified": [
+      "Lcom/anonymous/soesyntheticdemo/member/MemberSecureStore;",
+      "Lcom/anonymous/soesyntheticdemo/member/NativeSoeMemberModule;",
+      "Lcom/anonymous/soesyntheticdemo/member/SoeMemberPackage;",
+      "Lcom/anonymous/soesyntheticdemo/reader/SourceReaderManager;",
+      "Lcom/anonymous/soesyntheticdemo/reader/ClipPlayerManager;"
+    ],
+    "definedClassCount": 17641,
+    "assets": {
+      "assets/app.config": {
+        "bytes": 406,
+        "sha256": "a874206b04e584729b0d24d6dd00a350145672359a3e5e3e36521be1be2277a0"
+      },
+      "assets/app.fingerprint": {
+        "bytes": 8514,
+        "sha256": "50d7c2f8bdf48623c9322f64683c464ca32f7a42e65aa63c5faf3d92b0cd069f"
+      },
+      "assets/index.android.bundle": {
+        "bytes": 3121476,
+        "sha256": "7d3b368507b5bd42043f610afd9fa77590e155809a82d7ca1645aa5a27519d63"
+      },
+      "assets/source-reader-catalog.json": {
+        "bytes": 88177,
+        "sha256": "44882616e9975f0a0199f0b16b978babfac02f86d309c9078f32499b3d3870b3"
+      }
+    },
+    "clipsPackagedAndHashMatched": 5,
+    "permissions": [
+      "android.permission.ACCESS_LOCAL_NETWORK",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.INTERNET",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "com.anonymous.soesyntheticdemo.embedded.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+    ],
+    "permissionsMatchPriorDebugArtifact": true,
+    "priorApkUnchanged": true,
+    "fellowshipNativeScreenImplemented": false,
+    "physicalDeviceTested": false,
+    "releaseSigning": false,
+    "newSpendingUsd": 0,
+    "scope": "Current-source private Android test APK compiled, signed and directly inspected. No installation, real-member authentication, device acceptance, store release or native Fellowship screen is claimed."
+  },
+  "stages": {
+    "canonical-native-typecheck-01": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 4.24,
+      "minimumSampledFreeBytes": 25536057344,
+      "maximumSampledPrivateAllocatedBytes": 10399428608,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-native-typecheck-01.log"
+    },
+    "canonical-native-regressions-03": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 16.72,
+      "minimumSampledFreeBytes": 25524219904,
+      "maximumSampledPrivateAllocatedBytes": 10347798528,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-native-regressions-03.log"
+    },
+    "canonical-web-regressions-03": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 4.06,
+      "minimumSampledFreeBytes": 25524301824,
+      "maximumSampledPrivateAllocatedBytes": 10347786240,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-web-regressions-03.log"
+    },
+    "canonical-android-policy-01": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 2.92,
+      "minimumSampledFreeBytes": 25524097024,
+      "maximumSampledPrivateAllocatedBytes": 10347745280,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-android-policy-01.log"
+    },
+    "canonical-projection-final-01": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 3.12,
+      "minimumSampledFreeBytes": 23725875200,
+      "maximumSampledPrivateAllocatedBytes": 12113453056,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-projection-final-01.log"
+    },
+    "canonical-android-assemble-01": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 75.92,
+      "minimumSampledFreeBytes": 24949452800,
+      "maximumSampledPrivateAllocatedBytes": 10877743104,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-android-assemble-01.log"
+    },
+    "canonical-android-assemble-02": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 16.63,
+      "minimumSampledFreeBytes": 23721357312,
+      "maximumSampledPrivateAllocatedBytes": 12113633280,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-android-assemble-02.log"
+    },
+    "canonical-web-build-02": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 44.78,
+      "minimumSampledFreeBytes": 23429320704,
+      "maximumSampledPrivateAllocatedBytes": 12346503168,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-web-build-02.log"
+    },
+    "canonical-scoped-lint-02": {
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 4.37,
+      "minimumSampledFreeBytes": 23722438656,
+      "maximumSampledPrivateAllocatedBytes": 12113494016,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/canonical-scoped-lint-02.log"
+    }
+  },
+  "limits": {
+    "productionCleared": false,
+    "physicalDeviceTested": false,
+    "fellowshipNativeScreenImplemented": false,
+    "iosBuildAccepted": false,
+    "questHeadsetAccepted": false,
+    "hostedWrites": false,
+    "newInstallInThisIntegration": false,
+    "spendingUsd": 0
+  },
+  "preservation": {
+    "previousApkUnchanged": true,
+    "unrelatedWorkingTreeChangesOverwritten": false,
+    "originalSourcePreimages": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build/canonical-integration-01/before",
+    "candidate": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build/canonical-integration-01/source"
+  },
+  "failedAttemptsRetained": [
+    "canonical-compatibility-regressions-01: web harness was invoked from repository root",
+    "canonical-compatibility-regressions-02: native harness was invoked from web test directory"
+  ],
+  "scope": "Twelve verified build compatibility files integrated locally. Full web build and actual synthetic Android package are distinct from native Fellowship implementation, real-account or device acceptance."
+}

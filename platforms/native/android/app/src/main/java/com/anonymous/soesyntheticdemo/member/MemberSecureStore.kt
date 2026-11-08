@@ -185,8 +185,15 @@ internal class MemberSecureStore private constructor(private val context: Contex
     File(file.baseFile.path + ".bak").exists() || File(file.baseFile.path + ".new").exists()
 
   private fun syncDirectory(path: File) {
-    val descriptor = Os.open(path.absolutePath, OsConstants.O_RDONLY or OsConstants.O_DIRECTORY, 0)
-    try { Os.fsync(descriptor) } finally { Os.close(descriptor) }
+    // O_DIRECTORY is not part of the public Android SDK. Check the opened
+    // descriptor instead of a path precheck, which could race replacement.
+    // Refuse a final symlink; a substituted FIFO must not block this operation.
+    val descriptor = Os.open(path.absolutePath,
+      OsConstants.O_RDONLY or OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK, 0)
+    try {
+      check(OsConstants.S_ISDIR(Os.fstat(descriptor).st_mode))
+      Os.fsync(descriptor)
+    } finally { Os.close(descriptor) }
   }
   private fun readBounded(file: AtomicFile, max: Int): ByteArray = file.openRead().use { input ->
     val output = ByteArrayOutputStream(); val buffer = ByteArray(4096)

@@ -1,5 +1,19 @@
 # Native toolchain unblock plan
 
+## November 8 current result: Android compiles
+
+The approved free setup produced a real test APK, and its compatibility fixes
+have now been integrated against the current canonical source. The newer
+Fellowship web work is retained; native Fellowship screens still need to be
+implemented. The APK is debug-signed and synthetic, with empty live connection
+configuration. It has not been installed or accepted on a device.
+
+The work reused the installed tools and locked dependencies, stayed within the
+approved storage limits, and cost $0. Full Xcode/iOS and physical Quest acceptance
+remain separate. See [the current build checkpoint](android-build-compatibility.md)
+and its verification record. The installation-pending and build-unverified
+statements below are preserved historical checkpoints, superseded by this result.
+
 Prepared 2026-11-04 from canonical source at checkpoint `e1fbb2d`, named local metadata and current official documentation. This is an installation/build proposal, not a native build, bridge, device or release acceptance receipt. Only this document was added during this continuation.
 
 ## November 8 approval: isolated Android setup in progress

@@ -98,7 +98,10 @@ export function OwnedAccountScreen({ prepare = prepareInstalledOwnedAccount, pub
   }, []);
 
   useLayoutEffect(() => {
-    return observePublicAppLinks(ReactNative.Linking, reelLinkOrigin, (link, initial) => {
+    return observePublicAppLinks({
+      getInitialURL: async () => (await ReactNative.Linking.getInitialURL()) ?? null,
+      addEventListener: (type, listener) => ReactNative.Linking.addEventListener(type, listener),
+    }, reelLinkOrigin, (link, initial) => {
       if (initial && !hasChosenView.current && !current.current && !preparing.current) {
         hasChosenView.current = true;
         epoch.current++;

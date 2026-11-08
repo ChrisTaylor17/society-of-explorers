@@ -1,3 +1,11 @@
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.TaskAction
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
@@ -5,16 +13,37 @@ apply plugin: "com.facebook.react"
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 // Package only the canonical public pins, never the content tree or account data.
-def sourceReaderAssets = layout.buildDirectory.dir('generated/sourceReaderAssets')
-def packageSourceReaderCatalog = tasks.register('packageSourceReaderCatalog', Copy) {
-    from(new File(projectRoot, '../../lib/books/source-reader-catalog.json'))
-    into(sourceReaderAssets)
+abstract class SoeSourceReaderCatalogTask extends DefaultTask {
+    @InputFile
+    @PathSensitive(PathSensitivity.NONE)
+    abstract RegularFileProperty getCatalogFile()
+
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDirectory()
+
+    @TaskAction
+    void copyCatalog() {
+        def destination = outputDirectory.file('source-reader-catalog.json').get().asFile.toPath()
+        java.nio.file.Files.createDirectories(destination.parent)
+        java.nio.file.Files.copy(catalogFile.get().asFile.toPath(), destination,
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
+abstract class SoeClipResourcesTask extends Exec {
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDirectory()
+}
+
+def packageSourceReaderCatalog = tasks.register('packageSourceReaderCatalog', SoeSourceReaderCatalogTask) {
+    catalogFile.set(new File(projectRoot, '../../lib/books/source-reader-catalog.json'))
+    outputDirectory.set(layout.buildDirectory.dir('generated/sourceReaderAssets'))
 }
 tasks.configureEach { task -> if (task.name == 'preBuild') task.dependsOn(packageSourceReaderCatalog) }
 
-def clipResources = layout.buildDirectory.dir('generated/soeClipResources')
 def clipPackager = new File(projectRoot, 'prepare-clip-assets.cjs')
-def packageClipAssets = tasks.register('packageSoeClipAssets', Exec) {
+def packageClipAssets = tasks.register('packageSoeClipAssets', SoeClipResourcesTask) {
+    outputDirectory.set(layout.buildDirectory.dir('generated/soeClipResources'))
     inputs.files(clipPackager, new File(projectRoot, 'clip-catalog.json'), new File(projectRoot, '../../lib/clips/registry.json'),
         new File(projectRoot, '../../lib/clips/review-policy.cjs'))
     inputs.files(fileTree(new File(projectRoot, '../../content/clips')) {
@@ -23,13 +52,24 @@ def packageClipAssets = tasks.register('packageSoeClipAssets', Exec) {
                 'which-height-inspection.json', 'new-species-inspection.json', 'circle-intro-source.html',
                 'eso2607d-source.mp4', 'potw2643a-source.m4v'
     })
-    outputs.dir(clipResources)
     // Review dates and withdrawals must be checked on every build invocation.
     outputs.upToDateWhen { false }
     outputs.cacheIf { false }
-    doFirst { commandLine('node', clipPackager.absolutePath, clipResources.get().dir('raw').asFile.absolutePath) }
+    doFirst { commandLine('node', clipPackager.absolutePath, outputDirectory.get().dir('raw').asFile.absolutePath) }
 }
 tasks.configureEach { task -> if (task.name == 'preBuild') task.dependsOn(packageClipAssets) }
+
+// AGP 9 requires generated directories to carry their producing task and a
+// DirectoryProperty, rather than an untyped Provider on the legacy source set.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        if (variant.sources.assets == null || variant.sources.res == null) {
+            throw new GradleException('SoE public assets/resources sources unavailable.')
+        }
+        variant.sources.assets.addGeneratedSourceDirectory(packageSourceReaderCatalog) { task -> task.outputDirectory }
+        variant.sources.res.addGeneratedSourceDirectory(packageClipAssets) { task -> task.outputDirectory }
+    }
+}
 
 // Public application policy only. No environment/launch-extra/credential lookup.
 // Empty policy keeps NativeSoeMember unavailable; partial/invalid policy aborts.
@@ -163,8 +203,6 @@ def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBu
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
-    sourceSets.main.assets.srcDir(sourceReaderAssets)
-    sourceSets.main.res.srcDir(clipResources)
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion

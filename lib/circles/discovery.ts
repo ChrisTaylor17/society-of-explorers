@@ -1,7 +1,7 @@
 // Shared, side-effect-free discovery rules for the public circle directory.
 // Search only the public projection: meeting links and private member data never
 // enter this helper or its shareable URL parameters.
-import type { PublicCircle } from './server';
+import type { PublicCircle } from './public-circle';
 import { getReadingWork, getReadingEdition, parseReadingContext, readingSessionLabel } from './reading-program';
 
 export const ONLINE_CIRCLES_HREF = '/circles?format=online';

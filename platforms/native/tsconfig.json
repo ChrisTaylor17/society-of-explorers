@@ -3,9 +3,20 @@
   "compilerOptions": {
     "strict": true,
     "allowImportingTsExtensions": true,
-    "baseUrl": "../..",
-    "paths": { "@/*": ["./*"] }
+    "paths": {
+      "@/*": [
+        "../../*"
+      ]
+    }
   },
-  "include": ["**/*.ts", "**/*.tsx", "../shared/**/*.ts"],
-  "exclude": ["node_modules", "dist", ".expo"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../shared/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".expo"
+  ]
 }

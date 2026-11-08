@@ -2,7 +2,7 @@ import { DEFAULT_DISCOVERY_QUERY, discoverySearchParams, parseDiscoveryQuery, ty
 import { parseReadingProgram } from './reading-program';
 import { firstMeeting, pathWeek, TIMEZONES } from './schedule';
 import { isUuid } from '@/lib/ids/uuid';
-import type { PublicCircle } from './server';
+import type { PublicCircle } from './public-circle';
 
 export const DISCOVERY_PAGE_LIMIT = 25;
 export const DISCOVERY_CURSOR_LIMIT = 4096;

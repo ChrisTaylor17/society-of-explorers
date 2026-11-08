@@ -23,3 +23,21 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+
+// Expo library defaults omit buildToolsVersion. Keep every source module on
+// the same approved version as the application instead of downloading a second SDK.
+subprojects { subproject ->
+    subproject.plugins.withId('com.android.library') {
+        def pinnedBuildTools = rootProject.ext.buildToolsVersion.toString()
+        if (pinnedBuildTools != '37.0.0') {
+            throw new GradleException('SoE reviewed Build Tools version changed.')
+        }
+        subproject.extensions.getByName('android').buildToolsVersion = pinnedBuildTools
+        subproject.extensions.getByName('androidComponents').finalizeDsl { dsl ->
+            if (dsl.buildToolsVersion != pinnedBuildTools) {
+                throw new GradleException('SoE library Build Tools version differs from reviewed root configuration.')
+            }
+            logger.lifecycle("SOE_LIBRARY_BUILD_TOOLS ${subproject.path}=${dsl.buildToolsVersion}")
+        }
+    }
+}
