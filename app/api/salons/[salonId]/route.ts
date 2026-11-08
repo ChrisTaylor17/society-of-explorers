@@ -4,6 +4,8 @@ import { emitActivity } from '@/lib/feed/activityFeed';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { authorizeGuideProgramRead } from '@/lib/salons/read-access';
+import { isUuid } from '@/lib/ids/uuid';
 
 const SALON_DETAIL_SELECT = 'id, title, status, week_number, max_members, topic_rotation, description, guide_member_id';
 const SALON_MEMBER_SELECT = 'role, sessions_attended, sessions_led, is_guide_candidate, members(display_name)';
@@ -581,11 +583,9 @@ async function handleGraduateSalonMembers(
   return privateJson({ results });
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ salonId: string }> }) {
-  const { salonId } = await params;
-  const supabase = getSupabaseAdmin();
+async function readSalonDetails(supabase: SupabaseAdminClient, salonId: string) {
   const { data: salon, error: salonError } = await supabase.from('salons').select(SALON_DETAIL_SELECT).eq('id', salonId).single();
-  if (salonError || !salon) return privateJson({ error: 'Not found' }, { status: 404 });
+  if (salonError || !salon) throw new Error('Program details unavailable');
 
   const salonRow = salon as SalonDetailRow;
   const { data: members, error: membersError } = await supabase.from('salon_members')
@@ -600,7 +600,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ sal
 
   let guide: GuideRow | null = null;
   if (typeof salonRow.guide_member_id === 'string') {
-    const { data: g } = await supabase.from('members').select(GUIDE_SELECT).eq('id', salonRow.guide_member_id).single();
+    const { data: g, error: guideError } = await supabase.from('members').select(GUIDE_SELECT).eq('id', salonRow.guide_member_id).single();
+    if (guideError || !g) throw new Error('Program guide unavailable');
     guide = g;
   }
 
@@ -611,6 +612,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ sal
     stats: publicSalonStats(stats),
     guide: publicGuide(guide),
   });
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ salonId: string }> }) {
+  try {
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const { salonId } = await params;
+    if (!isUuid(salonId)) return privateJson({ error: 'Not found' }, { status: 404 });
+    const supabase = getSupabaseAdmin();
+    const denied = await authorizeGuideProgramRead(supabase, auth.memberId, salonId);
+    if (denied) return denied;
+    return await readSalonDetails(supabase, salonId);
+  } catch {
+    return privateJson({ error: 'Program details are temporarily unavailable' }, { status: 503 });
+  }
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ salonId: string }> }) {

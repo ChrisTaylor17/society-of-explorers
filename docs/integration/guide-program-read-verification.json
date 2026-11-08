@@ -1,0 +1,160 @@
+{
+  "status": "PASS",
+  "recordedAt": "2026-11-08T12:50:34.756346+00:00",
+  "baseCommit": "7ad2a54e0ed0cfcac1d775cf67816799ae173934",
+  "scope": "Local guide-program read authorization, query-failure handling and active-member lookup. Four GET routes and two helpers; existing writes, browser identity lifecycle and hosted state unchanged.",
+  "buildInputs": 1237,
+  "canonicalResidentInputs": 1225,
+  "canonicalUnchangedGitBlobs": 12,
+  "canonicalBuildMismatches": [],
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 39.63,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1237,
+    "sourceSha256": "24176fce3c6d9278f4cbed8c439ffca99dafb26d1fd75773d2e70da02d0cb0a1",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/built-shell-guide-program-read-02-next-build.log"
+  },
+  "dataScenarios": 19,
+  "scenarioNames": [
+    "Anonymous detail, sessions and personal-program reads stop before creating a data client",
+    "Invalid and general identifiers do not reach program data even for a signed-in member",
+    "A current member receives only the existing bounded detail projection and ordered dates",
+    "The assigned guide can read without a roster row; a generic guide flag grants nothing",
+    "Membership in another program and caller-supplied member IDs cannot reveal this program",
+    "Removing membership or changing the assigned guide revokes the next read",
+    "Missing programs return not found without reading rosters or sessions",
+    "Authorization query failures deny reads as unavailable without fetching private content",
+    "Authorized detail lookup failures never become a successful empty or partial detail",
+    "The sessions endpoint returns a bounded projection, a real empty list, or an explicit failure",
+    "Statistics reject each failed source query instead of inventing zero counts",
+    "Public listings retain their exact bounded projection and verified member count",
+    "Failed or missing public counts are unavailable, never zero members presented as known",
+    "Listing failure differs from a genuinely empty list",
+    "Personal-program lookup stays bound to the current member and preserves its DTO",
+    "Personal-program statistics and guide failures become generic private errors",
+    "A completed membership cannot hide an active program in either member lookup",
+    "Unexpected identity or data-client failures do not leak exception details",
+    "The program authorization helper never adopts the shared chat general-room exception"
+  ],
+  "dataTestScope": "Actual source and locked Supabase SDK over disposable PGlite PostgreSQL data based on the historical guide schema; bounded transport adapter and synthetic verified identity, not hosted PostgREST/Auth/RLS.",
+  "scopedLint": "PASS",
+  "existingSourceChecks": 73,
+  "compiledHttpChecks": 10,
+  "httpResult": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/guide-program-http-03/result.json",
+  "httpScope": "Ten actual compiled loopback GET requests, no API interception. Only nonissued hints/tokens and signed-out state; no real authenticated/provider/hosted/device acceptance. No writes or issued credentials.",
+  "runtimeChecks": {
+    "serverCleanup": "owned-process-stopped",
+    "portClosed": true,
+    "sourceMismatches": [],
+    "builtMismatches": [],
+    "inputMismatches": [],
+    "runtimeMismatches": [],
+    "deniedOperations": []
+  },
+  "sourceHashes": {
+    "app/api/salons/route.ts": "795890c29972ad8c3dda0e1fab474579f699178c0854196b15389e5e7e1aaf48",
+    "app/api/salons/[salonId]/route.ts": "c161f2d20b9014630f5e436681085de5699c45eaee4ed178abea2700d7152119",
+    "app/api/salons/[salonId]/sessions/route.ts": "ee7d44502e8b78349591d5f52b605c74bca85583713ef58977b5f3d999b0cada",
+    "app/api/salons/my-salon/route.ts": "249698990cec7defd08bf9080d673dea3e394dfb4fba8a29f820536751dd73de",
+    "lib/salons/index.ts": "2e7c4c483d74b883ef8cd6a97b41c42e6c05c0eda1e8cc84948f2718081eea5d",
+    "lib/salons/read-access.ts": "e04f3d0363879b79c13719e9eff426a73642a8a3e02efde8165bbf748df8ac5d",
+    "verification/web/tests/guide-program-read.test.mjs": "7bd9a9c78ccbe9fa00b80910b471f49d7956ee59d85c3292f40dd58eabe37c79",
+    "verification/web/tests/support/guide-program-read-fixture.mjs": "ad85559820a2cfdfb75f2c43bbb5fff757ead392e52e4c9ec397d485f4946ce1",
+    "verification/web/scripts/verify-guide-program-http.py": "51b2f0e600eea3a7196b06f0e68fb3e4c893b60eb6ba14b6b6d7e6fb2de183ae"
+  },
+  "preservedOperations": {
+    "app/api/salons/route.ts": {
+      "writeHandlersUnchanged": true,
+      "sha256": "1311a59f58dfb82f05164ff7cddcf88773039e24261e513d897516de453b9e08"
+    },
+    "app/api/salons/[salonId]/route.ts": {
+      "writeHandlersUnchanged": true,
+      "sha256": "c0d9cc9b6cde5e275f8c666e24e9457b0e29007d76a8a421d28e45d11c00670e"
+    },
+    "app/api/salons/[salonId]/sessions/route.ts": {
+      "writeHandlersUnchanged": true,
+      "sha256": "dc3ed0d7a4be01a2e3d00891bed512c72be9b0df6546a098c414022cfe6e4ec8"
+    },
+    "lib/getAuthenticatedMember.ts": {
+      "entireFileUnchanged": true,
+      "sha256": "db06410e33111bff9b58ddf64ee9bd5f22f409ff774476784842d690330a109c"
+    },
+    "lib/salons/access.ts": {
+      "entireFileUnchanged": true,
+      "sha256": "8c52ef3020d7d994c2efcd2200ae466e4bf04fdc2df1a7ccdc4a108669ebff7d"
+    },
+    "app/api/guide/route.ts": {
+      "entireFileUnchanged": true,
+      "sha256": "cb059acabbcdf46b0c98afce2dae7a3594a43fa285fad227d404ffe0e4c830a4"
+    },
+    "app/api/guide/create-salon/route.ts": {
+      "entireFileUnchanged": true,
+      "sha256": "0c8b8f1c77d3ab30cf6aaae80dbc14225c29b460d28e0525143e88818c217c26"
+    },
+    "app/salon/page.tsx": {
+      "entireFileUnchanged": true,
+      "sha256": "7c11ff31dcd1641a65bf58ea755ff82fa973d7ba783a2499790d96ae7fc2cce8"
+    },
+    "app/guide/page.tsx": {
+      "entireFileUnchanged": true,
+      "sha256": "671182979367c320825b3de6dd484fbbf604111ff6306f00949aaf5d706ce050"
+    },
+    "supabase/migrations/20260413_salon_flywheel.sql": {
+      "entireFileUnchanged": true,
+      "sha256": "32c438378aac8be4eec247bc8abf790ea3c42fb45c194f033a245648655bd2dc"
+    }
+  },
+  "retainedCorrections": [
+    {
+      "stage": "guide-program-read-routes-01",
+      "reason": "Disposable PostgreSQL DATE values decoded as JS Date objects. The bounded transport now emits SQL DATE text matching PostgREST; the application was not changed to accept a synthetic timestamp."
+    },
+    {
+      "stage": "guide-program-read-http-01",
+      "reason": "The HTTP checker initially inspected only the first Vary header. It now combines repeated header fields and requires Cookie plus Authorization tokens; the observed headers are retained. No application header requirement was weakened."
+    }
+  ],
+  "storage": {
+    "minimumSampledFreeBytes": 15693254656,
+    "maximumSampledPrivateAllocatedBytes": 19045228544,
+    "newInstall": false,
+    "deletedFiles": false
+  },
+  "stageReceipts": {
+    "guide-program-read-routes-03": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-read-routes-03.json",
+    "guide-program-read-web-build-02": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-read-web-build-02.json",
+    "guide-program-read-lint-01": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-read-lint-01.json",
+    "guide-program-read-lint-03": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-read-lint-03.json",
+    "guide-program-read-http-03": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-read-http-03.json",
+    "guide-program-read-existing-checks-02": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-program-read-existing-checks-02.json"
+  },
+  "privateEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-program-read",
+  "remaining": [
+    "Browser account switching/retirement and wallet-only guide-program entry.",
+    "Fresh guide-role authority lookup consistent with safe writers.",
+    "Atomic/idempotent program creation, joining, attendance and graduation.",
+    "Public projection consent and direct hosted data access.",
+    "Real recovery, provider/member/device acceptance and confirmed pilot host/schedule."
+  ],
+  "schemaOrPermissionChange": false,
+  "migrationRequired": false,
+  "providerOrHostedRequest": false,
+  "credentialChange": false,
+  "spentUsd": 0,
+  "productionCleared": false
+}

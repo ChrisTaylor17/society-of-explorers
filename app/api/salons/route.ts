@@ -119,23 +119,28 @@ function publicSalonCreateReceipt(row: SalonListRow) {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = getSupabaseAdmin();
-  const communityId = req.nextUrl.searchParams.get('community_id');
-  const statuses = parseStatuses(req.nextUrl.searchParams.get('status'));
+  try {
+    const supabase = getSupabaseAdmin();
+    const communityId = req.nextUrl.searchParams.get('community_id');
+    const statuses = parseStatuses(req.nextUrl.searchParams.get('status'));
 
-  let query = supabase.from('salons').select(SALON_LIST_SELECT)
-    .in('status', statuses).order('created_at', { ascending: false }).limit(20);
+    let query = supabase.from('salons').select(SALON_LIST_SELECT)
+      .in('status', statuses).order('created_at', { ascending: false }).limit(20);
 
-  if (communityId) query = query.eq('community_id', communityId);
-  const { data, error } = await query;
-  if (error) return privateJson({ salons: [], error: 'Failed to load salons' }, { status: 500 });
+    if (communityId) query = query.eq('community_id', communityId);
+    const { data, error } = await query;
+    if (error || !Array.isArray(data)) throw new Error('Program listings unavailable');
 
-  const enriched = await Promise.all(((data || []) as SalonListRow[]).map(async (s) => {
-    const { count } = await supabase.from('salon_members').select('id', { count: 'exact', head: true }).eq('salon_id', s.id);
-    return publicSalonListRow(s, count || 0);
-  }));
+    const enriched = await Promise.all((data as SalonListRow[]).map(async (s) => {
+      const { count, error: countError } = await supabase.from('salon_members').select('id', { count: 'exact', head: true }).eq('salon_id', s.id);
+      if (countError || !Number.isSafeInteger(count) || count === null || count < 0) throw new Error('Program count unavailable');
+      return publicSalonListRow(s, count);
+    }));
 
-  return privateJson({ salons: enriched });
+    return privateJson({ salons: enriched });
+  } catch {
+    return privateJson({ error: 'Program listings are temporarily unavailable' }, { status: 503 });
+  }
 }
 
 export async function POST(req: NextRequest) {

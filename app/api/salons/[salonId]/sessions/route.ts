@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { authorizeGuideProgramRead } from '@/lib/salons/read-access';
+import { isUuid } from '@/lib/ids/uuid';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_TOPIC_LENGTH = 140;
@@ -162,18 +164,25 @@ async function canManageSalonSession(
   return canManageSalon(supabase, salonId, memberId);
 }
 
-export async function GET(_req: NextRequest, { params }: SessionRouteContext) {
-  const { salonId } = await params;
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from('salon_sessions')
-    .select(SALON_SESSION_PUBLIC_SELECT)
-    .eq('salon_id', salonId)
-    .order('session_date', { ascending: true });
-
-  if (error) return privateJson({ error: 'Failed to load salon sessions' }, { status: 500 });
-
-  return privateJson({ sessions: ((data || []) as SalonSessionRow[]).map(publicSalonSession) });
+export async function GET(req: NextRequest, { params }: SessionRouteContext) {
+  try {
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const { salonId } = await params;
+    if (!isUuid(salonId)) return privateJson({ error: 'Not found' }, { status: 404 });
+    const supabase = getSupabaseAdmin();
+    const denied = await authorizeGuideProgramRead(supabase, auth.memberId, salonId);
+    if (denied) return denied;
+    const { data, error } = await supabase
+      .from('salon_sessions')
+      .select(SALON_SESSION_PUBLIC_SELECT)
+      .eq('salon_id', salonId)
+      .order('session_date', { ascending: true });
+    if (error || !Array.isArray(data)) throw new Error('Program sessions unavailable');
+    return privateJson({ sessions: (data as SalonSessionRow[]).map(publicSalonSession) });
+  } catch {
+    return privateJson({ error: 'Program sessions are temporarily unavailable' }, { status: 503 });
+  }
 }
 
 export async function POST(req: NextRequest, { params }: SessionRouteContext) {

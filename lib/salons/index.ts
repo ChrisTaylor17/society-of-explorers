@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const MEMBER_SALON_SELECT =
-  'salon_id, role, salons(id, title, status, week_number, max_members, topic_rotation, description)';
+  'salon_id, role, salons!inner(id, title, status, week_number, max_members, topic_rotation, description)';
 const UPCOMING_SESSION_SELECT = 'id, salon_id, session_date, session_number, status, track, topic, led_by_member_id';
 
 type SalonMemberWithSalon = {
@@ -91,9 +91,12 @@ export function generateSessionSchedule(startDate: Date, weeks = 7): Date[] {
 
 export async function getSalonStats(salonId: string) {
   const supabase = getSupabaseAdmin();
-  const { data: members } = await supabase.from('salon_members').select('id').eq('salon_id', salonId);
-  const { data: sessions } = await supabase.from('salon_sessions').select('status, session_date, attendance').eq('salon_id', salonId);
-  const { data: salon } = await supabase.from('salons').select('week_number').eq('id', salonId).single();
+  const { data: members, error: membersError } = await supabase.from('salon_members').select('id').eq('salon_id', salonId);
+  if (membersError || !Array.isArray(members)) throw new Error('Program statistics unavailable');
+  const { data: sessions, error: sessionsError } = await supabase.from('salon_sessions').select('status, session_date, attendance').eq('salon_id', salonId).order('session_date', { ascending: true });
+  if (sessionsError || !Array.isArray(sessions)) throw new Error('Program statistics unavailable');
+  const { data: salon, error: salonError } = await supabase.from('salons').select('week_number').eq('id', salonId).single();
+  if (salonError || !salon) throw new Error('Program statistics unavailable');
 
   const completed = (sessions || []).filter(s => s.status === 'completed');
   const scheduled = (sessions || []).filter(s => s.status === 'scheduled');

@@ -4,7 +4,7 @@ import { privateJson } from '@/lib/http/routeError';
 import { getSalonStats } from '@/lib/salons';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const MY_SALON_SELECT = 'salon_id, role, sessions_attended, sessions_led, is_guide_candidate, salons(id, title, status, week_number, max_members, topic_rotation, description, guide_member_id)';
+const MY_SALON_SELECT = 'salon_id, role, sessions_attended, sessions_led, is_guide_candidate, salons!inner(id, title, status, week_number, max_members, topic_rotation, description, guide_member_id)';
 const SALON_MEMBER_SELECT = 'role, sessions_attended, sessions_led, is_guide_candidate, members(display_name)';
 const SALON_SESSION_SELECT = 'session_date, session_number, status, track, topic';
 const GUIDE_SELECT = 'display_name, guide_level';
@@ -169,7 +169,7 @@ function emptyMySalonResponse() {
   });
 }
 
-export async function GET(req: NextRequest) {
+async function loadMySalon(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
@@ -207,7 +207,8 @@ export async function GET(req: NextRequest) {
 
   let guide: GuideRow | null = null;
   if (typeof salon.guide_member_id === 'string') {
-    const { data: guideRow } = await supabase.from('members').select(GUIDE_SELECT).eq('id', salon.guide_member_id).single();
+    const { data: guideRow, error: guideError } = await supabase.from('members').select(GUIDE_SELECT).eq('id', salon.guide_member_id).single();
+    if (guideError || !guideRow) throw new Error('Program guide unavailable');
     guide = guideRow as GuideRow | null;
   }
 
@@ -219,4 +220,12 @@ export async function GET(req: NextRequest) {
     guide: publicGuide(guide),
     myMembership: publicMyMembership(membership),
   });
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    return await loadMySalon(req);
+  } catch {
+    return privateJson({ error: 'Your program is temporarily unavailable' }, { status: 503 });
+  }
 }
