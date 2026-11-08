@@ -37,7 +37,7 @@ try {
     }
     if (req.method() !== 'GET') { errors.push('Unexpected write ' + url.pathname); return route.abort(); }
     if (url.pathname === '/api/auth/member') return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ session: 'signed_out', browserSignedOut: true }) });
-    if (url.pathname === '/api/book-salons') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"cohorts":[]}' });
+    if (url.pathname === '/api/book-salons') return route.fulfill({ status: 200, contentType: 'application/json', body: '{"cohorts":[],"page":{"offset":0,"limit":50,"total":0,"nextOffset":null}}' });
     if (url.pathname !== '/api/salons' || url.searchParams.get('status') !== 'recruiting,active') {
       errors.push('Unexpected API ' + url.pathname); return route.abort();
     }
@@ -125,7 +125,7 @@ try {
   await page.goto(origin + '/book-salons');
   const bookNav = page.getByRole('navigation', { name: 'Book salon navigation', exact: true });
   assert.equal(await bookNav.getByRole('link', { name: 'SIGN IN FOR THE GUIDE PROGRAM', exact: true }).getAttribute('href'), '/login?next=%2Fsalon');
-  assert.match(await page.locator('body').innerText(), /any optional AI guide before joining/);
+  assert.match(await page.locator('body').innerText(), /any optional AI perspective before joining/);
   assert.doesNotMatch(await page.locator('body').innerText(), /Meet weekly with a thinker who guides the conversation/);
   assert.doesNotMatch(await page.locator('body').innerText(), /Each week, a thinker leads the discussion|3-8 members/);
   for (const width of [320, 390, 768, 1440]) {

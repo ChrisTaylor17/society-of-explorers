@@ -5,11 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { CIRCLE_BOOK_ID } from '@/lib/circles/path';
 import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server';
 import { isUuid } from '@/lib/ids/uuid';
-
-type BookCohortListRow = {
-  book_cohort_members?: Array<{ id: string }> | null;
-  [key: string]: unknown;
-};
+import { BOOK_SALON_PAGE_SIZE, bookSalonListing, parseBookSalonOffset } from '@/lib/books/salon-discovery';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -32,23 +28,26 @@ function safeMaxMembers(value: unknown): number {
   return Math.max(2, Math.min(12, maxMembers));
 }
 
-export async function GET() {
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data, error } = await supabaseAdmin
-    .from('book_cohorts')
-    .select('id,book_id,title,description,max_members,start_date,thinker_id,status,created_at,book_cohort_members(id)')
-    .neq('book_id', CIRCLE_BOOK_ID) // circles are listed on /circles
-    .order('created_at', { ascending: false });
-
-  if (error) return privateJson({ cohorts: [], error: 'Failed to load book salons' }, { status: 500 });
-
-  const cohorts = ((data || []) as BookCohortListRow[]).map((c) => ({
-    ...c,
-    member_count: c.book_cohort_members?.length || 0,
-    book_cohort_members: undefined,
-  }));
-
-  return privateJson({ cohorts });
+export async function GET(req: NextRequest) {
+  const query = new URL(req.url).searchParams;
+  const offset = parseBookSalonOffset(query.get('offset'));
+  if (offset === null || query.getAll('offset').length > 1) return privateJson({ error: 'Invalid page' }, { status: 400 });
+  try {
+    const { data, error, count } = await getSupabaseAdmin()
+      .from('book_cohorts')
+      .select('id,book_id,title,description,max_members,start_date,thinker_id,status,book_cohort_members(count)', { count: 'exact' })
+      .neq('book_id', CIRCLE_BOOK_ID) // circles have their own discovery/access contract
+      .order('created_at', { ascending: false }).order('id', { ascending: false })
+      .range(offset, offset + BOOK_SALON_PAGE_SIZE - 1);
+    if (error || !Array.isArray(data) || data.length > BOOK_SALON_PAGE_SIZE || !Number.isSafeInteger(count) || count === null || count < 0) throw Error('Unavailable');
+    const cohorts = data.map(bookSalonListing);
+    if (cohorts.some(row => row === null) || new Set(cohorts.map(row => row!.id)).size !== cohorts.length
+      || (cohorts.length === 0 && offset < count) || (cohorts.length > 0 && offset + cohorts.length > count)) throw Error('Unavailable');
+    return privateJson({ cohorts, page: { offset, limit: BOOK_SALON_PAGE_SIZE, total: count,
+      nextOffset: offset + cohorts.length < count ? offset + cohorts.length : null } });
+  } catch {
+    return privateJson({ error: 'Book salon listings are temporarily unavailable' }, { status: 503 });
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -43,7 +43,7 @@ try {
         '/api/message': { unreadCount: 0 }, '/api/feed': { events: [] },
         '/api/dashboard/briefing': { profile: null, triggers: [], sessionCount: 0, lastSessionAt: null, latestVerdict: null,
           memberName: 'Fictional Owner', events: [], scans: [], stampSpaces: [], showWelcome: false },
-        '/api/book-salons': { cohorts: [] },
+        '/api/book-salons': { cohorts: [], page: { offset: 0, limit: 50, total: 0, nextOffset: null } },
       };
       assert(Object.hasOwn(adapters, url.pathname), 'Unreviewed browser API: ' + url.pathname);
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(adapters[url.pathname]) });

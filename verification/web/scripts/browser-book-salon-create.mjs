@@ -39,10 +39,10 @@ try {
       if (req.method() === 'GET') {
         // Explicit synthetic listing adapter. Creation below runs the actual HTTP
         // handler and actual SQL; this fixture does not verify the public GET route.
-        const cohorts = (await f.db.query(`SELECT c.id,c.book_id,c.title,c.max_members,c.start_date,c.thinker_id,c.status,
+        const cohorts = (await f.db.query(`SELECT c.id,c.book_id,c.title,c.description,c.max_members,c.start_date,c.thinker_id,c.status,
           (SELECT count(*)::int FROM book_cohort_members m WHERE m.cohort_id=c.id) AS member_count
           FROM book_cohorts c JOIN soe_book_salons_private.creation_receipts r ON r.cohort_id=c.id ORDER BY c.created_at`)).rows;
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ cohorts }) });
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ cohorts: cohorts.map(row => ({ ...row, start_date: row.start_date ? new Date(row.start_date).toISOString().slice(0, 10) : null })), page: { offset: 0, limit: 50, total: cohorts.length, nextOffset: null } }) });
       }
       assert.equal(req.method(), 'POST'); const body = req.postDataJSON(); requests.push(body);
       if (mode === 'hold') await new Promise(resolve => { release = resolve; onHeld?.(); });

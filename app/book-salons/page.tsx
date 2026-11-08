@@ -1,9 +1,11 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
 import { isUuid } from '@/lib/ids/uuid';
+import { useBookSalonDiscovery } from '@/lib/books/useBookSalonDiscovery';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -12,18 +14,6 @@ const muted = '#9a8f7a';
 const THINKER_NAMES: Record<string, string> = {
   socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
   aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
-};
-
-type BookCohort = {
-  id: string;
-  book_id: string;
-  title: string;
-  description?: string | null;
-  max_members?: number | null;
-  member_count?: number | null;
-  status?: string | null;
-  thinker_id?: string | null;
-  start_date?: string | null;
 };
 
 async function bookSalonHeaders(json = false): Promise<Record<string, string>> {
@@ -35,8 +25,8 @@ async function bookSalonHeaders(json = false): Promise<Record<string, string>> {
 }
 
 export default function BookSalons() {
-  const [cohorts, setCohorts] = useState<BookCohort[]>([]);
-  const [loading, setLoading] = useState(true);
+  const discovery = useBookSalonDiscovery();
+  const { cohorts, loading, load: loadCohorts } = discovery;
   const [memberId, setMemberId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [createBook, setCreateBook] = useState('');
@@ -49,23 +39,9 @@ export default function BookSalons() {
   const createAttempt = useRef<{ signature: string; requestId: string } | null>(null);
   const [joining, setJoining] = useState<string | null>(null);
 
-  const loadCohorts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/book-salons', {
-        cache: 'no-store',
-        headers: await bookSalonHeaders(),
-      });
-      const data = await res.json();
-      setCohorts(data.cohorts || []);
-    } catch {}
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
     getMemberSession().then(s => { if (s?.member?.id) setMemberId(s.member.id); });
-    void Promise.resolve().then(() => loadCohorts());
-  }, [loadCohorts]);
+  }, []);
 
   async function createCohort() {
     if (!createBook || !createTitle.trim() || !memberId || createBusy.current) return;
@@ -136,9 +112,10 @@ export default function BookSalons() {
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>READING TOGETHER</div>
         <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 300, letterSpacing: '0.15em', color: parchment, marginBottom: '1rem' }}>BOOK SALONS</h1>
         <p style={{ fontSize: '1.15rem', color: muted, fontStyle: 'italic', maxWidth: '600px', margin: '0 auto 2rem', lineHeight: 1.8 }}>
-          Read with a small group and discuss the text together. Confirm each group’s host, schedule and any optional AI guide before joining.
+          Read with a small group and discuss the text together. Book-salon discussions are public. Confirm the human host, schedule and any optional AI perspective before joining.
         </p>
         <p><Link href="/salons/pilot" prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Explore the four-week fellowship plan</Link></p>
+        <p><Link href={ONLINE_CIRCLES_HREF} prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Find an online reading Circle</Link></p>
         {memberId && (
           <button onClick={() => setShowCreate(true)} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em', color: '#000', background: gold, border: 'none', padding: '12px 30px', cursor: 'pointer' }}>
             START A NEW SALON
@@ -146,46 +123,53 @@ export default function BookSalons() {
         )}
       </div>
 
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 4rem' }}>
+      <section aria-label="Public book salon listings" style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 4rem' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>
-          {loading ? 'LOADING...' : `${cohorts.length} SALON${cohorts.length !== 1 ? 'S' : ''}`}
+          {loading ? (cohorts.length ? 'LOADING MORE SALONS…' : 'CHECKING PUBLIC SALONS…') : discovery.error && !cohorts.length ? 'AVAILABILITY UNCONFIRMED' : `${cohorts.length} SALON${cohorts.length !== 1 ? 'S' : ''} SHOWN`}
         </div>
 
-        {!loading && cohorts.length === 0 && (
+        <noscript><p>Public salon listings require JavaScript. You can still read the fellowship plan and browse the Great Books library.</p></noscript>
+        {discovery.error && <div role="alert" style={{ padding: '1.5rem 0', color: parchment }}>
+          <p>{cohorts.length ? 'More salons could not be loaded. The groups already shown are from the earlier lookup.' : 'We could not load the book salons. Availability is unconfirmed.'}</p>
+          <button type="button" disabled={loading} onClick={() => void loadCohorts(discovery.requestedOffset)} style={{ minHeight: 44, padding: '8px 16px', color: gold, border: `1px solid ${gold}`, background: 'transparent' }}>Retry salon listings</button>
+        </div>}
+        {!loading && !discovery.error && cohorts.length === 0 && (
           <div style={{ textAlign: 'center', padding: '4rem', color: muted, fontStyle: 'italic' }}>
-            No salons yet. Be the first to start one.
+            No public book salons are listed right now.
           </div>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: `${gold}15` }}>
           {cohorts.map(cohort => {
             const book = GREAT_BOOKS.find(b => b.id === cohort.book_id);
-            const spotsLeft = (cohort.max_members || 8) - (cohort.member_count || 0);
+            const spotsLeft = cohort.max_members === null ? null : Math.max(0, cohort.max_members - cohort.member_count);
             return (
-              <div key={cohort.id} style={{ background: '#0d0d0d', padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '2rem' }}>
-                <div style={{ flex: 1 }}>
+              <div key={cohort.id} style={{ background: '#0d0d0d', padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 220px', minWidth: 0, overflowWrap: 'anywhere' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
                     <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: cohort.status === 'active' ? '#6B9E6B' : gold, opacity: 0.8 }}>
-                      {cohort.status === 'active' ? '● ACTIVE' : cohort.status === 'completed' ? '○ COMPLETED' : '○ FORMING'}
+                      {cohort.status === 'active' ? '● ACTIVE' : cohort.status === 'completed' ? '○ COMPLETED' : cohort.status === 'forming' ? '○ FORMING' : 'STATUS TO CONFIRM'}
                     </span>
                   </div>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', letterSpacing: '0.1em', color: parchment, marginBottom: '0.25rem' }}>{cohort.title}</div>
                   <div style={{ fontSize: '13px', color: muted, fontStyle: 'italic' }}>
-                    {book?.author || 'Unknown'} · Led by {THINKER_NAMES[cohort.thinker_id || ''] || 'Socrates'}
-                    {cohort.start_date && ` · Starts ${new Date(cohort.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                    {book?.author || 'Book details to confirm'}
+                    {cohort.start_date ? ` · Recorded start: ${new Date(cohort.start_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ' · Start date to confirm'}
+                    <div>Human host: confirm with the group.</div>
+                    <div>{THINKER_NAMES[cohort.thinker_id || ''] ? `Optional AI perspective: ${THINKER_NAMES[cohort.thinker_id!]}. Confirm with the host.` : 'Optional AI perspective: not specified.'}</div>
                   </div>
                   {cohort.description && <p style={{ fontSize: '12px', color: muted, marginTop: '0.5rem', lineHeight: 1.6 }}>{cohort.description}</p>}
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, marginBottom: '0.5rem' }}>
-                    {cohort.member_count || 0}/{cohort.max_members || 8} members
+                    {cohort.max_members === null ? `${cohort.member_count} members · capacity unconfirmed` : `${cohort.member_count}/${cohort.max_members} members`}
                   </div>
-                  {cohort.status === 'forming' && spotsLeft > 0 && memberId ? (
-                    <button onClick={() => joinCohort(cohort.id)} disabled={joining === cohort.id} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: '#000', background: gold, border: 'none', padding: '8px 18px', cursor: 'pointer', opacity: joining === cohort.id ? 0.5 : 1 }}>
+                  {cohort.status === 'forming' && spotsLeft !== null && spotsLeft > 0 && memberId ? (
+                    <button onClick={() => joinCohort(cohort.id)} disabled={joining === cohort.id} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: '#000', background: gold, border: 'none', padding: '8px 18px', minHeight: 44, cursor: 'pointer', opacity: joining === cohort.id ? 0.5 : 1 }}>
                       {joining === cohort.id ? 'JOINING...' : `JOIN · ${spotsLeft} SPOTS`}
                     </button>
                   ) : (
-                    <Link href={`/book-salons/${cohort.id}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '8px 18px', textDecoration: 'none', display: 'inline-block' }}>
+                    <Link href={`/book-salons/${cohort.id}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}44`, padding: '8px 18px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
                       ENTER SALON
                     </Link>
                   )}
@@ -194,7 +178,11 @@ export default function BookSalons() {
             );
           })}
         </div>
-      </div>
+        {!discovery.error && discovery.nextOffset !== null && <button type="button" disabled={loading} onClick={() => void loadCohorts(discovery.nextOffset!)}
+          style={{ minHeight: 44, marginTop: '1.5rem', padding: '8px 16px', color: gold, border: `1px solid ${gold}`, background: 'transparent' }}>Load more salons</button>}
+        {cohorts.length > 0 && <p><button type="button" disabled={loading} onClick={() => void loadCohorts()}
+          style={{ minHeight: 44, color: gold, border: 0, background: 'transparent' }}>Refresh salon listings</button></p>}
+      </section>
 
       {/* How It Works */}
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 4rem' }}>
