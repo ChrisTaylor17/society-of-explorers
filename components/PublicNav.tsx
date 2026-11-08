@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { l: 'Practice', h: '/practice' },
   { l: 'Feed', h: '/feed' },
   { l: 'Circles', h: '/circles' },
+  { l: 'Christian fellowship', h: '/fellowship' },
   { l: 'Manifesto', h: '/manifesto' },
   { l: 'Roadmap', h: '/roadmap' },
   { l: 'Movement', h: '/movement' },
@@ -112,7 +113,7 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
           SOCIETY OF EXPLORERS
         </Link>
 
-        <div style={{ display: 'flex', gap: '1.75rem', alignItems: 'center' }} className="hide-mobile">
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }} className="hide-mobile">
           {visibleLinks.map(lk => (
             <a key={lk.h} href={lk.h} style={linkStyle}>{lk.l}</a>
           ))}
@@ -150,8 +151,8 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
       </dialog>
 
       <style>{`
-        @media (max-width: 640px) { .hide-mobile { display: none !important; } .show-mobile { display: block !important; } }
-        @media (min-width: 641px) { .show-mobile { display: none !important; } }
+        @media (max-width: 1399px) { .soe-public-nav .hide-mobile { display: none !important; } .soe-public-nav .show-mobile { display: block !important; } }
+        @media (min-width: 1400px) { .soe-public-nav .show-mobile { display: none !important; } }
       `}</style>
     </>
   );

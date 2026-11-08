@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import FellowshipInvitation from '@/components/FellowshipInvitation';
 import { track } from '@/lib/analytics/client';
 import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 import { fetchPulse, type PulseQuestion } from '@/lib/feed/pulseClient';
@@ -129,6 +130,8 @@ export default function HomePage() {
           </p>
         </div>
       </section>
+
+      <FellowshipInvitation />
 
       {/* LATEST PUBLISHED QUESTION */}
       {question && (

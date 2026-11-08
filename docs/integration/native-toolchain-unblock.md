@@ -2,6 +2,14 @@
 
 Prepared 2026-11-04 from canonical source at checkpoint `e1fbb2d`, named local metadata and current official documentation. This is an installation/build proposal, not a native build, bridge, device or release acceptance receipt. Only this document was added during this continuation.
 
+## November 8 approval: isolated Android setup in progress
+
+The owner explicitly answered **Approve the free Android setup** to the reviewed tool/dependency/SDK-license proposal. The recorded approval preserves its $0,30GB-new/8GB-free limits and exclusions. Do not ask again. A private source copy and locked dependencies are being prepared; actual compilation remains unverified. The authoritative setup state is under /Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build.
+
+The current archive’s new android launcher tried to bootstrap an unlisted component. That owned process was stopped,its partial file retained and excluded,and no new component was executed. Read-only inspection found the self-contained Java SdkManagerCli inside the same checksummed approved archive. Root reviewed continuing through that bundled route as an invocation choice within the approved scope,without fetching the bootstrap runtime. Only the reviewed stable Android SDK license and listed packages are authorized. Further pin,license,acquisition,storage or privilege deviations still stop the work.
+
+The earlier pending-approval paragraphs below are historical and superseded by this explicit owner answer. Database password entry remains separate and awaits the owner at the Mac.
+
 ## November 7 evening update: cleanup complete; Android setup approval pending
 
 The owner explicitly approved the exact27 generated compilation-cache folders.

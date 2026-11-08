@@ -1,0 +1,1735 @@
+{
+  "edition": "World English Bible Classic",
+  "editionId": "eng-web",
+  "rightsUrl": "https://ebible.org/eng-web/copyright.htm",
+  "rightsNotice": "The publisher dedicates the World English Bible to the public domain. Its name identifies faithful copies. Scripture wording and publisher notes are kept separate from SoE commentary.",
+  "passages": [
+    {
+      "id": "psalm-22",
+      "title": "Psalm 22",
+      "publisherUrl": "https://ebible.org/eng-web/PSA022.htm",
+      "sourceSha256": "775d7079d22423a5b6b511166a13ae45882be8c743c18325ca9f4bbef3d2824c",
+      "sourceBytes": 7930,
+      "superscription": "For the Chief Musician; set to “The Doe of the Morning.” A Psalm by David.",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "My God, my God, why have you forsaken me?\nWhy are you so far from helping me, and from the words of my groaning?"
+        },
+        {
+          "verse": 2,
+          "text": "My God, I cry in the daytime, but you don’t answer;\nin the night season, and am not silent."
+        },
+        {
+          "verse": 3,
+          "text": "But you are holy,\nyou who inhabit the praises of Israel."
+        },
+        {
+          "verse": 4,
+          "text": "Our fathers trusted in you.\nThey trusted, and you delivered them."
+        },
+        {
+          "verse": 5,
+          "text": "They cried to you, and were delivered.\nThey trusted in you, and were not disappointed."
+        },
+        {
+          "verse": 6,
+          "text": "But I am a worm, and no man;\na reproach of men, and despised by the people."
+        },
+        {
+          "verse": 7,
+          "text": "All those who see me mock me.\nThey insult me with their lips. They shake their heads, saying,"
+        },
+        {
+          "verse": 8,
+          "text": "“He trusts in Yahweh.\nLet him deliver him.\nLet him rescue him, since he delights in him.”"
+        },
+        {
+          "verse": 9,
+          "text": "But you brought me out of the womb.\nYou made me trust while at my mother’s breasts."
+        },
+        {
+          "verse": 10,
+          "text": "I was thrown on you from my mother’s womb.\nYou are my God since my mother bore me."
+        },
+        {
+          "verse": 11,
+          "text": "Don’t be far from me, for trouble is near.\nFor there is no one to help."
+        },
+        {
+          "verse": 12,
+          "text": "Many bulls have surrounded me.\nStrong bulls of Bashan have encircled me."
+        },
+        {
+          "verse": 13,
+          "text": "They open their mouths wide against me,\nlions tearing prey and roaring."
+        },
+        {
+          "verse": 14,
+          "text": "I am poured out like water.\nAll my bones are out of joint.\nMy heart is like wax.\nIt is melted within me."
+        },
+        {
+          "verse": 15,
+          "text": "My strength is dried up like a potsherd.\nMy tongue sticks to the roof of my mouth.\nYou have brought me into the dust of death."
+        },
+        {
+          "verse": 16,
+          "text": "For dogs have surrounded me.\nA company of evildoers have enclosed me.\nThey have pierced my hands and feet."
+        },
+        {
+          "verse": 17,
+          "text": "I can count all of my bones.\nThey look and stare at me."
+        },
+        {
+          "verse": 18,
+          "text": "They divide my garments among them.\nThey cast lots for my clothing."
+        },
+        {
+          "verse": 19,
+          "text": "But don’t be far off, Yahweh.\nYou are my help. Hurry to help me!"
+        },
+        {
+          "verse": 20,
+          "text": "Deliver my soul from the sword,\nmy precious life from the power of the dog."
+        },
+        {
+          "verse": 21,
+          "text": "Save me from the lion’s mouth!\nYes, you have rescued me from the horns of the wild oxen."
+        },
+        {
+          "verse": 22,
+          "text": "I will declare your name to my brothers.\nAmong the assembly, I will praise you."
+        },
+        {
+          "verse": 23,
+          "text": "You who fear Yahweh, praise him!\nAll you descendants of Jacob, glorify him!\nStand in awe of him, all you descendants of Israel!"
+        },
+        {
+          "verse": 24,
+          "text": "For he has not despised nor abhorred the affliction of the afflicted,\nneither has he hidden his face from him;\nbut when he cried to him, he heard."
+        },
+        {
+          "verse": 25,
+          "text": "My praise of you comes in the great assembly.\nI will pay my vows before those who fear him."
+        },
+        {
+          "verse": 26,
+          "text": "The humble shall eat and be satisfied.\nThey shall praise Yahweh who seek after him.\nLet your hearts live forever."
+        },
+        {
+          "verse": 27,
+          "text": "All the ends of the earth shall remember and turn to Yahweh.\nAll the relatives of the nations shall worship before you."
+        },
+        {
+          "verse": 28,
+          "text": "For the kingdom is Yahweh’s.\nHe is the ruler over the nations."
+        },
+        {
+          "verse": 29,
+          "text": "All the rich ones of the earth shall eat and worship.\nAll those who go down to the dust shall bow before him,\neven he who can’t keep his soul alive."
+        },
+        {
+          "verse": 30,
+          "text": "Posterity shall serve him.\nFuture generations shall be told about the Lord."
+        },
+        {
+          "verse": 31,
+          "text": "They shall come and shall declare his righteousness to a people that shall be born,\nfor he has done it."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 16,
+          "text": "So Dead Sea Scrolls. Masoretic Text reads, “Like a lion, they pin my hands and feet.”",
+          "id": "FN1",
+          "kind": "textual note"
+        }
+      ]
+    },
+    {
+      "id": "isaiah-52",
+      "title": "Isaiah 52",
+      "publisherUrl": "https://ebible.org/eng-web/ISA52.htm",
+      "sourceSha256": "754c9a7c344090aa774ee45b02f25dd8e73cae13206f3c28b858f2299276a8cb",
+      "sourceBytes": 5760,
+      "superscription": "",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "Awake, awake! Put on your strength, Zion.\nPut on your beautiful garments, Jerusalem, the holy city,\nfor from now on the uncircumcised and the unclean will no more come into you."
+        },
+        {
+          "verse": 2,
+          "text": "Shake yourself from the dust!\nArise, sit up, Jerusalem!\nRelease yourself from the bonds of your neck, captive daughter of Zion!"
+        },
+        {
+          "verse": 3,
+          "text": "For Yahweh says, “You were sold for nothing;\nand you will be redeemed without money.”"
+        },
+        {
+          "verse": 4,
+          "text": "For the Lord Yahweh says:\n“My people went down at the first into Egypt to live there;\nand the Assyrian has oppressed them without cause."
+        },
+        {
+          "verse": 5,
+          "text": "“Now therefore, what do I do here,” says Yahweh,\n“seeing that my people are taken away for nothing?\nThose who rule over them mock,” says Yahweh,\n“and my name is blasphemed continually all day long."
+        },
+        {
+          "verse": 6,
+          "text": "Therefore my people shall know my name.\nTherefore they shall know in that day that I am he who speaks.\nBehold, it is I.”"
+        },
+        {
+          "verse": 7,
+          "text": "How beautiful on the mountains are the feet of him who brings good news,\nwho publishes peace,\nwho brings good news,\nwho proclaims salvation,\nwho says to Zion, “Your God reigns!”"
+        },
+        {
+          "verse": 8,
+          "text": "Your watchmen lift up their voice.\nTogether they sing;\nfor they shall see eye to eye when Yahweh returns to Zion."
+        },
+        {
+          "verse": 9,
+          "text": "Break out into joy!\nSing together, you waste places of Jerusalem;\nfor Yahweh has comforted his people.\nHe has redeemed Jerusalem."
+        },
+        {
+          "verse": 10,
+          "text": "Yahweh has made his holy arm bare in the eyes of all the nations.\nAll the ends of the earth have seen the salvation of our God."
+        },
+        {
+          "verse": 11,
+          "text": "Depart! Depart! Go out from there! Touch no unclean thing!\nGo out from among her!\nCleanse yourselves, you who carry Yahweh’s vessels."
+        },
+        {
+          "verse": 12,
+          "text": "For you shall not go out in haste,\nneither shall you go by flight;\nfor Yahweh will go before you,\nand the God of Israel will be your rear guard."
+        },
+        {
+          "verse": 13,
+          "text": "Behold, my servant will deal wisely.\nHe will be exalted and lifted up,\nand will be very high."
+        },
+        {
+          "verse": 14,
+          "text": "Just as many were astonished at you—\nhis appearance was marred more than any man, and his form more than the sons of men—"
+        },
+        {
+          "verse": 15,
+          "text": "so he will cleanse many nations.\nKings will shut their mouths at him;\nfor they will see that which had not been told them,\nand they will understand that which they had not heard."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 15,
+          "text": "or, sprinkle",
+          "id": "FN1",
+          "kind": "textual note"
+        }
+      ]
+    },
+    {
+      "id": "isaiah-53",
+      "title": "Isaiah 53",
+      "publisherUrl": "https://ebible.org/eng-web/ISA53.htm",
+      "sourceSha256": "4f48f5d05f33d4e4f46ac136f62cb33a5f238dd429104030cf056f5ed4d2f34f",
+      "sourceBytes": 5629,
+      "superscription": "",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "Who has believed our message?\nTo whom has Yahweh’s arm been revealed?"
+        },
+        {
+          "verse": 2,
+          "text": "For he grew up before him as a tender plant,\nand as a root out of dry ground.\nHe has no good looks or majesty.\nWhen we see him, there is no beauty that we should desire him."
+        },
+        {
+          "verse": 3,
+          "text": "He was despised\nand rejected by men,\na man of suffering\nand acquainted with disease.\nHe was despised as one from whom men hide their face;\nand we didn’t respect him."
+        },
+        {
+          "verse": 4,
+          "text": "Surely he has borne our sickness\nand carried our suffering;\nyet we considered him plagued,\nstruck by God, and afflicted."
+        },
+        {
+          "verse": 5,
+          "text": "But he was pierced for our transgressions.\nHe was crushed for our iniquities.\nThe punishment that brought our peace was on him;\nand by his wounds we are healed."
+        },
+        {
+          "verse": 6,
+          "text": "All we like sheep have gone astray.\nEveryone has turned to his own way;\nand Yahweh has laid on him the iniquity of us all."
+        },
+        {
+          "verse": 7,
+          "text": "He was oppressed,\nyet when he was afflicted he didn’t open his mouth.\nAs a lamb that is led to the slaughter,\nand as a sheep that before its shearers is silent,\nso he didn’t open his mouth."
+        },
+        {
+          "verse": 8,
+          "text": "He was taken away by oppression and judgment.\nAs for his generation,\nwho considered that he was cut off out of the land of the living\nand stricken for the disobedience of my people?"
+        },
+        {
+          "verse": 9,
+          "text": "They made his grave with the wicked,\nand with a rich man in his death,\nalthough he had done no violence,\nnor was any deceit in his mouth."
+        },
+        {
+          "verse": 10,
+          "text": "Yet it pleased Yahweh to bruise him.\nHe has caused him to suffer.\nWhen you make his soul an offering for sin,\nhe will see his offspring.\nHe will prolong his days\nand Yahweh’s pleasure will prosper in his hand."
+        },
+        {
+          "verse": 11,
+          "text": "After the suffering of his soul,\nhe will see the light and be satisfied.\nMy righteous servant will justify many by the knowledge of himself;\nand he will bear their iniquities."
+        },
+        {
+          "verse": 12,
+          "text": "Therefore I will give him a portion with the great.\nHe will divide the plunder with the strong,\nbecause he poured out his soul to death\nand was counted with the transgressors;\nyet he bore the sins of many\nand made intercession for the transgressors."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 11,
+          "text": "So read the Dead Sea Scrolls and Septuagint. Masoretic Text omits “the light”.",
+          "id": "FN1",
+          "kind": "textual note"
+        }
+      ]
+    },
+    {
+      "id": "isaiah-54",
+      "title": "Isaiah 54",
+      "publisherUrl": "https://ebible.org/eng-web/ISA54.htm",
+      "sourceSha256": "ea5676e4138bec4628681c07730f9f4dcad67296c4a23f1e5501ab18c71b4d90",
+      "sourceBytes": 6180,
+      "superscription": "",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "“Sing, barren, you who didn’t give birth!\nBreak out into singing, and cry aloud, you who didn’t travail with child!\nFor more are the children of the desolate than the children of the married wife,” says Yahweh."
+        },
+        {
+          "verse": 2,
+          "text": "“Enlarge the place of your tent,\nand let them stretch out the curtains of your habitations;\ndon’t spare; lengthen your cords, and strengthen your stakes."
+        },
+        {
+          "verse": 3,
+          "text": "For you will spread out on the right hand and on the left;\nand your offspring will possess the nations\nand settle in desolate cities."
+        },
+        {
+          "verse": 4,
+          "text": "“Don’t be afraid, for you will not be ashamed.\nDon’t be confounded, for you will not be disappointed.\nFor you will forget the shame of your youth.\nYou will remember the reproach of your widowhood no more."
+        },
+        {
+          "verse": 5,
+          "text": "For your Maker is your husband; Yahweh of Armies is his name.\nThe Holy One of Israel is your Redeemer.\nHe will be called the God of the whole earth."
+        },
+        {
+          "verse": 6,
+          "text": "For Yahweh has called you as a wife forsaken and grieved in spirit,\neven a wife of youth, when she is cast off,” says your God."
+        },
+        {
+          "verse": 7,
+          "text": "“For a small moment I have forsaken you,\nbut I will gather you with great mercies."
+        },
+        {
+          "verse": 8,
+          "text": "In overflowing wrath I hid my face from you for a moment,\nbut with everlasting loving kindness I will have mercy on you,” says Yahweh your Redeemer."
+        },
+        {
+          "verse": 9,
+          "text": "“For this is like the waters of Noah to me;\nfor as I have sworn that the waters of Noah will no more go over the earth,\nso I have sworn that I will not be angry with you, nor rebuke you."
+        },
+        {
+          "verse": 10,
+          "text": "For the mountains may depart,\nand the hills be removed,\nbut my loving kindness will not depart from you,\nand my covenant of peace will not be removed,”\nsays Yahweh who has mercy on you."
+        },
+        {
+          "verse": 11,
+          "text": "“You afflicted, tossed with storms, and not comforted,\nbehold, I will set your stones in beautiful colors,\nand lay your foundations with sapphires."
+        },
+        {
+          "verse": 12,
+          "text": "I will make your pinnacles of rubies,\nyour gates of sparkling jewels,\nand all your walls of precious stones."
+        },
+        {
+          "verse": 13,
+          "text": "All your children will be taught by Yahweh,\nand your children’s peace will be great."
+        },
+        {
+          "verse": 14,
+          "text": "You will be established in righteousness.\nYou will be far from oppression,\nfor you will not be afraid,\nand far from terror,\nfor it shall not come near you."
+        },
+        {
+          "verse": 15,
+          "text": "Behold, they may gather together, but not by me.\nWhoever gathers together against you will fall because of you."
+        },
+        {
+          "verse": 16,
+          "text": "“Behold, I have created the blacksmith who fans the coals into flame,\nand forges a weapon for his work;\nand I have created the destroyer to destroy."
+        },
+        {
+          "verse": 17,
+          "text": "No weapon that is formed against you will prevail;\nand you will condemn every tongue that rises against you in judgment.\nThis is the heritage of Yahweh’s servants,\nand their righteousness is of me,” says Yahweh."
+        }
+      ],
+      "footnotes": []
+    },
+    {
+      "id": "matthew-27",
+      "title": "Matthew 27",
+      "publisherUrl": "https://ebible.org/eng-web/MAT27.htm",
+      "sourceSha256": "0434a75e4c80011027573a63cadc8de9739a2398efda2cb473c3230084af3a12",
+      "sourceBytes": 15700,
+      "superscription": "",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "Now when morning had come, all the chief priests and the elders of the people took counsel against Jesus to put him to death."
+        },
+        {
+          "verse": 2,
+          "text": "They bound him, led him away, and delivered him up to Pontius Pilate, the governor."
+        },
+        {
+          "verse": 3,
+          "text": "Then Judas, who betrayed him, when he saw that Jesus was condemned, felt remorse, and brought back the thirty pieces of silver to the chief priests and elders,"
+        },
+        {
+          "verse": 4,
+          "text": "saying, “I have sinned in that I betrayed innocent blood.”\nBut they said, “What is that to us? You see to it.”"
+        },
+        {
+          "verse": 5,
+          "text": "He threw down the pieces of silver in the sanctuary and departed. Then he went away and hanged himself."
+        },
+        {
+          "verse": 6,
+          "text": "The chief priests took the pieces of silver and said, “It’s not lawful to put them into the treasury, since it is the price of blood.”"
+        },
+        {
+          "verse": 7,
+          "text": "They took counsel, and bought the potter’s field with them to bury strangers in."
+        },
+        {
+          "verse": 8,
+          "text": "Therefore that field has been called “The Field of Blood” to this day."
+        },
+        {
+          "verse": 9,
+          "text": "Then that which was spoken through Jeremiah the prophet was fulfilled, saying,\n“They took the thirty pieces of silver,\nthe price of him upon whom a price had been set,\nwhom some of the children of Israel priced,"
+        },
+        {
+          "verse": 10,
+          "text": "and they gave them for the potter’s field,\nas the Lord commanded me.”"
+        },
+        {
+          "verse": 11,
+          "text": "Now Jesus stood before the governor; and the governor asked him, saying, “Are you the King of the Jews?”\nJesus said to him, “So you say.”"
+        },
+        {
+          "verse": 12,
+          "text": "When he was accused by the chief priests and elders, he answered nothing."
+        },
+        {
+          "verse": 13,
+          "text": "Then Pilate said to him, “Don’t you hear how many things they testify against you?”"
+        },
+        {
+          "verse": 14,
+          "text": "He gave him no answer, not even one word, so that the governor marveled greatly."
+        },
+        {
+          "verse": 15,
+          "text": "Now at the feast the governor was accustomed to release to the multitude one prisoner whom they desired."
+        },
+        {
+          "verse": 16,
+          "text": "They had then a notable prisoner called Barabbas."
+        },
+        {
+          "verse": 17,
+          "text": "When therefore they were gathered together, Pilate said to them, “Whom do you want me to release to you? Barabbas, or Jesus who is called Christ?”"
+        },
+        {
+          "verse": 18,
+          "text": "For he knew that because of envy they had delivered him up."
+        },
+        {
+          "verse": 19,
+          "text": "While he was sitting on the judgment seat, his wife sent to him, saying, “Have nothing to do with that righteous man, for I have suffered many things today in a dream because of him.”"
+        },
+        {
+          "verse": 20,
+          "text": "Now the chief priests and the elders persuaded the multitudes to ask for Barabbas and destroy Jesus."
+        },
+        {
+          "verse": 21,
+          "text": "But the governor answered them, “Which of the two do you want me to release to you?”\nThey said, “Barabbas!”"
+        },
+        {
+          "verse": 22,
+          "text": "Pilate said to them, “What then shall I do to Jesus who is called Christ?”\nThey all said to him, “Let him be crucified!”"
+        },
+        {
+          "verse": 23,
+          "text": "But the governor said, “Why? What evil has he done?”\nBut they cried out exceedingly, saying, “Let him be crucified!”"
+        },
+        {
+          "verse": 24,
+          "text": "So when Pilate saw that nothing was being gained, but rather that a disturbance was starting, he took water and washed his hands before the multitude, saying, “I am innocent of the blood of this righteous person. You see to it.”"
+        },
+        {
+          "verse": 25,
+          "text": "All the people answered, “May his blood be on us and on our children!”"
+        },
+        {
+          "verse": 26,
+          "text": "Then he released Barabbas to them, but Jesus he flogged and delivered to be crucified."
+        },
+        {
+          "verse": 27,
+          "text": "Then the governor’s soldiers took Jesus into the Praetorium, and gathered the whole garrison together against him."
+        },
+        {
+          "verse": 28,
+          "text": "They stripped him and put a scarlet robe on him."
+        },
+        {
+          "verse": 29,
+          "text": "They braided a crown of thorns and put it on his head, and a reed in his right hand; and they kneeled down before him and mocked him, saying, “Hail, King of the Jews!”"
+        },
+        {
+          "verse": 30,
+          "text": "They spat on him, and took the reed and struck him on the head."
+        },
+        {
+          "verse": 31,
+          "text": "When they had mocked him, they took the robe off him, and put his clothes on him, and led him away to crucify him."
+        },
+        {
+          "verse": 32,
+          "text": "As they came out, they found a man of Cyrene, Simon by name, and they compelled him to go with them, that he might carry his cross."
+        },
+        {
+          "verse": 33,
+          "text": "When they came to a place called “Golgotha”, that is to say, “The place of a skull,”"
+        },
+        {
+          "verse": 34,
+          "text": "they gave him sour wine to drink mixed with gall. When he had tasted it, he would not drink."
+        },
+        {
+          "verse": 35,
+          "text": "When they had crucified him, they divided his clothing among them, casting lots,"
+        },
+        {
+          "verse": 36,
+          "text": "and they sat and watched him there."
+        },
+        {
+          "verse": 37,
+          "text": "They set up over his head the accusation against him written, “THIS IS JESUS, THE KING OF THE JEWS.”"
+        },
+        {
+          "verse": 38,
+          "text": "Then there were two robbers crucified with him, one on his right hand and one on the left."
+        },
+        {
+          "verse": 39,
+          "text": "Those who passed by blasphemed him, wagging their heads"
+        },
+        {
+          "verse": 40,
+          "text": "and saying, “You who destroy the temple and build it in three days, save yourself! If you are the Son of God, come down from the cross!”"
+        },
+        {
+          "verse": 41,
+          "text": "Likewise the chief priests also mocking with the scribes, the Pharisees, and the elders, said,"
+        },
+        {
+          "verse": 42,
+          "text": "“He saved others, but he can’t save himself. If he is the King of Israel, let him come down from the cross now, and we will believe in him."
+        },
+        {
+          "verse": 43,
+          "text": "He trusts in God. Let God deliver him now, if he wants him; for he said, ‘I am the Son of God.’ ”"
+        },
+        {
+          "verse": 44,
+          "text": "The robbers also who were crucified with him cast on him the same reproach."
+        },
+        {
+          "verse": 45,
+          "text": "Now from the sixth hour there was darkness over all the land until the ninth hour."
+        },
+        {
+          "verse": 46,
+          "text": "About the ninth hour Jesus cried with a loud voice, saying, “Eli, Eli, lima sabachthani?” That is, “My God, my God, why have you forsaken me?”"
+        },
+        {
+          "verse": 47,
+          "text": "Some of them who stood there, when they heard it, said, “This man is calling Elijah.”"
+        },
+        {
+          "verse": 48,
+          "text": "Immediately one of them ran and took a sponge, filled it with vinegar, put it on a reed, and gave him a drink."
+        },
+        {
+          "verse": 49,
+          "text": "The rest said, “Let him be. Let’s see whether Elijah comes to save him.”"
+        },
+        {
+          "verse": 50,
+          "text": "Jesus cried again with a loud voice, and yielded up his spirit."
+        },
+        {
+          "verse": 51,
+          "text": "Behold, the veil of the temple was torn in two from the top to the bottom. The earth quaked and the rocks were split."
+        },
+        {
+          "verse": 52,
+          "text": "The tombs were opened, and many bodies of the saints who had fallen asleep were raised;"
+        },
+        {
+          "verse": 53,
+          "text": "and coming out of the tombs after his resurrection, they entered into the holy city and appeared to many."
+        },
+        {
+          "verse": 54,
+          "text": "Now the centurion and those who were with him watching Jesus, when they saw the earthquake and the things that were done, were terrified, saying, “Truly this was the Son of God!”"
+        },
+        {
+          "verse": 55,
+          "text": "Many women were there watching from afar, who had followed Jesus from Galilee, serving him."
+        },
+        {
+          "verse": 56,
+          "text": "Among them were Mary Magdalene, Mary the mother of James and Joses, and the mother of the sons of Zebedee."
+        },
+        {
+          "verse": 57,
+          "text": "When evening had come, a rich man from Arimathaea named Joseph, who himself was also Jesus’ disciple, came."
+        },
+        {
+          "verse": 58,
+          "text": "This man went to Pilate and asked for Jesus’ body. Then Pilate commanded the body to be given up."
+        },
+        {
+          "verse": 59,
+          "text": "Joseph took the body and wrapped it in a clean linen cloth"
+        },
+        {
+          "verse": 60,
+          "text": "and laid it in his own new tomb, which he had cut out in the rock. Then he rolled a large stone against the door of the tomb, and departed."
+        },
+        {
+          "verse": 61,
+          "text": "Mary Magdalene was there, and the other Mary, sitting opposite the tomb."
+        },
+        {
+          "verse": 62,
+          "text": "Now on the next day, which was the day after the Preparation Day, the chief priests and the Pharisees were gathered together to Pilate,"
+        },
+        {
+          "verse": 63,
+          "text": "saying, “Sir, we remember what that deceiver said while he was still alive: ‘After three days I will rise again.’"
+        },
+        {
+          "verse": 64,
+          "text": "Command therefore that the tomb be made secure until the third day, lest perhaps his disciples come at night and steal him away, and tell the people, ‘He is risen from the dead;’ and the last deception will be worse than the first.”"
+        },
+        {
+          "verse": 65,
+          "text": "Pilate said to them, “You have a guard. Go, make it as secure as you can.”"
+        },
+        {
+          "verse": 66,
+          "text": "So they went with the guard and made the tomb secure, sealing the stone."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 9,
+          "text": "some manuscripts omit “Jeremiah”",
+          "id": "FN1",
+          "kind": "textual note"
+        },
+        {
+          "verse": 10,
+          "text": "Zechariah 11:12-13; Jeremiah 19:1-13; 32:6-9",
+          "id": "FN2",
+          "kind": "cross-reference"
+        },
+        {
+          "verse": 34,
+          "text": "or, vinegar",
+          "id": "FN3",
+          "kind": "textual note"
+        },
+        {
+          "verse": 34,
+          "text": "Gall is a bitter-tasting, dark green oil from a wormwood plant that is alcoholic in its effect.",
+          "id": "FN4",
+          "kind": "textual note"
+        },
+        {
+          "verse": 35,
+          "text": "TR adds “that it might be fulfilled which was spoken by the prophet: ‘They divided my garments among them, and for my clothing they cast lots;’ ” [see Psalms 22:18 and John 19:24]",
+          "id": "FN5",
+          "kind": "textual note"
+        },
+        {
+          "verse": 41,
+          "text": "TR omits “the Pharisees”",
+          "id": "FN6",
+          "kind": "textual note"
+        },
+        {
+          "verse": 45,
+          "text": "noon",
+          "id": "FN7",
+          "kind": "textual note"
+        },
+        {
+          "verse": 45,
+          "text": "3:00 p.m.",
+          "id": "FN8",
+          "kind": "textual note"
+        },
+        {
+          "verse": 46,
+          "text": "TR reads “lama” instead of “lima”",
+          "id": "FN9",
+          "kind": "textual note"
+        },
+        {
+          "verse": 46,
+          "text": "Psalms 22:1",
+          "id": "FN10",
+          "kind": "cross-reference"
+        }
+      ]
+    },
+    {
+      "id": "mark-15",
+      "title": "Mark 15",
+      "publisherUrl": "https://ebible.org/eng-web/MRK15.htm",
+      "sourceSha256": "e0261b9968788fb062c9a6b07e6af3203c011da4f4b9b0532e9a62ff2d1c7829",
+      "sourceBytes": 10290,
+      "superscription": "",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "Immediately in the morning the chief priests, with the elders, scribes, and the whole council, held a consultation, bound Jesus, carried him away, and delivered him up to Pilate."
+        },
+        {
+          "verse": 2,
+          "text": "Pilate asked him, “Are you the King of the Jews?”\nHe answered, “So you say.”"
+        },
+        {
+          "verse": 3,
+          "text": "The chief priests accused him of many things."
+        },
+        {
+          "verse": 4,
+          "text": "Pilate again asked him, “Have you no answer? See how many things they testify against you!”"
+        },
+        {
+          "verse": 5,
+          "text": "But Jesus made no further answer, so that Pilate marveled."
+        },
+        {
+          "verse": 6,
+          "text": "Now at the feast he used to release to them one prisoner, whomever they asked of him."
+        },
+        {
+          "verse": 7,
+          "text": "There was one called Barabbas, bound with his fellow insurgents, men who in the insurrection had committed murder."
+        },
+        {
+          "verse": 8,
+          "text": "The multitude, crying aloud, began to ask him to do as he always did for them."
+        },
+        {
+          "verse": 9,
+          "text": "Pilate answered them, saying, “Do you want me to release to you the King of the Jews?”"
+        },
+        {
+          "verse": 10,
+          "text": "For he perceived that for envy the chief priests had delivered him up."
+        },
+        {
+          "verse": 11,
+          "text": "But the chief priests stirred up the multitude, that he should release Barabbas to them instead."
+        },
+        {
+          "verse": 12,
+          "text": "Pilate again asked them, “What then should I do to him whom you call the King of the Jews?”"
+        },
+        {
+          "verse": 13,
+          "text": "They cried out again, “Crucify him!”"
+        },
+        {
+          "verse": 14,
+          "text": "Pilate said to them, “Why, what evil has he done?”\nBut they cried out exceedingly, “Crucify him!”"
+        },
+        {
+          "verse": 15,
+          "text": "Pilate, wishing to please the multitude, released Barabbas to them, and handed over Jesus, when he had flogged him, to be crucified."
+        },
+        {
+          "verse": 16,
+          "text": "The soldiers led him away within the court, which is the Praetorium; and they called together the whole cohort."
+        },
+        {
+          "verse": 17,
+          "text": "They clothed him with purple; and weaving a crown of thorns, they put it on him."
+        },
+        {
+          "verse": 18,
+          "text": "They began to salute him, “Hail, King of the Jews!”"
+        },
+        {
+          "verse": 19,
+          "text": "They struck his head with a reed and spat on him, and bowing their knees, did homage to him."
+        },
+        {
+          "verse": 20,
+          "text": "When they had mocked him, they took the purple cloak off him, and put his own garments on him. They led him out to crucify him."
+        },
+        {
+          "verse": 21,
+          "text": "They compelled one passing by, coming from the country, Simon of Cyrene, the father of Alexander and Rufus, to go with them that he might bear his cross."
+        },
+        {
+          "verse": 22,
+          "text": "They brought him to the place called Golgotha, which is, being interpreted, “The place of a skull.”"
+        },
+        {
+          "verse": 23,
+          "text": "They offered him wine mixed with myrrh to drink, but he didn’t take it."
+        },
+        {
+          "verse": 24,
+          "text": "Crucifying him, they parted his garments among them, casting lots on them, what each should take."
+        },
+        {
+          "verse": 25,
+          "text": "It was the third hour when they crucified him."
+        },
+        {
+          "verse": 26,
+          "text": "The superscription of his accusation was written over him: “THE KING OF THE JEWS.”"
+        },
+        {
+          "verse": 27,
+          "text": "With him they crucified two robbers, one on his right hand, and one on his left."
+        },
+        {
+          "verse": 28,
+          "text": "The Scripture was fulfilled which says, “He was counted with transgressors.”"
+        },
+        {
+          "verse": 29,
+          "text": "Those who passed by blasphemed him, wagging their heads and saying, “Ha! You who destroy the temple and build it in three days,"
+        },
+        {
+          "verse": 30,
+          "text": "save yourself, and come down from the cross!”"
+        },
+        {
+          "verse": 31,
+          "text": "Likewise, also the chief priests mocking among themselves with the scribes said, “He saved others. He can’t save himself."
+        },
+        {
+          "verse": 32,
+          "text": "Let the Christ, the King of Israel, now come down from the cross, that we may see and believe him.” Those who were crucified with him also insulted him."
+        },
+        {
+          "verse": 33,
+          "text": "When the sixth hour had come, there was darkness over the whole land until the ninth hour."
+        },
+        {
+          "verse": 34,
+          "text": "At the ninth hour Jesus cried with a loud voice, saying, “Eloi, Eloi, lama sabachthani?” which is, being interpreted, “My God, my God, why have you forsaken me?”"
+        },
+        {
+          "verse": 35,
+          "text": "Some of those who stood by, when they heard it, said, “Behold, he is calling Elijah.”"
+        },
+        {
+          "verse": 36,
+          "text": "One ran, and filling a sponge full of vinegar, put it on a reed and gave it to him to drink, saying, “Let him be. Let’s see whether Elijah comes to take him down.”"
+        },
+        {
+          "verse": 37,
+          "text": "Jesus cried out with a loud voice, and gave up the spirit."
+        },
+        {
+          "verse": 38,
+          "text": "The veil of the temple was torn in two from the top to the bottom."
+        },
+        {
+          "verse": 39,
+          "text": "When the centurion, who stood by opposite him, saw that he cried out like this and breathed his last, he said, “Truly this man was the Son of God!”"
+        },
+        {
+          "verse": 40,
+          "text": "There were also women watching from afar, among whom were both Mary Magdalene and Mary the mother of James the less and of Joses, and Salome;"
+        },
+        {
+          "verse": 41,
+          "text": "who, when he was in Galilee, followed him and served him; and many other women who came up with him to Jerusalem."
+        },
+        {
+          "verse": 42,
+          "text": "When evening had now come, because it was the Preparation Day, that is, the day before the Sabbath,"
+        },
+        {
+          "verse": 43,
+          "text": "Joseph of Arimathaea, a prominent council member who also himself was looking for God’s Kingdom, came. He boldly went in to Pilate, and asked for Jesus’ body."
+        },
+        {
+          "verse": 44,
+          "text": "Pilate was surprised to hear that he was already dead; and summoning the centurion, he asked him whether he had been dead long."
+        },
+        {
+          "verse": 45,
+          "text": "When he found out from the centurion, he granted the body to Joseph."
+        },
+        {
+          "verse": 46,
+          "text": "He bought a linen cloth, and taking him down, wound him in the linen cloth and laid him in a tomb which had been cut out of a rock. He rolled a stone against the door of the tomb."
+        },
+        {
+          "verse": 47,
+          "text": "Mary Magdalene and Mary the mother of Joses, saw where he was laid."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 25,
+          "text": "9:00 a.m.",
+          "id": "FN1",
+          "kind": "textual note"
+        },
+        {
+          "verse": 28,
+          "text": "NU omits verse 28.",
+          "id": "FN2",
+          "kind": "textual note"
+        },
+        {
+          "verse": 32,
+          "text": "TR omits “him”",
+          "id": "FN3",
+          "kind": "textual note"
+        },
+        {
+          "verse": 33,
+          "text": "or, noon",
+          "id": "FN4",
+          "kind": "textual note"
+        },
+        {
+          "verse": 33,
+          "text": "3:00 p.m.",
+          "id": "FN5",
+          "kind": "textual note"
+        },
+        {
+          "verse": 34,
+          "text": "Psalms 22:1",
+          "id": "FN6",
+          "kind": "cross-reference"
+        }
+      ]
+    },
+    {
+      "id": "luke-23",
+      "title": "Luke 23",
+      "publisherUrl": "https://ebible.org/eng-web/LUK23.htm",
+      "sourceSha256": "a4b806ebe38e4b46c689f92bc01d3eea81b2a0f35c506139aa5b32fa654be48f",
+      "sourceBytes": 11609,
+      "superscription": "",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "The whole company of them rose up and brought him before Pilate."
+        },
+        {
+          "verse": 2,
+          "text": "They began to accuse him, saying, “We found this man perverting the nation, forbidding paying taxes to Caesar, and saying that he himself is Christ, a king.”"
+        },
+        {
+          "verse": 3,
+          "text": "Pilate asked him, “Are you the King of the Jews?”\nHe answered him, “So you say.”"
+        },
+        {
+          "verse": 4,
+          "text": "Pilate said to the chief priests and the multitudes, “I find no basis for a charge against this man.”"
+        },
+        {
+          "verse": 5,
+          "text": "But they insisted, saying, “He stirs up the people, teaching throughout all Judea, beginning from Galilee even to this place.”"
+        },
+        {
+          "verse": 6,
+          "text": "But when Pilate heard Galilee mentioned, he asked if the man was a Galilean."
+        },
+        {
+          "verse": 7,
+          "text": "When he found out that he was in Herod’s jurisdiction, he sent him to Herod, who was also in Jerusalem during those days."
+        },
+        {
+          "verse": 8,
+          "text": "Now when Herod saw Jesus, he was exceedingly glad, for he had wanted to see him for a long time, because he had heard many things about him. He hoped to see some miracle done by him."
+        },
+        {
+          "verse": 9,
+          "text": "He questioned him with many words, but he gave no answers."
+        },
+        {
+          "verse": 10,
+          "text": "The chief priests and the scribes stood, vehemently accusing him."
+        },
+        {
+          "verse": 11,
+          "text": "Herod with his soldiers humiliated him and mocked him. Dressing him in luxurious clothing, they sent him back to Pilate."
+        },
+        {
+          "verse": 12,
+          "text": "Herod and Pilate became friends with each other that very day, for before that they were enemies with each other."
+        },
+        {
+          "verse": 13,
+          "text": "Pilate called together the chief priests, the rulers, and the people,"
+        },
+        {
+          "verse": 14,
+          "text": "and said to them, “You brought this man to me as one that perverts the people, and behold, having examined him before you, I found no basis for a charge against this man concerning those things of which you accuse him."
+        },
+        {
+          "verse": 15,
+          "text": "Neither has Herod, for I sent you to him, and see, nothing worthy of death has been done by him."
+        },
+        {
+          "verse": 16,
+          "text": "I will therefore chastise him and release him.”"
+        },
+        {
+          "verse": 17,
+          "text": "Now he had to release one prisoner to them at the feast."
+        },
+        {
+          "verse": 18,
+          "text": "But they all cried out together, saying, “Away with this man! Release to us Barabbas!”—"
+        },
+        {
+          "verse": 19,
+          "text": "one who was thrown into prison for a certain revolt in the city, and for murder."
+        },
+        {
+          "verse": 20,
+          "text": "Then Pilate spoke to them again, wanting to release Jesus,"
+        },
+        {
+          "verse": 21,
+          "text": "but they shouted, saying, “Crucify! Crucify him!”"
+        },
+        {
+          "verse": 22,
+          "text": "He said to them the third time, “Why? What evil has this man done? I have found no capital crime in him. I will therefore chastise him and release him.”"
+        },
+        {
+          "verse": 23,
+          "text": "But they were urgent with loud voices, asking that he might be crucified. Their voices and the voices of the chief priests prevailed."
+        },
+        {
+          "verse": 24,
+          "text": "Pilate decreed that what they asked for should be done."
+        },
+        {
+          "verse": 25,
+          "text": "He released him who had been thrown into prison for insurrection and murder, for whom they asked, but he delivered Jesus up to their will."
+        },
+        {
+          "verse": 26,
+          "text": "When they led him away, they grabbed one Simon of Cyrene, coming from the country, and laid the cross on him to carry it after Jesus."
+        },
+        {
+          "verse": 27,
+          "text": "A great multitude of the people followed him, including women who also mourned and lamented him."
+        },
+        {
+          "verse": 28,
+          "text": "But Jesus, turning to them, said, “Daughters of Jerusalem, don’t weep for me, but weep for yourselves and for your children."
+        },
+        {
+          "verse": 29,
+          "text": "For behold, the days are coming in which they will say, ‘Blessed are the barren, the wombs that never bore, and the breasts that never nursed.’"
+        },
+        {
+          "verse": 30,
+          "text": "Then they will begin to tell the mountains, ‘Fall on us!’ and tell the hills, ‘Cover us.’"
+        },
+        {
+          "verse": 31,
+          "text": "For if they do these things in the green tree, what will be done in the dry?”"
+        },
+        {
+          "verse": 32,
+          "text": "There were also others, two criminals, led with him to be put to death."
+        },
+        {
+          "verse": 33,
+          "text": "When they came to the place that is called “The Skull”, they crucified him there with the criminals, one on the right and the other on the left."
+        },
+        {
+          "verse": 34,
+          "text": "Jesus said, “Father, forgive them, for they don’t know what they are doing.”\nDividing his garments among them, they cast lots."
+        },
+        {
+          "verse": 35,
+          "text": "The people stood watching. The rulers with them also scoffed at him, saying, “He saved others. Let him save himself, if this is the Christ of God, his chosen one!”"
+        },
+        {
+          "verse": 36,
+          "text": "The soldiers also mocked him, coming to him and offering him vinegar,"
+        },
+        {
+          "verse": 37,
+          "text": "and saying, “If you are the King of the Jews, save yourself!”"
+        },
+        {
+          "verse": 38,
+          "text": "An inscription was also written over him in letters of Greek, Latin, and Hebrew: “THIS IS THE KING OF THE JEWS.”"
+        },
+        {
+          "verse": 39,
+          "text": "One of the criminals who was hanged insulted him, saying, “If you are the Christ, save yourself and us!”"
+        },
+        {
+          "verse": 40,
+          "text": "But the other answered, and rebuking him said, “Don’t you even fear God, seeing you are under the same condemnation?"
+        },
+        {
+          "verse": 41,
+          "text": "And we indeed justly, for we receive the due reward for our deeds, but this man has done nothing wrong.”"
+        },
+        {
+          "verse": 42,
+          "text": "He said to Jesus, “Lord, remember me when you come into your Kingdom.”"
+        },
+        {
+          "verse": 43,
+          "text": "Jesus said to him, “Assuredly I tell you, today you will be with me in Paradise.”"
+        },
+        {
+          "verse": 44,
+          "text": "It was now about the sixth hour, and darkness came over the whole land until the ninth hour."
+        },
+        {
+          "verse": 45,
+          "text": "The sun was darkened, and the veil of the temple was torn in two."
+        },
+        {
+          "verse": 46,
+          "text": "Jesus, crying with a loud voice, said, “Father, into your hands I commit my spirit!” Having said this, he breathed his last."
+        },
+        {
+          "verse": 47,
+          "text": "When the centurion saw what was done, he glorified God, saying, “Certainly this was a righteous man.”"
+        },
+        {
+          "verse": 48,
+          "text": "All the multitudes that came together to see this, when they saw the things that were done, returned home beating their chests."
+        },
+        {
+          "verse": 49,
+          "text": "All his acquaintances and the women who followed with him from Galilee stood at a distance, watching these things."
+        },
+        {
+          "verse": 50,
+          "text": "Behold, there was a man named Joseph, who was a member of the council, a good and righteous man"
+        },
+        {
+          "verse": 51,
+          "text": "(he had not consented to their counsel and deed), from Arimathaea, a city of the Jews, who was also waiting for God’s Kingdom."
+        },
+        {
+          "verse": 52,
+          "text": "This man went to Pilate, and asked for Jesus’ body."
+        },
+        {
+          "verse": 53,
+          "text": "He took it down and wrapped it in a linen cloth, and laid him in a tomb that was cut in stone, where no one had ever been laid."
+        },
+        {
+          "verse": 54,
+          "text": "It was the day of the Preparation, and the Sabbath was drawing near."
+        },
+        {
+          "verse": 55,
+          "text": "The women who had come with him out of Galilee followed after, and saw the tomb and how his body was laid."
+        },
+        {
+          "verse": 56,
+          "text": "They returned and prepared spices and ointments. On the Sabbath they rested according to the commandment."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 17,
+          "text": "NU omits verse 17.",
+          "id": "FN1",
+          "kind": "textual note"
+        },
+        {
+          "verse": 30,
+          "text": "Hosea 10:8",
+          "id": "FN2",
+          "kind": "cross-reference"
+        },
+        {
+          "verse": 44,
+          "text": "Time was counted from sunrise, so the sixth hour was about noon.",
+          "id": "FN3",
+          "kind": "textual note"
+        },
+        {
+          "verse": 44,
+          "text": "3:00 p.m.",
+          "id": "FN4",
+          "kind": "textual note"
+        }
+      ]
+    },
+    {
+      "id": "john-19",
+      "title": "John 19",
+      "publisherUrl": "https://ebible.org/eng-web/JHN19.htm",
+      "sourceSha256": "a7e6ef2fcb45dfee0813ec2389264dace792850f226a56dbea606493630f6dac",
+      "sourceBytes": 11515,
+      "superscription": "",
+      "extent": "Complete chapter",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "So Pilate then took Jesus and flogged him."
+        },
+        {
+          "verse": 2,
+          "text": "The soldiers twisted thorns into a crown and put it on his head, and dressed him in a purple garment."
+        },
+        {
+          "verse": 3,
+          "text": "They kept saying, “Hail, King of the Jews!” and they kept slapping him."
+        },
+        {
+          "verse": 4,
+          "text": "Then Pilate went out again, and said to them, “Behold, I bring him out to you, that you may know that I find no basis for a charge against him.”"
+        },
+        {
+          "verse": 5,
+          "text": "Jesus therefore came out, wearing the crown of thorns and the purple garment. Pilate said to them, “Behold, the man!”"
+        },
+        {
+          "verse": 6,
+          "text": "When therefore the chief priests and the officers saw him, they shouted, saying, “Crucify! Crucify!”\nPilate said to them, “Take him yourselves and crucify him, for I find no basis for a charge against him.”"
+        },
+        {
+          "verse": 7,
+          "text": "The Jews answered him, “We have a law, and by our law he ought to die, because he made himself the Son of God.”"
+        },
+        {
+          "verse": 8,
+          "text": "When therefore Pilate heard this saying, he was more afraid."
+        },
+        {
+          "verse": 9,
+          "text": "He entered into the Praetorium again, and said to Jesus, “Where are you from?” But Jesus gave him no answer."
+        },
+        {
+          "verse": 10,
+          "text": "Pilate therefore said to him, “Aren’t you speaking to me? Don’t you know that I have power to release you and have power to crucify you?”"
+        },
+        {
+          "verse": 11,
+          "text": "Jesus answered, “You would have no power at all against me, unless it were given to you from above. Therefore he who delivered me to you has greater sin.”"
+        },
+        {
+          "verse": 12,
+          "text": "At this, Pilate was seeking to release him, but the Jews cried out, saying, “If you release this man, you aren’t Caesar’s friend! Everyone who makes himself a king speaks against Caesar!”"
+        },
+        {
+          "verse": 13,
+          "text": "When Pilate therefore heard these words, he brought Jesus out and sat down on the judgment seat at a place called “The Pavement”, but in Hebrew, “Gabbatha.”"
+        },
+        {
+          "verse": 14,
+          "text": "Now it was the Preparation Day of the Passover, at about the sixth hour. He said to the Jews, “Behold, your King!”"
+        },
+        {
+          "verse": 15,
+          "text": "They cried out, “Away with him! Away with him! Crucify him!”\nPilate said to them, “Shall I crucify your King?”\nThe chief priests answered, “We have no king but Caesar!”"
+        },
+        {
+          "verse": 16,
+          "text": "So then he delivered him to them to be crucified. So they took Jesus and led him away."
+        },
+        {
+          "verse": 17,
+          "text": "He went out, bearing his cross, to the place called “The Place of a Skull”, which is called in Hebrew, “Golgotha”,"
+        },
+        {
+          "verse": 18,
+          "text": "where they crucified him, and with him two others, on either side one, and Jesus in the middle."
+        },
+        {
+          "verse": 19,
+          "text": "Pilate wrote a title also, and put it on the cross. There was written, “JESUS OF NAZARETH, THE KING OF THE JEWS.”"
+        },
+        {
+          "verse": 20,
+          "text": "Therefore many of the Jews read this title, for the place where Jesus was crucified was near the city; and it was written in Hebrew, in Latin, and in Greek."
+        },
+        {
+          "verse": 21,
+          "text": "The chief priests of the Jews therefore said to Pilate, “Don’t write, ‘The King of the Jews,’ but, ‘he said, “I am King of the Jews.” ’ ”"
+        },
+        {
+          "verse": 22,
+          "text": "Pilate answered, “What I have written, I have written.”"
+        },
+        {
+          "verse": 23,
+          "text": "Then the soldiers, when they had crucified Jesus, took his garments and made four parts, to every soldier a part; and also the tunic. Now the tunic was without seam, woven from the top throughout."
+        },
+        {
+          "verse": 24,
+          "text": "Then they said to one another, “Let’s not tear it, but cast lots for it to decide whose it will be,” that the Scripture might be fulfilled, which says,\n“They parted my garments among them.\nThey cast lots for my clothing.”\nTherefore the soldiers did these things."
+        },
+        {
+          "verse": 25,
+          "text": "But standing by Jesus’ cross were his mother, his mother’s sister, Mary the wife of Clopas, and Mary Magdalene."
+        },
+        {
+          "verse": 26,
+          "text": "Therefore when Jesus saw his mother, and the disciple whom he loved standing there, he said to his mother, “Woman, behold, your son!”"
+        },
+        {
+          "verse": 27,
+          "text": "Then he said to the disciple, “Behold, your mother!” From that hour, the disciple took her to his own home."
+        },
+        {
+          "verse": 28,
+          "text": "After this, Jesus, seeing that all things were now finished, that the Scripture might be fulfilled, said, “I am thirsty!”"
+        },
+        {
+          "verse": 29,
+          "text": "Now a vessel full of vinegar was set there; so they put a sponge full of the vinegar on hyssop, and held it at his mouth."
+        },
+        {
+          "verse": 30,
+          "text": "When Jesus therefore had received the vinegar, he said, “It is finished!” Then he bowed his head and gave up his spirit."
+        },
+        {
+          "verse": 31,
+          "text": "Therefore the Jews, because it was the Preparation Day, so that the bodies wouldn’t remain on the cross on the Sabbath (for that Sabbath was a special one), asked of Pilate that their legs might be broken and that they might be taken away."
+        },
+        {
+          "verse": 32,
+          "text": "Therefore the soldiers came and broke the legs of the first and of the other who was crucified with him;"
+        },
+        {
+          "verse": 33,
+          "text": "but when they came to Jesus and saw that he was already dead, they didn’t break his legs."
+        },
+        {
+          "verse": 34,
+          "text": "However, one of the soldiers pierced his side with a spear, and immediately blood and water came out."
+        },
+        {
+          "verse": 35,
+          "text": "He who has seen has testified, and his testimony is true. He knows that he tells the truth, that you may believe."
+        },
+        {
+          "verse": 36,
+          "text": "For these things happened that the Scripture might be fulfilled, “A bone of him will not be broken.”"
+        },
+        {
+          "verse": 37,
+          "text": "Again another Scripture says, “They will look on him whom they pierced.”"
+        },
+        {
+          "verse": 38,
+          "text": "After these things, Joseph of Arimathaea, being a disciple of Jesus, but secretly for fear of the Jews, asked of Pilate that he might take away Jesus’ body. Pilate gave him permission. He came therefore and took away his body."
+        },
+        {
+          "verse": 39,
+          "text": "Nicodemus, who at first came to Jesus by night, also came bringing a mixture of myrrh and aloes, about a hundred Roman pounds."
+        },
+        {
+          "verse": 40,
+          "text": "So they took Jesus’ body, and bound it in linen cloths with the spices, as the custom of the Jews is to bury."
+        },
+        {
+          "verse": 41,
+          "text": "Now in the place where he was crucified there was a garden. In the garden was a new tomb in which no man had ever yet been laid."
+        },
+        {
+          "verse": 42,
+          "text": "Then, because of the Jews’ Preparation Day (for the tomb was near at hand), they laid Jesus there."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 14,
+          "text": "“the sixth hour” would have been 6:00 a.m. according to the Roman timekeeping system, or noon for the Jewish timekeeping system in use, then.",
+          "id": "FN1",
+          "kind": "textual note"
+        },
+        {
+          "verse": 24,
+          "text": "Psalms 22:18",
+          "id": "FN2",
+          "kind": "cross-reference"
+        },
+        {
+          "verse": 28,
+          "text": "NU, TR read “knowing” instead of “seeing”",
+          "id": "FN3",
+          "kind": "textual note"
+        },
+        {
+          "verse": 36,
+          "text": "Exodus 12:46; Numbers 9:12; Psalms 34:20",
+          "id": "FN4",
+          "kind": "cross-reference"
+        },
+        {
+          "verse": 37,
+          "text": "Zechariah 12:10",
+          "id": "FN5",
+          "kind": "cross-reference"
+        },
+        {
+          "verse": 39,
+          "text": "100 Roman pounds of 12 ounces each, or about 72 pounds, or 33 Kilograms.",
+          "id": "FN6",
+          "kind": "textual note"
+        }
+      ]
+    },
+    {
+      "id": "luke-22",
+      "title": "Luke 22:35–38",
+      "publisherUrl": "https://ebible.org/eng-web/LUK22.htm",
+      "sourceSha256": "28dc273f9a7c0413763576819d1410fe7e7954eb5c24d0fae7d1c74e4ea46f4e",
+      "sourceBytes": 14448,
+      "superscription": "",
+      "extent": "Selected context; complete chapter at publisher",
+      "verses": [
+        {
+          "verse": 35,
+          "text": "He said to them, “When I sent you out without purse, bag, and sandals, did you lack anything?”\nThey said, “Nothing.”"
+        },
+        {
+          "verse": 36,
+          "text": "Then he said to them, “But now, whoever has a purse, let him take it, and likewise a bag. Whoever has none, let him sell his cloak, and buy a sword."
+        },
+        {
+          "verse": 37,
+          "text": "For I tell you that this which is written must still be fulfilled in me: ‘He was counted with transgressors.’ For that which concerns me is being fulfilled.”"
+        },
+        {
+          "verse": 38,
+          "text": "They said, “Lord, behold, here are two swords.”\nHe said to them, “That is enough.”"
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 37,
+          "text": "Isaiah 53:12",
+          "id": "FN2",
+          "kind": "cross-reference"
+        }
+      ]
+    },
+    {
+      "id": "acts-8",
+      "title": "Acts 8:26–40",
+      "publisherUrl": "https://ebible.org/eng-web/ACT08.htm",
+      "sourceSha256": "90687a08ca72accd6857d229b16c6fe294702aa0cc2349d309e1d72746a48d5d",
+      "sourceBytes": 9024,
+      "superscription": "",
+      "extent": "Selected context; complete chapter at publisher",
+      "verses": [
+        {
+          "verse": 26,
+          "text": "Then an angel of the Lord spoke to Philip, saying, “Arise, and go toward the south to the way that goes down from Jerusalem to Gaza. This is a desert.”"
+        },
+        {
+          "verse": 27,
+          "text": "He arose and went; and behold, there was a man of Ethiopia, a eunuch of great authority under Candace, queen of the Ethiopians, who was over all her treasure, who had come to Jerusalem to worship."
+        },
+        {
+          "verse": 28,
+          "text": "He was returning and sitting in his chariot, and was reading the prophet Isaiah."
+        },
+        {
+          "verse": 29,
+          "text": "The Spirit said to Philip, “Go near, and join yourself to this chariot.”"
+        },
+        {
+          "verse": 30,
+          "text": "Philip ran to him, and heard him reading Isaiah the prophet, and said, “Do you understand what you are reading?”"
+        },
+        {
+          "verse": 31,
+          "text": "He said, “How can I, unless someone explains it to me?” He begged Philip to come up and sit with him."
+        },
+        {
+          "verse": 32,
+          "text": "Now the passage of the Scripture which he was reading was this,\n“He was led as a sheep to the slaughter.\nAs a lamb before his shearer is silent,\nso he doesn’t open his mouth."
+        },
+        {
+          "verse": 33,
+          "text": "In his humiliation, his judgment was taken away.\nWho will declare His generation?\nFor his life is taken from the earth.”"
+        },
+        {
+          "verse": 34,
+          "text": "The eunuch answered Philip, “Who is the prophet talking about? About himself, or about someone else?”"
+        },
+        {
+          "verse": 35,
+          "text": "Philip opened his mouth, and beginning from this Scripture, preached to him about Jesus."
+        },
+        {
+          "verse": 36,
+          "text": "As they went on the way, they came to some water; and the eunuch said, “Behold, here is water. What is keeping me from being baptized?”"
+        },
+        {
+          "verse": 37,
+          "text": ""
+        },
+        {
+          "verse": 38,
+          "text": "He commanded the chariot to stand still, and they both went down into the water, both Philip and the eunuch, and he baptized him."
+        },
+        {
+          "verse": 39,
+          "text": "When they came up out of the water, the Spirit of the Lord caught Philip away, and the eunuch didn’t see him any more, for he went on his way rejoicing."
+        },
+        {
+          "verse": 40,
+          "text": "But Philip was found at Azotus. Passing through, he preached the Good News to all the cities until he came to Caesarea."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 33,
+          "text": "Isaiah 53:7,8",
+          "id": "FN1",
+          "kind": "cross-reference"
+        },
+        {
+          "verse": 37,
+          "text": "TR adds Philip said, “If you believe with all your heart, you may.” He answered, “I believe that Jesus Christ is the Son of God.”",
+          "id": "FN2",
+          "kind": "textual note"
+        }
+      ]
+    },
+    {
+      "id": "peter-2",
+      "title": "1 Peter 2:18–25",
+      "publisherUrl": "https://ebible.org/eng-web/1PE02.htm",
+      "sourceSha256": "392707cb73d537209450819b8c3c7bada9bf80161fdee84381d1ee0030906641",
+      "sourceBytes": 8221,
+      "superscription": "",
+      "extent": "Selected context; complete chapter at publisher",
+      "verses": [
+        {
+          "verse": 18,
+          "text": "Servants, be in subjection to your masters with all respect, not only to the good and gentle, but also to the wicked."
+        },
+        {
+          "verse": 19,
+          "text": "For it is commendable if someone endures pain, suffering unjustly, because of conscience toward God."
+        },
+        {
+          "verse": 20,
+          "text": "For what glory is it if, when you sin, you patiently endure beating? But if when you do well, you patiently endure suffering, this is commendable with God."
+        },
+        {
+          "verse": 21,
+          "text": "For you were called to this, because Christ also suffered for us, leaving you an example, that you should follow his steps,"
+        },
+        {
+          "verse": 22,
+          "text": "who didn’t sin, “neither was deceit found in his mouth.”"
+        },
+        {
+          "verse": 23,
+          "text": "When he was cursed, he didn’t curse back. When he suffered, he didn’t threaten, but committed himself to him who judges righteously."
+        },
+        {
+          "verse": 24,
+          "text": "He himself bore our sins in his body on the tree, that we, having died to sins, might live to righteousness. You were healed by his wounds."
+        },
+        {
+          "verse": 25,
+          "text": "For you were going astray like sheep; but now you have returned to the Shepherd and Overseer of your souls."
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 21,
+          "text": "TR reads “us” instead of “you”",
+          "id": "FN5",
+          "kind": "textual note"
+        },
+        {
+          "verse": 22,
+          "text": "Isaiah 53:9",
+          "id": "FN6",
+          "kind": "cross-reference"
+        },
+        {
+          "verse": 24,
+          "text": "or, stripes",
+          "id": "FN7",
+          "kind": "textual note"
+        },
+        {
+          "verse": 25,
+          "text": "“Overseer” is from the Greek ἐπίσκοπον, which can mean overseer, curator, guardian, or superintendent.",
+          "id": "FN8",
+          "kind": "textual note"
+        }
+      ]
+    },
+    {
+      "id": "matthew-8",
+      "title": "Matthew 8:14–17",
+      "publisherUrl": "https://ebible.org/eng-web/MAT08.htm",
+      "sourceSha256": "84710733a916e516c02656c814ba90e25b4ea1ff6279e9b494d25639514ff4a7",
+      "sourceBytes": 8326,
+      "superscription": "",
+      "extent": "Selected context; complete chapter at publisher",
+      "verses": [
+        {
+          "verse": 14,
+          "text": "When Jesus came into Peter’s house, he saw his wife’s mother lying sick with a fever."
+        },
+        {
+          "verse": 15,
+          "text": "He touched her hand, and the fever left her. So she got up and served him."
+        },
+        {
+          "verse": 16,
+          "text": "When evening came, they brought to him many possessed with demons. He cast out the spirits with a word, and healed all who were sick,"
+        },
+        {
+          "verse": 17,
+          "text": "that it might be fulfilled which was spoken through Isaiah the prophet, saying, “He took our infirmities and bore our diseases.”"
+        }
+      ],
+      "footnotes": [
+        {
+          "verse": 15,
+          "text": "TR reads “them” instead of “him”",
+          "id": "FN1",
+          "kind": "textual note"
+        },
+        {
+          "verse": 17,
+          "text": "Isaiah 53:4",
+          "id": "FN2",
+          "kind": "cross-reference"
+        }
+      ]
+    },
+    {
+      "id": "isaiah-41",
+      "title": "Isaiah 41:8–13",
+      "publisherUrl": "https://ebible.org/eng-web/ISA41.htm",
+      "sourceSha256": "8a0ebbcefaf7ce1e76a26e6f07d0c64420cf0a0457d6a60bf48a3371c41d0c2b",
+      "sourceBytes": 9380,
+      "superscription": "",
+      "extent": "Selected context; complete chapter at publisher",
+      "verses": [
+        {
+          "verse": 8,
+          "text": "“But you, Israel, my servant,\nJacob whom I have chosen,\nthe offspring of Abraham my friend,"
+        },
+        {
+          "verse": 9,
+          "text": "you whom I have taken hold of from the ends of the earth,\nand called from its corners,\nand said to you, ‘You are my servant. I have chosen you and have not cast you away.’"
+        },
+        {
+          "verse": 10,
+          "text": "Don’t you be afraid, for I am with you.\nDon’t be dismayed, for I am your God.\nI will strengthen you.\nYes, I will help you.\nYes, I will uphold you with the right hand of my righteousness."
+        },
+        {
+          "verse": 11,
+          "text": "Behold, all those who are incensed against you will be disappointed and confounded.\nThose who strive with you will be like nothing, and shall perish."
+        },
+        {
+          "verse": 12,
+          "text": "You will seek them, and won’t find them,\neven those who contend with you.\nThose who war against you will be as nothing,\nas a nonexistent thing."
+        },
+        {
+          "verse": 13,
+          "text": "For I, Yahweh your God, will hold your right hand,\nsaying to you, ‘Don’t be afraid.\nI will help you.’"
+        }
+      ],
+      "footnotes": []
+    },
+    {
+      "id": "isaiah-49",
+      "title": "Isaiah 49:1–7",
+      "publisherUrl": "https://ebible.org/eng-web/ISA49.htm",
+      "sourceSha256": "77f6fa83ea03276020348b9af23996a18334cc9830849148d10888c4c69c5007",
+      "sourceBytes": 9320,
+      "superscription": "",
+      "extent": "Selected context; complete chapter at publisher",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "Listen, islands, to me.\nListen, you peoples, from afar:\nYahweh has called me from the womb;\nfrom the inside of my mother, he has mentioned my name."
+        },
+        {
+          "verse": 2,
+          "text": "He has made my mouth like a sharp sword.\nHe has hidden me in the shadow of his hand.\nHe has made me a polished shaft.\nHe has kept me close in his quiver."
+        },
+        {
+          "verse": 3,
+          "text": "He said to me, “You are my servant,\nIsrael, in whom I will be glorified.”"
+        },
+        {
+          "verse": 4,
+          "text": "But I said, “I have labored in vain.\nI have spent my strength in vain for nothing;\nyet surely the justice due to me is with Yahweh,\nand my reward with my God.”"
+        },
+        {
+          "verse": 5,
+          "text": "Now Yahweh, he who formed me from the womb to be his servant,\nsays to bring Jacob again to him,\nand to gather Israel to him,\nfor I am honorable in Yahweh’s eyes,\nand my God has become my strength."
+        },
+        {
+          "verse": 6,
+          "text": "Indeed, he says, “It is too light a thing that you should be my servant to raise up the tribes of Jacob,\nand to restore the preserved of Israel.\nI will also give you as a light to the nations,\nthat you may be my salvation to the end of the earth.”"
+        },
+        {
+          "verse": 7,
+          "text": "Yahweh, the Redeemer of Israel, and his Holy One,\nsays to him whom man despises, to him whom the nation abhors, to a servant of rulers:\n“Kings shall see and rise up,\nprinces, and they shall worship,\nbecause of Yahweh who is faithful, even the Holy One of Israel, who has chosen you.”"
+        }
+      ],
+      "footnotes": []
+    }
+  ]
+}

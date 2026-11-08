@@ -5,7 +5,7 @@ import styles from './reading.module.css';
 export default function ReadingNav() {
   return <header style={{ borderBottom: '1px solid #695b36', padding: '1rem 1.25rem' }}>
     <nav aria-label="Reading navigation" className={styles.nav} style={{ maxWidth: '1150px', margin: '0 auto', columnGap: '1.25rem' }}>
-      <Link href="/">Society of Explorers</Link><Link href="/great-books">Free library</Link><Link href="/salons/pilot" prefetch={false}>Four-week salon plan</Link><Link href="/circles">Reading Circles</Link><Link href="/login">Sign in</Link><a href="#main">Skip to reading content</a>
+      <Link href="/">Society of Explorers</Link><Link href="/great-books">Free library</Link><Link href="/fellowship">Christian fellowship</Link><Link href="/salons/pilot" prefetch={false}>Four-week salon plan</Link><Link href="/circles">Reading Circles</Link><Link href="/login">Sign in</Link><a href="#main">Skip to reading content</a>
     </nav>
   </header>;
 }
