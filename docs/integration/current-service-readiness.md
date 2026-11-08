@@ -1,5 +1,7 @@
 # Current service readiness — 2026-11-04
 
+**November 8 local member-discovery update:** the member page's incompatible matching request is replaced with fresh published-profile keyword discovery. Query text stays in the browser, response ownership is checked, and failures remain separate from empty results. Local build and scoped browser/behavioral checks pass; the four older matching families remain unvalidated and separately gated. This changes no hosted access, schema or deployment. See [the implementation and evidence limits](member-discovery.md). The dated hosted observations below remain historical evidence, not a new live check.
+
 **Production access/privacy gate remains HOLD.** The connected SoE Supabase service is healthy, but the live database does not have the first-release Circle schema or the access boundaries exercised by the local fixtures. No production fix, migration, role change, provider sign-in or deployment was performed.
 
 Root verified project `woqvlkeluxkxplpgzdgv` as `ACTIVE_HEALTHY`, `us-east-1`, PostgreSQL `17.6.1.084`: 95 public tables and 13 recorded migrations, latest `20260619183311` prompt catalog expansion. This supersedes older notes describing a paused project. Health is control-plane evidence, not proof of correct permissions, app configuration, deployment or customer use.

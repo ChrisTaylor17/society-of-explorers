@@ -164,6 +164,7 @@ const routes = {
 };
 
 const helpers = {
+  memberFinder: read('lib/members/finder.ts'),
   memoryExtractFacts: read('lib/memory/extractFacts.ts'),
   thinkerMemory: read('lib/thinkerMemory.ts'),
   thinkerActions: read('lib/thinkerActions.ts'),
@@ -1542,7 +1543,7 @@ const checks = [
       pages.profileEditor.includes('expectedMemberId: owner.memberId, expectedRevision: owner.revision') &&
       pages.profileEditor.includes("cache: 'no-store', redirect: 'error'") &&
       pages.members.includes('getSupabaseAccessToken') &&
-      pages.members.includes('getAuthHeaders(true)') &&
+      pages.members.includes('dmHeaders(true)') &&
       !pages.members.includes('memberId: currentMember.id') &&
       !routes.memberProfile.includes('memberId?:') &&
       !routes.memberProfile.includes('memberId required') &&
@@ -1597,7 +1598,10 @@ const checks = [
       routes.membersDiscover.includes('communitySlug(req)') &&
       routes.membersDiscover.includes(".eq('member_id', auth.memberId)") &&
       precedes(routes.membersDiscover, 'if (!requester) return unavailable(403)', 'profile:members!community_members_member_id_fkey!inner(') &&
-      precedes(routes.membersDiscover, ".eq('profile.profile_visibility', 'public')", '.limit(50)') &&
+      helpers.memberFinder.includes('export const DIRECTORY_LIMIT = 50;') &&
+      precedes(routes.membersDiscover, ".eq('profile.profile_visibility', 'public')", '.limit(DIRECTORY_LIMIT)') &&
+      precedes(routes.membersDiscover, 'req.headers.get(DIRECTORY_EXPECTED_OWNER_HEADER)', 'getSupabaseAdmin()') &&
+      routes.membersDiscover.includes('[DIRECTORY_OWNER_HEADER]: auth.memberId.toLowerCase()') &&
       routes.membersDiscover.includes('PUBLIC_MEMBER_SELECT') &&
       routes.membersDiscover.includes('parsePublicMemberProfile(row.profile)') &&
       !routes.membersDiscover.includes('wallet_address') &&
@@ -1959,7 +1963,9 @@ const checks = [
       !routes.message.includes('NextResponse') &&
       !routes.message.includes('senderId') &&
       pages.members.includes("fetch('/api/message'") &&
-      pages.members.includes('getAuthHeaders(true)') &&
+      pages.members.includes('dmHeaders(true)') &&
+      pages.members.includes('new Headers(await getAuthHeaders(json))') &&
+      pages.members.includes('scoped.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)') &&
       pages.members.includes('getSupabaseAccessToken()') &&
       pages.members.includes("fetch('/api/message', { headers, cache: 'no-store' })") &&
       pages.members.includes('fetch(`/api/message?peerId=${encodeURIComponent(scope.peerId)}`') &&

@@ -1,0 +1,344 @@
+{
+  "recordedAt": "2026-11-08T09:06:42.111395+00:00",
+  "status": "PASS_LOCAL_ONLY",
+  "baseCommit": "e78e9de631861db1d669c94f70810a3ea77c0158",
+  "canonical": "/Users/christaylor/Documents/Codex/soe-release",
+  "sourceArchive": {
+    "at": "2026-11-08T08:41:59.191849+00:00",
+    "baseCommit": "e78e9de631861db1d669c94f70810a3ea77c0158",
+    "canonical": "/Users/christaylor/Documents/Codex/soe-release",
+    "source": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source",
+    "archiveSha256": "1399090cb0dc8eba5461c7cc00be8a9fd83592f1dc080ce787d7f23c3c71bcb0",
+    "archiveBytes": 148858880,
+    "newInstallations": 0,
+    "spentUsd": 0,
+    "scope": "Exact clean Git archive and existing dependencies. No live credentials, dotenv files, private member rows or private originals copied."
+  },
+  "sourceFiles": {
+    "app/api/members/discover/route.ts": {
+      "bytes": 3661,
+      "sha256": "028599cc46a96dc647bb69cb7104d7c526a3c0afb5b9c434107f28dc1fb2af3f"
+    },
+    "app/members/MemberFinder.tsx": {
+      "bytes": 7182,
+      "sha256": "132a957a5fa832740d588032ac5a1eee703e9c58132b125f0bbd3f7790973cff"
+    },
+    "app/members/member-finder.module.css": {
+      "bytes": 1834,
+      "sha256": "a529355e5c8dcb94009205fa72ee63eb8c00595cf4402fb991c08b180e4e5a5c"
+    },
+    "app/members/page.tsx": {
+      "bytes": 34255,
+      "sha256": "74d497fe7f60ccdad0de9adbea0dcc135e6cb91a8f410e63ec385a0d550e2a8b"
+    },
+    "docs/integration/current-service-readiness.md": {
+      "bytes": 14397,
+      "sha256": "52e911cc40a591ebec3579104c6c4322b39a8b875843166d16737ad0553660d8"
+    },
+    "docs/integration/member-discovery.md": {
+      "bytes": 6459,
+      "sha256": "442285cf8945e284ee60bc72af962ed5a3cb84771fc48da34d3353ce9d4f8ed3"
+    },
+    "lib/members/finder.ts": {
+      "bytes": 3081,
+      "sha256": "23ab28d9685625658e21519cc1d725833fa1f348c30830b6d1038af812f0b669"
+    },
+    "scripts/external-effect-lazy-clients-smoke.mjs": {
+      "bytes": 163382,
+      "sha256": "11ac90198a1f671ccc0545bc08ece5c3f9d4d9d3a63abe4f6c337ceb566f6738"
+    },
+    "verification/web/scripts/browser-member-finder.mjs": {
+      "bytes": 13289,
+      "sha256": "09f5249e3742458ecb4baae0d37c89995837d1699c1cfc41f65a56fcbcbfd154"
+    },
+    "verification/web/tests/member-finder.test.mjs": {
+      "bytes": 3195,
+      "sha256": "3d81c0980c5d7cf7529cc8d9fe67fb2d445c31acaf650cbebcb6162178a40ea7"
+    },
+    "verification/web/tests/public-member-profile.test.mjs": {
+      "bytes": 17725,
+      "sha256": "8369eb58e7752f0c860b5c03538e39119e82356c60802dcae518caa4a8e9491a"
+    },
+    "verification/web/tests/support/member-finder-app.mjs": {
+      "bytes": 4228,
+      "sha256": "34b3d26a1d6a26611d48d6f717adc97fdb561cc63eb80dbef7888afc8e4505d4"
+    }
+  },
+  "buildBinding": {
+    "inputFiles": 1229,
+    "residentWorkingFileMatches": 1097,
+    "committedBlobMatchesForUnchangedOffloadedPaths": 132,
+    "offloadedWorkingFilesNotOpened": [
+      "content/great-books/relativity/assets/rasterized/3ab293bedf5aa23c98baa5fc17895e1953172ad3d276fa433d0d408f7ffa13f2.png",
+      "content/great-books/relativity/assets/rasterized/3e13f952dfb4ab4c521a84440c6a0af9b051654dabc383b9a6ff73a1b1f861ef.png",
+      "content/great-books/relativity/assets/rasterized/3e37497f84b8b5e977957de037657dbca1b61147ca5e3249f7403bf5551184a7.png",
+      "content/great-books/relativity/assets/rasterized/3e5305ce246177c705c6e0bcb78ffc7484eead820e8466cea3ede10f477d84bc.png",
+      "content/great-books/relativity/assets/rasterized/3e9fa25da9286ab47b9ee5785b41acade906e0648b7acd69d054e1e098d69a6c.png",
+      "content/great-books/relativity/assets/rasterized/3f2cb479eec98cb9dee673ef684bb3745b646044825ee7bd0d10f256dcad1988.png",
+      "content/great-books/relativity/assets/rasterized/3f808d42351838b5572fd0c9c0e0a0c0d9b57472f4dcfaee81202e87aff28af4.png",
+      "content/great-books/relativity/assets/rasterized/41906d7bd119138510dd77bb90de33dbf5b7bc9fae47bb3afd23dc21c0514adf.png",
+      "content/great-books/relativity/assets/rasterized/42785323fd2aa6d274b63df4af048f6114c26b43498b1b9a876cd69137b9387b.png",
+      "content/great-books/relativity/assets/rasterized/44ea38bef978f739177ee23a93bed496e421af39f29d5df852380e1e6689cc9c.png",
+      "content/great-books/relativity/assets/rasterized/4530588f90e58a6c00b47dcf523364c95b3584e8e35130a1c175d0778c08dcb3.png",
+      "content/great-books/relativity/assets/rasterized/455c577add97ca628a803f58bafbd3b7434e2ed8108c133c320b29947b751599.png",
+      "content/great-books/relativity/assets/rasterized/46379b8e6e2a5e3914d870a50e692ad29dbfb8a25b2186fcd202f64eaf0b3a20.png",
+      "content/great-books/relativity/assets/rasterized/4d4e342b3f28ff8961a40e175774fbc51deeb149d4be4f9246030acab2cf57fd.png",
+      "content/great-books/relativity/assets/rasterized/4e9d6c7919e91594672eaf69308f896b9e7b59d0db129717f27bc884a6f2392f.png",
+      "content/great-books/relativity/assets/rasterized/4f69f6ec2eb56c3a2a966495875ce027c4182f6df33f616ad2265c0ecc36c01d.png",
+      "content/great-books/relativity/assets/rasterized/566ac2e5c66cef4b8d8ead0fc08bab751d5e7e48919152ca42eef013bc9f7451.png",
+      "content/great-books/relativity/assets/rasterized/56777dc3dad04cc104cfe67d39a49e3f187320a41383716a9f8a69d9e4df2692.png",
+      "content/great-books/relativity/assets/rasterized/5762c0a15a86bf0204489f3edc0e4daacce8e6f396560593b89f366201b30069.png",
+      "content/great-books/relativity/assets/rasterized/57fa5953211e6bd7abc72ef032814b4b898b0673cb9a42590b8253e172e911fa.png",
+      "content/great-books/relativity/assets/rasterized/5d157a5d00d9d0a5eada66145600f64239927b5e0d7308a32739e22823e081e2.png",
+      "content/great-books/relativity/assets/rasterized/5deca10598f4fe77584c30bae0dee1e29788063297549a6185c53e58b2d2d6c1.png",
+      "content/great-books/relativity/assets/rasterized/5f412c8309d5a449b72f6fad8e4eb8ba122b2d3bc0c918ce0961581eb78e7b4f.png",
+      "content/great-books/relativity/assets/rasterized/5f643f4b85f919609f3f910327da9629714c3c3a2b9049e8c7018f2724b40632.png",
+      "content/great-books/relativity/assets/rasterized/618a5153a7292556e6c0f031b0ac7479cd85ec6ce887014d6dd8c491c4fc1ff2.png",
+      "content/great-books/relativity/assets/rasterized/62117deb4777ee0195667d591cd0824c2e7b73830f5a07a426353cdb5d18eeb2.png",
+      "content/great-books/relativity/assets/rasterized/63b7695d2a472afdfaf5b4075820539fd5bd0525c4013bd02fde2160f7f7fe5d.png",
+      "content/great-books/relativity/assets/rasterized/64bf786ff00a69d57cf34a5fd30eb2362a68f7fd534852067027f4cc9ba5272a.png",
+      "content/great-books/relativity/assets/rasterized/65b3a15ad3c48874345a563d8d9fe7fe24787fa06115b27ca345116fc454da17.png",
+      "content/great-books/relativity/assets/rasterized/65c49db62025d9c86d602e978272a73c26295ec956efa382f65937c48e958e1e.png",
+      "content/great-books/relativity/assets/rasterized/65ee9c8e16be43faf2dca9cea658e6d7eec9d5550da4dde169a3570460651c50.png",
+      "content/great-books/relativity/assets/rasterized/671fa43a50426f0ef3436a6d1e2a920925b079711f22ef393bdf3bf21bb4a22c.png",
+      "content/great-books/relativity/assets/rasterized/6c88999468ef31c9b40abde86c6dbebf63b460e07d004d03387d3b0aed92e2eb.png",
+      "content/great-books/relativity/assets/rasterized/6d78ae9d61171a261e65893c08181e7cedee2c6b979e89072d781e0e11c80287.png",
+      "content/great-books/relativity/assets/rasterized/6fb053f36e599f638b9ade7b8fdd06ead7986bc5183bcd11f384e986401756d6.png",
+      "content/great-books/relativity/assets/rasterized/71d3fbb2ae5dc9045bf3b8f4774278fc0f4410b4abe4545e279bdc952f33644e.png",
+      "content/great-books/relativity/assets/rasterized/71d77fd4ae83d44180b0089c005d25d9a66f8b70bb22dfddb6df801b0bda1edb.png",
+      "content/great-books/relativity/assets/rasterized/73889c4df13f2bbf60ad9d631c015052933aed342de0080c685e9ecacecfcf0d.png",
+      "content/great-books/relativity/assets/rasterized/74e1204b61c0d53575de2fb74d19b97913d6dc232040abd3cb325e3040fd33c2.png",
+      "content/great-books/relativity/assets/rasterized/775d85778e2912dfc0b57907dcb5334007300a5f8b62259a5d9a99c8aa71b378.png",
+      "content/great-books/relativity/assets/rasterized/77ebe748140749465977ed802dfa58360807fdf3477704fe038cb3263961b759.png",
+      "content/great-books/relativity/assets/rasterized/7a60b807ce04bdbfe612ca30db5cc95003a0fe6aa650306d378b8761babc243e.png",
+      "content/great-books/relativity/assets/rasterized/7c40c4fb06c7a9fa13b3a07e3cba401927968388063280333acd6f56212cd4c0.png",
+      "content/great-books/relativity/assets/rasterized/7ec641d425262ed6116fada4215d4e68f4e23d799f691e19fc5ca6cf2d098251.png",
+      "content/great-books/relativity/assets/rasterized/81f112a5db9456651ad3140f1bfe6ed3cae7c0e3bdbe34ec44199a18d42d2494.png",
+      "content/great-books/relativity/assets/rasterized/82354a14d43bf8c5dc081c9c1677b252414b86d1497b1469fb502b6cf922c711.png",
+      "content/great-books/relativity/assets/rasterized/8293bafa6f890a9197afebdf3ea758e2d7f40ba862f2e00d685ffa1ca7185a0f.png",
+      "content/great-books/relativity/assets/rasterized/833a8fa5eb5c01ee598a65d5f4985d9850a2b62397937cca8191a3757375ec2f.png",
+      "content/great-books/relativity/assets/rasterized/860ff76daed3206c3261495d39ac14cbcd0fa796d61cedc83ac71c2234d263cb.png",
+      "content/great-books/relativity/assets/rasterized/87faa26878c0c7d4c49df2419093dcea2af8c452463c0e95cf9273e3d3b75c47.png",
+      "content/great-books/relativity/assets/rasterized/8c6098e1bf2e4d6e85ab1fc91f544188bc2ef3507efc5719ad5fd8e17686580f.png",
+      "content/great-books/relativity/assets/rasterized/924c171de5ba2297a79a57e8a2182a5f28eb2962872fef74f4fe44a5fdbca6c2.png",
+      "content/great-books/relativity/assets/rasterized/929341f72ef9f412b45c63a3bac34af38995bbe0a77e49634ca079edf26f01db.png",
+      "content/great-books/relativity/assets/rasterized/93332b3152cd20d03fa717aab31f3d84a4ffbcc2f31486c9673289b0605af308.png",
+      "content/great-books/relativity/assets/rasterized/9393ec73be4f1a58f9cdfffa75fc90dce9eec3ba1221ffcf2d719861ebd7e9ee.png",
+      "content/great-books/relativity/assets/rasterized/945e295fe4ccbeb4fb5b63727c770fe6b973d65a7c4c078c16b9d1d8ae966ed5.png",
+      "content/great-books/relativity/assets/rasterized/954fc361a5669a819ea9f638907291fc4fc34bf2e69f50089a60a937ec87cc40.png",
+      "content/great-books/relativity/assets/rasterized/95d571cdf01f58fe8d0e2116e1ff8111b18ac679f3c9d64f60d91aeed60d1aec.png",
+      "content/great-books/relativity/assets/rasterized/9614040dfb2dfd27361ac3c4b187be212181f0d647676b6ec149b5a0e7ff5816.png",
+      "content/great-books/relativity/assets/rasterized/97ecd3d952e4562f5885b3d365915742bcfe6aef28309400b1ad203ba043456e.png",
+      "content/great-books/relativity/assets/rasterized/9a7ee063a773bed7e0465ade98a5fd88b18f722368af4cf8159cc337a5e98dfb.png",
+      "content/great-books/relativity/assets/rasterized/9f2cee6becb82af4db458bf36da92776267ba87272d6f7d1294aa8072312691f.png",
+      "content/great-books/relativity/assets/rasterized/9f432f80d5f3ad869a3d3f456a0694618dec2d89a2890d97a371ce41bc67a1d8.png",
+      "content/great-books/relativity/assets/rasterized/a2d3102a1990c67daf11ad9e9c6fc7203c516fbc74daa4f26a4f9fa347a7be76.png",
+      "content/great-books/relativity/assets/rasterized/a8ef0400c8bcfc891768240e8ff9f5e9a4353635770b26e691cece92d42fc073.png",
+      "content/great-books/relativity/assets/rasterized/ac2c9ea2bc2640270bde16ddadec4d85c6078bb4ec460840b7d61a03554307c2.png",
+      "content/great-books/relativity/assets/rasterized/afb1fb69b864ab9b960cb37de234aa5922e0995e7dada4171a52814654ad70d4.png",
+      "content/great-books/relativity/assets/rasterized/b000d7d936d533c3840dc653e52ac1384c37e7aec3865b458f13eb11ef35c83c.png",
+      "content/great-books/relativity/assets/rasterized/b09e607a63db2a4ee0a6b82528b7e23346320a95e7f69a9f6622986cb076d661.png",
+      "content/great-books/relativity/assets/rasterized/b0a239d259b188cea679471552f8ac62d4334b87e69bae1196c553a9d45a4751.png",
+      "content/great-books/relativity/assets/rasterized/b0b3ea081c92f584641f909f3e71fea6e05e6a923cb8b8d009e28751cc45df15.png",
+      "content/great-books/relativity/assets/rasterized/b448c2e9f71c04b59797f995581e5a3d84c6e2b933fcd44bde64efccd2bc75f2.png",
+      "content/great-books/relativity/assets/rasterized/b507c1739cdcfde6129d89ee2292c702850075eebf68ac93595ac73940240d63.png",
+      "content/great-books/relativity/assets/rasterized/b5879dec4e426e1ff81885b5f8572baaf60d8a0738b3932a754c4af1ef16e525.png",
+      "content/great-books/relativity/assets/rasterized/b63391d3e37605aadb6cb9bb45daec558aed36a9caf4d610209092df956d4e8c.png",
+      "content/great-books/relativity/assets/rasterized/c0f692e27d3e18357b42c07ba2c25ca7f65f7f30ae8c9450f8f7a00de70b463f.png",
+      "content/great-books/relativity/assets/rasterized/c379352a97417cdcca14cfc4645382d2cc9bfbb6df3cdc00ef9bb6ef2f23792e.png",
+      "content/great-books/relativity/assets/rasterized/c8f0242ed8a3909fc16e0acd29f0da9f9fec0abf0e262e03a72c1534f2223937.png",
+      "content/great-books/relativity/assets/rasterized/c975af433fb54a3edb44d0c10c0516fa2878c7f2ca0b26e2d6108d8eb6cdb3a5.png",
+      "content/great-books/relativity/assets/rasterized/cded039d5eff83803a067877be1c73ea1e27cd004118e93179d73b178cd557a8.png",
+      "content/great-books/relativity/assets/rasterized/d413ff2b37ada1e916e240e79f9368b6c0162eb13d58a348532a4d705ae0aa7f.png",
+      "content/great-books/relativity/assets/rasterized/d41d0d9cd014a6d3ce6e3e9cc154c00cb92e37ffd9d9e00eba57fc7dcda1f064.png",
+      "content/great-books/relativity/assets/rasterized/d620f1126bbebb68a6c235ad2fa5dd0ae3e8126f6f73db3820ded19660c3043c.png",
+      "content/great-books/relativity/assets/rasterized/daaab75742a96707b8d2c787d16b4d9787639c17ea4904348e4c8cf8d0d53975.png",
+      "content/great-books/relativity/assets/rasterized/db3839695ffe696259a9e3a3048bcd28678a5d63f8b77564062558eee14ecaf6.png",
+      "content/great-books/relativity/assets/rasterized/e0c40e2e155c2fdce5d57cd74a22fcf4f5639d9dc7b4d4d9f37571850553dd0f.png",
+      "content/great-books/relativity/assets/rasterized/e1a267acdbd3c981eab3545e42ac1bfe52e8bb1b7b33f33f1d31e7319ccda8c2.png",
+      "content/great-books/relativity/assets/rasterized/e65260e5938cf488969d6a5ab392ac587a1ac5bbe6b7ee3f03495a8beea7d225.png",
+      "content/great-books/relativity/assets/rasterized/e7d1361211ea854e2ed05e455b547639de01e9c1c0264a8ad0c234431e95706b.png",
+      "content/great-books/relativity/assets/rasterized/e9df85e0eaefd9d710e370edc05be15f61f374a7d9d7c5b38dbb5873626a366b.png",
+      "content/great-books/relativity/assets/rasterized/ebdd2c1757665a0363a505c6b323200b65854a5cb438c545368e131120067b98.png",
+      "content/great-books/relativity/assets/rasterized/ecd5df090e85dd48d7179a9d9e3f42d2cd4ea1d27654bed4d0dd04c3fcd78f57.png",
+      "content/great-books/relativity/assets/rasterized/f00074c11033ea446a1f7e1e84959d2daa815a3869385309096ba1cfb5149157.png",
+      "content/great-books/relativity/assets/rasterized/f3bce5b43b836ffb48177c16c5d57d81b9d28deb31d6fc293e448ac814591196.png",
+      "content/great-books/relativity/assets/rasterized/f4092db139ecc5f6a3e1c455558bfdfd5e39d67dcb9bdeefb43dffe831cf30a6.png",
+      "content/great-books/relativity/assets/rasterized/f6e32e64f00e186067a02054872ba15618b09a9d166813dfb285107e9486652b.png",
+      "content/great-books/relativity/assets/rasterized/fb8b3b28d4498e26af853e42d9743907390e4d3dd0e32be28fb150efae8fc52a.png",
+      "content/great-books/relativity/assets/rasterized/fbd01ae228359d25f4881e14161dff2c70bc2afcb23d19c7aa2395c0adab3986.png",
+      "content/great-books/relativity/assets/rasterized/fd58e2bfbcf851a53501f891b8f77fa78ce46f8aebb0c3a18fa5c52becf00746.png",
+      "content/great-books/relativity/native-reader.html",
+      "content/great-books/relativity/passages.json",
+      "content/great-books/relativity/source-receipt.json",
+      "content/great-books/republic/manifest.json",
+      "content/great-books/republic/passages.json",
+      "content/great-books/republic/source-receipt.json",
+      "package-lock.json",
+      "platforms/quest/AUTHOR_AI_CONSENT.md",
+      "platforms/quest/README.md",
+      "platforms/quest/circle-host.mjs",
+      "platforms/quest/circle-page.mjs",
+      "platforms/quest/circle.html",
+      "platforms/quest/meeting.mjs",
+      "platforms/quest/member-blocks-view.mjs",
+      "platforms/quest/member-contributions-view.mjs",
+      "platforms/quest/quest.css",
+      "platforms/quest/room-composer.mjs",
+      "platforms/quest/room-message-safety.mjs",
+      "platforms/quest/salon-presence.mjs",
+      "platforms/quest/xr-room.mjs",
+      "platforms/quest/xr-session.mjs",
+      "platforms/shared/quest-entry.ts",
+      "postcss.config.mjs",
+      "public/file.svg",
+      "public/globe.svg",
+      "public/icon-192.png",
+      "public/icon-512.png",
+      "public/images/92b-window-qr.svg",
+      "public/manifest.json",
+      "public/next.svg",
+      "public/sw.js",
+      "public/vercel.svg",
+      "public/window.svg"
+    ],
+    "allChangedBuildInputsComparedDirectly": true
+  },
+  "validation": {
+    "focusedNodeTests": 26,
+    "guardMutationTests": 13,
+    "staticChecks": 73,
+    "compiledBrowserStories": 8,
+    "offlineBuildInputs": 1229,
+    "scopedLint": "PASS",
+    "screenshotsInspected": true,
+    "externalBrowserRequests": 0,
+    "browserOrFixtureErrors": 0,
+    "ownedAppPreviewsStopped": 2,
+    "portsClosed": [
+      55726,
+      55728
+    ]
+  },
+  "storage": {
+    "minimumSampledFreeBytes": 15474262016,
+    "maximumSampledPrivateAllocatedBytes": 18979180544,
+    "ownerLimits": {
+      "minimumFreeBytes": 8000000000,
+      "maximumAdditionalBytes": 30000000000
+    }
+  },
+  "budget": {
+    "authorizedUsd": 200,
+    "spentUsd": 0,
+    "remainingUsd": 200,
+    "chargeScheduled": false
+  },
+  "noHostedChanges": true,
+  "noNewDependencies": true,
+  "evidence": {
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-tests-01.json": {
+      "bytes": 1408,
+      "sha256": "7691490b21b9316e82d74012bbe7e676cc335840ecb72a1f2fb7bdd0a84e102a"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-tests-01.log": {
+      "bytes": 7145,
+      "sha256": "eb1d9fac63f2f266c2c3fd18b766d455b26d960ba921a1423339c19085c55a21"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-static-02.json": {
+      "bytes": 990,
+      "sha256": "9391fe34d92d7a806c8a66bb365df065ca5971a6353e0d2c826434142ac6069f"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-static-02.log": {
+      "bytes": 5996,
+      "sha256": "345e2429e76142122aaca445aa12107b1c44afe623aa6dec251ab632cdd5d4db"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-guard-regression-01.json": {
+      "bytes": 1217,
+      "sha256": "8a6bdfae566be21cb429e991cf7f0f9099fd2a72dd5d5e784196f10c39da58d9"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-guard-regression-01.log": {
+      "bytes": 3025,
+      "sha256": "3dfebefd9eef0008d2391bc1d437439851a5e9a93e17cc9d6a924ae54277628f"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-build-02.json": {
+      "bytes": 1814,
+      "sha256": "5f87e614ae86b03dab4637f16c7dd337d61a5f1d3d7017ae0f215de89f3900e6"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-build-02.log": {
+      "bytes": 789,
+      "sha256": "e165ea456a5e4c84bc001d59c3bd957731d9fcfd72ad44e2c1b179647315f1ee"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-lint-02.json": {
+      "bytes": 1249,
+      "sha256": "905c60960e4de1c16467eda5ab90aef0bd917b00a9750105b3b7a342cadf1758"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-lint-02.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-server-guard-01.json": {
+      "bytes": 1468,
+      "sha256": "8b04db157abcbe4116fb0aa4be8c5ddb2eafa69a68ba3cf6b15b9cd75bb12213"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-server-guard-01.log": {
+      "bytes": 207,
+      "sha256": "ea78ea4b5103745aa822a8e47ec039eba18aa5d9b419bb479cad419b75b1d502"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-preview-01.json": {
+      "bytes": 3917,
+      "sha256": "d4c281f5c4fb5e03921259b2cfab6b1ae23f5c8fe98ee211a0d5973409b26793"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-preview-01.log": {
+      "bytes": 336,
+      "sha256": "74c34b4f8f09c3c8ff1794d402a50a4d5a7ee881f35bde86835089341c53816c"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-preview-02.json": {
+      "bytes": 2692,
+      "sha256": "e51fad8f185dfece2dccdb1dea8c5d2c4f5f96dc95bec9d98696201db89eea32"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-preview-02.log": {
+      "bytes": 336,
+      "sha256": "6cdbe9a3697129713217f8a45038d8f85ce5fc5b63bb482bb141b2284d13e921"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-browser-03.json": {
+      "bytes": 1667,
+      "sha256": "03c453dffb8d9e886e6aa6caa3e067fde48f8228ec1e23cbdce4c36f31c3bdbe"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/member-finder-browser-03.log": {
+      "bytes": 68,
+      "sha256": "5ea2928fbdd275f7515eea715f18386687d37edced0e554847e0123ebb8440e9"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/MATCHING_DISCOVERY.json": {
+      "bytes": 2796,
+      "sha256": "76d7075517196712a01f0fcecdb45c20bea2b5cd5e7d7fcc346880d539f43826"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-member-finder-02-next-build.json": {
+      "bytes": 737,
+      "sha256": "9274511cb20d228fde8e5fad95311364d93e1e491b97c65d360f7d0c38431910"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-member-finder-02-build-source-sha256.json": {
+      "bytes": 147730,
+      "sha256": "7354971f4ad4f0f608d987274ca53d707846a3ec5ecee076c2a5efc7ecca9396"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/member-finder-browser-03/result.json": {
+      "bytes": 10107,
+      "sha256": "129bb93f6a29131bb83d84316d4d82e742891855de29511791d31635450b8431"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-member-finder-preview-02-server.json": {
+      "bytes": 876208,
+      "sha256": "56f449e1c040881e6db084b006349e830de545bcb3bcc41fa092169d2a1b165c"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/member-finder-browser-03/published-profile-search-phone.png": {
+      "bytes": 243132,
+      "sha256": "9642b291d1832e0d40ad4072a9c81a460163cbeba8423ae6fcf08946a1a1c2ec"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/member-finder-browser-03/published-profile-result-phone.png": {
+      "bytes": 239371,
+      "sha256": "386f8be2aeebaf84e89c986d7183ff3a7d423226f798ccf63308e15903d49b24"
+    }
+  },
+  "reconciliation": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/TEST_RECONCILIATION.json",
+  "limits": "Compiled Next page and real auth/directory handlers with synthetic signed wallet identities and explicit FakeDb relation transport. No hosted database, real member, provider login, DM delivery or device acceptance. No publication or spending. Existing wallet-session access is mocked; erasure gate is disabled. The four legacy matching families remain separately unvalidated and gated.",
+  "next": "Keep hosted restore/access and physical acceptance gates. Deeper matching needs reviewed consent, withdrawal, validity and access; no purchase is necessary for the next bounded review."
+}

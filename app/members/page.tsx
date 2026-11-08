@@ -10,6 +10,7 @@ import { DIRECT_MESSAGE_ACK_LIMIT, DIRECT_MESSAGE_OWNER_HEADER, parseDirectMessa
 import DirectMessageBlocks, { sendBlockChange } from './DirectMessageBlocks'
 import styles from './direct-message.module.css'
 import PublishedProfileLink from '@/components/PublishedProfileLink'
+import MemberFinder from './MemberFinder'
 
 interface Member {
   id: string
@@ -109,9 +110,6 @@ export default function MembersPage() {
   const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile' | 'blocked'>('directory')
   const [directoryStatus, setDirectoryStatus] = useState<'loading' | 'ready' | 'forbidden' | 'unavailable'>('loading')
   const [retired, setRetired] = useState(false)
-  const [matchQuery, setMatchQuery] = useState('')
-  const [matchResult, setMatchResult] = useState('')
-  const [matchLoading, setMatchLoading] = useState(false)
   const [showThinkerPicker, setShowThinkerPicker] = useState(false)
   const [sendStatus, setSendStatus] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
@@ -140,7 +138,7 @@ export default function MembersPage() {
       invalidate()
       setRetired(true); setCurrentMember(null); setSelectedMember(null); setMembers([]); setMessages([])
       setInput(''); setContact(null); setBlockReview(null); setBlockBusy(false)
-      setSendStatus(''); setMatchQuery(''); setMatchResult(''); setUnreadCount(0)
+      setSendStatus(''); setUnreadCount(0)
     })
     return () => { invalidate(); stop() }
   }, [])
@@ -333,26 +331,6 @@ export default function MembersPage() {
     }
   }
 
-  async function findMatch() {
-    if (!matchQuery.trim()) return
-    const generation = authorityEpoch.current
-    setMatchLoading(true); setMatchResult('')
-    const memberProfiles = members.filter(m => m.id !== currentMember?.id)
-      .map(m => `${m.display_name} | ${m.discipline || 'Explorer'} | Skills: ${(m.skills || []).join(', ')} | Project: ${m.project_description || 'n/a'} | Seeking: ${m.seeking || 'n/a'}`)
-      .join('\n')
-    const headers = await getAuthHeaders(true)
-    if (generation !== authorityEpoch.current) return
-    const res = await fetch('/api/match', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ query: matchQuery, memberProfiles, seekerName: currentMember?.display_name, walletMemberId: currentMember?.id, seekerProfile: currentMember })
-    })
-    const data = await res.json()
-    if (generation !== authorityEpoch.current) return
-    setMatchResult(data.result || 'No matches found.')
-    setMatchLoading(false)
-  }
-
   function focusChat(peerId: string | null) {
     if ((chatScope.current?.peerId ?? null) === peerId) return
     chatScope.current = peerId ? { peerId, readRevision: 0, sending: false, changingBlock: false } : null
@@ -393,11 +371,11 @@ export default function MembersPage() {
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.25em', color: gold }}>SOCIETY OF EXPLORERS</div>
         <nav className={styles.topNav} aria-label="Member views">
           {(['directory', 'chat', 'match', 'profile'] as const).map(v => (
-            <button key={v} onClick={() => changeView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
+            <button key={v} aria-pressed={view === v} onClick={() => changeView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
               {v === 'chat' && unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#c05050', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif' }}>{unreadCount}</span>
               )}
-              {v.toUpperCase()}
+              {v === 'match' ? 'FIND PEOPLE' : v.toUpperCase()}
             </button>
           ))}
           <button onClick={() => router.push('/salon')} style={{ background: 'none', border: `1px solid ${goldBorder}`, color: muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px' }}>← SALON</button>
@@ -615,38 +593,11 @@ export default function MembersPage() {
           </div>
         )}
 
-        {/* MATCH VIEW */}
+        {/* PUBLISHED PROFILE DISCOVERY */}
         {view === 'match' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '3rem 2rem' }}>
-            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '1rem' }}>AI MATCHMAKER</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', color: gold, marginBottom: '2rem' }}>FIND YOUR COLLABORATOR</h2>
-              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: muted, lineHeight: 1.8, marginBottom: '2rem', fontStyle: 'italic' }}>
-                Describe what you&apos;re building or looking for. The AI uses the published profiles available in this directory to suggest a collaborator.
-              </p>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '2rem' }}>
-                <input
-                  value={matchQuery}
-                  onChange={e => setMatchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && findMatch()}
-                  placeholder="e.g. Looking for a blockchain developer who cares about philosophy..."
-                  style={{ flex: 1, background: bgCard, border: `1px solid ${goldBorder}`, padding: '12px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none' }}
-                />
-                <button
-                  onClick={findMatch}
-                  disabled={matchLoading}
-                  style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: '#000', background: gold, border: 'none', padding: '12px 20px', cursor: 'pointer', opacity: matchLoading ? 0.6 : 1 }}
-                >
-                  {matchLoading ? 'SCANNING...' : 'FIND MATCH'}
-                </button>
-              </div>
-              {matchResult && (
-                <div style={{ background: bgCard, border: `1px solid ${goldBorder}`, padding: '2rem', borderLeft: `2px solid ${gold}` }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, marginBottom: '1rem', opacity: 0.7 }}>YOUR MATCH</div>
-                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: ivory, lineHeight: 1.9 }}>{matchResult}</div>
-                </div>
-              )}
-            </div>
+          <div style={{ flex: 1, overflowY: 'auto', minWidth: 0 }}>
+            {currentMemberId && <MemberFinder key={currentMemberId} ownerId={currentMemberId} onOpenConversation={member =>
+              openChat({ id: member.id, display_name: member.display_name, discipline: member.discipline ?? undefined, skills: member.skills })} />}
           </div>
         )}
       {/* PROFILE VIEW */}

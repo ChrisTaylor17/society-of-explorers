@@ -59,7 +59,11 @@ function fixture({ visibility = 'private', rows, member = true } = {}) {
 async function request(app, { provider = 'supabase', url = 'https://soe.invalid/api/members/discover', signed = true } = {}) {
   const req = new Request(url); req.nextUrl = new URL(url);
   const wallet = provider === 'wallet' && signed ? await app.load('lib/auth/walletSession.ts').createWalletSessionValue(OWNER) : null;
-  req.cookies = { get: name => name === 'soe_auth_provider' ? { value: provider } : name === 'soe_wallet_id' && wallet ? { value: wallet } : undefined };
+  const intent = '99999999-9999-4999-8999-999999999999';
+  const cookies = { soe_auth_provider: provider, soe_auth_intent: intent,
+    soe_auth_selection_v1: `v1.${intent}.${provider}.${provider === 'wallet' ? OWNER : SUBJECT}`,
+    ...(wallet ? { soe_wallet_id: wallet } : {}) };
+  req.cookies = { get: name => cookies[name] === undefined ? undefined : { value: cookies[name] } };
   return req;
 }
 const explorer = (app, id) => app.load('app/api/explorer/[id]/route.ts').GET(new Request('https://soe.invalid/api/explorer/' + id), { params: Promise.resolve({ id }) });
@@ -144,6 +148,26 @@ test('signed-in outsiders and forged wallet hints cannot read the roster or publ
   assert.equal(a.db.log.filter(q => q.table === 'community_members').length, 1);
   assert.ok(!a.db.log.some(q => q.table === 'members' && q.filters.some(f => f[1] === 'profile_visibility')));
   const b = fixture(), denied = await discover(b, { provider: 'wallet', signed: false }); assert.equal(denied.status, 401); assert.equal(b.db.log.length, 0);
+});
+
+test('directory binds a refreshed response to the displayed account and rejects a changed account before reading the community', async () => {
+  for (const provider of ['supabase', 'wallet']) {
+    const a = fixture(), route = a.load('app/api/members/discover/route.ts');
+    const wrong = await request(a, { provider }); wrong.headers.set('x-soe-expected-member', PUBLIC);
+    const rejected = await route.GET(wrong); assert.equal(rejected.status, 409); noPrivate(await rejected.json());
+    assert.equal(a.db.log.filter(query => ['communities', 'community_members'].includes(query.table)).length, 0);
+    const right = await request(a, { provider }); right.headers.set('x-soe-expected-member', OWNER.toUpperCase());
+    const response = await route.GET(right); assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-soe-directory-owner'), OWNER); noPrivate(await response.json());
+    assert.match(response.headers.get('cache-control'), /private.*no-store/);
+  }
+});
+
+test('a freshly retrieved directory excludes a withdrawn publication', async () => {
+  const a = fixture(); assert.equal((await (await discover(a)).json()).members.length, 1);
+  a.db.rows('members').find(row => row.id === PUBLIC).profile_visibility = 'private';
+  const response = await discover(a); assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).members, []);
 });
 
 test('directory membership, roster and publication-schema failures return unavailable without profiles or a false empty success', async () => {

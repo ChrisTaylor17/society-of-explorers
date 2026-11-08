@@ -4,6 +4,7 @@ import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { PUBLIC_MEMBER_SELECT, parsePublicMemberProfile, type PublicMemberProfile } from '@/lib/members/profile';
 import { isPublicExplorerId } from '@/lib/explorer/publicProfile';
+import { DIRECTORY_EXPECTED_OWNER_HEADER, DIRECTORY_OWNER_HEADER, DIRECTORY_LIMIT } from '@/lib/members/finder';
 
 const unavailable = (status: number) => privateJson({ error: 'This community directory is unavailable.' }, { status });
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -19,6 +20,8 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthenticatedMember(req);
     if (!auth) return unavailable(401);
+    const expectedOwner = req.headers.get(DIRECTORY_EXPECTED_OWNER_HEADER);
+    if (expectedOwner !== null && expectedOwner.toLowerCase() !== auth.memberId.toLowerCase()) return unavailable(409);
     const slug = communitySlug(req);
     if (!slug) return unavailable(400);
     const db = getSupabaseAdmin();
@@ -42,8 +45,8 @@ export async function GET(req: NextRequest) {
     const { data: rows, error: profileError } = await db.from('community_members')
       .select('community_id,member_id,profile:members!community_members_member_id_fkey!inner(' + PUBLIC_MEMBER_SELECT + ')')
       .eq('community_id', community.id).eq('profile.profile_visibility', 'public')
-      .order('joined_at', { ascending: false }).limit(50).returns<unknown[]>();
-    if (profileError || !Array.isArray(rows) || rows.length > 50) return unavailable(503);
+      .order('joined_at', { ascending: false }).limit(DIRECTORY_LIMIT).returns<unknown[]>();
+    if (profileError || !Array.isArray(rows) || rows.length > DIRECTORY_LIMIT) return unavailable(503);
     const members: PublicMemberProfile[] = [], seen = new Set<string>();
     for (const row of rows) {
       if (!record(row)) return unavailable(503);
@@ -51,7 +54,7 @@ export async function GET(req: NextRequest) {
       if (!profile || row.community_id !== community.id || row.member_id !== profile.id || seen.has(profile.id)) return unavailable(503);
       seen.add(profile.id); members.push(profile);
     }
-    return privateJson({ members });
+    return privateJson({ members }, { headers: { [DIRECTORY_OWNER_HEADER]: auth.memberId.toLowerCase() } });
   } catch {
     return unavailable(503);
   }
