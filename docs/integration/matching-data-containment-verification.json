@@ -1,0 +1,147 @@
+{
+  "recordedAt": "2026-11-08T09:32:35.253266+00:00",
+  "status": "PASS_LOCAL_CANDIDATE_AND_AUDIT_ONLY",
+  "baseCommit": "2f342c64a98a9a8fce86e327f92deef916b27933",
+  "canonical": "/Users/christaylor/Documents/Codex/soe-release",
+  "changedSources": {
+    "docs/integration/current-service-readiness.md": {
+      "bytes": 14985,
+      "sha256": "0ecaca15afed72e4b6549bab35707319a32b774324a6d336527942bd76cf8180"
+    },
+    "docs/integration/matching-access-review.md": {
+      "bytes": 8834,
+      "sha256": "490781a99ef32ebcc1059cda59cc92c7162200cfa280f3332815ba41892a988b"
+    },
+    "docs/sql/matching-data-containment-apply.sql": {
+      "bytes": 5964,
+      "sha256": "86e9b4ba41f2803411bf0d45c36c5536ae0b07b186e66cc9354cb21f192440d3"
+    },
+    "docs/sql/matching-data-containment-preflight.sql": {
+      "bytes": 2894,
+      "sha256": "16426262608bcb634b5fb6b13e78dd8e13c683cc92151a36639ae3216e24d866"
+    },
+    "verification/web/tests/matching-data-containment.test.mjs": {
+      "bytes": 10267,
+      "sha256": "c2a03102e6998b81b8910251b698e0f62a8b3c9d623a6378e60e41329e454fc1"
+    }
+  },
+  "applicationSourceChanged": false,
+  "schemaCandidateAppliedToHosted": false,
+  "hostedObservation": {
+    "at": "2026-11-08T09:16:49.619148+00:00",
+    "tables": 3,
+    "memberRowsRead": 0,
+    "scope": "Read-only catalog metadata, not Data API exploit or full-database freshness proof."
+  },
+  "validation": {
+    "syntheticRouteFindings": 5,
+    "sqlTestResults": 15,
+    "negativeDriftCases": 11,
+    "scopedLint": "PASS",
+    "allDisposableDatabasesClosed": true,
+    "independentPostgresSessionTest": false,
+    "hostedPostgrestTest": false,
+    "newFullWebBuild": false,
+    "previousApplicationEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-member-finder-02-next-build.json"
+  },
+  "budget": {
+    "authorizedUsd": 200,
+    "spentUsd": 0,
+    "remainingUsd": 200,
+    "chargeScheduled": false
+  },
+  "ownerAvailability": "Owner is away from the Mac. No secure entry prompt opened; password step remains pending.",
+  "evidence": {
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/probe-matching.mjs": {
+      "bytes": 9308,
+      "sha256": "ffdd76008d797090064099464fb16d80d2f62b26521df6a1562750a12de0c40d"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/provider-guidance.json": {
+      "bytes": 3560,
+      "sha256": "e9656d20141c3d0d9954f63874e096f67f94dd964251df7951093e2cf53296bc"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/PREPARATION.json": {
+      "bytes": 584,
+      "sha256": "94ffb38c4e1e37a54f9dde8ae90352c1e48e6390bce5369e24a0a30098c5d49b"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/probe-source-binding.json": {
+      "bytes": 2041,
+      "sha256": "149fc743be1a91fc9d8b600abec08af98c37f9c129c2e7b78ed76d3851c4d836"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/guarded-stage.py": {
+      "bytes": 5057,
+      "sha256": "bd7253dd54cdce22d9a72f8fa334699baec5b96c058cdbcbc5b17d8e52c2ce2b"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/RECONCILIATION.json": {
+      "bytes": 846,
+      "sha256": "8c00764d3ef36c901680362bbf00bab72306defead3edb54dea0b88d32385cd1"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/route-observations.json": {
+      "bytes": 5828,
+      "sha256": "018ca36bc9ddae86953206238cd757777321a4d6010c8d1915adc109be90e455"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/supabase-changelog.md": {
+      "bytes": 103941,
+      "sha256": "d3b1566a6a60d54095de09aeb61f50128dd0da17357fd62b646ccf560007162d"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/matching-catalog-query.sql": {
+      "bytes": 2894,
+      "sha256": "16426262608bcb634b5fb6b13e78dd8e13c683cc92151a36639ae3216e24d866"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/supabase-changelog-receipt.json": {
+      "bytes": 311,
+      "sha256": "526c15188dadb7e24576ba6380a2ac7c7c56023ec9f3ee2a483e94dd0827ebf7"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-access/matching-catalog.json": {
+      "bytes": 8228,
+      "sha256": "ec50cf2a423c145bb61efbdde9b6f3aa9b23062447f9ea6823888b8c68a72e89"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-probe-01.json": {
+      "bytes": 1274,
+      "sha256": "d70c8e0bdcdd1e3a8352bb4f3a1f0bce3ca38fc55f04c358f6a679d59ea96acb"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-probe-01.log": {
+      "bytes": 1450,
+      "sha256": "ed4186c9cc57e19a6cc06f5a88a9db17b4d4141b1ceaa92d95a97d5eb78104bc"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-probe-02.json": {
+      "bytes": 1274,
+      "sha256": "3a4df789e48563bd847529d6cd554d4f27e7ac6d914d841a12b5b9716dcfd53b"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-probe-02.log": {
+      "bytes": 95,
+      "sha256": "e7cf3ca4d47aa00b07a7caa9eeb6fa42dfc361c9af06f36e0a7df5370d07f375"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-sql-01.json": {
+      "bytes": 1334,
+      "sha256": "2f852a757c07fdc38a7d260ea0d37a6d5a81e8979fe16845c35fac20cbeefde6"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-sql-01.log": {
+      "bytes": 2727,
+      "sha256": "4620e51f0c4ccfaf266dafc14a8e21ccdeaaf96a0933adc4774fe3b80108c7b9"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-sql-02.json": {
+      "bytes": 1335,
+      "sha256": "eb9706ce9dfc6c2e7b8e71a9eac0b504e63c6e054b598806c15bd864fd3dacb0"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-sql-02.log": {
+      "bytes": 2730,
+      "sha256": "f52232de24d5bfbc824300d0e3a9479a46615a0b5845f072e8648ca8e5269aac"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-lint-01.json": {
+      "bytes": 1042,
+      "sha256": "056c7a450785f66e7f863de8f49aec2cde875185e82d21b531153e0241260d15"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-access-lint-01.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "limitations": [
+    "The five route observations reproduce unsafe behavior; they are not acceptance tests approving it.",
+    "FakeDb route transport and wallet-access mock, with erasure disabled. SQL tests use one disposable PGlite connection.",
+    "Direct-table containment deliberately preserves service CRUD and therefore does not repair server-side consent/authorization.",
+    "No hosted migration, advisor clearance, real-member/provider/device acceptance or change to recovery pins."
+  ],
+  "next": "Enforce the first-pilot matching boundary in source before reading others or creating pairs; replace misleading dashboard invitations, preserve records, then design/review optional consent and validation before deeper matching."
+}

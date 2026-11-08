@@ -1,5 +1,7 @@
 # Current service readiness — 2026-11-04
 
+**November 8 matching-access review:** a fresh three-table metadata check and five synthetic route probes confirm separate direct-data and service-consent gaps in the older matching systems. A local containment candidate passes 15 SQL test results, preserves records and service access, and handles both open policies on each community-matching table. It remains unapplied; service-side pilot gates and a real consent contract are still required. See [the evidence, paired plan and rollback limits](matching-access-review.md). No member rows, hosted mutations or spending were involved.
+
 **November 8 local member-discovery update:** the member page's incompatible matching request is replaced with fresh published-profile keyword discovery. Query text stays in the browser, response ownership is checked, and failures remain separate from empty results. Local build and scoped browser/behavioral checks pass; the four older matching families remain unvalidated and separately gated. This changes no hosted access, schema or deployment. See [the implementation and evidence limits](member-discovery.md). The dated hosted observations below remain historical evidence, not a new live check.
 
 **Production access/privacy gate remains HOLD.** The connected SoE Supabase service is healthy, but the live database does not have the first-release Circle schema or the access boundaries exercised by the local fixtures. No production fix, migration, role change, provider sign-in or deployment was performed.
