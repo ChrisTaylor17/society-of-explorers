@@ -1,5 +1,7 @@
 # 92B funding claims and release boundaries — November 8, 2026
 
+**Subsequent local implementation:** [the physical-space pilot hold](physical-space-hold.md) now blocks seven campaign and city-interest operations and replaces three public collection pages with proposals. The findings below record the pre-hold source review; its ledger, progress and future-offer concerns remain requirements before reopening. No hosted or provider state was changed.
+
 Status: read-only source review. The campaign and payment code are unchanged. No checkout, webhook, account, environment value, customer record, bank record or live provider configuration was accessed. No charge or outreach occurred. Current public availability and funds collected are unverified.
 
 ## Evidence and limits

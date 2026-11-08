@@ -1,3 +1,4 @@
+import { physicalSpaceReleaseBlock } from '@/lib/capital/physicalSpaceReleaseBlock';
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 import { CAPITAL_CAMPAIGN_GOAL_DOLLARS } from '@/lib/capital/campaign';
@@ -25,6 +26,9 @@ function getStripe(): Stripe | null {
 }
 
 export async function GET() {
+  const unavailable = physicalSpaceReleaseBlock();
+  if (unavailable) return unavailable;
+
   try {
     const ledgerProgress = await getNinetyTwoBProgressFromLedger(
       getSupabaseAdmin(),

@@ -1,3 +1,4 @@
+import { physicalSpaceReleaseBlock } from '@/lib/capital/physicalSpaceReleaseBlock';
 import { NextRequest } from 'next/server';
 import { getResend } from '@/lib/email/resend';
 import { privateJson } from '@/lib/http/routeError';
@@ -78,6 +79,9 @@ async function sendSalonProposalNotification(input: {
 }
 
 export async function POST(req: NextRequest) {
+  const unavailable = physicalSpaceReleaseBlock();
+  if (unavailable) return unavailable;
+
   const body = await safeRequestJson(req);
 
   if (!body) {

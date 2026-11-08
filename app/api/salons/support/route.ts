@@ -1,3 +1,4 @@
+import { physicalSpaceReleaseBlock } from '@/lib/capital/physicalSpaceReleaseBlock';
 import { NextRequest } from 'next/server';
 import {
   boundedLeadText,
@@ -8,6 +9,9 @@ import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
+  const unavailable = physicalSpaceReleaseBlock();
+  if (unavailable) return unavailable;
+
   const body = await safeRequestJson(req);
 
   if (!body) {

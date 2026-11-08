@@ -1,3 +1,4 @@
+import { physicalSpaceReleaseBlock } from '@/lib/capital/physicalSpaceReleaseBlock';
 // Backup/intent-only route. Real payments go through /api/92b/checkout -> Stripe.
 import { NextRequest } from 'next/server';
 import { getResend } from '@/lib/email/resend';
@@ -87,6 +88,9 @@ async function sendPledgeIntentNotification(input: {
 }
 
 export async function POST(req: NextRequest) {
+  const unavailable = physicalSpaceReleaseBlock();
+  if (unavailable) return unavailable;
+
   const body = await safeRequestJson(req);
 
   if (!body) {

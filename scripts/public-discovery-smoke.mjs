@@ -13,6 +13,8 @@ const files = {
   ninetyTwoBLayout: read('app/92b/layout.tsx'),
   fundLayout: read('app/92b/fund/layout.tsx'),
   ninetyTwoBPage: read('app/92b/page.tsx'),
+  fundPage: read('app/92b/fund/page.tsx'),
+  physicalSalonsPage: read('app/salons/page.tsx'),
   movementPodLayout: read('app/movement/pod/layout.tsx'),
   movementSovereigntyLayout: read('app/movement/sovereignty/layout.tsx'),
   movementMemoryLayout: read('app/movement/memory/layout.tsx'),
@@ -42,6 +44,8 @@ const forbiddenPositiveClaims = [
   'The lease is signed',
   'The construction is underway',
   'This is happening.',
+  'LEASE: SIGNED',
+  'CONSTRUCTION: IN PROGRESS',
 ];
 
 const checks = [
@@ -81,7 +85,7 @@ const checks = [
       files.ninetyTwoBLayout.includes("url: '/92b'") &&
       files.fundLayout.includes("canonical: '/92b/fund'") &&
       files.fundLayout.includes("url: '/92b/fund'") &&
-      files.fundLayout.includes('Patronage offers recognition, access, community, and artifacts, not financial returns.'),
+      files.fundLayout.includes('The campaign is on hold and pledges are not open.'),
   },
   {
     name: 'private Movement member tools carry noindex metadata',
@@ -96,11 +100,10 @@ const checks = [
   {
     name: '92B public copy is conditional and removes false location claims',
     ok:
-      forbiddenPositiveClaims.every((claim) => !files.ninetyTwoBPage.includes(claim)) &&
-      files.ninetyTwoBPage.includes('subject to lease status, repairs, access, and landlord alignment') &&
-      files.ninetyTwoBPage.includes('A working vision, not a secured location or active buildout.') &&
-      files.ninetyTwoBPage.includes('No buildout or opening date is promised.') &&
-      files.ninetyTwoBPage.includes('This may begin here.'),
+      [files.ninetyTwoBPage, files.fundPage, files.physicalSalonsPage].every(source => forbiddenPositiveClaims.every(claim => !source.includes(claim))) &&
+      files.ninetyTwoBPage.includes('have not been verified. No opening date is confirmed.') &&
+      files.fundPage.includes('earlier proposed budget, not money raised') &&
+      files.physicalSalonsPage.includes('City-interest registration is on hold.'),
   },
   {
     name: 'capital preflight scans the full 92B path for false claims',

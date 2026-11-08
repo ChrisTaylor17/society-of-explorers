@@ -658,8 +658,11 @@ const checks = [
       !routes.salonCities.includes('NextResponse') &&
       !routes.salonCities.includes('console.error') &&
       !routes.salonCities.includes('console.warn') &&
-      pages.salons.includes("fetch('/api/salons/cities', { cache: 'no-store' })") &&
-      pages.salons.includes("fetch('/api/92b/progress', { cache: 'no-store' })") &&
+      !pages.salons.includes('fetch(') &&
+      !pages.salons.includes('<form') &&
+      pages.salons.includes('City-interest registration is on hold.') &&
+      routes.salonCities.includes('if (unavailable) return unavailable;') &&
+      routes.salonCities.indexOf('const unavailable = physicalSpaceReleaseBlock()') < routes.salonCities.indexOf('const supabase = getSupabaseAdmin()') &&
       routes.salonMessage.indexOf('Content required') < routes.salonMessage.indexOf('getSupabaseAdmin()') &&
       routes.salonMessage.includes('safeRequestJson(req)') &&
       routes.salonMessage.includes('const content = boundedText(body.content, MAX_CONTENT_LENGTH)') &&

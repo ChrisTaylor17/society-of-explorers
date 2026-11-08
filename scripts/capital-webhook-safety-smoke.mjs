@@ -35,7 +35,7 @@ const route = read('app/api/stripe/webhook/route.ts');
 const helper = read('lib/capital/webhookSafety.ts');
 const packageJson = read('package.json');
 const operatorSmoke = read('scripts/operator-smoke.mjs');
-const envExample = read('.env.example');
+const envExample = read('docs/soe-env-readiness-template.md');
 const docs = {
   handoff: read('docs/soe-current-thread-handoff.md'),
   operator: read('docs/soe-operator-system.md'),
@@ -74,7 +74,7 @@ const checks = [
       !route.includes('new Resend(process.env.RESEND_API_KEY);'),
   },
   {
-    name: 'env example defaults webhook notification email off',
+    name: 'tracked readiness template defaults webhook notification email off',
     ok: envExample.includes('CAPITAL_WEBHOOK_EMAIL_NOTIFICATIONS_ENABLED=false'),
   },
   {

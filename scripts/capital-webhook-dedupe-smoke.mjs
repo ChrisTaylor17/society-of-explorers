@@ -48,7 +48,7 @@ const ninetyTwoBranch = sliceBetween(
 const projectBranch = sliceBetween(
   route,
   "if (session.metadata?.type === 'project_pledge')",
-  '// --- MEMBERSHIP SUBSCRIPTION HANDLING ---',
+  '// Unclassified checkout sessions',
 );
 
 const ninetyTwoDuplicateBlock = sliceBetween(

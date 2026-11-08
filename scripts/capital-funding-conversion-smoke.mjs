@@ -11,6 +11,8 @@ const files = {
   page: read('app/92b/fund/page.tsx'),
   checkout: read('app/api/92b/checkout/route.ts'),
   progress: read('app/api/92b/progress/route.ts'),
+  releaseBlock: read('lib/capital/physicalSpaceReleaseBlock.ts'),
+  browser: read('verification/web/scripts/browser-physical-space-hold.mjs'),
   packageJson: read('package.json'),
   operatorSmoke: read('scripts/operator-smoke.mjs'),
   operatorDoc: read('docs/soe-operator-system.md'),
@@ -20,7 +22,7 @@ const files = {
 
 const checks = [
   {
-    name: '92B checkout derives price and label from the exact server-side tier id',
+    name: 'Retained legacy checkout derives price and label from the exact server-side tier id',
     ok:
       files.checkout.includes('const tierId = boundedText(body.tierId, 80).toLowerCase()') &&
       files.checkout.includes('const tierDefinition = getTierById(NINETY_TWO_B_TIERS, tierId)') &&
@@ -32,14 +34,12 @@ const checks = [
       !files.checkout.includes('Number(body.amount)'),
   },
   {
-    name: '92B browser checkout sends intent, not an authoritative price or label',
-    ok:
-      files.page.includes('tierId: tier.id') &&
-      !files.page.includes('tier: tier.name') &&
-      !files.page.includes('amount: tier.amount'),
+    name: 'current proposal page does not collect payment intent or personal data',
+    ok: !files.page.includes('fetch(') && !files.page.includes('<form') && !files.page.includes('<input') &&
+      !files.page.includes('window.location') && files.page.includes('Pledges are not open.'),
   },
   {
-    name: '92B checkout validates email and keeps attribution classification-only',
+    name: 'Retained legacy checkout validates email and keeps attribution classification-only',
     ok:
       files.checkout.includes('normalizeEmail(body.email)') &&
       files.checkout.includes("const source = '92b_fund_page'") &&
@@ -51,7 +51,7 @@ const checks = [
       !files.page.includes("source: '92b_fund_page'"),
   },
   {
-    name: '92B checkout returns private no-store JSON and validates Stripe-hosted destinations',
+    name: 'Retained legacy checkout returns private no-store JSON and validates Stripe-hosted destinations',
     ok:
       files.checkout.includes("import { privateJson } from '@/lib/http/routeError'") &&
       files.checkout.includes("url.protocol === 'https:' && url.hostname === 'checkout.stripe.com'") &&
@@ -61,62 +61,37 @@ const checks = [
       !files.checkout.includes('NextResponse'),
   },
   {
-    name: 'funding page exposes recoverable checkout failures and validates navigation',
-    ok:
-      files.page.includes('const [checkoutError, setCheckoutError]') &&
-      files.page.includes('isStripeCheckoutUrl(data.url)') &&
-      files.page.includes('Checkout could not start.') &&
-      files.page.includes('role="alert"') &&
-      files.page.includes('aria-live="polite"'),
+    name: 'server hold precedes checkout parsing and progress lookup',
+    ok: [files.checkout, files.progress].every(source => source.includes('if (unavailable) return unavailable;')) &&
+      files.checkout.indexOf('const unavailable = physicalSpaceReleaseBlock()') < files.checkout.indexOf('const body = await safeRequestJson(req)') &&
+      files.progress.indexOf('const unavailable = physicalSpaceReleaseBlock()') < files.progress.indexOf('const ledgerProgress = await getNinetyTwoBProgressFromLedger'),
   },
   {
-    name: 'funding hero presents a direct, honest path to reviewed pledge tiers',
-    ok:
-      files.page.includes('href="#pledge-tiers"') &&
-      files.page.includes('PLEDGE FROM $25') &&
-      files.page.includes('id="pledge-tiers"') &&
-      files.page.includes("scrollMarginTop: '72px'") &&
-      files.page.indexOf('{/* ═══ PLEDGE TIERS ═══ */}') <
-        files.page.indexOf('<section id="pledge-tiers"') &&
-      files.page.includes('No equity or financial return') &&
-      files.page.includes('Patron benefits follow verified payment'),
+    name: 'current campaign hold is private and cannot be opened with environment or body flags',
+    ok: files.releaseBlock.includes("code: 'PHYSICAL_SPACE_ON_HOLD'") && files.releaseBlock.includes('{ status: 503 }') &&
+      files.releaseBlock.includes('return privateJson') && !files.releaseBlock.includes('process.env') &&
+      !files.releaseBlock.includes('return null') && !files.releaseBlock.includes('totalRaised:'),
   },
   {
-    name: 'pledge dialog has labels, Escape support, focus recovery, and modal semantics',
-    ok:
-      files.page.includes('role="dialog"') &&
-      files.page.includes('aria-modal="true"') &&
-      files.page.includes('aria-labelledby="pledge-dialog-title"') &&
-      files.page.includes('aria-describedby="pledge-dialog-description"') &&
-      files.page.includes("event.key !== 'Escape'") &&
-      files.page.includes('emailInputRef.current?.focus()') &&
-      files.page.includes('pledgeOpenerRef.current?.focus()') &&
-      files.page.includes('htmlFor="pledge-email"'),
+    name: 'proposal distinguishes unavailable totals and historical allocation from payments',
+    ok: files.page.includes('Verified campaign totals are not available here') && files.page.includes('earlier proposed budget, not money raised') &&
+      files.page.includes('this page does not confirm a payment or accept a pledge'),
   },
   {
-    name: 'return banner waits for verified fulfillment instead of claiming payment completion',
-    ok:
-      files.page.includes('Payment confirmation may take a moment') &&
-      files.page.includes('fulfilled benefits follow the verified payment event') &&
-      !files.page.includes('Your pledge has been received'),
-  },
-  {
-    name: 'untracked direct-wallet payment instructions are disabled',
-    ok:
-      files.page.includes('Crypto pledging is not enabled') &&
-      files.page.includes('Please do not send funds directly to a wallet') &&
-      !files.page.includes('0x22fEA1dd7626f0eB50861daDC01F60f7336f135c') &&
+    name: 'old return links and direct-wallet instructions cannot open the campaign',
+    ok: !files.page.includes('URLSearchParams') && !files.page.includes('useSearchParams') &&
+      !files.page.includes('PAY WITH CARD') && !files.page.includes('0x22fEA1dd7626f0eB50861daDC01F60f7336f135c') &&
       !files.page.includes('All crypto pledges receive bonus'),
   },
   {
-    name: 'funding progress is fetched and returned without caching or raw failure details',
-    ok:
-      files.page.includes("fetch('/api/92b/progress', { cache: 'no-store' })") &&
-      files.progress.includes("'Cache-Control': 'no-store, no-cache, max-age=0, must-revalidate'") &&
-      files.progress.includes("'Surrogate-Control': 'no-store'") &&
-      files.progress.includes("'X-Robots-Tag': 'noindex, nofollow, noarchive'") &&
-      files.progress.includes("console.warn('[92b/progress] aggregate lookup failed')") &&
-      !files.progress.includes("console.error('92B progress error:', err)"),
+    name: 'the proposal directs readers to the existing online pilot and organizational review',
+    ok: files.page.includes('href="/salons/pilot"') && files.page.includes('href="/structure"') &&
+      files.page.includes('Tax-deductible giving is not promised'),
+  },
+  {
+    name: 'compiled acceptance covers saved return links, seven HTTP refusals and non-JavaScript reading',
+    ok: files.browser.includes('NONISSUED_RETURN_FIXTURE') && files.browser.includes('actualHttp.push') &&
+      files.browser.includes('javaScriptEnabled: false') && files.browser.includes('PHYSICAL_SPACE_ON_HOLD'),
   },
   {
     name: 'funding conversion guard is wired into package, operator, and launch docs',

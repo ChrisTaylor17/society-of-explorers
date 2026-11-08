@@ -1,0 +1,136 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-11-08T11:24:26.442996+00:00",
+  "baseCommit": "e517c946a5df18a92a795cced74259d82876c47e",
+  "buildId": "61VnA4nyfxuAb6Pc1luLk",
+  "buildInputs": 1236,
+  "canonicalResidentInputs": 1224,
+  "canonicalUnchangedGitBlobs": 12,
+  "canonicalBuildMismatches": [],
+  "sourceHashes": {
+    "app/92b/page.tsx": "8e98e0424ec846ec43688f05908ebfdea567e1b87ea8b1907d2c5e1b0c93e92a",
+    "app/92b/fund/page.tsx": "26fcfe2e7ca9218237573052aab85bd2d3a0b401d348e041642213fa7d5434ea",
+    "app/92b/fund/layout.tsx": "2c7b7784578912f3de4ee12f82ea47e11b8c3d0c5070a7ee57f86357d8a33e10",
+    "app/salons/page.tsx": "c5eb7dd7032fa706a6159fcae54a323d7becdfa650b9f827db0d20e474982ee1",
+    "lib/capital/physicalSpaceReleaseBlock.ts": "eef58e4a3e7c545a50126494b744253bb97a2708f839e3fcd230f9280cbcc3c8",
+    "app/api/92b/checkout/route.ts": "8f4b685a9a0ec7b33d650de97b52bf63c7601c43f0978d03d1a2b539d89db654",
+    "app/api/92b/pledge/route.ts": "4ed446adfa24e6ea68d38cc5f4c7480e0e2e3bfc78d8c770999ac3c0b5451fed",
+    "app/api/92b/propose/route.ts": "bae9c75e5fd96f22c7a1ed7e28722c84325fd9bc38a2baab94400154eee1f125",
+    "app/api/92b/progress/route.ts": "63143b7a93696cfb8a43c6608231103798fe3ee40c14e6c4e4b990bfb5a644f1",
+    "app/api/salons/cities/route.ts": "ad26fd20cb1ee021cf15b39182814502f4dbfc47824a4deb6f396ef572c33136",
+    "app/api/salons/propose/route.ts": "64686c156f06b2ef959670e8eecc6fcc1beadaf2136013d26333c83c141a54d1",
+    "app/api/salons/support/route.ts": "91f15c09df1328da80d7b9bd4d17b34834dbd11e39bfb13732d511eee96cfaca",
+    "verification/web/scripts/browser-physical-space-hold.mjs": "6a5eaba7bfdf9be344dcb28bb2255025bf39b6c4b56fe5df89e539453f72977c",
+    "verification/web/tests/physical-space-release-boundary.test.mjs": "fabb51d2b3d85eb6dc14fc3aa6bc06f7777aae8ad8d04425aae4d8e586db2aa4"
+  },
+  "directHandlerScenarios": 21,
+  "nodeTestResultsIncludingParents": 28,
+  "compiledBrowserJourneys": 7,
+  "actualCompiledHttpRefusals": [
+    {
+      "path": "92b/checkout",
+      "method": "POST",
+      "status": 503,
+      "code": "PHYSICAL_SPACE_ON_HOLD"
+    },
+    {
+      "path": "92b/pledge",
+      "method": "POST",
+      "status": 503,
+      "code": "PHYSICAL_SPACE_ON_HOLD"
+    },
+    {
+      "path": "92b/propose",
+      "method": "POST",
+      "status": 503,
+      "code": "PHYSICAL_SPACE_ON_HOLD"
+    },
+    {
+      "path": "92b/progress",
+      "method": "GET",
+      "status": 503,
+      "code": "PHYSICAL_SPACE_ON_HOLD"
+    },
+    {
+      "path": "salons/cities",
+      "method": "GET",
+      "status": 503,
+      "code": "PHYSICAL_SPACE_ON_HOLD"
+    },
+    {
+      "path": "salons/propose",
+      "method": "POST",
+      "status": 503,
+      "code": "PHYSICAL_SPACE_ON_HOLD"
+    },
+    {
+      "path": "salons/support",
+      "method": "POST",
+      "status": 503,
+      "code": "PHYSICAL_SPACE_ON_HOLD"
+    }
+  ],
+  "browserClosed": true,
+  "unexpectedBrowserApiRequests": 0,
+  "browserExternalRequests": 0,
+  "browserPageErrors": 0,
+  "serverStopped": true,
+  "sourceRuntimeMismatches": 0,
+  "previewPortClosed": true,
+  "scopedLint": "PASS",
+  "targetedExistingChecks": [
+    {
+      "script": "capital-checkout-safety-smoke.mjs",
+      "exitCode": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-physical-space-hold/capital-checkout-safety-smoke.mjs.log"
+    },
+    {
+      "script": "capital-funding-conversion-smoke.mjs",
+      "exitCode": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-physical-space-hold/capital-funding-conversion-smoke.mjs.log"
+    },
+    {
+      "script": "capital-metadata-smoke.mjs",
+      "exitCode": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-physical-space-hold/capital-metadata-smoke.mjs.log"
+    },
+    {
+      "script": "public-discovery-smoke.mjs",
+      "exitCode": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-physical-space-hold/public-discovery-smoke.mjs.log"
+    },
+    {
+      "script": "external-effect-lazy-clients-smoke.mjs",
+      "exitCode": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-physical-space-hold/external-effect-lazy-clients-smoke.mjs.log"
+    },
+    {
+      "script": "capital-webhook-safety-smoke.mjs",
+      "exitCode": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-physical-space-hold/capital-webhook-safety-smoke.mjs.log"
+    },
+    {
+      "script": "capital-webhook-dedupe-smoke.mjs",
+      "exitCode": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-physical-space-hold/capital-webhook-dedupe-smoke.mjs.log"
+    }
+  ],
+  "minimumSampledFreeBytes": 15853285376,
+  "maximumSampledPrivateAllocatedBytes": 19024941056,
+  "legacyHandlersPreservedBelowGate": 7,
+  "webhookSourceUnchangedSha256": "9142730bea59eeaf439170600fb1cfd3621d3e5d248d70f0393bed771ffc5edd",
+  "environmentOrCredentialFilesCreated": false,
+  "secureEntryOpened": false,
+  "spentUsd": 0,
+  "remainingUsd": 200,
+  "failedAttemptsRetained": [
+    "First browser request attempted Node-side loopback, rejected by the network guard; changed to seven exact browser pass-through operations.",
+    "Three older checks expected active campaign UI; two baseline checks had a missing template dependency and obsolete branch marker. Existing checks updated; no webhook implementation changed."
+  ],
+  "scope": "Local application hold and informational pages only. Offline direct-handler tests mock providers/response transport; compiled HTTP tests use the actual local server. No hosted gating, provider payment, legal authority, data-access repair or physical-device acceptance.",
+  "evidence": {
+    "build": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-physical-space-02-next-build.json",
+    "browser": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/physical-space-browser-02/result.json",
+    "server": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-physical-space-server-02-server.json"
+  }
+}

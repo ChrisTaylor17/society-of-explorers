@@ -1,3 +1,4 @@
+import { physicalSpaceReleaseBlock } from '@/lib/capital/physicalSpaceReleaseBlock';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
@@ -48,6 +49,9 @@ function boundedCount(value: number) {
 }
 
 export async function GET() {
+  const unavailable = physicalSpaceReleaseBlock();
+  if (unavailable) return unavailable;
+
   const supabase = getSupabaseAdmin();
   const { data: rows, error } = await supabase
     .from('founding_interest')

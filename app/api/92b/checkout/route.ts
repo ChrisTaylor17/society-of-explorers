@@ -1,3 +1,4 @@
+import { physicalSpaceReleaseBlock } from '@/lib/capital/physicalSpaceReleaseBlock';
 import Stripe from 'stripe';
 import { NextRequest } from 'next/server';
 import {
@@ -78,6 +79,9 @@ function getStripe() {
 }
 
 export async function POST(req: NextRequest) {
+  const unavailable = physicalSpaceReleaseBlock();
+  if (unavailable) return unavailable;
+
   const body = await safeRequestJson(req);
   if (!isRecord(body)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
