@@ -10,7 +10,8 @@ export {assertContributionsMarkup};
  * start only on a deliberate action in the regular window or headset room. */
 export function mountExistingMemberCircle(options) { return mount(options,true); }
 export function mountExistingMemberContributions(options) { return mount(options,false); }
-function mount({window:win,document:doc,config},withCircle) {
+function mount({window:win,document:doc,config,onRegularActivity},withCircle) {
+  if(onRegularActivity!==undefined&&typeof onRegularActivity!=='function')throw Error('Regular view activity observer unavailable');
   if(withCircle)assertCircleMarkup(doc);
   const immersive=withCircle?config?.immersive:null;
   const reelStarter=withCircle?config?.reelStarter:undefined;
@@ -39,6 +40,7 @@ function mount({window:win,document:doc,config},withCircle) {
   const handlers=[];
   const dispose=()=>{
     if(disposed)return;disposed=true;
+    try{onRegularActivity?.(false);}catch{/* Continue clearing the owned views. */}
     for(const stop of [()=>room?.dispose(),()=>browserSalon?.dispose(),()=>browserMeeting?.dispose(),()=>binding.stop(),()=>contributions?.dispose(),()=>blocks?.dispose(),()=>screen?.dispose(),()=>off(),...handlers]){try{stop();}catch{/* Finish every independent retirement step. */}}
     handlers.length=0;
   };
@@ -60,6 +62,7 @@ function mount({window:win,document:doc,config},withCircle) {
     const listen=(target,event,fn)=>{target.addEventListener(event,fn);handlers.push(()=>target.removeEventListener(event,fn));};
     const activity=()=>{
       if(disposed)return;
+      onRegularActivity?.(regularActive());
       if(!regularActive()){browserSalon?.retire();browserMeeting?.retire();}
       blocks?.activity(regularActive(),online);
       binding.activity(regularActive());

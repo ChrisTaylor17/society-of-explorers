@@ -12,6 +12,8 @@ import { createSavedReading, type SavedReading } from '../shared/saved-reading';
 import { SavedReadingScreen } from './SavedReadingScreen';
 import { CircleHostingScreen } from './CircleHostingScreen';
 import { createCircleHosting, type CircleHosting } from '../shared/circle-hosting';
+import { createCircleAdmission, type CircleAdmission } from '../shared/circle-admission';
+import { CircleAdmissionScreen } from './CircleAdmissionScreen';
 import { createVerifiedSupabaseCircleOwner, type ExistingMemberAccountConfig } from './src/circles/verified-member-session';
 import { observeNativeConnectivity, type NativeConnectivityPort } from './src/circles/native-connectivity';
 import { openAccountDeletionPage } from './src/auth/account-deletion';
@@ -33,17 +35,34 @@ export function createMemberViewConnection(config: ExistingMemberAccountConfig, 
   let profile: { memberId: string; session: MemberProfile } | null = null, closed = false;
   let savedReading: { memberId: string; session: SavedReading } | null = null;
   let hosting: { memberId: string; session: CircleHosting } | null = null;
+  let admission: { memberId: string; circleId: string; session: CircleAdmission } | null = null;
   const closeProfile = () => { profile?.session.close(); profile = null; };
   const closeSavedReading = () => { savedReading?.session.close(); savedReading = null; };
   const closeHosting = () => { hosting?.session.close(); hosting = null; };
+  const closeAdmission = () => { admission?.session.close(); admission = null; };
   return { config, binding, account, host: { ...host, owner: binding.owner }, connectivity,
     profile: () => profile,
     savedReading: () => savedReading,
     hosting: () => hosting,
+    admission: () => admission,
+    discardAdmission: closeAdmission,
     discardOtherMemberViews(memberId: string) {
       if (profile && profile.memberId !== memberId) closeProfile();
       if (savedReading && savedReading.memberId !== memberId) closeSavedReading();
       if (hosting && hosting.memberId !== memberId) closeHosting();
+      if (admission && admission.memberId !== memberId) {
+        if (admission.session.model().uncertain) admission.session.disconnect(); else closeAdmission();
+      }
+    },
+    openAdmission(memberId: string, circleId: string) {
+      if (closed || !host.admissionTransport || !host.newRequestId) throw Error('Salon invitations unavailable');
+      if (admission && (admission.memberId !== memberId || admission.circleId !== circleId)) {
+        if (admission.session.model().uncertain) throw Error('Earlier invitation result needs its original account and salon');
+        closeAdmission();
+      }
+      if (!admission) admission = { memberId, circleId, session: createCircleAdmission({ origin: host.origin, memberId, circleId,
+        owner: binding.owner, transport: host.transport, admissionTransport: host.admissionTransport,
+        newRequestId: host.newRequestId, timeoutMs: host.timeoutMs, initialOnline: false }) };
     },
     openHosting(memberId: string) {
       if (closed || !host.hostingTransport || !host.newRequestId) throw Error('Circle hosting unavailable');
@@ -70,9 +89,9 @@ export function createMemberViewConnection(config: ExistingMemberAccountConfig, 
           profileTransport: host.profileTransport, publicProfileTransport: host.publicProfileTransport, timeoutMs: host.timeoutMs, initialOnline: false }) };
       }
     },
-    disconnect(discardProfile = false) { if (discardProfile) { closeProfile(); closeSavedReading(); closeHosting(); }
-      else { profile?.session.disconnect(); savedReading?.session.disconnect(); hosting?.session.disconnect(); } account.disconnect(); binding.stop(); },
-    close() { if (closed) return; closed = true; closeProfile(); closeSavedReading(); closeHosting(); account.close(); binding.stop(); } };
+    disconnect(discardProfile = false) { if (discardProfile) { closeProfile(); closeSavedReading(); closeHosting(); closeAdmission(); }
+      else { profile?.session.disconnect(); savedReading?.session.disconnect(); hosting?.session.disconnect(); admission?.session.disconnect(); } account.disconnect(); binding.stop(); },
+    close() { if (closed) return; closed = true; closeProfile(); closeSavedReading(); closeHosting(); closeAdmission(); account.close(); binding.stop(); } };
 }
 export type MemberViewConnection = ReturnType<typeof createMemberViewConnection>;
 
@@ -93,7 +112,7 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
   const [snapshot, setSnapshot] = useState(() => ({ connection, model: connection?.binding.model() }));
   const [accountSnapshot, setAccountSnapshot] = useState(() => ({ connection, model: connection?.account.model() }));
   const [entered, setEntered] = useState<{ connection: typeof connection; onlinePreset?: boolean; scripturePreset?: ScriptureStudyId; studyId?: ScriptureStudyId; initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId;
-    destination: 'circle' | 'contributions' | 'blocks' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'scripture' | 'clips' } | null>(null);
+    circleId?: string; destination: 'circle' | 'contributions' | 'blocks' | 'reviews' | 'circle-reviews' | 'discover' | 'mine' | 'profile' | 'saved' | 'hosting' | 'admission' | 'scripture' | 'clips' } | null>(null);
   const [profileNotice, setProfileNotice] = useState('');
   const [viewEpoch, setViewEpoch] = useState(0);
   const viewLife = useRef({ mounted: false, enabled: false, epoch: 0 });
@@ -186,6 +205,14 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
   const profileConnection = connection?.profile();
   const savedReadingConnection = connection?.savedReading();
   const hostingConnection = connection?.hosting();
+  const admissionConnection = connection?.admission();
+  const admissionAvailable = Boolean(connection?.host.admissionTransport && connection.host.newRequestId);
+  const openAdmission = (circleId: string) => act(() => {
+    const current = connection?.account.model();
+    if (!connection || !current?.canOpenCircle || !current.member || connection.binding.model().phase !== 'ready') return;
+    try { connection.openAdmission(current.member.id, circleId); setProfileNotice(''); setEntered({ connection, destination: 'admission', circleId }); }
+    catch { setProfileNotice('Invitations are unavailable. An earlier uncertain request needs its original account and salon before another invitation view can open.'); }
+  });
   const hostingAvailable = Boolean(connection?.host.hostingTransport && connection.host.newRequestId);
   if (connection && entered?.connection === connection && account?.canOpenCircle && model?.phase === 'ready') {
     if (entered.destination === 'clips') return <ClipsScreen onBack={back} appOrigin={connection.host.origin} reel={entered.reel}
@@ -200,6 +227,11 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
       return <CircleHostingScreen session={hostingConnection.session} config={connection.host} hostApprovalAvailable={Boolean(connection.host.admissionTransport)} connectivity={connection.connectivity} scripturePreset={entered.scripturePreset}
         onBack={back} onMyCircles={() => openReadingDestination('mine')} onClose={close}/>;
     }
+    if (entered.destination === 'admission' && admissionConnection && admissionConnection.memberId === account.member?.id && admissionConnection.circleId === entered.circleId) {
+      return <CircleAdmissionScreen session={admissionConnection.session} connectivity={connection.connectivity}
+        onBack={() => openReadingDestination('discover', { initialCircle: { id: admissionConnection.circleId, title: 'Selected salon' } })}
+        onDiscard={() => act(() => { connection.discardAdmission(); setEntered(null); }, true)}/>;
+    }
     if (entered.destination === 'saved' && savedReadingConnection && savedReadingConnection.memberId === account.member?.id) {
       return <SavedReadingScreen session={savedReadingConnection.session} config={connection.host} connectivity={connection.connectivity} onBack={back} onClose={close}/>;
     }
@@ -209,7 +241,8 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
     }
     if ((entered.destination === 'discover' || entered.destination === 'mine') && directoryConfig) return <CircleDirectoryScreen config={directoryConfig} connectivity={connection.connectivity}
       initialMode={entered.destination} initialOnlineFilter={entered.onlinePreset} initialCircle={entered.initialCircle} reel={entered.reel}
-      savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined} onBack={back} onClose={close}/>;
+      savedReading={savedReadingConnection && savedReadingConnection.memberId === account.member?.id ? savedReadingConnection.session : undefined}
+      onInvitations={admissionAvailable ? openAdmission : undefined} onBack={back} onClose={close}/>;
     if (entered.destination === 'blocks' && memberId && blocksConfig) return <BlockedMembersScreen config={blocksConfig} memberId={memberId}
       connectivity={connection.connectivity} onBack={back} onClose={close}/>;
     if (entered.destination === 'contributions') return <ContributionsScreen config={connection.host} connectivity={connection.connectivity}
@@ -253,6 +286,11 @@ export function MemberCircleScreen({ config, connectivity, retained, studyHostin
     <Action label="My profile" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.profileTransport} onPress={openProfile}/>
     <Action label="Delete account on the website" disabled={model?.phase !== 'ready'} onPress={openDeletion}/>
     <Action label="Saved reading" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || !connection?.host.savedReadingTransport} onPress={() => openReadingDestination('saved')}/>
+    {admissionConnection ? <>
+      <Text style={styles.copy}>A private salon invitation view is retained in this app. Returning requires its original account. A sent request may still complete.</Text>
+      <Action label="Return to private salon invitation" disabled={!account?.canOpenCircle || model?.phase !== 'ready' || account.member?.id !== admissionConnection.memberId}
+        onPress={() => openAdmission(admissionConnection.circleId)}/>
+    </> : null}
     {sharedInvite && <>
       <Text accessibilityLiveRegion="polite" style={styles.copy}>A shared salon invitation is ready to review.</Text>
       <Action label="Open shared salon invitation" disabled={model?.busy || account?.busy} onPress={() => act(sharedInvite.open)}/>

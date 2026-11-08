@@ -2,12 +2,14 @@
 import Link from 'next/link';
 import { useCallback, useRef } from 'react';
 import { useCircleAdmission } from '@/lib/circles/useCircleAdmission';
+import type { CircleAdmissionActivity } from '@/lib/circles/admission-activity';
 import { isCircleApprovalCode, isCircleRecipientCode } from '@/lib/circles/admission';
 import { body, button, card, fieldLabel, h1, h2, input, primary, small } from '@/lib/circles/ui';
 import styles from '../participation.module.css';
 
-export default function CircleAdmission({circleId}:{circleId:string}) {
- const flow=useCircleAdmission(circleId),disabled=!flow.active||flow.busy,locked=disabled||flow.uncertain||!!flow.intent;
+export default function CircleAdmission({circleId,activity,embedded=false}:{circleId:string;activity?:CircleAdmissionActivity;embedded?:boolean}) {
+ const flow=useCircleAdmission(circleId,activity),disabled=!flow.active||flow.busy,locked=disabled||flow.uncertain||!!flow.intent;
+ const Heading=embedded?'h2':'h1';
  const access=flow.access,intent=flow.intent,statusRef=useRef<HTMLParagraphElement>(null);
  const focusReview=useCallback((node:HTMLHeadingElement|null)=>node?.focus({preventScroll:true}),[]);
  const confirmLabel=intent?.kind==='issue'?'Issue approval code':intent?.kind==='join'?'Confirm join':'Confirm revocation';
@@ -16,7 +18,7 @@ export default function CircleAdmission({circleId}:{circleId:string}) {
  return <div className={styles.scope} onClickCapture={event=>{
   if((flow.uncertain||flow.busy||flow.intent)&&(event.target as HTMLElement).closest('a'))event.preventDefault();
  }}>
-  <h1 style={h1}>Salon invitations</h1>
+  <Heading style={h1}>Salon invitations</Heading>
   <p style={body}>A salon’s name, description and schedule are public. Host approval controls membership; it does not hide the listing or secure an external video room. The host manages entry to that room.</p>
   <p style={small}><Link href={`/circles/${circleId}`}>Salon details</Link> · <Link href={`/login?next=${encodeURIComponent(`/circles/${circleId}/admission`)}`}>Sign in</Link>. Approval codes stay out of links. Paste them only into this private form.</p>
   <p ref={statusRef} tabIndex={-1} role="status" aria-live="polite" style={body}>{flow.notice}</p>

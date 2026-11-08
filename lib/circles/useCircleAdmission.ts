@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { bindCircleAccess } from './browser-access';
 import { circleHeaders } from '@/lib/circles/client';
 import { membershipRecord } from './membership';
+import type { CircleAdmissionActivity } from './admission-activity';
 import { admissionTime, canonicalAdmissionUuid, exactAdmissionKeys, isCircleApprovalCode, isCircleRecipientCode,
   parseCircleAdmissionAccess, parseCircleInvitedJoinReceipt, parseCircleInvitationReview,
   type CircleAdmissionAccess, type CircleInvitationCheck, type CircleInvitationRecovery, type CircleInvitationReview } from './admission';
@@ -21,26 +22,27 @@ class Refusal extends Error { constructor(readonly status:number,readonly outcom
 
 /** Raw codes live only in this view. A retired sent join retains just its
  * account-bound, read-only receipt reference. Nothing enters browser storage. */
-export function useCircleAdmission(circleId:string) {
+export function useCircleAdmission(circleId:string,activity?:CircleAdmissionActivity) {
  const [view,setView]=useState<View>(initial);
  const ref=useRef({mounted:false,observing:false,active:true,busy:false,generation:0,epoch:0,owner:null as string|null,
   pending:null as Pending|null,controller:null as AbortController|null,view:initial()});
  const core=ref.current,epoch=core.epoch;
  const publish=useCallback((value:Partial<View>)=>{core.view={...core.view,...value};core.epoch++;if(core.mounted)setView(core.view);},[core]);
  useEffect(()=>{
-  core.mounted=true;core.active=document.visibilityState==='visible'&&navigator.onLine!==false;
+  core.mounted=true;core.active=document.visibilityState==='visible'&&navigator.onLine!==false&&activity?.active()!==false;
   core.view={...initial(),active:core.active};setView(core.view);
   const retire=()=>{core.generation++;core.epoch++;core.controller?.abort();core.controller=null;core.busy=false;core.active=false;core.owner=null;
    core.view={...initial(),active:false,uncertain:!!core.pending,notice:core.pending
     ?'Private codes and review cleared. A sent request may still finish. Check the same account to recover its result.'
     :'Private codes, recipient names and review cleared. Check your account again to continue.'};if(core.mounted)setView(core.view);};
-  const activate=()=>{if(core.mounted&&core.observing&&document.visibilityState==='visible'&&navigator.onLine!==false){core.active=true;publish({active:true});}};
+  const activate=()=>{if(core.mounted&&core.observing&&document.visibilityState==='visible'&&navigator.onLine!==false&&activity?.active()!==false){core.active=true;publish({active:true});}};
   const dispose=bindCircleAccess({window,document,subscribeAuth(listener){try{const{data}=createClient().auth.onAuthStateChange(listener);core.observing=true;return()=>data.subscription.unsubscribe();}
    catch{retire();return()=>{};}},onInactive:retire,onActive:activate,onIdentity(){retire();activate();}});
   window.addEventListener('offline',retire);window.addEventListener('online',activate);
-  return()=>{core.mounted=false;retire();dispose();window.removeEventListener('offline',retire);window.removeEventListener('online',activate);};
- },[circleId,core,publish]);
- const valid=()=>core.mounted&&core.observing&&core.active&&!core.busy&&core.epoch===epoch&&document.visibilityState==='visible'&&navigator.onLine!==false;
+  const offActivity=activity?.subscribe(active=>{if(active)activate();else retire();})??(()=>{});
+  return()=>{core.mounted=false;retire();offActivity();dispose();window.removeEventListener('offline',retire);window.removeEventListener('online',activate);};
+ },[circleId,core,publish,activity]);
+ const valid=()=>core.mounted&&core.observing&&core.active&&!core.busy&&core.epoch===epoch&&document.visibilityState==='visible'&&navigator.onLine!==false&&activity?.active()!==false;
  async function run(kind:'load'|'code'|'hostReview'|'joinReview'|'revokeReview'|'confirm'|'recover') {
   const snapshot=core.view,intent=snapshot.intent,oldOwner=core.owner,hadPending=!!core.pending;
   if(!valid() || core.pending && !['load','recover'].includes(kind) && !(kind==='confirm'&&intent?.kind==='revoke'&&core.pending.kind==='revoke'&&intent.body===core.pending.body))return;
@@ -52,7 +54,7 @@ export function useCircleAdmission(circleId:string) {
   if(kind==='revokeReview'&&!snapshot.access?.canRevoke)return;
   core.busy=true;const generation=++core.generation,controller=new AbortController();core.controller=controller;
   publish({busy:true,confirmed:false,notice:'Checking the current account and invitation…'});
-  const current=()=>core.mounted&&core.active&&core.generation===generation&&!controller.signal.aborted;
+  const current=()=>core.mounted&&core.active&&core.generation===generation&&!controller.signal.aborted&&activity?.active()!==false;
   const timer=setTimeout(()=>controller.abort(),15000);
   const aborted=new Promise<never>((_,reject)=>controller.signal.addEventListener('abort',()=>reject(Error('Invitation view retired')),{once:true}));
   let sent=false;

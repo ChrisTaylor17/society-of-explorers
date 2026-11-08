@@ -8,6 +8,8 @@ import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import { reelHref } from '@/lib/clips/contracts';
 import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
 import { isUuid } from '@/lib/ids/uuid';
+import CircleAdmission from '@/app/circles/[circleId]/CircleAdmission';
+import { createCircleAdmissionActivity } from '@/lib/circles/admission-activity';
 import styles from './quest.module.css';
 
 type Connection = { dispose(): void; invalidate(): void };
@@ -28,6 +30,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
   circleId?: string; sharedSalon?: boolean; reel?: ReelDiscussionId;
 }) {
   const connection = useRef<Connection | null>(null);
+  const [admissionActivity] = useState(createCircleAdmissionActivity);
   const lifetime = useRef({ mounted: false, generation: 0 });
   const [phase, setPhase] = useState<'closed' | 'connecting' | 'connected'>('closed');
   const [notice, setNotice] = useState(circleId ? 'Connect your signed-in account to check current Circle access.' : 'Connect your signed-in account to check your posted messages across Circles.');
@@ -43,7 +46,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
       if (event.persisted) reconnect('Connect and check your current account after returning to Quest Browser.');
     };
     const offProvider = subscribeAuthProviderChanges(changed);
-    const pause = () => connection.current?.invalidate();
+    const pause = () => { admissionActivity.setActive(false); connection.current?.invalidate(); };
     const visibility = () => { if (document.visibilityState !== 'visible') pause(); };
     window.addEventListener('blur', pause); window.addEventListener('offline', pause); window.addEventListener('pagehide', pause);
     window.addEventListener('pageshow', restored);
@@ -54,7 +57,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
       window.removeEventListener('pageshow', restored);
       document.removeEventListener('visibilitychange', visibility);
     };
-  }, []);
+  }, [admissionActivity]);
   async function connect() {
     if (phase !== 'closed') return;
     if (!window.isSecureContext || window.location.protocol !== 'https:') {
@@ -101,13 +104,14 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
       const memberAuth = verifiedAuth(() => document.visibilityState === 'visible' && document.hasFocus());
       try {
         const view = circleId
-          ? mountExistingMemberCircle({ window, document, config: { circleId, origin, transport, browserBinding: memberAuth.binding, aiConsent: true, sharedSalon, meeting: true,
-            immersive: { createAuth: verifiedAuth, pauseRegular: memberAuth.invalidate }, reelStarter } })
+          ? mountExistingMemberCircle({ window, document, onRegularActivity: admissionActivity.setActive, config: { circleId, origin, transport, browserBinding: memberAuth.binding, aiConsent: true, sharedSalon, meeting: true,
+            immersive: { createAuth: verifiedAuth, pauseRegular() { admissionActivity.setActive(false); memberAuth.invalidate(); } }, reelStarter } })
           : mountExistingMemberContributions({ window, document, config: { origin, transport, browserBinding: memberAuth.binding, aiConsent: true } });
-        connection.current = { invalidate: memberAuth.invalidate, dispose() { memberAuth.retire(); view.dispose(); } };
+        connection.current = { invalidate() { admissionActivity.setActive(false); memberAuth.invalidate(); }, dispose() { admissionActivity.setActive(false); memberAuth.retire(); view.dispose(); } };
       } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
       setPhase('connected'); setNotice(circleId ? 'Account connection opened. Check the member-session and Circle-access messages below.' : 'Account connection opened. Check the member session, then load your own posted messages when ready.');
     } catch {
+      admissionActivity.setActive(false);
       if (lifetime.current.mounted && lifetime.current.generation === generation) {
         connection.current?.dispose(); connection.current = null;
         setPhase('closed'); setNotice(circleId ? 'The Circle view could not connect. Try again or use the regular Circle view.' : 'Your contributions could not connect. Try again or use your regular posted messages page.');
@@ -133,6 +137,10 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
       <p>{REEL_QUESTIONS[reel]}</p>
       <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
     </section>}
+    {circleId && phase === 'connected' ? <section aria-label="Private salon invitation controls">
+      <p>Connect this Quest view to use invitations in the regular browser. Entering an immersive room clears codes and review; return and check the account again afterward.</p>
+      <CircleAdmission circleId={circleId} activity={admissionActivity} embedded/>
+    </section> : null}
     <div data-quest-member-view>
       {circleId ? <h2 id="circle-title">A conversation worth having.</h2> : null}
       <section aria-label="Member session"><p id="member-session-status" role="status">Member session is not connected.</p><button id="member-session-check" type="button" disabled>Check member session</button></section>

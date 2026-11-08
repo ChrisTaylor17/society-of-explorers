@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
 import {sourceLoader} from './load-source.mjs';
 const modulePath='platforms/native/src/circles/native-connectivity.ts';
 const observe=()=>sourceLoader()(modulePath).observeNativeConnectivity;
@@ -27,7 +28,7 @@ test('invalid events close access; retired callbacks and callbacks from a dispos
  off();off();listener('online');assert.equal(disposals,1);assert.deepEqual(values,['unknown','online','offline','unknown']);
 });
 test('source loader refuses zero-block or linked source before any content read',()=>{
- const load=sourceLoader(),file=new URL('../native/src/circles/native-connectivity.ts',import.meta.url).pathname;
+ const load=sourceLoader(),file=fileURLToPath(new URL('../native/src/circles/native-connectivity.ts',import.meta.url));
  const originalStat=fs.lstatSync,originalRead=fs.readFileSync;let reads=0;
  try{
   fs.readFileSync=(name,...rest)=>{if(String(name)===file)reads++;return originalRead(name,...rest);};

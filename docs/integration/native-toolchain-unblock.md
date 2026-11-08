@@ -2,7 +2,39 @@
 
 Prepared 2026-11-04 from canonical source at checkpoint `e1fbb2d`, named local metadata and current official documentation. This is an installation/build proposal, not a native build, bridge, device or release acceptance receipt. Only this document was added during this continuation.
 
-## November 7 owner review: no installation or spending authorized
+## November 7 evening update: cleanup complete; Android setup approval pending
+
+The owner explicitly approved the exact27 generated compilation-cache folders.
+Current process/open-file and unchanged-tree checks passed before their removal.
+The398 generated files represented30.29GB allocated; measured free space rose
+28.65GB to43.39GB. Subsequent verification builds left about42.20GB free at the
+Android proposal review. Project roots,source,backups,personal files,evidence,
+dependencies and the active cache were preserved. The original proposal remains
+immutable; completion is recorded in `native-storage-cleanup-verification.json`.
+
+The separately prepared $0 Android proposal installs only task-local Java17,
+Gradle9.4.1,stable SDK37/Build Tools37,NDK27.1.12297006,CMake3.30.5 and the committed
+app dependencies. CMake3.30.5 was verified against the exact RN0.88.0 upstream
+source; vendor archive checksums and the wrapper checksum are recorded. Platform
+tools with a preview license are excluded. Fixed JDK/CLI/SDK/NDK/CMake archives
+are about1.37GB compressed,excluding Gradle,app/Maven dependencies and extraction/
+build output. The overall limit is30GB of new working space with8GB kept free.
+These are stop limits,not a promise that compilation will fit or succeed.
+
+The proposal excludes Studio,emulators,Xcode,Rosetta,cloud upload,device
+installation,store enrollment,release signing,credential changes and further
+cleanup. It requires approval to install and accept the Android SDK license.
+That question has now been asked once and is pending; do not repeat it or treat
+silence as approval. No binary tool archive,installation or license acceptance
+has occurred. The owner can approve this while on their phone. Secure database
+password entry still waits for the owner's Mac return on November8 evening.
+
+Private reviewed scope:
+`/Users/christaylor/Library/Application Support/Society of Explorers/Planning/ANDROID_INSTALL_PROPOSAL_2026-11-07.json`
+and its readable `.txt` companion. Approval status is saved alongside it. Check
+that record and the actual owner response before any acquisition.
+
+## Earlier November 7 owner review: no installation or spending authorized
 
 The owner requested a secure password-entry option, a read-only phone-tool/storage review, and continued independent web pilot work. Do not delete existing files, install tools, accept vendor licenses or spend money without asking first. The earlier recovery setup approval does not authorize a native tool acquisition.
 

@@ -132,9 +132,57 @@ Kotlin is source-reviewed with static assertions only; no Android compiler,
 SDK or JDK was installed. See `native-admission-verification.json` for source
 bindings, exact commands and private receipt locations.
 
-Incoming-code, sharing-consent, host approval, recipient review/join and receipt
-recovery **screens/controllers remain unfinished on native and Quest**. The port
-and creation UI are foundations for those flows, not evidence of a complete phone
-invitation experience. Native signing/build/device checks, a physical Quest,
-matching hosted backup/restore, privacy repairs and real provider sign-in/recovery
-remain open. No migration, release, deployment or production access change occurred.
+The transport-only milestone above is superseded by the locally verified member
+invitation screens described below. Native signing/build/device checks, a physical
+Quest, matching hosted backup/restore, privacy repairs and real provider
+sign-in/recovery remain open. No migration, release, deployment or production
+access change occurred.
+
+
+## Reachable invitation screens and Quest browser — November 7
+
+The native member screen now opens “Salon invitations and host approvals” from a
+selected salon in discovery or My Circles. Existing public salon links retain
+only the salon reference; approval codes are pasted manually and never enter
+navigation or a link. The optional admission capability and native request-ID
+support are both required. Older bridges keep their existing experience.
+
+The parent member connection retains one member-and-salon invitation controller.
+It does no private work until a deliberate access check. Each operation renews the
+provider proof and checks the canonical member binding. One-hour sharing requires
+explicit author consent, host review identifies the recipient, and issuing an
+approval grants no membership. Joining has a separate review and confirmation;
+that review hides prior entry forms and includes the community norms. Raw codes,
+names and review disappear on activity/account/connectivity retirement. View
+epochs reject callbacks saved from an earlier form or review.
+
+A lost join retains only the member/circle/request/revision/nonce/proof reference,
+never its raw approval. Recovery is a read-only receipt query and never resends a
+join. A different account cannot load the result. Revocation instead retains its
+exact original request and revisions and needs a fresh deliberate retry review.
+A retained pending request prevents another invitation context from opening.
+Explicit discard clears the controller and returns to the member screen; a sent
+request may still finish. References are not persisted across app termination,
+replacement of the account connection, or explicit close.
+
+Quest uses the existing web invitation hook/component in its connected regular
+browser view. Its owned activity boundary carries no account or code. The
+platform pauses it before awaiting immersive permission and throughout the room.
+No invitation is transmitted by entering or exiting XR. After returning, the
+member checks access again. Account selection/disconnect ends that connected form
+and discards its local receipt reference; current membership can still be checked
+through the ordinary salon view. Headset text entry and real-device delivery are
+not established by these browser simulations.
+
+The current source passed140 selected native regressions,88 server/controller
+checks,eight composed native browser stories,three Quest/XR stories and the nine
+ordinary web regression journeys. The registered native app type contract,
+warning-free scoped lint and full web build/type check passed. All browser and
+synthetic databases closed. A deliberate post-database-setup failure verified that
+the browser runner preserves both FAIL status and exit1 after cleanup. A prior
+misreported receipt is explicitly rejected in the current evidence.
+
+See `platform-admission-verification.json` for exact source hashes,commands,
+private receipts and scope limits. This is local source verification. Installed
+Android/iOS apps, physical Quest, new Safari/WebKit checks and hosted recovery,
+privacy/authentication and cutover acceptance remain release gates.

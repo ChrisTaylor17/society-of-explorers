@@ -21,9 +21,9 @@ function meetingHref(model: CircleDirectoryModel | undefined) {
     ? safePrivateMeetingUrl(model.detail.online_url) : null;
 }
 
-export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', initialOnlineFilter = false, initialCircle, reel, savedReading, onBack, onClose }: {
+export function CircleDirectoryScreen({ config, connectivity, initialMode = 'discover', initialOnlineFilter = false, initialCircle, reel, savedReading, onInvitations, onBack, onClose }: {
   config: CircleDirectoryConfig; connectivity?: NativeConnectivityPort; initialMode?: 'discover' | 'mine'; initialOnlineFilter?: boolean;
-  initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId; savedReading?: SavedReading; onBack(): void; onClose(): void;
+  initialCircle?: PublicCircleChoice; reel?: ReelDiscussionId; savedReading?: SavedReading; onInvitations?(circleId: string): void; onBack(): void; onClose(): void;
 }) {
   const previewCircleId = initialCircle?.id;
   const connection = useMemo(() => {
@@ -260,6 +260,8 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
         </>}
       </View> : management ? <Text style={styles.copy}>The full listing is unavailable. You can check your membership and leave this Circle here. Current hosts can also review completing it when that control is available.</Text> : null}
       <Action label="Check current Circle" disabled={!m?.canRefresh} onPress={() => act(() => void session?.refresh())}/>
+      {onInvitations && m?.selected ? <Action label="Salon invitations and host approvals" disabled={m.phase !== 'ready' || !m.canNavigate}
+        onPress={() => act(() => onInvitations(m.selected!))}/> : null}
       {m?.phase === 'review' ? <View style={styles.card}>
         <Text accessibilityRole="header" style={styles.heading}>{m.intent === 'join' ? 'Review joining this Circle' : m.intent === 'rsvp' ? 'Review your attendance response' : m.intent === 'complete' ? 'Review completing this Circle' : 'Review leaving this Circle'}</Text>
         {m.intent === 'rsvp' && m.attendanceReview ? <AttendanceReview date={m.attendanceReview.date} status={m.attendanceReview.status} previousStatus={m.attendanceReview.previousStatus} circleTitle={m.attendanceReview.circleTitle} time={m.attendanceReview.time} timezone={m.attendanceReview.timezone}/> : <Text style={styles.copy}>{m.intent === 'join' ? 'Join this free Circle with your current member account and share your member display name with the group. Read the community norms below before joining. Its members will be able to see your contributions when you post.' : m.intent === 'complete' ? 'Complete this Circle as its host. This permanently closes new joins and attendance responses. Existing members keep their discussion access and can still leave. Posted messages remain. Completion does not transfer hosting, join you to the Circle or reopen it later.' : 'Leave this Circle, remove your current RSVPs and end your member discussion access. Your posted messages remain; you can review or withdraw your own messages from My posted messages. If you are the host, you keep hosting responsibility. Completing the Circle is a separate host action.'}</Text>}
