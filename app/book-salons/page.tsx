@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { GREAT_BOOKS } from '@/lib/books/catalog';
+import { isUuid } from '@/lib/ids/uuid';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -43,6 +44,9 @@ export default function BookSalons() {
   const [createMax, setCreateMax] = useState(8);
   const [createDate, setCreateDate] = useState('');
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const createBusy = useRef(false);
+  const createAttempt = useRef<{ signature: string; requestId: string } | null>(null);
   const [joining, setJoining] = useState<string | null>(null);
 
   const loadCohorts = useCallback(async () => {
@@ -64,23 +68,48 @@ export default function BookSalons() {
   }, [loadCohorts]);
 
   async function createCohort() {
-    if (!createBook || !createTitle || !memberId) return;
+    if (!createBook || !createTitle.trim() || !memberId || createBusy.current) return;
+    createBusy.current = true;
     setCreating(true);
+    setCreateError('');
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15_000);
     const book = GREAT_BOOKS.find(b => b.id === createBook);
-    await fetch('/api/book-salons', {
-      method: 'POST',
-      cache: 'no-store',
-      headers: await bookSalonHeaders(true),
-      body: JSON.stringify({
-        bookId: createBook,
-        title: createTitle,
-        maxMembers: createMax,
-        startDate: createDate || new Date().toISOString(),
-        thinkerId: book?.recommended_thinker || 'socrates',
-      }),
-    });
-    setCreating(false); setShowCreate(false); setCreateTitle(''); setCreateBook('');
-    void loadCohorts();
+    const input = {
+      expectedMemberId: memberId.toLowerCase(), bookId: createBook, title: createTitle.trim(),
+      maxMembers: createMax, startDate: createDate || null,
+      thinkerId: book?.recommended_thinker || 'socrates',
+    };
+    try {
+      const signature = JSON.stringify(input);
+      if (createAttempt.current?.signature !== signature) {
+        createAttempt.current = { signature, requestId: crypto.randomUUID() };
+      }
+      const requestId = createAttempt.current.requestId;
+      const res = await fetch('/api/book-salons', {
+        method: 'POST', cache: 'no-store', signal: controller.signal, headers: await bookSalonHeaders(true),
+        body: JSON.stringify({ ...input, requestId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCreateError(typeof data?.error === 'string' ? data.error : 'Could not confirm creation. Retry without changing the form.');
+        return;
+      }
+      if (data?.requestId !== requestId || data?.creatorJoined !== true || !isUuid(data?.cohort?.id)
+        || data.cohort.created_by !== input.expectedMemberId) {
+        setCreateError('Could not confirm creation. Retry without changing the form to check the same request.');
+        return;
+      }
+      createAttempt.current = null;
+      setShowCreate(false); setCreateTitle(''); setCreateBook('');
+      void loadCohorts();
+    } catch {
+      setCreateError('Could not confirm creation. Retry without changing the form to check the same request.');
+    } finally {
+      window.clearTimeout(timeout);
+      createBusy.current = false;
+      setCreating(false);
+    }
   }
 
   async function joinCohort(cohortId: string) {
@@ -186,36 +215,37 @@ export default function BookSalons() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div onClick={() => setShowCreate(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#0a0a0a', border: `1px solid ${gold}22`, padding: '3rem', maxWidth: '500px', width: '100%' }}>
+        <div onClick={() => { if (!createBusy.current) setShowCreate(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div role="dialog" aria-modal="true" aria-label="Start a new book salon" onClick={e => e.stopPropagation()} style={{ background: '#0a0a0a', border: `1px solid ${gold}22`, padding: 'clamp(1rem, 5vw, 3rem)', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', width: '100%' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.6, marginBottom: '1.5rem', textAlign: 'center' }}>START A NEW BOOK SALON</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>BOOK</label>
-                <select value={createBook} onChange={e => { setCreateBook(e.target.value); const b = GREAT_BOOKS.find(x => x.id === e.target.value); if (b) setCreateTitle(`${b.title} — Reading Group`); }} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none' }}>
+                <select aria-label="Book" disabled={creating} value={createBook} onChange={e => { setCreateBook(e.target.value); const b = GREAT_BOOKS.find(x => x.id === e.target.value); if (b) setCreateTitle(`${b.title} — Reading Group`); }} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none' }}>
                   <option value="">Select a book...</option>
                   {GREAT_BOOKS.map(b => <option key={b.id} value={b.id}>{b.title} — {b.author}</option>)}
                 </select>
               </div>
               <div>
                 <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>SALON NAME</label>
-                <input value={createTitle} onChange={e => setCreateTitle(e.target.value)} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
+                <input aria-label="Salon name" disabled={creating} maxLength={160} value={createTitle} onChange={e => setCreateTitle(e.target.value)} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>MAX MEMBERS</label>
-                  <input type="number" value={createMax} onChange={e => setCreateMax(Number(e.target.value))} min={2} max={12} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
+                  <input aria-label="Max members" disabled={creating} type="number" value={createMax} onChange={e => setCreateMax(Number(e.target.value))} min={2} max={12} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>START DATE</label>
-                  <input type="date" value={createDate} onChange={e => setCreateDate(e.target.value)} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
+                  <input aria-label="Start date" disabled={creating} type="date" value={createDate} onChange={e => setCreateDate(e.target.value)} style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '10px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
+              {createError && <p role="alert" style={{ color: '#e5b8a2', lineHeight: 1.5, margin: 0 }}>{createError}</p>}
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={createCohort} disabled={creating || !createBook || !createTitle} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, border: 'none', padding: '10px', cursor: 'pointer', opacity: creating ? 0.5 : 1 }}>
+                <button onClick={createCohort} disabled={creating || !createBook || !createTitle.trim()} style={{ flex: 1, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, border: 'none', padding: '10px', cursor: 'pointer', opacity: creating ? 0.5 : 1 }}>
                   {creating ? 'CREATING...' : 'CREATE SALON'}
                 </button>
-                <button onClick={() => setShowCreate(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: muted, background: 'none', border: `1px solid ${gold}22`, padding: '10px 20px', cursor: 'pointer' }}>CANCEL</button>
+                <button disabled={creating} onClick={() => setShowCreate(false)} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: muted, background: 'none', border: `1px solid ${gold}22`, padding: '10px 20px', cursor: 'pointer' }}>CANCEL</button>
               </div>
             </div>
           </div>

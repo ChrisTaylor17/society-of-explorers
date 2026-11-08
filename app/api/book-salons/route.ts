@@ -4,6 +4,7 @@ import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { CIRCLE_BOOK_ID } from '@/lib/circles/path';
 import { circleWriteOrigin, readCircleReviewJson } from '@/lib/circles/moderation-server';
+import { isUuid } from '@/lib/ids/uuid';
 
 type BookCohortListRow = {
   book_cohort_members?: Array<{ id: string }> | null;
@@ -62,34 +63,51 @@ export async function POST(req: NextRequest) {
   const title = boundedText(body.title, 160);
   if (!bookId || !title) return privateJson({ error: 'Missing fields' }, { status: 400 });
   if (bookId === CIRCLE_BOOK_ID) return privateJson({ error: 'Start circles from /circles/start' }, { status: 400 });
+  if (!isUuid(body.requestId) || !isUuid(body.expectedMemberId)) {
+    return privateJson({ error: 'Review the salon and try again' }, { status: 400 });
+  }
+  const requestId = body.requestId.toLowerCase();
+  const startDate = boundedText(body.startDate, 40);
+  if (body.startDate != null && (!startDate || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z)?$/.test(startDate)
+    || !Number.isFinite(Date.parse(startDate)) || new Date(startDate).toISOString().slice(0, 10) !== startDate.slice(0, 10))) {
+    return privateJson({ error: 'Choose a valid start date' }, { status: 400 });
+  }
 
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+  if (body.expectedMemberId.toLowerCase() !== auth.memberId.toLowerCase()) {
+    return privateJson({ error: 'Your account changed. Reload before creating a salon.' }, { status: 409 });
+  }
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { data: cohort, error } = await supabaseAdmin.from('book_cohorts').insert({
-      book_id: bookId,
-      title,
-      description: boundedText(body.description, 1_000),
-      max_members: safeMaxMembers(body.maxMembers),
-      start_date: boundedText(body.startDate, 40) || new Date().toISOString(),
-      thinker_id: safeKey(body.thinkerId, 'socrates'),
-      status: 'forming',
-      created_by: auth.memberId,
-    }).select().single();
-
-    if (error) return privateJson({ error: 'Failed to create book salon' }, { status: 500 });
-
-    // Auto-add creator as first member
-    await supabaseAdmin.from('book_cohort_members').insert({
-      cohort_id: cohort.id,
-      member_id: auth.memberId,
+    const { data, error } = await supabaseAdmin.rpc('soe_circle_legacy_salon_create', {
+      p_actor: auth.memberId,
+      p_request_id: requestId,
+      p_input: {
+        bookId, title, description: boundedText(body.description, 1_000),
+        maxMembers: safeMaxMembers(body.maxMembers),
+        // Keep a missing date stable across retries; SQL chooses it once.
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        thinkerId: safeKey(body.thinkerId, 'socrates'),
+      },
     });
-
-    return privateJson({ cohort });
-  } catch (err) {
-    console.error('Book salon creation failed:', err);
-    return privateJson({ error: 'Failed to create book salon' }, { status: 500 });
+    if (error) {
+      const status = ({ PT400: 400, PT403: 403, PT409: 409, PT410: 410 } as Record<string, number>)[error.code] || 503;
+      const message = status === 400 ? 'Review the salon details and try again'
+        : status === 403 ? 'This account cannot create a salon right now'
+          : status === 409 || status === 410 ? 'The original request or salon changed. Reload to review it.'
+            : 'Could not confirm creation. Retry without changing the form to check the same request.';
+      return privateJson({ error: message }, { status });
+    }
+    if (!isRecord(data) || data.requestId !== requestId || data.creatorJoined !== true
+      || typeof data.replayed !== 'boolean' || !isRecord(data.cohort)
+      || !isUuid(data.cohort.id) || data.cohort.created_by !== auth.memberId.toLowerCase()) {
+      return privateJson({ error: 'Could not confirm creation. Retry without changing the form to check the same request.' }, { status: 503 });
+    }
+    return privateJson({ cohort: { id: data.cohort.id, created_by: data.cohort.created_by },
+      requestId, creatorJoined: true, replayed: data.replayed });
+  } catch {
+    return privateJson({ error: 'Could not confirm creation. Retry without changing the form to check the same request.' }, { status: 503 });
   }
 }

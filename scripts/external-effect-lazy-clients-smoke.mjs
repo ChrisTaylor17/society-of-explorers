@@ -716,8 +716,12 @@ const checks = [
           source.includes('privateJson') &&
           source.includes('getSupabaseAdmin()'),
       ) &&
-      routes.bookSalons.includes('created_by: auth.memberId') &&
-      routes.bookSalons.includes('member_id: auth.memberId') &&
+      routes.bookSalons.includes("rpc('soe_circle_legacy_salon_create', {") &&
+      routes.bookSalons.includes('p_actor: auth.memberId') &&
+      routes.bookSalons.includes('p_request_id: requestId') &&
+      routes.bookSalons.includes('body.expectedMemberId.toLowerCase() !== auth.memberId.toLowerCase()') &&
+      routes.bookSalons.includes('data.creatorJoined !== true') &&
+      !routes.bookSalons.slice(routes.bookSalons.indexOf('export async function POST')).includes('.insert(') &&
       routes.bookSalons.indexOf('Missing fields') < routes.bookSalons.indexOf('getAuthenticatedMember(req)') &&
       routes.bookSalons.indexOf('getAuthenticatedMember(req)') < routes.bookSalons.lastIndexOf('getSupabaseAdmin()') &&
       // Admission containment removed raw membership writes. The service-only

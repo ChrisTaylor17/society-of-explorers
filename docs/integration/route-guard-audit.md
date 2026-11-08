@@ -31,3 +31,7 @@ These gaps are not repaired by correcting the static checks. They are the next l
 ## Preservation
 
 The exact starting Git archive, diagnostic clauses, source hashes and test attempts are retained privately. Revert this local verification commit after reviewing dependencies if needed; there is no schema or product data migration. Do not change pinned recovery inputs or infer production clearance from the passing checklist.
+
+## Subsequent local repair — November 8
+
+The ordinary creation gap is now repaired and verified locally through a controlled atomic path with account-bound retry confirmation and visible failure states. Its SQL remains unapplied; hosted and independent-session acceptance are still open. See [the creation repair and rollout limits](book-salon-creation.md). The matching-contract gap remains unrepaired. The earlier probe and failed logs above describe their original checkpoint and remain preserved.

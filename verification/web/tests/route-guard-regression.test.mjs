@@ -35,6 +35,8 @@ const dm = 'DM route is signed-in, sender/read-scoped, lazy, and private';
 const reading = 'Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls';
 const thinker = 'core thinker and Movement creator helpers use lazy Supabase admin clients';
 const cases = [
+  { name: 'salon creation trusts a submitted actor', path: 'app/api/book-salons/route.ts', from: 'p_actor: auth.memberId', to: 'p_actor: body.memberId', check: salon },
+  { name: 'salon creation accepts an incomplete receipt', path: 'app/api/book-salons/route.ts', from: 'data.creatorJoined !== true', to: 'false', check: salon },
   { name: 'salon join trusts a submitted actor', path: 'app/api/book-salons/join/route.ts', from: 'p_actor: auth.memberId, p_cohort_id: cohortId', to: 'p_actor: body.memberId, p_cohort_id: cohortId', check: salon },
   { name: 'direct-message read skips authenticated ownership', path: 'app/api/message/route.ts', from: 'const auth = await messageOwner(req)', to: "const auth = { memberId: 'submitted' }", check: dm },
   { name: 'direct-message sender comes from the body', path: 'app/api/message/route.ts', from: 'p_actor: memberId, p_peer: recipientId, p_content: content', to: 'p_actor: body.senderId, p_peer: recipientId, p_content: content', check: dm },

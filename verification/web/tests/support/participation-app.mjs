@@ -116,7 +116,7 @@ export async function participationApp() {
     let filename, params;
     if (url.pathname === '/api/circles') filename = 'app/api/circles/route.ts';
     else if (['/api/circles/start', '/api/circles/mine', '/api/circles/contributions'].includes(url.pathname)) filename = 'app' + url.pathname + '/route.ts';
-    else if (url.pathname === '/api/book-salons/join') filename = 'app/api/book-salons/join/route.ts';
+    else if (['/api/book-salons', '/api/book-salons/join'].includes(url.pathname)) filename = 'app' + url.pathname + '/route.ts';
     else {
       let match = /^\/api\/circles\/([^/]+)(?:\/(join|leave|rsvp|complete|membership))?$/.exec(url.pathname);
       if (match) { filename = 'app/api/circles/[circleId]/' + (match[2] ? match[2] + '/' : '') + 'route.ts'; params = { circleId: match[1] }; }
