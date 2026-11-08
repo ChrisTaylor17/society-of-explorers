@@ -127,17 +127,18 @@ export default function BookSalons() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0A', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
+      <nav aria-label="Book salon navigation" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem', display: 'flex', flexWrap: 'wrap', gap: '8px 16px', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
         <Link href="/great-books" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← GREAT BOOKS LIBRARY</Link>
-        <Link href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.5 }}>SALON</Link>
+        <Link href={memberId ? '/salon' : '/login?next=%2Fsalon'} prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, textDecoration: 'none', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>{memberId ? 'SEVEN-WEEK GUIDE PROGRAM' : 'SIGN IN FOR THE GUIDE PROGRAM'}</Link>
       </nav>
 
-      <div style={{ textAlign: 'center', padding: '80px 20px 40px' }}>
+      <div style={{ textAlign: 'center', padding: '144px 20px 40px' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>READING TOGETHER</div>
         <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 300, letterSpacing: '0.15em', color: parchment, marginBottom: '1rem' }}>BOOK SALONS</h1>
         <p style={{ fontSize: '1.15rem', color: muted, fontStyle: 'italic', maxWidth: '600px', margin: '0 auto 2rem', lineHeight: 1.8 }}>
-          Join a cohort. Read the same text on the same schedule. Meet weekly with a thinker who guides the conversation.
+          Read with a small group and discuss the text together. Confirm each group’s host, schedule and any optional AI guide before joining.
         </p>
+        <p><Link href="/salons/pilot" prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Explore the four-week fellowship plan</Link></p>
         {memberId && (
           <button onClick={() => setShowCreate(true)} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em', color: '#000', background: gold, border: 'none', padding: '12px 30px', cursor: 'pointer' }}>
             START A NEW SALON
@@ -198,13 +199,13 @@ export default function BookSalons() {
       {/* How It Works */}
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 4rem' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '2rem', textAlign: 'center' }}>HOW BOOK SALONS WORK</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: `${gold}15` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 14rem), 1fr))', gap: '1px', background: `${gold}15` }}>
           {[
-            { num: 'I', title: 'CHOOSE A TEXT', desc: 'Pick from the Great Books catalog. Each salon reads one book over 4-8 weeks.' },
-            { num: 'II', title: 'GATHER YOUR COHORT', desc: '3-8 members. Small enough for real conversation. Large enough for diverse perspectives.' },
-            { num: 'III', title: 'READ WITH A THINKER', desc: 'Each week, a thinker leads the discussion. They read the same passage you do — and they disagree with the author.' },
+            { num: 'I', title: 'CHOOSE A TEXT', desc: 'Pick from the Great Books catalog and agree on a reading schedule with your group.' },
+            { num: 'II', title: 'GATHER YOUR COHORT', desc: 'Confirm the group’s host, capacity and meeting dates. Make room for respectful disagreement.' },
+            { num: 'III', title: 'EXPLORE TOGETHER', desc: 'Bring a question from the reading. An optional AI thinker can offer another perspective when the group chooses to use it.' },
           ].map(step => (
-            <div key={step.num} style={{ background: '#0d0d0d', padding: '2rem', textAlign: 'center' }}>
+            <div key={step.num} style={{ minWidth: 0, background: '#0d0d0d', padding: '2rem', textAlign: 'center' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1rem' }}>{step.num}</div>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, marginBottom: '0.75rem' }}>{step.title}</div>
               <p style={{ fontSize: '13px', color: muted, lineHeight: 1.7 }}>{step.desc}</p>

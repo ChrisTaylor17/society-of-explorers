@@ -578,7 +578,7 @@ const checks = [
       !routes.salons.includes('return NextResponse.json({ salon') &&
       !routes.salons.includes('guide_since') &&
       !routes.salons.includes('exp_tokens') &&
-      pages.salon.includes("fetch('/api/salons?status=recruiting,active', { cache: 'no-store' })") &&
+      pages.salon.includes("fetch('/api/salons?status=recruiting,active', { cache: 'no-store', signal: controller.signal })") &&
       pages.salon.includes("fetch('/api/salons/my-salon', { headers: { 'Authorization': `Bearer ${authToken}` }, cache: 'no-store' })") &&
       routes.salons.indexOf('Title required') < routes.salons.lastIndexOf('getSupabaseAdmin()') &&
       routes.salonDetail.includes('SALON_DETAIL_SELECT') &&
