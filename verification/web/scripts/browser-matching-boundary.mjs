@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { memberFinderApp, IDS } from '../tests/support/member-finder-app.mjs';
 
 const [prefix, run, ...rest] = process.argv.slice(2);
-assert(!rest.length && /^built-shell-matching-boundary-[a-z0-9-]+-$/.test(prefix ?? '') && /^matching-boundary-browser-[0-9]+$/.test(run ?? ''));
+assert(!rest.length && /^built-shell-(?:matching-boundary|public-claims)-[a-z0-9-]+-$/.test(prefix ?? '') && /^matching-boundary-browser-[0-9]+$/.test(run ?? ''));
 assert(process.execArgv.some(value => value.endsWith('/deny-build-network.cjs')));
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const ready = JSON.parse(readFileSync(resolve(root, 'verification/web/evidence', prefix + 'server-ready.json')));
@@ -91,7 +91,7 @@ try {
   await people.waitFor(); assert.equal(await people.getAttribute('href'), '/members');
   assert.equal(await page.locator('a[href="/world/match"], a[href="/match"]').count(), 0);
   await page.goto(origin + '/soe');
-  assert.equal(await page.getByRole('link', { name: /MEET EXPLORERS Find people through interests/ }).getAttribute('href'), '/members');
+  assert.equal(await page.getByRole('link', { name: 'Find people', exact: true }).getAttribute('href'), '/members');
   assert.doesNotMatch(await page.locator('body').innerText(), /After 7 responses, paired/);
   stories.push('Dashboard and public SoE entry actions lead to published people finding and no longer promise automatic pairing.');
 

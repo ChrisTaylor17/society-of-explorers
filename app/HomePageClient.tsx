@@ -162,13 +162,15 @@ export default function HomePage() {
         <div style={{ maxWidth: '1040px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>
-              PRIVATE NETWORK HANDSHAKE
+              COLLABORATION PROTOTYPE
             </div>
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>
-              Align, invite, build.
+              Explore ideas for working together.
             </h2>
             <p style={{ fontSize: '15px', color: muted, lineHeight: 1.7, maxWidth: '620px', margin: '0 auto' }}>
-              Your profile stays local. Your collaboration workspace moves through encrypted pod sync and Base multi-sig checkpoints.
+              This optional prototype explores profile questions and shared project planning.
+              Working data is saved in this browser, and a sync can send an encrypted draft.
+              Its labels are exploratory, not validated compatibility scores.
             </p>
           </div>
 
@@ -198,7 +200,7 @@ export default function HomePage() {
                 cursor: 'pointer',
               }}
             >
-              Philosophical Alignment Survey
+              Profile questions
             </button>
             <button
               type="button"
@@ -214,7 +216,7 @@ export default function HomePage() {
                 cursor: 'pointer',
               }}
             >
-              Collaboration Multi-Sig Sandbox
+              Project workspace
             </button>
           </div>
 
@@ -264,7 +266,7 @@ export default function HomePage() {
                 }}
               >
                 <span>Workspace status: {sandboxProject?.workspace_status || 'proposed'}</span>
-                <span>Encrypted pod queue: {podSync.pending_count}</span>
+                <span>Local change queue: {podSync.pending_count}</span>
               </div>
               <CollaborationSandbox
                 graph={podSync.state}
