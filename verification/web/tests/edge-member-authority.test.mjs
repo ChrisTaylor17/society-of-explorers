@@ -10,7 +10,7 @@ const OLD_INTENT = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const SUBJECT = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const OTHER_SUBJECT = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const UNPROVISIONED = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-const EDGE_ROUTES = ['match', 'projects/create', 'projects/invite', 'movement/pod/sync'];
+const EDGE_ROUTES = [ 'projects/create', 'projects/invite', 'movement/pod/sync'];
 
 const projectionFor = memberId => ({
   member_id: memberId, primary_builder_archetype: 'Systems Architect', decentralization_conviction: 0.5,
@@ -179,16 +179,20 @@ test('Pod streaming retains an unauthorized event without parsing a rejected req
   assert.equal(f.db.log[0].filters[0][1], 'supabase_auth_id');
 });
 
-test('A selected wallet can still read a consented match without exposing private member fields', async () => {
+test('projection matching remains deferred even with selected wallet or bearer credentials', async () => {
   const f = await fixture('match');
   const projection = projectionFor(f.ADA);
   f.db.tables.consented_match_projections = [{ ...projection, member_id: f.JULES, private_note: 'private sentinel' }];
-  const { response } = await f.send({ cookies: f.walletCookies, body: { projection } });
-  assert.equal(response.status, 200);
-  const result = await response.json();
-  assert.equal(result.source_member_id, f.ADA);
-  assert.equal(result.matches[0].candidate_id, f.JULES);
-  assert.doesNotMatch(JSON.stringify(result), /private sentinel|private@example.invalid/);
+  for (const attempt of [{ cookies: f.walletCookies }, { authorization: 'Bearer subject-a', origin: null }]) {
+    const { response, request } = await f.send({ ...attempt, body: { projection } });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).code, 'MATCHING_NOT_AVAILABLE');
+    assert.equal(request.bodyUsed, false);
+  }
+  assert.deepEqual(f.auth, []);
+  assert.deepEqual(f.selects, []);
+  assert.deepEqual(f.rest, []);
+  assert.equal(f.db.log.length, 0);
 });
 
 test('A verified bearer can still scaffold a project for the two authorized participants', async () => {

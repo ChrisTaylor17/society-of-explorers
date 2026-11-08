@@ -1,3 +1,4 @@
+import { matchingReleaseBlock } from '@/lib/matching/releaseBlock';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
@@ -115,6 +116,9 @@ async function awardMatchCompletionExp(
 }
 
 export async function POST(req: NextRequest) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   try {
     const body = await safeRequestJson(req);
     const matchId = normalizeMatchId(body?.matchId);

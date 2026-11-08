@@ -1,3 +1,4 @@
+import { matchingReleaseBlock } from '@/lib/matching/releaseBlock';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
@@ -10,6 +11,9 @@ const SHARED_PRACTICE_PROMPTS = [
 ];
 
 export async function POST(req: NextRequest) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 

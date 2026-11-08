@@ -57,10 +57,7 @@ const REQUIRED: Case[] = [
   ['book-salons/join', 'book-salons/join', 'POST'],
   ['book-salons POST', 'book-salons', 'POST'],
   ['communities/[slug]/join', 'communities/[slug]/join', 'POST', { slug: 'demo' }],
-  ['communities/[slug]/matches GET', 'communities/[slug]/matches', 'GET', { slug: 'demo' }],
-  ['communities/[slug]/matches POST', 'communities/[slug]/matches', 'POST', { slug: 'demo' }],
   ['communities/[slug]/products POST', 'communities/[slug]/products', 'POST', { slug: 'demo' }],
-  ['communities/[slug]/questionnaire POST', 'communities/[slug]/questionnaire', 'POST', { slug: 'demo' }],
   ['communities POST', 'communities', 'POST'],
   ['exp/award', 'exp/award', 'POST'],
   ['great-books/progress GET', 'great-books/progress', 'GET'],
@@ -86,7 +83,6 @@ const REQUIRED: Case[] = [
   ['twiddle POST', 'twiddle', 'POST'],
   ['voice-notes/generate', 'voice-notes/generate', 'POST'],
   ['world/annotate', 'world/annotate', 'POST'],
-  ['world/match GET', 'world/match', 'GET'],
   ['world/scan/verify', 'world/scan/verify', 'POST'],
   ['world/spaces POST', 'world/spaces', 'POST'],
 ];
@@ -127,6 +123,26 @@ describe('no session + body/query/header memberId=JULES -> refused (400/401/403)
       const { res } = await call(c);
       expect([400, 401, 403]).toContain(res.status);
       expect(writes(db)).toEqual([]);
+      expect(anthropicCalls.length).toBe(0);
+    });
+  }
+});
+
+// The separate Node boundary suite also exercises all nine deferred operations,
+// hostile inputs and zero identity/data access. These former authority cases now
+// refuse uniformly before authentication because the feature is not in the pilot.
+describe('deferred matching has no data operation', () => {
+  for (const c of [
+    ['community matches GET', 'communities/[slug]/matches', 'GET', { slug: 'demo' }],
+    ['community matches POST', 'communities/[slug]/matches', 'POST', { slug: 'demo' }],
+    ['questionnaire POST', 'communities/[slug]/questionnaire', 'POST', { slug: 'demo' }],
+    ['world matching GET', 'world/match', 'GET'],
+  ] as Case[]) {
+    test(c[0], async () => {
+      const { db } = await import('./fakes');
+      const { res } = await call(c);
+      expect(res.status).toBe(503);
+      expect(db.log).toEqual([]);
       expect(anthropicCalls.length).toBe(0);
     });
   }
@@ -230,11 +246,12 @@ describe('signed session ADA + body memberId=JULES -> acts as ADA only', () => {
     expect([400, 403]).toContain(res.status);
     expect(db.rows('video_rooms')[0].is_live).toBe(true);
   });
-  test('communities/[slug]/matches POST cannot accept someone else\'s match (403)', async () => {
+  test('deferred community matching cannot change another person\'s match (503)', async () => {
     const { db } = await import('./fakes');
     const m = await load('communities/[slug]/matches');
     const res: Response = await m.POST(makeReq({ matchId: '55555555-5555-4555-8555-555555555502', memberId: JULES, action: 'accept' }, await ada()), { params: Promise.resolve({ slug: 'demo' }) });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(503);
+    expect(db.log).toEqual([]);
     expect(db.rows('community_matches')[0].status).toBe('pending');
   });
   test('world/scan/verify: body reviewerId cannot impersonate the space host (403)', async () => {

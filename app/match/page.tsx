@@ -1,4 +1,6 @@
 'use client';
+import MatchingUnavailable from '@/components/matching/MatchingUnavailable';
+import { scoredMatchingAvailable } from '@/lib/matching/releaseAvailability';
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
@@ -28,6 +30,11 @@ function totalResponsesFor(member: unknown): number {
 }
 
 export default function MatchPage() {
+  if (!scoredMatchingAvailable()) return <MatchingUnavailable />;
+  return <LegacyMatchPage />;
+}
+
+function LegacyMatchPage() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [activeMatch, setActiveMatch] = useState<MatchRecord | null>(null);

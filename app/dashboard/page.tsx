@@ -357,7 +357,7 @@ export default function ExplorerDashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1px', background: `${gold}10` }}>
             {[
               { label: 'Scan a Space', desc: 'Upload photos or LiDAR', icon: '📸', href: '/world' },
-              { label: 'Find Your Frequency', desc: 'Match with explorers', icon: '🔮', href: '/world/match' },
+              { label: 'Find People', desc: 'Explore published interests', icon: '◎', href: '/members' },
               { label: 'Talk to a Thinker', desc: 'Enter the Salon', icon: 'Σ', href: '/salon' },
               { label: 'Book Travel', desc: 'Sovereign booking', icon: '✈️', href: '/travel' },
             ].map(action => (
@@ -491,7 +491,7 @@ export default function ExplorerDashboard() {
                   ))}
                 </div>
               )}
-              <a href="/world/match" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, textDecoration: 'none' }}>Find Resonant Explorers →</a>
+              <a href="/members" style={{ display: 'block', textAlign: 'center', marginTop: '1rem', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, textDecoration: 'none' }}>Find People Through Shared Interests →</a>
             </div>
           </div>
         </section>

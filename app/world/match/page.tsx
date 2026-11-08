@@ -1,4 +1,6 @@
 'use client';
+import MatchingUnavailable from '@/components/matching/MatchingUnavailable';
+import { scoredMatchingAvailable } from '@/lib/matching/releaseAvailability';
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
@@ -47,6 +49,11 @@ function CoherenceBar({ label, value, color }: { label: string; value: number; c
 }
 
 export default function FrequencyMatchPage() {
+  if (!scoredMatchingAvailable()) return <MatchingUnavailable />;
+  return <LegacyFrequencyMatchPage />;
+}
+
+function LegacyFrequencyMatchPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [callerVector, setCallerVector] = useState<FrequencyVector | null>(null);
   const [callerTags, setCallerTags] = useState<string[]>([]);

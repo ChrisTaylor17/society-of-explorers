@@ -229,20 +229,13 @@ test('legacy automatic AI reflection is paused before any provider or storage op
   assert.equal(f.calls.length, 0);
 });
 
-test('new practice matching uses shared question IDs and three general prompts without reading answer text', async t => {
+test('private practice participation cannot create a new match while scoring is deferred', async t => {
   const f = await fixture(t);
   await f.db.query('UPDATE members SET total_responses=7 WHERE id=$1', [C]);
-  await f.db.exec("INSERT INTO daily_questions(thinker_id,question_text,date) "
-    + "SELECT 'socrates','Synthetic past question',CURRENT_DATE - i FROM generate_series(1,3) i");
-  await f.db.query("INSERT INTO question_responses(member_id,question_id,response_text) "
-    + "SELECT m.id,q.id,'MATCH_TEXT_MUST_STAY_PRIVATE' FROM members m CROSS JOIN daily_questions q "
-    + "WHERE m.id IN ($1,$2) AND q.id <> $3", [B, C, Q]);
   f.setActor(C);
-  const result = await json(await load(f, '/match/generate').POST(request('/match/generate', { method: 'POST', body: {} })));
-  assert.equal(result.match.partner_display_name, 'Synthetic B');
-  assert.equal(result.match.prompts.length, 3);
-  assert.match(result.match.match_reason, /3 of the same daily questions/);
-  assert.equal(f.calls.filter(call => call.table === 'question_responses').length, 2);
-  assert(f.calls.filter(call => call.table === 'question_responses').every(call => !call.select.includes('response_text')));
-  assert(!JSON.stringify(result).includes('MATCH_TEXT_MUST_STAY_PRIVATE'));
+  const before = (await f.db.query('SELECT * FROM matched_conversations')).rows;
+  const result = await json(await load(f, '/match/generate').POST(request('/match/generate', { method: 'POST', body: {} })), 503);
+  assert.equal(result.code, 'MATCHING_NOT_AVAILABLE');
+  assert.equal(f.calls.length, 0);
+  assert.deepEqual((await f.db.query('SELECT * FROM matched_conversations')).rows, before);
 });

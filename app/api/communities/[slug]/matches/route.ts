@@ -1,3 +1,4 @@
+import { matchingReleaseBlock } from '@/lib/matching/releaseBlock';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
@@ -45,6 +46,9 @@ function dedupeMatches(matches: CommunityMatchRow[]) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const { slug } = await params;
   const auth = await getAuthenticatedMember(req);
 
@@ -103,6 +107,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const { slug } = await params;
   let body: CommunityMatchBody;
 

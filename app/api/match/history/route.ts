@@ -1,3 +1,4 @@
+import { matchingReleaseBlock } from '@/lib/matching/releaseBlock';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
@@ -71,6 +72,9 @@ function matchHistoryFailure() {
 }
 
 export async function GET(req: NextRequest) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 

@@ -1,0 +1,201 @@
+{
+  "recordedAt": "2026-11-08T09:57:41.508666+00:00",
+  "status": "PASS_LOCAL_RELEASE_BOUNDARY_ONLY",
+  "baseCommit": "8de572dbe60ec870fbbc4258aec4b74b73fa0166",
+  "canonical": "/Users/christaylor/Documents/Codex/soe-release",
+  "sourceFiles": {
+    "app/api/world/match/route.ts": {
+      "bytes": 4738,
+      "sha256": "2edf66147feca7c3a15fdaf14b84495c7cff8752befc0aaa487d1f70725d5b33"
+    },
+    "app/api/match/route.ts": {
+      "bytes": 17311,
+      "sha256": "bf33f8ca378192076d266c93cb29db75eb8292d647d34823039357a6a5e78b72"
+    },
+    "app/api/match/generate/route.ts": {
+      "bytes": 4096,
+      "sha256": "3d85b3354b3d6128f4cef1c0bbd6d595a97d53800e4d5e72455eeaefd30204a8"
+    },
+    "app/api/match/history/route.ts": {
+      "bytes": 3666,
+      "sha256": "e7554ef9daee9177fe2622dbf63a8f3664c3515d897cde1ae9cb2ffcf6e1ea82"
+    },
+    "app/api/match/respond/route.ts": {
+      "bytes": 6773,
+      "sha256": "efa00a2c18fcf629a37657626258f90b3796a4f5056555a5b30d936793a2f28e"
+    },
+    "app/api/communities/[slug]/questionnaire/route.ts": {
+      "bytes": 3355,
+      "sha256": "2c290492d0a9fa724bfafcd9c424e821657edc7a99f15c2e4234ab32e45404bf"
+    },
+    "app/api/communities/[slug]/matches/route.ts": {
+      "bytes": 5085,
+      "sha256": "b6708eeb30c0c4839411bacb63712f40a1038cd8a5a0fc44212199f9d9e7e848"
+    },
+    "lib/matching/index.ts": {
+      "bytes": 4194,
+      "sha256": "6f53bfb20bbcba728085f46500ffd6b43036aa1c920524bf1f9633d4e645368b"
+    },
+    "app/match/page.tsx": {
+      "bytes": 12001,
+      "sha256": "2d8d56c68aff648e6fd9824ae7d6aed9f0f2cf438ff7db1579e5c9cc9accbd21"
+    },
+    "app/world/match/page.tsx": {
+      "bytes": 9898,
+      "sha256": "8a120549bc079dd89b639383d9ed442f782353e14adfaaec3bcca2ac7b128bf2"
+    },
+    "app/dashboard/page.tsx": {
+      "bytes": 26126,
+      "sha256": "897be57a551b8b008fec0168d3b81ee08ccffdfdf02b9eff51879edf638df9e0"
+    },
+    "app/soe/page.tsx": {
+      "bytes": 6686,
+      "sha256": "2a18520f8760aac533c005c591ee44713e92c06eb41e4262a5cf153238396bd6"
+    },
+    "lib/matching/releaseAvailability.ts": {
+      "bytes": 306,
+      "sha256": "2cdc122a6d33973ef7afe9626b7d43064793ce43b7370158726a12b8df83553c"
+    },
+    "lib/matching/releaseBlock.ts": {
+      "bytes": 556,
+      "sha256": "88a3808fd5318400f61b30716e4aa3d5968b6370837f0261bb3ffee1913b5e5e"
+    },
+    "components/matching/MatchingUnavailable.tsx": {
+      "bytes": 1852,
+      "sha256": "72f3501a598ead278356b7213c3aed55fef4ae9355313417093815a09eaee290"
+    },
+    "verification/web/tests/matching-release-boundary.test.mjs": {
+      "bytes": 3944,
+      "sha256": "7cbcac72f837309136fbb7f30f954c53c1d62da2bc9918cf326fb610036730e6"
+    },
+    "tests/security/s1b-body-member-routes.test.ts": {
+      "bytes": 17826,
+      "sha256": "5bb8087830611443c770526c2ef93d1325731b13edb8e11012cca8bf9f056e10"
+    },
+    "verification/web/tests/edge-member-authority.test.mjs": {
+      "bytes": 10817,
+      "sha256": "3f5d6310fd8d76065e17099a74512016c71ce51fb450bb1f0e5f3b45bb4a0e83"
+    },
+    "verification/web/tests/practice-privacy-api.test.mjs": {
+      "bytes": 13556,
+      "sha256": "482c193dc9faa5400de7cbca8fbcc26c7fc95fa9f80ed5c2618cd024ef4ade3a"
+    },
+    "verification/web/scripts/browser-matching-boundary.mjs": {
+      "bytes": 10087,
+      "sha256": "71afa001d81302672d9fbce54b45bdc497e30eb4da02e00ecf75bcdab701d068"
+    },
+    "docs/integration/matching-access-review.md": {
+      "bytes": 10961,
+      "sha256": "e84e53a2dbb20d48495638bbf3ef410057c7f6a7a5840be3f4744039572a4bf1"
+    },
+    "docs/integration/current-service-readiness.md": {
+      "bytes": 15606,
+      "sha256": "769e81ddbe820f880388237b983a68182395717adaf6251a4ca61a9fea946183"
+    },
+    "docs/integration/matching-participation-design.md": {
+      "bytes": 5408,
+      "sha256": "5dac1090c81b494ab0b51061926bf4d4f188e1e1aa092bbeae989ce60b823d81"
+    }
+  },
+  "buildBinding": {
+    "sourceFiles": 1232,
+    "canonicalResidentInputs": 1220,
+    "unchangedCommittedInputsUsedWithoutHydration": 12,
+    "missing": [],
+    "different": [],
+    "baseCommit": "8de572dbe60ec870fbbc4258aec4b74b73fa0166",
+    "scope": "All actual web-build input hashes match canonical resident changes or unchanged committed objects. No offloaded private originals reopened."
+  },
+  "validation": {
+    "focusedTestResults": 68,
+    "newBoundaryResults": 37,
+    "fullWebBuild": "PASS",
+    "builtInputs": 1232,
+    "scopedLint": "PASS",
+    "compiledBrowserJourneys": 5,
+    "actualBuiltHttpOperations": 9,
+    "browserErrors": [],
+    "externalBrowserRequests": [],
+    "browserClosed": true,
+    "fullHistoricalBunSuiteRun": false,
+    "databaseConsentImplementation": false,
+    "physicalDeviceTest": false
+  },
+  "storage": {
+    "minimumSampledFreeBytes": 15875526656,
+    "maximumSampledPrivateAllocatedBytes": 18985627648
+  },
+  "evidence": {
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-pilot-boundary/SOURCE_BINDING.json": {
+      "bytes": 365,
+      "sha256": "dee0a079fcf4f8a9625d6fc0ff1f3565c4abfde17b69d95e2e26346c7f15372f"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-matching-pilot-boundary/RECONCILIATION.json": {
+      "bytes": 1415,
+      "sha256": "acf2ed84c4d1cf1a0470293aac56a1e63f2dac0bb6505ca3350540ee9f2afd51"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-matching-boundary-03-next-build.json": {
+      "bytes": 741,
+      "sha256": "f1f1735a16a8116649ba96eb5d546841ef0eaff71413ae6cf4878fac4a59b85b"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-matching-boundary-03-build-source-sha256.json": {
+      "bytes": 148058,
+      "sha256": "03e292d348e49ba61e7807337e10845b485c0e220e1e9370e54a4ca76894e11f"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/matching-boundary-browser-01/result.json": {
+      "bytes": 8654,
+      "sha256": "7953f9e14e25eae79b7a7af2d5fd15a559ff255d5049e1036553c5ca1416279e"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-tests-03.json": {
+      "bytes": 1501,
+      "sha256": "53805be54958bae0497e3cb25e006e52e2850cee71894b62537dca38cb4af845"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-tests-03.log": {
+      "bytes": 13715,
+      "sha256": "54b960eb94e6e18c2ee9c9397a932afd34960afc9eed4a2e37140542432ca56f"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-build-03.json": {
+      "bytes": 1782,
+      "sha256": "01c11233664fcba6bcbc616a960741a55d946f3648438f1a60832ba98f007048"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-build-03.log": {
+      "bytes": 793,
+      "sha256": "788cafeb52d94e1fee5329cbead3930142475afab87726878eeb42667b22eb2a"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-lint-03.json": {
+      "bytes": 1627,
+      "sha256": "b3231388fb9618c62d10d20e3fc120f3e3c85d48d3d155fc24ee3ad3a7c715c4"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-lint-03.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-browser-01.json": {
+      "bytes": 1285,
+      "sha256": "ec09cd9450284412da1044a6c1ceaa854be79b7a74acba42234f3ba2833a571f"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/matching-boundary-browser-01.log": {
+      "bytes": 83,
+      "sha256": "cf926f6af645d93139391795b91703a5eb0aa078efd2af3f8b0cde10e946b3b0"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-matching-boundary-server-01-server.json": {
+      "bytes": 876311,
+      "sha256": "92775f82ba9176a445965df9cc915c83a1248718fc7e53f215294d13cd740ba8"
+    },
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-matching-boundary-server-02-server.json": {
+      "bytes": 878341,
+      "sha256": "7970364b1ce053f6c5ff7de208d20f805e1af1e03460e3ec586e19257e0902ab"
+    }
+  },
+  "preservation": "Legacy algorithms, UI implementations and records preserved. This change neither deletes data nor backfills participation.",
+  "hostedChanges": false,
+  "credentialChanges": false,
+  "newDependencies": false,
+  "budget": {
+    "spentUsd": 0,
+    "remainingUsd": 200,
+    "chargeScheduled": false
+  },
+  "ownerAction": "None from phone; secure entry remains pending until the owner can use the Mac.",
+  "limits": "Web-local release boundary only. Existing database containment candidates are unapplied. Future consent, history/export, scoring validity, hosted recovery and real-account/device acceptance remain open."
+}

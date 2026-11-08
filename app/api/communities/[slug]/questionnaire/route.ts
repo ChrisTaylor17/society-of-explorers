@@ -1,3 +1,4 @@
+import { matchingReleaseBlock } from '@/lib/matching/releaseBlock';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
@@ -38,6 +39,9 @@ async function loadCommunityId(slug: string) {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const { slug } = await params;
   const communityId = await loadCommunityId(slug);
 
@@ -57,6 +61,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const { slug } = await params;
   let body: QuestionnaireBody;
 

@@ -1,3 +1,4 @@
+import { scoredMatchingAvailable } from '@/lib/matching/releaseAvailability';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const AXES = ['epistemology', 'ethics', 'metaphysics', 'aesthetics', 'politics'] as const;
@@ -53,6 +54,10 @@ function findTensionAxes(a: Record<string, number>, b: Record<string, number>): 
 }
 
 export async function runMatching(communityId: string, memberId: string): Promise<void> {
+  if (!scoredMatchingAvailable()) {
+    throw new Error('Scored matching is not available in this release.');
+  }
+
   const supabase = getSupabaseAdmin();
   const { data: myProfile } = await supabase
     .from('community_match_profiles')

@@ -1,3 +1,4 @@
+import { matchingReleaseBlock } from '@/lib/matching/releaseBlock';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedEdgeMember } from '@/lib/getAuthenticatedMember';
 import { memberWriteOriginAllowed } from '@/lib/auth/request';
@@ -60,6 +61,9 @@ interface MatchAuditContext {
 }
 
 export async function POST(req: NextRequest) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const audit: MatchAuditContext = {
     auditId: crypto.randomUUID(),
     startedAtMs: performance.now(),

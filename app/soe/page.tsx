@@ -29,7 +29,7 @@ export default function SOEPage() {
             Citizen science of the mind.
           </h1>
           <p style={{ fontSize: '17px', color: ivory85, lineHeight: 1.7, maxWidth: '560px', margin: '0 auto 2rem' }}>
-            SOE is the first DAO built on Consilience Systems. The habit layer: daily philosophical practice, matched conversations, and 7-week salons. Soulbound $EXP reputation for verified contributions to the collective inquiry.
+            SOE is the first DAO built on Consilience Systems. The habit layer: daily philosophical practice, shared interests, and reading salons. Soulbound $EXP reputation for verified contributions to the collective inquiry.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px' }}>START DAILY PRACTICE</a>
@@ -45,7 +45,7 @@ export default function SOEPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1px', background: `${gold}10` }}>
             {[
               { label: 'DAILY PRACTICE', desc: 'One question a day. 280 characters. Build streaks. See what others think.', href: '/practice' },
-              { label: 'MATCHED CONVERSATIONS', desc: 'After 7 responses, paired with a fellow explorer for a structured 1:1.', href: '/match' },
+              { label: 'MEET EXPLORERS', desc: 'Find people through interests they choose to publish, or join a reading salon.', href: '/members' },
               { label: 'SALONS', desc: 'Seven people, seven weeks, 35 sessions. Lead, graduate, start your own.', href: '/salon' },
               { label: 'COUNCIL MODE', desc: 'Multi-thinker debate. Real-time streaming. Verdicts you can share.', href: '/council' },
               { label: 'LIVE SESSIONS', desc: 'Weekly video sessions on Daily.co. Wednesday 8pm ET.', href: '/live' },
