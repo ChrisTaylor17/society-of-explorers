@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import Link from 'next/link';
+import { parsePublicActivityReply, type PublicActivity } from '@/lib/feed/publicActivity';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -14,14 +16,6 @@ const ICONS: Record<string, string> = {
   thinker_insight: '\ud83d\udca1',
 };
 
-interface ActivityEvent {
-  id: string;
-  event_type: string;
-  title: string;
-  description: string | null;
-  created_at: string;
-}
-
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
@@ -33,12 +27,23 @@ function timeAgo(iso: string): string {
 }
 
 export default function ActivityPage() {
-  const [events, setEvents] = useState<ActivityEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<PublicActivity[]>([]);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    fetch('/api/feed?limit=50').then(r => r.json()).then(d => setEvents(d.events || [])).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+    let active = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => { controller.abort(); if (active) setStatus('error'); }, 10_000);
+    fetch('/api/feed?limit=50', { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Activity unavailable');
+        const current = parsePublicActivityReply(await response.json());
+        if (!current) throw new Error('Activity unavailable');
+        if (active && !controller.signal.aborted) { setEvents(current); setStatus('ready'); }
+      }).catch(() => { if (active) { setEvents([]); setStatus('error'); } }).finally(() => clearTimeout(timeout));
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
+  }, [attempt]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
@@ -50,12 +55,13 @@ export default function ActivityPage() {
 
       <section style={{ padding: '0 2rem 4rem' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          {loading && <p style={{ textAlign: 'center', color: muted }}>Loading...</p>}
-          {!loading && events.length === 0 && <p style={{ textAlign: 'center', color: muted, fontStyle: 'italic' }}>No activity yet. Ask the Council something.</p>}
+          {status === 'loading' && <p role="status" style={{ textAlign: 'center', color: muted }}>Loading published activity…</p>}
+          {status === 'error' && <div style={{ textAlign: 'center' }}><p role="status">Published activity could not be loaded.</p><button type="button" onClick={() => { setStatus('loading'); setAttempt(value => value + 1); }}>Try again</button></div>}
+          {status === 'ready' && events.length === 0 && <p style={{ textAlign: 'center', color: muted }}>No published activity is available yet. <Link href="/circles">Explore the Circles</Link>.</p>}
           {events.map(ev => (
             <div key={ev.id} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: `1px solid ${gold}08` }}>
               <span style={{ fontSize: '16px', width: '28px', textAlign: 'center', flexShrink: 0 }}>{ICONS[ev.event_type] || '\u2022'}</span>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
                 <p style={{ fontSize: '15px', color: parchment, margin: 0, lineHeight: 1.5 }}>{ev.title}</p>
                 {ev.description && <p style={{ fontSize: '13px', color: muted, margin: '2px 0 0', lineHeight: 1.5 }}>{ev.description}</p>}
               </div>

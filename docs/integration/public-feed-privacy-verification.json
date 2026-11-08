@@ -1,0 +1,211 @@
+{
+  "status": "VERIFIED_LOCAL_FEED_HARDENING_WITH_OPEN_RELEASE_GATES",
+  "recordedAt": "2026-11-08T07:49:00.276195+00:00",
+  "baseCommit": "dd82406198ede4bbd3cbc2594980d8c64b1d063b",
+  "productHashes": {
+    "lib/feed/publicActivity.ts": "203549f4a30430983c65ada4a114f755f751c9b8db524e7e7e074207d65b20a9",
+    "lib/feed/activityFeed.ts": "2f49932740c3875412d1bff8d13e1b99ee4ed299154d0805978a794ff84256bd",
+    "app/api/feed/route.ts": "f4d2e03ed0652517f5428ade0ce7021026922586f4917135775972a35b822b0d",
+    "app/activity/page.tsx": "d7d70990b2c8b997c34ae46647cee412e0baeb0222b36ffbddb6a03769b609c0",
+    "app/dashboard/page.tsx": "bef49478568ff1f4c729af185e22eb3601022da83daff074367f926c83f2f34b"
+  },
+  "testHashes": {
+    "scripts/external-effect-lazy-clients-smoke.mjs": "e7da541bb41e7f700f63d0a7210629bb0eb05101c81aaea0c1743cf46410973c",
+    "verification/web/tests/support/public-feed-fixture.mjs": "43c3388f02260fac7c110d30e03461e13a4e1df9a53c5813e3d37b37ae49e451",
+    "verification/web/tests/public-feed-privacy.test.mjs": "a6dfb398a5d5cde5c10bfdb0f7a3981bfa3861bff86b0918116a766d6bc8c87c",
+    "verification/web/scripts/browser-public-feed.mjs": "51a49fe31a19b9a4e6b59d9836ee423604c2700f8ebecbd1da13e09165569fd6"
+  },
+  "sourceBinding": {
+    "fullBuildInputs": 1226,
+    "allInputsMatchTestedSource": true,
+    "unchangedCanonicalInputsMatched": true,
+    "offloadedUnchangedComparedToGitCount": 136,
+    "exactPreimagesVerified": true
+  },
+  "behaviorTests": {
+    "passed": 11,
+    "failed": 0,
+    "scope": "Actual API/helper and installed Supabase JS client over disposable PGlite SQL with a bounded synthetic PostgREST transport adapter. Not hosted PostgREST or RLS acceptance. Fake model only."
+  },
+  "compiledBrowser": {
+    "stories": [
+      "The actual compiled activity page shows only the reviewed public copy from the actual route and synthetic SQL; raw and legacy private canaries are absent.",
+      "Withdrawal disappears on the next load; the empty state points to Circles and does not promise that a private Council action will be published.",
+      "A database error is shown as unavailable, not empty; an explicit retry recovers the reviewed feed.",
+      "An old or malformed raw response is rejected by the new display contract. This is display defense, not protection against an old server disclosing data over the network.",
+      "A stalled request reaches the ten-second unavailable state; retry works and the retired response cannot replace the current feed.",
+      "The screen fits 390px and 320px; the actual built API returns a generic no-store 503 when its real service configuration is absent."
+    ],
+    "errors": [],
+    "external": [],
+    "cleanup": {
+      "browser": true,
+      "database": true
+    },
+    "scope": "Compiled local Next activity page, actual API/helper over disposable synthetic SQL and the real installed Supabase client with a bounded transport adapter. No hosted database, real member, issued provider credential, paid model call or publication. SDK transport adapter is not hosted PostgREST acceptance."
+  },
+  "fullBuild": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/source",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 40.53,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1226,
+    "sourceSha256": "16115e49cb1a0befa6245b4b78b41db0e4de998e3ff5f3eb764978637a743f21",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/built-shell-public-feed-03-next-build.log"
+  },
+  "lint": "PASS, zero warnings on changed product and verification files; final browser edit linted separately",
+  "broaderStaticChecks": {
+    "baselineCommit": "dd82406198ede4bbd3cbc2594980d8c64b1d063b",
+    "sameFailures": true,
+    "failures": [
+      "fail - book salon writes check the origin and bind the verified actor",
+      "fail - DM route is signed-in, sender/read-scoped, lazy, and private",
+      "fail - Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls",
+      "fail - core thinker and Movement creator helpers use lazy Supabase admin clients"
+    ],
+    "scope": "Existing static source guards fail identically on the clean baseline and candidate. These four concerns are not repaired or accepted by the feed change."
+  },
+  "cleanup": {
+    "status": "STOPPED",
+    "cleanup": "owned-process-stopped",
+    "sourceMismatches": [],
+    "builtMismatches": [],
+    "inputMismatches": [],
+    "runtimeMismatches": [],
+    "deniedOperations": []
+  },
+  "ownedServerPortClosed": true,
+  "screenshotVisuallyInspected": true,
+  "storage": {
+    "minimumSampledFreeBytes": 20119883776,
+    "maximumSampledPrivateAllocatedBytes": 15638188032,
+    "approvedFloorBytes": 8000000000,
+    "approvedAdditionalCeilingBytes": 30000000000
+  },
+  "receipts": [
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/source/verification/web/evidence/built-shell-public-feed-03-next-build.json",
+      "sha256": "b0289010b69046b36d65d81d19d49ed5354cabcf38ebed00b6d26a24b6f34b4e"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/source/verification/web/evidence/built-shell-public-feed-03-build-source-sha256.json",
+      "sha256": "9ff71796516ca326279197c6dc7c522c66eadae8fa8d01dfb22d3e18e0f83c56"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/source/verification/web/evidence/public-feed-browser-03/browser.json",
+      "sha256": "298e1ff8a59d417d8b47d083dc3fa8c0be6fa27ecb72b58e0c58faf82e89132f"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/source/verification/web/evidence/built-shell-public-feed-server-01-server.json",
+      "sha256": "bea5b4bb9002d75e3358546baee20b1c434e4878d4c515e82cc002c89e307b2b"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/PREPARATION.json",
+      "sha256": "9cdff9acd5941651a72ff2c0fdc511b1c7a846ac7757d7d1e305047c41c6c2d5"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/DOCS_REVIEW.json",
+      "sha256": "e5d64450d914b6de55725dd6e2fcd60278667e95817d04ce58f1944671828805"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/BASELINE_COMPARISON.json",
+      "sha256": "0ace4ba4e5b912c2b9f743d93614e9ad0c4c7a47ad7196eb8632570f115dec71"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/BASELINE_SMOKE_INPUTS.json",
+      "sha256": "1ca6d8bf05f5cd82c952a8e2cdc5fc9e2be748a576a2b9f2b3b34c772e4cdece"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-feed/CANONICAL_SOURCE_BINDING.json",
+      "sha256": "cb79000a2c86864cf64090bf8a0b1380edc8a3761b0383fd77dc6fd2a1e84407"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-api-04.json",
+      "sha256": "124b1caf6a84b0e9337e52a57382e50d7654ef82c9e57bc4092d86ac2b4cc436"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-api-04.log",
+      "sha256": "aa46584cc4bc9b4f585783c346a0167a1ebc1507bbb3538d2ecacce7e199dafe"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-build-03.json",
+      "sha256": "b8c2e23884ffa9a1e018445ea809b410c050757b72837745545f9d55000476b2"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-build-03.log",
+      "sha256": "7b2dba850a226f9210067d9e274bbf8f21d837382b94f81582f4c35b45622129"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-final-lint-01.json",
+      "sha256": "323d442738954dd4cd6224928e762606919c825888732c76c635ef282b8a5625"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-final-lint-01.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-browser-03.json",
+      "sha256": "e77af6b11a82c50d1e0f1602dddc87080030dfd911952057a0dfa18d02d7349a"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-browser-03.log",
+      "sha256": "d99ad317067a01253e39d023b7e9fbd0a54740dd2def16a18f9f0cd5b309b335"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-browser-lint-02.json",
+      "sha256": "0fb5c080c58b0ea6084bef6ef7a7dc7c4c9322155c0af7d917b9033fff0d75a6"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-browser-lint-02.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-regression-01.json",
+      "sha256": "cc766464175ede87d2652e862eea1379d69f2c8cba6958ee91aa8a112738bcb9"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-regression-01.log",
+      "sha256": "9790c9cb04d68d06a9b6615df54741c231d3763a04207eb8f114247347719cc6"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-baseline-smoke-01.json",
+      "sha256": "d8b20a2dc0c9704fe3621fc8d6300f6c5879b6d1f07921f13cbdad61759830fd"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/public-feed-baseline-smoke-01.log",
+      "sha256": "9790c9cb04d68d06a9b6615df54741c231d3763a04207eb8f114247347719cc6"
+    }
+  ],
+  "retainedAttempts": [
+    "API fixture attempts 01/02 corrected Request URL and boolean transport binding errors; a subsequent binding variable error was also corrected before final passing 04.",
+    "Build 01 lacked an evidence directory; build 02 found a product TypeScript nullability error. Explicit null guard added; final full build 03 passed.",
+    "Browser 01 lacked an unauthenticated navigation fixture; browser 02 attempted the real local API through a Node HTTP client denied by the build guard. Final 03 uses a browser fetch to the exact guarded loopback server and passed. No guard was weakened.",
+    "Four broad static failures reproduce identically on the untouched starting commit; not resolved by this change."
+  ],
+  "spendingUsd": 0,
+  "productionCleared": false,
+  "hostedWrites": false,
+  "providerCalls": 0,
+  "remaining": [
+    "Hosted source backup/restore and complete access cutover",
+    "A trusted exact-content publication and withdrawal workflow; review marker alone is not authority",
+    "Other service-backed routes and four unresolved broad static checks",
+    "Real provider, iOS compilation and physical Android/iOS/Quest acceptance",
+    "Actual salon host, dates and attendance"
+  ],
+  "rollback": "Local source revert after dependency review; no SQL migration. Do not publicly restore old raw-feed behavior. Preserve source archive, receipts and pinned recovery procedure.",
+  "scope": "Five application files, four verification files and three documentation/status files. No database/schema/permission/credential changes, publishing, deployment, device installation or spending."
+}

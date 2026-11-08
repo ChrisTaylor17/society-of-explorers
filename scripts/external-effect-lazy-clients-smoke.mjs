@@ -1644,7 +1644,9 @@ const checks = [
       [routes.feed, routes.feedPulse].every(
         (source) => source.includes('getSupabaseAdmin()') && source.includes('privateJson'),
       ) &&
-      routes.feed.indexOf('parseLimit') < routes.feed.indexOf('getSupabaseAdmin()') &&
+      precedes(routes.feed, 'const input = parseActivityQuery', 'const supabase = getSupabaseAdmin();') &&
+      routes.feed.includes('.select(PUBLIC_ACTIVITY_SELECT)') &&
+      !routes.feed.includes(".select('*')") &&
       routes.feed.includes('Failed to load community feed') &&
       routes.feedPulse.includes('Failed to load community pulse') &&
       routes.feedPulse.includes("from('daily_questions')") &&

@@ -7,6 +7,7 @@ import WelcomeModal from '@/components/WelcomeModal';
 import AccountSignOut from '@/components/AccountSignOut';
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import { computeFrequencyProfile, deriveTags, type CoherenceInput, type FrequencyVector } from '@/lib/world/frequency';
+import { parsePublicActivityReply, type PublicActivity } from '@/lib/feed/publicActivity';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
@@ -79,16 +80,6 @@ interface DashboardBriefing {
   error?: string;
 }
 
-interface FeedEvent {
-  id: string;
-  event_type: string;
-  title: string;
-}
-
-interface FeedResponse {
-  events?: FeedEvent[];
-}
-
 const TIER_BADGES: Record<string, { label: string; color: string; icon: string }> = {
   free: { label: 'Explorer', color: '#9a8f7a', icon: '🧭' },
   explorer: { label: 'Explorer', color: '#9a8f7a', icon: '🧭' },
@@ -133,12 +124,17 @@ function timeAgo(iso: string): string {
 }
 
 function DashboardFeed() {
-  const [events, setEvents] = useState<FeedEvent[]>([]);
+  const [events, setEvents] = useState<PublicActivity[]>([]);
   useEffect(() => {
-    fetch('/api/feed?limit=8')
-      .then(r => r.json() as Promise<FeedResponse>)
-      .then(d => setEvents(d.events || []))
+    let active = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    fetch('/api/feed?limit=8', { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal })
+      .then(async response => response.ok ? parsePublicActivityReply(await response.json()) : null)
+      .then(current => { if (active && !controller.signal.aborted && current) setEvents(current); })
+      .finally(() => clearTimeout(timeout))
       .catch(() => {});
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
   }, []);
   if (events.length === 0) return null;
   const ICONS: Record<string, string> = { task_created: '\u2713', task_completed: '\u2705', exp_awarded: '\ud83c\udf96', project_created: '\ud83d\udcca', room_started: '\ud83d\udcf9', member_joined: '\ud83d\udc64' };
