@@ -4,6 +4,7 @@ import QuestCircle from '../../app/quest/[circleId]/QuestCircle';
 import { AUTH_INTENT_COOKIE, currentBrowserAuthIntent } from '../../lib/auth/browserIntent';
 import { notifyAuthProviderChanged } from '../../lib/auth/providerSelection';
 import { reelDiscussionId } from '../../lib/clips/salon';
+import { parseFellowshipTopic } from '../../lib/fellowship/topics';
 
 const subjects = { author: '72111111-1111-4111-8111-111111111111', outsider: '72222222-2222-4222-8222-222222222222' };
 const tokens = { author: 'NONISSUED_QUEST_COMPOSED_AUTHOR', outsider: 'NONISSUED_QUEST_COMPOSED_OUTSIDER' };
@@ -26,4 +27,5 @@ const qa = { factory() { factories++; return { auth }; }, counts: () => ({ facto
 Object.assign(window, { questComposedQa: qa });
 root.render(<React.StrictMode><QuestCircle circleId={document.documentElement.dataset.circle!}
   sharedSalon={document.documentElement.hasAttribute('data-shared-salon')}
-  reel={reelDiscussionId(document.documentElement.dataset.reel)} /></React.StrictMode>);
+  reel={reelDiscussionId(document.documentElement.dataset.reel)}
+  fellowship={parseFellowshipTopic(document.documentElement.dataset.fellowship)} /></React.StrictMode>);

@@ -16,12 +16,14 @@ export function assertCircleMarkup(doc) {
 
 /** Existing authenticated application code supplies config. No token input,
  * global credential object, URL credential, synthetic login or persistence. */
-export function mountCirclePage({window:win,document:doc,config,reelStarter}) {
+export function mountCirclePage({window:win,document:doc,config,reelStarter,fellowshipStarter}) {
   assertCircleMarkup(doc);
   const $=id=>doc.getElementById(id),hasThreadWriter=threadControls.every(id=>$(id)),hasSafety=safetyControls.every(id=>$(id));
   const blockButton=$('circle-safety-block');
   const reelButton=reelStarter?$('circle-thread-reel'):null;
   if(reelStarter&&(!hasThreadWriter||!reelButton||doc.querySelectorAll('#circle-thread-reel').length!==1))throw Error('Reel draft control unavailable');
+  const fellowshipButton=fellowshipStarter?$('circle-thread-fellowship'):null;
+  if(fellowshipStarter&&(!hasThreadWriter||!fellowshipButton||doc.querySelectorAll('#circle-thread-fellowship').length!==1))throw Error('Fellowship draft control unavailable');
   let safetyWasOpen=false,safetyMessage=null;
   let host=null,renderEpoch=0;
   try { if(config)host=createCircleHost(config); } catch { /* Fail closed without exposing configuration. */ }
@@ -85,6 +87,7 @@ export function mountCirclePage({window:win,document:doc,config,reelStarter}) {
       $('circle-thread-write').hidden=!archive?.open;
       $('circle-thread-new').disabled=!thread?.canStart||!safetyNavigation;
       if(reelButton)reelButton.disabled=!canRead||safety?.open||page?.kind!=='archive'||!thread?.canStart||thread.phase!=='locked';
+      if(fellowshipButton)fellowshipButton.disabled=!canRead||safety?.open||page?.kind!=='archive'||!thread?.canStart||thread.phase!=='locked';
       $('circle-thread-target').textContent=thread?.target?'Reply to the selected visible contribution.':'A new discussion root.';
       $('circle-thread-draft').value=thread?.draft??'';$('circle-thread-draft').disabled=!thread?.canEdit||!safetyNavigation;
       $('circle-thread-draft').maxLength=thread?.commentLimit??2000;
@@ -145,6 +148,7 @@ export function mountCirclePage({window:win,document:doc,config,reelStarter}) {
     for(const id of ['circle-draft','circle-thread-draft','circle-safety-note','circle-safety-reason'])if($(id))$(id).value='';
     if($('circle-thread-confirm'))$('circle-thread-confirm').checked=false;
     if(reelButton)reelButton.disabled=true;
+    if(fellowshipButton)fellowshipButton.disabled=true;
     if($('circle-safety-confirm'))$('circle-safety-confirm').checked=false;
     if($('circle-safety'))$('circle-safety').hidden=true;
     if($('circle-thread-write'))$('circle-thread-write').hidden=true;
@@ -168,6 +172,11 @@ export function mountCirclePage({window:win,document:doc,config,reelStarter}) {
     if(reelButton)listen(reelButton,'click',()=>{
       if(!reelButton.disabled&&host?.model().threadWrite.phase==='locked'&&host.threadStart(null)){
         host.threadEdit(reelStarter.draft);$('circle-thread-draft').focus();
+      }
+    });
+    if(fellowshipButton)listen(fellowshipButton,'click',()=>{
+      if(!fellowshipButton.disabled&&host?.model().threadWrite.phase==='locked'&&host.threadStart(null)){
+        host.threadEdit(fellowshipStarter.draft);$('circle-thread-draft').focus();
       }
     });
     listen($('circle-thread-draft'),'input',()=>{host?.threadEdit($('circle-thread-draft').value);if(host)render(host.model());});

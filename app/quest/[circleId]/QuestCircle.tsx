@@ -7,6 +7,7 @@ import { AUTH_INTENT_HEADER, EXPECTED_MEMBER_HEADER, currentBrowserAuthIntent } 
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import { reelHref } from '@/lib/clips/contracts';
 import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
+import { getFellowshipTopic, fellowshipDiscussionDraft, withFellowshipTopic, type FellowshipTopicId } from '@/lib/fellowship/topics';
 import { isUuid } from '@/lib/ids/uuid';
 import CircleAdmission from '@/app/circles/[circleId]/CircleAdmission';
 import { createCircleAdmissionActivity } from '@/lib/circles/admission-activity';
@@ -26,9 +27,11 @@ function providerConfigured() {
 
 /** The platform view owns this DOM island. React only owns its surrounding
  * connect controls; no credential or private message enters React props/state. */
-export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
-  circleId?: string; sharedSalon?: boolean; reel?: ReelDiscussionId;
+export default function QuestCircle({ circleId, sharedSalon = false, reel, fellowship }: {
+  circleId?: string; sharedSalon?: boolean; reel?: ReelDiscussionId; fellowship?: FellowshipTopicId;
 }) {
+  const topic = getFellowshipTopic(fellowship);
+  const contextHref = (href: string) => withFellowshipTopic(withReelDiscussion(href, reel), fellowship);
   const connection = useRef<Connection | null>(null);
   const [admissionActivity] = useState(createCircleAdmissionActivity);
   const lifetime = useRef({ mounted: false, generation: 0 });
@@ -84,6 +87,8 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
         question: REEL_QUESTIONS[reel], draft: reelDiscussionDraft(reel, origin),
         roomDraft: reelDiscussionDraft(reel) + '\n\n',
       } : undefined;
+      const fellowshipStarter = topic ? { title: topic.title, question: topic.question, brief: topic.brief,
+        draft: fellowshipDiscussionDraft(topic.id, origin), roomDraft: fellowshipDiscussionDraft(topic.id) } : undefined;
       const transport = (url: string, init: RequestInit) => {
         const target = new URL(url);
         if (!current() || init.signal?.aborted || target.origin !== origin || target.username || target.password || target.hash) {
@@ -105,7 +110,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
       try {
         const view = circleId
           ? mountExistingMemberCircle({ window, document, onRegularActivity: admissionActivity.setActive, config: { circleId, origin, transport, browserBinding: memberAuth.binding, aiConsent: true, sharedSalon, meeting: true,
-            immersive: { createAuth: verifiedAuth, pauseRegular() { admissionActivity.setActive(false); memberAuth.invalidate(); } }, reelStarter } })
+            immersive: { createAuth: verifiedAuth, pauseRegular() { admissionActivity.setActive(false); memberAuth.invalidate(); } }, reelStarter, fellowshipStarter } })
           : mountExistingMemberContributions({ window, document, config: { origin, transport, browserBinding: memberAuth.binding, aiConsent: true } });
         connection.current = { invalidate() { admissionActivity.setActive(false); memberAuth.invalidate(); }, dispose() { admissionActivity.setActive(false); memberAuth.retire(); view.dispose(); } };
       } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
@@ -126,8 +131,8 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
     <section><p>READ. REFLECT. SHARE.</p><h1>{circleId ? 'Quest Browser Circle' : 'My Quest Browser contributions'}</h1>
       <p>This view uses your existing web account. It opens in the regular browser window.</p>
       <p>Connect the email, Google, or wallet account you selected in this browser.</p>
-      <p>{circleId ? <><Link href={withReelDiscussion(`/circles/${circleId}`, reel)}>Regular Circle view and safety controls</Link>{' · '}<Link href={withReelDiscussion(`/circles/${circleId}/discussion`, reel)}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
-      <p><Link href={`/login?next=${encodeURIComponent(circleId ? withReelDiscussion(`/quest/${circleId}`, reel) : '/quest/contributions')}`}>Sign in to your account</Link></p>
+      <p>{circleId ? <><Link href={contextHref(`/circles/${circleId}`)}>Regular Circle view and safety controls</Link>{' · '}<Link href={contextHref(`/circles/${circleId}/discussion`)}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
+      <p><Link href={`/login?next=${encodeURIComponent(circleId ? contextHref(`/quest/${circleId}`) : '/quest/contributions')}`}>Sign in to your account</Link></p>
       <p role="status">{notice}</p>
       <button type="button" disabled={phase !== 'closed'} onClick={() => void connect()}>{phase === 'connecting' ? 'Connecting…' : 'Connect signed-in account'}</button>
       <button type="button" disabled={phase === 'closed'} onClick={disconnect}>{circleId ? 'Disconnect Circle view' : 'Disconnect contributions view'}</button>
@@ -136,6 +141,11 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
       <h2>Question from the Reel</h2>
       <p>{REEL_QUESTIONS[reel]}</p>
       <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
+    </section>}
+    {circleId && topic && <section aria-label="Fellowship study for this Circle">
+      <h2>{topic.title}</h2><p>{topic.question}</p><p>{topic.brief}</p>
+      <p><Link href={topic.href} prefetch={false}>Read the source texts and named interpretations</Link></p>
+      <p>In the immersive discussion, choose Fellowship study to read this brief and prepare an editable question. Review before posting. Use the shared salon count when enabled, and the host’s meeting in the browser to speak together.</p>
     </section>}
     {circleId && phase === 'connected' ? <section aria-label="Private salon invitation controls">
       <p>Connect this Quest view to use invitations in the regular browser. Entering an immersive room clears codes and review; return and check the account again afterward.</p>
@@ -227,6 +237,7 @@ export default function QuestCircle({ circleId, sharedSalon = false, reel }: {
           <h3 id="circle-thread-write-heading">Write in this discussion</h3>
           <button id="circle-thread-new" type="button" disabled>Start a new discussion</button>
           {reel && <button id="circle-thread-reel" type="button" disabled>Use Reel question in a draft</button>}
+          {topic && <button id="circle-thread-fellowship" type="button" disabled>Use Fellowship question in a draft</button>}
           <p id="circle-thread-target" /><label htmlFor="circle-thread-draft">Your contribution</label>
           <textarea id="circle-thread-draft" maxLength={2000} autoComplete="off" spellCheck={false} aria-describedby="circle-thread-remaining circle-thread-status" disabled />
           <p id="circle-thread-remaining">2000 characters remaining</p><p id="circle-thread-status" role="status" />

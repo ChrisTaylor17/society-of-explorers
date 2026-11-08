@@ -14,15 +14,17 @@ import { reelHref } from '@/lib/clips/contracts';
 import { getScriptureDiscussion, scriptureDiscussionHref } from '@/lib/circles/scripture-discussion';
 import type { ScriptureStudyId } from '@/lib/root-kernel/scripture-studies';
 import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
+import { getFellowshipTopic, fellowshipDiscussionDraft, withFellowshipTopic, type FellowshipTopicId } from '@/lib/fellowship/topics';
 
 type ReadQuery = Exclude<DiscussionQuery, { kind: 'receipt' }>;
 type Pending = { body: string; request: DiscussionPostInput; content: string; rootMessageId: string | null };
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
-export default function DiscussionBrowser({ circleId, messageId, invalidIntent = false, reel, study }: {
-  circleId: string; messageId: string | null; invalidIntent?: boolean; reel?: ReelDiscussionId; study?: ScriptureStudyId;
+export default function DiscussionBrowser({ circleId, messageId, invalidIntent = false, reel, study, fellowship }: {
+  circleId: string; messageId: string | null; invalidIntent?: boolean; reel?: ReelDiscussionId; study?: ScriptureStudyId; fellowship?: FellowshipTopicId;
 }) {
   const scripture = getScriptureDiscussion(study);
+  const topic = getFellowshipTopic(fellowship);
   const [page, setPage] = useState<DiscussionPage | null>(null), [readVersion, setReadVersion] = useState(0);
   const [query, setQuery] = useState<ReadQuery>(messageId ? { kind: 'thread', messageId, after: null, limit: 25 } : { kind: 'archive', before: null, limit: 25 });
   const [target, setTarget] = useState<ThreadMessage | null>(null), [writing, setWriting] = useState(false), [comment, setComment] = useState('');
@@ -43,7 +45,7 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
   const disabled = !active || busy || Boolean(pending);
   const endpoint = `/api/circles/${circleId}/discussion`;
   const returnHref = scripture ? scriptureDiscussionHref(circleId, scripture.id)
-    : withReelDiscussion(discussionHref(circleId, query.kind === 'thread' ? query.messageId : null), reel);
+    : withFellowshipTopic(withReelDiscussion(discussionHref(circleId, query.kind === 'thread' ? query.messageId : null), reel), query.kind === 'archive' ? fellowship : undefined);
   const signInHref = `/login?next=${encodeURIComponent(returnHref)}`;
   const commentLimit = discussionCommentLimit(circleId, target?.id ?? null);
   const focusHeading = useCallback((element: HTMLHeadingElement | null) => { element?.focus({ preventScroll: true }); }, []);
@@ -138,7 +140,14 @@ export default function DiscussionBrowser({ circleId, messageId, invalidIntent =
     </div>;
   }
   return <div className={`${styles.scope} ${styles.stack}`} aria-busy={busy}>
-    <nav className={styles.row} aria-label="Discussion navigation"><Link href={withReelDiscussion(circleDetailHref(circleId, Boolean(reel)), reel)}>Return to Circle details</Link><Link href="/circles/mine">My Circles</Link><Link href={signInHref}>Sign in or create an account</Link></nav>
+    <nav className={styles.row} aria-label="Discussion navigation"><Link href={withFellowshipTopic(withReelDiscussion(circleDetailHref(circleId, Boolean(reel || fellowship)), reel), fellowship)}>Return to Circle details</Link><Link href="/circles/mine">My Circles</Link><Link href={signInHref}>Sign in or create an account</Link></nav>
+    {topic && <section aria-label="Question from Fellowship" style={card}>
+      <h2 style={h2}>{topic.title}</h2><p style={body}>{topic.question}</p><p style={small}>{topic.brief}</p>
+      <Link href={topic.href} prefetch={false}>Read the sources and named interpretations</Link>
+      <p style={small}>Choose to prepare an editable question. The existing review and confirmation still apply before anything is posted to this Circle.</p>
+      {page?.kind === 'archive' && <div><button type="button" style={button} disabled={disabled || writing}
+        onClick={() => selectTarget(null, fellowshipDiscussionDraft(topic.id, window.location.origin))}>Use Fellowship question in a draft</button></div>}
+    </section>}
     {reel && <section aria-label="Question from the Reel" style={card}>
       <p style={body}>{REEL_QUESTIONS[reel]}</p>
       <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>

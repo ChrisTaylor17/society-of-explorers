@@ -23,7 +23,7 @@ export function immersiveControls(doc, sharedSalon) {
 
 /** The headset gets a separate member lifetime. A visible headset may
  * have focus while the regular browser window's private session is paused. */
-export function mountImmersiveCircle({ window: win, document: doc, config, reelStarter, onModeChange, onMeetingRequested }) {
+export function mountImmersiveCircle({ window: win, document: doc, config, reelStarter, fellowshipStarter, onModeChange, onMeetingRequested }) {
   const [status, enter, exit, enterSalon] = immersiveControls(doc, config.sharedSalon);
   const { origin, circleId, transport, immersive, newRequestId } = config;
   const discussion = origin + '/api/circles/' + circleId + '/discussion';
@@ -144,6 +144,7 @@ export function mountImmersiveCircle({ window: win, document: doc, config, reelS
       control('advance', more ? 'Next preview' : 'Refresh')];
     if (model.archive.phase === 'ready') {
       if (reelStarter) actions.push(control('reel-question', 'Reel question'));
+      if (fellowshipStarter) actions.push(control('fellowship-study', 'Fellowship study'));
       actions.push(control('reading-open', 'Read selection'));
     }
     if (current.salon) {
@@ -230,6 +231,17 @@ export function mountImmersiveCircle({ window: win, document: doc, config, reelS
       rows: [[...(canDraft ? [control('reel-draft', 'Use question')] : []), control('reel-back', 'Back to discussion')]],
       footer: 'Open the credited video and captions in Quest Browser.' };
   }
+  function showFellowship(current, question = false) {
+    view = 'fellowship';
+    const model = current.host.model();
+    const canDraft = model.archive.phase === 'ready' && model.threadWrite.canStart
+      && fellowshipStarter.roomDraft.length <= ROOM_POST_LIMIT;
+    panel = { label: 'FELLOWSHIP STUDY', heading: fellowshipStarter.title,
+      text: question ? fellowshipStarter.question : fellowshipStarter.brief,
+      rows: [[control(question ? 'fellowship-brief' : 'fellowship-question', question ? 'Study brief' : 'Consider the question'),
+        ...(canDraft ? [control('fellowship-draft', 'Use question')] : []), control('fellowship-back', 'Back to discussion')]],
+      footer: question ? 'A draft stays editable. Review it before choosing Post.' : 'Editorial brief. Full sources and named interpretations are in the browser study.' };
+  }
   async function compose(current, target) {
     const { host, keyboard } = current;
     const model = host.model().threadWrite;
@@ -297,6 +309,19 @@ export function mountImmersiveCircle({ window: win, document: doc, config, reelS
         }
         return;
       }
+      if (view === 'fellowship') {
+        if (target === 'fellowship-back' || target === 'fellowship-draft') {
+          view = 'discussion';
+          const model = current.host.model();
+          if (target === 'fellowship-draft' && model.archive.phase === 'ready'
+            && model.threadWrite.canStart && fellowshipStarter.roomDraft.length <= ROOM_POST_LIMIT) {
+            startComposer(current, null, fellowshipStarter.roomDraft);
+          } else showDiscussion(current);
+        } else if (target === 'fellowship-question' || target === 'fellowship-brief') {
+          showFellowship(current, target === 'fellowship-question');
+        }
+        return;
+      }
       if (view === 'reading') {
         const { reader, from } = current.reading;
         const study = target === 'reading-discuss' ? reader.studyDiscussion() : null;
@@ -336,6 +361,9 @@ export function mountImmersiveCircle({ window: win, document: doc, config, reelS
       if (current.keyboard) { await compose(current, target); return; }
       if (target === 'reel-question' && reelStarter && current.host.model().archive.phase === 'ready') {
         showReelQuestion(current); return;
+      }
+      if (target === 'fellowship-study' && fellowshipStarter && current.host.model().archive.phase === 'ready') {
+        showFellowship(current); return;
       }
       if (target === 'reading-open' && current.host.model().archive.phase === 'ready') { await openReading(current); return; }
       if (target === 'salon-back' && current.salon) {

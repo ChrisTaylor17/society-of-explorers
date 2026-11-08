@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
+import { FELLOWSHIP_TOPICS, fellowshipDiscoveryHref } from '@/lib/fellowship/topics';
 import styles from './fellowship.module.css';
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function FellowshipPage() {
       <div className={styles.actions}>
         <Link className={styles.button} href="/fellowship/scripture">Open the Scripture study</Link>
         <Link className={styles.button} href="/fellowship/manifesto">Read our fellowship covenant</Link>
+        <Link className={styles.button} href="#gather-around-a-question">Find your next conversation</Link>
       </div>
     </header>
     <div className={styles.grid}>
@@ -43,6 +45,21 @@ export default function FellowshipPage() {
         <Link href="/salons/pilot">Explore the four-week plan →</Link>
       </article>
     </div>
+    <section className={styles.section} aria-labelledby="gather-around-a-question">
+      <p className={styles.eyebrow}>One reading · real company</p>
+      <h2 id="gather-around-a-question">Bring a question to the table.</h2>
+      <p>Choose a starting point, explore current online Circles, and check the host’s purpose and meeting dates. This choice carries a suggested question; it does not label a Circle as a Christian study or book a place. Join a suitable Circle and RSVP to a real meeting when you are ready.</p>
+      <div className={styles.grid}>{FELLOWSHIP_TOPICS.map(topic => <article className={styles.card} key={topic.id}>
+        <h3>{topic.title}</h3><p>{topic.question}</p>
+        <p className={styles.muted}>{topic.brief}</p>
+        <div className={styles.actions}><Link className={styles.button} href={fellowshipDiscoveryHref(topic.id)}>Find a Circle with this question</Link><Link href={topic.href}>Read the sources first</Link></div>
+      </article>)}</div>
+      <article className={styles.panel}><h3>A place in the room, including Quest</h3>
+        <p>Within a Circle, continue in its private discussion or open Quest Browser. The immersive room can hold your study question beside recent contributions, with an editable draft and a review before posting. Where shared salon check-in is enabled, see the current member count and return to the host’s meeting in the browser.</p>
+        <p>The host’s live meeting provides the conversation. A spatial voice or avatar service is not yet established. Prayer is optional; listening and respectful disagreement belong at the table.</p>
+        <Link className={styles.button} href="/quest">Explore Fellowship on Quest</Link>
+      </article>
+    </section>
     <section className={styles.section} aria-labelledby="root-kernel">
       <p className={styles.eyebrow}>Root Kernel · a reading companion</p>
       <h2 id="root-kernel">Keep the text and the interpretation distinct.</h2>

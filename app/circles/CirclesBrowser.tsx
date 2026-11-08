@@ -10,6 +10,7 @@ import styles from './reading-program.module.css';
 import { defaultDiscoveryPageRequest, discoveryPageSearchParams, isDiscoveryRestart, parseDiscoveryPage, parseDiscoveryPageRequest, type DiscoveryPageReply, type DiscoveryPageRequest, type PublicDiscoveryCircle } from '@/lib/circles/discovery-page';
 import { reelHref } from '@/lib/clips/contracts';
 import { REEL_QUESTIONS, reelDiscussionId, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
+import { getFellowshipTopic, parseFellowshipTopic, withFellowshipTopic, type FellowshipTopicId } from '@/lib/fellowship/topics';
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'invalid' } | { status: 'soon' } | { status: 'restart' } | { status: 'ok'; result: DiscoveryPageReply };
 const NAVIGATION_EVENT = 'soe-public-discovery-navigation';
@@ -36,6 +37,7 @@ export default function CirclesBrowser() {
   const [search, setSearch] = useState<{ request: DiscoveryPageRequest; attempt: number } | null>(null);
   const [state, setState] = useState<State>({ status: 'loading' });
   const [reel, setReel] = useState<ReelDiscussionId>();
+  const [fellowship, setFellowship] = useState<FellowshipTopicId>();
   const generation = useRef(0);
   const pending = useRef<AbortController | null>(null);
   const focusResults = useRef(false);
@@ -50,10 +52,13 @@ export default function CirclesBrowser() {
       generation.current += 1;
       focusResults.current = Boolean(event);
       pending.current?.abort();
-      const params = new URLSearchParams(currentSearch), values = params.getAll('reel');
-      const selectedReel = values.length === 1 ? reelDiscussionId(values[0]) : undefined;
+      const params = new URLSearchParams(currentSearch), values = params.getAll('reel'), topics = params.getAll('fellowship');
+      const selectedReel = values.length === 1 && topics.length === 0 ? reelDiscussionId(values[0]) : undefined;
+      const selectedTopic = topics.length === 1 && values.length === 0 ? parseFellowshipTopic(topics[0]) : undefined;
       if (selectedReel) params.delete('reel');
+      if (selectedTopic) params.delete('fellowship');
       setReel(selectedReel);
+      setFellowship(selectedTopic);
       const parsed = parseDiscoveryPageRequest(params);
       setDraft(parseDiscoveryQuery(params));
       if (!parsed.ok) { setState({ status: 'invalid' }); setSearch(null); return; }
@@ -105,7 +110,7 @@ export default function CirclesBrowser() {
     pending.current?.abort();
     try {
       const request = { query: parseDiscoveryQuery(discoverySearchParams(query)), limit: search?.request.limit ?? 25, cursor };
-      const params = discoveryPageSearchParams(request), next = withReelDiscussion(`/circles${params.size ? `?${params}` : ''}`, reel);
+      const params = discoveryPageSearchParams(request), next = withFellowshipTopic(withReelDiscussion(`/circles${params.size ? `?${params}` : ''}`, reel), fellowship);
       if (updateHistory && next !== `${window.location.pathname}${window.location.search}`) window.history.pushState(null, '', next);
       if (updateHistory) window.dispatchEvent(new Event(NAVIGATION_EVENT));
       else { setDraft(request.query); setState({ status: 'loading' }); setSearch(previous => ({ request, attempt: (previous?.attempt ?? 0) + 1 })); }
@@ -115,7 +120,8 @@ export default function CirclesBrowser() {
   const request = search?.request ?? defaultDiscoveryPageRequest(), query = request.query;
   const filtered = Boolean(query.q || query.city || query.format || query.open || query.book);
   const queryString = discoveryPageSearchParams(request).toString();
-  const searchLink = withReelDiscussion(`/circles${queryString ? `?${queryString}` : ''}`, reel);
+  const searchLink = withFellowshipTopic(withReelDiscussion(`/circles${queryString ? `?${queryString}` : ''}`, reel), fellowship);
+  const topic = getFellowshipTopic(fellowship);
   const edition = query.book && query.edition ? getReadingEdition(query.book, query.edition) : undefined;
   const selected = edition ? query.from !== undefined && query.to !== undefined ? { from: query.from, to: query.to } : { from: 0, to: edition.blockCount - 1 } : null;
   const startLink = edition && selected ? readingStartHref({ bookId: edition.bookId, editionId: edition.editionId, ...selected }) : '/circles/start';
@@ -128,6 +134,11 @@ export default function CirclesBrowser() {
 
   return (
     <div className={styles.scope}>
+      {topic && <section aria-label="Fellowship question for your Circle" style={{ ...card, marginBottom: '1rem' }}>
+        <h2 style={{ color: parchment }}>{topic.title}</h2><p style={small}>{topic.question}</p>
+        <p style={small}>This is a suggested conversation, not an assigned reading for these listings. Check the host’s purpose, format and actual meeting dates. Join a suitable Circle and RSVP; then use the question in its discussion or Quest room.</p>
+        <Link href={topic.href} prefetch={false}>Read the Fellowship sources</Link>{' · '}<Link href="/fellowship#gather-around-a-question" prefetch={false}>Choose another question</Link>
+      </section>}
       {reel && <section aria-label="Question from the Reel" style={{ ...card, marginBottom: '1rem' }}>
         <p style={small}>{REEL_QUESTIONS[reel]}</p>
         <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
@@ -189,15 +200,15 @@ export default function CirclesBrowser() {
             <button type="button" style={button} onClick={() => apply(query)}>First page of results</button>
             {state.result.page.nextCursor && <button type="button" style={button} onClick={() => apply(query, state.result.page.nextCursor)}>Next page of results</button>}
           </nav>
-          {state.result.circles.length === 0 ? <EmptyState filtered={filtered} continuation={request.cursor !== null} startHref={startLink} /> : <ul aria-label="Circles on this page" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>{state.result.circles.map(c => <CircleCard key={c.id} c={c} fromOnline={query.format === 'online'} reel={reel} />)}</ul>}
+          {state.result.circles.length === 0 ? <EmptyState filtered={filtered} continuation={request.cursor !== null} startHref={startLink} /> : <ul aria-label="Circles on this page" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>{state.result.circles.map(c => <CircleCard key={c.id} c={c} fromOnline={query.format === 'online'} reel={reel} fellowship={fellowship} />)}</ul>}
         </>}
       </div>
     </div>
   );
 }
 
-function CircleCard({ c, fromOnline, reel }: { c: PublicDiscoveryCircle; fromOnline: boolean; reel?: ReelDiscussionId }) {
-  const href = withReelDiscussion(circleDetailHref(c.id, fromOnline), reel);
+function CircleCard({ c, fromOnline, reel, fellowship }: { c: PublicDiscoveryCircle; fromOnline: boolean; reel?: ReelDiscussionId; fellowship?: FellowshipTopicId }) {
+  const href = withFellowshipTopic(withReelDiscussion(circleDetailHref(c.id, fromOnline), reel), fellowship);
   const where = c.format === 'online' ? 'Online' : [c.venue_name, c.city, c.region].filter(Boolean).join(', ');
   return (
     <li data-circle-id={c.id} style={{ ...card, overflowWrap: 'anywhere' }}>

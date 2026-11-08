@@ -16,7 +16,7 @@ assert.ok(process.execArgv.some(value => value.endsWith('/deny-build-network.cjs
 assert.ok(process.env.SOE_PLAYWRIGHT_PACKAGE && process.env.SOE_BROWSER_EXECUTABLE);
 const evidence = resolve(root, 'platforms/evidence', 'quest-salon-' + run + '.json');
 const fixture = resolve(root, 'platforms/evidence', 'quest-member-composed-fixture-' + run);
-const { sourceHashes, bunVersion } = JSON.parse(await readFile(resolve(fixture, 'source-manifest.json')));
+const { sourceHashes, bunVersion, bundler, typescript, scope: bundleScope } = JSON.parse(await readFile(resolve(fixture, 'source-manifest.json')));
 const [bundle, css] = await Promise.all(['page.js', 'page.css'].map(name => readFile(resolve(fixture, name))));
 const sha = data => createHash('sha256').update(data).digest('hex');
 const sources = [
@@ -42,7 +42,8 @@ await verifyHashes();
 const { chromium } = createRequire(resolve(process.env.SOE_PLAYWRIGHT_PACKAGE, 'package.json'))('playwright');
 const results = [], errors = [], browserRequests = [], cleanup = { browser: false, database: false };
 const receipt = { status: 'RUNNING', results, errors, cleanup, browserRequests, sourceHashes,
-  bundleSHA256: sha(bundle), cssSHA256: sha(css), startedAt: new Date().toISOString(), node: process.version, bunVersion };
+  bundleSHA256: sha(bundle), cssSHA256: sha(css), startedAt: new Date().toISOString(), node: process.version, bunVersion, bundler, typescript, bundleScope,
+  scope: 'Actual Quest component, private discussion and meeting handlers over disposable PGlite SQL; synthetic provider identity and locally fulfilled HTTPS. Simulated WebXR/controller/WebGL exercise does not establish headset, spatial voice, issued provider credentials or hosted database acceptance.' };
 const pass = name => { results.push(name); console.log('PASS: ' + name); };
 const gates = new Set();
 const activeRoutes = new Set();
@@ -91,7 +92,7 @@ try {
   let holdReserve = null, holdDetail = null, holdPassage = null, corruptPassage = false, meetingNavigations = 0;
   const reelId = 'which-height';
   const reelQuestion = 'How would you report both heights so a reader can tell what each number measures and where it was measured from?';
-  async function client(actor, headset = false, { circleId = f.circleId, salon = true, reel = false } = {}) {
+  async function client(actor, headset = false, { circleId = f.circleId, salon = true, reel = false, fellowship = '' } = {}) {
     const context = await browser.newContext({ viewport: { width: 375, height: 844 }, serviceWorkers: 'block' });
     const readingCircle = circleId !== f.circleId, circlePath = '/api/circles/' + circleId;
     if (readingCircle) await context.addCookies([{ name: 'quest_fixture_cookie', value: 'test-only', url: origin }]);
@@ -115,7 +116,7 @@ try {
         }
         assert.equal(url.origin, origin);
         if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body:
-          `<!doctype html><html lang="en" data-circle="${circleId}" ${salon ? 'data-shared-salon' : ''} ${reel ? 'data-reel="' + reelId + '"' : ''}><head><link rel="stylesheet" href="/page.css"></head><body><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
+          `<!doctype html><html lang="en" data-circle="${circleId}" ${salon ? 'data-shared-salon' : ''} ${reel ? 'data-reel="' + reelId + '"' : ''} ${fellowship ? 'data-fellowship="' + fellowship + '"' : ''}><head><link rel="stylesheet" href="/page.css"></head><body><div id="root"></div><script type="module" src="/page.mjs"></script></body></html>` });
         if (url.pathname === '/page.mjs') return route.fulfill({ contentType: 'text/javascript', body: bundle });
         if (url.pathname === '/page.css') return route.fulfill({ contentType: 'text/css', body: css });
         const actual = await request.allHeaders();
@@ -637,6 +638,56 @@ try {
   await readingPress(scripturePage, 'Back to discussion');
   await readingPanel(scripturePage, 'Read selection');
   pass('The headset checks the current Philemon Circle, pages through the bundled letter and publisher footnotes, and returns to discussion without a source request');
+
+  const fellowshipPage = await client('outsider', true, { salon: false, fellowship: 'psalm-22' });
+  const fellowshipQuestion = 'How does the ending of Psalm 22 change what you hear in its opening?';
+  const fellowshipSource = '/fellowship/scripture#cry-of-abandonment';
+  const fellowshipDraft = fellowshipQuestion + '\n\n' + fellowshipSource;
+  const fellowshipBanner = fellowshipPage.getByRole('region', { name: 'Fellowship study for this Circle' });
+  await fellowshipBanner.getByText(fellowshipQuestion, { exact: true }).waitFor();
+  assert.equal(await fellowshipBanner.getByRole('link').getAttribute('href'), fellowshipSource);
+  assert.equal(await fellowshipPage.locator('#circle-thread-reel').count(), 0);
+  assert(await fellowshipPage.locator('#circle-thread-fellowship').isDisabled());
+  const fellowshipReceipts = await f.receiptCount();
+  await fellowshipPage.locator('#quest-immersive-enter').click();
+  await readingPanel(fellowshipPage, 'check your signed-in account');
+  await readingTrigger(fellowshipPage);
+  await readingPanel(fellowshipPage, 'load recent discussion');
+  await readingTrigger(fellowshipPage);
+  await readingPanel(fellowshipPage, 'Fellowship study');
+  const fellowshipReads = archiveReads('outsider');
+  await readingPress(fellowshipPage, 'Fellowship study');
+  await readingPanel(fellowshipPage, 'Read the whole psalm');
+  receipt.fellowshipBrief = await capturePanel(fellowshipPage, 'quest-fellowship-brief');
+  await readingPress(fellowshipPage, 'Consider the question');
+  await readingPanel(fellowshipPage, fellowshipQuestion);
+  assert.equal(archiveReads('outsider'), fellowshipReads);
+  assert.equal(await f.receiptCount(), fellowshipReceipts);
+  await readingPress(fellowshipPage, 'Use question');
+  await readingPanel(fellowshipPage, `${fellowshipDraft.length} of 180`);
+  await readingPress(fellowshipPage, 'Review');
+  await readingPanel(fellowshipPage, 'Review your post');
+  await readingPanel(fellowshipPage, fellowshipSource);
+  receipt.fellowshipReview = await capturePanel(fellowshipPage, 'quest-fellowship-review');
+  assert.equal(await f.receiptCount(), fellowshipReceipts);
+  await readingPress(fellowshipPage, 'Post');
+  await readingPanel(fellowshipPage, 'Post confirmed');
+  assert.equal(await f.receiptCount(), fellowshipReceipts + 1);
+  assert.deepEqual((await f.db.query('SELECT content FROM seminar_messages WHERE cohort_id=$1 AND member_id=$2 AND content=$3',
+    [f.circleId, f.reviewerId, fellowshipDraft])).rows, [{ content: fellowshipDraft }]);
+  await fellowshipPage.locator('#quest-immersive-exit').click();
+  await fellowshipPage.locator('#member-session-check').click();
+  await fellowshipPage.locator('#circle-archive-open').click();
+  const fellowshipButton = fellowshipPage.locator('#circle-thread-fellowship');
+  await fellowshipButton.click();
+  const fellowshipEditor = fellowshipPage.locator('#circle-thread-draft');
+  assert.equal(await fellowshipEditor.inputValue(), fellowshipQuestion + '\n\n' + origin + fellowshipSource);
+  assert(await fellowshipButton.isDisabled());
+  await fellowshipPage.evaluate(() => window.questComposedQa.providerChanged());
+  assert.equal(await fellowshipEditor.inputValue(), '');
+  assert(await fellowshipButton.isDisabled());
+  assert.equal(await f.receiptCount(), fellowshipReceipts + 1);
+  pass('Fellowship keeps its own study provenance, opens a brief and question only after current Circle access, posts only after explicit review and Post, and clears the regular question draft on account change');
 
   await f.db.query('UPDATE book_cohorts SET circle_hidden=true WHERE id=$1', [f.circleId]);
   assert.equal((await send('outsider', probe)).status, 404);

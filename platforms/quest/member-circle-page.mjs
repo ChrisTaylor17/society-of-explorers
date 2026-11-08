@@ -15,6 +15,7 @@ function mount({window:win,document:doc,config,onRegularActivity},withCircle) {
   if(withCircle)assertCircleMarkup(doc);
   const immersive=withCircle?config?.immersive:null;
   const reelStarter=withCircle?config?.reelStarter:undefined;
+  const fellowshipStarter=withCircle?config?.fellowshipStarter:undefined;
   const sharedSalon=withCircle&&config?.sharedSalon===true;
   const meeting=withCircle&&config?.meeting===true;
   if(sharedSalon)salonControls(doc);
@@ -45,7 +46,7 @@ function mount({window:win,document:doc,config,onRegularActivity},withCircle) {
     handlers.length=0;
   };
   try {
-    if(withCircle)screen=mountCirclePage({window:win,document:doc,config:{...hostConfig,owner:binding.owner},reelStarter});
+    if(withCircle)screen=mountCirclePage({window:win,document:doc,config:{...hostConfig,owner:binding.owner},reelStarter,fellowshipStarter});
     contributions=mountMemberContributions({window:win,document:doc,config:{...hostConfig,aiConsent,owner:binding.owner},circleHost:screen?.host});
     blocks=mountMemberBlocks({document:doc,config:{...hostConfig,owner:binding.owner}});
     if(sharedSalon)browserSalon=mountBrowserSalon(doc,{
@@ -68,7 +69,7 @@ function mount({window:win,document:doc,config,onRegularActivity},withCircle) {
       binding.activity(regularActive());
       renderSession(binding.model());
     };
-    if(withCircle&&immersive)room=mountImmersiveCircle({window:win,document:doc,config:{...hostConfig,immersive,sharedSalon},reelStarter,
+    if(withCircle&&immersive)room=mountImmersiveCircle({window:win,document:doc,config:{...hostConfig,immersive,sharedSalon},reelStarter,fellowshipStarter,
       onMeetingRequested:browserMeeting?()=>browserMeeting.focus():null,onModeChange(open){
       immersiveOpen=open;
       if(open)immersive.pauseRegular();
