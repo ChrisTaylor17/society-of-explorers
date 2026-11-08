@@ -15,7 +15,8 @@ const ASSETS=BOOKS.flatMap(book=>['manifest.json','reader.html'].map(name=>`cont
 const SOURCES=['app/api/members/profile/route.ts','app/api/auth/provider/route.ts','docs/sql/circle-luke-good-samaritan-edition-apply.sql',...['preflight','apply','rollback'].map(n=>'docs/sql/circle-public-profiles-'+n+'.sql'),'app/api/book-salons/[cohortId]/route.ts','app/api/circles/[circleId]/discussion/route.ts','app/api/circles/[circleId]/discussion/preview/route.ts','app/api/circles/[circleId]/messages/[messageId]/route.ts','app/api/explorer/[id]/route.ts','app/explorer/[id]/page.tsx',...['preflight','apply'].map(n=>'docs/sql/member-profile-'+n+'.sql'),...['preflight','apply','rollback'].map(n=>'docs/sql/member-profile-intent-'+n+'.sql'),'verification/web/tests/support/public-profile-app.mjs','docs/sql/circle-membership-intent-preflight.sql','docs/sql/circle-membership-intent-apply.sql','docs/sql/circle-membership-intent-rollback.sql', 'lib/circles/hosting.ts','app/api/circles/start/route.ts','app/api/circles/route.ts','app/api/great-books/text/[bookId]/route.ts',...ASSETS,
  'lib/circles/membership.ts','lib/circles/membership-server.ts','app/api/auth/member/route.ts','app/api/circles/[circleId]/route.ts',
  ...['membership','rsvp','join','leave','complete'].map(action=>`app/api/circles/[circleId]/${action}/route.ts`)];
-export async function publicProfileAppHashes(){
+const ADMISSION_SOURCES=['circle-legacy-salon-membership.sql','account-deletion-requests-apply.sql','account-erasure-access-apply.sql','circle-admission-apply.sql'].map(n=>'docs/sql/'+n).concat(['lib/circles/admission-server.ts','lib/circles/admission-token-server.ts','lib/circles/admission.ts'],['admission-access','recipient-code','invitation-review','invitations','invitation-check','join-invited','invitation-receipt','invitations/revoke'].map(n=>'app/api/circles/[circleId]/'+n+'/route.ts'));
+export async function publicProfileAppHashes({admission=false}={}){
  const hashes={...await base.hostingAppHashes()},seen=new Set();
  async function bind(name){if(seen.has(name))return;seen.add(name);const bytes=await contributionSource(name);hashes[name]=createHash('sha256').update(bytes).digest('hex');if(!/\.(?:ts|tsx)$/.test(name))return;
   for(const match of bytes.toString().matchAll(/(?:import|export)\s[^;]*?\sfrom\s*['"]([^'"]+)['"]/g)){
@@ -24,10 +25,10 @@ export async function publicProfileAppHashes(){
    const candidate=/\.(?:ts|tsx|json)$/.test(target)?target:['.ts','.tsx','.json'].map(ext=>target+ext).find(name=>existsSync(new URL('../../../../'+name,import.meta.url)));assert(candidate,'Missing local source '+target);await bind(candidate);
   }
  }
- for(const name of SOURCES)await bind(name);return hashes;
+ for(const name of [...SOURCES,...(admission?ADMISSION_SOURCES:[])])await bind(name);return hashes;
 }
-export async function createPublicProfileApp({memberBlocks=false,lukeEdition=false}={}){
- await publicProfileAppHashes();const f=await base.createCircleHostingApp(),app=offlineApp(),sql=[],provider=[],http=[];
+export async function createPublicProfileApp({memberBlocks=false,lukeEdition=false,admission=false}={}){
+ await publicProfileAppHashes({admission});const f=await base.createCircleHostingApp(),app=offlineApp(),sql=[],provider=[],http=[];
  let closed=false,httpHook=null,beforeHook=null,dbHook=null,cookieActor=null,lane=Promise.resolve();
  const serial=fn=>{const task=lane.then(fn);lane=task.catch(()=>{});return task;};
  try{
@@ -38,7 +39,7 @@ export async function createPublicProfileApp({memberBlocks=false,lukeEdition=fal
    assert.equal((await f.db.query("SELECT count(*)::int AS n FROM members WHERE profile_visibility IS DISTINCT FROM 'private'")).rows[0].n,0);
    await f.db.exec('ALTER TABLE members DROP COLUMN profile_visibility');
    for(const name of ['member-profile-preflight.sql','member-profile-apply.sql','member-profile-intent-preflight.sql','member-profile-intent-apply.sql','circle-public-profiles-preflight.sql','circle-public-profiles-apply.sql'])await f.db.exec((await contributionSource('docs/sql/'+name)).toString());
-  if (lukeEdition) await f.db.exec((await contributionSource('docs/sql/circle-luke-good-samaritan-edition-apply.sql')).toString());
+  if (lukeEdition || admission) await f.db.exec((await contributionSource('docs/sql/circle-luke-good-samaritan-edition-apply.sql')).toString());
   if (memberBlocks) {
     await f.db.exec(`CREATE TABLE public.direct_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(), sender_id uuid, recipient_id uuid,
@@ -51,6 +52,8 @@ export async function createPublicProfileApp({memberBlocks=false,lukeEdition=fal
       await f.db.exec((await contributionSource('docs/sql/'+name)).toString());
     }
   }
+  if(admission)for(const name of ['circle-legacy-salon-membership.sql','account-deletion-requests-apply.sql','account-erasure-access-apply.sql','circle-admission-apply.sql'])await f.db.exec((await contributionSource('docs/sql/'+name)).toString());
+  if(admission)app.context.process.env.NEXTAUTH_SECRET='SYNTHETIC_WEBKIT_ADMISSION_SIGNING_KEY_NOT_AN_ISSUED_CREDENTIAL';
   app.context.process.env.WALLET_SESSION_SECRET='SYNTHETIC_ATTENDANCE_WALLET_SECRET_NOT_A_REAL_CREDENTIAL_2026';app.context.process.env.NEXT_PUBLIC_SUPABASE_URL=PROVIDER;app.context.process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY=PUBLIC_KEY;
   app.setMock('@/lib/supabase/server',()=>({createClient:async()=>({auth:{getUser:async()=>({data:{user:cookieActor?{id:SUBJECTS[cookieActor]}:null},error:cookieActor?null:{name:'AuthSessionMissingError'}})}})}));
   app.setMock('@supabase/supabase-js',()=>({createClient:(url,key,options)=>{
@@ -61,14 +64,16 @@ export async function createPublicProfileApp({memberBlocks=false,lukeEdition=fal
   }}));
   const columns=new Set(['id','supabase_auth_id','display_name','email','bio','discipline','skills','project_description','seeking','philosophy','exp_tokens','tier','coherence_data','total_responses','wallet_address','profile_visibility','profile_revision']);
   const rpcNames=new Set(['soe_circle_detail_profiles','soe_circle_messages_read_profiles','soe_circle_discussion_read_profiles','soe_circle_discussion_thread_profiles','soe_circle_discussion_receipt_profiles','soe_circle_message_state_profiles','soe_circle_discussion_target','soe_circle_discussion_post','soe_circle_messages_post','soe_circle_message_action','soe_member_profile_update','soe_circle_start','soe_circle_create','soe_circle_detail','soe_circle_membership_state','soe_circle_join','soe_circle_leave','soe_circle_rsvp','soe_circle_complete']),argumentsByName=new Map();
+  if(admission)for(const name of ['soe_circle_invitation_review','soe_circle_join_invited','soe_circle_invitation_revoke'])rpcNames.add(name);
   if(memberBlocks) {
     for (const name of ['soe_circle_message_block','soe_direct_message_blocks','soe_direct_message_set_block']) rpcNames.add(name);
   }
   app.setMock('@/lib/supabase/admin',()=>({getSupabaseAdmin:()=>({
-    from(table){assert(['members','book_cohorts'].includes(table));let projection;const filters=[];
-     const query={select(value){assert(table==='members'?value.split(',').every(v=>columns.has(v.trim())):value==='id,book_id,title,description,max_members,start_date,thinker_id,status,created_at');projection=value;return query;},
-      eq(column,value){assert((table==='members'?['id','supabase_auth_id','profile_visibility']:['id']).includes(column));assert(!filters.some(f=>f.column===column));filters.push({column,value});return query;},single:()=>execute(false),maybeSingle:()=>execute(true)};
-     function execute(optional){return serial(async()=>{assert(projection&&filters.length>=1&&filters.length<=2);if(filters.length===2){assert.equal(table,'members');assert.deepEqual(filters.map(f=>f.column),['id','profile_visibility']);assert.equal(filters[1].value,'public');assert.equal(projection,'id,display_name,bio,discipline,skills,project_description,seeking,philosophy,profile_visibility');}sql.push({kind:'select',table,projection,filters:structuredClone(filters)});let result;
+    from(table){assert(['members','book_cohorts',...(admission?['circle_participation_receipts']:[])].includes(table));let projection;const filters=[];
+     const cohortProjections=['id,book_id,title,description,max_members,start_date,thinker_id,status,created_at',...(admission?['id,created_by,circle_admission_mode,circle_invitation_revision,circle_participation_revision','id,created_by,circle_invitation_revision,circle_participation_revision']:[])];
+     const query={select(value){assert(table==='members'?value.split(',').every(v=>columns.has(v.trim())):table==='book_cohorts'?cohortProjections.includes(value):value==='actor_member_id,request_id,cohort_id,payload,receipt');projection=value;return query;},
+      eq(column,value){assert((table==='members'?['id','supabase_auth_id','profile_visibility']:table==='book_cohorts'?['id']:['actor_member_id','request_id','cohort_id']).includes(column));assert(!filters.some(f=>f.column===column));filters.push({column,value});return query;},single:()=>execute(false),maybeSingle:()=>execute(true)};
+     function execute(optional){return serial(async()=>{assert(projection&&filters.length>=1&&filters.length<=(table==='circle_participation_receipts'?3:2));if(table==='circle_participation_receipts')assert.deepEqual(filters.map(f=>f.column),['actor_member_id','request_id','cohort_id']);if(filters.length===2){assert.equal(table,'members');assert.deepEqual(filters.map(f=>f.column),['id','profile_visibility']);assert.equal(filters[1].value,'public');assert.equal(projection,'id,display_name,bio,discipline,skills,project_description,seeking,philosophy,profile_visibility');}sql.push({kind:'select',table,projection,filters:structuredClone(filters)});let result;
       try{await f.db.exec('SET ROLE service_role');const rows=(await f.db.query(`SELECT ${projection} FROM ${table} WHERE ${filters.map((f,i)=>f.column+'=$'+(i+1)).join(' AND ')}`,filters.map(f=>f.value))).rows;result=rows.length===1||optional&&rows.length===0?{data:rows[0]?JSON.parse(JSON.stringify(rows[0])):null,error:null}:{data:null,error:{code:'PGRST116'}};}
       catch(error){result={data:null,error:{code:error.code??'FIXTURE_ERROR'}};}finally{await f.db.exec('RESET ROLE');}
       return dbHook?dbHook({kind:'select',table,result}):result;
@@ -99,6 +104,7 @@ export async function createPublicProfileApp({memberBlocks=false,lukeEdition=fal
   async function dispatch(path,{method='GET',headers={},body,signal}={}){
    const url=new URL(path,ORIGIN);assert.equal(url.origin,ORIGIN);assert(!closed);
    const match=/^\/api\/circles\/([^/]+)(?:\/(membership|rsvp|join|leave|complete))?$/.exec(url.pathname);
+   const admissionRoute=admission&&/^\/api\/circles\/([0-9a-f-]+)\/(admission-access|recipient-code|invitation-review|invitations|invitation-check|join-invited|invitation-receipt|invitations\/revoke)$/.exec(url.pathname);
    const discussion=/^\/api\/circles\/([0-9a-f-]+)\/discussion(\/preview)?$/.exec(url.pathname);
    const message=/^\/api\/circles\/([0-9a-f-]+)\/messages\/([0-9a-f-]+)$/.exec(url.pathname);
    const legacy=/^\/api\/book-salons\/([0-9a-f-]+)$/.exec(url.pathname);
@@ -108,7 +114,7 @@ export async function createPublicProfileApp({memberBlocks=false,lukeEdition=fal
     const publicProfile=/^\/api\/explorer\/([0-9a-f-]+)$/.exec(url.pathname);
     const ownerProfile=url.pathname==='/api/members/profile';
     const ownerBlocks=memberBlocks&&url.pathname==='/api/members/blocks';
-    const owned=Boolean(discussion||message||legacy)||ownerProfile||ownerBlocks||Boolean(publicProfile)||hosting||Boolean(edition)||account||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
+    const owned=Boolean(admissionRoute||discussion||message||legacy)||ownerProfile||ownerBlocks||Boolean(publicProfile)||hosting||Boolean(edition)||account||Boolean(match&&!['mine','start','search','contributions'].includes(match[1]));
     if(publicProfile){assert.equal(method,'GET');assert.equal(url.search,'');const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
     if(edition){assert(BOOKS.includes(edition[1])||edition[1]==='philemon'||lukeEdition&&edition[1]==='luke-good-samaritan');assert.equal(method,'GET');assert.equal(url.search,'');assert.equal(body,undefined);const supplied=new Headers(headers);for(const name of ['authorization','cookie','apikey'])assert(!supplied.has(name));}
    assert(['GET','POST'].includes(method));const h=new Headers(headers);if(method==='POST'&&!h.has('content-type'))h.set('content-type','application/json');
@@ -117,8 +123,8 @@ export async function createPublicProfileApp({memberBlocks=false,lukeEdition=fal
    Object.defineProperties(request,{nextUrl:{value:url},cookies:{value:{get:key=>cookies.has(key)?{value:cookies.get(key)}:undefined}}});
    const call={path:url.pathname+url.search,method,request,body:body===undefined?null:typeof body==='string'?body:JSON.stringify(body)};http.push(call);
    const early=beforeHook?await beforeHook(call):null;
-    const file=ownerBlocks?'app/api/members/blocks/route.ts':discussion?'app/api/circles/[circleId]/discussion/'+(discussion[2]?'preview/':'')+'route.ts':message?'app/api/circles/[circleId]/messages/[messageId]/route.ts':legacy?'app/api/book-salons/[cohortId]/route.ts':publicProfile?'app/api/explorer/[id]/route.ts':edition?'app/api/great-books/text/[bookId]/route.ts':match&&!hosting?'app/api/circles/[circleId]/'+(match[2]?match[2]+'/':'')+'route.ts':'app'+url.pathname+'/route.ts';
-    const params=discussion?{circleId:discussion[1]}:message?{circleId:message[1],messageId:message[2]}:legacy?{cohortId:legacy[1]}:publicProfile?{id:publicProfile[1]}:edition?{bookId:edition[1]}:match&&!hosting?{circleId:match[1]}:undefined;
+    const file=admissionRoute?'app/api/circles/[circleId]/'+admissionRoute[2]+'/route.ts':ownerBlocks?'app/api/members/blocks/route.ts':discussion?'app/api/circles/[circleId]/discussion/'+(discussion[2]?'preview/':'')+'route.ts':message?'app/api/circles/[circleId]/messages/[messageId]/route.ts':legacy?'app/api/book-salons/[cohortId]/route.ts':publicProfile?'app/api/explorer/[id]/route.ts':edition?'app/api/great-books/text/[bookId]/route.ts':match&&!hosting?'app/api/circles/[circleId]/'+(match[2]?match[2]+'/':'')+'route.ts':'app'+url.pathname+'/route.ts';
+    const params=admissionRoute?{circleId:admissionRoute[1]}:discussion?{circleId:discussion[1]}:message?{circleId:message[1],messageId:message[2]}:legacy?{cohortId:legacy[1]}:publicProfile?{id:publicProfile[1]}:edition?{bookId:edition[1]}:match&&!hosting?{circleId:match[1]}:undefined;
    const response=early instanceof Response?early:owned?await route(file)[method](request,params?{params:Promise.resolve(params)}:undefined):await f.dispatch(path,{method,headers,body,signal});
    return httpHook?httpHook({...call,response}):response;
   }

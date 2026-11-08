@@ -1,0 +1,171 @@
+{
+  "status": "LOCAL_WEBKIT_MILESTONE_VERIFIED",
+  "recordedAtUtc": "2026-11-08T01:23:20.860511+00:00",
+  "baseCommit": "55910b66be0923dec2d26738fcfd9b44b800950e",
+  "productionCleared": false,
+  "productSourceChanged": false,
+  "surface": "Compiled web admission and regular Quest view in resident macOS WKWebView, with local source wallet/auth/admission handlers and disposable SQL.",
+  "verifiedSourceSha256": {
+    "verification/web/scripts/build-offline.py": "d731b2f481666ac9cb2f5b969423e6e0ff53077afc8e7741af2e8878aae77b20",
+    "verification/web/tests/support/public-profile-app.mjs": "fc870f4d938d1c1c84cc472e48e0192e89fdd314132dec05555f8d6df93928ce",
+    "verification/web/scripts/webkit-admission-fixture.mjs": "1ba7a32d12187ef7c7ea5fd8b8aa7973b5b9e9f4a00bc07476f9f2dd8fbe7958",
+    "verification/web/tests/webkit-admission.swift": "b9185d27bd6a88fff28bffe5e4fdaca71c57cfbf20bee8a2de9b7498a8b16de3",
+    "verification/web/scripts/verify-webkit-admission.py": "490f01e371b506397c04a9c95036c5d10239ded18efc99779eeb6a2be71f536d"
+  },
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 53.01,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "synthetic browser auth configuration; no issued key",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1208,
+    "sourceSha256": "c3899c52379578060213031ccc929ab65bc22448c3998a879f17d130eb0c4267",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/webkit-admission-next-build.log"
+  },
+  "webKit": {
+    "buildId": "LljraXHcijrq7iHcBRnfL",
+    "layouts": [
+      {
+        "documentWidth": 1276,
+        "width": 1280
+      },
+      {
+        "documentWidth": 636,
+        "width": 640
+      },
+      {
+        "documentWidth": 316,
+        "width": 320
+      }
+    ],
+    "pinnedCertificate": true,
+    "scope": "Resident macOS WKWebView/nonpersistent stores; actual compiled frontend/SDK and local wallet/auth/admission source handlers over disposable SQL. Wallet transport,lifecycle,PostgREST/provider and API dispatch are explicit adapters. No Safari UI,real provider,physical iPhone/Quest or deployed middleware acceptance.",
+    "status": "PASS",
+    "stories": [
+      "The actual compiled admission page hydrates and refuses the signed-out visitor without exposing private fields.",
+      "Three isolated WebKit cookie stores complete real nonce/SIWE signature/session handling with throwaway wallets and distinct synthetic members.",
+      "At 100%, 200% and 400% the invitation form fits; explicit sharing gives no membership and its code clears on controlled blur.",
+      "Host review focuses the exact recipient; a separate confirmation issues approval and another authenticated member cannot use it.",
+      "A post-commit lost reply stays uncertain across controlled retirement and recovers read-only without another join.",
+      "Revocation uses explicit review and exact retry after a lost reply; final SQL checks establish one advance and preserved members.",
+      "The actual compiled Quest view accepts the wallet-cookie account, clears private code on controlled blur, and keeps regular controls usable when WebXR is unsupported.",
+      "All three wallet sessions revoke through the real local logout handler; the reloaded signed-out reader cannot recover private invitation fields."
+    ]
+  },
+  "compilation": {
+    "command": [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-parse-as-library",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX27.2.sdk",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-module-cache-path",
+      "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/swift-module-cache",
+      "-framework",
+      "AppKit",
+      "-framework",
+      "WebKit",
+      "-framework",
+      "Security",
+      "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/tests/webkit-admission.swift",
+      "-o",
+      "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/webkit-admission"
+    ],
+    "exitCode": 0,
+    "sourceSha256": "b9185d27bd6a88fff28bffe5e4fdaca71c57cfbf20bee8a2de9b7498a8b16de3"
+  },
+  "finalDatabase": {
+    "invitationRevision": 2,
+    "members": [
+      "44444444-4444-4444-8444-444444444444",
+      "66666666-6666-4666-8666-666666666666"
+    ],
+    "revokedSessions": 3,
+    "usedChallenges": 3
+  },
+  "checks": {
+    "eightBrowserJourneys": "PASS",
+    "publicProfileDefaultFixtureRegressions": {
+      "status": "PASS",
+      "passed": 26,
+      "failed": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/public-profile-backend-regression.log",
+      "sha256": "38401371dee665196520df6780f1699e3754b523f2d424edd8bfae978dce3e3e"
+    },
+    "fixtureLint": {
+      "status": "PASS",
+      "warnings": 0,
+      "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/scoped-fixture-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "failureCalibration": {
+      "status": "PASS_EXPECTED_FAILURE",
+      "browserExitCode": 1,
+      "reportStatus": "FAIL",
+      "ownedServerExitCode": 0,
+      "failureAfter": "SQL startup and compiled-page hydration",
+      "report": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/failure-calibration-02/result.json",
+      "sha256": "813230a6701eb2b786f8ef3d5e2a0ec0af7bbad84d6da1ce47f112b0452d1089"
+    },
+    "sourceUnchanged": true,
+    "compiledBuildUnchanged": true,
+    "runtimeUnchanged": true,
+    "ownedServerStopped": true,
+    "externalFetchAttempts": 0,
+    "fixtureFailures": 0
+  },
+  "sourceInputs": 1375,
+  "compiledFiles": 2840,
+  "evidence": {
+    "result.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/result.json",
+      "sha256": "c8172761680a0488d99aa90fe3fdf668468fec703c9c527e3a100078d46cacb6"
+    },
+    "source-sha256.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/source-sha256.json",
+      "sha256": "386db42431b8c378e752fcda874b51ef4980bdbf5caa04e5ae699593c8d7a9ed"
+    },
+    "compiled-build-sha256.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/compiled-build-sha256.json",
+      "sha256": "6b7ae086a400c6016b0150dfff7ff9a0007d8e153f3556b5f737a2db94339845"
+    },
+    "runtime.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/runtime.json",
+      "sha256": "828a12d3f40662d4c2a5bda62a72d726abe8769ef529edf6ba4c51b0887ba075"
+    },
+    "fixture-stopped.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/fixture-stopped.json",
+      "sha256": "b645a61104b17f38729772aedb93ae2b1019795387a2d27a32903afef841004d"
+    },
+    "browser.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/browser.json",
+      "sha256": "b92048e3705032328bdfc8a541f421d4c8d43304418b3cfb3d27802f89c5a924"
+    },
+    "compile.log": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-webkit-admission/run-final/compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "limits": [
+    "macOS WKWebView is not Safari UI, an iOS build, a phone device or physical Quest acceptance.",
+    "Wallet transport, focus/visibility lifecycle, PostgREST/provider identity and API dispatch are explicit test adapters. Three random wallet keys exist only in fixture memory; none are real accounts.",
+    "Actual compiled frontend and SDK, TLS cookie stores, nonce/SIWE/session handling and canonical admission source routes execute locally. Deployment middleware, hosted provider/session behavior and mail recovery were not exercised.",
+    "The isolated TLS leaf is pinned within the test view; OS certificate trust is unchanged. Node API guard plus WebKit content/fetch restrictions are not an OS-wide firewall.",
+    "WebXR is unsupported in this host engine; this checks regular-view fallback. Permission-pending and active immersive paths retain earlier simulated Chromium evidence; physical headset acceptance remains open.",
+    "No product code, SQL migration, hosted schema/grant, credentials, access, deployment, new native tools or spending changed. First release remains HOLD.",
+    "Android setup approval remains pending. Secure source-database entry waits for the owner at the Mac on November8 evening."
+  ]
+}
