@@ -32,9 +32,9 @@ The green-and-parchment layout gives the reading invitation room, with a compact
 
 The subsequent [recorded-session correction](live-schedule.md) resolves the local live page’s invented recurring date and failure-as-empty behavior. Real event and hosted acceptance remain open.
 
-- The roadmap labels practice/feed as LIVE and makes signed-in availability claims. Compilation and route existence cannot certify those claims. Its seven-week invitation also needs reconciliation.
-- The structure page promises private conversation access, on-chain artifacts, soulbound reputation and device-held memory. The current privacy/recovery hold prevents treating those assurances as proven. Venue claims and third-party comparisons need a sourced review.
-- The 92B page already describes a conditional venue proposal, but has funding calls to action. Review the campaign/operator, purpose, venue authority and donor disclosures separately. This pass did not inspect/change checkout, enable donations or verify deductibility.
+- The subsequent [roadmap/structure correction](roadmap-structure.md) removes the local roadmap’s unverified LIVE/paid-tier claims and aligns its proposal to four weeks. It does not verify hosted service availability.
+- That same correction distinguishes the structure page’s local-first, member-agency, hardware, token and venue aspirations from delivered capabilities, with primary research links. Current legal and privacy acceptance remain open.
+- The 92B page already describes a conditional venue proposal, but has funding calls to action. The subsequent [bounded funding review](funding-claims-review.md) inspects checkout/progress source and documents unresolved operator, offer, approval and accounting issues. No payment code or live service was changed; deductibility and current checkout reachability remain unverified.
 - The homepage collaboration experiment still needs a complete review of synchronization, account transitions, custody, contracts and child-component labels. This copy correction is not that audit.
 - Other public pages, emails, search snippets, legal terms and older deployed copies are outside this bounded pass.
 
