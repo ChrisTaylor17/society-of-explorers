@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-11-08T14:31:30.371312+00:00",
+  "baseCommit": "efb44b9197c0544398519cb5c8ba3b5623199cbd",
+  "sourceHashes": {
+    "app/book-salons/page.tsx": "6facc9456e49a742b3fb90356e592a46da9c87909d91583dd8c6e3f57507d88d",
+    "app/api/book-salons/join/route.ts": "cd70afa62043815819307b2b0e41c6a53b9a3f08195c60728f25b386d4b8d396",
+    "lib/book-salons/browser-account.ts": "bc26196a9ae77c141cc291a1686de942e4924e44bc35dc0b709057dc54c2a025",
+    "lib/book-salons/useBookSalonAccount.ts": "2eb72f6c587a52f7a4c3627c83c0879c914b1b6af6166fe5c4fa6a6e2dfadc79",
+    "verification/web/tests/book-salon-account.test.mjs": "a255f8176d48d62e3995405e2e63dd9b2431870c2895c6b3b5b0162cc93a41ed",
+    "verification/web/tests/book-salon-origin.test.mjs": "22a48d876373437e870bc4236008f3725c385690b1479884f3a78aac2d18b6c7",
+    "verification/web/scripts/browser-book-salon-create.mjs": "bd94a4e45e50ed2dfd457a16f31dbc6f585c6e1dc3f7287e0e4f4864b143d51e",
+    "verification/web/scripts/browser-book-salon-discovery.mjs": "8a04ebf2c03510f2b2c9c942540982cabce9267a75318b79859bcfaa69557122"
+  },
+  "canonicalInputCount": 1243,
+  "canonicalInputMismatches": [],
+  "checks": {
+    "fullBuildAndTypecheck": true,
+    "scopedLint": true,
+    "controllerActualAuthAndDisposableSqlCases": 22,
+    "compiledAccountStories": 9,
+    "actualCompiledMembershipHttpRefusals": 3,
+    "compiledDiscoveryStories": 9,
+    "actualCompiledDiscoveryHttpRefusals": 4,
+    "existingSalonJourneys": 8
+  },
+  "privateEvidenceDirectory": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-account",
+  "stageReceipts": [
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-account-tests-02.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-account-build-02.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-account-lint-01.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-account-lint-02.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-account-browser-03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-account-discovery-02.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-account-journeys-01.json"
+  ],
+  "buildReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-book-salon-account-02-next-build.json",
+  "buildInputEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-account/FINAL_INPUT_RECHECK.json",
+  "browserRuns": [
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-account/BROWSER_RUN_14.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-account/BROWSER_RUN_15.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-account/BROWSER_RUN_16.json"
+  ],
+  "preservedOperationsEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-account/PRESERVED_OPERATIONS.json",
+  "creationPostJoinPostAuthHelperAndSqlPreserved": true,
+  "databaseSchemaChanged": false,
+  "hostedApplicationCalls": false,
+  "productionClearance": false,
+  "deployment": false,
+  "spentUsd": 0,
+  "minimumSampledFreeBytes": 15231111168,
+  "maximumSampledPrivateAllocatedBytes": 19101655040,
+  "limitations": [
+    "Controller and compiled page identity, lifecycle events and some transport are synthetic; disposable SQL and actual source handlers do not establish hosted PostgREST/RLS or real provider acceptance.",
+    "The new membership read reports only the authenticated account and cannot prove a false result will remain false while a prior write is in flight.",
+    "Pending request state survives retirement only within this page/controller lifetime. Full reload, navigation, a new tab or device can lose it; durable browser recovery and join idempotency remain open.",
+    "Creation and join POST/SQL are preserved; creation SQL remains unapplied. No concurrent independent PostgreSQL sessions or coherent hosted recovery accepted.",
+    "No physical Android/iOS/Quest, real membership, host, attendance, paid demand or release acceptance."
+  ],
+  "priorAttempts": [
+    "Browser01 retained failure: fixture advanced SQL membership before its preceding status read settled; the correct read confirmed it and removed the button the test next expected. Browser02/03 await the false read and enabled status action before simulating later completion. No product change was required for that fixture timing issue.",
+    "Build01 and account/discovery browser checkpoints passed before visual review. An opaque navigation background, account scroll margin and 44px creation action then addressed scrolling readability; build02 and all final browser checks verify those final bytes."
+  ],
+  "allOwnedBuildBrowserServersStopped": true,
+  "allOwnedBuildBrowserPortsClosed": true
+}

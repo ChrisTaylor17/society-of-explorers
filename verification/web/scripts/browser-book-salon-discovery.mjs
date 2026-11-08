@@ -44,6 +44,9 @@ try {
   await probeContext.close();
   await f.db.query("DELETE FROM book_cohorts WHERE book_id <> 'soe-circles-path'"); f.unavailable = true;
   const context = await browser.newContext({ viewport: { width: 390, height: 950 }, timezoneId: 'America/Los_Angeles', serviceWorkers: 'block' });
+  // A noncredential browser selection allows the private lookup to start.
+  // Discovery must still omit this cookie entirely.
+  await context.addCookies([{ name: 'soe_auth_intent', value: '44444444-4444-4444-8444-444444444444', url: origin }]);
   await context.route('**/*', async route => {
     try {
       const req = route.request(), url = new URL(req.url());

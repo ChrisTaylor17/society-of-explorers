@@ -57,6 +57,7 @@ async function fixture() {
     handlers: {
       create: app.load('app/api/book-salons/route.ts').POST,
       join: app.load('app/api/book-salons/join/route.ts').POST,
+      membership: app.load('app/api/book-salons/join/route.ts').GET,
       post: request => app.load('app/api/book-salons/[cohortId]/route.ts')
         .POST(request, { params: Promise.resolve({ cohortId }) }),
     },
@@ -71,6 +72,25 @@ function request(action, headers, body) {
 function privateHeaders(response) {
   assert.match(response.headers.get('cache-control'), /private.*no-store/);
 }
+
+test('private salon membership checks enforce actual cookie intent and expected-member authority', async () => {
+  const f = await fixture();
+  for (const headers of [
+    { 'x-soe-auth-intent': intent, 'x-soe-expected-member': f.memberId },
+    { 'x-soe-auth-intent': intent, 'x-soe-expected-member': cohortId },
+    { 'x-soe-auth-intent': cohortId, 'x-soe-expected-member': f.memberId },
+    { 'x-soe-auth-intent': intent },
+  ]) {
+    const response = await f.handlers.membership(new NextRequest(origin + '/api/book-salons/join?cohortId=' + cohortId,
+      { headers: { cookie: f.cookie, ...headers } }));
+    const valid = headers['x-soe-auth-intent'] === intent && headers['x-soe-expected-member'] === f.memberId;
+    assert.equal(response.status, valid ? 200 : 401); privateHeaders(response);
+    const body = await response.json();
+    if (valid) assert.deepEqual(body, { cohortId, memberId: f.memberId, isMember: false });
+    else assert.equal(Object.hasOwn(body, 'isMember'), false);
+  }
+  assert.equal(f.rpcCalls.length, 0);
+});
 
 for (const action of ['create', 'join']) {
   test(`a same-site sibling cannot ${action} a salon using the signed browser session`, async () => {

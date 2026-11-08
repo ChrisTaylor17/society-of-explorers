@@ -30,4 +30,6 @@ The creation POST handler, join endpoint, account-auth helper and creation SQL a
 
 ## Rollback
 
+Subsequent [account-lifecycle work](book-salon-account-lifecycle.md) corrects the private form and join-result limitations above. It preserves this public discovery implementation and the creation/join POST bodies, while adding an authenticated current-membership GET. Its verification and remaining browser-reload limitations are recorded separately.
+
 This is a source-only change. Revert the page, GET handler and two discovery modules together, preserving the existing POST/SQL work and all stored groups. No data migration or backfill was introduced. Restoring the old discovery path restores its misleading failure/metadata behavior; it is not a recommended release fallback. Unknown future clients must be checked against the new paging envelope before deployment. The reviewed app/native/Quest source has only this page as a collection-list consumer; discussion and Circle clients use separate endpoints.

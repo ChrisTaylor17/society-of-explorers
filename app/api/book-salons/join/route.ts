@@ -13,6 +13,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// A private current-membership check, separate from public listing counts.
+// A false result does not prove that an earlier in-flight join cannot commit.
+export async function GET(req: NextRequest) {
+  const query = new URL(req.url).searchParams;
+  const cohortId = query.get('cohortId')?.toLowerCase() ?? '';
+  if (!UUID_RE.test(cohortId) || query.getAll('cohortId').length !== 1
+    || [...query.keys()].some(key => key !== 'cohortId')) return privateJson({ error: 'Invalid salon' }, { status: 400 });
+  try {
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Sign in to check membership' }, { status: 401 });
+    const admin = getSupabaseAdmin();
+    const cohort = await admin.from('book_cohorts').select('id,book_id').eq('id', cohortId).maybeSingle();
+    if (cohort.error) return privateJson({ error: 'Membership unavailable' }, { status: 503 });
+    if (!cohort.data) return privateJson({ error: 'Salon not found' }, { status: 404 });
+    if (!isRecord(cohort.data) || cohort.data.id !== cohortId || typeof cohort.data.book_id !== 'string') return privateJson({ error: 'Membership unavailable' }, { status: 503 });
+    if (cohort.data.book_id === CIRCLE_BOOK_ID) return privateJson({ error: 'Use the Circle membership flow' }, { status: 403 });
+    const result = await admin.from('book_cohort_members').select('id,cohort_id,member_id')
+      .eq('cohort_id', cohortId).eq('member_id', auth.memberId).maybeSingle();
+    if (result.error || (result.data !== null && (!isRecord(result.data) || typeof result.data.id !== 'string'
+      || !UUID_RE.test(result.data.id) || result.data.cohort_id !== cohortId || result.data.member_id !== auth.memberId))) {
+      return privateJson({ error: 'Membership unavailable' }, { status: 503 });
+    }
+    return privateJson({ cohortId, memberId: auth.memberId.toLowerCase(), isMember: result.data !== null });
+  } catch { return privateJson({ error: 'Membership unavailable' }, { status: 503 }); }
+}
+
 export async function POST(req: NextRequest) {
   const originError = circleWriteOrigin(req);
   if (originError) return originError;
