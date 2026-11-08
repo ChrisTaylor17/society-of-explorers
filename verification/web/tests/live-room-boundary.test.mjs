@@ -25,7 +25,7 @@ async function joined(fixture) {
   return rows;
 }
 
-test('public schedule preserves its calendar and withholds links, summaries and other communities', async t => {
+test('public schedule identifies a running session without inventing a calendar and withholds private fields', async t => {
   const fixture = await open(t);
   const response = await fixture.list.GET();
   assert.equal(response.status, 200);
@@ -35,8 +35,8 @@ test('public schedule preserves its calendar and withholds links, summaries and 
   assert.deepEqual(payload.past.map(row => row.id), [PAST]);
   assert.deepEqual(Object.keys(payload.upcoming).sort(),
     ['ended_at', 'id', 'is_live', 'room_type', 'scheduled_for', 'started_at', 'title']);
-  assert.match(payload.calendarLinks.google, /^https:\/\/calendar.google.com\//);
-  assert.match(decodeURIComponent(payload.calendarLinks.ics), /BEGIN:VCALENDAR/);
+  assert.equal(payload.calendarLinks, null);
+  assert.equal(payload.nextSessionDate, null);
   assert.doesNotMatch(JSON.stringify(payload), /daily\.co|PRIVATE_|metadata/);
 });
 

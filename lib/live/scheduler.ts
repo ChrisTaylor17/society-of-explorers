@@ -19,30 +19,24 @@ export async function liveCouncilCommunityId(supabase: ReturnType<typeof getSupa
   return !error && typeof data?.id === 'string' ? data.id : null;
 }
 
-export function getNextSessionDate(): Date {
-  const now = new Date();
-  // Get current day/time in ET
-  const etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
-  const etNow = new Date(etStr);
-  const day = etNow.getDay(); // 0=Sun, 3=Wed
+export function getNextSessionDate(now: Date = new Date()): Date {
+  const eastern = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', year: 'numeric', month: 'numeric', day: 'numeric',
+    weekday: 'short', hour: 'numeric', hourCycle: 'h23',
+  });
+  const parts = (date: Date) => Object.fromEntries(eastern.formatToParts(date)
+    .map(part => [part.type, part.value]));
+  const local = parts(now);
+  const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(local.weekday);
   let daysUntilWed = (3 - day + 7) % 7;
-
-  // If it's Wednesday past 9pm ET, push to next week
-  if (daysUntilWed === 0 && etNow.getHours() >= 21) daysUntilWed = 7;
-
-  // Build target: next Wednesday 8pm ET
-  const target = new Date(etNow);
-  target.setDate(target.getDate() + daysUntilWed);
-  target.setHours(20, 0, 0, 0);
-
-  // Convert ET back to UTC
-  const year = target.getFullYear();
-  const month = String(target.getMonth() + 1).padStart(2, '0');
-  const dateStr = String(target.getDate()).padStart(2, '0');
-  // Simpler: April is always EDT (-04:00)
-  const offset = (target.getMonth() >= 2 && target.getMonth() <= 10) ? '-04:00' : '-05:00';
-
-  return new Date(`${year}-${month}-${dateStr}T20:00:00${offset}`);
+  // Preserve the existing host window through Wednesday 8:59pm Eastern.
+  if (daysUntilWed === 0 && Number(local.hour) >= 21) daysUntilWed = 7;
+  const wall = Date.UTC(Number(local.year), Number(local.month) - 1, Number(local.day) + daysUntilWed, 20);
+  // Wednesday evening is outside Eastern daylight-saving gaps and overlaps.
+  // Derive the offset for the target date, not the current month or host timezone.
+  const target = parts(new Date(wall));
+  const observedWall = Date.UTC(Number(target.year), Number(target.month) - 1, Number(target.day), Number(target.hour));
+  return new Date(wall + (wall - observedWall));
 }
 
 export function generateGoogleCalendarUrl(sessionDate: Date): string {

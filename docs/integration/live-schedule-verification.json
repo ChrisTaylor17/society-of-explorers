@@ -1,0 +1,83 @@
+{
+  "status": "PASS",
+  "recordedAt": "2026-11-08T10:43:45.454581+00:00",
+  "baseCommit": "f6b1c04780b4f9e398b9197184fa75ef6d96b009",
+  "canonical": "/Users/christaylor/Documents/Codex/soe-release",
+  "changedFiles": [
+    "lib/live/publicSchedule.ts",
+    "app/api/live/route.ts",
+    "app/live/page.tsx",
+    "verification/web/tests/support/live-room-fixture.mjs",
+    "verification/web/tests/live-room-boundary.test.mjs",
+    "verification/web/tests/live-schedule.test.mjs",
+    "verification/web/scripts/browser-live-room.mjs",
+    "lib/live/scheduler.ts",
+    "docs/integration/live-schedule.md",
+    "docs/integration/current-service-readiness.md",
+    "docs/integration/public-pilot-claims.md",
+    "docs/integration/live-schedule-verification.json"
+  ],
+  "scope": "Recorded-session schedule, error/retry states, single-event calendar and Eastern default correction. Local verification only.",
+  "sourceBinding": {
+    "sourceFiles": 1234,
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-live-schedule/SOURCE_BINDING.json",
+    "mismatches": [],
+    "changedSourceHashes": {
+      "lib/live/publicSchedule.ts": "7a80962945d321a3cba4d42862a5c322a56013abf8366fa22bb16ca8927a3052",
+      "app/api/live/route.ts": "ad122729787be371333f1b3952a25e410dbf788de087139b836e9dead90acce2",
+      "app/live/page.tsx": "5093b187d13be343796de17a51c264e5ca7b270c74c0df39143e23f14e939ce7",
+      "verification/web/tests/support/live-room-fixture.mjs": "8f7abc65ddab5da86fa21a064d67dbda69fb0ef1c80ea3db23d504fddf4f756a",
+      "verification/web/tests/live-room-boundary.test.mjs": "5ea4cddb2e3ba3ab6060e9c8007e4acee0bc071c52a35e01e0633366fe474c9d",
+      "verification/web/tests/live-schedule.test.mjs": "537627fc132865bac11701666edbf4ddb1fb218f4bc653517abda466ad134824",
+      "verification/web/scripts/browser-live-room.mjs": "3db72af6ab60f9ecba9dc90dad7c49bb009b9f711c61eaa89f6c83889a29054e",
+      "lib/live/scheduler.ts": "63442866f5c0e4b9782c75343a3f8dbfd1c27ad00fabd028e5d7250b9d03bfd8"
+    }
+  },
+  "baseline": {
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-live-schedule/BASELINE_BEHAVIOR.json",
+    "observed": "Actual route returned synthetic recurring calendar for absent events and a failed community lookup using disposable data."
+  },
+  "verification": {
+    "focusedRouteAndHelperTests": 16,
+    "compiledBrowserJourneys": 9,
+    "fullWebBuildInputs": 1234,
+    "scopedLint": "PASS",
+    "buildReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-live-schedule/evidence/built-shell-live-schedule-02-next-build.json",
+    "testsLog": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-live-schedule/evidence/live-schedule-tests-03.log",
+    "browserReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-live-schedule/evidence/built-shell-live-schedule-server-01-run-03-browser.json",
+    "allBrowserContextsClosed": true,
+    "interceptedMeetingRequests": 1,
+    "actualExternalProviderRequests": 0
+  },
+  "cleanup": {
+    "previewStopped": true,
+    "ownedProcessesGone": true,
+    "portClosed": true,
+    "allSourceBuildInputRuntimeMismatches": [],
+    "deniedNodeNetworkOperations": [],
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-live-schedule/evidence/built-shell-live-schedule-server-01-server.json"
+  },
+  "storage": {
+    "minimumSampledFreeBytes": 15814332416,
+    "maximumSampledCountedAllocatedBytes": 19009699840
+  },
+  "limits": [
+    "Database transport and identity are synthetic; no hosted PostgREST, issued provider, real member or actual event acceptance.",
+    "Google/ICS links inspected; no actual calendar import or external calendar opened.",
+    "A recorded live flag still depends on a host; provider health and automatic status updates are not established.",
+    "No native build or physical phone/headset test in this checkpoint.",
+    "Broader roadmap, structure, fundraising and publication-authority claims remain unresolved."
+  ],
+  "budget": {
+    "authorizedUsd": 200,
+    "spentUsd": 0,
+    "remainingUsd": 200,
+    "chargeScheduled": false
+  },
+  "sourcePasswordReceived": false,
+  "securePromptOpened": false,
+  "hostedWrites": false,
+  "credentialChanges": false,
+  "productionClearance": false,
+  "ownerAction": "No phone action; secure database entry waits until owner is at the Mac."
+}

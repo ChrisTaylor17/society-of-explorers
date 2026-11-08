@@ -8,11 +8,11 @@ import { A, LIVE, LINK, liveRoomFixture } from '../tests/support/live-room-fixtu
 const [mode, run, ...extra] = process.argv.slice(2);
 const component = mode === '--component';
 assert(extra.length === 0 && (component ? /^[0-9]+$/.test(run ?? '') :
-  !run && /^built-shell-live-room-[0-9]+-$/.test(mode ?? '')));
-const prefix = component ? 'live-room-component-' + run + '-' : mode;
+  (!run || /^[0-9]+$/.test(run)) && /^built-shell-(?:live-room-[0-9]+|live-schedule-server-[0-9]+)-$/.test(mode ?? '')));
+const prefix = component ? 'live-room-component-' + run + '-' : mode + (run ? 'run-' + run + '-' : '');
 assert(process.execArgv.some(arg => arg.endsWith('/deny-build-network.cjs')));
 const ready = component ? { status: 'READY', origin: 'http://127.0.0.1:53667' } :
-  JSON.parse(readFileSync('evidence/' + prefix + 'server-ready.json'));
+  JSON.parse(readFileSync('evidence/' + mode + 'server-ready.json'));
 assert.equal(ready.status, 'READY');
 assert.match(ready.origin, /^http:\/\/127\.0\.0\.1:\d+$/);
 const origin = ready.origin;
@@ -54,7 +54,8 @@ async function bundleComponent() {
 const bundle = component ? await bundleComponent() : null;
 const fixture = await liveRoomFixture();
 const stories = [], errors = [], providerRequests = [], applicationRequests = [];
-let actor = null, hold = null, browser;
+let actor = null, hold = null, browser, scheduleHold = null;
+let scheduleMode = 'actual', browserClosed = false;
 let failure;
 try {
   browser = await require('playwright').chromium.launch({
@@ -97,6 +98,8 @@ try {
         return await route.fulfill({ json: { member: { id: actor, display_name: 'Fixture member' }, auth: { provider: 'wallet', subject: actor } } });
       }
       if (url.pathname === '/api/live') {
+        if (scheduleMode === 'invalid') return await route.fulfill({ status: 200, json: { upcoming: null, past: 'invalid', nextSessionDate: '2050-01-01T20:00:00Z' } });
+        if (scheduleHold) { retired = true; await scheduleHold.promise; }
         const headers = await req.allHeaders();
         assert.equal(headers.authorization, undefined);
         assert.equal(headers.cookie, undefined);
@@ -183,13 +186,69 @@ try {
     release.resolve();
     hold = null;
   }
+
+  await fixture.db.exec("UPDATE video_rooms SET room_type='hidden_fixture'");
+  await page.getByRole('button', { name: 'Refresh schedule', exact: true }).click();
+  await page.getByText('No session scheduled yet.', { exact: true }).waitFor();
+  assert.equal(await page.getByRole('link', { name: 'GOOGLE CALENDAR', exact: true }).count(), 0);
+  assert.doesNotMatch(await page.locator('body').innerText(), /Every Wednesday|8:00 PM ET/);
+  stories.push('An actual empty disposable schedule offers no invented date, countdown or recurring calendar.');
+
+  await fixture.db.query("UPDATE video_rooms SET room_type='live_session', scheduled_for='2050-07-10T15:30:00Z', title='Synthetic summer salon' WHERE id=$1", ['30000000-0000-4000-8000-000000000005']);
+  await page.getByRole('button', { name: 'Refresh schedule', exact: true }).click();
+  await page.getByRole('heading', { name: 'Synthetic summer salon', exact: true }).waitFor();
+  await page.getByText('July 10, 2050 at 11:30 AM EDT', { exact: true }).waitFor();
+  const google = page.getByRole('link', { name: 'GOOGLE CALENDAR', exact: true });
+  assert.equal(new URL(await google.getAttribute('href')).searchParams.get('dates'), '20500710T153000Z/20500710T153000Z');
+  const ics = decodeURIComponent((await page.getByRole('link', { name: 'DOWNLOAD .ICS', exact: true }).getAttribute('href')).split(',')[1]);
+  assert.match(ics, /DTSTART:20500710T153000Z/); assert.doesNotMatch(ics, /RRULE:|DTEND:/);
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    for (const control of [google, page.getByRole('button', { name: 'Refresh schedule', exact: true })]) {
+      const box = await control.boundingBox(); assert(box && box.height >= 44);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.locator('section[aria-label="Session schedule"]').screenshot({ path: 'evidence/' + prefix + 'schedule-phone.png' });
+  stories.push('A real route response supplies the exact recorded summer time, one calendar event and responsive phone actions; no external calendar is opened.');
+
+  await fixture.db.exec('REVOKE SELECT ON public.communities FROM service_role');
+  await page.getByRole('button', { name: 'Refresh schedule', exact: true }).click();
+  await page.locator('section[aria-label="Session schedule"]').getByRole('alert').waitFor();
+  assert.equal(await google.count(), 0);
+  assert.equal(await page.getByText('No session scheduled yet.', { exact: true }).count(), 0);
+  await fixture.db.exec('GRANT SELECT ON public.communities TO service_role');
+  await page.getByRole('button', { name: 'Try again', exact: true }).press('Enter');
+  await page.getByRole('heading', { name: 'Synthetic summer salon', exact: true }).waitFor();
+  stories.push('A failed database lookup is visibly unavailable; keyboard retry recovers and old calendar state is removed while loading.');
+
+  scheduleMode = 'invalid';
+  await page.getByRole('button', { name: 'Refresh schedule', exact: true }).click();
+  await page.locator('section[aria-label="Session schedule"]').getByRole('alert').waitFor();
+  assert.equal(await google.count(), 0);
+  scheduleMode = 'actual';
+  scheduleHold = Promise.withResolvers();
+  const pending = scheduleHold;
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await page.getByRole('button', { name: 'Loading schedule', exact: true }).waitFor();
+  await page.locator('section[aria-label="Session schedule"]').getByRole('alert').waitFor({ state: 'hidden' });
+  await page.locator('section[aria-label="Session schedule"]').getByRole('alert').waitFor({ timeout: 15000 });
+  scheduleHold = null; pending.resolve();
+  assert.equal(await google.count(), 0);
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await page.getByRole('heading', { name: 'Synthetic summer salon', exact: true }).waitFor();
+  assert.equal(providerRequests.length, 1);
+  stories.push('Malformed replies and a stalled fetch show a recoverable error; the timed-out reply cannot restore stale state or open a meeting.');
+
   assert.equal(errors.length, 0, errors.join('\n'));
 } catch (error) {
   failure = String(error.stack ?? error);
 } finally {
-  try { await browser?.close(); } finally { await fixture.db.close(); }
+  scheduleHold?.resolve();
+  try { await browser?.close(); browserClosed = true; } finally { await fixture.db.close(); }
   const result = {
-    status: failure ? 'FAIL' : 'PASS', stories, errors, providerRequests, applicationRequests, failure,
+    status: failure ? 'FAIL' : 'PASS', stories, errors, providerRequests, applicationRequests, failure, browserClosed,
     scope: (component ? 'Chromium component bundle with Next and SDK adapters' : 'Built Chromium page')
       + ', actual route source and Supabase SDK with disposable PostgreSQL transport and synthetic account state. External meeting intercepted locally.',
     bundleSha256: bundle && createHash('sha256').update(bundle).digest('hex'),

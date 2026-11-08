@@ -6,31 +6,15 @@ import { currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
 import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import { safePrivateMeetingUrl } from '@/lib/circles/discussion-reader';
+import { liveSessionTime, readPublicLiveSchedule, type PublicLiveSession } from '@/lib/live/publicSchedule';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-type LiveSession = {
-  id: string;
-  title: string;
-  scheduled_for?: string | null;
-  started_at?: string | null;
-  is_live?: boolean | null;
-};
-
-type LivePayload = {
-  upcoming?: LiveSession | null;
-  past?: LiveSession[];
-  nextSessionDate?: string | null;
-  calendarLinks?: { google: string; ics: string } | null;
-};
-
-function formatSessionDate(session: LiveSession) {
-  const dateValue = session.scheduled_for || session.started_at;
-  if (!dateValue) return 'Date pending';
-  return new Date(dateValue).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+function formatSessionDate(session: PublicLiveSession) {
+  return liveSessionTime(session.started_at || session.scheduled_for || session.ended_at);
 }
 
 function useCountdown(targetDate: string | null) {
@@ -54,37 +38,57 @@ function useCountdown(targetDate: string | null) {
 }
 
 export default function LivePage() {
-  const [upcoming, setUpcoming] = useState<LiveSession | null>(null);
-  const [past, setPast] = useState<LiveSession[]>([]);
+  const [upcoming, setUpcoming] = useState<PublicLiveSession | null>(null);
+  const [past, setPast] = useState<PublicLiveSession[]>([]);
   const [nextDate, setNextDate] = useState<string | null>(null);
   const [calLinks, setCalLinks] = useState<{ google: string; ics: string } | null>(null);
   const [dailyUrl, setDailyUrl] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const activeJoin = useRef<AbortController | null>(null);
   const countdown = useCountdown(nextDate);
 
   useEffect(() => {
     const controller = new AbortController();
+    let retired = false;
+    const timeout = setTimeout(() => controller.abort(), 12_000);
     async function loadLive() {
       try {
         const res = await fetch('/api/live', {
           cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal,
         });
-        if (!res.ok) return;
-        const data = (await res.json()) as LivePayload;
-        if (controller.signal.aborted) return;
-        setUpcoming(data.upcoming ?? null);
-        setPast(data.past ?? []);
-        setNextDate(data.nextSessionDate ?? null);
-        setCalLinks(data.calendarLinks ?? null);
-      } catch {}
-      finally { if (!controller.signal.aborted) setLoading(false); }
+        if (!res.ok) throw new Error('Schedule unavailable');
+        const data = readPublicLiveSchedule(await res.json());
+        if (!data || controller.signal.aborted) throw new Error('Invalid schedule');
+        if (retired) return;
+        setUpcoming(data.upcoming);
+        setPast(data.past);
+        setNextDate(data.nextSessionDate);
+        setCalLinks(data.calendarLinks);
+      } catch { if (!retired) setLoadError(true); }
+      finally { clearTimeout(timeout); if (!retired) setLoading(false); }
     }
     void loadLive();
-    return () => controller.abort();
-  }, []);
+    return () => { retired = true; clearTimeout(timeout); controller.abort(); };
+  }, [loadAttempt]);
+
+  function refreshSchedule() {
+    activeJoin.current?.abort();
+    activeJoin.current = null;
+    setDailyUrl(null);
+    setJoining(false);
+    setJoinError(false);
+    setUpcoming(null);
+    setPast([]);
+    setNextDate(null);
+    setCalLinks(null);
+    setLoadError(false);
+    setLoading(true);
+    setLoadAttempt(value => value + 1);
+  }
 
   useEffect(() => {
     const retire = () => {
@@ -153,7 +157,7 @@ export default function LivePage() {
 
   const boxStyle: React.CSSProperties = {
     background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.15)',
-    padding: '12px 16px', textAlign: 'center', minWidth: '60px',
+    padding: '12px 4px', textAlign: 'center', minWidth: 0, flex: 1,
   };
 
   return (
@@ -164,21 +168,26 @@ export default function LivePage() {
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>LIVE COUNCIL</div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>
-            Every Wednesday. 8pm Eastern.
+            A place to think together.
           </h1>
-          <p style={{ fontSize: '18px', color: ivory85 }}>Six minds. One room. Your question.</p>
+          <p style={{ fontSize: '18px', color: ivory85 }}>See scheduled online sessions and return here when your host opens the room.</p>
+          <a href="/salons/pilot" style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Explore the four-week salon plan</a>
         </div>
       </section>
 
       {/* Countdown or Live */}
-      <section style={{ padding: '1rem 2rem 3rem', textAlign: 'center' }}>
+      <section aria-label="Session schedule" aria-busy={loading} style={{ padding: '1rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '400px', margin: '0 auto' }}>
           {loading ? (
             <div style={{ minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: muted, opacity: 0.5 }}>LOADING</span>
             </div>
+          ) : loadError ? (
+            <p role="alert">We couldn’t load the session schedule. Try again.</p>
           ) : upcoming?.is_live ? (
             <div>
+              <h2 style={{ fontSize: '24px', overflowWrap: 'anywhere' }}>{upcoming.title}</h2>
+              <p style={{ color: muted }}>{formatSessionDate(upcoming)}</p>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#DC143C', animation: 'pulse 1.5s infinite' }} />
                 <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: '#DC143C' }}>LIVE NOW</span>
@@ -190,6 +199,7 @@ export default function LivePage() {
             </div>
           ) : nextDate ? (
             <div>
+              <h2 style={{ fontSize: '24px', overflowWrap: 'anywhere' }}>{upcoming?.title}</h2>
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '1rem' }}>
                 {[
                   { val: countdown.days, label: 'DAYS' },
@@ -198,24 +208,29 @@ export default function LivePage() {
                   { val: countdown.seconds, label: 'SEC' },
                 ].map(b => (
                   <div key={b.label} style={boxStyle}>
-                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', color: gold }}>{b.val}</div>
+                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(18px, 6vw, 28px)', color: gold }}>{b.val}</div>
                     <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{b.label}</div>
                   </div>
                 ))}
               </div>
               <p style={{ fontSize: '14px', color: muted }}>
-                {new Date(nextDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} &middot; 8:00 PM ET
+                {liveSessionTime(nextDate)}
               </p>
               {calLinks && (
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '1.5rem' }}>
-                  <a href={calLinks.google} target="_blank" rel="noopener" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '8px 16px', textDecoration: 'none' }}>GOOGLE CALENDAR</a>
-                  <a href={calLinks.ics} download="soe-live-council.ics" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '8px 16px', textDecoration: 'none' }}>DOWNLOAD .ICS</a>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+                  <a href={calLinks.google} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '12px 16px', minHeight: 44, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>GOOGLE CALENDAR</a>
+                  <a href={calLinks.ics} download="soe-live-council.ics" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '12px 16px', minHeight: 44, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>DOWNLOAD .ICS</a>
                 </div>
               )}
+              <p style={{ fontSize: '14px', color: muted }}>One session; end time is not confirmed. Check this page for changes after saving it to your calendar.</p>
+              {Object.values(countdown).every(value => value === 0) && <p role="status">The scheduled start has arrived. Refresh to check whether the host has opened the room.</p>}
             </div>
           ) : (
             <p style={{ fontSize: '14px', color: muted, fontStyle: 'italic' }}>No session scheduled yet.</p>
           )}
+          <button type="button" onClick={refreshSchedule} disabled={loading} style={{ minHeight: 44, marginTop: '1rem', padding: '10px 18px', background: 'transparent', color: gold, border: `1px solid ${gold}66`, cursor: loading ? 'default' : 'pointer' }}>
+            {loading ? 'Loading schedule' : loadError ? 'Try again' : 'Refresh schedule'}
+          </button>
         </div>
       </section>
 

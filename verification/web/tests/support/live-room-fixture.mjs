@@ -32,6 +32,7 @@ function toSql(url, body) {
     const value = predicate.slice(separator + 1);
     const column = identifier(field);
     if (op === 'is') { assert.equal(value, 'null'); return column + ' IS NULL'; }
+    if (op === 'not') { assert.equal(value, 'is.null'); return column + ' IS NOT NULL'; }
     const comparison = { eq: '=', neq: '<>', gte: '>=', lt: '<' }[op];
     assert(comparison, predicate);
     return column + comparison + bind(column === 'is_live' ? value === 'true' : value);
@@ -143,7 +144,8 @@ export async function liveRoomFixture() {
     const action = app.load('app/api/live/[sessionId]/route.ts');
     const rooms = app.load('app/api/rooms/route.ts');
     const room = app.load('app/api/rooms/[roomId]/route.ts');
-    return { db, calls, list, action, rooms, room, onJoin: hook => { beforeJoin = hook; } };
+    return { db, calls, list, action, rooms, room,
+      schedule: app.load('lib/live/publicSchedule.ts'), scheduler: app.load('lib/live/scheduler.ts'), onJoin: hook => { beforeJoin = hook; } };
   } catch (error) {
     await db.close();
     throw error;
