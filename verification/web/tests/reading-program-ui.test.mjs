@@ -1,21 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { offlineApp } from './support/offline-app.mjs';
 const require = createRequire(path.resolve('../../package.json'));
 const { JSDOM } = createRequire(path.resolve('tooling/package.json'))('jsdom');
 const circleId = '11111111-1111-4111-8111-111111111111', otherId = '22222222-2222-4222-8222-222222222222';
+const memberId = '33333333-3333-4333-8333-333333333333';
+const actor = { member: { id: memberId, display_name: 'Fixture host' }, auth: { provider: 'supabase', subject: memberId } };
 const dates = ['2026-11-10', '2026-11-17', '2026-11-24', '2026-12-01'];
 function detail({ member = false, host = false, hidden = false, ended = false, revision = 3, signed = true, full = false, id = circleId, title = 'Tuesday reading Circle' } = {}) {
   return { ready: true, revision, ended, circle: { id, title, description: 'Public text with welcoming conversation.', format: 'online', format_label: 'Online', city: null, region: null, venue_name: null, venue_label: 'Online', meeting_label: 'Tuesdays at 7 PM ET', weekday: 2, time: '19:00', timezone: 'America/New_York', start_date: '2026-11-10', first_meeting: '2026-11-10', next_meeting: ended || hidden ? null : dates[0], week: 1, reading: null, reading_program: null, program_length: 12, member_count: full ? 8 : 4, max_members: 8, spots_left: full || ended ? 0 : 4, status: ended ? 'completed' : 'forming', host_name: 'Volunteer host', going_next: ended || hidden ? null : 1, hidden }, viewer: { signed_in: signed, is_member: member, is_host: host }, capabilities: { canJoin: signed && !member && !hidden && !ended && !full, canLeave: member, canRsvp: member && !hidden && !ended, canComplete: host && !ended, canReadConversation: member && !hidden }, meetings: ended || hidden ? [] : dates.map(date => ({ date, going: 1, my_status: null })), online_url: member && !hidden ? 'https://meet.example.invalid/PRIVATE_MEETING' : null };
 }
 function receipt(request, action, current, replayed = false) {
   const c = current.circle, v = current.viewer;
-  return { requestId: request.requestId, circleId: c.id, receipt: { action, joined: action !== 'leave', completed: action === 'complete', date: request.date ?? null, status: request.status ?? null }, state: { revision: current.revision, isMember: v.is_member, isHost: v.is_host, hidden: c.hidden, completed: c.status === 'completed', ended: current.ended, ...current.capabilities }, replayed };
+  return { memberId, requestId: request.requestId, circleId: c.id, receipt: { action, joined: action !== 'leave', completed: action === 'complete', date: request.date ?? null, status: request.status ?? null }, state: { revision: current.revision, isMember: v.is_member, isHost: v.is_host, hidden: c.hidden, completed: c.status === 'completed', ended: current.ended, ...current.capabilities }, replayed };
 }
-function summary(current) { const { ready, meetings, online_url, ...result } = current; return { ...result, kind: 'circle' }; }
+function summary(current) { return { kind: 'circle', circle: current.circle, revision: current.revision, ended: current.ended, viewer: current.viewer, capabilities: current.capabilities }; }
 function management({ member = true, host = false, hidden = false, revision = 3, title = 'Legacy Circle', complete = false } = {}) {
   return { kind: 'management', circle: { id: circleId, title, hidden }, revision, viewer: { signed_in: true, is_member: member, is_host: host }, capabilities: { canLeave: member, canComplete: host && !complete } };
 }
@@ -28,10 +29,10 @@ async function mount({ view = 'start', respond = () => Response.json(detail()), 
   }
   const React = require('react'), { createRoot } = require('react-dom/client'), { act } = React;
   const app = offlineApp(), requests = [], listeners = new Set(), deadlines = [];
-  app.context.window = dom.window; app.context.document = dom.window.document;
+  app.context.window = dom.window; app.context.document = dom.window.document; app.context.navigator = dom.window.navigator; app.context.Event = dom.window.Event;
   app.context.setTimeout = (fn, ms) => { if (ms === 15000) { const handle = { fn, cleared: false }; deadlines.push(handle); return handle; } return setTimeout(fn, ms); };
   app.context.clearTimeout = handle => handle && 'cleared' in Object(handle) ? handle.cleared = true : clearTimeout(handle);
-  app.context.fetch = (url, options) => { requests.push({ url, options }); return Promise.resolve(respond(url, options)); };
+  app.context.fetch = (url, options) => { requests.push({ url, options }); return Promise.resolve(url === '/api/auth/member' ? Response.json(actor) : respond(url, options)); };
   app.setMock('./client', () => ({ circleHeaders: credentials }));
   app.setMock('@/lib/circles/client', () => ({ circleHeaders: credentials }));
   app.setMock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { onAuthStateChange(listener) { listeners.add(listener); return { data: { subscription: { unsubscribe() { listeners.delete(listener); } } } }; } } }) }));
@@ -67,7 +68,7 @@ const fullRange = { from: 0, to: edition.blockCount - 1 };
 const program = (sessions = [fullRange]) => ({ version: 1, bookId: edition.bookId, editionId: edition.editionId, sessions });
 const context = { bookId: edition.bookId, editionId: edition.editionId, from: 12, to: 22 };
 const contextParams = new URLSearchParams({ book: context.bookId, edition: context.editionId, from: String(context.from), to: String(context.to) });
-const hosting = { canCreate: true, activeHosted: 0, maxActiveHosted: 3 };
+const hosting = { memberId, canCreate: true, activeHosted: 0, maxActiveHosted: 3 };
 const normalResponse = url => Response.json(url.startsWith('/api/great-books/text/') ? metadata : url === '/api/circles/start' ? hosting : detail());
 async function loadBook(a) {
   await a.click('Check hosting access');
@@ -75,7 +76,10 @@ async function loadBook(a) {
   await a.edit('Book and pinned source edition', 'hamlet');
   await a.click('Load and verify selected edition');
 }
-const discoveryResponse = circles => Response.json({ ready: true, circles, inventory: { truncated: false, scopeLimit: 100 } });
+const discoveryResponse = circles => Response.json({ ready: true,
+  circles: circles.map(circle => ({ ...circle, going_next: null, phase: 'upcoming' })),
+  page: { limit: 25, nextCursor: null, asOf: '2026-11-09T12:00:00Z' },
+});
 
 test('book plans load public verified metadata only on request, default to the full edition, and preview actual credits', async () => {
   const a = await mount({ respond: normalResponse });
@@ -94,6 +98,8 @@ test('book plans load public verified metadata only on request, default to the f
     assert.ok(document.querySelector('section[aria-label="Review your Circle listing"]'));
     assert.equal(a.requests.filter(request => request.options.method === 'POST').length, 0);
     assert.equal(a.requests.filter(request => request.url === '/api/circles/start').length, 2);
+    assert.equal(a.requests.filter(request => request.url === '/api/auth/member').length, 2);
+    assert.ok(a.requests.filter(request => request.url === '/api/circles/start').every(request => request.options.headers.get('X-Soe-Expected-Member') === memberId));
   } finally { await a.cleanup(); }
 });
 
@@ -103,7 +109,7 @@ test('reader context is an explicit opt-in with a verified edition and an encode
     const signup = document.querySelector('a[href*="mode=signup"]');
     assert.equal(new URL(signup.href).searchParams.get('next'), `/circles/start?${contextParams}`);
     await a.click('Check hosting access'); assert.equal(document.getElementById('circle-reading-plan').value, 'starter');
-    assert.equal(document.getElementById('reading-0-from'), null); assert.equal(a.requests.length, 1);
+    assert.equal(document.getElementById('reading-0-from'), null); assert.equal(a.requests.length, 2);
     await a.click('Use the reader selection as the first reading'); assert.equal(document.getElementById('reading-0-from'), null);
     await a.click('Load and verify selected edition');
     assert.equal(document.getElementById('reading-0-from').value, '13'); assert.equal(document.getElementById('reading-0-to').value, '23');
@@ -159,7 +165,7 @@ test('metadata deadline and lifecycle retirement suppress delayed replies withou
       if (mode === 'blur') await a.event('blur'); else if (mode === 'auth') await a.auth('SIGNED_OUT'); else await a.act(async () => a.deadlines.filter(item => !item.cleared).at(-1).fn());
       await a.act(async () => late.resolve(Response.json(metadata)));
       assert.equal(document.getElementById('reading-0-from'), null);
-      assert.equal(a.requests.length, 2); await a.event('focus'); assert.equal(a.requests.length, 2);
+      assert.equal(a.requests.length, 3); await a.event('focus'); assert.equal(a.requests.length, 3);
       assert.equal(a.requests.some(request => request.options.method === 'POST'), false);
       if (mode === 'timeout') assert.match(a.text(), /could not be verified/);
     } finally { late.resolve(Response.json(metadata)); await a.cleanup(); }
@@ -178,11 +184,14 @@ test('unknown creation preserves the exact verified program and UUID for manual 
     await loadBook(a); await a.edit('Week 1 begins at reading position', '13'); await a.edit('Week 1 ends at reading position', '23');
     await a.click('Add weekly reading'); await a.edit('Week 2 begins at reading position', '1'); await a.edit('Week 2 ends at reading position', '8');
     await fillCreation(a); await a.click('Review my Circle listing'); await a.confirm(); await a.click('Confirm and list my Circle');
-    assert.equal(posts, 1); assert.match(a.text(), /reply was lost/); await a.event('focus'); assert.equal(posts, 1);
-    await a.click('Retry exact Circle creation'); const writes = a.requests.filter(request => request.options.method === 'POST');
+    assert.equal(posts, 1); assert.match(a.text(), /reply could not be confirmed/); await a.event('focus'); assert.equal(posts, 1);
+    await a.click('Check hosting access'); await a.click('Review exact Circle creation retry'); assert.equal(posts, 1);
+    assert.equal(a.button('Confirm exact Circle creation retry').disabled, true); await a.confirm(); await a.click('Confirm exact Circle creation retry');
+    const writes = a.requests.filter(request => request.options.method === 'POST');
     assert.equal(writes[0].options.body, writes[1].options.body);
-    const sent = JSON.parse(writes[0].options.body); assert.deepEqual(sent.readingProgram, program([{ from: 12, to: 22 }, { from: 0, to: 7 }]));
-    assert.equal(a.requests.at(-1).options.method, 'GET'); assert.match(a.text(), /Circle creation confirmed/);
+    const sent = JSON.parse(writes[0].options.body); assert.equal(sent.expectedMemberId, memberId); assert.deepEqual(sent.readingProgram, program([{ from: 12, to: 22 }, { from: 0, to: 7 }]));
+    const readback = a.requests.at(-1); assert.equal(readback.url, `/api/circles/${circleId}`);
+    assert.equal(new Request(`https://offline.invalid${readback.url}`, readback.options).method, 'GET'); assert.match(a.text(), /Circle creation confirmed/);
   } finally { await a.cleanup(); }
 });
 
@@ -193,7 +202,7 @@ test('starter creation omits the readingProgram property rather than sending a n
 });
 
 test('detail shows all agreed ranges before the unchanged conversation with canonical Circle-bound reader links', async () => {
-  const current = detail({ member: true }); current.circle.reading_program = program([{ from: 12, to: 22 }, fullRange]); current.circle.program_length = 2;
+  const current = detail({ member: true }); current.circle.reading_program = program([{ from: 12, to: 22 }, fullRange]); current.circle.program_length = 2; current.meetings = current.meetings.slice(0, 2);
   const a = await mount({ view: 'detail', respond: () => Response.json(current) });
   try {
     await a.click('Load current Circle access'); const summary = document.querySelector('section[aria-label="Agreed reading program"]'); assert.ok(summary);
@@ -225,7 +234,7 @@ test('invalid duplicate or stale discovery context never broadens into an unfilt
       assert.equal(a.requests.length, 0); assert.match(a.text(), /could not be verified/);
       await a.click('Search'); assert.equal(a.requests.length, 0);
       await a.edit('Book and exact edition', 'hamlet'); await a.click('Search');
-      assert.ok(a.requests.length > 0); assert.equal(new URL(`https://offline.invalid${a.requests.at(-1).url}`).searchParams.get('edition'), edition.editionId); assert.match(a.text(), /No matches in these listings/);
+      assert.ok(a.requests.length > 0); assert.equal(new URL(`https://offline.invalid${a.requests.at(-1).url}`).searchParams.get('edition'), edition.editionId); assert.match(a.text(), /No matches were returned by this search at this check/);
     } finally { await a.cleanup(); }
   }
 });

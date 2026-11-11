@@ -26,7 +26,7 @@ export async function mountPassage(f, { view = 'composer', respond, props = {}, 
   }
   const React = require('react'), { act } = React, { createRoot } = require('react-dom/client');
   const { app } = f.system, requests = [], listeners = new Set(), deadlines = [], jumped = [];
-  app.context.window = dom.window; app.context.document = dom.window.document;
+  app.context.window = dom.window; app.context.document = dom.window.document; app.context.navigator = dom.window.navigator;
   app.context.setTimeout = (fn, ms) => { if (ms === 15_000) { const timer = { fn, cleared: false }; deadlines.push(timer); return timer; } return setTimeout(fn, ms); };
   app.context.clearTimeout = timer => timer && typeof timer === 'object' && 'cleared' in timer ? timer.cleared = true : clearTimeout(timer);
   app.context.fetch = (url, options) => { requests.push({ url, options }); return Promise.resolve(respond ? respond(url, options, f.dispatch) : f.dispatch(url, options)); };

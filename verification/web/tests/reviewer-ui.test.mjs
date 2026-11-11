@@ -15,12 +15,13 @@ async function mount({report=false,respond,credentials=async json=>json?{'conten
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'https://offline.invalid/moderation/circles',pretendToBeVisual:true});
  const previous={};for(const[k,v]of Object.entries({window:dom.window,document:dom.window.document,navigator:dom.window.navigator,HTMLElement:dom.window.HTMLElement,IS_REACT_ACT_ENVIRONMENT:true})){previous[k]=Object.getOwnPropertyDescriptor(globalThis,k);Object.defineProperty(globalThis,k,{value:v,configurable:true,writable:true});}
  const React=require('react'),{act}=React,{createRoot}=require('react-dom/client'),a=offlineApp(),requests=[];let listener;
- a.context.window=dom.window;a.context.document=dom.window.document;
+ a.context.window=dom.window;a.context.document=dom.window.document;a.context.navigator=dom.window.navigator;
  a.setMock('next/link',()=>({__esModule:true,default:({children,...props})=>React.createElement('a',props,children)}));
+ for(const specifier of['@/app/circles/messages/safety.module.css','./safety.module.css','../circles/passages/passage.module.css'])a.setMock(specifier,()=>({__esModule:true,default:new Proxy({},{get:(_target,key)=>String(key)})}));
  a.setMock('@/lib/circles/client',()=>({circleHeaders:credentials}));a.setMock('./client',()=>({circleHeaders:credentials}));
  a.setMock('@/lib/supabase/client',()=>({createClient:()=>({auth:{onAuthStateChange:fn=>{listener=fn;return{data:{subscription:{unsubscribe(){}}}}}}})}));
  let saved=false;
- a.context.fetch=async(url,init)=>{requests.push({url,init});if(respond)return respond(url,init);if(init.method==='POST'){saved=true;return Response.json({decision:history,revision:2,hidden:true,replayed:false});}if(url.endsWith(ID))return Response.json(saved?{...detail(),circle:{...detail().circle,hidden:true},revision:2,reports:[],decisions:[history]}:detail());return Response.json(queue);};
+ a.context.fetch=async(url,init)=>{requests.push({url,init});if(respond)return respond(url,init);if(init.method==='POST'){saved=true;const request=JSON.parse(init.body);return Response.json({circleId:ID,requestId:request.requestId,decision:history,revision:2,hidden:true,replayed:false});}if(url.endsWith(ID))return Response.json(saved?{...detail(),circle:{...detail().circle,hidden:true},revision:2,reports:[],decisions:[history]}:detail());return Response.json(queue);};
  const View=a.load(report?'app/circles/ReportButton.tsx':'app/moderation/circles/CircleReviews.tsx').default;
  const root=createRoot(document.getElementById('root'));let circle=ID;
  const render=()=>strict?React.createElement(React.StrictMode,null,React.createElement(View,report?{circleId:circle}:{})):React.createElement(View,report?{circleId:circle}:{});

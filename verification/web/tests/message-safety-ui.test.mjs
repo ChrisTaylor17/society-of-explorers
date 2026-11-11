@@ -23,7 +23,7 @@ async function mount({ view = 'actions', respond = () => Response.json(safety())
   }
   const React = require('react'), { createRoot } = require('react-dom/client'), { act } = React;
   const app = offlineApp(), requests = [], listeners = new Set(), deadlines = [];
-  app.context.window = dom.window; app.context.document = dom.window.document;
+  app.context.window = dom.window; app.context.document = dom.window.document; app.context.navigator = dom.window.navigator;
   app.context.setTimeout = (fn, ms) => { if (ms === 15000) { const handle = { fn, cleared: false }; deadlines.push(handle); return handle; } return setTimeout(fn, ms); };
   app.context.clearTimeout = handle => handle && 'cleared' in Object(handle) ? handle.cleared = true : clearTimeout(handle);
   app.context.fetch = (url, options) => { requests.push({ url, options }); return Promise.resolve(respond(url, options)); };
@@ -220,7 +220,11 @@ test('reviewer incomplete cases and private failure never become an empty queue 
   let fail = false;
   const a = await mount({ view: 'review', respond: url => fail ? Response.json({ error: 'PRIVATE_DETAIL' }, { status: 403 }) : Response.json(url === '/api/admin/circles/messages' ? queue : { ...detail(), complete: false }) });
   try {
-    await a.click('Load assigned message reviews'); await a.click('Review message in Private reading circle'); assert.equal(document.querySelector('fieldset').disabled, true); assert.match(a.text(), /full case is not available/);
+    await a.click('Load assigned message reviews'); await a.click('Review message in Private reading circle');
+    assert.equal(document.querySelector('fieldset').disabled, true); assert.match(a.text(), /read and acknowledge every report page/);
+    assert.ok(a.button('Start full case review')); assert.equal(a.button('Save message decision').disabled, true);
+    assert.equal(a.button('Request AI observations').disabled, true); assert.doesNotMatch(a.text(), /Private exact safety allegation/);
+    await a.click('Save message decision'); assert.equal(a.requests.filter(request => request.options.method === 'POST').length, 0);
     fail = true; await a.click('Load assigned message reviews'); assert.doesNotMatch(a.text(), /Private reading circle|Private exact safety allegation|PRIVATE_DETAIL|No assigned message reviews/); assert.match(a.text(), /No eligible assignment/);
   } finally { await a.cleanup(); }
 });

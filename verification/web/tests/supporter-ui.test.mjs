@@ -20,7 +20,7 @@ async function mount({ mode = 'join', fullPage = false, attemptId = null, respon
   }
   const React = require('react'), { createRoot } = require('react-dom/client'), { act } = React;
   const app = offlineApp(), requests = [], listeners = new Set(), deadlines = [];
-  app.context.window = dom.window; app.context.document = dom.window.document;
+  app.context.window = dom.window; app.context.document = dom.window.document; app.context.navigator = dom.window.navigator;
   app.context.setTimeout = (fn, ms) => { if (ms === 15000) { const item = { fn, cleared: false }; deadlines.push(item); return item; } return setTimeout(fn, ms); };
   app.context.clearTimeout = item => item && 'cleared' in Object(item) ? item.cleared = true : clearTimeout(item);
   app.context.fetch = (url, options) => {

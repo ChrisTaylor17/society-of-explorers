@@ -33,7 +33,7 @@ async function mount({ respond = () => Response.json(result()), credentials = as
   const React = require('react'), { createRoot } = require('react-dom/client'), { act } = React;
   const app = offlineApp(), requests = [], credentialCalls = [], deadlines = [], authListeners = new Set();
   let unsubscribeCount = 0, retireCount = 0, controls;
-  app.context.window = dom.window; app.context.document = dom.window.document;
+  app.context.window = dom.window; app.context.document = dom.window.document; app.context.navigator = dom.window.navigator;
   app.context.setTimeout = (fn, ms) => {
     if (ms === 15_000) { const deadline = { fn, cleared: false }; deadlines.push(deadline); return deadline; }
     return setTimeout(fn, ms);
