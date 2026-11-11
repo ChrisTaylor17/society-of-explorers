@@ -44,7 +44,17 @@ npm run start -- --hostname 127.0.0.1
 
 Open `http://127.0.0.1:3000/try`. These standard scripts load the checkout's normal environment; they are not an isolated recovery or provider test. Public readings work without member credentials. Member-dependent actions should report unavailable in an unconfigured environment. Do not point a test at production merely to remove that message.
 
-The November 11 verification uses a separate materialized snapshot with reused locked dependencies and an outbound-denied runtime. Its exact run/view receipt is recorded in `DONE.md` when acceptance finishes. Dependencies are governed by `package-lock.json`; do not upgrade them to reproduce a result.
+The verified November 11 app preview is running on this Mac at [the local trial](http://127.0.0.1:41780/try). Its source is commit `7834733`; the production build/type check passed with all 1,263 recorded inputs unchanged. This address is local to the Mac, not a shareable phone URL. To restart the same verified preview after it is stopped:
+
+```sh
+python3 '/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/start_verified_preview.py'
+```
+
+That launcher checks the successful build receipt and all recorded source hashes, refuses runtime environment files, supplies only invalid public placeholders, denies outbound application requests and binds to the Mac alone. Stop its own process with Control-C. It does not create an account, restore a database or deploy the app.
+
+The separate [static public-site candidate](http://127.0.0.1:8786/try) is also available on this Mac. It is the proposed update for `www.societyofexplorers.com`, with the complete Apology and Scripture comparison. [Review, source and restart instructions](docs/integration/static-public-reading-candidate-2026-11-11.md). It has not been published; new metered hosting usage remains an owner decision.
+
+Dependencies are governed by the existing lockfiles; do not upgrade them to reproduce a result. The cloud-managed canonical checkout contains offloaded source files, so use the verified materialized snapshot for testing. A stalled cloud read is not a passing test.
 
 ## Verification
 

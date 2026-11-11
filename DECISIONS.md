@@ -10,3 +10,7 @@
 - 2026-11-11: Update obsolete fixtures to the reviewed current account/RPC contracts; never weaken production validation merely to make inherited tests pass.
 - 2026-11-11: Extend the existing static public exhibition with an additive reading trial; keep the full member app separate until recovery and hosted access are verified.
 - 2026-11-11: A checked hosting usage report shows metered build/storage charges. Prepare the exact static release and rollback first; do not claim a new deployment is free or silently revive the earlier spending reserve.
+- 2026-11-11: Keep generic legacy meeting writes explicitly unavailable until their authority can be checked atomically; a valid identifier alone must never grant room/project access. Preserve the separate Live Council path and earlier code in Git.
+- 2026-11-11: Public space discovery exposes active coarse summaries only; full details require verified membership and active status. Preserve owner mutations and do not invent private-host access for the public trial.
+- 2026-11-11: Connect the additive static reading trial through one existing homepage link; retain every other existing page, access redirect and source attribution.
+- 2026-11-11: Report broad tests plus exact-source affected reruns as a reconciled matrix, retaining historical skips and failed attempts. Use the materialized snapshot rather than claiming cloud-placeholder reads passed.
