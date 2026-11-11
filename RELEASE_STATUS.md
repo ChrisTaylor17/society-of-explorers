@@ -1,6 +1,16 @@
 # Society of Explorers release status
 
-Updated November 9, 2026, Eastern time. **First release: HOLD. Production clearance: false.**
+Updated November 11, 2026, Eastern time. **Public trial verified locally; new public-site package unpublished. Member production clearance: false.**
+
+The November 11 finish pass preserved the starting work in restore commit `7020eb5`, repaired concrete public journeys and verified the composed app. The final web build/type check of `7834733` passes with 1,263 unchanged inputs. The reconciled test matrix accounts for 251 files: 3,180 passed cases, zero unresolved failures and five explicit historical skips. Full lint has zero errors and 46 fixture/tool warnings. These are local results, not hosted or customer acceptance. [Checklist and exact open dependencies](DONE.md) · [Test provenance and limitations](docs/integration/finish-checks-2026-11-11.md).
+
+The repaired app has a `/try` entry, complete book recovery without JavaScript, source-linked Scripture and salon paths, truthful travel/project/audio descriptions, working failure/retry states and corrected sharing/navigation. Legacy generic room writes refuse before external effects; public space lists exclude unpublished rows and full details require verified membership. Actual compiled anonymous boundary checks and narrow-screen/browser journeys pass. [App run/view instructions](README.md).
+
+The existing live public website is a separate static deployment. Its prepared update adds `/try`, the complete Apology and Scripture comparison, connects the homepage reading link, and preserves the prior access redirects. Nine local assertion groups and thirteen browser observations pass. Publication awaits a bounded hosting-cost authorization because the actual account has metered usage. The database login/recovery dependency does not prevent preparing this static release. [Exact candidate, destination and rollback](docs/integration/static-public-reading-candidate-2026-11-11.md).
+
+No code was pushed, no new deployment was made, no member data or credential was changed and no new money was spent in this finish pass. Native/store/device and actual hosted account acceptance remain separate. The dated November 9 record below is retained for provenance and is superseded by the current checklist wherever later evidence differs.
+
+## Historical November 9 reconciliation
 
 The canonical app is `/Users/christaylor/Documents/Codex/soe-release`, branch `codex/soe-first-release`. The original checkout and other candidates remain preserved. The account-authority model is one security component, not the complete app. [Source inventory](docs/integration/source-inventory.md)
 
