@@ -23,7 +23,7 @@ The actual APK build succeeded in 81.99 seconds. Minimum sampled free space was 
 
 ## Still open
 
-This package has not been installed or run on Android. No ADB client was found at the approved SDK or usual executable paths, so the count of authorized devices is unknown. Device/runtime acceptance needs an authorized Android device or a separately approved emulator/tooling step; no device IDs were collected.
+This package has not been installed or run on Android. No ADB client was found at the approved SDK or usual executable paths, so the count of authorized devices is unknown. Device/runtime acceptance needs an accessible authorized Android device, or an emulator/tooling setup that fits the retained storage budget. Neither was exercised here; no device IDs were collected. The current broad instruction permits reversible free local work, so missing access/capacity must not be mislabeled as a fresh generic installation-approval requirement.
 
 Named Xcode/Xcode-beta and simulator-runtime paths are absent; CommandLineTools is selected. Full Xcode/iOS SDK, storage/setup review, compilation and signing/device acceptance remain open. The iOS source is preserved, not compiled by this build.
 

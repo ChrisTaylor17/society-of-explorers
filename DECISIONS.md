@@ -14,3 +14,5 @@
 - 2026-11-11: Public space discovery exposes active coarse summaries only; full details require verified membership and active status. Preserve owner mutations and do not invent private-host access for the public trial.
 - 2026-11-11: Connect the additive static reading trial through one existing homepage link; retain every other existing page, access redirect and source attribution.
 - 2026-11-11: Report broad tests plus exact-source affected reruns as a reconciled matrix, retaining historical skips and failed attempts. Use the materialized snapshot rather than claiming cloud-placeholder reads passed.
+- 2026-11-11: Close the actual Android linking gap with installed locked tools and an isolated debug build; preserve prior artifacts and held source, and leave real device/signing acceptance explicit.
+- 2026-11-11: End this finish checklist when its available work is verified and the remaining money, recovery and device/tooling dependencies are explicit; do not invent additional features or claim full member production clearance.

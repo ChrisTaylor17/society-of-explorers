@@ -8,6 +8,8 @@ The repaired app has a `/try` entry, complete book recovery without JavaScript, 
 
 The existing live public website is a separate static deployment. Its prepared update adds `/try`, the complete Apology and Scripture comparison, connects the homepage reading link, and preserves the prior access redirects. Nine local assertion groups and thirteen browser observations pass. Publication awaits a bounded hosting-cost authorization because the actual account has metered usage. The database login/recovery dependency does not prevent preparing this static release. [Exact candidate, destination and rollback](docs/integration/static-public-reading-candidate-2026-11-11.md).
 
+A new current-source Android debug APK also passes native types, thirty focused policy checks, offline linking, direct signature/content inspection and static 16 KB alignment. It includes the latest reader-size controls, preserves the prior APK and uses blank live configuration. It has not been run on a phone. Xcode/iOS and phone/headset/store acceptance remain open. [Current artifact and exact limits](docs/integration/android-current-source-2026-11-11.md).
+
 No code was pushed, no new deployment was made, no member data or credential was changed and no new money was spent in this finish pass. Native/store/device and actual hosted account acceptance remain separate. The dated November 9 record below is retained for provenance and is superseded by the current checklist wherever later evidence differs.
 
 ## Historical November 9 reconciliation
