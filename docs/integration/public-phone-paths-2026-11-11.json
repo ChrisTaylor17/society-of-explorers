@@ -1,0 +1,100 @@
+{
+  "observedAt": "2026-11-11T14:57:24.530154+00:00",
+  "method": "Anonymous public GET, redirects not followed; no credentials, forms or private records",
+  "results": [
+    {
+      "path": "/",
+      "status": 200,
+      "location": null,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 7315,
+      "sha256": "665af9c0dfc348e5114d96365b8a5945628a6e9b0ce71f6ac84505ef9424902c",
+      "heading": "Good questions. Real company.  Something worth building.",
+      "matches_prior_released_file": true
+    },
+    {
+      "path": "/fellowship",
+      "status": 200,
+      "location": null,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 13523,
+      "sha256": "ed4ccb486e3479d0c9d4dd19faeb6f8e79c84afe253ae381420463311e5c815d",
+      "heading": "Faith that makes room for  honest questions.",
+      "matches_prior_released_file": true
+    },
+    {
+      "path": "/readings/philemon",
+      "status": 200,
+      "location": null,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 7931,
+      "sha256": "2822f93518011445fecf00705d88fd02c248c07e8627516af4e9a4970d919fed",
+      "heading": "What does  fellowship require?",
+      "matches_prior_released_file": true
+    },
+    {
+      "path": "/salon-plan",
+      "status": 200,
+      "location": null,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 7394,
+      "sha256": "2aa70b969cf21be0b308f7e614c7e451cea67e0b3b44f1f774d0d49666b77a07",
+      "heading": "An evening  worth gathering for.",
+      "matches_prior_released_file": true
+    },
+    {
+      "path": "/try",
+      "status": 404,
+      "location": null,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 3881,
+      "sha256": "d1ef51431ee0bd999b753e404e12ae94a3a8b8eb28d2be61a78bee793c1fa8d9",
+      "heading": "That page is not in this exhibition"
+    },
+    {
+      "path": "/great-books/apology",
+      "status": 404,
+      "location": null,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 3881,
+      "sha256": "d1ef51431ee0bd999b753e404e12ae94a3a8b8eb28d2be61a78bee793c1fa8d9",
+      "heading": "That page is not in this exhibition"
+    },
+    {
+      "path": "/fellowship/scripture",
+      "status": 404,
+      "location": null,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 3881,
+      "sha256": "d1ef51431ee0bd999b753e404e12ae94a3a8b8eb28d2be61a78bee793c1fa8d9",
+      "heading": "That page is not in this exhibition"
+    },
+    {
+      "path": "/salons/pilot",
+      "status": 308,
+      "location": "/hold.html",
+      "mime": "text/plain",
+      "bytes": 15,
+      "sha256": "7c040f8633b8823d72ed63da9b3b2dfe9846e912c66a64c9433ec9c4815d76c2",
+      "heading": null
+    },
+    {
+      "path": "/login",
+      "status": 308,
+      "location": "/hold.html",
+      "mime": "text/plain",
+      "bytes": 15,
+      "sha256": "7c040f8633b8823d72ed63da9b3b2dfe9846e912c66a64c9433ec9c4815d76c2",
+      "heading": null
+    },
+    {
+      "path": "/api/",
+      "status": 308,
+      "location": "/hold.html",
+      "mime": "text/plain",
+      "bytes": 15,
+      "sha256": "7c040f8633b8823d72ed63da9b3b2dfe9846e912c66a64c9433ec9c4815d76c2",
+      "heading": null
+    }
+  ]
+}
