@@ -18,3 +18,7 @@
 - 2026-11-11: End this finish checklist when its available work is verified and the remaining money, recovery and device/tooling dependencies are explicit; do not invent additional features or claim full member production clearance.
 - 2026-11-11: Reopen the core checklist for the verified Circle creation reload gap; retain only an owner-bound opaque recovery reference and reconcile an exact authenticated receipt, without persisting private drafts or automatically resending a creation.
 - 2026-11-11: Use the verified current Pro account's included Sites hosting for a separate reading-only preview under the user's current authority to let people try SoE; preserve the primary domain, unrelated prototypes and private account services, and incur no additional hosting purchase.
+- 2026-11-11: Apply the exact first-attempt refusal contract to native Circle creation; an HTTP status alone cannot settle a possibly committed write.
+- 2026-11-11: Show recorded/processing deletion progress using existing authorized state while preserving uncertainty for older receipts; identity removal or processing is never presented as completed erasure.
+
+- 2026-11-11: Honor the owner's request to finish now before credits run out: preserve the tested native repair and reviewable deletion draft, defer new builds and clearly retain their unfinished validation status.
