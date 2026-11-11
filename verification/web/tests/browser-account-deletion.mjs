@@ -246,7 +246,7 @@ try {
   await page.getByText('The request may have been received.', { exact: false }).waitFor();
   assert.equal((await app.db.query('SELECT count(*)::int AS n FROM soe_account_deletion_private.requests')).rows[0].n, 1);
   await button('Submit deletion request').click();
-  await page.getByText('Request received. Account deletion is pending.', { exact: true }).waitFor();
+  await page.getByText('Request received. Processing status is unavailable.', { exact: true }).waitFor();
   assert.equal((await app.db.query('SELECT count(*)::int AS n FROM soe_account_deletion_private.requests')).rows[0].n, 1);
   assert.deepEqual(observed.filter(entry => entry.kind === 'request').map(entry => entry.status), [200, 200]);
   await web.context.close();
@@ -256,12 +256,12 @@ try {
   await anonymous.page.goto(target);
   await anonymous.page.locator('#deletion-status-code').fill(code);
   await anonymous.page.getByRole('button', { name: 'Check request status' }).click();
-  await anonymous.page.getByText('Request received. Account deletion is pending.', { exact: true }).waitFor();
+  await anonymous.page.getByText('Request received. Processing status is unavailable.', { exact: true }).waitFor();
   assert.equal(await anonymous.page.locator('#deletion-status-code').inputValue(), '');
   assert.equal(anonymous.page.url(), target);
   assert.doesNotMatch(await anonymous.page.locator('body').innerText(), new RegExp(email));
   await anonymous.context.close();
-  pass('a fresh anonymous browser retrieves pending status using the full code, without exposing the account identity');
+  pass('a fresh anonymous browser retrieves legacy status with processing unknown using the full code, without exposing the account identity');
 
   const google = await makePage(linked);
   await google.page.goto(origin + '/auth/complete?next=%2Faccount%2Fdelete&intent=' + intent);
@@ -290,7 +290,7 @@ try {
   }
   await stale.page.getByRole('button', { name: 'Check my account' }).click();
   await stale.page.getByText(email, { exact: true }).waitFor();
-  assert.equal(await stale.page.getByText('Request received. Account deletion is pending.', { exact: true }).count(), 0);
+  assert.equal(await stale.page.getByText('Request received. Processing status is unavailable.', { exact: true }).count(), 0);
   assert.equal(await stale.page.getByRole('button', { name: 'Prepare deletion request' }).count(), 1);
   await stale.context.close();
   pass('an account change retires an in-flight read and the replacement account starts with its own review');

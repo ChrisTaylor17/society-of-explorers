@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { parseDeletionCode, parseDeletionOwner, parseDeletionReceipt, type DeletionOwner, type DeletionReceipt } from '@/lib/account/deletion-contract';
+import { deletionReceiptProgress, parseDeletionCode, parseDeletionOwner, parseDeletionReceipt, type DeletionOwner, type DeletionReceipt } from '@/lib/account/deletion-contract';
 import { currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 import styles from '../profile/profile.module.css';
@@ -14,12 +14,19 @@ type Draft = { review: Review; code: string };
 type Reply = { owner?: unknown; label?: unknown; reviewDays?: unknown; request?: unknown; error?: unknown };
 
 function RequestReceipt({ value }: { value: DeletionReceipt }) {
+  const progress = deletionReceiptProgress(value);
   return <div className={styles.preview}>
-    <strong>Request received. Account deletion is pending.</strong>
+    <strong>{progress === 'processing' ? 'Account deletion processing has started.'
+      : progress === 'recorded' ? 'Request received. No processing start is recorded.'
+        : 'Request received. Processing status is unavailable.'}</strong>
+    <p>{progress === 'unknown' ? 'This older receipt does not show whether processing has started. '
+      : progress === 'recorded' ? 'This reflects the latest recorded status; processing may begin after this check. '
+        : 'Account access may be restricted while processing continues. '}This receipt does not confirm final deletion.</p>
     <dl>
       <dt>Request reference</dt><dd>{value.id}</dd>
       <dt>Received</dt><dd><time dateTime={value.requestedAt}>{new Date(value.requestedAt).toLocaleString()}</time></dd>
       <dt>Review due by</dt><dd><time dateTime={value.reviewBy}>{new Date(value.reviewBy).toLocaleString()}</time></dd>
+      {progress === 'processing' && value.processingStartedAt && <><dt>Processing started</dt><dd><time dateTime={value.processingStartedAt}>{new Date(value.processingStartedAt).toLocaleString()}</time></dd></>}
     </dl>
   </div>;
 }
@@ -228,7 +235,7 @@ export default function AccountDeletionForm({ intakeEnabled }: { intakeEnabled: 
         <p><output aria-label="Private status code"><code>{draft.code}</code></output></p>
         <p><button type="button" disabled={busy} onClick={() => void copyCode()}>Copy status code</button></p>
         {submitted ? <RequestReceipt value={submitted}/> : <form className={styles.fields} onSubmit={submit} autoComplete="off">
-          <p>We aim to review your request within {draft.review.days} days. Your account remains active while deletion is pending.</p>
+          <p>We aim to review your request within {draft.review.days} days. Submitting a request does not immediately delete your data. Account access may be restricted once processing begins.</p>
           <div className={styles.field}>
             <label htmlFor="deletion-confirmation">Type DELETE to confirm</label>
             <input id="deletion-confirmation" autoComplete="off" spellCheck={false} maxLength={6}

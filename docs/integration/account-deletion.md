@@ -2,9 +2,29 @@
 
 Web account settings and the connected phone account screens lead to `/account/delete`. The page works in a browser without the installed app. The website verifies the selected email, Google or wallet sign-in. The deletion sign-in path bypasses member provisioning so a verified provider account can request deletion before creating a member record.
 
-The person checks the account, saves a private status code and types `DELETE`. Submission uses the reviewed account and one code. An exact retry returns the original receipt. Linked wallet and provider sign-ins see the same pending request. The code works without a sign-in and reveals only the request reference and dates. The private queue stores the code's digest. Website service routines can read receipts and accept requests. Direct table access is restricted to its owner.
+The person checks the account, saves a private status code and types `DELETE`. Submission uses the reviewed account and one code. An exact retry returns the original receipt. Linked wallet and provider sign-ins see the same pending request. The code works without a sign-in and reveals only the request reference and safe receipt dates. The private queue stores the code's digest. Website service routines can read receipts and accept requests. Direct table access is restricted to its owner.
 
-The current receipt confirms that the request was received and that deletion is pending. It shows the review date. The owner must choose a review deadline from 1 to 30 days. The owner still needs to approve retention and verify the hosted erasure process before opening intake.
+The receipt confirms that the request was received and shows the review date. It never confirms final deletion or promises that account access remains active. The owner must choose a review deadline from 1 to 30 days. The owner still needs to approve retention and verify the hosted erasure process before opening intake.
+
+## Receipt progress and older backends
+
+The optional [progress SQL candidate](../sql/account-deletion-progress-apply.sql) projects one additional safe field, `processingStartedAt`, from the existing private processing record. Rehearse it after the request and access drafts; its prerequisite check refuses a missing processing table or prior routine. It creates no new table, starts no processing, removes no data and declares no completion. The private functions reuse the current owner or hashed-code authorization, use a fixed search path and expose execution only to the service role through public invoker wrappers. The raw queue and processing tables remain inaccessible to service and browser roles.
+
+The route and client preserve three distinct receipt meanings:
+
+| Receipt | Displayed meaning |
+| --- | --- |
+| Existing three fields; progress omitted | Processing status unavailable. An older receipt cannot establish whether processing has started. |
+| `processingStartedAt: null` | No processing start is recorded in that read snapshot. Processing may begin after the check. |
+| Valid processing timestamp | Processing has started at the recorded time. Account access may be restricted. This does not confirm final deletion. |
+
+All dates must be real calendar timestamps with explicit timezones. Review must follow receipt; processing cannot precede it, including at SQL microsecond precision. Unknown fields or malformed dates fail unavailable rather than inventing a phase. The status-code response never includes an account ID, internal erasure counts, retention notes or review snapshots.
+
+The server tries the progress RPC first. Only PostgREST `PGRST202` naming that exact optional function as missing permits the old receipt RPC fallback; other errors do not replay a request. An older backend therefore keeps the progress field omitted across both server and client parsing. Missing progress is never normalized to null. Retaining the old functions also permits a reviewed application rollback without altering recorded requests or processing state; this candidate does not authorize applying or removing hosted functions.
+
+Local verification covers the actual request/status handlers and SQL through the strict service-query adapter, including the transition performed by the existing owner-only `start_erasure` in a disposable database, linked wallet/provider and provider-only cases, signed-out receipt access after the access fence, wrong-code privacy, effective grants, malformed results and exact missing-function compatibility. The actual React form is tested for every phase, private-code submission, invalid receipt rejection and retirement of account-specific state. These checks do not exercise hosted PostgREST, real providers, physical devices or final erasure. [Handler/SQL tests](../../verification/web/tests/account-deletion-progress.test.mjs) · [Form tests](../../verification/web/tests/account-deletion-progress-ui.test.mjs)
+
+Intake remains disabled. The archived compiled-browser script now expects the honest legacy-unknown wording; its old build receipt is historical and is not proof of this source change.
 
 ## Start processing a reviewed request
 
@@ -20,7 +40,7 @@ Drain operations that already passed authentication before clearing account data
 
 The owner-only private data draft follows the queue and access drafts. For a request already in processing, the owner calls `preview_private_data` with its reviewed request, member and provider IDs. The returned counts cover saved reading and its older records, highlights and book reflections, the Thinker memory table, Practice answers and their reflections.
 
-The owner passes those same IDs and the reviewed counts to `erase_private_data`. A changed count, a cross-member Practice reflection, an unexpected dependency or an inactive write guard stops the phase. The transaction clears the matched records and recalculates the affected Practice totals. An exact retry checks the cleared scope and returns the original internal receipt. The member’s status code continues to show that deletion is pending.
+The owner passes those same IDs and the reviewed counts to `erase_private_data`. A changed count, a cross-member Practice reflection, an unexpected dependency or an inactive write guard stops the phase. The transaction clears the matched records and recalculates the affected Practice totals. An exact retry checks the cleared scope and returns the original internal receipt. The member’s status code continues to show the available request progress, without confirming final deletion.
 
 New writes to those eight tables check the processing state. The owner start waits for earlier transactions touching them, then the write guards refuse new or held writes for the reviewed account. Practice reflections also check the source answer when the stored reflection has no member ID.
 
@@ -58,7 +78,7 @@ Before using the [Twiddle erasure draft](../sql/account-erasure-twiddle-apply.sq
 
 For the exact processing request, the owner calls `preview_twiddle_erasure` with the request, member and provider IDs. It returns counts, IDs that need separate review, and a digest. Resolve linked media through its owner and provider. Review minted records and any identified woven or AI-generated copies separately, including copies outside the app. Request a fresh preview after any disposition.
 
-The owner passes the exact review and explicit approval to `erase_twiddle_data`. It removes the author, text and attached fields from the departing account’s posts, leaves the thread anchors, and removes the account’s collaboration and reaction links. It preserves the other authors’ records and entries without a recorded owner. The owner-only receipt verifies the withdrawn anchors and detects a new linked record or known copy. The private status code continues to show that deletion is pending. [Verification](account-erasure-twiddle-verification.json)
+The owner passes the exact review and explicit approval to `erase_twiddle_data`. It removes the author, text and attached fields from the departing account’s posts, leaves the thread anchors, and removes the account’s collaboration and reaction links. It preserves the other authors’ records and entries without a recorded owner. The owner-only receipt verifies the withdrawn anchors and detects a new linked record or known copy. The private status code continues to show the available request progress, without confirming final deletion. [Verification](account-erasure-twiddle-verification.json)
 
 ## Remove Waddle voice posts
 
@@ -70,7 +90,7 @@ Pass the exact scope digest and explicit approval to `prepare_waddle_erasure`. I
 
 Use the approved Storage API removal in the exact project and bucket for the reviewed keys. Confirm each exact key is absent through authorized provider readback. For a key that lacked a catalog row at preparation, resolve underlying file absence with the provider before confirming that key. An incomplete inventory, access error, ambiguous result or unresolved file keeps the request pending. On a lost reply, read back the exact keys and recheck the prepared scope before retrying. [Supabase object removal](https://supabase.com/docs/guides/storage/management/delete-objects)
 
-Pass the reviewed digest and the ordered array of independently confirmed absent keys to `clear_waddle_erasure`. The transaction also verifies the current catalog, removes the reviewed posts and transcripts, and drops the raw file list from the receipt. Exact retries return the original time. A new voice record or catalog key under that member blocks identity verification. The member’s private status still shows pending while the other deletion steps are reviewed. [Verification](account-erasure-waddle-verification.json)
+Pass the reviewed digest and the ordered array of independently confirmed absent keys to `clear_waddle_erasure`. The transaction also verifies the current catalog, removes the reviewed posts and transcripts, and drops the raw file list from the receipt. Exact retries return the original time. A new voice record or catalog key under that member blocks identity verification. The member’s private receipt does not confirm final deletion while the other deletion steps are reviewed. [Verification](account-erasure-waddle-verification.json)
 
 ## Remove private member blocks
 

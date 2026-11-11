@@ -10,6 +10,7 @@ const require = createRequire(new URL('package.json', root));
 const { NextRequest } = require('next/server');
 const sql = await readFile(new URL('docs/sql/account-deletion-requests-apply.sql', root), 'utf8');
 const erasureSql = await readFile(new URL('docs/sql/account-erasure-access-apply.sql', root), 'utf8');
+const progressSql = await readFile(new URL('docs/sql/account-deletion-progress-apply.sql', root), 'utf8');
 const challengeSql = await readFile(new URL('docs/sql/wallet-challenge-consumption-apply.sql', root), 'utf8');
 const walletSql = await readFile(new URL('docs/sql/wallet-session-revocation-apply.sql', root), 'utf8');
 export const intent = '99999999-9999-4999-8999-999999999999';
@@ -33,7 +34,7 @@ export function cookieHeader(cookies) {
   return Object.entries(cookies).map(([name, value]) => name + '=' + value).join('; ');
 }
 
-export async function createAccountDeletionApp(origin = 'https://members.soe.test', { erasure = false, address = walletAddress } = {}) {
+export async function createAccountDeletionApp(origin = 'https://members.soe.test', { erasure = false, progress = false, address = walletAddress, rpcFault = () => undefined } = {}) {
   const db = new PGlite();
   try {
     await db.exec(`
@@ -50,7 +51,8 @@ export async function createAccountDeletionApp(origin = 'https://members.soe.tes
     await db.exec(sql);
     await db.exec(challengeSql);
     await db.exec(walletSql);
-    if (erasure) await db.exec(erasureSql);
+    if (erasure || progress) await db.exec(erasureSql);
+    if (progress) await db.exec(progressSql);
 
     const app = offlineApp({ root: fileURLToPath(root).replace(/\/$/, '') });
     const requestContext = new AsyncLocalStorage();
@@ -60,6 +62,9 @@ export async function createAccountDeletionApp(origin = 'https://members.soe.tes
       soe_account_deletion_owner_state: ['p_provider', 'p_subject'],
       soe_account_deletion_request: ['p_provider', 'p_subject', 'p_request_id', 'p_receipt_hash', 'p_review_days'],
       soe_account_deletion_status: ['p_request_id', 'p_receipt_hash'],
+      soe_account_deletion_owner_progress: ['p_provider', 'p_subject'],
+      soe_account_deletion_request_progress: ['p_provider', 'p_subject', 'p_request_id', 'p_receipt_hash', 'p_review_days'],
+      soe_account_deletion_status_progress: ['p_request_id', 'p_receipt_hash'],
       soe_account_erasure_access_allowed: ['p_provider', 'p_subject'],
       soe_wallet_challenge_consume: ['p_digest', 'p_expires_at'],
       soe_wallet_session_access: ['p_digest', 'p_expires_at', 'p_revoke'],
@@ -71,6 +76,13 @@ export async function createAccountDeletionApp(origin = 'https://members.soe.tes
         const fields = routines[name];
         async function invoke() {
           try {
+            const fault = rpcFault(name, args);
+            if (fault !== undefined) return fault;
+            // Model only PostgREST's missing optional routine response. Installed
+            // routines below execute the actual SQL as the restricted service role.
+            if (name.endsWith('_progress') && !progress) return { data: null, error: {
+              code: 'PGRST202', message: `Could not find the function public.${name}(${fields.join(', ')}) in the schema cache`,
+            } };
             if (name === 'soe_account_erasure_access_allowed' && guardUnavailable) return { data: null, error: { code: 'FIXTURE' } };
             const rows = await db.transaction(async tx => {
               await tx.exec('SET LOCAL ROLE service_role');
@@ -131,7 +143,7 @@ export async function createAccountDeletionApp(origin = 'https://members.soe.tes
       }}}),
       createServiceClient: () => admin,
     }));
-    if (erasure) {
+    if (erasure || progress) {
       app.context.performance = performance;
       app.setMock('next/server', () => require('next/server'));
       app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({

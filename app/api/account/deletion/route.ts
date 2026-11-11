@@ -52,6 +52,22 @@ function ownerParams(owner: DeletionOwner) {
   return { p_provider: owner.provider, p_subject: owner.subject };
 }
 
+const progressRoutines = {
+  soe_account_deletion_owner_state: 'soe_account_deletion_owner_progress',
+  soe_account_deletion_request: 'soe_account_deletion_request_progress',
+  soe_account_deletion_status: 'soe_account_deletion_status_progress',
+} as const;
+
+async function readReceipt(name: keyof typeof progressRoutines, params: Record<string, unknown>) {
+  const db = getSupabaseAdmin(), progressName = progressRoutines[name];
+  const result = await db.rpc(progressName, params).maybeSingle();
+  // An absent optional progress routine can use the old receipt, whose
+  // processing state stays unknown. Other failures do not replay a request.
+  return result.error?.code === 'PGRST202' && typeof result.error.message === 'string'
+    && result.error.message.startsWith(`Could not find the function public.${progressName}(`)
+    ? db.rpc(name, params).maybeSingle() : result;
+}
+
 export async function GET(req: NextRequest) {
   if (new URL(req.url).search || req.headers.get('sec-fetch-site') === 'cross-site' || req.headers.get('sec-fetch-site') === 'same-site') {
     return error(403, 'Open account deletion directly on this website.');
@@ -59,7 +75,7 @@ export async function GET(req: NextRequest) {
   try {
     const account = await websiteAccount(req);
     if (!account) return signIn();
-    const result = await getSupabaseAdmin().rpc('soe_account_deletion_owner_state', ownerParams(account.owner)).maybeSingle();
+    const result = await readReceipt('soe_account_deletion_owner_state', ownerParams(account.owner));
     const request = parseDeletionReceipt(result.data);
     if (result.error || (result.data !== null && !request)) return unavailable();
     return privateJson({ ...account, reviewDays: deletionReviewDays(), request });
@@ -78,7 +94,7 @@ export async function POST(req: NextRequest) {
   const params = { p_request_id: code.id, p_receipt_hash: createHash('sha256').update(code.secret).digest('hex') };
   try {
     if (body.action === 'status' && Object.keys(body).length === 2) {
-      const result = await getSupabaseAdmin().rpc('soe_account_deletion_status', params).maybeSingle();
+      const result = await readReceipt('soe_account_deletion_status', params);
       if (result.error) return unavailable();
       if (result.data === null) return receiptMissing();
       const receipt = parseDeletionReceipt(result.data);
@@ -94,9 +110,9 @@ export async function POST(req: NextRequest) {
     if (!sameDeletionOwner(expected, account.owner)) return error(409, 'Your sign-in changed. Check the account again.');
     const days = deletionReviewDays();
     if (days === null) return unavailable();
-    const result = await getSupabaseAdmin().rpc('soe_account_deletion_request', {
+    const result = await readReceipt('soe_account_deletion_request', {
       ...ownerParams(account.owner), ...params, p_review_days: days,
-    }).maybeSingle();
+    });
     if (result.error?.code === 'PT409') return error(409, 'A deletion request is already pending or the code is unavailable. Check your account.');
     const receipt = parseDeletionReceipt(result.data);
     return !result.error && receipt?.id === code.id ? privateJson({ request: receipt }) : unavailable();
