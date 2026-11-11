@@ -2,39 +2,26 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { startSpaceDirectory, type SpaceDirectory } from './space-directory';
 
 const gold = '#c9a84c';
 const parchment = '#E8DCC8';
 const muted = '#9a8f7a';
-
-interface Space {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  city: string | null;
-  country: string | null;
-  space_type: string;
-  total_scans: number;
-  avg_quality: number;
-  cover_url: string | null;
-  created_at: string;
-}
 
 const TYPE_ICONS: Record<string, string> = {
   salon: '⬡', library: '📚', temple: '◈', garden: '🌿', waypoint: '🧭', outpost: '⚑',
 };
 
 export default function WorldHub() {
-  const [spaces, setSpaces] = useState<Space[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [directory, setDirectory] = useState<SpaceDirectory>({ kind: 'loading' });
+  const [attempt, setAttempt] = useState(0);
+  const spaces = directory.kind === 'ready' ? directory.spaces : [];
+  const loading = directory.kind === 'loading';
+  const failed = directory.kind === 'error';
 
   useEffect(() => {
-    fetch('/api/world/spaces')
-      .then(r => r.json())
-      .then(d => { setSpaces(d.spaces || []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+    return startSpaceDirectory(setDirectory);
+  }, [attempt]);
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -55,17 +42,17 @@ export default function WorldHub() {
 
       {/* Hero */}
       <section style={{ textAlign: 'center', padding: '100px 2rem 3rem' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>SCAN-TO-EARN · WORLD LAYER</div>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>PUBLIC SPACE DIRECTORY</div>
         <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 300, letterSpacing: '0.08em', color: '#f5f0e8', marginBottom: '1rem' }}>
           Scanned Spaces
         </h1>
         <p style={{ fontSize: '1.15rem', color: muted, fontStyle: 'italic', maxWidth: '560px', margin: '0 auto 2.5rem', lineHeight: 1.8 }}>
-          Explore the world layer. Scan real spaces. Earn EXP. Leave spatial annotations for future explorers.
+          Browse published spaces and their scan summaries. These listings do not confirm booking availability or a live VR meeting.
         </p>
       </section>
 
       {/* Stats bar */}
-      <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+      {directory.kind === 'ready' && <section style={{ padding: '0 2rem 3rem' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: `${gold}12` }}>
           {[
             { label: 'Active Spaces', value: spaces.length },
@@ -78,20 +65,24 @@ export default function WorldHub() {
             </div>
           ))}
         </div>
-      </section>
+      </section>}
 
       {/* Spaces grid */}
-      <section data-fade style={{ padding: '0 2rem 4rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
+      <section aria-live="polite" style={{ padding: '0 2rem 4rem' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: muted, fontStyle: 'italic' }}>Loading spaces...</div>
+          ) : failed ? (
+            <div role="status" style={{ textAlign: 'center', padding: '2rem' }}>
+              <p>The spaces directory could not be loaded. This does not mean there are no spaces.</p>
+              <button type="button" onClick={() => { setDirectory({ kind: 'loading' }); setAttempt(value => value + 1); }} style={{ minHeight: 44, marginTop: '1rem', padding: '.65rem 1rem', color: parchment, border: `1px solid ${gold}`, background: '#111', font: 'inherit', cursor: 'pointer' }}>Retry spaces</button>
+            </div>
           ) : spaces.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem' }}>
-              <p style={{ color: muted, fontStyle: 'italic', marginBottom: '1.5rem' }}>No spaces scanned yet. Be the first explorer.</p>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.6 }}>COMING SOON</div>
+              <p style={{ color: muted, fontStyle: 'italic', marginBottom: '1.5rem' }}>No published spaces are listed right now.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: `${gold}12` }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1px', background: `${gold}12` }}>
               {spaces.map(space => (
                 <div key={space.id} style={{ background: '#0d0d0d', padding: '2rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
@@ -122,13 +113,13 @@ export default function WorldHub() {
       {/* How it works */}
       <section data-fade style={{ padding: '4rem 2rem', background: '#050505', opacity: 0, transition: 'opacity 0.8s ease' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.4, marginBottom: '2rem' }}>HOW SCAN-TO-EARN WORKS</div>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.4, marginBottom: '2rem' }}>SPACE DOCUMENTATION</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
             {[
               { icon: '📸', title: 'Scan', desc: 'Photograph or 3D-scan a real space' },
-              { icon: '🔐', title: 'Prove', desc: 'SHA-256 hash proves authenticity' },
+              { icon: '🔐', title: 'Record', desc: 'A hash identifies file contents; it does not prove a place or claim is authentic' },
               { icon: '✓', title: 'Verify', desc: 'Space host reviews quality' },
-              { icon: '⬡', title: 'Earn', desc: 'EXP based on quality + bonuses' },
+              { icon: '⬡', title: 'Review', desc: 'Published summaries need host review; no token payout is offered here' },
             ].map(step => (
               <div key={step.title}>
                 <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{step.icon}</div>
