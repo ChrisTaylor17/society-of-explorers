@@ -149,7 +149,10 @@ export function makeReq(body: any, opts: { cookies?: Record<string, string>; hea
   if (opts.cookies && !headers.has('cookie')) headers.set('cookie', Object.entries(opts.cookies).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('; '));
   const url = opts.url || 'http://localhost/x';
   const text = body === undefined ? '' : JSON.stringify(body);
-  return { json: async () => body, text: async () => text, arrayBuffer: async () => new TextEncoder().encode(text).buffer, headers, cookies: new FakeCookies(opts.cookies), nextUrl: new URL(url), url, method: 'POST' } as any;
+  if (body !== undefined && !headers.has('content-type')) headers.set('content-type', 'application/json');
+  // Actual streamed bytes let bounded readers enforce size/JSON limits as in NextRequest.
+  const stream = body === undefined ? null : new Response(text).body;
+  return { body: stream, signal: new AbortController().signal, json: async () => body, text: async () => text, arrayBuffer: async () => new TextEncoder().encode(text).buffer, headers, cookies: new FakeCookies(opts.cookies), nextUrl: new URL(url), url, method: 'POST' } as any;
 }
 
 export function installMocks(extra: Record<string, () => any> = {}) {
@@ -165,7 +168,8 @@ export function installMocks(extra: Record<string, () => any> = {}) {
   class NextResponse extends Response {
     cookies = new FakeCookies();
     static json(data: any, init?: ResponseInit) {
-      return new NextResponse(JSON.stringify(data), { ...init, headers: { 'Content-Type': 'application/json' } });
+      const headers = new Headers(init?.headers); headers.set('content-type', 'application/json');
+      return new NextResponse(JSON.stringify(data), { ...init, headers });
     }
   }
   mock.module('next/server', () => ({ NextResponse, NextRequest: class {} }));

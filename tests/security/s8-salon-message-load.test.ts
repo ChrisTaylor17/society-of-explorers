@@ -3,6 +3,7 @@
 // members' private salons and salons the caller doesn't belong to.
 import { test, expect, beforeEach } from 'bun:test';
 import { installMocks, resetDb, makeReq, ADA, JULES, walletCookie } from './fakes';
+import { selectedCookies } from './auth-request';
 
 installMocks();
 const SALON_X = '66666666-6666-4666-8666-666666666601'; // a members-only salon (production salon ids are 'general' or UUIDs)
@@ -23,7 +24,7 @@ beforeEach(() => {
   });
 });
 const get = async (salonId: string, member?: string) =>
-  route.GET(makeReq(undefined, { url: `http://localhost/api/salon-message/load?salonId=${encodeURIComponent(salonId)}`, cookies: member ? { soe_wallet_id: await walletCookie(member) } : {} }));
+  route.GET(makeReq(undefined, { url: `http://localhost/api/salon-message/load?salonId=${encodeURIComponent(salonId)}`, cookies: member ? { ...selectedCookies('wallet', member), soe_wallet_id: await walletCookie(member) } : {} }));
 
 test('anonymous -> 401', async () => {
   const res = await get('general');

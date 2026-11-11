@@ -74,10 +74,13 @@
     "sovereignty:passport:smoke": "node scripts/sovereignty-passport-smoke.mjs",
     "world:permissions:smoke": "node scripts/world-permissions-smoke.mjs",
     "twiddle:cron-auth:smoke": "node scripts/twiddle-cron-auth-smoke.mjs",
-    "test:security": "bash tests/security/run.sh",
-    "test:growth": "bash tests/growth/run.sh",
-    "test": "bash tests/security/run.sh && bash tests/growth/run.sh",
-    "funnel:summary": "node scripts/soe-funnel-summary.mjs"
+    "test:security": "node scripts/run-tests.mjs --groups=security",
+    "test:growth": "node scripts/run-tests.mjs --groups=growth",
+    "test": "node scripts/run-tests.mjs",
+    "funnel:summary": "node scripts/soe-funnel-summary.mjs",
+    "test:web": "node scripts/run-tests.mjs --groups=web",
+    "test:platforms": "node scripts/run-tests.mjs --groups=platforms",
+    "test:all": "node scripts/run-tests.mjs --groups=security,growth,web,platforms"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

@@ -3,6 +3,7 @@
 // able to load another member's private salon history into their own prompt.
 import { test, expect, beforeEach } from 'bun:test';
 import { installMocks, resetDb, makeReq, drain, settle, anthropicCalls, ADA, JULES } from './fakes';
+import { selectedCookies } from './auth-request';
 
 installMocks({
   '@/lib/claude/thinkers': () => ({ buildSystemPrompt: () => 'You are a thinker.', THINKER_PROFILES: {}, getThinkerProfile: () => null, getAllThinkerIds: () => [] }),
@@ -19,8 +20,8 @@ const ADA_OWN = 'ADA-OWN-NOTE-heron';             // fictional marker text
 const t = (n: number) => new Date(1_600_000_000_000 + n * 1000).toISOString();
 const seed = (count: number) => ({
   members: [
-    { id: ADA, display_name: 'Ada Example', exp_tokens: 3, supabase_auth_id: 'auth-ada' },
-    { id: JULES, display_name: 'Jules Example', exp_tokens: 5, supabase_auth_id: 'auth-jules' },
+    { id: ADA, display_name: 'Ada Example', exp_tokens: 3, supabase_auth_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+    { id: JULES, display_name: 'Jules Example', exp_tokens: 5, supabase_auth_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' },
   ],
   thinker_memory: [{ id: 'tm-ada', member_id: ADA, thinker_id: 'socrates', message_count: count, summary: '' }],
   salon_messages: [
@@ -48,8 +49,8 @@ test("S2a shared-salon summary never folds another member's words into Ada's mem
 
 test("S2b a member cannot pull another member's private salon into their prompt", async () => {
   resetDb(seed(0));
-  (globalThis as any).__authUser = { id: 'auth-ada' };
-  const res = await thinker.POST(makeReq({ thinkerId: 'socrates', message: 'what did they say?', salonId: `private-${JULES}` }));
+  (globalThis as any).__authUser = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' };
+  const res = await thinker.POST(makeReq({ thinkerId: 'socrates', message: 'what did they say?', salonId: `private-${JULES}` }, { cookies: selectedCookies('supabase', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') }));
   await drain(res); await settle();
   expect(res.status).toBe(403);
   expect(allPrompts()).not.toContain(JULES_SECRET);
@@ -65,8 +66,8 @@ test("S2c Ada's own private salon still feeds Ada's memory (feature preserved)",
 
 test("S2d Ada can still use her own private salon through the thinker route", async () => {
   resetDb(seed(0));
-  (globalThis as any).__authUser = { id: 'auth-ada' };
-  const res = await thinker.POST(makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'continue', salonId: `private-${ADA}` }));
+  (globalThis as any).__authUser = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' };
+  const res = await thinker.POST(makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'continue', salonId: `private-${ADA}` }, { cookies: selectedCookies('supabase', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') }));
   await drain(res); await settle();
   expect(res.status).toBe(200);
   expect(allPrompts()).toContain(ADA_OWN);

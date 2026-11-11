@@ -1,7 +1,7 @@
 // These edge routes use the selected account and verify the signed wallet
 // session through the same authority as other member routes.
 import { test, expect, beforeEach, describe } from 'bun:test';
-import { installMocks, resetDb, makeReq, drain, ADA, JULES, walletCookie } from './fakes';
+import { installMocks, resetDb, makeReq, drain, db, ADA, JULES, walletCookie } from './fakes';
 import { selectedCookies } from './auth-request';
 
 installMocks();
@@ -19,7 +19,7 @@ const walletRequest = (value: string, memberId: string) => makeReq({}, {
   headers: { origin: 'http://localhost' },
 });
 
-const ROUTES = ['match', 'projects/create', 'projects/invite', 'movement/pod/sync'];
+const ROUTES = [ 'projects/create', 'projects/invite', 'movement/pod/sync'];
 describe('raw soe_wallet_id cookie is not identity on edge routes', () => {
   for (const r of ROUTES) {
     test(`${r}: soe_wallet_id=JULES alone -> 401`, async () => {
@@ -61,5 +61,14 @@ describe('the shared Web Crypto verifier works for edge routes', () => {
       await drain(res);
       expect(res.status).toBe(400);
     });
+  }
+});
+
+test('matching remains unavailable for raw, forged and valid selected sessions without data access', async () => {
+  const route = await import('../../app/api/match/route.ts');
+  for (const cookie of [JULES, (await walletCookie(ADA)).replace(ADA, JULES), await walletCookie(ADA)]) {
+    const response = await route.POST(walletRequest(cookie, ADA));
+    expect(response.status).toBe(503); expect(await response.text()).toContain('MATCHING_NOT_AVAILABLE');
+    expect(db.log).toEqual([]);
   }
 });

@@ -48,8 +48,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Res
 };
 function Fixture() {
   const reward = useThinkerRewards();
-  qa.reward = reward;
-  useEffect(() => { qa.mounted = true; qa.reward = reward; return () => { qa.mounted = false; qa.reward = null; }; }, []);
+  useEffect(() => { qa.mounted = true; qa.reward = reward; return () => { qa.mounted = false; qa.reward = null; }; }, [reward]);
   return <main><h1>Actual Thinker reward notice fixture</h1><ThinkerRewardNotice reward={reward} /></main>;
 }
 Object.assign(window, { thinkerRewardQa: qa });

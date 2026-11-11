@@ -6,6 +6,7 @@
 // additionally bind the reviewed draft owner/revision before any RPC mutation.
 import { test, expect, beforeEach, describe } from 'bun:test';
 import { installMocks, resetDb, makeReq, drain, settle, anthropicCalls, ADA, JULES, walletCookie } from './fakes';
+import { selectedCookies } from './auth-request';
 
 installMocks({
   '@/lib/feed/activityFeed': () => ({ emitActivity: async () => {}, generateSocialDraft: async (_e: string, m: string) => ({ content: 'draft', postId: `post-${m}` }) }),
@@ -16,7 +17,7 @@ installMocks({
   '@/lib/thinkerMemory': () => ({ getMemory: async () => null, getStructuredMemory: async () => null, recordInteraction: async () => {} }),
   '@/lib/thinkerActions': () => ({ parseActions: (t: string) => ({ actions: [], cleanText: t }), executeThinkerAction: async () => {} }),
   '@/lib/memory/embeddings': () => ({ storeConversationEmbedding: async () => {} }),
-  '@/lib/live/scheduler': () => ({ generateSessionSummary: async () => ({ ok: true }), createLiveSession: async () => ({}) }),
+  '@/lib/live/scheduler': () => ({ liveCouncilCommunityId: () => null, liveCouncilRoomUrl: () => null, LIVE_COUNCIL_TYPE: 'live-council', generateSessionSummary: async () => ({ ok: true }), createLiveSession: async () => ({}) }),
   '@/lib/claude/thinkers': () => ({ buildSystemPrompt: () => 'You are a thinker.', THINKERS: {}, THINKER_PROFILES: {}, getThinker: () => null, getThinkerProfile: () => null, getAllThinkerIds: () => [] }),
   'viem': () => ({ isAddress: () => true, getAddress: (a: string) => a }),
 });
@@ -75,7 +76,7 @@ const REQUIRED: Case[] = [
   ['social/generate', 'social/generate', 'POST'],
   ['store/buy', 'store/buy', 'POST'],
   ['tasks POST', 'tasks', 'POST'],
-  ['thinker/extract-facts (fails closed without CRON_SECRET)', 'thinker/extract-facts', 'POST'],
+  ['thinker/extract-facts (retired)', 'thinker/extract-facts', 'POST'],
   ['thinker/memory', 'thinker/memory', 'POST'],
   ['transactions/approve', 'transactions/approve', 'POST'],
   ['twiddle/[id]/react', 'twiddle/[id]/react', 'POST', { id: '55555555-5555-4555-8555-555555555503' }],
@@ -121,7 +122,8 @@ describe('no session + body/query/header memberId=JULES -> refused (400/401/403)
     test(c[0], async () => {
       const { db } = await import('./fakes');
       const { res } = await call(c);
-      expect([400, 401, 403]).toContain(res.status);
+      const retired = ['exp/award', 'thinker/extract-facts', 'thinker/memory', 'twiddle/[id]/react', 'twiddle/[id]', 'twiddle'];
+      expect(retired.includes(c[1]) ? [410] : [400, 401, 403]).toContain(res.status);
       expect(writes(db)).toEqual([]);
       expect(anthropicCalls.length).toBe(0);
     });
@@ -178,7 +180,7 @@ describe('optional-identity routes: no session -> never acts as JULES', () => {
 });
 
 describe('signed session ADA + body memberId=JULES -> acts as ADA only', () => {
-  const ada = async () => ({ cookies: { soe_wallet_id: await walletCookie(ADA) } });
+  const ada = async () => ({ cookies: { ...selectedCookies('wallet', ADA), soe_wallet_id: await walletCookie(ADA) }, headers: { origin: 'http://localhost' } });
   const profileReq = async (body: unknown) => {
     const sample = makeReq(body, { ...await ada(), headers: { 'content-type': 'application/json', origin: 'http://localhost' } });
     return Object.assign(new Request(sample.url, { method: 'POST', headers: sample.headers, body: JSON.stringify(body) }), { cookies: sample.cookies, nextUrl: sample.nextUrl });
@@ -209,11 +211,11 @@ describe('signed session ADA + body memberId=JULES -> acts as ADA only', () => {
       const body = await response.json(); expect(body.memberId).toBe(ADA); expect(body.profile.bio).toBe('owner edit'); expect(JSON.stringify(body)).not.toContain('SYNTHETIC_PRIVATE_EMAIL'); expect(body.tier).toBeUndefined(); expect(db.rows('members').find(member => member.id === JULES)!.display_name).toBe('Jules Example');
     } finally { db.rpc = original; }
   });
-  test('exp/award credits the session member, not the body member', async () => {
+  test('retired exp/award refuses even a valid session and credits nobody', async () => {
     const { db } = await import('./fakes');
     const { res } = await call(['exp/award', 'exp/award', 'POST'], await ada());
-    // Production refuses a mismatched body memberId outright (403); either way JULES is never credited.
-    expect([200, 403]).toContain(res.status);
+    // Browser-supplied reading awards are retired; authenticating cannot revive them.
+    expect(res.status).toBe(410);
     expect(db.rows('exp_events').map(e => e.member_id)).toEqual(res.status === 200 ? [ADA] : []);
     expect(db.rows('members').find(m => m.id === JULES)!.exp_tokens).toBe(5);
   });

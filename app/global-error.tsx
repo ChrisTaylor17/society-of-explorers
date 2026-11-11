@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-html-link-for-pages -- A root-layout failure must recover with a full native navigation even when the client router has failed. */
 
 // Last-resort boundary for errors in the root layout. Must render its own
 // <html> and <body>, and cannot rely on global CSS or fonts.

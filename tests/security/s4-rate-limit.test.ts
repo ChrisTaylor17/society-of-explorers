@@ -4,6 +4,7 @@
 import { test, expect, beforeEach } from 'bun:test';
 import { existsSync } from 'fs';
 import { installMocks, resetDb, makeReq, drain, settle, anthropicCalls, ADA, walletCookie } from './fakes';
+import { selectedCookies } from './auth-request';
 
 installMocks({
   '@/lib/claude/thinkers': () => ({ buildSystemPrompt: () => 'You are a thinker.', THINKER_PROFILES: {}, getThinkerProfile: () => null, getAllThinkerIds: () => [] }),
@@ -35,45 +36,42 @@ test('anonymous council is refused before any model call (production requires si
   expect(anthropicCalls.length).toBe(0);
 });
 
-test('anonymous demo is limited per IP; the over-limit call makes no model call', async () => {
+test('retired anonymous demo refuses every IP and never makes a model call', async () => {
   const { LIMITS } = await import(RL);
   const thinker = await import('../../app/api/thinker/route.ts');
-  const demoFrom = (ip: string) => makeReq({ thinkerId: 'socrates', message: 'hi', demo: true }, { headers: { 'x-forwarded-for': `${ip}, 10.0.0.1` } });
-  for (let i = 0; i < LIMITS.anonymous.max; i++) {
-    const r = await thinker.POST(demoFrom('203.0.113.7')); await drain(r); await settle();
-    expect(r.status).not.toBe(429);
+  for (const ip of ['203.0.113.7', '198.51.100.9']) {
+    for (let i = 0; i <= LIMITS.anonymous.max; i++) {
+      const response = await thinker.POST(makeReq({ thinkerId: 'socrates', message: 'hi', demo: true }, { headers: { 'x-forwarded-for': ip } }));
+      expect(response.status).toBe(410); await drain(response);
+    }
   }
-  const before = anthropicCalls.length;
-  const over = await thinker.POST(demoFrom('203.0.113.7'));
-  expect(over.status).toBe(429);
-  expect(over.headers.get('retry-after')).toBeTruthy();
-  expect(anthropicCalls.length).toBe(before);
-  const other = await thinker.POST(demoFrom('198.51.100.9')); await drain(other); await settle();
-  expect(other.status).not.toBe(429);
+  expect(anthropicCalls).toEqual([]);
 });
 
-test('demo mode is limited too', async () => {
-  const { LIMITS } = await import(RL);
+test('a selected signed-in session cannot revive the retired demo', async () => {
   const thinker = await import('../../app/api/thinker/route.ts');
-  const demo = () => makeReq({ thinkerId: 'socrates', message: 'hi', demo: true }, { headers: { 'x-forwarded-for': '192.0.2.44' } });
-  for (let i = 0; i < LIMITS.anonymous.max; i++) { const r = await thinker.POST(demo()); await drain(r); await settle(); }
-  expect((await thinker.POST(demo())).status).toBe(429);
+  const response = await thinker.POST(makeReq({ thinkerId: 'socrates', message: 'hi', demo: true }, {
+    cookies: { ...selectedCookies('wallet', ADA), soe_wallet_id: await walletCookie(ADA) },
+  }));
+  expect(response.status).toBe(410); expect(anthropicCalls).toEqual([]);
 });
 
-test('signed-in members get their own (larger) budget, not the IP one, and are limited too', async () => {
-  const { LIMITS } = await import(RL);
+test('signed-in model calls exhaust their own budget before another provider call', async () => {
+  const { LIMITS, limitModelCall } = await import(RL);
+  const thinker = await import('../../app/api/thinker/route.ts');
   expect(LIMITS.member.max).toBeGreaterThan(LIMITS.anonymous.max);
-  const thinker = await import('../../app/api/thinker/route.ts');
-  const demo50 = () => makeReq({ thinkerId: 'socrates', message: 'hi', demo: true }, { headers: { 'x-forwarded-for': '203.0.113.50' } });
-  for (let i = 0; i < LIMITS.anonymous.max; i++) { const r = await thinker.POST(demo50()); await drain(r); await settle(); }
-  expect((await thinker.POST(demo50())).status).toBe(429); // that IP's anonymous budget is spent
-  const r = await thinker.POST(makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'hello', isCouncilMode: true }, { headers: { 'x-forwarded-for': '203.0.113.50' }, cookies: { soe_wallet_id: await walletCookie(ADA) } }));
-  await drain(r); await settle();
-  expect(r.status).not.toBe(429);
-  const cookie = await walletCookie(ADA);
-  const member = () => makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'hello', isCouncilMode: true }, { headers: { 'x-forwarded-for': '203.0.113.51' }, cookies: { soe_wallet_id: cookie } });
-  for (let i = 1; i < LIMITS.member.max; i++) { const x = await thinker.POST(member()); await drain(x); }
-  expect((await thinker.POST(member())).status).toBe(429);
+  const ip = '203.0.113.50';
+  // Exhaust the independent anonymous bucket through the actual limiter; the
+  // retired demo route deliberately never spends that budget or calls a model.
+  for (let i = 0; i < LIMITS.anonymous.max; i++) expect(limitModelCall(council(ip), null)).toBeNull();
+  expect(limitModelCall(council(ip), null)?.status).toBe(429);
+  const cookies = { ...selectedCookies('wallet', ADA), soe_wallet_id: await walletCookie(ADA) };
+  const member = () => makeReq({ requestId: '33333333-3333-4333-8333-333333333333', thinkerId: 'socrates', message: 'hello', isCouncilMode: true }, { headers: { 'x-forwarded-for': ip }, cookies });
+  for (let i = 0; i < LIMITS.member.max; i++) { const response = await thinker.POST(member()); expect(response.status).toBe(200); await drain(response); }
+  const before = anthropicCalls.length;
+  const rejected = await thinker.POST(member());
+  expect(rejected.status).toBe(429); expect(rejected.headers.get('retry-after')).toBeTruthy();
+  expect(anthropicCalls.length).toBe(before);
 });
 
 test('limiter unit: fixed window, independent keys', async () => {

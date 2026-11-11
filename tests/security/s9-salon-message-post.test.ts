@@ -6,6 +6,7 @@
 //   - any other salon: the salon's owner (salons.guide_member_id) or a salon_members row.
 import { test, expect, beforeEach } from 'bun:test';
 import { installMocks, resetDb, makeReq, db, ADA, JULES, walletCookie } from './fakes';
+import { selectedCookies } from './auth-request';
 
 installMocks();
 const SECRET = 's'.repeat(48); // synthetic test-only value
@@ -26,7 +27,7 @@ beforeEach(() => {
 });
 
 const post = async (body: any, member?: string) =>
-  route.POST(makeReq(body, { url: 'http://localhost/api/salon-message', cookies: member ? { soe_wallet_id: await walletCookie(member) } : {} }));
+  route.POST(makeReq(body, { url: 'http://localhost/api/salon-message', headers: { origin: 'http://localhost' }, cookies: member ? { ...selectedCookies('wallet', member), soe_wallet_id: await walletCookie(member) } : {} }));
 const inserts = () => db.log.filter(l => l.table === 'salon_messages' && l.op === 'insert');
 
 test('anonymous -> 401 and nothing is written', async () => {
