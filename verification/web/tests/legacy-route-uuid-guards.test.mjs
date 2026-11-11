@@ -16,19 +16,7 @@ const ORIGIN = 'https://uuid-fixture.invalid';
 function fixture({ auth = null, access = null, seed = {}, unpauseInFixture = false } = {}) {
   const app = offlineApp();
   const db = app.fakes.resetDb(seed);
-  // This fixture needs PostgREST's UPDATE ... RETURNING semantics; older shared
-  // FakeDb cases intentionally return no rows for every update.
-  const from = db.from.bind(db);
-  db.from = table => {
-    const query = from(table), exec = query.exec.bind(query);
-    query.exec = () => {
-      const returning = query.op === 'update' && query.wantRows ? db.rows(table).filter(row => query.match(row)) : null;
-      const result = exec();
-      return returning && !result.error ? { ...result, data: query.isSingle ? returning[0] ?? null : returning } : result;
-    };
-    return query;
-  };
-  const calls = { auth: 0, access: 0, fetch: [], effects: [], modelLimit: 0 };
+  const calls = { auth: 0, access: 0, admin: 0, fetch: [], effects: [], modelLimit: 0 };
   const unexpected = name => { calls.effects.push(name); throw Error(`Unexpected ${name} in UUID guard test`); };
   app.context.performance = performance;
   app.context.console = { ...console, info() {}, warn() {}, error() {} };
@@ -38,7 +26,7 @@ function fixture({ auth = null, access = null, seed = {}, unpauseInFixture = fal
     getAuthenticatedEdgeMember: async () => { calls.auth++; return auth ? { ...auth.member, id: auth.memberId } : null; },
   }));
   app.setMock('@/lib/movement/access', () => ({ getMovementAccess: async () => { calls.access++; return access; } }));
-  app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => db }));
+  app.setMock('@/lib/supabase/admin', () => ({ getSupabaseAdmin: () => { calls.admin++; return db; } }));
   app.setMock('@/lib/feed/activityFeed', () => ({ emitActivity: async () => unexpected('activity') }));
   app.setMock('@/lib/ai/anthropic', () => ({ createAnthropicClient: () => unexpected('AI'), resolveClaudeModel: () => 'UNISSUED_FIXTURE_MODEL' }));
   app.setMock('@/lib/claude/thinkers', () => ({ buildSystemPrompt: () => unexpected('prompt'), getThinkerProfile: () => unexpected('thinker') }));
@@ -103,55 +91,36 @@ test('generic room IDs reach authentication without admitting malformed IDs or f
   noEffects(f);
 });
 
-test('all generic room mutations explicitly refuse Live Council, unknown or absent room kinds', async () => {
-  for (const roomType of ['live_session', 'future_private_room', undefined]) {
-    for (const action of ['join', 'leave', 'end', 'transcript']) {
-      const f = fixture({ auth: AUTH, seed: { video_rooms: [{ id: ID, created_by: MEMBER, room_type: roomType, is_live: true }] } });
-      const response = await f.route('rooms/[roomId]').POST(f.request({ action, content: 'Synthetic transcript' }), context(ID, 'roomId'));
-      assert.equal(response.status, 409, `${roomType}:${action}`); noCache(response); noEffects(f, { reads: true });
-      assert.equal(f.db.log.length, 1); assert.equal(f.db.tables.video_rooms[0].is_live, true);
+test('every legacy room action stays unavailable for owners and outsiders before any room lookup or mutation', async () => {
+  for (const roomType of [null, 'open', 'project', 'council', 'salon', 'live_session', 'future_private_room', undefined]) {
+    for (const creator of [MEMBER, OTHER]) {
+      for (const action of ['join', 'leave', 'end', 'transcript']) {
+        const seed = {
+          video_rooms: [{ id: ID, created_by: creator, room_type: roomType, is_live: true }],
+          room_participants: [{ room_id: ID, member_id: MEMBER, joined_at: '2026-01-01' }],
+          room_transcripts: [],
+        };
+        const f = fixture({ auth: AUTH, seed }), before = JSON.stringify(f.db.tables);
+        const response = await f.route('rooms/[roomId]').POST(f.request({ action, content: 'Synthetic transcript' }), context(ID, 'roomId'));
+        assert.equal(response.status, 409, `${roomType}:${creator}:${action}`);
+        const body = await response.json();
+        assert.equal(body.code, 'legacy_rooms_unavailable'); assert.match(body.error, /unavailable/);
+        assert.equal(Object.hasOwn(body, 'success'), false);
+        noCache(response); noEffects(f); assert.equal(f.calls.admin, 0);
+        assert.equal(JSON.stringify(f.db.tables), before);
+      }
     }
   }
-  const missing = fixture({ auth: AUTH });
-  assert.equal((await missing.route('rooms/[roomId]').POST(missing.request({ action: 'join' }), context(ID, 'roomId'))).status, 404);
-  noEffects(missing, { reads: true });
 });
 
-test('valid legacy/open room actions keep the authenticated identity and owner-only ending', async () => {
-  for (const roomType of [null, 'open', 'project', 'council', 'salon']) {
-    const f = fixture({ auth: AUTH, seed: { video_rooms: [{ id: ID, created_by: MEMBER, room_type: roomType, is_live: true }] } });
-    const response = await f.route('rooms/[roomId]').POST(f.request({ action: 'end' }), context(ID, 'roomId'));
-    assert.equal(response.status, 200); assert.equal(f.db.tables.video_rooms[0].is_live, false);
-    const write = f.db.log.find(entry => entry.op === 'update');
-    assert.ok(write.filters.some(filter => filter[0] === 'eq' && filter[1] === 'created_by' && filter[2] === MEMBER));
-    assert.ok(write.filters.some(filter => filter[0] === (roomType === null ? 'isnull' : 'eq') && filter[1] === 'room_type' && filter[2] === roomType));
-    assert.deepEqual(f.calls.effects, []); assert.deepEqual(f.calls.fetch, []);
+test('missing or changing room state cannot bypass the legacy hold, which has no check/write race', async () => {
+  const f = fixture({ auth: AUTH });
+  f.db.from = () => { throw Error('Legacy mutation must not query room state'); };
+  for (const id of VALID_IDS) {
+    const response = await f.route('rooms/[roomId]').POST(f.request({ action: 'end' }), context(id, 'roomId'));
+    assert.equal(response.status, 409); assert.equal((await response.json()).code, 'legacy_rooms_unavailable');
+    noEffects(f); assert.equal(f.calls.admin, 0);
   }
-  const f = fixture({ auth: AUTH, seed: { video_rooms: [{ id: ID, created_by: OTHER, room_type: 'open', is_live: true }] } });
-  assert.equal((await f.route('rooms/[roomId]').POST(f.request({ action: 'end' }), context(ID, 'roomId'))).status, 403);
-  noEffects(f, { reads: true }); assert.equal(f.db.tables.video_rooms[0].is_live, true);
-});
-
-test('generic room end cannot write after its room changes to Live Council during the lookup', async () => {
-  const f = fixture({ auth: AUTH, seed: { video_rooms: [{ id: ID, created_by: MEMBER, room_type: 'open', is_live: true }] } });
-  const from = f.db.from.bind(f.db);
-  f.db.from = table => {
-    const query = from(table), exec = query.exec.bind(query);
-    query.exec = () => {
-      const result = exec();
-      if (table === 'video_rooms' && query.op === 'select') {
-        const snapshot = { ...result.data };
-        f.db.tables.video_rooms[0].room_type = 'live_session';
-        return { ...result, data: snapshot };
-      }
-      return result;
-    };
-    return query;
-  };
-  const response = await f.route('rooms/[roomId]').POST(f.request({ action: 'end' }), context(ID, 'roomId'));
-  assert.equal(response.status, 409); assert.doesNotMatch(await response.text(), /"success":true/);
-  assert.equal(f.db.tables.video_rooms[0].is_live, true);
-  assert.deepEqual(f.calls.fetch, []); assert.deepEqual(f.calls.effects, []);
 });
 
 test('room creation rejects supplied malformed project IDs before auth, database or provider effects', async () => {
@@ -165,19 +134,27 @@ test('room creation rejects supplied malformed project IDs before auth, database
     assert.equal((await f.route('rooms').POST(f.request({ title: 'Fixture room', projectId }))).status, 401); noEffects(f);
   }
   const f = fixture({ auth: AUTH });
-  assert.equal((await f.route('rooms').POST(f.request({ title: 'Fixture room', projectId: ID }))).status, 404);
-  assert.deepEqual(Array.from(f.db.log, entry => entry.table), ['communities']); noEffects(f, { reads: true });
+  assert.equal((await f.route('rooms').POST(f.request({ title: 'Fixture room', projectId: ID }))).status, 409);
+  noEffects(f); assert.equal(f.calls.admin, 0);
 });
 
-test('room creation retains a valid project UUID through the existing local database path', async () => {
-  const f = fixture({ auth: AUTH, seed: { communities: [{ id: COMMUNITY, slug: 'society-of-explorers' }] } });
-  const activity = [];
-  f.app.setMock('@/lib/feed/activityFeed', () => ({ emitActivity: async value => activity.push(value) }));
-  assert.equal(f.app.context.process.env.DAILY_API_KEY, undefined);
-  const response = await f.route('rooms').POST(f.request({ title: 'Fixture room', projectId: ID }));
-  assert.equal(response.status, 200); assert.equal(f.db.tables.video_rooms[0].project_id, ID);
-  assert.equal(f.db.tables.video_rooms[0].created_by, MEMBER); assert.equal(f.db.tables.room_participants[0].member_id, MEMBER);
-  assert.equal(activity.length, 1); assert.deepEqual(f.calls.effects, []); assert.deepEqual(f.calls.fetch, []);
+test('legacy creation cannot attach another project, create provider rooms or emit activity even with provider configuration', async () => {
+  for (const projectId of [undefined, null, '', ...VALID_IDS]) {
+    for (const roomType of ['open', 'project', 'council', 'salon', 'live_session']) {
+      const f = fixture({ auth: AUTH, seed: { communities: [{ id: COMMUNITY, slug: 'society-of-explorers' }] } });
+      f.app.context.process.env.DAILY_API_KEY = 'UNISSUED_SYNTHETIC_FIXTURE_ONLY';
+      const before = JSON.stringify(f.db.tables);
+      const response = await f.route('rooms').POST(f.request({ title: 'Fixture room', projectId, roomType, communitySlug: 'another-private-community' }));
+      assert.equal(response.status, 409); noCache(response);
+      const body = await response.json();
+      assert.equal(body.code, 'legacy_rooms_unavailable'); assert.match(body.error, /unavailable/);
+      assert.equal(Object.hasOwn(body, 'room'), false); assert.equal(Object.hasOwn(body, 'success'), false);
+      assert.equal(JSON.stringify(f.db.tables), before); assert.equal(f.calls.admin, 0); noEffects(f);
+    }
+  }
+  const forged = fixture({ auth: AUTH });
+  assert.equal((await forged.route('rooms').POST(forged.request({ memberId: OTHER, projectId: ID }))).status, 403);
+  assert.equal(forged.calls.admin, 0); noEffects(forged);
 });
 
 const inviteBody = id => ({ recipient_member_id: id, sender_match_hash: 'a'.repeat(64), encrypted_invite_payload: 'synthetic opaque fixture', workspace: { title: 'Fixture collaboration', description: 'No real invitation.' } });

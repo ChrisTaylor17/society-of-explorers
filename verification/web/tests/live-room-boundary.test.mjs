@@ -49,12 +49,21 @@ test('generic room routes preserve old null-typed rooms and cannot expose or mut
   assert.deepEqual(rooms.map(room => room.id), [LEGACY]);
   assert.equal(rooms[0].daily_room_url, 'https://soe-fixture.daily.co/old-open');
   assert(!Object.hasOwn(rooms[0], 'metadata'));
-  const denied = await fixture.room.POST(request('/api/rooms/' + LIVE, {
-    actor: A, body: { action: 'end' },
-  }), { params: Promise.resolve({ roomId: LIVE }) });
-  // Valid IDs reach an explicit room-kind boundary, never generic mutation.
-  assert.equal(denied.status, 409);
+  const callsBefore = fixture.calls.length;
+  for (const roomId of [LIVE, LEGACY, FOREIGN]) {
+    for (const action of ['join', 'leave', 'end', 'transcript']) {
+      const denied = await fixture.room.POST(request('/api/rooms/' + roomId, {
+        actor: A, body: { action, content: 'Synthetic transcript' },
+      }), { params: Promise.resolve({ roomId }) });
+      assert.equal(denied.status, 409);
+      assert.equal((await denied.json()).code, 'legacy_rooms_unavailable');
+    }
+  }
+  // The explicit legacy hold returns before any room lookup or mutation.
+  assert.equal(fixture.calls.length, callsBefore);
   assert.equal((await fixture.db.query('SELECT is_live FROM video_rooms WHERE id=$1', [LIVE])).rows[0].is_live, true);
+  assert.equal((await fixture.db.query('SELECT is_live FROM video_rooms WHERE id=$1', [LEGACY])).rows[0].is_live, true);
+  assert.deepEqual(await joined(fixture), []);
 });
 
 test('anonymous and cross-origin join attempts are refused before room access', async t => {

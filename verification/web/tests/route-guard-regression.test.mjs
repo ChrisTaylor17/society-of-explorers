@@ -34,7 +34,12 @@ const salon = 'book salon writes check the origin and bind the verified actor';
 const dm = 'DM route is signed-in, sender/read-scoped, lazy, and private';
 const reading = 'Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls';
 const thinker = 'core thinker and Movement creator helpers use lazy Supabase admin clients';
+const legacyRooms = 'live sessions keep their authority checks while legacy room writes stay unavailable';
 const cases = [
+  { name: 'legacy room creation starts a provider request', path: 'app/api/rooms/route.ts', from: "code: 'legacy_rooms_unavailable'", to: "code: await fetch('https://unreviewed.invalid')", check: legacyRooms },
+  { name: 'legacy room actions write with an admin client', path: 'app/api/rooms/[roomId]/route.ts', from: "code: 'legacy_rooms_unavailable'", to: "code: await getSupabaseAdmin().from('room_participants').insert({})", check: legacyRooms },
+  { name: 'legacy room creation claims success', path: 'app/api/rooms/route.ts', from: '}, { status: 409 })', to: '}, { status: 200 })', check: legacyRooms },
+  { name: 'legacy room actions lose the unavailable receipt', path: 'app/api/rooms/[roomId]/route.ts', from: "code: 'legacy_rooms_unavailable'", to: 'success: true', check: legacyRooms },
   { name: 'retired memory extraction starts a provider request', path: 'app/api/thinker/extract-facts/route.ts', from: 'return privateJson(', to: "fetch('https://unreviewed.invalid'); return privateJson(", check: 'legacy automatic fact extraction is a private 410 with no model or storage effects' },
   { name: 'retired memory saves claim success', path: 'app/api/thinker/memory/route.ts', from: '{ status: 410 }', to: '{ status: 200 }', check: 'legacy unreviewed memory embedding is a private 410 with no model or storage effects' },
   { name: 'proactive job starts external contact', path: 'app/api/cron/proactive/route.ts', from: 'processed: 0', to: "processed: await fetch('https://unreviewed.invalid')", check: 'proactive email stays disabled and onboarding is lazy, private, escaped, and flag-gated' },

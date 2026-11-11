@@ -821,10 +821,10 @@ const checks = [
       routes.bookSalonDetail.includes("rpc('soe_circle_messages_post'"),
   },
   {
-    name: 'live session and room routes use lazy Supabase admin clients',
+    name: 'live sessions keep their authority checks while legacy room writes stay unavailable',
     ok:
       [routes.live, routes.liveSession, routes.rooms, routes.roomDetail, routes.cronCreateLiveSession].every(lacksModuleScopeClients) &&
-      [routes.live, routes.liveSession, routes.rooms, routes.roomDetail].every((source) =>
+      [routes.live, routes.liveSession, routes.rooms].every((source) =>
         source.includes('getSupabaseAdmin()'),
       ) &&
       routes.live.includes('privateJson') &&
@@ -874,21 +874,24 @@ const checks = [
       !routes.cronCreateLiveSession.includes('error.message') &&
       !routes.cronCreateLiveSession.includes('String(err)') &&
       routes.rooms.includes('getAuthenticatedMember(req)') &&
-      routes.rooms.includes('createDailyRoomUrl') &&
-      routes.rooms.includes('process.env.DAILY_API_KEY') &&
-      routes.rooms.includes('created_by: auth.memberId') &&
       routes.rooms.includes('Cannot create a room for another member') &&
-      routes.rooms.includes('Failed to create room') &&
       routes.rooms.indexOf('safeRequestJson(req)') < routes.rooms.lastIndexOf('getAuthenticatedMember(req)') &&
-      routes.rooms.lastIndexOf('getAuthenticatedMember(req)') < routes.rooms.lastIndexOf('getSupabaseAdmin()') &&
       routes.roomDetail.includes('getAuthenticatedMember(req)') &&
       routes.roomDetail.includes('Cannot update another member room state') &&
       routes.rooms.includes("or('room_type.is.null,room_type.neq.live_session')") &&
-      routes.roomDetail.includes('requireRoomOwner') &&
-      routes.roomDetail.includes('member_id: auth.memberId') &&
-      routes.roomDetail.includes('Failed to save transcript') &&
       routes.roomDetail.indexOf('safeRequestJson(req)') < routes.roomDetail.indexOf('getAuthenticatedMember(req)') &&
-      routes.roomDetail.indexOf('getAuthenticatedMember(req)') < routes.roomDetail.indexOf('getSupabaseAdmin()') &&
+      !routes.roomDetail.includes('getSupabaseAdmin') &&
+      [routes.rooms, routes.roomDetail].every((source) => {
+        const post = source.slice(source.indexOf('export async function POST('));
+        return source.includes('export async function POST(') &&
+          post.includes("code: 'legacy_rooms_unavailable'") &&
+          post.includes('}, { status: 409 })') &&
+          post.includes('return privateJson({') &&
+          post.indexOf('getAuthenticatedMember(req)') < post.indexOf("code: 'legacy_rooms_unavailable'") &&
+          !/getSupabaseAdmin|\.from\(|\.rpc\(|fetch\(|emitActivity|createDailyRoomUrl/.test(post) &&
+          !post.includes('success: true') &&
+          !source.includes('process.env.DAILY_API_KEY');
+      }) &&
       [routes.rooms, routes.roomDetail].every(
         (source) =>
           source.includes('privateJson') &&
@@ -1817,9 +1820,8 @@ const checks = [
       ].every((source) => source.includes('privateJson')) &&
       routes.merchSuggestions.indexOf('getMovementAccess(req)') <
         routes.merchSuggestions.indexOf('getSupabaseAdmin()') &&
-      routes.merchSuggestionDetail.includes('UUID_RE') &&
-      routes.merchSuggestionDetail.indexOf('UUID_RE.test(id)') <
-        routes.merchSuggestionDetail.indexOf('getMovementAccess(req)') &&
+      routes.merchSuggestionDetail.includes("import { isUuid } from '@/lib/ids/uuid'") &&
+      precedes(routes.merchSuggestionDetail, '!isUuid(id)', 'getMovementAccess(req)') &&
       routes.merchGenerateProducts.indexOf('getMovementAccess(req)') <
         routes.merchGenerateProducts.indexOf('createAnthropicClient()') &&
       routes.merchGenerateMockup.indexOf('getMovementAccess(req)') <
