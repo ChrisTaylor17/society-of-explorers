@@ -8,10 +8,12 @@ The feedback action opens an ordinary email draft to the existing contact, `chri
 
 The two leaderboard recovery links previously pointed to the nonexistent `/community` route. Both now point to the existing `/explore` directory. Its availability and privacy behavior are unchanged.
 
+The seeded collaboration workspace is no longer mounted on the public homepage. The page now links to the existing proposed venture model at `/structure`. The complete research component is retained in `components/workspace/CollaborationPrototype.tsx` without a public route. Its hook setup, rendered prototype, storage keys and helper functions match their pre-extraction source exactly. Existing browser data, the underlying survey/workspace components, and their account or sync contracts are unchanged. Public visits no longer initialize this seeded graph or show pretend member roles, signers, telemetry or funding.
+
 ## Verification
 
-- Six focused groups in `verification/web/tests/public-trial.test.mjs` pass. They render the actual page, reject unexpected imports, check existing local routes and in-page anchors, verify the explicit availability statements and email draft, and render leaderboard recovery in five synthetic display states without executing effects.
-- Scoped ESLint passes with zero warnings for `app/HomePageClient.tsx`, `app/try/page.tsx`, `app/leaderboard/page.tsx` and the focused test.
+- Eight focused groups in `verification/web/tests/public-trial.test.mjs` pass. They render the actual pages, reject unexpected imports, check existing local routes and in-page anchors, verify the explicit availability statements and email draft, render leaderboard recovery in five synthetic display states without executing effects, and confirm that the retained prototype is not imported by a public route.
+- Scoped ESLint passes with zero warnings for the changed homepage, trial route, leaderboard, retained prototype and focused test.
 - The focused checks use the already-installed locked dependencies in the isolated `2026-11-11-public-trial/source` validation copy. No dependency installation occurred.
 - Built-app mobile, keyboard and navigation acceptance is assigned to the parent completion pass. This source/SSR check is not a browser, deployed-site or customer-validation result.
 

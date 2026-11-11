@@ -121,3 +121,46 @@ test('leaderboard recovery links lead to an existing community directory in ever
   }
   assert.ok(fs.existsSync(new URL('app/explore/page.tsx', root)));
 });
+
+test('homepage no longer mounts the seeded collaboration prototype or touches its storage and sync hooks', () => {
+  const home = fs.readFileSync(new URL('app/HomePageClient.tsx', root), 'utf8');
+  const source = ts.transpileModule(home, { compilerOptions: {
+    module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+  } }).outputText;
+  const mocks = {
+    react: React,
+    'react/jsx-runtime': require('react/jsx-runtime'),
+    'next/link': { default: function Link({ children, prefetch, ...props }) {
+      assert.equal(prefetch, false);
+      return React.createElement('a', props, children);
+    } },
+    '@/components/PublicNav': { default: () => null },
+    '@/components/PublicFooter': { default: () => null },
+    '@/components/FellowshipInvitation': { default: () => null },
+    '@/lib/analytics/client': { track: () => { throw Error('SSR may not record an action'); } },
+    '@/lib/circles/discovery': { ONLINE_CIRCLES_HREF: '/circles?format=online' },
+    '@/lib/feed/pulseClient': { fetchPulse: () => { throw Error('SSR may not load live questions'); } },
+  };
+  const loaded = { exports: {} };
+  new vm.Script(`(function(require,module,exports){${source}\n})`).runInNewContext({})(name => {
+    assert.ok(name in mocks, `Homepage may not import a prototype dependency: ${name}`);
+    return mocks[name];
+  }, loaded, loaded.exports);
+  const html = renderToStaticMarkup(React.createElement(loaded.exports.default));
+  assert.doesNotMatch(html, /network-handshake|Current role|Local pod queue|Local change queue|Project workspace|Profile questions|Systems Architect|multisig|payout/i);
+  assert.match(html, /href="\/try"/);
+  assert.match(html, /href="\/structure"/);
+  assert.match(cleanText(html), /venture-building model is a proposal/);
+  assert.doesNotMatch(home, /usePodSync|useProjectEscrow|PhilosophicalSurvey|CollaborationSandbox|CollaborationPrototype|localStorage/);
+});
+
+test('the extracted collaboration prototype retains its existing keys and stays off public routes', () => {
+  const prototype = fs.readFileSync(new URL('components/workspace/CollaborationPrototype.tsx', root), 'utf8');
+  for (const value of ['soe:homepage-pod-key:v1', 'soe:homepage-explorer-graph:v1', 'createHomepageExplorerGraph', 'buildHomepagePodEnvelope', 'CollaborationSandbox', 'PhilosophicalSurvey']) assert.ok(prototype.includes(value), value);
+  assert.match(prototype, /autoSync: false/);
+  assert.match(prototype, /stream: false/);
+  const walk = directory => fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? walk(new URL(entry.name + '/', directory)) : entry.name.endsWith('.tsx') || entry.name.endsWith('.ts') ? [new URL(entry.name, directory)] : []);
+  for (const file of walk(new URL('app/', root))) {
+    assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /(?:from\s*|import\s*\()['"][^'"]*CollaborationPrototype/, file.pathname);
+  }
+});
