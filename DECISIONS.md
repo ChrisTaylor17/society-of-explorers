@@ -6,3 +6,7 @@
 - 2026-11-11: Recover no-JavaScript book reading through the existing verified complete-edition endpoint, retaining exact edition checks and stating that linked passage positioning is unavailable.
 - 2026-11-11: Reuse existing tools and dependencies, preserve source/backups, and keep at least 8 GiB free; do not weaken a safety test to make a status green.
 - 2026-11-11: Treat a failed public directory request as an unavailable result with retry, never as evidence of an empty community or zero activity.
+
+- 2026-11-11: Update obsolete fixtures to the reviewed current account/RPC contracts; never weaken production validation merely to make inherited tests pass.
+- 2026-11-11: Extend the existing static public exhibition with an additive reading trial; keep the full member app separate until recovery and hosted access are verified.
+- 2026-11-11: A checked hosting usage report shows metered build/storage charges. Prepare the exact static release and rollback first; do not claim a new deployment is free or silently revive the earlier spending reserve.
