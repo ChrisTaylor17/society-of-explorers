@@ -4,6 +4,9 @@ import { createPortal } from 'react-dom';
 import { renderMarkdown } from '@/lib/renderMarkdown';
 import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice';
+import { readGuideReply, guideReplyNotice } from '@/lib/claude/guideReply';
+import { useGuideRequest } from '@/lib/claude/useGuideRequest';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 
 interface HubTask {
   id: string;
@@ -52,6 +55,12 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
   const [askLoading,    setAskLoading]    = useState(false);
   const [response,      setResponse]      = useState('');
   const [responseAgent, setResponseAgent] = useState('socrates');
+  const [responseNotice, setResponseNotice] = useState('');
+  const retireGuide = useCallback(() => {
+    setResponse(''); setAskLoading(false); setTasks([]);
+    setResponseNotice('Account changed. Sign in again before asking the guides.');
+  }, []);
+  const { begin: beginGuide, owns: ownsGuide, finish: finishGuide, cancel: cancelGuide } = useGuideRequest(retireGuide);
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -73,6 +82,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
 
   useEffect(() => {
     let cancelled = false;
+    const unsubscribe = subscribeAuthProviderChanges(() => { cancelled = true; });
 
     if (!memberId) {
       Promise.resolve().then(() => {
@@ -80,7 +90,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
         setTasks([]);
         setLoading(false);
       });
-      return () => { cancelled = true; };
+      return () => { cancelled = true; unsubscribe(); };
     }
 
     getAuthHeaders()
@@ -101,7 +111,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
         setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; unsubscribe(); };
   }, [memberId]);
 
   async function addTask(title?: string) {
@@ -121,66 +131,42 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
   }
 
   async function askAgent() {
+    if (!memberId) return;
     if (!tasks.length) {
       setResponse('Add some tasks first — I cannot counsel you on an empty mind.');
       setResponseAgent(selectedAgent);
       return;
     }
-    setAskLoading(true);
-    setResponse('');
-    setResponseAgent(selectedAgent);
+    const controller = beginGuide();
+    if (!controller) return;
+    setAskLoading(true); setResponse(''); setResponseNotice(''); setResponseAgent(selectedAgent);
     const thinker = THINKERS.find(t => t.id === selectedAgent) ?? THINKERS[0];
     const taskList = tasks.map(t => `[${t.status.toUpperCase()}] ${t.title}`).join('\n');
     const requestId = reward.begin(thinker.name);
-    if (!requestId) { setAskLoading(false); return; }
-
+    if (!requestId) { finishGuide(controller); setAskLoading(false); return; }
     try {
       const accessToken = await getSupabaseAccessToken();
+      if (!ownsGuide(controller)) return;
+      if (controller.signal.aborted) { setResponseNotice(guideReplyNotice('cancelled')); return; }
       const res = await fetch('/api/thinker', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({
-          requestId,
-          thinkerId: selectedAgent,
-          message: `Here are my current tasks:\n${taskList}\n\nSpeak to me as ${thinker.name}. Be direct, provocative, and in character. Tell me exactly what to focus on and why. Be specific about which task matters most right now. Keep it under 150 words.`,
-          history: [],
-        }),
+        method: 'POST', signal: controller.signal,
+        credentials: 'same-origin', cache: 'no-store', redirect: 'error',
+        headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        body: JSON.stringify({ requestId, thinkerId: selectedAgent, salonId: `private-${memberId}`,
+          message: `Here are my current tasks:\n${taskList}\n\nSpeak to me as ${thinker.name}. Be direct, provocative, and in character. Tell me exactly what to focus on and why. Be specific about which task matters most right now. Keep it under 150 words.`, history: [] }),
       });
-
-      if (!res.ok) {
-        setResponse(`${thinker.name} is unavailable right now. Check the API connection.`);
-        setAskLoading(false);
-        return;
-      }
-
-      const reader = res.body!.getReader();
-      const dec = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() ?? '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const payload = line.slice(6).trim();
-          if (payload === '[DONE]') continue;
-          try {
-            const evt = JSON.parse(payload);
-            if (evt.reward) reward.observe(requestId, evt.reward);
-            if (evt.delta) setResponse(p => p + evt.delta);
-            if (evt.text)  setResponse(p => p + evt.text);
-          } catch {}
-        }
-      }
+      const reply = await readGuideReply(res, { signal: controller.signal,
+        onText: text => { if (ownsGuide(controller)) setResponse(text); } });
+      if (!ownsGuide(controller)) return;
+      setResponse(reply.text); setResponseNotice(guideReplyNotice(reply.status));
+      if (reply.status === 'complete') reward.observe(requestId, reply.reward);
     } catch {
-      setResponse('Something went wrong. Try again.');
-    } finally { reward.finish(requestId); }
-    setAskLoading(false);
+      if (ownsGuide(controller)) setResponseNotice(guideReplyNotice(controller.signal.aborted ? 'cancelled' : 'interrupted'));
+    } finally {
+      reward.finish(requestId);
+      if (ownsGuide(controller)) setAskLoading(false);
+      finishGuide(controller);
+    }
   }
 
   async function moveTask(id: string, status: HubTask['status']) {
@@ -229,6 +215,17 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
       >
     <>
         <ThinkerRewardNotice reward={reward} />
+        {responseNotice && <p role="alert" style={{ padding: '8px 24px', color: ivory, lineHeight: 1.5 }}>{responseNotice}</p>}
+        {askLoading && <button type="button" onClick={cancelGuide} style={{ minHeight: 44 }}>Stop reply</button>}
+        <style>{`
+          @media (max-width: 700px) {
+            .soe-hub-input { flex-wrap: wrap; }
+            .soe-hub-input input { min-width: 0; flex-basis: 100% !important; }
+            .soe-hub-columns { flex-direction: column; }
+            .soe-hub-board { flex: 0 0 210px !important; }
+            .soe-hub-response { width: 100% !important; min-height: 280px; flex: 1 0 280px; }
+          }
+        `}</style>
         {/* HEADER */}
         <div style={{ padding: '16px 24px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, background: bgCard }}>
           <div>
@@ -242,7 +239,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
         </div>
 
         {/* INPUT BAR */}
-        <div style={{ padding: '12px 24px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0, background: bgCard }}>
+        <div className="soe-hub-input" style={{ padding: '12px 24px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0, background: bgCard }}>
           <input
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
@@ -270,10 +267,10 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
         </div>
 
         {/* MAIN CONTENT */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+        <div className="soe-hub-columns" style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex' }}>
 
           {/* KANBAN BOARD */}
-          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1px', background: goldBorder, overflow: 'hidden' }}>
+          <div className="soe-hub-board" style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1px', background: goldBorder, overflow: 'hidden' }}>
             {cols.map(col => (
               <div key={col.key} style={{ background: bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ padding: '12px 18px', borderBottom: `1px solid ${col.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -310,7 +307,7 @@ export default function HubOverlay({ member, onClose }: { member: HubMember | nu
           </div>
 
           {/* THINKER RESPONSE PANEL */}
-          <div style={{ width: '340px', borderLeft: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+          <div className="soe-hub-response" style={{ width: '340px', borderLeft: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
             {/* Thinker selector */}
             <div style={{ padding: '12px 16px', borderBottom: `1px solid ${goldBorder}`, flexShrink: 0 }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.5, marginBottom: '8px' }}>CONSULT A MIND</div>

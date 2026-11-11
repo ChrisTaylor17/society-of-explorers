@@ -79,7 +79,7 @@ export default function AccessPage() {
 
       {/* Header */}
       <div style={{ textAlign: 'center', padding: '80px 2rem 40px' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>ACCESS + SOVEREIGNTY</div>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>ACCESS + ACTIVITY</div>
         <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 300, letterSpacing: '0.15em', marginBottom: '1rem' }}>
           LOCK & SAFE
         </h1>
@@ -134,19 +134,19 @@ export default function AccessPage() {
             YOUR SAFE
           </h2>
           <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic', textAlign: 'center', marginBottom: '2rem' }}>
-            Everything you create is yours.
+            Your account and activity summary.
           </p>
 
           {!memberId ? (
             <div style={{ textAlign: 'center', padding: '3rem', border: `1px solid ${gold}22`, background: '#0d0d0d' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1rem' }}>⬡</div>
-              <p style={{ fontSize: '1rem', color: muted, marginBottom: '1.5rem' }}>Sign in to view your Safe</p>
+              <p style={{ fontSize: '1rem', color: muted, marginBottom: '1.5rem' }}>Sign in to view your activity summary</p>
               <button onClick={signInWithGoogle} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, border: 'none', padding: '10px 24px', cursor: 'pointer' }}>
                 SIGN IN WITH GOOGLE
               </button>
             </div>
           ) : loadingSafe ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: muted, fontStyle: 'italic' }}>Opening your Safe...</div>
+            <div style={{ textAlign: 'center', padding: '3rem', color: muted, fontStyle: 'italic' }}>Loading activity summary...</div>
           ) : safeData ? (
             <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d' }}>
               <div style={{ padding: '1.5rem 2rem', borderBottom: `1px solid ${gold}11` }}>
@@ -157,7 +157,7 @@ export default function AccessPage() {
                 { icon: '◈', label: 'Great Books Highlights', value: safeData.highlights },
                 { icon: '◎', label: 'Waddles Recorded', value: safeData.waddles },
                 { icon: '⬡', label: 'Artifacts Created', value: safeData.artifacts },
-                { icon: '◆', label: '$EXP Earned', value: safeData.exp },
+                { icon: '◆', label: 'EXP points recorded', value: safeData.exp },
                 { icon: '◇', label: 'Books Started', value: safeData.booksStarted },
                 { icon: '✓', label: 'Books Completed', value: safeData.booksCompleted },
               ].map((item, i) => (
@@ -192,7 +192,7 @@ export default function AccessPage() {
               ))}
             </div>
             <p style={{ fontSize: '0.95rem', color: muted, lineHeight: 1.7, fontStyle: 'italic', textAlign: 'center' }}>
-              Your learning is recorded. When ETH ID launches, this history becomes part of your sovereign identity on-chain.
+              The totals above summarize recorded activity. EXP points are not a promised payment or reward. ETH ID and an on-chain learning history remain proposals, with availability and safeguards still to be verified.
             </p>
           </div>
         </section>
@@ -202,14 +202,14 @@ export default function AccessPage() {
       <section style={{ padding: '4rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>III.</div>
         <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '2rem', textAlign: 'center', borderBottom: `1px solid ${gold}22`, paddingBottom: '1rem' }}>
-          DATA SOVEREIGNTY
+          DATA SOVEREIGNTY · PROPOSED
         </h2>
         <p style={{ fontSize: '1.15rem', lineHeight: 1.9, textAlign: 'center', marginBottom: '2rem' }}>
-          Your data lives in your Safe. It is encrypted, portable, and yours. No platform can access it without your permission. This is the Living Archive — the beginning of sovereign data.
+          This page presents account and activity summaries. The Living Archive proposes greater control over personal data, including encryption, portability and permission controls. Those capabilities, their availability and their safeguards still need verification.
         </p>
         <div style={{ textAlign: 'center' }}>
           <a href="/data-layer" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '10px 24px', display: 'inline-block' }}>
-            READ THE FULL DATA LAYER VISION →
+            EXPLORE THE PROPOSED DATA LAYER →
           </a>
         </div>
       </section>

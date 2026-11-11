@@ -8,6 +8,7 @@ export default function FellowshipLayout({ children }: { children: React.ReactNo
         <Link className={styles.brand} href="/">Society of Explorers</Link>
         <nav className={styles.nav} aria-label="Christian fellowship navigation">
           <Link href="/fellowship">Fellowship</Link>
+          <Link href="/fellowship#root-kernel">Root Kernel · optional study</Link>
           <Link href="/fellowship/manifesto">Our covenant</Link>
           <Link href="/fellowship/scripture">Scripture in conversation</Link>
           <Link href="/fellowship/research/ancient-jesus-passage">Ancient-text dossier</Link>

@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   const anthropic = createAnthropicClient();
-  const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
+  const model = resolveClaudeModel('content');
   let analysisText = '';
 
   try {

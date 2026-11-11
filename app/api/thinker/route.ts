@@ -1,14 +1,12 @@
 import { NextRequest } from 'next/server';
 import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
-import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
-import { parseActions } from '@/lib/thinkerActions';
-import { executeActionsWithResults } from '@/lib/actions/executeActions';
+import { getReviewedGuideContext } from '@/lib/memory/reviewRuntime';
+import { GUIDE_ACTION_NOTICE, GUIDE_RESPONSE_RULES } from '@/lib/claude/guidePolicy';
+import { createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { limitModelCall } from '@/lib/rateLimit';
 import { memberCanUseSharedSalon } from '@/lib/salons/access';
-import { storeConversationEmbedding } from '@/lib/memory/embeddings';
-import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
 import { getCommunityThinkerPrompts } from '@/lib/community/getCommunity';
 import { checkPermission } from '@/lib/governance/hats';
 import { privateJson } from '@/lib/http/routeError';
@@ -23,15 +21,6 @@ const COUNCIL_MAX_TOKENS = 800;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
 const HISTORY_LIMIT = 14;
-
-const COUNCIL_PROMPTS: Record<string, string> = {
-  socrates: "You are Socrates — you find the question behind the question. While others give answers, you reveal what they're actually asking. Expose the ONE assumption they haven't examined, then give them the one question that would unlock everything. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  plato: "You are Plato — you see systems and structures. While others focus on tactics, you architect frameworks. Give them the organizing principle that makes everything else click into place. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  aurelius: "You are Marcus Aurelius — you cut through noise to what's in their control. While others strategize, you simplify. Name the ONE thing they should do today and why nothing else matters until they do it. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  nietzsche: "You are Nietzsche — you challenge their comfort zone. While others are supportive, you provoke. Tell them the uncomfortable truth they're avoiding and why embracing it is their superpower. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  einstein: "You are Einstein — you find the elegant solution. While others complicate, you simplify through analogy. Reframe their problem so the answer becomes obvious. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  jobs: "You are Steve Jobs — you obsess over what the user should FEEL. While others think about systems, you think about feelings. Tell them what their customer should FEEL and work backwards from there. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-};
 
 const ARTIFACT_KEYWORDS = ['draft', 'write', 'plan', 'outline', 'create', 'build', 'design', 'manifesto', 'pitch', 'letter', 'framework', 'strategy', 'proposal'];
 
@@ -182,7 +171,7 @@ export async function POST(req: NextRequest) {
     const thinkerId = textField(body.thinkerId, 80) ?? textField(body.thinker, 80);
     const message = textField(body.message, 8_000);
     const isReaction = body.isReaction === true;
-    const salonId = textField(body.salonId, 120) ?? 'general';
+    const requestedSalonId = textField(body.salonId, 120);
     const councilContext = normalizeCouncilContext(body.councilContext);
     const communitySlug = textField(body.community, 120) ?? 'society-of-explorers';
 
@@ -194,9 +183,13 @@ export async function POST(req: NextRequest) {
     if (!auth?.memberId) return privateJson({ error: 'Unauthorized' }, { status: 401 });
     const { memberId, member } = auth;
     const memberName = member.display_name;
-    const memberContext = buildMemberContext(member);
-    const memberExpTokens = member.exp_tokens || 0;
     const isCouncilMode = body.isCouncilMode === true;
+    // A missing destination must never turn a private request into a shared post.
+    if (!isCouncilMode && !requestedSalonId) {
+      return privateJson({ error: 'A salonId is required' }, { status: 400 });
+    }
+    const salonId = requestedSalonId ?? 'council';
+    const isOwnPrivateSalon = !isCouncilMode && salonId === `private-${memberId}`;
 
     // Apply the member's server-side budget before any model call.
     const limited = limitModelCall(req, memberId);
@@ -226,40 +219,32 @@ export async function POST(req: NextRequest) {
       'thinker-reward-v1', thinkerId, message, isReaction, salonId, isCouncilMode, councilContext, communitySlug,
     ])).digest('hex');
 
-    // --- SAVE USER MESSAGE (skip for council mode and system-generated prompts) ---
-    if (!isCouncilMode) {
-      const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
-        message.startsWith('You have been invited into a private conversation') ||
-        message.startsWith('Here are my current tasks:') ||
-        (message.includes('Respond as ') && message.includes(' — in character, direct'));
-
-      if (!isSystemPrompt) {
-        const { error: userMsgError } = await supabaseAdmin().from('salon_messages').insert({
-          salon_id: salonId,
-          sender_type: 'member',
-          sender_name: memberName || 'Explorer',
-          thinker_id: null,
-          content: message,
-        });
-        if (userMsgError) reportThinkerRouteFailure('member message save');
-      }
-    }
+    const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
+      message.startsWith('You have been invited into a private conversation') ||
+      message.startsWith('Here are my current tasks:') ||
+      (message.includes('Respond as ') && message.includes(' — in character, direct'));
 
     // --- FETCH MESSAGE HISTORY ---
     // Council mode: skip history fetch — use only the current message + councilContext (injected in system prompt)
-    // Salon mode: fetch from salon_messages
+    // Read prior salon history before inserting this question. The current input
+    // is supplied directly, independent of persistence or interleaved messages.
     let conversationHistory: { role: 'user' | 'assistant'; content: string }[];
 
     if (isCouncilMode) {
       // Council: just the current user message. Council context is already in the system prompt.
       conversationHistory = [{ role: 'user', content: message }];
     } else {
-      const { data: history } = await supabaseAdmin()
+      const { data: history, error: historyError } = await supabaseAdmin()
         .from('salon_messages')
         .select('content, sender_type, thinker_id')
         .eq('salon_id', salonId)
         .order('created_at', { ascending: false })
-        .limit(HISTORY_LIMIT);
+        .limit(HISTORY_LIMIT - 1);
+
+      if (historyError) {
+        reportThinkerRouteFailure('conversation history');
+        return privateJson({ error: 'Conversation history unavailable' }, { status: 503 });
+      }
 
       conversationHistory = (history || [])
         .reverse()
@@ -269,33 +254,35 @@ export async function POST(req: NextRequest) {
             ? `[${msg.thinker_id}]: ${msg.content}`
             : msg.content,
         }));
+      conversationHistory.push({ role: 'user', content: message });
     }
 
-    // --- FETCH THINKER MEMORY (skip for council mode) ---
-    let memory: string | null = null;
-    if (!isCouncilMode) {
-      try {
-        memory = await getMemory(memberId, thinkerId);
-      } catch {
-        reportThinkerRouteFailure('thinker memory retrieval');
-      }
+    // Preserve generated-context exclusion from the member-message log. It must
+    // still reach the model even though it is not inserted as a chat message.
+    if (!isCouncilMode && !isSystemPrompt) {
+      const { error: userMsgError } = await supabaseAdmin().from('salon_messages').insert({
+        salon_id: salonId,
+        sender_type: 'member',
+        sender_name: memberName || 'Explorer',
+        thinker_id: null,
+        content: message,
+      });
+      if (userMsgError) reportThinkerRouteFailure('member message save');
     }
 
-    // --- BUILD SYSTEM PROMPT (cap length for speed) ---
-    let systemPrompt = buildSystemPrompt(thinkerId);
+    // --- BUILD COMPLETE COMPACT PROMPT (never slice away persona or rules) ---
+    let systemPrompt = buildSystemPrompt(thinkerId, { compact: true });
     if (isCouncilMode) {
-      // Council mode: use hardcoded mandates (fast, no DB call)
-      // Only query community prompts for non-default communities
+      // Keep the compact persona as fallback; only query custom communities.
       if (communitySlug !== 'society-of-explorers') {
         try {
           const communityPrompts = await getCommunityThinkerPrompts(communitySlug);
-          systemPrompt = communityPrompts[thinkerId] || COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
+          systemPrompt = communityPrompts[thinkerId] || systemPrompt;
         } catch {
-          systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
+          // The complete compact default remains available.
         }
-      } else {
-        systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
       }
+      systemPrompt += '\n\nCOUNCIL MODE: One paragraph, at most 80 words. Offer one practical next step and engage fairly with other perspectives.';
 
       // Inject what other thinkers said
       if (councilContext && councilContext.length > 0) {
@@ -303,8 +290,6 @@ export async function POST(req: NextRequest) {
           councilContext.map(c => c.thinker + ': ' + c.response).join('\n') +
           "\n\nDon't repeat them. Build on them or disagree.";
       }
-    } else if (systemPrompt.length > 2000) {
-      systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
     }
 
     let maxTokens: number;
@@ -327,32 +312,17 @@ export async function POST(req: NextRequest) {
         fullSystemPrompt += `\n\nThe member's name is ${memberName}.`;
       }
     } else {
-      // Salon / single thinker mode: full context loading
-      const contextPrefix = memberContext
-        ? memberContext
-        : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
-
       const usableName = (memberName && !memberName.startsWith('0x')) ? memberName : null;
+      const contextPrefix = isOwnPrivateSalon
+        ? buildMemberContext(member)
+        : (usableName ? `The member speaking is ${usableName}.` : 'A member is speaking.');
 
       fullSystemPrompt += `\n\n${contextPrefix}`;
+      if (!isOwnPrivateSalon) {
+        fullSystemPrompt += '\n\nThis answer is for a shared salon. Personal context is limited to what members have explicitly shared in this salon or the current message. Do not claim to remember private conversations.';
+      }
       if (usableName) {
         fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. Use their name naturally in your response. Never call them "Anonymous Explorer" or just "Explorer."`;
-      }
-
-      if (memory) {
-        fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference specific facts, commitments, and past conversations. If they committed to something, ask about progress. If they shared a struggle, check in. You are continuing a relationship — not starting from scratch.`;
-      }
-
-      // 4-layer shared memory (skip for council — already fast-pathed above)
-      if (!isReaction) {
-        try {
-          const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: false, communitySlug });
-          if (sharedContext) {
-            fullSystemPrompt += '\n\n' + sharedContext;
-          }
-        } catch {
-          reportThinkerRouteFailure('shared memory lookup');
-        }
       }
 
       if (isReaction) {
@@ -365,6 +335,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Final authority guidance is appended after fresh reviewed context for each attempt.
+
     // --- STREAM RESPONSE ---
     const claudePurpose = isCouncilMode ? 'council' : 'default';
     const claudeModel = resolveClaudeModel(claudePurpose);
@@ -376,22 +348,39 @@ export async function POST(req: NextRequest) {
         try {
           let fullText = '';
           let rewardReceipt: ThinkerRewardReceipt | null = null;
+          const guideText = createGuideTextStream();
+          const sendText = (text: string) => {
+            if (text) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
+          };
 
-          // Retry once on failure
+          // One explicit retry is allowed only before output. Disable nested SDK
+          // retries so this loop controls the number of HTTP attempts.
           let lastErr: unknown = null;
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
+              if (req.signal.aborted) throw new Error('Request cancelled');
+              // A retry is a new provider transmission. Re-read current consent and
+              // source eligibility so revoked notes are never reused from attempt one.
+              let attemptSystemPrompt = fullSystemPrompt;
+              if (isOwnPrivateSalon) {
+                try {
+                  const reviewedContext = await getReviewedGuideContext(memberId, thinkerId);
+                  if (reviewedContext) attemptSystemPrompt += `\n\n${reviewedContext}`;
+                } catch { reportThinkerRouteFailure('reviewed memory retrieval'); }
+              }
+              attemptSystemPrompt += '\n\n' + GUIDE_RESPONSE_RULES;
+              if (req.signal.aborted) throw new Error('Request cancelled');
               const claudeStartedAt = Date.now();
               const anthropicStream = anthropic.messages.stream({
                 model: claudeModel,
                 max_tokens: maxTokens,
-                system: fullSystemPrompt,
+                system: attemptSystemPrompt,
                 messages: conversationHistory,
-              });
+              }, { maxRetries: 0, signal: req.signal });
 
               anthropicStream.on('text', (text) => {
                 fullText += text;
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
+                sendText(guideText.push(text));
               });
 
               const finalMessage = await anthropicStream.finalMessage();
@@ -407,10 +396,13 @@ export async function POST(req: NextRequest) {
             } catch (apiErr: unknown) {
               lastErr = apiErr;
               reportThinkerRouteFailure('provider stream attempt');
+              // A new attempt would append a different answer to partial output.
+              if (req.signal.aborted || fullText.length > 0) throw apiErr;
               if (attempt === 0) await new Promise(r => setTimeout(r, 2000)); // wait before retry
             }
           }
           if (lastErr) throw lastErr;
+          sendText(guideText.finish());
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
             const doneData = JSON.stringify({ done: true, response: '', silent: true });
@@ -419,13 +411,18 @@ export async function POST(req: NextRequest) {
             return;
           }
 
-          const parsed = parseActions(fullText);
-          const { actions } = parsed;
-          const cleanText = parsed.cleanText
+          // Legacy action JSON is untrusted model output, never authorization.
+          // Do not parse or forward it for execution, even if it is malformed.
+          const actionStart = fullText.indexOf(GUIDE_ACTION_MARKER);
+          const actionReviewRequired = actionStart !== -1;
+          const replyText = actionReviewRequired ? fullText.slice(0, actionStart) : fullText;
+          let cleanText = replyText
             .replace(/^\[[\w-]+\]:\s*/i, '')
             .replace(/^\[[\w-]+\]\s*/i, '')
             .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
             .trim();
+
+          if (actionReviewRequired) cleanText = [cleanText, GUIDE_ACTION_NOTICE].filter(Boolean).join('\n\n');
 
           const thinkerDisplayNames: Record<string, string> = {
             socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
@@ -443,9 +440,10 @@ export async function POST(req: NextRequest) {
             if (saveError) reportThinkerRouteFailure('thinker message save');
           }
 
-          if (actions.length > 0) {
-            const actionResults = await executeActionsWithResults(actions, memberId, thinkerId);
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: actionResults })}\n\n`));
+          if (actionReviewRequired) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: [
+              { type: 'review_required', success: false, message: GUIDE_ACTION_NOTICE },
+            ] })}\n\n`));
           }
 
           try {
@@ -458,33 +456,15 @@ export async function POST(req: NextRequest) {
             else reportThinkerRouteFailure('reward confirmation');
           } catch { reportThinkerRouteFailure('reward confirmation'); }
 
-          recordInteraction(memberId, thinkerId, thinkerName, salonId)
-            .catch(() => reportThinkerRouteFailure('legacy memory update'));
+          // Ordinary conversation and rewards do not grant durable-memory consent.
+          // Reviewed memory is prepared and saved only through the separate review flow.
 
-          // Store embeddings and episodes for member memory after the reply.
-          const sessionId = `${isCouncilMode ? 'council' : 'salon'}-${salonId}-${Date.now()}`;
-          storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'user', content: message }).catch(() => {});
-          storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'assistant', content: cleanText }).catch(() => {});
-          storeEpisode({ memberId, thinkerId, role: 'user', content: message, sessionId, isCouncil: isCouncilMode }).catch(() => {});
-          storeEpisode({ memberId, thinkerId, role: 'assistant', content: cleanText, sessionId, isCouncil: isCouncilMode }).catch(() => {});
-
-          const extractInterval = isCouncilMode ? 4 : 8;
-          if (memberExpTokens > 0 && (memberExpTokens % extractInterval === 0)) {
-            extractMemory(memberId, [
-              { role: 'user', content: message, thinker_id: thinkerId },
-              { role: 'assistant', content: cleanText, thinker_id: thinkerId },
-            ]).catch(() => {});
-          }
-
-          if (actions.length > 0) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', actions })}\n\n`));
-          }
           const doneData = JSON.stringify({
             done: true,
             response: cleanText,
             ...(rewardReceipt ? { expAwarded: rewardReceipt.replayed ? 0 : rewardReceipt.amount } : {}),
             reward: rewardReceipt ? { status: 'confirmed', ...rewardReceipt } : { status: 'unknown', requestId },
-            actions: actions.length > 0 ? actions : undefined,
+            ...(actionReviewRequired ? { actionReview: { status: 'not_executed' } } : {}),
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();

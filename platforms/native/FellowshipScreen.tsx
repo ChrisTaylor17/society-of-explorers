@@ -17,25 +17,30 @@ const NOTHING = () => {};
 /** Public readings work offline. Navigation and correction actions retire on
  * background/Android blur; this screen has no account or network authority. */
 function useForegroundAction(retire: () => void = NOTHING) {
-  const life = useRef({ mounted: false, active: false, epoch: 0 });
+  const life = useRef({ mounted: false, active: false, epoch: 0, editEpoch: 0 });
   const [epoch, setEpoch] = useState(0);
+  const [editEpoch, setEditEpoch] = useState(0);
   useLayoutEffect(() => {
     const state = life.current; state.mounted = true;
     let blurred = false;
     const sync = () => {
       state.active = AppState.currentState === 'active' && !blurred;
       if (!state.active) retire();
+      setEditEpoch(++state.editEpoch);
       setEpoch(++state.epoch);
     };
     const change = AppState.addEventListener('change', sync);
     const blur = Platform.OS === 'android' ? AppState.addEventListener('blur', () => { blurred = true; sync(); }) : null;
     const focus = Platform.OS === 'android' ? AppState.addEventListener('focus', () => { blurred = false; sync(); }) : null;
     sync();
-    return () => { state.mounted = false; state.active = false; ++state.epoch; change.remove(); blur?.remove(); focus?.remove(); };
+    return () => { state.mounted = false; state.active = false; ++state.epoch; ++state.editEpoch; change.remove(); blur?.remove(); focus?.remove(); };
   }, [retire]);
-  return (work: () => void) => {
+  return (work: () => void, kind: 'action' | 'text-change' = 'action') => {
     const state = life.current;
-    if (state.mounted && state.active && state.epoch === epoch) {
+    if (state.mounted && state.active && (kind === 'text-change' ? state.editEpoch === editEpoch : state.epoch === epoch)) {
+      // Native text events may arrive together before a render. Keep that edit
+      // stream valid, while every edit still retires older button callbacks.
+      if (kind === 'action') setEditEpoch(++state.editEpoch);
       setEpoch(++state.epoch);
       work();
     }
@@ -171,10 +176,10 @@ function FellowshipCorrection({ claim }: { claim: ReviewableAnalysis }) {
     <Text style={styles.note}>Your proposal stays in this view. Copy the preview if you want to keep it. It is cleared when you leave or background the app; nothing is submitted.</Text>
     <TextInput accessibilityLabel={'Proposed analysis · ' + claim.id} value={text} maxLength={6000} multiline
       autoComplete="off" autoCorrect={false} textContentType="none" style={styles.input}
-      onChangeText={value => act(() => { setText(value); setProposal(null); })}/>
+      onChangeText={value => act(() => { setText(value); setProposal(null); }, 'text-change')}/>
     <TextInput accessibilityLabel={'Reason and source to check · ' + claim.id} value={reason} maxLength={3000} multiline
       autoComplete="off" autoCorrect={false} textContentType="none" style={styles.input}
-      onChangeText={value => act(() => { setReason(value); setProposal(null); })}/>
+      onChangeText={value => act(() => { setReason(value); setProposal(null); }, 'text-change')}/>
     <Action label={'Preview correction · ' + claim.id} disabled={!possible} onPress={() => act(() => setProposal(correctionProposal(claim, text, reason)))}/>
     {proposal ? <Text selectable accessibilityLabel={'Correction preview · ' + claim.id} style={styles.copy}>{JSON.stringify(proposal, null, 2)}</Text> : null}
     <Action label={'Clear correction · ' + claim.id} onPress={() => act(clear)}/>

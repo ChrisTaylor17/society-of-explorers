@@ -1,23 +1,34 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import ProjectProposalForm from '@/components/projects/ProjectProposalForm';
+import { PROJECT_ID_PATTERN, type PublicProject } from '@/lib/projects/publicProject';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-interface Project {
-  id: string;
-  title: string;
-  short_description: string | null;
-  description: string;
-  category: string;
-  funding_goal: number;
-  amount_raised: number;
-  backer_count: number;
-  status: string;
+function readProjectList(payload: unknown): PublicProject[] {
+  if (!payload || typeof payload !== 'object' || !('projects' in payload) || !Array.isArray(payload.projects)) {
+    throw new Error('Invalid project list');
+  }
+  const ids = new Set<string>();
+  return payload.projects.map((value: unknown) => {
+    if (!value || typeof value !== 'object') throw new Error('Invalid project');
+    const project = value as Record<string, unknown>;
+    if (
+      typeof project.id !== 'string' || !PROJECT_ID_PATTERN.test(project.id) || ids.has(project.id.toLowerCase()) ||
+      typeof project.title !== 'string' || !project.title.trim() ||
+      (project.short_description !== null && typeof project.short_description !== 'string') ||
+      typeof project.description !== 'string' || typeof project.category !== 'string' || typeof project.status !== 'string' ||
+      !['funding_goal', 'amount_raised', 'backer_count'].every(key => typeof project[key] === 'number' && Number.isFinite(project[key]) && project[key] >= 0) ||
+      !Number.isInteger(project.backer_count)
+    ) throw new Error('Invalid project');
+    ids.add(project.id.toLowerCase());
+    return project as PublicProject;
+  });
 }
 
 const STEPS = [
@@ -39,16 +50,11 @@ const CATEGORIES: Record<string, string> = {
 };
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [title, setTitle] = useState('');
-  const [shortDesc, setShortDesc] = useState('');
-  const [desc, setDesc] = useState('');
-  const [category, setCategory] = useState('general');
-  const [fundingGoal, setFundingGoal] = useState('10000');
-  const [pName, setPName] = useState('');
-  const [pEmail, setPEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [projects, setProjects] = useState<PublicProject[]>([]);
+  const [projectState, setProjectState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [projectAttempt, setProjectAttempt] = useState(0);
+  const projectRequestPending = useRef(true);
+
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -68,35 +74,52 @@ export default function ProjectsPage() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/projects')
-      .then(r => r.json())
-      .then(d => setProjects(d.projects || []))
-      .catch(() => {});
-  }, []);
+    const controller = new AbortController();
+    let active = true;
+    const fail = () => {
+      if (!active) return;
+      active = false;
+      projectRequestPending.current = false;
+      setProjects([]);
+      setProjectState('error');
+    };
+    const timeout = window.setTimeout(() => {
+      fail();
+      controller.abort();
+    }, 10_000);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim() || !desc.trim() || !pName.trim() || !pEmail.trim()) return;
-    setSubmitting(true);
-    try {
-      await fetch('/api/projects/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(), short_description: shortDesc.trim(), description: desc.trim(),
-          category, funding_goal: fundingGoal, name: pName.trim(), email: pEmail.trim(),
-        }),
-      });
-      setSubmitted(true);
-    } catch {}
-    setSubmitting(false);
+    async function loadProjects() {
+      try {
+        const response = await fetch('/api/projects', { signal: controller.signal, cache: 'no-store' });
+        if (!response.ok) throw new Error('Project request failed');
+        const nextProjects = readProjectList(await response.json());
+        if (!active) return;
+        active = false;
+        projectRequestPending.current = false;
+        setProjects(nextProjects);
+        setProjectState('ready');
+      } catch {
+        fail();
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+    void loadProjects();
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [projectAttempt]);
+
+  function retryProjects() {
+    if (projectRequestPending.current) return;
+    projectRequestPending.current = true;
+    setProjects([]);
+    setProjectState('loading');
+    setProjectAttempt(attempt => attempt + 1);
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px',
-    fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment,
-    outline: 'none', boxSizing: 'border-box',
-  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
@@ -125,26 +148,31 @@ export default function ProjectsPage() {
       </section>
 
       {/* ═══ ACTIVE PROJECTS ═══ */}
-      {projects.length > 0 && (
-        <section data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <section id="project-list" aria-labelledby="project-list-heading" style={{ padding: '6rem 2rem', background: '#0a0a0a' }}>
           <div style={{ maxWidth: '960px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>ACTIVE PROJECTS</div>
+              <h2 id="project-list-heading" style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', fontWeight: 400, letterSpacing: '0.2em', color: gold, marginBottom: '0.75rem' }}>ACTIVE PROJECTS</h2>
+              <p role={projectState === 'error' ? 'alert' : 'status'} style={{ color: ivory85, fontSize: '18px', lineHeight: 1.7, marginBottom: '1rem' }}>
+                {projectState === 'loading' ? 'Loading projects…' : projectState === 'error' ? 'We couldn’t load the projects. Please try again.' : projects.length === 0 ? 'No active projects are listed right now.' : `${projects.length} active project${projects.length === 1 ? '' : 's'}.`}
+              </p>
+              <button type="button" onClick={retryProjects} disabled={projectState === 'loading'} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, background: 'transparent', border: `1px solid ${gold}66`, padding: '12px 20px', minHeight: '44px', cursor: projectState === 'loading' ? 'wait' : 'pointer', opacity: projectState === 'loading' ? 0.6 : 1 }}>
+                {projectState === 'loading' ? 'Loading projects…' : projectState === 'error' ? 'Retry projects' : 'Refresh projects'}
+              </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1px', background: `${gold}10` }}>
+            <div aria-busy={projectState === 'loading'} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1px', background: `${gold}10` }}>
               {projects.map(p => {
                 const pct = p.funding_goal > 0 ? Math.min((p.amount_raised / p.funding_goal) * 100, 100) : 0;
                 return (
-                  <div key={p.id} style={{ background: '#0d0d0d', padding: '2rem', border: `1px solid rgba(201,168,76,0.15)`, position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '3px 10px', borderRadius: '10px' }}>
+                  <div key={p.id} style={{ background: '#0d0d0d', padding: '2rem', border: `1px solid rgba(201,168,76,0.15)`, minWidth: 0, overflowWrap: 'anywhere' }}>
+                    <div style={{ display: 'inline-block', maxWidth: '100%', marginBottom: '1rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '3px 10px', borderRadius: '10px' }}>
                       {CATEGORIES[p.category] || p.category.toUpperCase()}
                     </div>
-                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', fontWeight: 400, color: parchment, marginBottom: '0.75rem', paddingRight: '80px' }}>{p.title}</h3>
+                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>{p.title}</h3>
                     <p style={{ fontSize: '16px', color: muted, lineHeight: 1.7, marginBottom: '1.5rem' }}>{p.short_description || p.description.slice(0, 120) + '...'}</p>
                     <div style={{ height: '6px', background: '#1a1a1a', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.5rem' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: gold, borderRadius: '3px', transition: 'width 0.5s ease' }} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: muted, marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between', fontSize: '13px', color: muted, marginBottom: '1.5rem' }}>
                       <span>${p.amount_raised.toLocaleString()} of ${p.funding_goal.toLocaleString()}</span>
                       <span>{p.backer_count} backer{p.backer_count !== 1 ? 's' : ''}</span>
                     </div>
@@ -155,7 +183,6 @@ export default function ProjectsPage() {
             </div>
           </div>
         </section>
-      )}
 
       {/* ═══ HOW IT WORKS ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.9s ease' }}>
@@ -186,39 +213,14 @@ export default function ProjectsPage() {
             Have something worth building?
           </h2>
 
-          {submitted ? (
-            <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}08` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>SUBMISSION RECEIVED</div>
-              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>Your project has been submitted for review. We&apos;ll be in touch.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
-              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Project title" required style={inputStyle} />
-              <input value={shortDesc} onChange={e => setShortDesc(e.target.value)} placeholder="One-line description" style={inputStyle} />
-              <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Full description" required rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
-              <select value={category} onChange={e => setCategory(e.target.value)} style={{ ...inputStyle, appearance: 'auto' }}>
-                <option value="general">General</option>
-                <option value="physical">Physical Space</option>
-                <option value="technology">Technology</option>
-                <option value="education">Education</option>
-                <option value="art">Art</option>
-                <option value="community">Community</option>
-              </select>
-              <input value={fundingGoal} onChange={e => setFundingGoal(e.target.value)} placeholder="Funding goal ($)" type="number" style={inputStyle} />
-              <input value={pName} onChange={e => setPName(e.target.value)} placeholder="Your name" required style={inputStyle} />
-              <input value={pEmail} onChange={e => setPEmail(e.target.value)} placeholder="Your email" type="email" required style={inputStyle} />
-              <button type="submit" disabled={submitting} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: submitting ? 0.5 : 1, borderRadius: 0 }}>
-                {submitting ? 'SUBMITTING...' : 'SUBMIT PROJECT PROPOSAL'}
-              </button>
-            </form>
-          )}
+          <ProjectProposalForm />
         </div>
       </section>
 
       {/* ═══ INSPIRATION CARDS ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.9s ease' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}10` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1px', background: `${gold}10` }}>
             {CARDS.map(card => (
               <div key={card.title} style={{ background: '#0d0d0d', padding: '2.5rem 2rem', border: `1px solid rgba(201,168,76,0.15)` }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>{card.title.toUpperCase()}</div>

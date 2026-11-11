@@ -256,8 +256,19 @@ test('library uses author/translator discovery, loads progress explicitly and di
   const a = await mount({ view: 'library', respond: () => Response.json({memberId:MEMBER,progress}) });
   try {
     assert.equal(a.requests.length, 0); assert.doesNotMatch(a.text(), /RECOMMENDS/); assert.match(a.text(), /Benjamin Jowett/);
+    const editionLinks = [...document.querySelectorAll('article a')];
+    assert.equal(editionLinks.filter(link => link.textContent === 'Read complete edition free').length, 1);
+    assert.equal(editionLinks.filter(link => link.textContent === 'Check edition availability').length, books.length - 1);
     await a.type('library-search', 'Jowett'); assert.equal(document.querySelectorAll('article').length, 1);
     await a.click('Load my saved-place summaries'); assert.match(a.text(), /Saved place in this edition/); assert.doesNotMatch(a.text(), /soe-reading:v1|pg-1497-/);
+    const requestCount = a.requests.length;
+    await a.type('library-search', 'Hamlet');
+    await a.act(async () => { const author = document.getElementById('library-author'); author.value = 'Plato'; author.dispatchEvent(new a.dom.window.Event('change', { bubbles: true })); });
+    assert.equal(document.querySelectorAll('article').length, 0); assert.match(a.text(), /No books match both filters/);
+    await a.click('Clear search and author filters');
+    assert.equal(document.getElementById('library-search').value, ''); assert.equal(document.getElementById('library-author').value, 'all');
+    assert.equal(document.activeElement.id, 'library-search'); assert.equal(document.querySelectorAll('article').length, books.length);
+    assert.equal(a.requests.length, requestCount); assert.match(a.text(), /Saved place in this edition/);
     await a.fireAuth('SIGNED_OUT'); assert.doesNotMatch(a.text(), /Saved place in this edition/);
   } finally { await a.cleanup(); }
 });

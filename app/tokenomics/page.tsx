@@ -1,249 +1,142 @@
-'use client';
-import { useState, useEffect } from 'react';
-import PublicNav from '@/components/PublicNav';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import PublicFooter from '@/components/PublicFooter';
 
-const gold = '#c9a84c';
-const parchment = '#E8DCC8';
-const muted = '#9a8f7a';
-
-const EARN_METHODS = [
-  { action: 'Node Hosting', exp: 'Variable', icon: '🖥️', desc: 'Run an AI thinker node. Rewards scale with uptime and query volume.' },
-  { action: 'Space Scanning', exp: '10–50', icon: '📸', desc: 'Photograph or 3D-scan real spaces. Quality tier determines reward.' },
-  { action: 'Salon Attendance', exp: '8', icon: '🏛️', desc: 'Attend a live salon gathering — in-person or virtual.' },
-  { action: 'Great Books Discussion', exp: '5', icon: '📖', desc: 'Contribute to a Great Books seminar or reading group.' },
-  { action: 'Music Collaboration', exp: '12', icon: '🎵', desc: 'Co-create in a music session — composition, performance, or remix.' },
-  { action: 'Biofeedback Circle', exp: '10', icon: '💓', desc: 'Participate in a coherence circle with EEG/HRV data.' },
-  { action: 'Hosting Travelers', exp: '15', icon: '🏡', desc: 'Host an explorer at your space via Dtravel. Per booking.' },
-  { action: 'Annotations', exp: '3', icon: '🖊️', desc: 'Leave a spatial annotation (White Knight Pen) on a scanned space.' },
-];
-
-const BURN_USES = [
-  { use: 'Premium Mesh Access', icon: '🌐', desc: 'Unlock priority bandwidth on the decentralized thinker mesh network.' },
-  { use: 'Extended AI Thinker Sessions', icon: 'Σ', desc: 'Longer, deeper conversations with philosophical AI beyond standard limits.' },
-  { use: 'VR/AR Unlocks', icon: '🥽', desc: 'Access immersive spatial experiences of scanned explorer spaces.' },
-  { use: 'Governance Weight', icon: '⚖️', desc: 'Burn $EXP to increase your vote weight on Commons proposals.' },
-  { use: 'Priority Commons Booking', icon: '📅', desc: 'Reserve time-slots at physical salons and pop-up spaces first.' },
-];
-
-const FAQS = [
-  {
-    q: 'Can I sell $EXP?',
-    a: 'No. $EXP is soulbound — minted to your wallet using Solana Token-2022 NonTransferable extension. It cannot be listed, transferred, or traded on any marketplace. This is by design: reputation should be earned, not bought.',
-  },
-  {
-    q: 'How do Commons Shares work?',
-    a: 'Commons Shares are soulbound NFTs that represent fractional ownership in a specific city expansion. They are issued when the community funds a new physical space via Realms governance. Shares entitle holders to booking priority and governance votes for that location — but cannot be sold or transferred.',
-  },
-  {
-    q: 'What blockchain?',
-    a: 'Solana, using the Token-2022 program. We chose Solana for sub-second finality, negligible fees, and native support for the NonTransferable extension — no custom smart contract needed for soulbound logic.',
-  },
-  {
-    q: 'Is this a security?',
-    a: '$EXP is not a security. It has no monetary value, cannot be exchanged for currency, and confers no equity or profit-sharing. It is a non-transferable reputation token — closer to a library card than a stock certificate. Commons Shares similarly represent governance rights, not financial instruments.',
-  },
-];
-
-const MOCK_STATS = [
-  { label: 'Total $EXP Minted', value: '184,720' },
-  { label: 'Active Earners', value: '342' },
-  { label: 'Spaces Scanned', value: '47' },
-  { label: 'Nodes Online', value: '12' },
-];
+export const metadata: Metadata = {
+  title: "EXP & the Commons \u2014 research",
+  description: "Internal EXP points, proposed tokens and ideas for shared spaces: what exists in software and what remains under review.",
+};
 
 export default function TokenomicsPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) (e.target as HTMLElement).style.opacity = '1'; });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('[data-fade]').forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <PublicNav />
-
-      {/* ═══ HERO ═══ */}
-      <section style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8rem 2rem 6rem', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, pointerEvents: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 5L55 20V40L30 55L5 40V20Z' fill='none' stroke='%23C9A84C' stroke-width='0.3'/%3E%3C/svg%3E")`, backgroundSize: '60px 60px' }} />
-        <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.6, marginBottom: '1.5rem' }}>EXPLORER COMMONS · TOKEN MODEL</div>
-          <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2.4rem, 6vw, 4.5rem)', fontWeight: 400, letterSpacing: '0.02em', lineHeight: 1.15, color: '#f5f0e8', marginBottom: '1.5rem' }}>
-            $EXP — Sovereign<br />Reputation
-          </h1>
-          <p style={{ fontSize: '1.3rem', color: muted, lineHeight: 1.7, maxWidth: '480px', margin: '0 auto 2rem' }}>
-            Earned. Soulbound. Non-transferable.
-          </p>
-          <p style={{ fontSize: '1rem', color: `${muted}cc`, lineHeight: 1.8, maxWidth: '520px', margin: '0 auto' }}>
-            $EXP is the reputation token of the Explorer Commons. You earn it by contributing — scanning spaces, attending salons, hosting travelers, running nodes. You can never buy it, sell it, or transfer it. It is proof of participation, not speculation.
-          </p>
+    <div className="soe-tokenomics-concept">
+      <style>{`
+  .soe-tokenomics-concept { background: #0a0a0a; color: #e8dcc8; min-height: 100vh; font-family: 'Cormorant Garamond', serif; }
+  .soe-tokenomics-concept * { box-sizing: border-box; }
+  .soe-tokenomics-concept a { color: #d6b860; text-underline-offset: .25em; }
+  .soe-tokenomics-concept a:focus-visible, .soe-tokenomics-concept summary:focus-visible { outline: 3px solid #f1d788; outline-offset: 5px; }
+  .soe-tokenomics-concept .skip { position: absolute; left: 1rem; top: -8rem; z-index: 300; padding: .8rem; background: #0a0a0a; }
+  .soe-tokenomics-concept .skip:focus { top: 1rem; }
+  .soe-tokenomics-concept .nav { padding: 1rem clamp(1rem, 4vw, 3rem); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 2rem; border-bottom: 1px solid #c9a84c38; }
+  .soe-tokenomics-concept .nav a { display: inline-flex; align-items: center; min-height: 44px; font-family: 'Cinzel', serif; font-size: .8rem; letter-spacing: .06em; text-decoration: none; }
+  .soe-tokenomics-concept .nav a:hover { text-decoration: underline; }
+  .soe-tokenomics-concept .nav-links { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+  .soe-tokenomics-concept .hero { padding: clamp(3rem, 8vw, 7rem) 1.25rem; text-align: center; background: radial-gradient(ellipse at center, #211a09 0%, #0a0a0a 72%); }
+  .soe-tokenomics-concept .hero-inner { max-width: 780px; margin: 0 auto; }
+  .soe-tokenomics-concept .eyebrow { font-family: 'Cinzel', serif; color: #d6b860; font-size: .8rem; letter-spacing: .15em; line-height: 1.8; margin: 0 0 1rem; }
+  .soe-tokenomics-concept h1, .soe-tokenomics-concept h2, .soe-tokenomics-concept h3 { font-family: 'Cinzel', serif; font-weight: 400; color: #f5f0e8; text-wrap: balance; }
+  .soe-tokenomics-concept h1 { font-size: clamp(2.3rem, 7vw, 4.7rem); line-height: 1.15; letter-spacing: .03em; margin: 0 0 1.5rem; }
+  .soe-tokenomics-concept h2 { font-size: clamp(1.65rem, 4vw, 2.5rem); line-height: 1.35; margin: 0 0 1.5rem; }
+  .soe-tokenomics-concept h3 { font-size: 1.15rem; line-height: 1.5; margin: 0 0 .75rem; }
+  .soe-tokenomics-concept p, .soe-tokenomics-concept li { font-size: 1.2rem; line-height: 1.8; }
+  .soe-tokenomics-concept p { margin: 0 0 1.25rem; }
+  .soe-tokenomics-concept p:last-child { margin-bottom: 0; }
+  .soe-tokenomics-concept .lede { font-size: 1.5rem; color: #e8dcc8; }
+  .soe-tokenomics-concept .status { margin: 2rem auto 0; max-width: 680px; padding: 1.5rem; border: 1px solid #c9a84c70; background: #121109; text-align: left; }
+  .soe-tokenomics-concept .status strong { color: #f1d788; }
+  .soe-tokenomics-concept .section { max-width: 1060px; margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 1.25rem; }
+  .soe-tokenomics-concept .narrow { max-width: 800px; }
+  .soe-tokenomics-concept .band { background: #101010; border-block: 1px solid #c9a84c20; }
+  .soe-tokenomics-concept .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1rem; margin-top: 2rem; }
+  .soe-tokenomics-concept .card { padding: 1.5rem; background: #141310; border: 1px solid #c9a84c38; min-width: 0; }
+  .soe-tokenomics-concept .card p { color: #c9c0ac; }
+  .soe-tokenomics-concept .steps { list-style: none; padding: 0; margin: 2rem 0 0; counter-reset: steps; }
+  .soe-tokenomics-concept .steps li { counter-increment: steps; padding: 1.5rem 0; border-top: 1px solid #c9a84c38; }
+  .soe-tokenomics-concept .steps h3::before { content: counter(steps, decimal-leading-zero) ' / '; color: #d6b860; }
+  .soe-tokenomics-concept details { border-block-start: 1px solid #c9a84c55; padding: .25rem 0; }
+  .soe-tokenomics-concept details:last-child { border-block-end: 1px solid #c9a84c55; }
+  .soe-tokenomics-concept summary { cursor: pointer; padding: 1rem .25rem; min-height: 44px; font-family: 'Cinzel', serif; font-size: 1rem; color: #f5f0e8; line-height: 1.65; }
+  .soe-tokenomics-concept details p { padding: 0 .25rem 1.25rem; }
+  .soe-tokenomics-concept .actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+  .soe-tokenomics-concept .actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .85rem 1.25rem; border: 1px solid #c9a84c; font-family: 'Cinzel', serif; font-size: .85rem; line-height: 1.6; text-align: center; text-decoration: none; }
+  .soe-tokenomics-concept .actions a:first-child { background: #c9a84c; color: #0a0a0a; }
+  .soe-tokenomics-concept .actions a:hover { text-decoration: underline; }
+  .soe-tokenomics-concept .closing { border-top: 1px solid #c9a84c38; }
+  .soe-tokenomics-concept .accent { color: #d6b860; }
+  @media (max-width: 420px) { .soe-tokenomics-concept .actions a { width: 100%; } .soe-tokenomics-concept .nav-links { gap: .35rem 1rem; } }
+`}</style>
+      <a className="skip" href="#tokenomics-content">Skip to content</a>
+      <nav className="nav" aria-label="Research navigation">
+        <Link href="/" prefetch={false}>Society of Explorers</Link>
+        <div className="nav-links">
+          <Link href="/great-books" prefetch={false}>Reading</Link>
+          <Link href="/fellowship" prefetch={false}>Christian fellowship</Link>
         </div>
-      </section>
-
-      {/* ═══ HOW YOU EARN ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>EARNING</div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8' }}>How You Earn $EXP</h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            {EARN_METHODS.map(m => (
-              <div key={m.action} style={{ background: '#0a0a0a', padding: '1.75rem 1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '1.5rem' }}>{m.icon}</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: gold }}>{m.exp}</span>
-                </div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.08em', color: '#f5f0e8', marginBottom: '0.5rem' }}>{m.action}</div>
-                <p style={{ fontSize: '13px', color: muted, lineHeight: 1.7 }}>{m.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ HOW YOU BURN ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>BURNING</div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8' }}>How You Burn $EXP</h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            {BURN_USES.map(b => (
-              <div key={b.use} style={{ background: '#0d0d0d', padding: '2rem 1.5rem' }}>
-                <div style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>{b.icon}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.08em', color: '#f5f0e8', marginBottom: '0.5rem' }}>{b.use}</div>
-                <p style={{ fontSize: '13px', color: muted, lineHeight: 1.7 }}>{b.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ THE SOULBOUND PROMISE ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>SOULBOUND</div>
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1.5rem' }}>The Soulbound Promise</h2>
-
-          <div style={{ background: '#0a0a0a', border: `1px solid ${gold}22`, padding: '2.5rem 2rem', textAlign: 'left' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: `1px solid ${gold}12` }}>
-              <div style={{ width: '48px', height: '48px', background: `${gold}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '20px', color: gold }}>⬡</div>
-              <div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: '#f5f0e8' }}>Solana Token-2022</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted }}>NONTRANSFERABLE EXTENSION</div>
-              </div>
+      </nav>
+      <main id="tokenomics-content" tabIndex={-1}>
+        <header className="hero">
+          <div className="hero-inner">
+            <p className="eyebrow">Explorer Commons · Research</p>
+            <h1>Contribution deserves<br /><span className="accent">recognition.</span></h1>
+            <p className="lede">An exploration of participation, reputation and places held in common.</p>
+            <div className="status">
+              <p><strong>Internal points and proposed tokens are separate.</strong></p>
+              <p>The app includes internal EXP point accounting. A point balance does not establish a blockchain balance, cash value, ownership or voting rights. The token and Commons ideas below remain proposals.</p>
             </div>
-
-            {[
-              { label: 'Cannot be sold', desc: 'No marketplace listing, no OTC deals. The token program itself rejects transfer instructions.' },
-              { label: 'Cannot be transferred', desc: 'Minted directly to your wallet. The NonTransferable extension makes movement between wallets impossible at the protocol level.' },
-              { label: 'Proof of participation', desc: 'Your $EXP balance is a living résumé — it reflects what you have actually done in the Commons, not what you paid.' },
-              { label: 'Not speculation', desc: 'There is no price, no liquidity pool, no exchange. $EXP exists outside the financialisation loop entirely.' },
-            ].map((item, i) => (
-              <div key={i} style={{ marginBottom: i < 3 ? '1.25rem' : 0 }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.08em', color: gold, marginBottom: '0.35rem' }}>{item.label}</div>
-                <p style={{ fontSize: '14px', color: muted, lineHeight: 1.8 }}>{item.desc}</p>
-              </div>
-            ))}
           </div>
+        </header>
+
+        <section className="section" aria-labelledby="exp-status">
+          <p className="eyebrow">What exists · What is proposed</p>
+          <h2 id="exp-status">Three different ideas</h2>
+          <div className="grid">
+            <article className="card">
+              <p className="eyebrow">Existing software</p>
+              <h3>EXP points</h3>
+              <p>Participation accounting exists in the app&apos;s software, with local verification work. That work does not establish that an earning program is available to members. No reward rate is offered on this page.</p>
+            </article>
+            <article className="card">
+              <p className="eyebrow">Earlier proposals</p>
+              <h3>$EXP and $SOE</h3>
+              <p>Earlier designs used these names for blockchain assets. They are not interchangeable with internal EXP points. A live mint, transfer rules, redemption terms and launch availability have not been verified for this page.</p>
+            </article>
+            <article className="card">
+              <p className="eyebrow">Future research</p>
+              <h3>Commons Shares</h3>
+              <p>An earlier idea connected community spaces with funding and participation rights. Its ownership, governance and financial terms remain unresolved. No shares or interests are offered here.</p>
+            </article>
+          </div>
+        </section>
+
+        <div className="band">
+          <section className="section" aria-labelledby="contribution">
+            <p className="eyebrow">The purpose</p>
+            <h2 id="contribution">Recognize what helps people flourish</h2>
+            <p>The worthwhile question is how to recognize careful reading, generous hosting and useful work without making every act of fellowship a transaction.</p>
+            <div className="grid">
+              <article className="card"><h3>Read &amp; discuss</h3><p>Explore ways to acknowledge a thoughtful question, a well-sourced correction or a reading shared with care.</p></article>
+              <article className="card"><h3>Host &amp; welcome</h3><p>Consider the work of preparing a salon and helping people take part. Attendance and service need a fair process before any reward scheme.</p></article>
+              <article className="card"><h3>Build &amp; contribute</h3><p>Recognize useful tools and creative work with clear credit and contributor terms. These are design possibilities, with no promised payment or allocation.</p></article>
+            </div>
+          </section>
         </div>
-      </section>
 
-      {/* ═══ COMMONS SHARES ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>GOVERNANCE</div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.75rem' }}>Commons Shares</h2>
-            <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8, maxWidth: '520px', margin: '0 auto' }}>
-              Soulbound NFTs that fund and govern real-world expansions of the Explorer Commons.
-            </p>
-          </div>
+        <section className="section narrow" aria-labelledby="commons">
+          <p className="eyebrow">The longer view</p>
+          <h2 id="commons">A Commons worth belonging to</h2>
+          <p>Shared reading rooms, gathering places and tools remain part of the vision. They need workable ownership, operating costs, access rules and accountable human decisions.</p>
+          <p>Earlier plans named Solana Token-2022, Realms and Squads. Those references describe candidate approaches; they do not verify a deployed token, an operating voting system or custody of a treasury.</p>
+          <p>A non-token approach remains an option. Any token, ownership or fundraising proposal needs a defined purpose, technical review and qualified legal and tax review before an offer. This page makes no determination about securities status.</p>
+        </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1px', background: `${gold}10`, marginBottom: '2rem' }}>
-            {[
-              { title: 'City Expansions', icon: '🏙️', desc: 'When the community votes to open a new physical salon, Commons Shares fund the buildout. Each share is a soulbound NFT tied to that specific location.' },
-              { title: 'Realms Governance', icon: '🗳️', desc: 'Proposals, votes, and treasury management happen on Realms — Solana-native DAO tooling. Your $EXP and Commons Shares determine your voting weight.' },
-              { title: 'Squads Multisig', icon: '🔐', desc: 'Treasury funds are held in a Squads multisig. No single person can move funds. Execution requires threshold approval from elected stewards.' },
-            ].map(card => (
-              <div key={card.title} style={{ background: '#0d0d0d', padding: '2rem 1.5rem' }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>{card.icon}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.08em', color: '#f5f0e8', marginBottom: '0.5rem' }}>{card.title}</div>
-                <p style={{ fontSize: '13px', color: muted, lineHeight: 1.8 }}>{card.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ textAlign: 'center', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted, opacity: 0.5 }}>
-            COMMONS SHARES ARE NON-TRANSFERABLE · NO SECONDARY MARKET · GOVERNANCE RIGHTS ONLY
-          </div>
+        <div className="band">
+          <section className="section narrow" aria-labelledby="questions">
+            <p className="eyebrow">Questions</p>
+            <h2 id="questions">Before treating an idea as a promise</h2>
+            <details><summary>Can I buy, sell or redeem EXP here?</summary><p>This page provides no purchase, trading, minting or redemption service. Internal point accounting is separate from proposed blockchain assets; no conversion or cash-out promise is made.</p></details>
+            <details><summary>What does “soulbound” mean in the earlier plan?</summary><p>The term described an intention to limit transfers. That intention is not proof of the rules of a deployed asset, and it does not settle ownership, financial or legal questions.</p></details>
+            <details><summary>Are rewards, booking priority or governance rights available?</summary><p>The earlier reward tables, point multipliers and token-based benefits were proposals. They are not confirmed offers. Any future program would need published terms and verified availability.</p></details>
+            <details><summary>Where are the network totals?</summary><p>The previous totals were illustrative figures, not verified activity. They have been removed. This page reports no live token supply, earners, spaces or node counts.</p></details>
+          </section>
         </div>
-      </section>
 
-      {/* ═══ LIVE STATS ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>NETWORK</div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8' }}>Live Stats</h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: `${gold}12` }}>
-            {MOCK_STATS.map(stat => (
-              <div key={stat.label} style={{ background: '#0a0a0a', padding: '2rem 1rem', textAlign: 'center' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)', color: gold, marginBottom: '0.35rem' }}>{stat.value}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted }}>{stat.label.toUpperCase()}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ FAQ ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>QUESTIONS</div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8' }}>Frequently Asked</h2>
-          </div>
-          <div>
-            {FAQS.map((faq, i) => (
-              <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? `1px solid ${gold}12` : 'none' }}>
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  style={{
-                    width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
-                    padding: '1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}
-                >
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.06em', color: '#f5f0e8' }}>{faq.q}</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: gold, opacity: 0.5, transform: openFaq === i ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>+</span>
-                </button>
-                {openFaq === i && (
-                  <div style={{ paddingBottom: '1.25rem' }}>
-                    <p style={{ fontSize: '14px', color: muted, lineHeight: 1.8 }}>{faq.a}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ CTA ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', textAlign: 'center', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem' }}>Start earning $EXP</h2>
-          <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8, marginBottom: '2rem' }}>Join the Society. Scan a space. Attend a salon. Your reputation begins with a single action.</p>
-          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '14px 36px', textDecoration: 'none', display: 'inline-block' }}>Join the Society →</a>
-        </div>
-      </section>
-
+        <section className="section narrow closing" aria-labelledby="start-reading">
+          <p className="eyebrow">Begin with an idea</p>
+          <h2 id="start-reading">Read something worth discussing.</h2>
+          <p>Explore the reading library or the proposed salon format. These links let you explore the work without a token transaction.</p>
+          <div className="actions"><Link href="/great-books" prefetch={false}>Explore the readings</Link><Link href="/salons/pilot" prefetch={false}>Read the salon plan</Link></div>
+        </section>
+      </main>
       <PublicFooter />
     </div>
   );

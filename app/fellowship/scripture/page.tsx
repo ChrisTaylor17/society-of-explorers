@@ -12,6 +12,7 @@ export default function ScriptureStudyPage() {
       <p className={styles.eyebrow}>Root Kernel · Scripture in conversation</p>
       <h1>The cross, the psalm and the servant.</h1>
       <p className={styles.lead}>Psalm 22 and Isaiah 52:13–53:12 alongside the crucifixion accounts. Begin with the text; then compare what readers make of it.</p>
+      <p>Root Kernel is an independent study resource offered here within SoE. Reading is free and optional; agreement with its named faith perspective is not required. <Link href="/fellowship#root-kernel">About Root Kernel and the other studies</Link>.</p>
       <p className={styles.muted}>{ANALYSIS_STATUS} · revision {STUDY_REVISION}. Christian belief, textual criticism and historical inference are labeled separately. You can inspect sources and prepare a local correction.</p>
       <nav className={styles.nav} aria-label="In this Scripture study"><a href="#reading-context">Start in context</a><a href="#compare-claims">Compare connections</a><a href="#scripture-readings">Read the passages</a><a href="#study-sources">Sources and rights</a></nav>
     </header>

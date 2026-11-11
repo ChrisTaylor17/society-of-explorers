@@ -1,9 +1,12 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 import { hasAccess } from '@/lib/auth/checkAccess';
 import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
 import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice';
+import { readGuideReply, guideReplyNotice } from '@/lib/claude/guideReply';
+import { useGuideRequest } from '@/lib/claude/useGuideRequest';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -52,6 +55,15 @@ export default function WaddleForge() {
   const [feed, setFeed] = useState<WaddleFeedItem[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [memberTier, setMemberTier] = useState('free');
+  const [reactionComplete, setReactionComplete] = useState(false);
+  const [reactionNotice, setReactionNotice] = useState('');
+  const [reactionThinker, setReactionThinker] = useState('socrates');
+  const retireGuide = useCallback(() => {
+    setThinkerReaction(''); setReactionComplete(false); setReacting(false);
+    setMemberId(null); setMemberTier('free');
+    setReactionNotice('Account changed. Sign in again before asking for a reaction.');
+  }, []);
+  const { begin: beginGuide, owns: ownsGuide, finish: finishGuide, cancel: cancelGuide } = useGuideRequest(retireGuide);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -62,9 +74,11 @@ export default function WaddleForge() {
 
   // Load member + feed
   useEffect(() => {
+    let active = true;
+    const unsubscribe = subscribeAuthProviderChanges(() => { active = false; });
     getMemberSession().then(s => {
       const member = s?.member as WaddleMember | undefined;
-      if (member?.id) {
+      if (active && member?.id) {
         setMemberId(member.id);
         setMemberTier(member.tier || 'free');
       }
@@ -73,6 +87,7 @@ export default function WaddleForge() {
       .then(r => r.json())
       .then((d: { waddles?: WaddleFeedItem[] }) => setFeed(d.waddles || []))
       .catch(() => {});
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   useEffect(() => {
@@ -83,6 +98,7 @@ export default function WaddleForge() {
     chunksRef.current = [];
     setElapsed(0); setAudioBlob(null); setAudioUrl(''); setTranscription(''); setThinkerReaction(''); setSaved(false);
     setTranscriptionError(''); setPublishError('');
+    setReactionComplete(false); setReactionNotice('');
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     streamRef.current = stream;
@@ -144,49 +160,40 @@ export default function WaddleForge() {
   }
 
   async function getThinkerReaction() {
-    if (!transcription) return;
+    if (!memberId || !transcription) return;
+    const controller = beginGuide();
+    if (!controller) return;
     const requestId = reward.begin(THINKERS.find(thinker => thinker.id === selectedThinker)?.name ?? 'Thinker');
-    if (!requestId) return;
-    setReacting(true);
+    if (!requestId) { finishGuide(controller); return; }
+    setReacting(true); setThinkerReaction(''); setReactionComplete(false); setReactionNotice(''); setReactionThinker(selectedThinker);
     try {
       const accessToken = await getSupabaseAccessToken();
+      if (!ownsGuide(controller)) return;
+      if (controller.signal.aborted) { setReactionNotice(guideReplyNotice('cancelled')); return; }
       const res = await fetch('/api/thinker', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({
-          requestId,
-          thinkerId: selectedThinker,
-          message: `A member recorded a 15-second Waddle. Here is what they said: "${transcription}". Respond in 1-2 sentences. Be sharp and in character.`,
-          history: [],
-        }),
+        method: 'POST', signal: controller.signal,
+        credentials: 'same-origin', cache: 'no-store', redirect: 'error',
+        headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        body: JSON.stringify({ requestId, thinkerId: selectedThinker, salonId: `private-${memberId}`,
+          message: `A member recorded a 15-second Waddle. Here is what they said: "${transcription}". Respond in 1-2 sentences. Be sharp and in character.`, history: [] }),
       });
-      const reader = res.body!.getReader();
-      const dec = new TextDecoder();
-      let buf = '', full = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const evt = JSON.parse(line.slice(6));
-            if (evt.reward) reward.observe(requestId, evt.reward);
-            if (evt.delta) { full += evt.delta; setThinkerReaction(full); }
-          } catch {}
-        }
-      }
-    } catch {} finally { reward.finish(requestId); }
-    setReacting(false);
+      const reply = await readGuideReply(res, { signal: controller.signal,
+        onText: text => { if (ownsGuide(controller)) setThinkerReaction(text); } });
+      if (!ownsGuide(controller)) return;
+      setThinkerReaction(reply.text); setReactionNotice(guideReplyNotice(reply.status));
+      setReactionComplete(reply.status === 'complete');
+      if (reply.status === 'complete') reward.observe(requestId, reply.reward);
+    } catch {
+      if (ownsGuide(controller)) setReactionNotice(guideReplyNotice(controller.signal.aborted ? 'cancelled' : 'interrupted'));
+    } finally {
+      reward.finish(requestId);
+      if (ownsGuide(controller)) setReacting(false);
+      finishGuide(controller);
+    }
   }
 
   async function publishWaddle() {
-    if (!memberId || !audioBlob || !transcription) return;
+    if (!memberId || !audioBlob || !transcription || reacting) return;
     setSaving(true);
     setPublishError('');
     try {
@@ -195,7 +202,7 @@ export default function WaddleForge() {
       fd.append('transcription', transcription);
       fd.append('expectedMemberId', memberId);
       fd.append('publishPublicly', 'true');
-      if (thinkerReaction) { fd.append('thinkerReaction', thinkerReaction); fd.append('thinkerId', selectedThinker); }
+      if (reactionComplete && thinkerReaction) { fd.append('thinkerReaction', thinkerReaction); fd.append('thinkerId', reactionThinker); }
       const accessToken = await getSupabaseAccessToken();
       const res = await fetch('/api/waddle', {
         method: 'POST',
@@ -244,6 +251,7 @@ export default function WaddleForge() {
   }
 
   async function generateCard(mode: 'download' | 'clipboard') {
+    if (!reactionComplete || !thinkerReaction) return;
     setCardStatus('generating');
     const W = 1080, H = 1080;
     const canvas = document.createElement('canvas');
@@ -423,7 +431,7 @@ export default function WaddleForge() {
             )}
 
             {/* Thinker reaction */}
-            {!thinkerReaction && !reacting && (
+            {(!thinkerReaction || reactionNotice) && !reacting && (
               <div style={{ marginBottom: '1rem' }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted, marginBottom: '0.5rem' }}>GET A THINKER REACTION</div>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '0.5rem' }}>
@@ -442,10 +450,12 @@ export default function WaddleForge() {
                 </button>
               </div>
             )}
+            {reactionNotice && <p role="alert" style={{ color: parchment, lineHeight: 1.5 }}>{reactionNotice} Incomplete reactions are excluded from publishing and cards.</p>}
+            {reacting && <button type="button" onClick={cancelGuide} style={{ minHeight: 44, padding: '8px 12px' }}>Stop reaction</button>}
             {reacting && <div style={{ fontSize: '13px', color: muted, fontStyle: 'italic' }}>{activeThinker.name} is listening...</div>}
             {thinkerReaction && (
               <div style={{ borderLeft: `2px solid ${gold}33`, paddingLeft: '12px', marginBottom: '1rem' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.6, marginBottom: '0.25rem' }}>{activeThinker.symbol} {activeThinker.name.toUpperCase()}</div>
+                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, opacity: 0.6, marginBottom: '0.25rem' }}>{THINKERS.find(t => t.id === reactionThinker)?.name.toUpperCase()}</div>
                 <p style={{ fontSize: '14px', color: parchment, lineHeight: 1.7, fontStyle: 'italic' }}>{thinkerReaction}</p>
               </div>
             )}
@@ -454,7 +464,7 @@ export default function WaddleForge() {
             <p style={{ color: parchment }}>Anyone can listen to the recording and read the transcript after you publish it.</p>
             {publishError && <p role="alert" style={{ color: parchment }}>{publishError}</p>}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button type="button" onClick={publishWaddle} disabled={saving || saved} style={{
+              <button type="button" onClick={publishWaddle} disabled={saving || saved || reacting} style={{
                 fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
                 color: saved ? '#6B9E6B' : '#000', background: saved ? 'transparent' : gold,
                 border: saved ? `1px solid #6B9E6B` : 'none', padding: '8px 16px', cursor: 'pointer',
@@ -468,7 +478,7 @@ export default function WaddleForge() {
               }} style={{
                 fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: copied ? '#6B9E6B' : gold, background: 'none', border: `1px solid ${copied ? '#6B9E6B' : gold}33`, padding: '8px 16px', cursor: 'pointer',
               }}>{copied ? '⬡ COPIED!' : '⬡ SHARE'}</button>
-              {thinkerReaction && (
+              {reactionComplete && thinkerReaction && (
                 <>
                   <button onClick={() => generateCard('download')} disabled={cardStatus === 'generating'} style={{
                     fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em',
@@ -493,7 +503,7 @@ export default function WaddleForge() {
         {/* New Waddle button */}
         {transcription && !transcribing && (
           <button disabled={saving || reacting} onClick={() => {
-            setTranscription(''); setAudioBlob(null); setAudioUrl(''); setThinkerReaction(''); setSaved(false); setElapsed(0); setPublishError('');
+            setTranscription(''); setAudioBlob(null); setAudioUrl(''); setThinkerReaction(''); setSaved(false); setElapsed(0); setPublishError(''); setReactionComplete(false); setReactionNotice('');
           }}
             style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted, background: 'none', border: 'none', cursor: 'pointer', marginBottom: '3rem' }}>
             RECORD ANOTHER WADDLE

@@ -23,6 +23,7 @@ const DESCRIPTIONS: Record<string, string> = {
 };
 export default function LibraryBrowser({ editions }: { editions: LibraryEdition[] }) {
   const [query, setQuery] = useState(''), [author, setAuthor] = useState('all');
+  const searchInput = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<Record<string, string>>({}), [notice, setNotice] = useState('Saved reading places are private. Load them only when you choose.');
   const lifetime = useRef(0), [epoch, setEpoch] = useState(0);
   const invalidate = useCallback((render = true) => { lifetime.current++; if (render) setEpoch(lifetime.current); }, []);
@@ -72,10 +73,12 @@ export default function LibraryBrowser({ editions }: { editions: LibraryEdition[
   return <>
     <section className={styles.panel} aria-label="Find a book">
       <label htmlFor="library-search" className={styles.label}>Search title, author, translator or subject</label>
-      <input id="library-search" className={styles.input} type="search" value={query} onChange={event => setQuery(event.target.value)} />
+      <input ref={searchInput} id="library-search" className={styles.input} type="search" value={query} onChange={event => setQuery(event.target.value)} />
       <label htmlFor="library-author" className={styles.label}>Author</label>
       <select id="library-author" className={styles.input} value={author} onChange={event => setAuthor(event.target.value)}><option value="all">All authors</option>{[...new Set(GREAT_BOOKS.map(book => book.author))].sort().map(name => <option key={name} value={name}>{name}</option>)}</select>
+      {(query || author !== 'all') && <button type="button" className={styles.button} style={{ marginTop: '1rem' }} onClick={() => { setQuery(''); setAuthor('all'); searchInput.current?.focus(); }}>Clear search and author filters</button>}
       <p role="status" className={styles.status}>{filtered.length} {filtered.length === 1 ? 'book' : 'books'} match.</p>
+      {filtered.length === 0 && <p className={styles.help}>No books match both filters. Try a different title, author or translator, or clear the filters to browse the full library.</p>}
     </section>
     <section className={styles.panel} aria-label="Private reading summaries">
       <p className={styles.status} role="status">{notice}</p><button type="button" className={styles.button} disabled={!active || !online || busy} onClick={loadProgress}>Load my saved-place summaries</button>
@@ -93,7 +96,7 @@ export default function LibraryBrowser({ editions }: { editions: LibraryEdition[
             <p className={styles.help}>Complete local source edition · Public domain in the United States.</p>
           </> : <p className={styles.help}>The verified local edition is currently unavailable.</p>}
           {progress[book.id] && <p className={styles.help}>{progress[book.id]}</p>}
-          <Link className={styles.bookLink} href={`/great-books/${book.id}`}>Read complete edition free</Link>
+          <Link className={styles.bookLink} href={`/great-books/${book.id}`}>{edition ? 'Read complete edition free' : 'Check edition availability'}</Link>
           {edition && <nav className={styles.nav} aria-label={`${book.title} source`}><a href={edition.sourceCatalogUrl} target="_blank" rel="noopener noreferrer">Source and edition details</a><a href={edition.downloadUrl} download>Download original archive</a></nav>}
         </article>;
       })}

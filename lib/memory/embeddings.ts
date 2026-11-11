@@ -7,6 +7,15 @@ type RetrievedEmbeddingRow = {
   similarity: number;
 };
 
+export type ConversationEmbeddingWriteResult = { status: 'stored' | 'unconfirmed' };
+
+const EMBEDDING_MODEL = 'text-embedding-3-small';
+const EMBEDDING_DIMENSIONS = 1536;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function reportEmbeddingFailure(scope: string) {
   console.warn(`[embeddings] ${scope} failed`);
 }
@@ -15,14 +24,17 @@ function reportEmbeddingFailure(scope: string) {
  * Generate embedding via OpenAI text-embedding-3-small.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new Error('Embedding provider is not configured');
+
   const res = await fetch('https://api.openai.com/v1/embeddings', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'text-embedding-3-small',
+      model: EMBEDDING_MODEL,
       input: text.slice(0, 8000),
     }),
   });
@@ -31,12 +43,20 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     throw new Error('Embedding API request failed');
   }
 
-  const data = await res.json();
-  return data.data[0].embedding;
+  const data: unknown = await res.json();
+  const item = isRecord(data) && Array.isArray(data.data) && data.data.length === 1 ? data.data[0] : null;
+  if (!isRecord(data) || data.object !== 'list' || data.model !== EMBEDDING_MODEL ||
+      !isRecord(item) || item.object !== 'embedding' || item.index !== 0 ||
+      !Array.isArray(item.embedding) || item.embedding.length !== EMBEDDING_DIMENSIONS ||
+      !item.embedding.every(value => typeof value === 'number' && Number.isFinite(value))) {
+    throw new Error('Invalid embedding provider response');
+  }
+  return item.embedding;
 }
 
 /**
- * Store a conversation message embedding. Fire and forget.
+ * Confirm the inserted row when possible. Unconfirmed does not prove absence:
+ * an acknowledgement can be lost after the database commits the write.
  */
 export async function storeConversationEmbedding({
   memberId,
@@ -50,11 +70,11 @@ export async function storeConversationEmbedding({
   role: string;
   content: string;
   metadata?: Record<string, unknown>;
-}): Promise<void> {
+}): Promise<ConversationEmbeddingWriteResult> {
   try {
-    const supabaseAdmin = getSupabaseAdmin();
     const embedding = await generateEmbedding(content);
-    await supabaseAdmin.from('thinker_conversation_embeddings').insert({
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data, error, status } = await supabaseAdmin.from('thinker_conversation_embeddings').insert({
       member_id: memberId,
       thinker_key: thinkerKey,
       message_role: role,
@@ -62,9 +82,15 @@ export async function storeConversationEmbedding({
       embedding,
       metadata,
       conversation_date: new Date().toISOString(),
-    });
+    }).select('member_id,thinker_key,message_role').single();
+    if (error !== null || status < 200 || status >= 300 || !isRecord(data) ||
+        data.member_id !== memberId || data.thinker_key !== thinkerKey || data.message_role !== role) {
+      throw new Error('Memory save was not confirmed');
+    }
+    return { status: 'stored' };
   } catch {
     reportEmbeddingFailure('store');
+    return { status: 'unconfirmed' };
   }
 }
 

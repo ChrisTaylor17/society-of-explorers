@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import ReviewedMemoryPanel from '@/components/memory/ReviewedMemoryPanel';
 import { getMemberSession } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
@@ -323,12 +324,14 @@ export default function MovementMemoryPage() {
             MEMORY CONSENT
           </div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 54px)', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.12, margin: '0 0 1rem' }}>
-            See what the Movement remembers.
+            Review what your guide may remember.
           </h1>
           <p style={{ fontSize: '18px', lineHeight: 1.7, color: ivory85, maxWidth: '720px', margin: 0 }}>
-            Active recall is separate from raw history: the Council can use these facts to continue a relationship, and you can remove anything that no longer belongs.
+            New guide memory begins off. You decide which proposed notes to save and whether your private guide may use them. Older records below remain separate from this reviewed memory.
           </p>
         </header>
+
+        <ReviewedMemoryPanel />
 
         {signedIn === false ? (
           <section style={{ background: card, border, padding: '2rem', textAlign: 'center' }}>
@@ -403,7 +406,7 @@ export default function MovementMemoryPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.25rem', alignItems: 'start' }}>
               <section style={{ background: card, border, padding: '1.25rem' }}>
-                <div style={eyebrowStyle}>REMEMBERED FACTS</div>
+                <div style={eyebrowStyle}>LEGACY FACTS — NOT ENROLLED IN REVIEWED MEMORY</div>
                 {loading ? (
                   <p style={emptyStyle}>Loading active memory...</p>
                 ) : groupedFacts.length === 0 ? (
@@ -466,7 +469,7 @@ export default function MovementMemoryPage() {
 
               <aside style={{ display: 'grid', gap: '1.25rem' }}>
                 <section style={{ background: card, border, padding: '1.25rem' }}>
-                  <div style={eyebrowStyle}>PROFILE SUMMARY</div>
+                  <div style={eyebrowStyle}>LEGACY PROFILE SUMMARY</div>
                   <p style={{ color: ivory85, fontSize: '16px', lineHeight: 1.7, margin: 0 }}>
                     {loading ? 'Loading...' : overview?.profile?.summary || 'No profile summary yet.'}
                   </p>

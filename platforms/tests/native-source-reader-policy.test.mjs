@@ -64,17 +64,20 @@ test('catalog pins exact resident derivative bytes, including larger-than-legacy
 // This hook harness executes the actual TSX callback policy with explicitly
 // supplied React/native primitives. It is not a React renderer or native test.
 function wrapper(platform = 'android', installed = true) {
-  let cursor = 0, state = [], effects = [], cleanups = new Map();
+  let cursor = 0, state = [], effects = [], cleanups = new Map(), deferred = false, updates = [];
   const same = (a, b) => a?.length === b?.length && a.every((v, n) => v === b[n]);
   const react = {
+    useState(initial) { const i = cursor++; if (!(i in state)) state[i] = typeof initial === 'function' ? initial() : initial; return [state[i], value => { const apply = () => { state[i] = typeof value === 'function' ? value(state[i]) : value; }; if (deferred) updates.push(apply); else apply(); }]; },
+    useCallback(fn, deps) { return react.useMemo(() => fn, deps); },
     useRef(value) { const i = cursor++; state[i] ??= { current: value }; return state[i]; },
     useMemo(fn, deps) { const i = cursor++; if (!state[i] || !same(state[i].deps, deps)) state[i] = { deps, value: fn() }; return state[i].value; },
     useLayoutEffect(fn, deps) { const i = cursor++; if (!state[i] || !same(state[i], deps)) { state[i] = deps; effects.push(() => { cleanups.get(i)?.(); cleanups.set(i, fn()); }); } },
   };
-  const primitives = { Platform: { OS: platform }, UIManager: { getViewManagerConfig: () => installed ? {} : null }, codegenNativeComponent: () => 'NativeReader' };
+  const primitives = { Platform: { OS: platform }, UIManager: { getViewManagerConfig: () => installed ? {} : null }, codegenNativeComponent: () => 'NativeReader', View: 'View', Text: 'Text', Pressable: 'Pressable', StyleSheet: { create: value => value } };
   const loader = sourceLoader({ react, 'react-native': primitives, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) } });
   const loaded = loader('platforms/native/SourceReader.tsx');
-  return { module: loaded, render(props) { cursor = 0; const result = loaded.SourceReader(props); const jobs = effects; effects = []; jobs.forEach(fn => fn()); return result; }, unmount() { cleanups.forEach(fn => fn?.()); cleanups.clear(); }, installed(value) { installed = value; } };
+  function nodes(value) { if (!value || typeof value !== 'object') return []; if (Array.isArray(value)) return value.flatMap(nodes); if (typeof value.type === 'function') return nodes(value.type(value.props)); return [value, ...nodes(value.props?.children)]; }
+  return { module: loaded, render(props) { cursor = 0; const result = loaded.SourceReader(props); const jobs = effects; effects = []; jobs.forEach(fn => fn()); const tree = nodes(result), reader = tree.find(n => n.type === 'NativeReader'); if (reader) reader.controls = tree.filter(n => n.type === 'Pressable'); return reader ?? null; }, defer(value = true) { deferred = value; }, flush() { const batch = updates; updates = []; batch.forEach(fn => fn()); }, unmount() { cleanups.forEach(fn => fn?.()); cleanups.clear(); }, installed(value) { installed = value; } };
 }
 const event = (requestKey = 'reader-1', blockIndex = 41, phase = 'ready') => ({ nativeEvent: { requestKey, blockIndex, phase } });
 test('wrapper only offers actual registered Android/iOS component, with explicit unavailable response', () => {
@@ -104,11 +107,71 @@ test('wrapper invalid selection never mounts the native component or exposes arb
   const f = wrapper(), received = [], onState = value => received.push(value);
   assert.equal(f.render({ ...selection({ editionId: 'stale' }), active: true, onState }), null); assert.equal(received[0].phase, 'unavailable');
   const view = f.render({ ...selection(), active: true, onState, origin: 'https://bad.invalid', bearer: 'PRIVATE', html: '<script/>', circleId: 'PRIVATE' });
-  assert.deepEqual(Object.keys(view.props).sort(), ['active', 'blockIndex', 'bookId', 'editionId', 'onReaderState', 'requestKey', 'style']);
+  assert.deepEqual(Object.keys(view.props).sort(), ['active', 'blockIndex', 'bookId', 'editionId', 'onReaderState', 'requestKey', 'style', 'textZoomPercent']);
   f.unmount();
 });
 
 const android = 'platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/reader/';
+const sizeButton = (view, part) => view.controls.find(control => control.props.accessibilityLabel.startsWith(part));
+test('reader size defaults to 100, stops at 80/150 and resets after repeated controls', () => {
+  const f = wrapper(), props = { ...selection(), active: true, onState() {} };
+  let view = f.render(props); assert.equal(view.props.textZoomPercent, 100);
+  assert.equal(sizeButton(view, 'Reset').props.disabled, true);
+  const nativeCallback = view.props.onReaderState;
+  for (let i = 0; i < 12; i++) { sizeButton(view, 'Increase').props.onPress(); view = f.render(props); }
+  assert.equal(view.props.textZoomPercent, 150); assert.equal(sizeButton(view, 'Increase').props.disabled, true);
+  assert.equal(view.props.onReaderState, nativeCallback, 'sizing does not restart the renderer callback lifetime');
+  for (let i = 0; i < 12; i++) { sizeButton(view, 'Decrease').props.onPress(); view = f.render(props); }
+  assert.equal(view.props.textZoomPercent, 80); assert.equal(sizeButton(view, 'Decrease').props.disabled, true);
+  sizeButton(view, 'Reset').props.onPress(); view = f.render(props);
+  assert.equal(view.props.textZoomPercent, 100); assert.equal(view.props.blockIndex, 41); assert.equal(view.props.requestKey, 'reader-1');
+  f.unmount();
+});
+test('reading position changes keep local size but a source change or inactive lifetime starts at default', () => {
+  const f = wrapper(), props = { ...selection(), active: true, onState() {} };
+  let view = f.render(props); sizeButton(view, 'Increase').props.onPress(); view = f.render(props);
+  const retained = sizeButton(view, 'Increase').props.onPress;
+  const moved = { ...props, requestKey: 'reader-2', blockIndex: 42 };
+  view = f.render(moved); assert.equal(view.props.textZoomPercent, 110);
+  retained(); view = f.render(moved); assert.equal(view.props.textZoomPercent, 110);
+  const other = { ...moved, bookId: 'apology', editionId: source.getSourceReaderEdition('apology').editionId };
+  view = f.render(other); assert.equal(view.props.textZoomPercent, 100);
+  sizeButton(view, 'Increase').props.onPress(); view = f.render(other);
+  const retired = sizeButton(view, 'Increase').props.onPress;
+  view = f.render({ ...other, active: false }); assert(view.controls.every(b => b.props.disabled));
+  retired(); view = f.render(other); assert.equal(view.props.textZoomPercent, 100);
+  retired(); view = f.render(other); assert.equal(view.props.textZoomPercent, 100);
+  f.unmount(); sizeButton(view, 'Increase').props.onPress();
+});
+test('queued size update is fenced when source/callback authority changes before React applies it', () => {
+  const f = wrapper(), props = { ...selection(), active: true, onState() {} };
+  let view = f.render(props); f.defer(); sizeButton(view, 'Increase').props.onPress();
+  const next = { ...props, onState() {} };
+  view = f.render(next); f.flush(); view = f.render(next);
+  assert.equal(view.props.textZoomPercent, 100);
+  sizeButton(view, 'Increase').props.onPress(); f.unmount(); f.flush();
+});
+test('iOS labels full-page scaling honestly while keeping the same local bounds', () => {
+  const f = wrapper('ios'), props = { ...selection(), active: true, onState() {} };
+  const view = f.render(props);
+  assert.deepEqual(view.controls.map(b => b.props.accessibilityLabel), ['Decrease book page size', 'Increase book page size', 'Reset book page size to 100 percent']);
+  f.unmount();
+});
+test('bounded sizing policy refuses non-finite inputs without creating a source or saved-position input', () => {
+  const size = load('platforms/native/src/reading/source-reader-size.ts');
+  for (const bad of [NaN, Infinity, -Infinity]) assert.equal(size.boundedReaderSize(bad), 100);
+  assert.equal(size.boundedReaderSize(-1), 80); assert.equal(size.boundedReaderSize(1000), 150);
+});
+test('native scaling uses existing native display settings without script injection (STATIC SOURCE ONLY)', () => {
+  const androidView = safe(android + 'SourceReaderView.kt'), manager = safe(android + 'SourceReaderManager.kt');
+  const ios = safe('platforms/native/ios-source/SoeSourceReaderView.mm');
+  assert(androidView.includes('value.coerceIn(80, 150)'));
+  assert(androidView.includes('web?.settings?.textZoom = textZoomPercent'));
+  assert(manager.includes('defaultInt = 100'));
+  assert(ios.includes('MAX(80, MIN(150, value.textZoomPercent))'));
+  assert(ios.includes('_web.pageZoom = _textZoomPercent / 100.0'));
+  assert(!androidView.includes('evaluateJavascript(') && !ios.includes('evaluateJavaScript:'));
+});
 test('Android resource security and independent lifecycle are present (STATIC SOURCE ONLY, NOT COMPILED)', () => {
   const session = safe(android + 'SourceReaderSession.kt'), view = safe(android + 'SourceReaderView.kt'), catalogSource = safe(android + 'SourceReaderCatalog.kt');
   for (const token of ['.followRedirects(false)', '.followSslRedirects(false)', '.retryOnConnectionFailure(false)', 'CookieJar.NO_COOKIES', '.cache(null)', 'Authenticator.NONE', 'sent?.compareAndSet(false, true)', 'response.code == 200', 'SourceReaderCatalog.sha(data) == resource.sha', 'data.size == resource.bytes', 'readBytesBounded(resource.bytes)', 'Executors.newFixedThreadPool(4)', 'TimeUnit.SECONDS.toNanos(120)', 'resources.values.forEach { it.cancel(true) }']) assert(session.includes(token), token);
@@ -127,7 +190,7 @@ test('Fabric/package catalog wiring exists without a new runtime dependency (STA
   const pkg = JSON.parse(safe('platforms/native/package.json')), gradle = safe('platforms/native/android/app/build.gradle'), pod = safe('platforms/native/ios-source/SoeSourceReader.podspec');
   assert.equal(pkg.codegenConfig.type, 'all'); assert.equal(pkg.codegenConfig.ios.components.SoeSourceReader.className, 'SoeSourceReaderView');
   assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['@supabase/auth-js', 'expo', 'expo-status-bar', 'react', 'react-native']);
-  assert(gradle.includes("'../../lib/books/source-reader-catalog.json'") && gradle.includes('sourceSets.main.assets.srcDir(sourceReaderAssets)'));
+  assert(gradle.includes("'../../lib/books/source-reader-catalog.json'") && gradle.includes('variant.sources.assets.addGeneratedSourceDirectory(packageSourceReaderCatalog) { task -> task.outputDirectory }'));
   assert(pod.includes("'generated/source-reader-catalog.json'") && pod.includes("s.frameworks = 'WebKit'"));
   assert(safe('platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/SoeMemberPackage.kt').includes('listOf(SourceReaderManager(), ClipPlayerManager())'));
 });

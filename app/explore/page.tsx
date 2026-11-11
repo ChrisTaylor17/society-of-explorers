@@ -1,107 +1,119 @@
-'use client';
-import { useEffect, useState } from 'react';
-import PublicNav from '@/components/PublicNav';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import PublicFooter from '@/components/PublicFooter';
+import CommunityDirectory from './CommunityDirectory';
 
-const gold = '#c9a84c';
-const parchment = '#f5f0e8';
-const ivory85 = 'rgba(245,240,232,0.85)';
-const muted = '#9a8f7a';
-
-interface CommunitySummary {
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-}
+export const metadata: Metadata = {
+  title: 'Explore communities — reading, friendship & shared inquiry',
+  description: 'Browse community records and explore Society of Explorers: Christian-rooted fellowship, reading, salon plans and ideas for building together.',
+};
 
 export default function ExplorePage() {
-  const [daos, setDaos] = useState<CommunitySummary[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/communities').then(r => r.json()).then(d => { setDaos(d.discover || []); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
-
-  const flagship = daos.find(d => d.slug === 'society-of-explorers' || d.slug === 'soe');
-  const others = daos.filter(d => d !== flagship);
-
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <PublicNav />
+    <div className="soe-explore">
+      <style>{`
+  .soe-explore { background: #0a0a0a; color: #e8dcc8; min-height: 100vh; font-family: 'Cormorant Garamond', serif; }
+  .soe-explore * { box-sizing: border-box; }
+  .soe-explore a { color: #d6b860; text-underline-offset: .25em; }
+  .soe-explore a:focus-visible, .soe-explore summary:focus-visible { outline: 3px solid #f1d788; outline-offset: 5px; }
+  .soe-explore .skip { position: absolute; left: 1rem; top: -8rem; z-index: 300; padding: .8rem; background: #0a0a0a; }
+  .soe-explore .skip:focus { top: 1rem; }
+  .soe-explore .nav { padding: 1rem clamp(1rem, 4vw, 3rem); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 2rem; border-bottom: 1px solid #c9a84c38; }
+  .soe-explore .nav a { display: inline-flex; align-items: center; min-height: 44px; font-family: 'Cinzel', serif; font-size: .8rem; letter-spacing: .06em; text-decoration: none; }
+  .soe-explore .nav a:hover { text-decoration: underline; }
+  .soe-explore .nav-links { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+  .soe-explore .hero { padding: clamp(3rem, 8vw, 7rem) 1.25rem; text-align: center; background: radial-gradient(ellipse at center, #211a09 0%, #0a0a0a 72%); }
+  .soe-explore .hero-inner { max-width: 780px; margin: 0 auto; }
+  .soe-explore .eyebrow { font-family: 'Cinzel', serif; color: #d6b860; font-size: .8rem; letter-spacing: .15em; line-height: 1.8; margin: 0 0 1rem; }
+  .soe-explore h1, .soe-explore h2, .soe-explore h3 { font-family: 'Cinzel', serif; font-weight: 400; color: #f5f0e8; text-wrap: balance; }
+  .soe-explore h1 { font-size: clamp(2.3rem, 7vw, 4.7rem); line-height: 1.15; letter-spacing: .03em; margin: 0 0 1.5rem; }
+  .soe-explore h2 { font-size: clamp(1.65rem, 4vw, 2.5rem); line-height: 1.35; margin: 0 0 1.5rem; }
+  .soe-explore h3 { font-size: 1.15rem; line-height: 1.5; margin: 0 0 .75rem; }
+  .soe-explore p, .soe-explore li { font-size: 1.2rem; line-height: 1.8; }
+  .soe-explore p { margin: 0 0 1.25rem; }
+  .soe-explore p:last-child { margin-bottom: 0; }
+  .soe-explore .lede { font-size: 1.5rem; color: #e8dcc8; }
+  .soe-explore .status { margin: 2rem auto 0; max-width: 680px; padding: 1.5rem; border: 1px solid #c9a84c70; background: #121109; text-align: left; }
+  .soe-explore .status strong { color: #f1d788; }
+  .soe-explore .section { max-width: 1060px; margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 1.25rem; }
+  .soe-explore .narrow { max-width: 800px; }
+  .soe-explore .band { background: #101010; border-block: 1px solid #c9a84c20; }
+  .soe-explore .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1rem; margin-top: 2rem; }
+  .soe-explore .card { padding: 1.5rem; background: #141310; border: 1px solid #c9a84c38; min-width: 0; }
+  .soe-explore .card p { color: #c9c0ac; }
+  .soe-explore .steps { list-style: none; padding: 0; margin: 2rem 0 0; counter-reset: steps; }
+  .soe-explore .steps li { counter-increment: steps; padding: 1.5rem 0; border-top: 1px solid #c9a84c38; }
+  .soe-explore .steps h3::before { content: counter(steps, decimal-leading-zero) ' / '; color: #d6b860; }
+  .soe-explore details { border-block-start: 1px solid #c9a84c55; padding: .25rem 0; }
+  .soe-explore details:last-child { border-block-end: 1px solid #c9a84c55; }
+  .soe-explore summary { cursor: pointer; padding: 1rem .25rem; min-height: 44px; font-family: 'Cinzel', serif; font-size: 1rem; color: #f5f0e8; line-height: 1.65; }
+  .soe-explore details p { padding: 0 .25rem 1.25rem; }
+  .soe-explore .actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+  .soe-explore .actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .85rem 1.25rem; border: 1px solid #c9a84c; font-family: 'Cinzel', serif; font-size: .85rem; line-height: 1.6; text-align: center; text-decoration: none; }
+  .soe-explore .actions a:first-child { background: #c9a84c; color: #0a0a0a; }
+  .soe-explore .actions a:hover { text-decoration: underline; }
+  .soe-explore .closing { border-top: 1px solid #c9a84c38; }
+  .soe-explore .accent { color: #d6b860; }
+  @media (max-width: 420px) { .soe-explore .actions a { width: 100%; } .soe-explore .nav-links { gap: .35rem 1rem; } }
 
-      <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>EXPLORE DAOs</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 5vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '1rem', lineHeight: 1.25 }}>
-            Live DAOs running on Consilience Systems.
-          </h1>
-          <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>
-            Citizen-science collectives, DePIN networks, open hardware, and habit layers. Discover and join.
-          </p>
+  .soe-explore section { scroll-margin-top: 1rem; }
+  .soe-explore .section-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.5rem; margin-top: 1.5rem; }
+  .soe-explore .section-nav a, .soe-explore .directory-cards a { display: inline-flex; align-items: center; min-height: 44px; line-height: 1.65; }
+  .soe-explore .directory-status { margin-top: 1.5rem; padding: 1.5rem; border: 1px solid #c9a84c55; background: #141310; }
+  .soe-explore button { min-height: 48px; margin-top: .5rem; padding: .65rem 1.25rem; border: 1px solid #c9a84c; background: #c9a84c; color: #0a0a0a; font-family: 'Cinzel', serif; font-size: .85rem; line-height: 1.65; cursor: pointer; }
+  .soe-explore button[aria-disabled='true'] { background: #29261b; color: #c9c0ac; cursor: wait; }
+  .soe-explore button:focus-visible { outline: 3px solid #f1d788; outline-offset: 5px; }
+  .soe-explore .directory-cards { list-style: none; padding: 0; }
+  .soe-explore .directory-cards h3, .soe-explore .record-description { overflow-wrap: anywhere; white-space: pre-line; }
+  .soe-explore .directory-cards .eyebrow { font-size: .75rem; color: #d6b860; }
+  .soe-explore .introduction { border-left: 3px solid #c9a84c; padding-left: 1.5rem; }
+`}</style>
+      <a className="skip" href="#explore-content">Skip to content</a>
+      <nav className="nav" aria-label="Explore navigation">
+        <Link href="/" prefetch={false}>Society of Explorers</Link>
+        <div className="nav-links"><Link href="/great-books" prefetch={false}>Reading</Link><Link href="/fellowship" prefetch={false}>Christian fellowship</Link></div>
+      </nav>
+      <main id="explore-content" tabIndex={-1}>
+        <header className="hero">
+          <div className="hero-inner">
+            <p className="eyebrow">Explorer Commons · Communities</p>
+            <h1>Find a question.<br /><span className="accent">Build a connection.</span></h1>
+            <p className="lede">Friendship, shared reading and ideas worth exploring together.</p>
+            <nav className="section-nav" aria-label="Explore sections"><a href="#communities">Community directory</a><a href="#about-soe">About SoE</a><a href="#begin">Start with a reading</a></nav>
+          </div>
+        </header>
+
+        <section id="communities" className="section" aria-labelledby="communities-heading">
+          <p className="eyebrow">Browse records</p>
+          <h2 id="communities-heading">Community directory</h2>
+          <p>Explore names and descriptions returned by the directory. A listing does not confirm current activity or an available event.</p>
+          <details><summary>What does a community listing tell me?</summary><p>These are community records and their supplied descriptions. A listing does not verify legal status, blockchain deployment, wallet readiness or rewards. Check a community’s current arrangements before relying on an offer. Loading this directory does not join a group or create a community.</p></details>
+          <CommunityDirectory />
+        </section>
+
+        <div className="band">
+          <section id="about-soe" className="section narrow" aria-labelledby="about-heading">
+            <p className="eyebrow">An introduction · Independent of directory results</p>
+            <div className="introduction">
+              <h2 id="about-heading">Society of Explorers</h2>
+              <p>A vision for friendship through Christian-rooted fellowship, Scripture, Great Books and honest discussion. Respectful disagreement is welcome; participation in prayer is optional.</p>
+              <p>Small salons, shared activities and projects could bring people together online and eventually in physical and virtual spaces. The reading materials and salon plan offer a place to begin; a host, dates and participation arrangements still need to be confirmed.</p>
+              <p>The wider incubator idea would help people explore and build ventures with AI tools and optional human collaborators. It remains a proposal, with ownership, responsibilities and costs to be agreed for each project. This page offers no automatic matching, launch service or earnings.</p>
+            </div>
+          </section>
         </div>
-      </section>
 
-      <section style={{ padding: '0 2rem 4rem' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          {loading ? (
-            <p style={{ textAlign: 'center', color: muted, fontFamily: 'Cinzel, serif', fontSize: '11px' }}>LOADING...</p>
-          ) : (
-            <>
-              {/* Flagship (if SOE in list) */}
-              {flagship ? (
-                <a href="/soe" style={{ display: 'block', background: '#0d0d0d', border: `1px solid ${gold}33`, padding: '1.75rem', textDecoration: 'none', marginBottom: '1.5rem', transition: 'border-color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = gold}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}33`}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}`, padding: '3px 10px' }}>FLAGSHIP</span>
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: '#4CAF50' }}>{'\u25cf'} LIVE</span>
-                  </div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', color: parchment, marginBottom: '0.5rem' }}>{flagship.name}</div>
-                  <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6, margin: 0 }}>{flagship.description || 'Daily philosophical practice + matched conversations + 7-week salons.'}</p>
-                </a>
-              ) : (
-                <a href="/soe" style={{ display: 'block', background: '#0d0d0d', border: `1px solid ${gold}33`, padding: '1.75rem', textDecoration: 'none', marginBottom: '1.5rem', transition: 'border-color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = gold}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}33`}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}`, padding: '3px 10px' }}>FLAGSHIP</span>
-                    <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: '#4CAF50' }}>{'\u25cf'} LIVE</span>
-                  </div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', color: parchment, marginBottom: '0.5rem' }}>Society of Explorers</div>
-                  <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6, margin: 0 }}>Citizen science of the mind. Daily philosophical practice, matched conversations, 7-week salons. $EXP soulbound reputation.</p>
-                </a>
-              )}
-
-              {others.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2.5rem 1rem', border: `1px solid ${gold}15`, background: '#0d0d0d' }}>
-                  <p style={{ fontSize: '16px', color: parchment, fontStyle: 'italic', marginBottom: '0.5rem' }}>More DAOs launching soon.</p>
-                  <p style={{ fontSize: '13px', color: muted, marginBottom: '1.5rem' }}>Be an early builder. Launch the next one.</p>
-                  <a href="/create-community" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>CREATE A DAO</a>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
-                  {others.map(d => (
-                    <a key={d.id} href={`/c/${d.slug}`} style={{ display: 'block', background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1.25rem', textDecoration: 'none', transition: 'border-color 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = `${gold}44`}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}15`}>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.1em', color: gold, marginBottom: '0.5rem' }}>{d.name}</div>
-                      <p style={{ fontSize: '13px', color: muted, lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{d.description || 'Consilience DAO'}</p>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </section>
-
-      <section style={{ padding: '2rem 2rem 6rem', textAlign: 'center' }}>
-        <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 2rem' }} />
-        <p style={{ fontSize: '15px', color: muted, marginBottom: '1.5rem' }}>Launch your own citizen-science DAO in four steps.</p>
-        <a href="/create-community" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px' }}>CREATE YOUR DAO</a>
-      </section>
-
+        <section id="begin" className="section" aria-labelledby="begin-heading">
+          <p className="eyebrow">Materials to explore</p>
+          <h2 id="begin-heading">Start with something worth sharing.</h2>
+          <div className="grid">
+            <article className="card"><h3>Read together</h3><p>Choose a passage from the Great Books. Consider its context and bring a question of your own.</p><Link href="/great-books" prefetch={false}>Explore the reading library</Link></article>
+            <article className="card"><h3>Faith &amp; inquiry</h3><p>Explore Scripture, history and competing interpretations, with room for thoughtful disagreement.</p><Link href="/fellowship" prefetch={false}>Explore Christian fellowship</Link></article>
+            <article className="card"><h3>A small salon</h3><p>Read the proposed four-week online format. The plan is not a reservation for a scheduled session.</p><Link href="/salons/pilot" prefetch={false}>Read the salon plan</Link></article>
+          </div>
+          <div className="actions"><Link href="/experience" prefetch={false}>Explore the wider experience</Link></div>
+        </section>
+      </main>
       <PublicFooter />
     </div>
   );

@@ -68,7 +68,7 @@ function CircleView({ circleId, fromOnline, reel, fellowship }: { circleId: stri
     if (link && (participation.uncertain || busy || participation.phase === 'review' && link.getAttribute('href') !== '/circles/norms')) event.preventDefault();
   }}>
     <p style={label}><Link href={contextHref(fromOnline ? ONLINE_CIRCLES_HREF : '/circles')}>{fromOnline ? 'Online Circles' : 'Circles'}</Link> · <Link href="/circles/mine">My Circles</Link></p>
-    <p style={small}><Link href={`/circles/${circleId}/admission`} prefetch={false}>Host approvals and private invitation codes</Link></p>
+    <p style={small}><Link href={contextHref(`/circles/${circleId}/admission${fromOnline ? '?from=online' : ''}`)} prefetch={false}>Host approvals and private invitation codes</Link></p>
     <h1 style={h1}>{c?.title || management?.circle.title || listing?.title || (management ? 'Circle membership' : 'Circle details')}</h1>
     {topic && <section aria-label="Your Fellowship question" style={{ ...card, marginBottom: '1rem' }}>
       <h2 style={h2}>{topic.title}</h2><p style={body}>{topic.question}</p>

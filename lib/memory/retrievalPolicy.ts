@@ -6,23 +6,16 @@ export type MemoryRetrievalRow = {
   consent_state?: string | null;
 };
 
-const EXCLUDED_MEMORY_STATES = new Set([
-  'corrected',
-  'retracted',
-  'do_not_use',
-  'suppressed',
-  'deleted',
-  'forgotten',
-  'expired',
-]);
-
 export function canUseMemoryInAI(row: MemoryRetrievalRow | null | undefined): boolean {
-  if (!row) return false;
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return false;
   if (hasExpired(row.valid_until)) return false;
   if (row.suppressed_at) return false;
 
-  const state = String(row.status || row.state || row.consent_state || 'active').trim().toLowerCase();
-  return !EXCLUDED_MEMORY_STATES.has(state);
+  // Keep legacy rows without state columns compatible. Any explicit state must
+  // permit recall; one active field cannot override another field's exclusion.
+  return [row.status, row.state, row.consent_state].every(state =>
+    state == null || (typeof state === 'string' && state.trim().toLowerCase() === 'active')
+  );
 }
 
 export function filterUsableMemoryRows<T extends MemoryRetrievalRow>(rows: T[] | null | undefined): T[] {

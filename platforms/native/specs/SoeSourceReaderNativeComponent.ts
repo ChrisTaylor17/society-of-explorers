@@ -12,6 +12,7 @@ export interface NativeProps extends ViewProps {
   blockIndex: CodegenTypes.Int32;
   requestKey: string;
   active: boolean;
+  textZoomPercent?: CodegenTypes.WithDefault<CodegenTypes.Int32, 100>;
   onReaderState?: CodegenTypes.DirectEventHandler<ReaderState>;
 }
 // Deliberately no URI, HTML, script, headers, account, or Circle prop.

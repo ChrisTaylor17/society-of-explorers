@@ -1,204 +1,129 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import styles from '@/components/ProjectDirection.module.css';
 
 export const metadata: Metadata = {
-  title: 'The Three Pillars',
-  description: 'Consilience Systems LLC, Society of Explorers, and the SOE Nonprofit — the organizational architecture.',
+  title: 'The Three Pillars — Society of Explorers',
+  description: 'Community, venture building and charitable purpose: proposed roles for Society of Explorers and Consilience, with ownership and governance still under review.',
 };
 
+const roles = [
+  {
+    name: 'Society of Explorers',
+    status: 'Community & product direction',
+    purpose: 'The public-facing home for Christian-rooted fellowship, Scripture, Great Books, salons, friendship and shared projects. Respectful disagreement belongs here, and prayer is optional.',
+    direction: 'People may eventually meet online, in an immersive room or in a shared physical place. Useful ideas can grow into member projects and products. Each experience needs real hosts, clear expectations and evidence that it works.',
+  },
+  {
+    name: 'Consilience',
+    status: 'Venture-builder model under review',
+    purpose: 'A proposed way for a founder to use AI tools to research opportunities, test demand, build useful products and support customers, with people responsible for decisions and commitments.',
+    direction: 'A holding company, business-building services and future DAO or decentralized-corporation services are options to investigate. Existing ownership, IP rights and agreements must be established before assigning assets or declaring a parent–subsidiary relationship.',
+  },
+  {
+    name: 'Charitable work & shared spaces',
+    status: 'Purpose and governance under review',
+    purpose: 'Explore how education, access to fellowship and shared community places could serve a charitable purpose alongside commercial ventures. The existing nonprofit records need review before choosing a foundation, another structure or a partner.',
+    direction: 'A charitable program would need its own beneficiaries, responsible governance, budget and asset records. Its resources must serve its charitable purpose; relationships with affiliated businesses need separate review.',
+  },
+] as const;
+
+const questions = [
+  {
+    number: '01', title: 'Who operates and owns the work?',
+    detail: 'Confirm the current agreements, ownership and IP rights for each project. Founder ownership is a goal for future ventures; it does not settle the rights in an existing entity or someone else’s work.',
+  },
+  {
+    number: '02', title: 'What is each contribution for?',
+    detail: 'Keep a product purchase, membership payment, charitable gift and investment distinct. Each needs a named recipient, a clear purpose and appropriate terms before it is offered.',
+  },
+  {
+    number: '03', title: 'How would the parts work together?',
+    detail: 'Any shared staff, services, licensing or property arrangement needs documented responsibilities and review of conflicts, costs and control. A charitable organization is not a founder-owned source of business capital.',
+  },
+] as const;
+
+const papers = [
+  { title: 'White paper', name: 'The Convergence Thesis', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/white-paper.pdf' },
+  { title: 'Business plan', name: 'Consilience Systems', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/business-plan.pdf' },
+  { title: 'Green paper', name: 'The Educational Framework', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/green-paper.pdf' },
+  { title: 'Black paper', name: 'The Technical Architecture', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/black-paper.pdf' },
+] as const;
+
 export default function ThreePillars() {
-  const gold = '#C5A55A';
-  const purple = '#7B68EE';
-  const warmGold = '#C9A94E';
-  const text = '#E8DCC8';
-  const muted = '#9a8f7a';
-  const bg = '#0A0A0A';
-  const bgCard = '#0d0d0d';
-  const border = `${gold}22`;
-
   return (
-    <div style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
-
-      <PublicNav />
-
-      {/* HERO */}
-      <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '6rem 2rem 4rem', position: 'relative' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.4, marginBottom: '2rem' }}>ORGANIZATIONAL ARCHITECTURE</div>
-        <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2.5rem, 7vw, 5rem)', fontWeight: 300, letterSpacing: '0.15em', lineHeight: 1.1, marginBottom: '1.5rem' }}>
-          THE THREE PILLARS
-        </h1>
-        <p style={{ fontSize: '1.2rem', color: muted, fontStyle: 'italic', lineHeight: 1.8, maxWidth: '550px', marginBottom: '4rem' }}>
-          How the Society is organized — the legal and corporate architecture.
-        </p>
-
-        {/* Hierarchy Tree — Consilience at top, branching down */}
-        <div style={{ position: 'relative', width: '340px', height: '200px' }}>
-          {/* Root: Consilience */}
-          <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '18px', color: purple, marginBottom: '4px' }}>◊</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: purple }}>CONSILIENCE</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>PARENT DAC</div>
+    <div className={styles.page}>
+      <a className={styles.skip} href="#pillars-main">Skip to the three pillars</a>
+      <PublicNav checkSession={false} />
+      <main className={styles.main} id="pillars-main" tabIndex={-1}>
+        <header className={styles.hero}>
+          <p className={styles.eyebrow}>Community, ventures &amp; shared purpose</p>
+          <h1>The three pillars.<br /><em>Different roles. A shared horizon.</em></h1>
+          <p className={styles.lead}>Bring people together, help useful ideas become real, and make room for work that serves a wider community.</p>
+          <p className={styles.note}>These are proposed roles, not an announcement of a completed legal structure. Current ownership, IP, operating authority and charitable status remain under review.</p>
+          <div className={styles.actions}>
+            <Link className={styles.primary} href="#roles" prefetch={false}>Explore the three roles <span aria-hidden="true">↓</span></Link>
+            <Link className={styles.secondary} href="/structure" prefetch={false}>Read the guiding principles <span aria-hidden="true">↗</span></Link>
           </div>
-          {/* Trunk down from Consilience */}
-          <div style={{ position: 'absolute', left: '50%', top: '55px', width: '2px', height: '40px', background: gold, transform: 'translateX(-50%)' }} />
-          {/* Horizontal bar */}
-          <div style={{ position: 'absolute', left: 'calc(50% - 120px)', top: '95px', width: '240px', height: '2px', background: gold }} />
-          {/* Left branch down to SoE LLC */}
-          <div style={{ position: 'absolute', left: 'calc(50% - 120px)', top: '95px', width: '2px', height: '40px', background: gold }} />
-          {/* Right branch down to Nonprofit */}
-          <div style={{ position: 'absolute', left: 'calc(50% + 120px)', top: '95px', width: '2px', height: '40px', background: gold }} />
-          {/* SoE LLC label */}
-          <div style={{ position: 'absolute', left: 'calc(50% - 120px)', top: '140px', transform: 'translateX(-50%)', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: gold, marginBottom: '4px' }}>⬡</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: gold }}>SOE LLC</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>DAO / COMMUNITY</div>
+        </header>
+
+        <section className={styles.section} id="roles" aria-labelledby="roles-title">
+          <p className={styles.eyebrow}>A direction to develop</p>
+          <h2 id="roles-title">Community, enterprise and charitable purpose.</h2>
+          <p className={styles.intro}>The ambition is broader than a single app. The next steps should establish which experiences people value and what responsibilities each organization can actually take on.</p>
+          <div className={styles.cards}>
+            {roles.map(role => <article className={styles.card} key={role.name}>
+              <p className={styles.badge}>{role.status}</p><h3>{role.name}</h3>
+              <p>{role.purpose}</p><p>{role.direction}</p>
+            </article>)}
           </div>
-          {/* Nonprofit label */}
-          <div style={{ position: 'absolute', left: 'calc(50% + 120px)', top: '140px', transform: 'translateX(-50%)', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '16px', color: warmGold, marginBottom: '4px' }}>△</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: warmGold }}>SOE NONPROFIT</div>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>501(c)(3)</div>
+        </section>
+
+        <section className={styles.paper} aria-labelledby="inquiry-title">
+          <div><p className={styles.eyebrow}>Connected work, distinct principles</p><h2 id="inquiry-title">A place for careful inquiry.</h2></div>
+          <div>
+            <p>Root Kernel remains a distinct Bible-study project with its own established principles. Its connection to SoE should keep source passages, interpretations and AI-assisted analysis inspectable and open to correction.</p>
+            <p>Scripture, Great Books and historical questions can give people something worthwhile to discuss. Fellowship is a substantial part of the Society; venture building is another direction to explore.</p>
+            <Link className={styles.paperLink} href="/fellowship" prefetch={false}>Enter Christian fellowship <span aria-hidden="true">↗</span></Link>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* SECTION 1: THE NECESSITY */}
-      <section style={{ padding: '8rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>I.</div>
-        <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '2rem', borderBottom: `1px solid ${border}`, paddingBottom: '1rem' }}>
-          WHY THIS STRUCTURE
-        </h2>
-        <p style={{ fontSize: '1.15rem', lineHeight: 1.9, marginBottom: '2rem' }}>
-          A single entity cannot hold what we are building. Infrastructure needs freedom to build. Community needs freedom to gather. Education needs freedom to give. Consilience Systems is the root — the decentralized autonomous corporation that builds the technology backbone. From it, two branches extend: the Society of Explorers LLC, which runs the community and membership experience, and the SOE Nonprofit, which ensures the mission reaches everyone.
-        </p>
-        <p style={{ fontSize: '1.15rem', lineHeight: 1.9, color: muted }}>
-          The hierarchy is intentional. Consilience holds the IP, the infrastructure, and the long-term vision. The Society operates as a DAO under Consilience, running the salon, the thinkers, and the membership tiers. The nonprofit channels the educational mission — free salons, scholarships, and the Living Archive as a public good. Each pillar protects the others from its own temptations.
-        </p>
-      </section>
-
-      {/* SECTION 2: THE THREE ENTITIES */}
-      <section style={{ padding: '6rem 2rem', background: '#050505' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>II.</div>
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '4rem', textAlign: 'center', borderBottom: `1px solid ${border}`, paddingBottom: '1rem' }}>
-            THE THREE ENTITIES
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}12` }}>
-            {/* Consilience — Parent */}
-            <div style={{ background: bgCard, padding: '3rem 2.5rem', borderTop: `3px solid ${purple}` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: purple, opacity: 0.25, marginBottom: '1rem' }}>◊</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: purple, marginBottom: '0.25rem' }}>CONSILIENCE SYSTEMS LLC</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>THE PARENT DAC — TECHNOLOGY BACKBONE</div>
-              <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
-                The Decentralized Autonomous Corporation. Consilience builds the infrastructure that everything else runs on — blockchain systems, AI platforms, data sovereignty tools, the Living Archive (planned), TwiddleTwattle, ExploreOS (in development). Located at 92B South St in downtown Boston. It provides services, IP licensing, and technical infrastructure to the Society of Explorers and the Nonprofit. Consilience is the root. It asks the questions that take decades to answer and builds the tools that make the answers possible.
-              </p>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: purple, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
-              {['Blockchain and AI infrastructure', 'Living Archive (planned)', 'ExploreOS (in development)', 'TwiddleTwattle social layer', 'IP licensing and services', 'Data sovereignty tools', '92B South St operations'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
-                  <div style={{ color: purple, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>⬡</div>
-                  <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Society of Explorers LLC — Subsidiary */}
-            <div style={{ background: bgCard, padding: '3rem 2.5rem', borderTop: `3px solid ${gold}` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: gold, opacity: 0.25, marginBottom: '1rem' }}>⬡</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.25rem' }}>SOCIETY OF EXPLORERS LLC</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>SUBSIDIARY DAO — COMMUNITY + MEMBERSHIP</div>
-              <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
-                A Great Books community where people read complete source editions, form volunteer Circles and discuss ideas together. These activities remain free and open to everyone. Optional $10 USD monthly support is proposed for community infrastructure; current purchase availability is checked separately at /join. Older membership plans are closed to new purchases by default, and existing subscribers can check their own billing at /billing. Planned token, governance and physical-space ideas are not supporter benefits or verified sources of revenue.
-              </p>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
-              {['Membership platform and DAO governance', 'AI thinker salon', 'Great Books reading program', 'Merch and artifact marketplace', '$EXP token economy', 'Events and salon evenings', 'Book salons and cohorts'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
-                  <div style={{ color: gold, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>⬡</div>
-                  <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* SOE Nonprofit — 501(c)(3) */}
-            <div style={{ background: bgCard, padding: '3rem 2.5rem', borderTop: `3px solid ${warmGold}` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2rem', color: warmGold, opacity: 0.25, marginBottom: '1rem' }}>△</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: warmGold, marginBottom: '0.25rem' }}>SOE NONPROFIT</div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '1.5rem' }}>501(c)(3) — EDUCATIONAL FOUNDATION</div>
-              <p style={{ fontSize: '1rem', color: `${text}cc`, lineHeight: 1.9, marginBottom: '2rem' }}>
-                The gift. The nonprofit ensures the Society&apos;s ideas reach people who cannot pay for them. It maintains the Living Archive as a public-good resource. It funds scholarships to the Great Books program, runs free public salons, and creates educational content. It accepts grants and donations and channels them into making philosophy and technology education accessible to anyone with the courage to think. The nonprofit is the promise that this is not a gated garden.
-              </p>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: warmGold, opacity: 0.6, marginBottom: '0.75rem' }}>KEY FUNCTIONS</div>
-              {['Living Archive as public resource', 'Scholarships and grants', 'Free educational content', 'Public salons and events', 'Curriculum development', 'Community outreach', 'Tax-deductible donations'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', alignItems: 'flex-start' }}>
-                  <div style={{ color: warmGold, opacity: 0.4, marginTop: '3px', fontSize: '7px' }}>⬡</div>
-                  <div style={{ fontSize: '0.9rem', color: muted, lineHeight: 1.5 }}>{f}</div>
-                </div>
-              ))}
-            </div>
+        <section className={styles.section} aria-labelledby="responsibilities-title">
+          <p className={styles.eyebrow}>Relationships to establish</p>
+          <h2 id="responsibilities-title">Make the responsibilities clear.</h2>
+          <div className={styles.principles}>
+            {questions.map(question => <article key={question.number}>
+              <span className={styles.number} aria-hidden="true">{question.number}</span>
+              <div><h3>{question.title}</h3><p>{question.detail}</p></div>
+            </article>)}
           </div>
-        </div>
-      </section>
+          <p className={styles.note}>State nonprofit formation does not by itself establish federal tax exemption. This page does not promise tax-deductible donations. Current status and any proposed arrangement need qualified legal and tax review. <a className={styles.inlineLink} href="https://www.irs.gov/charities-non-profits/frequently-asked-questions-about-applying-for-tax-exemption">IRS guidance on exemption</a> · <a className={styles.inlineLink} href="https://www.irs.gov/charities-non-profits/charitable-organizations/inurement-private-benefit-charitable-organizations">IRS guidance on private benefit</a>.</p>
+        </section>
 
-      {/* SECTION 3: THE CONVERGENCE */}
-      <section style={{ padding: '8rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>III.</div>
-        <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '3rem', textAlign: 'center', borderBottom: `1px solid ${border}`, paddingBottom: '1rem' }}>
-          HOW THEY CONNECT
-        </h2>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-          {[
-            { from: 'Consilience Infrastructure', arrow: '→', to: 'SoE LLC Platform + Nonprofit Tools', color: purple },
-            { from: 'SoE LLC Revenue', arrow: '→', to: 'Nonprofit Grants + Consilience R&D', color: gold },
-            { from: 'Nonprofit Education', arrow: '→', to: 'SoE LLC Member Pipeline', color: warmGold },
-            { from: 'Consilience IP', arrow: '→', to: 'Licensed to Both Subsidiaries', color: purple },
-          ].map((flow, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: flow.color, minWidth: '180px', textAlign: 'right' }}>{flow.from}</span>
-              <span style={{ color: `${gold}40`, fontSize: '14px' }}>{flow.arrow}</span>
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: muted, minWidth: '180px' }}>{flow.to}</span>
-            </div>
-          ))}
-        </div>
-
-        <p style={{ fontSize: '1.1rem', lineHeight: 1.9, textAlign: 'center', color: muted }}>
-          Consilience builds the infrastructure that powers everything. The Society of Explorers LLC operates the community experience on that infrastructure. The Nonprofit ensures the mission reaches beyond paying members. Revenue flows up to fund R&D; technology flows down to power the community; education flows outward to grow the network. Three pillars, one organism.
-        </p>
-      </section>
-
-      {/* SECTION 4: THE PAPERS */}
-      <section style={{ padding: '6rem 2rem', background: '#050505' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>IV.</div>
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '0.75rem', textAlign: 'center', borderBottom: `1px solid ${border}`, paddingBottom: '1rem' }}>
-            THE FOUNDING DOCUMENTS
-          </h2>
-          <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic', textAlign: 'center', marginBottom: '3rem' }}>
-            Download the papers that define our vision, strategy, and structure.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}12` }}>
-            {[
-              { title: 'WHITE PAPER', name: 'The Convergence Thesis', desc: 'The philosophical foundation. Why AI, blockchain, and ancient wisdom must converge. The Heidegger framework. The case for poiesis over Gestell.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/white-paper.pdf' },
-              { title: 'BUSINESS PLAN', name: 'Consilience Systems — Business Plan', desc: 'Revenue model, growth strategy, membership tiers, technology roadmap, financial projections. The commercial engine.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/business-plan.pdf' },
-              { title: 'GREEN PAPER', name: 'The Educational Framework', desc: 'The Great Books curriculum. The salon methodology. How AI thinkers facilitate philosophical education. The nonprofit\u2019s mission and programs.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/green-paper.pdf' },
-              { title: 'BLACK PAPER', name: 'The Technical Architecture', desc: 'The data layer. Soulbound NFTs. Decentralized compute. $EXP tokenomics. ExploreOS. The full technical specification.', url: 'https://woqvlkeluxkxplpgzdgv.supabase.co/storage/v1/object/public/papers/black-paper.pdf' },
-            ].map(paper => (
-              <div key={paper.title} style={{ background: bgCard, padding: '2.5rem 2rem', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '1rem', right: '1rem', fontFamily: 'Cinzel, serif', fontSize: '6px', letterSpacing: '0.15em', color: bgCard, background: gold, padding: '2px 8px' }}>DOWNLOAD PDF</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.25em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>{paper.title}</div>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.08em', color: text, marginBottom: '1rem', lineHeight: 1.3 }}>{paper.name}</div>
-                <p style={{ fontSize: '0.95rem', color: muted, lineHeight: 1.7, marginBottom: '1.5rem' }}>{paper.desc}</p>
-                <a href={paper.url} target="_blank" rel="noopener noreferrer" download style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
-                  DOWNLOAD PDF →
-                </a>
-              </div>
-            ))}
+        <section className={styles.section} aria-labelledby="papers-title">
+          <p className={styles.eyebrow}>Historical proposals</p>
+          <h2 id="papers-title">Earlier ideas, kept in view.</h2>
+          <p className={styles.intro}>These existing document links preserve earlier proposals. Read them alongside the current direction above; they do not establish present ownership, tax status, investment terms or delivered products.</p>
+          <div className={styles.cards}>
+            {papers.map(paper => <article className={styles.card} key={paper.title}>
+              <p className={styles.badge}>{paper.title} · historical proposal</p><h3>{paper.name}</h3>
+              <a className={styles.textLink} href={paper.url} target="_blank" rel="noopener noreferrer">Open historical PDF <span aria-hidden="true">↗</span></a>
+            </article>)}
           </div>
-        </div>
-      </section>
+        </section>
 
+        <aside className={styles.callout} aria-labelledby="begin-title">
+          <p className={styles.eyebrow}>The next human step</p>
+          <h2 id="begin-title">Start with something worth sharing.</h2>
+          <p>Read a source, bring an honest question and return to a conversation. Useful products and lasting places should grow from needs we can understand and relationships people choose to keep.</p>
+          <div className={styles.actions}>
+            <Link className={styles.primary} href="/salons/pilot" prefetch={false}>Read the first salon plan <span aria-hidden="true">↗</span></Link>
+            <Link className={styles.secondary} href="/roadmap" prefetch={false}>Explore the wider roadmap <span aria-hidden="true">↗</span></Link>
+          </div>
+        </aside>
+      </main>
       <PublicFooter />
     </div>
   );

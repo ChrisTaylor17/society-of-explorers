@@ -21,6 +21,8 @@ import com.facebook.react.uimanager.events.Event
  * external intent. Each selection owns a new WebView and binary resource session. */
 internal class SourceReaderView(private val react: ThemedReactContext) : FrameLayout(react), LifecycleEventListener {
   var bookId = ""; var editionId = ""; var blockIndex = -1; var requestKey = ""
+  var textZoomPercent = 100
+    set(value) { field = value.coerceIn(80, 150) }
   var active = false
     set(value) { field = value; if (!value) retire(false) }
   private var disposed = false
@@ -40,6 +42,7 @@ internal class SourceReaderView(private val react: ThemedReactContext) : FrameLa
     if (disposed || !active || suspended || !isAttachedToWindow || windowVisibility != View.VISIBLE) return
     val next = listOf(bookId, editionId)
     if (identity == next && web != null) {
+      web?.settings?.textZoom = textZoomPercent
       if (attemptedKey != requestKey) navigateSelection()
       else if (targetIndex != blockIndex) { retire(false); emit(requestKey, blockIndex, "unavailable") }
       return
@@ -70,6 +73,7 @@ internal class SourceReaderView(private val react: ThemedReactContext) : FrameLa
         mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         setSupportMultipleWindows(false); useWideViewPort = true; loadWithOverviewMode = false
         setSupportZoom(true); builtInZoomControls = true; displayZoomControls = false
+        textZoom = textZoomPercent
         mediaPlaybackRequiresUserGesture = true
       }
       CookieManager.getInstance().setAcceptThirdPartyCookies(view, false)

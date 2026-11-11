@@ -1,6 +1,14 @@
 # Complete native source reader
 
-This local milestone extends profile/navigation checkpoint `5006dfba8d7dd2853d8a19aaf855eb663c897a54`. It prepares a complete native source view for the eight verified Great Books editions. The Android/iOS renderer code has not been compiled or exercised on a device. Deployment and production migrations remain held.
+The original local milestone extends profile/navigation checkpoint `5006dfba8d7dd2853d8a19aaf855eb663c897a54` and prepares a complete native source view for the eight verified Great Books editions. The historical receipt below records that source checkpoint. The November 10 sizing update now has Android Kotlin/Java compilation evidence; iOS compilation and physical-device acceptance remain unverified. Deployment and production migrations remain held.
+
+## November 10, 2026: bounded native sizing
+
+The complete reader now offers Smaller, Larger and Default size, a current percentage, and disabled controls at 80% and 150%, in 10-point steps. The choice exists only in this reader's local state. Same-source Previous/Next retains it; a new source, retired view or reopened reader starts at 100%. Retained and queued callbacks must still belong to the current active reader before changing size. No preference, account or provider storage was added.
+
+Android uses the platform's text zoom and labels the controls **Book text**. iOS source uses WKWebView page zoom and labels them **Book page**, explicitly explaining that illustrations and tables also scale. Neither path changes verified source bytes, enables page scripts, or changes the selected save target. Buttons wrap and have a 48-point minimum height. Screen-reader and actual native layout acceptance remain device work.
+
+The scoped update passes 20 policy/wrapper/static-source groups, native TypeScript, scoped lint and 26 composed-browser checks. The browser uses the actual screen/controller/wrapper with explicit RN/OS/Fabric doubles and CSS size approximations; it is not WebView or WKWebView execution. Offline Android Codegen, Kotlin and Java compilation pass. Compiled reader and generated bridge classes were inspected with `javap`; this is not a linked/installable app or a device test. [Current evidence, artifact, preservation checks and limits](/Users/christaylor/Documents/Mewest/RESEARCH/native-reader-text-size-2026-11-10/README.md).
 
 ## Product behavior
 
@@ -29,4 +37,4 @@ The native renderer accepts public book/edition/position coordinates and an opaq
 
 See [the checkpoint receipt](source-reader-verification.json) for hashes, tests, limitations and evidence at `7e7490c439c613308f51e065f600721e18cde41e`. Its 43 evidence files and original receipt are preserved under `verification/web/evidence/checkpoint-7e7490c/`. Existing profile/navigation evidence is preserved under `verification/web/evidence/checkpoint-5006dfb/`; these proofs establish their recorded historical source only. Local ignored evidence is not a portable export.
 
-Remaining native acceptance includes Codegen, Kotlin/Objective-C++ compilation, Android resource interception and cancellation, iOS scheme-handler/URL observation, fragment visibility, memory and load behavior, touch zoom, source accessibility and real devices. iOS has source/podspec integration material but no generated app project or owned-account bridge. Some canonical source images have empty alternative text; visual fidelity does not establish accessible descriptions. Dedicated font controls and scroll-derived saved positions are not implemented. Android SDK acquisition and production backup questions remain pending.
+Remaining native acceptance includes the final linked app, Objective-C++ compilation, Android resource interception and cancellation, iOS scheme-handler/URL observation, fragment visibility, memory/load behavior, touch/page zoom, source accessibility and real devices. The current checkout includes an [iOS account bridge](ios-member-bridge.md); its generation/build/device gates are recorded separately. Some canonical source images have empty alternative text; visual fidelity does not establish accessible descriptions. Scroll-derived saved positions remain intentionally unimplemented. Dedicated sizing controls and offline Android compilation are covered by the dated update above. Production backup questions remain separate and unresolved by this work.

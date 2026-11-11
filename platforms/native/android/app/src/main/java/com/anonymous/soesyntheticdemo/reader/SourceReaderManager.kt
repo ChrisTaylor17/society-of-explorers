@@ -17,6 +17,7 @@ internal class SourceReaderManager : SimpleViewManager<SourceReaderView>(), SoeS
   @ReactProp(name = "blockIndex") override fun setBlockIndex(view: SourceReaderView, value: Int) { view.blockIndex = value }
   @ReactProp(name = "requestKey") override fun setRequestKey(view: SourceReaderView, value: String?) { view.requestKey = value ?: "" }
   @ReactProp(name = "active") override fun setActive(view: SourceReaderView, value: Boolean) { view.active = value }
+  @ReactProp(name = "textZoomPercent", defaultInt = 100) override fun setTextZoomPercent(view: SourceReaderView, value: Int) { view.textZoomPercent = value }
   override fun onAfterUpdateTransaction(view: SourceReaderView) { super.onAfterUpdateTransaction(view); view.update() }
   override fun onDropViewInstance(view: SourceReaderView) { view.dispose(); super.onDropViewInstance(view) }
   override fun getExportedCustomDirectEventTypeConstants(): Map<String, Any> = mapOf("topReaderState" to mapOf("registrationName" to "onReaderState"))

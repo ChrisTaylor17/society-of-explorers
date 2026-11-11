@@ -214,7 +214,7 @@ static NSDictionary *SREdition(NSString *book, NSString *pin) {
   SoeReaderResources *_resources;
   NSString *_book, *_edition, *_key, *_attemptedKey, *_page, *_target, *_readyKey;
   NSDictionary *_entry;
-  NSInteger _index, _targetIndex;
+  NSInteger _index, _targetIndex, _textZoomPercent;
   NSUInteger _epoch;
   BOOL _active, _suspended, _resourceReady;
 }
@@ -222,6 +222,7 @@ static NSDictionary *SREdition(NSString *book, NSString *pin) {
 - (instancetype)initWithFrame:(CGRect)frame {
   if ((self = [super initWithFrame:frame])) {
     _props = std::make_shared<const SoeSourceReaderProps>();
+    _textZoomPercent = 100;
     self.backgroundColor = UIColor.whiteColor;
     _suspended = UIApplication.sharedApplication.applicationState != UIApplicationStateActive;
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(pauseReader) name:UIApplicationWillResignActiveNotification object:nil];
@@ -235,6 +236,9 @@ static NSDictionary *SREdition(NSString *book, NSString *pin) {
   BOOL changed = ![_book isEqual:book] || ![_edition isEqual:edition];
   if (changed || !value.active) [self retire:NO];
   _book = book; _edition = edition; _key = key; _index = value.blockIndex; _active = value.active;
+  _textZoomPercent = MAX(80, MIN(150, value.textZoomPercent));
+  // Native page scaling preserves verified bytes and requires no page script.
+  if (_web && _active && !_suspended && self.window) _web.pageZoom = _textZoomPercent / 100.0;
   [super updateProps:props oldProps:oldProps];
   [self startReader];
 }
@@ -258,6 +262,7 @@ static NSDictionary *SREdition(NSString *book, NSString *pin) {
   config.userContentController = [WKUserContentController new]; // No scripts/message handlers.
   [config setURLSchemeHandler:_resources forURLScheme:@"soe-reader"];
   _web = [[WKWebView alloc] initWithFrame:self.bounds configuration:config];
+  _web.pageZoom = _textZoomPercent / 100.0;
   _web.navigationDelegate = self; _web.allowsLinkPreview = NO; _web.allowsBackForwardNavigationGestures = NO;
   [_web addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nullptr];
   [_web addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:nullptr];

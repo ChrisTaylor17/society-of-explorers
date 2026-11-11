@@ -21,6 +21,7 @@ export default function FellowshipPage() {
       <p>We take Jesus Christ seriously, and we take the work of understanding seriously. Belief, doubt and disagreement can be spoken without turning a person into an opponent.</p>
       <div className={styles.actions}>
         <Link className={styles.button} href="/fellowship/scripture">Open the Scripture study</Link>
+        <Link className={styles.button} href="#root-kernel">Explore Root Kernel · optional study</Link>
         <Link className={styles.button} href="/fellowship/manifesto">Read our fellowship covenant</Link>
         <Link className={styles.button} href="#gather-around-a-question">Find your next conversation</Link>
       </div>
@@ -61,15 +62,22 @@ export default function FellowshipPage() {
       </article>
     </section>
     <section className={styles.section} aria-labelledby="root-kernel">
-      <p className={styles.eyebrow}>Root Kernel · a reading companion</p>
-      <h2 id="root-kernel">Keep the text and the interpretation distinct.</h2>
-      <p>The existing Root Kernel studies preserve the publisher’s Scripture and notes while comparing named readings. Its comparative approach gives a charitable Nicene Christian reading before its Biblical Unitarian perspective. Textual questions and historical confidence have their own place.</p>
-      <p>That editorial perspective is visible here. It is an invitation to examine reasons, not an allegedly unbiased AI verdict. Jewish and other relevant interpretations are represented under their own names.</p>
-      <div className={styles.twoColumns}>
+      <p className={styles.eyebrow}>Optional deeper study · free to read</p>
+      <h2 id="root-kernel" tabIndex={-1}>Explore Root Kernel.</h2>
+      <p>Root Kernel is an independent, Jesus-rooted study project. These existing studies are offered within SoE with their own attribution and editorial identity. You can read them freely without an account. Participation and agreement are optional; the wider Society welcomes respectful disagreement.</p>
+      <p>Begin with the text in context, compare named interpretations, inspect the sources and challenge the reasoning. An accessible source is not proof of the event it describes. Faith, historical evidence and speculation remain distinct.</p>
+      <details>
+        <summary>Our starting point and how we inquire</summary>
+        <p>Root Kernel’s founder describes his faith as Christadelphian. Its Biblical Unitarian reading understands the Father alone as God and Jesus as God’s human Messiah and Son. This is a named faith interpretation, not a belief test for SoE or a claim to speak for every Christadelphian.</p>
+        <p>The existing studies preserve the publisher’s Scripture and notes, compare a charitable Nicene Christian reading with Root Kernel’s perspective, and consider relevant Jewish and historical interpretations under their own names. Nicene Christians also distinguish Father and Son as persons; their understanding of divine nature differs.</p>
+        <p>Our aim is transparent, rigorous inquiry that can be challenged and corrected, rather than a claim of absolute neutrality or scientific proof of theology. Later or noncanonical writings, other traditions and speculative extraterrestrial explanations may be examined. Including an idea does not give it equal evidence or establish an ancient event.</p>
+      </details>
+      <div className={styles.grid}>
+        <article className={styles.panel}><h3>Psalm 22 and Isaiah 53</h3><p>Compare the passages with the crucifixion accounts, inspect competing readings and prepare a local analysis correction.</p><Link href="/fellowship/scripture">Compare the existing Scripture passages</Link></article>
         <article className={styles.panel}><h3>Philemon</h3><p>Read the complete letter, compare readings of its greeting and ask what it means to receive a beloved brother.</p><Link href="/great-books/scripture/philemon">Open the existing Philemon study</Link></article>
         <article className={styles.panel}><h3>The Good Samaritan</h3><p>Read Luke 10:25–37, consider neighbor love and prepare a practical 45-minute conversation.</p><Link href="/great-books/scripture/luke-good-samaritan">Open the existing Good Samaritan study</Link></article>
       </div>
-      <p className={styles.muted}>These are the Root Kernel studies currently available in SoE. This section does not claim that a separate app or the full original commentary collection has been integrated.</p>
+      <p className={styles.muted}>This is a connection to the existing studies, not a merger or the full Root Kernel commentary collection. The separate Jesus reader remains a design preview; its unverified candidate claims are not added to these studies.</p>
     </section>
     <section className={styles.panel} aria-labelledby="gather">
       <h2 id="gather">A simple way to gather</h2>

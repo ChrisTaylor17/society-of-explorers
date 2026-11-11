@@ -272,9 +272,10 @@ export function CircleDirectoryScreen({ config, connectivity, initialMode = 'dis
         <Action label={m.intent === 'join' ? 'Confirm join' : m.intent === 'rsvp' ? 'Confirm attendance response' : m.intent === 'complete' ? 'Confirm Circle completion' : 'Confirm leave'} disabled={!m.canConfirm} onPress={() => act(() => void session?.confirm())}/>
         <Action label={m.intent === 'rsvp' ? 'Cancel attendance change' : m.intent === 'complete' ? 'Cancel Circle completion' : 'Cancel membership change'} disabled={!m.canCancel} onPress={() => act(() => session?.cancel())}/>
       </View> : m?.phase === 'unknown' ? <View style={styles.card}>
+        {m.intent === 'complete' ? <Text accessibilityRole="header" style={styles.heading}>Circle completion unconfirmed</Text> : null}
         {m.attendanceReview ? <AttendanceReview date={m.attendanceReview.date} status={m.attendanceReview.status} previousStatus={m.attendanceReview.previousStatus} circleTitle={m.attendanceReview.circleTitle} time={m.attendanceReview.time} timezone={m.attendanceReview.timezone}/> : null}
-        <Text style={styles.copy}>This participation change may already have completed. Retry only the same request. Closing clears its local retry details, and a request already sent may still finish.</Text>
-        <Action label="Retry exact participation request" disabled={!m.canConfirm} onPress={() => act(() => void session?.confirm())}/>
+        <Text style={styles.copy}>{m.intent === 'complete' ? 'This Circle may already be completed. Completion permanently closes new joins and attendance responses; existing members keep their discussion access. Retry sends the same completion request. Closing clears its local retry details, and a request already sent may still finish.' : 'This participation change may already have completed. Retry only the same request. Closing clears its local retry details, and a request already sent may still finish.'}</Text>
+        <Action label={m.intent === 'complete' ? 'Retry exact Circle completion' : 'Retry exact participation request'} disabled={!m.canConfirm} onPress={() => act(() => void session?.confirm())}/>
       </View> : <>
         {m?.canPrepareJoin ? <Action label="Review joining this Circle" onPress={() => act(() => void session?.prepare('join'))}/> : null}
         {m?.canPrepareLeave ? <Action label="Review leaving this Circle" onPress={() => act(() => void session?.prepare('leave'))}/> : null}

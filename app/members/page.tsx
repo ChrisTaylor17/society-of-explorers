@@ -11,6 +11,7 @@ import DirectMessageBlocks, { sendBlockChange } from './DirectMessageBlocks'
 import styles from './direct-message.module.css'
 import PublishedProfileLink from '@/components/PublishedProfileLink'
 import MemberFinder from './MemberFinder'
+import { DIRECTORY_EXPECTED_OWNER_HEADER, DIRECTORY_OWNER_HEADER, parsePublishedDirectory } from '@/lib/members/finder'
 
 interface Member {
   id: string
@@ -109,6 +110,7 @@ export default function MembersPage() {
   const [sending, setSending] = useState(false)
   const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile' | 'blocked'>('directory')
   const [directoryStatus, setDirectoryStatus] = useState<'loading' | 'ready' | 'forbidden' | 'unavailable'>('loading')
+  const [directoryAttempt, setDirectoryAttempt] = useState(0)
   const [retired, setRetired] = useState(false)
   const [showThinkerPicker, setShowThinkerPicker] = useState(false)
   const [sendStatus, setSendStatus] = useState('')
@@ -117,6 +119,9 @@ export default function MembersPage() {
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const authorityEpoch = useRef(0)
+  const directoryRequest = useRef<AbortController | null>(null)
+  const directoryResult = useRef<HTMLDivElement | null>(null)
+  const focusDirectoryResult = useRef(false)
   const chatScope = useRef<ChatScope | null>(null)
   const router = useRouter()
   const currentMemberId = currentMember?.id ?? null
@@ -145,36 +150,67 @@ export default function MembersPage() {
 
   useEffect(() => {
     if (retired) return
-    let cancelled = false
+    const controller = new AbortController()
+    directoryRequest.current = controller
     const generation = authorityEpoch.current
+    const current = () => directoryRequest.current === controller && !controller.signal.aborted && generation === authorityEpoch.current
+    setMembers([]); setDirectoryStatus('loading')
+    // Bound account lookup, transport and parsing together. Retire this attempt
+    // before aborting so a delayed response cannot replace an error or a retry.
+    const timer = window.setTimeout(() => {
+      if (!current()) return
+      directoryRequest.current = null; controller.abort()
+      setDirectoryStatus('unavailable')
+    }, 10_000)
 
-    getMemberSession().then(session => {
-      if (cancelled || generation !== authorityEpoch.current) return
-      if (!session) { router.push('/'); return }
-      const sessionMember = session.member as MemberRecord
-      setCurrentMember(normalizeMember(sessionMember))
-    })
+    void (async () => {
+      try {
+        const session = await getMemberSession()
+        if (!current()) return
+        if (!session) { setDirectoryStatus('unavailable'); router.push('/'); return }
+        const sessionMember = normalizeMember(session.member as MemberRecord)
+        setCurrentMember(sessionMember)
+        const headers = new Headers(await getAuthHeaders())
+        if (!current()) return
+        headers.set(DIRECTORY_EXPECTED_OWNER_HEADER, sessionMember.id)
+        const response = await fetch('/api/members/discover', {
+          headers, cache: 'no-store', credentials: 'same-origin', redirect: 'error', signal: controller.signal,
+        })
+        if (!current()) return
+        if (!response.ok) { setDirectoryStatus(response.status === 403 ? 'forbidden' : 'unavailable'); return }
+        if (response.headers.get(DIRECTORY_OWNER_HEADER) !== sessionMember.id.toLowerCase()) throw Error('Directory account was not confirmed')
+        const profiles = parsePublishedDirectory(await response.json())
+        if (!current()) return
+        if (!profiles) throw Error('Published directory was not confirmed')
+        setMembers(profiles.map(profile => ({ ...profile, bio: profile.bio ?? undefined, discipline: profile.discipline ?? undefined,
+          project_description: profile.project_description ?? undefined, seeking: profile.seeking ?? undefined, philosophy: profile.philosophy ?? undefined })))
+        setDirectoryStatus('ready')
+      } catch {
+        if (current()) setDirectoryStatus('unavailable')
+      } finally {
+        window.clearTimeout(timer)
+        if (directoryRequest.current === controller) directoryRequest.current = null
+      }
+    })()
 
-    getAuthHeaders()
-      .then(headers => {
-        if (cancelled || generation !== authorityEpoch.current) throw new Error('retired')
-        return fetch('/api/members/discover', { headers, cache: 'no-store' })
-      })
-      .then(async res => {
-        if (!res.ok) throw new Error(res.status === 403 ? 'membership' : 'unavailable')
-        return res.json() as Promise<{ members?: MemberRecord[] }>
-      })
-      .then(({ members: discoveredMembers }) => {
-        if (cancelled || generation !== authorityEpoch.current) return
-        if (!Array.isArray(discoveredMembers) || discoveredMembers.some(member => !member || typeof member.id !== 'string' || typeof member.display_name !== 'string')) throw new Error('unavailable')
-        setMembers(discoveredMembers.map(normalizeMember)); setDirectoryStatus('ready')
-      })
-      .catch(error => {
-        if (!cancelled && generation === authorityEpoch.current) setDirectoryStatus(error instanceof Error && error.message === 'membership' ? 'forbidden' : 'unavailable')
-      })
+    return () => {
+      window.clearTimeout(timer)
+      if (directoryRequest.current === controller) directoryRequest.current = null
+      controller.abort()
+    }
+  }, [router, retired, directoryAttempt])
 
-    return () => { cancelled = true }
-  }, [router, retired])
+  function retryDirectory() {
+    if (retired || directoryRequest.current || directoryStatus === 'loading') return
+    focusDirectoryResult.current = true
+    setMembers([]); setDirectoryStatus('loading'); setDirectoryAttempt(attempt => attempt + 1)
+  }
+
+  useEffect(() => {
+    if (directoryStatus !== 'ready' || !focusDirectoryResult.current) return
+    focusDirectoryResult.current = false
+    directoryResult.current?.focus({ preventScroll: true })
+  }, [directoryStatus])
 
   // Load unread count
   useEffect(() => {
@@ -389,11 +425,12 @@ export default function MembersPage() {
         {view === 'directory' && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '2rem' }}>
+              <div ref={directoryResult} tabIndex={-1} role="status" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '2rem' }}>
                 {directoryStatus === 'ready' ? `${members.length} PUBLISHED PROFILES` : 'MEMBER DIRECTORY'}
               </div>
-              {directoryStatus !== 'ready' && <p role="status">{directoryStatus === 'loading' ? 'Loading published profiles…' : directoryStatus === 'forbidden' ? 'Join this community to view its member directory.' : 'The member directory is unavailable. Reload to try again.'}</p>}
-              {directoryStatus === 'ready' && members.length === 0 && <p>No published profiles are available in this directory yet.</p>}
+              {directoryStatus !== 'ready' && <p role={directoryStatus === 'loading' ? 'status' : 'alert'}>{directoryStatus === 'loading' ? 'Loading published profiles…' : directoryStatus === 'forbidden' ? 'Join this community to view its member directory.' : 'The member directory could not be checked. Please try again.'}</p>}
+              {(directoryStatus === 'unavailable' || directoryStatus === 'forbidden') && <button type="button" className={styles.safetyButton} onClick={retryDirectory}>Try directory again</button>}
+              {directoryStatus === 'ready' && members.length === 0 && <p role="status">No published profiles are available in this directory yet.</p>}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1px', background: goldBorder }}>
                 {members.map(m => (
                   <div key={m.id} style={{ background: bgCard, padding: '1.5rem' }}>

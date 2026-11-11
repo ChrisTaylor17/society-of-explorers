@@ -1,31 +1,43 @@
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 import { getMemberSession } from '@/lib/auth/getSession';
 import { PROJECT_PLEDGE_TIERS } from '@/lib/capital/campaign';
+import { PROJECT_ID_PATTERN, type PublicProjectDetail } from '@/lib/projects/publicProject';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-interface Project {
-  id: string;
-  title: string;
-  short_description: string | null;
-  description: string;
-  category: string;
-  funding_goal: number;
-  amount_raised: number;
-  backer_count: number;
-  proposer_name: string | null;
-  use_of_funds: string | null;
-  milestones: { title: string; description: string; status: string }[];
-  update_log: { title?: string; body?: string; date?: string }[] | null;
-  created_at: string;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
+
+function readProjectDetail(payload: unknown, id: string): PublicProjectDetail {
+  if (!isRecord(payload) || 'error' in payload || !isRecord(payload.project)) throw new Error('Invalid project response');
+  const project = payload.project;
+  if (
+    typeof project.id !== 'string' || !PROJECT_ID_PATTERN.test(project.id) || project.id.toLowerCase() !== id.toLowerCase() ||
+    typeof project.title !== 'string' || !project.title.trim() ||
+    typeof project.description !== 'string' || typeof project.category !== 'string' || typeof project.status !== 'string' ||
+    !['short_description', 'proposer_name', 'use_of_funds', 'created_at'].every(key => project[key] === null || typeof project[key] === 'string') ||
+    !['funding_goal', 'amount_raised', 'backer_count'].every(key => typeof project[key] === 'number' && Number.isFinite(project[key]) && project[key] >= 0) ||
+    !Number.isInteger(project.backer_count) ||
+    !Array.isArray(project.milestones) || !project.milestones.every(item => isRecord(item) && ['title', 'description', 'status'].every(key => typeof item[key] === 'string')) ||
+    !Array.isArray(project.update_log) || !project.update_log.every(item => isRecord(item) && ['title', 'body', 'date'].every(key => item[key] === undefined || typeof item[key] === 'string'))
+  ) throw new Error('Invalid project response');
+  return project as PublicProjectDetail;
+}
+
+type ProjectRead = {
+  id: string;
+  attempt: number;
+  state: 'ready' | 'not-found' | 'error';
+  project: PublicProjectDetail | null;
+};
 
 const TIERS = PROJECT_PLEDGE_TIERS;
 
@@ -38,8 +50,13 @@ export default function ProjectDetailPage({
 }) {
   const { id } = use(params);
   const { success } = use(searchParams);
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [projectRead, setProjectRead] = useState<ProjectRead | null>(null);
+  const [readAttempt, setReadAttempt] = useState(0);
+  const readPending = useRef(false);
+  const validProjectId = PROJECT_ID_PATTERN.test(id);
+  const currentRead = projectRead?.id === id && projectRead.attempt === readAttempt ? projectRead : null;
+  const readState = validProjectId ? currentRead?.state || 'loading' : 'not-found';
+  const project = readState === 'ready' ? currentRead?.project : null;
   const [pledging, setPledging] = useState<typeof TIERS[0] | null>(null);
   const [pledgeEmail, setPledgeEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -56,12 +73,46 @@ export default function ProjectDetailPage({
   }, []);
 
   useEffect(() => {
-    fetch(`/api/projects/${id}`)
-      .then(r => r.json())
-      .then(d => { if (d.project) setProject(d.project); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [id]);
+    if (!PROJECT_ID_PATTERN.test(id)) return;
+    const controller = new AbortController();
+    let active = true;
+    readPending.current = true;
+    const finish = (state: ProjectRead['state'], nextProject: PublicProjectDetail | null = null) => {
+      if (!active) return;
+      active = false;
+      readPending.current = false;
+      setProjectRead({ id, attempt: readAttempt, state, project: nextProject });
+    };
+    const timeout = window.setTimeout(() => {
+      finish('error');
+      controller.abort();
+    }, 10_000);
+    async function loadProject() {
+      try {
+        const response = await fetch(`/api/projects/${id}`, { signal: controller.signal, cache: 'no-store' });
+        if (response.status === 404) { finish('not-found'); return; }
+        if (!response.ok) throw new Error('Project request failed');
+        const nextProject = readProjectDetail(await response.json(), id);
+        finish('ready', nextProject);
+      } catch {
+        finish('error');
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+    void loadProject();
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [id, readAttempt]);
+
+  function retryProject() {
+    if (readState === 'loading' || readPending.current) return;
+    readPending.current = true;
+    setReadAttempt(attempt => attempt + 1);
+  }
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -100,21 +151,24 @@ export default function ProjectDetailPage({
     outline: 'none', boxSizing: 'border-box',
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <PublicNav />
-        <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: muted }}>LOADING...</span>
-      </div>
-    );
-  }
-
   if (!project) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7rem 2rem 3rem' }}>
         <PublicNav />
-        <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: parchment }}>Project not found</span>
-        <Link href="/projects" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold, textDecoration: 'none' }}>&larr; All Projects</Link>
+        <main id="project-read-state" aria-busy={readState === 'loading'} style={{ width: '100%', maxWidth: '520px', textAlign: 'center', overflowWrap: 'anywhere' }}>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 6vw, 36px)', fontWeight: 400, lineHeight: 1.3, marginBottom: '1rem' }}>
+            {readState === 'loading' ? 'Loading project…' : readState === 'not-found' ? 'Project not found' : 'We couldn’t load this project'}
+          </h1>
+          <p role={readState === 'error' ? 'alert' : 'status'} style={{ fontSize: '18px', lineHeight: 1.7, color: ivory85, marginBottom: '1.5rem' }}>
+            {readState === 'loading' ? 'You can return to all projects while this loads.' : readState === 'not-found' ? 'This link did not return an available project. You can try again or return to all projects.' : 'The project details are temporarily unavailable. Please try again.'}
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+            {validProjectId && <button type="button" onClick={retryProject} disabled={readState === 'loading'} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, background: 'transparent', border: `1px solid ${gold}66`, padding: '12px 20px', minHeight: '44px', cursor: readState === 'loading' ? 'wait' : 'pointer', opacity: readState === 'loading' ? 0.6 : 1 }}>
+              {readState === 'loading' ? 'Loading project…' : 'Retry project'}
+            </button>}
+            <Link href="/projects" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, textDecoration: 'none', minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}>&larr; All Projects</Link>
+          </div>
+        </main>
       </div>
     );
   }

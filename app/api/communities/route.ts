@@ -198,14 +198,24 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const { data: publicCommunities } = await supabase
-    .from('communities')
-    .select('id, slug, name, description, branding, theme')
-    .eq('is_public', true)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(20)
-    .returns<CommunityRow[]>();
+  let publicCommunities: CommunityRow[] | null;
+  try {
+    const { data, error } = await supabase
+      .from('communities')
+      .select('id, slug, name, description, branding, theme')
+      .eq('is_public', true)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .returns<CommunityRow[]>();
+
+    if (error) {
+      return privateJson({ error: 'Community directory unavailable' }, { status: 503 });
+    }
+    publicCommunities = data;
+  } catch {
+    return privateJson({ error: 'Community directory unavailable' }, { status: 503 });
+  }
 
   return privateJson({ mine, discover: publicCommunities || [] });
 }

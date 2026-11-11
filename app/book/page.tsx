@@ -1,168 +1,129 @@
-'use client';
-import { useState } from 'react';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import PublicFooter from '@/components/PublicFooter';
 
-export default function Book() {
-  const gold = '#c9a84c';
-  const dim = '#d4c9a8';
-  const muted = '#9a8f7a';
-  const [revealed, setRevealed] = useState(false);
+export const metadata: Metadata = {
+  title: "The book as living artifact \u2014 concept",
+  description: "A concept for connecting physical books, readings and conversations. NFC, token payments and membership minting remain unverified proposals.",
+};
 
+export default function BookPage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#000', color: '#fff', fontFamily: 'Cormorant Garamond, serif', overflowX: 'hidden' }}>
-
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, #000, transparent)' }}>
-        <a href="/salon" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', opacity: 0.7 }}>← RETURN TO THE SALON</a>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5 }}>SOCIETY OF EXPLORERS</div>
+    <div className="soe-book-concept">
+      <style>{`
+  .soe-book-concept { background: #0a0a0a; color: #e8dcc8; min-height: 100vh; font-family: 'Cormorant Garamond', serif; }
+  .soe-book-concept * { box-sizing: border-box; }
+  .soe-book-concept a { color: #d6b860; text-underline-offset: .25em; }
+  .soe-book-concept a:focus-visible, .soe-book-concept summary:focus-visible { outline: 3px solid #f1d788; outline-offset: 5px; }
+  .soe-book-concept .skip { position: absolute; left: 1rem; top: -8rem; z-index: 300; padding: .8rem; background: #0a0a0a; }
+  .soe-book-concept .skip:focus { top: 1rem; }
+  .soe-book-concept .nav { padding: 1rem clamp(1rem, 4vw, 3rem); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 2rem; border-bottom: 1px solid #c9a84c38; }
+  .soe-book-concept .nav a { display: inline-flex; align-items: center; min-height: 44px; font-family: 'Cinzel', serif; font-size: .8rem; letter-spacing: .06em; text-decoration: none; }
+  .soe-book-concept .nav a:hover { text-decoration: underline; }
+  .soe-book-concept .nav-links { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+  .soe-book-concept .hero { padding: clamp(3rem, 8vw, 7rem) 1.25rem; text-align: center; background: radial-gradient(ellipse at center, #211a09 0%, #0a0a0a 72%); }
+  .soe-book-concept .hero-inner { max-width: 780px; margin: 0 auto; }
+  .soe-book-concept .eyebrow { font-family: 'Cinzel', serif; color: #d6b860; font-size: .8rem; letter-spacing: .15em; line-height: 1.8; margin: 0 0 1rem; }
+  .soe-book-concept h1, .soe-book-concept h2, .soe-book-concept h3 { font-family: 'Cinzel', serif; font-weight: 400; color: #f5f0e8; text-wrap: balance; }
+  .soe-book-concept h1 { font-size: clamp(2.3rem, 7vw, 4.7rem); line-height: 1.15; letter-spacing: .03em; margin: 0 0 1.5rem; }
+  .soe-book-concept h2 { font-size: clamp(1.65rem, 4vw, 2.5rem); line-height: 1.35; margin: 0 0 1.5rem; }
+  .soe-book-concept h3 { font-size: 1.15rem; line-height: 1.5; margin: 0 0 .75rem; }
+  .soe-book-concept p, .soe-book-concept li { font-size: 1.2rem; line-height: 1.8; }
+  .soe-book-concept p { margin: 0 0 1.25rem; }
+  .soe-book-concept p:last-child { margin-bottom: 0; }
+  .soe-book-concept .lede { font-size: 1.5rem; color: #e8dcc8; }
+  .soe-book-concept .status { margin: 2rem auto 0; max-width: 680px; padding: 1.5rem; border: 1px solid #c9a84c70; background: #121109; text-align: left; }
+  .soe-book-concept .status strong { color: #f1d788; }
+  .soe-book-concept .section { max-width: 1060px; margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 1.25rem; }
+  .soe-book-concept .narrow { max-width: 800px; }
+  .soe-book-concept .band { background: #101010; border-block: 1px solid #c9a84c20; }
+  .soe-book-concept .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1rem; margin-top: 2rem; }
+  .soe-book-concept .card { padding: 1.5rem; background: #141310; border: 1px solid #c9a84c38; min-width: 0; }
+  .soe-book-concept .card p { color: #c9c0ac; }
+  .soe-book-concept .steps { list-style: none; padding: 0; margin: 2rem 0 0; counter-reset: steps; }
+  .soe-book-concept .steps li { counter-increment: steps; padding: 1.5rem 0; border-top: 1px solid #c9a84c38; }
+  .soe-book-concept .steps h3::before { content: counter(steps, decimal-leading-zero) ' / '; color: #d6b860; }
+  .soe-book-concept details { border-block-start: 1px solid #c9a84c55; padding: .25rem 0; }
+  .soe-book-concept details:last-child { border-block-end: 1px solid #c9a84c55; }
+  .soe-book-concept summary { cursor: pointer; padding: 1rem .25rem; min-height: 44px; font-family: 'Cinzel', serif; font-size: 1rem; color: #f5f0e8; line-height: 1.65; }
+  .soe-book-concept details p { padding: 0 .25rem 1.25rem; }
+  .soe-book-concept .actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+  .soe-book-concept .actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .85rem 1.25rem; border: 1px solid #c9a84c; font-family: 'Cinzel', serif; font-size: .85rem; line-height: 1.6; text-align: center; text-decoration: none; }
+  .soe-book-concept .actions a:first-child { background: #c9a84c; color: #0a0a0a; }
+  .soe-book-concept .actions a:hover { text-decoration: underline; }
+  .soe-book-concept .closing { border-top: 1px solid #c9a84c38; }
+  .soe-book-concept .accent { color: #d6b860; }
+  @media (max-width: 420px) { .soe-book-concept .actions a { width: 100%; } .soe-book-concept .nav-links { gap: .35rem 1rem; } }
+`}</style>
+      <a className="skip" href="#book-content">Skip to content</a>
+      <nav className="nav" aria-label="Research navigation">
+        <Link href="/" prefetch={false}>Society of Explorers</Link>
+        <div className="nav-links">
+          <Link href="/great-books" prefetch={false}>Reading</Link>
+          <Link href="/fellowship" prefetch={false}>Christian fellowship</Link>
+        </div>
       </nav>
-
-      {/* HERO */}
-      <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(ellipse at center, #0d0a02 0%, #000 70%)', textAlign: 'center', padding: '6rem 2rem 4rem' }}>
-        <div style={{ maxWidth: '800px' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.6, marginBottom: '2rem' }}>THE SOCIETY ARTIFACT</div>
-          <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2.5rem, 8vw, 6rem)', fontWeight: 300, letterSpacing: '0.15em', lineHeight: 1.1, marginBottom: '2rem' }}>
-            THE BOOK<br />
-            <span style={{ fontSize: '0.45em', letterSpacing: '0.3em', color: gold }}>AS LIVING ARTIFACT</span>
-          </h1>
-          <p style={{ fontSize: '1.4rem', color: dim, lineHeight: 1.9, marginBottom: '1.5rem' }}>
-            Every book you own is a dormant node in a global network. It is waiting to be activated — to become a living artifact that earns for you, connects you to other readers, and writes your name into an unbreakable chain of human knowledge.
-          </p>
-          <p style={{ fontSize: '1.2rem', color: gold, fontStyle: 'italic', lineHeight: 1.8, marginBottom: '3rem' }}>
-            This is where the blockchain meets the oldest technology humans ever built.
-          </p>
-          <a href="#how-it-works" style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', letterSpacing: '0.25em', color: gold, border: `1px solid ${gold}`, padding: '1rem 3rem', textDecoration: 'none', display: 'inline-block' }}>
-            SEE HOW IT WORKS
-          </a>
-        </div>
-      </section>
-
-      {/* THE VISION */}
-      <section style={{ padding: '8rem 2rem', maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>THE VISION</div>
-        <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 3rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '2rem', borderBottom: `1px solid ${gold}44`, paddingBottom: '1rem' }}>
-          THE SHARING ECONOMY, REBUILT
-        </h2>
-        <p style={{ fontSize: '1.2rem', lineHeight: 2, color: dim, marginBottom: '2rem' }}>
-          Heidegger warned that technology turns everything into <em>standing-reserve</em> — resources waiting to be used and discarded. The current book industry is the perfect example: you buy a book, read it once, and it sits on a shelf. Dead weight. A resource going to waste. The publisher collected your money. The author got a fraction. You got nothing after the first read.
-        </p>
-        <p style={{ fontSize: '1.2rem', lineHeight: 2, color: dim, marginBottom: '2rem' }}>
-          <strong style={{ color: '#e8e0d0' }}>We break that model entirely.</strong> Every Society Artifact book contains an embedded NFC chip and a unique QR code. When you share your book — lend it to a friend, leave it in a caf&eacute;, pass it to a stranger on a train — and they tap or scan it, a micro-payment flows automatically to you in <strong style={{ color: gold }}>$SOE</strong>. The blockchain records every handoff. You become a node in a living network of ideas.
-        </p>
-        <p style={{ fontSize: '1.2rem', lineHeight: 2, color: dim }}>
-          The more you share, the more you earn. The more the book travels, the more valuable your original ownership becomes. <strong style={{ color: '#e8e0d0' }}>This is the sharing economy that actually shares.</strong>
-        </p>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="how-it-works" style={{ padding: '8rem 2rem', background: '#050505' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>THE MECHANISM</div>
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 3rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '4rem', borderBottom: `1px solid ${gold}44`, paddingBottom: '1rem' }}>
-            HOW IT WORKS
-          </h2>
-
-          {[
-            {
-              num: 'I',
-              title: 'Acquire the Artifact',
-              body: 'You receive a physical Society book. Embedded inside the spine: an NFC chip encoded with your unique membership address on the Base blockchain. On the cover: a QR code linked to your node. This is not a product. It is an activation key.',
-            },
-            {
-              num: 'II',
-              title: 'The First Tap — Your Ritual',
-              body: 'You hold the book to your phone. The NFC chip fires. A micro-transaction mints your membership NFT on-chain in seconds. You are now a verified node in the Society of Explorers network. The book is alive.',
-            },
-            {
-              num: 'III',
-              title: 'Share — and Earn',
-              body: 'You lend the book to a friend. They tap or scan it. A micro-payment — denominated in $SOE — flows automatically to your wallet. Every future tap anywhere in the world continues to pay you. The book travels. Your earnings accumulate. The network grows.',
-            },
-            {
-              num: 'IV',
-              title: 'The Chain of Knowledge',
-              body: 'Every tap is recorded immutably on-chain. You can see exactly how far your book has traveled — how many people it has reached, which cities, which networks. Your artifact builds a permanent record of ideas in motion. This is provenance for the age of abundance.',
-            },
-            {
-              num: 'V',
-              title: 'AI Meets the Artifact',
-              body: "Each tap also unlocks an AI conversation with the thinkers of history — Socrates, Heidegger, Einstein — personalized to the reader's context. The book is not just words. It is a portal. Every reader who finds it gets a unique experience shaped by where and when they encountered it.",
-            },
-          ].map(step => (
-            <div key={step.num} style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '2rem', marginBottom: '4rem', paddingBottom: '4rem', borderBottom: `1px solid ${gold}11` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '2.5rem', fontWeight: 300, color: gold, opacity: 0.3, textAlign: 'center', paddingTop: '0.25rem' }}>{step.num}</div>
-              <div>
-                <h3 style={{ fontFamily: 'Cinzel, serif', fontSize: '1.1rem', fontWeight: 300, letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>{step.title.toUpperCase()}</h3>
-                <p style={{ fontSize: '1.15rem', lineHeight: 2, color: dim }}>{step.body}</p>
-              </div>
+      <main id="book-content" tabIndex={-1}>
+        <header className="hero">
+          <div className="hero-inner">
+            <p className="eyebrow">The Society artifact · Concept</p>
+            <h1>The book<br /><span className="accent">as living artifact</span></h1>
+            <p className="lede">A book passed from one person to another can become the beginning of a conversation.</p>
+            <div className="status">
+              <p><strong>A reading and sharing concept.</strong></p>
+              <p>Physical Society books, NFC membership minting and automatic $SOE payments have not been verified as available products or services. This page offers no book order, membership token or income opportunity.</p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* WHY BOOKS */}
-      <section style={{ padding: '8rem 2rem', maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>THE PHILOSOPHY</div>
-        <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 3rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '2rem', borderBottom: `1px solid ${gold}44`, paddingBottom: '1rem' }}>
-          WHY BOOKS FIRST
-        </h2>
-        <p style={{ fontSize: '1.2rem', lineHeight: 2, color: dim, marginBottom: '2rem' }}>
-          Books are the oldest technology for transmitting consciousness across time. A book written 2,500 years ago by Plato still changes the mind of someone reading it today. No other medium has that durability. No algorithm, no platform, no social network has survived a century intact. Books survive millennia.
-        </p>
-        <p style={{ fontSize: '1.2rem', lineHeight: 2, color: dim, marginBottom: '2rem' }}>
-          The Society of Explorers starts with books because they represent the deepest form of the sharing economy — ideas that travel freely between minds, building civilization one reader at a time. We are simply making the invisible visible: encoding that journey on-chain, so the value created by every act of sharing flows back to the people who made it possible.
-        </p>
-        <blockquote style={{ margin: '3rem 0', padding: '1.5rem 2rem', borderLeft: `2px solid ${gold}`, background: '#0a0800', fontStyle: 'italic', fontSize: '1.2rem', color: dim, lineHeight: 1.8 }}>
-          &ldquo;Wherever the art of medicine is loved, there is also a love of humanity.&rdquo;<br />
-          <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, opacity: 0.7, fontStyle: 'normal' }}>— HIPPOCRATES · A BOOK THAT HAS SAVED MILLIONS</span>
-        </blockquote>
-        <p style={{ fontSize: '1.2rem', lineHeight: 2, color: dim }}>
-          Books are where we start. But the mechanism — NFC artifact + blockchain micropayments + AI portal + network ownership — applies to every physical object that carries knowledge or beauty. We begin with the book. We do not end there.
-        </p>
-      </section>
-
-      {/* SECRET PASSAGE */}
-      <section style={{ padding: '4rem 2rem', background: '#050505', textAlign: 'center' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          {!revealed ? (
-            <button
-              onClick={() => setRevealed(true)}
-              style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, background: 'none', border: `1px solid ${gold}44`, padding: '1rem 2rem', cursor: 'pointer', opacity: 0.6 }}
-            >
-              ⬡ THERE IS MORE — IF YOU ARE READY
-            </button>
-          ) : (
-            <div>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>THE DEEPER VISION</div>
-              <p style={{ fontSize: '1.15rem', lineHeight: 2, color: dim, marginBottom: '1.5rem' }}>
-                Every physical object in the world — every tool, every garment, every instrument, every painting — can become a node. Every act of sharing becomes a transaction. Every creator becomes an owner. Every owner becomes a network.
-              </p>
-              <p style={{ fontSize: '1.15rem', lineHeight: 2, color: gold, fontStyle: 'italic' }}>
-                This is not a product feature. This is the redesign of the entire economy — from extraction to circulation, from ownership to stewardship, from standing-reserve to living artifact.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(ellipse at center, #0d0a02 0%, #000 70%)', textAlign: 'center', padding: '4rem 2rem' }}>
-        <div style={{ maxWidth: '600px' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '2rem' }}>THE ARTIFACT AWAITS</div>
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 3rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '2rem', lineHeight: 1.3 }}>
-            BECOME A NODE.<br />EARN FROM EVERY HANDOFF.<br />OWN THE NETWORK.
-          </h2>
-          <p style={{ fontSize: '1.1rem', color: muted, lineHeight: 1.8, marginBottom: '3rem' }}>
-            The first Society Artifact books go to founding members.<br />Join the Society to secure yours.
-          </p>
-          <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', letterSpacing: '0.2em', color: '#000', background: gold, padding: '1.2rem 3rem', textDecoration: 'none', display: 'inline-block' }}>JOIN THE SOCIETY</a>
-            <a href="/labyrinth" style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', letterSpacing: '0.2em', color: gold, border: `2px solid ${gold}`, padding: '1.2rem 3rem', textDecoration: 'none', display: 'inline-block' }}>ENTER THE LABYRINTH</a>
           </div>
-        </div>
-      </section>
+        </header>
 
-      <footer style={{ padding: '3rem 2rem', borderTop: `1px solid ${gold}22`, textAlign: 'center' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, opacity: 0.4 }}>SOCIETY OF EXPLORERS · 92B SOUTH ST · SOCIETYOFEXPLORERS.COM</div>
-      </footer>
+        <section className="section narrow" aria-labelledby="book-vision">
+          <p className="eyebrow">The vision</p>
+          <h2 id="book-vision">Let the ideas travel.</h2>
+          <p>A shared book carries an invitation: read this, consider it and tell me what you think. The Society Artifact idea asks how a physical book might connect readers with context, thoughtful questions and a salon.</p>
+          <p>The existing reading library is a place to explore that purpose. A specially manufactured book, a chip or a blockchain transaction is not required to read or start a discussion.</p>
+        </section>
+
+        <div className="band">
+          <section className="section narrow" aria-labelledby="book-pilot">
+            <p className="eyebrow">A possible first experiment</p>
+            <h2 id="book-pilot">Start with the reading.</h2>
+            <p>This is a proposed sequence for testing the idea, not an active artifact program.</p>
+            <ol className="steps">
+              <li><h3>Choose a text</h3><p>Start with an existing reading and check the rights for the exact edition and any material to be reproduced.</p></li>
+              <li><h3>Make the invitation clear</h3><p>A printed link or optional QR label could lead to context and discussion questions. A link alone would not enroll a member, verify identity or mint a token.</p></li>
+              <li><h3>Share a question</h3><p>Invite readers to consider the text together. Any later feedback or journey-tracking feature would need a clear purpose and a choice about what people share.</p></li>
+              <li><h3>Learn from the conversation</h3><p>Evaluate whether the material helps people understand one another and return to a discussion. No payment or increase in a book&apos;s financial value is promised.</p></li>
+            </ol>
+          </section>
+        </div>
+
+        <section className="section" aria-labelledby="book-research">
+          <p className="eyebrow">Earlier ideas · Unresolved choices</p>
+          <h2 id="book-research">What still needs to be worked out</h2>
+          <div className="grid">
+            <article className="card"><h3>NFC &amp; identity</h3><p>Earlier designs proposed a tap that opened a reader experience or minted membership on Base. No working physical-book or minting flow has been verified. A simple web link remains an alternative.</p></article>
+            <article className="card"><h3>Payments &amp; rights</h3><p>Automatic recurring $SOE payments were a proposal, without verified funding, distribution rights or operating terms. Sharing a book creates no earnings commitment here.</p></article>
+            <article className="card"><h3>Privacy &amp; AI</h3><p>A public record of every reader or handoff could reveal personal information. Tracking, AI personalization and any use of reader data require separate design, consent and review.</p></article>
+          </div>
+        </section>
+
+        <div className="band">
+          <section className="section narrow" aria-labelledby="beyond-book">
+            <p className="eyebrow">The deeper vision</p>
+            <h2 id="beyond-book">Knowledge shared with care.</h2>
+            <p>The lasting value is the encounter with an idea and another person. Technology should make the source easier to find, the invitation clearer and the discussion more thoughtful.</p>
+            <details><summary>Where could the artifact idea lead?</summary><p>Books, art and tools might connect physical places with a wider community. Whether that requires NFC, a shared catalog or a blockchain is an open question. Any future ownership, payment or token model would need defined rights, workable costs and qualified review.</p></details>
+          </section>
+        </div>
+
+        <section className="section narrow closing" aria-labelledby="book-reading">
+          <p className="eyebrow">Begin with a page</p>
+          <h2 id="book-reading">Find a reading.<br />Bring a question.</h2>
+          <p>Explore the library and the proposed salon format. The artifact can remain a question while the ideas give us something worth discussing.</p>
+          <div className="actions"><Link href="/great-books" prefetch={false}>Explore the readings</Link><Link href="/salons/pilot" prefetch={false}>Read the salon plan</Link></div>
+        </section>
+      </main>
+      <PublicFooter />
     </div>
   );
 }
