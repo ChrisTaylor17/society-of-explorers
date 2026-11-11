@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-11T16:38:23.460811+00:00",
+  "baseCommit": "a4660b6c8a9ffbed8cbb12d96b8311a992cee81c",
+  "status": "LOCAL_NATIVE_CONTROLLER_PASS_DEVICE_ACCEPTANCE_PENDING",
+  "scope": "Actual shared native controller and native request policy tests with explicit synthetic transport/identity, plus portable TypeScript and scoped lint. No new native binary or device run in this task.",
+  "sourceSha256": {
+    "platforms/shared/circle-hosting.ts": "9fb34a4561a81d615d7e2de897dfb0db0a7e5fc9a3b3959ad94348c6973613ce",
+    "platforms/tests/circle-hosting.test.mjs": "429919dd3f6d859c47a531aaf354f4825672c7d96431a266eeebd6a339d2ace5"
+  },
+  "baseline": {
+    "passed": 56,
+    "failed": 12,
+    "skipped": 0,
+    "meaning": "New regressions on unmodified product source reproduce status-only settlement and missing terminal503 handling.",
+    "evidence": "Counts and all twelve failure names were read from the runner/log during execution. Canonical raw logs were later cloud-evicted and were not re-read or rehydrated for this receipt.",
+    "preservedPath": "/Users/christaylor/Documents/Codex/soe-release/verification/web/evidence/native-creation-refusal-before-2026-11-11"
+  },
+  "final": {
+    "controllerPassed": 68,
+    "nativePolicyPassed": 17,
+    "failed": 0,
+    "skipped": 0,
+    "portableTypesExitCode": 0,
+    "lintErrors": 0,
+    "lintWarnings": 0
+  },
+  "sourceReadback": {
+    "selectedSnapshotInputsMatched": 541,
+    "additionalNativePolicyInputs": [
+      {
+        "file": "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberTransport.kt",
+        "testedSnapshot": "cd4a4d776798d0f27e10d817021384442c73bd2377ca79d4a21a6c92f105100b",
+        "priorVerifiedNativeSnapshot": "cd4a4d776798d0f27e10d817021384442c73bd2377ca79d4a21a6c92f105100b",
+        "matches": true
+      },
+      {
+        "file": "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/NativeSoeMemberModule.kt",
+        "testedSnapshot": "da3f7b23bf550191673a684f3d1e2fa39219ec72eb1636b4a569df140c7b9478",
+        "priorVerifiedNativeSnapshot": "da3f7b23bf550191673a684f3d1e2fa39219ec72eb1636b4a569df140c7b9478",
+        "matches": true
+      }
+    ],
+    "nativePolicyProvenance": "Both unchanged Kotlin inputs match the separately verified 2026-11-11-native-current-build source snapshot. Fresh Git reads stalled; no offloaded untouched source was hydrated.",
+    "snapshot": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source",
+    "canonicalRestoration": "Parent authorized atomically restoring only the two frozen owned files after cloud eviction. Tested bytes and original 0644 modes verified and staged; no commit made."
+  },
+  "preservedFailures": [
+    "Initial preparation stopped at an incorrect guard path before any test ran; corrected guard verified.",
+    "First portable type check exposed object-property narrowing errors; existing membershipRecord guard corrected the types without changing the predicate.",
+    "Final capture Git object read stalled and was stopped; bounded index read timed out. Already verified resident snapshot provenance used for unchanged Kotlin source.",
+    "Canonical baseline log readback refused after cloud eviction; actual execution counts were already observed and no log checksum is claimed."
+  ],
+  "evidence": [
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-final-2026-11-11/summary.json",
+      "sha256": "ba4b201a036244c47c84b40714d4c19f64dead90197bda75adbe91ef99e0ee32",
+      "bytes": 987
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-2026-11-11/final-source.json",
+      "sha256": "d6b4516baf629ff8dff5466a66fd02fcadf4e97aa5639970ad0cacf7ef493cb3",
+      "bytes": 81242
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-2026-11-11/portable-types.log",
+      "sha256": "b7ad34610473c37be36e9425ac0b60b20c8ad6f44fb0696c8a4d3b4774596aa8",
+      "bytes": 327
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-2026-11-11/portable-types.json",
+      "sha256": "d821d46735f84078f7bfb1fe745c296952f99d73f6cb605b2f05ba931d07b8e3",
+      "bytes": 697
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-2026-11-11/portable-types-final.json",
+      "sha256": "d50704f32d16e2fbeb8ac3a2e82c5a4666bd2c47560cb5b8d32ea76361f709fd",
+      "bytes": 578
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-2026-11-11/lint-final.json",
+      "sha256": "df18ae09b00763ac64a787c2edde0c7f3a4b5abb6661d0f6c6549f7b2221472c",
+      "bytes": 643
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-2026-11-11/retained-native-policy-source.json",
+      "sha256": "b75836d3151a0701da3383adebab0f023a4af7beb513b9a10f19345d86706c5f",
+      "bytes": 683
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-2026-11-11/canonical-restored.json",
+      "sha256": "bc824edfef465ecc745f2cf7611328a79b466a815b4ae7e32b010ffcd4ad686b",
+      "bytes": 406
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-final-2026-11-11/platforms__tests__circle-hosting.test.mjs.log",
+      "sha256": "28e0419b3bffe4c257d2498939902d58c47c8ba75ce7ffc1e7ae4280e4979039",
+      "bytes": 14241
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-finish-checks/source/verification/web/evidence/native-creation-refusal-final-2026-11-11/platforms__tests__native-hosting-policy.test.mjs.log",
+      "sha256": "7c0704c16e081ec79407c2aff25b30d97b26a11c5eddcf5df71fa3a367fd0ec1",
+      "bytes": 4279
+    }
+  ],
+  "boundaries": {
+    "externalNetworkDenied": true,
+    "issuedCredentialsSupplied": false,
+    "hostedMutation": false,
+    "spending": false,
+    "installs": false,
+    "published": false,
+    "newBinary": false,
+    "physicalDeviceAcceptance": false,
+    "heldChangesTouched": false,
+    "freeGiBAtReadback": 13.13
+  },
+  "review": "Independent final source/test review by finish_public_trial found no blocking issue; final receipt review requested."
+}

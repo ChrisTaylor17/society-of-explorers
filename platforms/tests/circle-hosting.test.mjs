@@ -61,11 +61,33 @@ test('known success needs current readback before New Circle draft; starting ano
 test('lost committed creation requires explicit exact review, ignores changed date/quota and never duplicates',async()=>{
  const f=fixture();try{await lose(f);const body=posts(f)[0].options.body,count=f.calls.length;assert.equal(f.session.model().canNavigate,false);await f.session.review(listing({title:'Another Circle'}),true);await f.session.create();f.session.startAnother();await tick();assert.equal(f.calls.length,count);f.quota(false);f.date('2035-01-01');await f.session.check();assert.equal(f.session.model().phase,'unknown');await f.session.reviewRetry();assert.equal(f.session.model().retryReview,true);assert.equal(f.session.model().review.startDate,'2030-01-01');assert.equal(f.session.model().confirmed,false);await create(f);assert.equal(posts(f)[1].options.body,body);assert.equal(f.keys,1);assert.equal(f.commits,1);assert.equal(f.session.model().created.current,true);}finally{f.close();}
 });
-for(const code of [401,409,429])test(`a refused ${code} exact retry retains earlier uncertainty`,async()=>{
- const f=fixture();try{await lose(f);await f.session.reviewRetry();f.hook((u,o,l,n)=>o.method==='POST'?f.response(u,{error:'refused'},code):n());await create(f);assert.equal(f.session.model().phase,'unknown');assert.equal(f.session.model().canNavigate,false);assert.equal(posts(f)[1].options.body,posts(f)[0].options.body);assert.equal(f.keys,1);}finally{f.close();}
+for(const code of [400,401,403,404,409,413,415,429,503])test(`a definite ${code} refusal of an exact retry retains earlier uncertainty`,async()=>{
+ const f=fixture();try{await lose(f);await f.session.reviewRetry();f.hook((u,o,l,n)=>o.method==='POST'?f.response(u,{error:'refused',outcome:'not_attempted'},code):n());await create(f);assert.equal(f.session.model().phase,'unknown');assert.equal(f.session.model().canNavigate,false);assert.equal(posts(f)[1].options.body,posts(f)[0].options.body);assert.equal(f.keys,1);assert.equal(f.commits,1);f.hook(null);await f.session.reviewRetry();await create(f);assert.equal(posts(f)[2].options.body,posts(f)[0].options.body);assert.equal(f.keys,1);assert.equal(f.commits,1);assert.equal(f.session.model().created.current,true);}finally{f.close();}
 });
-test('initial known refusal permits only a new fresh review and new request key',async()=>{
- const f=fixture();try{await review(f);f.hook((u,o,l,n)=>o.method==='POST'?f.response(u,{error:'refused'},409):n());await create(f);assert.equal(f.session.model().phase,'unavailable');assert.equal(f.session.model().canRetry,false);f.hook(null);await review(f);await create(f);assert.equal(f.keys,2);}finally{f.close();}
+for(const code of [400,401,403,404,409,413,415,429,503])test(`an exact first not_attempted ${code} refusal permits a separately reviewed new intent`,async()=>{
+ const f=fixture();try{await review(f);f.hook((u,o,l,n)=>o.method==='POST'?f.response(u,{error:'refused',outcome:'not_attempted'},code):n());await create(f);assert.equal(f.session.model().phase,'unavailable');assert.equal(f.session.model().canRetry,false);assert.equal(f.commits,0);f.hook(null);await review(f,listing({title:'A separately reviewed new Circle'}));assert.equal(posts(f).length,1);assert.equal(f.session.model().canConfirm,false);await f.session.create();assert.equal(posts(f).length,1);await create(f);assert.equal(f.keys,2);assert.equal(f.commits,1);assert.notEqual(JSON.parse(posts(f)[0].options.body).requestId,JSON.parse(posts(f)[1].options.body).requestId);assert.equal(JSON.parse(posts(f)[1].options.body).title,'A separately reviewed new Circle');}finally{f.close();}
+});
+for(const code of [403,429])test(`a committed creation followed by gateway ${code} keeps the original key and cannot start another draft`,async()=>{
+ const f=fixture();try{await review(f);f.hook((u,o,l,n)=>{const result=n();return o.method==='POST'?f.response(u,{error:'Gateway refused the reply'},code):result;});await create(f);assert.equal(f.commits,1);assert.equal(f.session.model().phase,'unknown');assert.equal(f.session.model().canNavigate,false);assert.equal(f.session.model().canEdit,false);assert.equal(f.session.model().canStartAnother,false);const before=f.calls.length;await f.session.review(listing({title:'Must not create a duplicate'}),true);await f.session.create();f.session.startAnother();assert.equal(f.calls.length,before);assert.equal(f.keys,1);f.hook(null);await f.session.check();assert.equal(f.session.model().phase,'unknown');await f.session.reviewRetry();assert.equal(f.session.model().canConfirm,false);await create(f);assert.equal(posts(f)[1].options.body,posts(f)[0].options.body);assert.equal(f.keys,1);assert.equal(f.commits,1);assert.equal(f.session.model().created.current,true);}finally{f.close();}
+});
+for(const [label,body,code] of [
+ ['missing outcome',{error:'Gateway refusal'},409],
+ ['unknown outcome',{error:'Uncertain delivery',outcome:'unknown'},409],
+ ['empty error',{error:'',outcome:'not_attempted'},409],
+ ['non-string error',{error:503,outcome:'not_attempted'},409],
+ ['extra field',{error:'Refused',outcome:'not_attempted',retry:true},409],
+ ['misspelled outcome',{error:'Refused',outcome:'not-attempted'},409],
+ ['null body',null,409],
+ ['array body',[{error:'Refused',outcome:'not_attempted'}],409],
+ ['string body','not_attempted',409],
+ ['unsupported failure status',{error:'Refused',outcome:'not_attempted'},500],
+ ['success status with refusal body',{error:'Refused',outcome:'not_attempted'},200],
+ ['unknown 503',{error:'Uncertain delivery',outcome:'unknown'},503],
+])test(`${label} cannot settle a sent creation`,async()=>{
+ const f=fixture();try{await review(f);f.hook((u,o,l,n)=>{const result=n();return o.method==='POST'?f.response(u,body,code):result;});await create(f);assert.equal(f.session.model().phase,'unknown');assert.equal(f.session.model().canNavigate,false);assert.equal(f.session.model().canRetry,true);assert.equal(f.session.model().created,null);f.hook(null);await f.session.reviewRetry();await create(f);assert.equal(posts(f)[1].options.body,posts(f)[0].options.body);assert.equal(f.keys,1);assert.equal(f.commits,1);}finally{f.close();}
+});
+test('a malformed JSON denial after a committed creation retains its exact retry',async()=>{
+ const f=fixture();try{await review(f);f.hook((u,o,l,n)=>{const result=n();return o.method==='POST'?{...result,status:403,json:async()=>{throw Error('Synthetic invalid JSON');}}:result;});await create(f);assert.equal(f.session.model().phase,'unknown');assert.equal(f.session.model().canNavigate,false);f.hook(null);await f.session.reviewRetry();await create(f);assert.equal(posts(f)[1].options.body,posts(f)[0].options.body);assert.equal(f.keys,1);assert.equal(f.commits,1);}finally{f.close();}
 });
 test('canceling exact retry preserves pending while canceling an unsent review sends nothing',async()=>{
  const f=fixture();try{await review(f);f.session.cancel();assert.equal(f.keys,0);assert.equal(posts(f).length,0);await lose(f);await f.session.reviewRetry();f.session.cancel();assert.equal(f.session.model().phase,'unknown');assert.equal(f.session.model().canRetry,true);}finally{f.close();}

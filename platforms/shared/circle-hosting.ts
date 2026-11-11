@@ -1,6 +1,6 @@
 import { parseCircleReadingEditionResponse, type CircleReadingEditionResponse, getReadingEdition, matchesReadingEdition } from '../../lib/circles/reading-program';
 import { validateCircleInput, type CircleInput } from '../../lib/circles/schedule';
-import { parseCircleDetail } from '../../lib/circles/membership';
+import { membershipRecord, parseCircleDetail } from '../../lib/circles/membership';
 import { parseCircleCreateMutation, circleCreateMutationBody, parseCircleHostingAccess, parseOwnedCircleCreateReceipt,
   type CircleCreateMutation, type CircleHostingAccess } from '../../lib/circles/hosting';
 import { isUuid } from '../../lib/ids/uuid';
@@ -169,7 +169,13 @@ export function createCircleHosting(config: CircleHostingConfig) {
           if (!current()) return;
           const receipt = [200, 201].includes(result.status) ? parseOwnedCircleCreateReceipt(result.body, exact.mutation.requestId, memberId) : null;
           if (!receipt || receipt.state.revision < 1) {
-            if (!earlier && [400, 401, 403, 404, 409, 413, 415, 429].includes(result.status)) { pending = null; throw Error('Creation refused'); }
+            const failure = result.body;
+            // A gateway status alone cannot settle a sent request. Even an
+            // explicit refusal only describes this send, not an earlier one.
+            if (!earlier && [400, 401, 403, 404, 409, 413, 415, 429, 503].includes(result.status)
+              && membershipRecord(failure)
+              && Object.keys(failure).length === 2 && typeof failure.error === 'string' && failure.error.length > 0
+              && failure.outcome === 'not_attempted') { pending = null; throw Error('Creation refused'); }
             throw Error('Creation unknown');
           }
           known = { circleId: receipt.circleId, minimumRevision: receipt.state.revision, subject: exact.subject }; pending = null;
