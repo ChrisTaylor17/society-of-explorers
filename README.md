@@ -46,7 +46,7 @@ npm run start -- --hostname 127.0.0.1
 
 Open `http://127.0.0.1:3000/try`. These standard scripts load the checkout's normal environment; they are not an isolated recovery or provider test. Public readings work without member credentials. Member-dependent actions should report unavailable in an unconfigured environment. Do not point a test at production merely to remove that message.
 
-The verified November 11 app preview is running on this Mac at [the local trial](http://127.0.0.1:41780/try). Its source is commit `7834733`; the production build/type check passed with all 1,263 recorded inputs unchanged. This address is local to the Mac, not a shareable phone URL. To restart the same verified preview after it is stopped:
+The verified November 11 app preview is running on this Mac at [the local trial](http://127.0.0.1:41780/try). Its source is commit `8bb9f12`; the production build/type check passed with all 1,266 recorded inputs unchanged and matched to Git. This address is local to the Mac, not a shareable phone URL; use the public reading Site above on a phone. To restart the same verified preview after it is stopped:
 
 ```sh
 python3 '/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/start_verified_preview.py'

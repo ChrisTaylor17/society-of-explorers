@@ -1,10 +1,18 @@
 # Finish-pass local verification — 2026-11-11
 
+## Later Circle recovery verification
+
+The later product commit `8bb9f1203477877d8b82c8320150f2241bd35a3a` repairs same-tab Circle creation recovery. It passes 14 new hook/form groups, nine new actual-handler/local-SQL groups, 41 existing hosting/admission groups and 25 Chromium stories. Scoped lint is clean and an independent code/evidence review found no blocking defect. The broad matrix below is the preserved baseline, not a claim that all 251 files were rerun after this change. [Affected implementation and receipts](circle-hosting.md#november-11-web-creation-recovery).
+
+The combined Next build/type check passes in 50.27 seconds. All 1,266 build inputs match both the frozen snapshot and the committed Git blobs. Four actual local HTTP checks verify the new receipt route's malformed/anonymous private denials and the existing public trial. No issued credentials or hosted provider access were used. [Build/readback](/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/RECOVERY_BUILD_READBACK.json) · [Compiled HTTP checks](/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/RECOVERY_COMPILED_HTTP.json).
+
+## Preserved broad baseline
+
 The reconciled local checks have **3,180 passed cases, zero remaining failures and five explicitly skipped historical observations** across 251 suite files. Full current lint has **zero errors**. This is the result of a broad run followed by focused repairs and reruns, not a claim that the original broad invocation passed unchanged. The machine-readable [receipt](finish-checks-2026-11-11.json) identifies the source, per-file outcome, log digest and originating run.
 
 These results do not establish hosted database safety, a successful production recovery, a live customer payment, a signed native build or real-device acceptance. The combined Next build and browser receipts were also reviewed and are linked below, separately from the test-case totals.
 
-## Current acceptance matrix
+## Baseline acceptance matrix
 
 | Group | Suite files | Passed cases | Failed cases | Skipped cases |
 | --- | ---: | ---: | ---: | ---: |
