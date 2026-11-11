@@ -5,7 +5,6 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-// @ts-ignore plain ESM script
 import { extractEvents, parseLines, summarize, formatSummary, toEastern } from '../../scripts/soe-funnel-summary.mjs';
 
 const ev = (event: string, props: Record<string, string> = {}, at = '2026-10-23T23:00:00.000Z', env = 'production') =>

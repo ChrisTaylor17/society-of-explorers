@@ -34,8 +34,8 @@ export function installCircleMembershipRpc(db: FakeDb) {
     const revision = circle.circle_participation_revision ?? 0;
     const caps = { canJoin: Boolean(args.p_actor) && !member, canLeave: member, canRsvp: member,
       canComplete: host, canReadConversation: member };
-    if (name === 'soe_circle_detail') return { data: { circle: { ...circle, circle_reading_program: circle.circle_reading_program ?? null }, memberCount: db.rows('book_cohort_members').filter(row => row.cohort_id === circle.id).length,
-      hostName: db.rows('members').find(row => row.id === circle.created_by)?.display_name ?? null, revision, ended: false,
+    if (name === 'soe_circle_detail_profiles') return { data: { circle: { ...circle, circle_reading_program: circle.circle_reading_program ?? null }, memberCount: db.rows('book_cohort_members').filter(row => row.cohort_id === circle.id).length,
+      hostName: db.rows('members').find(row => row.id === circle.created_by)?.display_name ?? null, publicProfileId: null, revision, ended: false,
       meetings: dates.map(date => ({ date, going: db.rows('circle_rsvps').filter(row => row.cohort_id === circle.id && row.meeting_date === date && row.status === 'going').length,
         my_status: db.rows('circle_rsvps').find(row => row.cohort_id === circle.id && row.meeting_date === date && row.member_id === args.p_actor)?.status ?? null })),
       viewer: { signed_in: Boolean(args.p_actor), is_member: member, is_host: host }, capabilities: caps,

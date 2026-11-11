@@ -5,6 +5,7 @@ import { describe, expect, test, beforeEach } from 'bun:test';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { installMocks, resetDb, makeReq, db, ADA, JULES, walletCookie } from '../security/fakes';
+import { selectedCookies } from '../security/auth-request';
 import { installCircleMembershipRpc } from './fixtures/circle-membership-rpc';
 
 process.env.NEXTAUTH_SECRET = 's'.repeat(48);
@@ -125,7 +126,7 @@ function seed(extra: Record<string, any[]> = {}) {
   server.resetCircleSchemaCache();
   const fixture = resetDb({
     members,
-    book_cohorts: [circleRow(), { id: 'salon-1', book_id: 'republic', title: 'Republic salon', status: 'forming', max_members: 8 }],
+    book_cohorts: [circleRow(), { id: '77777777-7777-4777-8777-777777777770', book_id: 'republic', title: 'Republic salon', status: 'forming', max_members: 8, book_cohort_members: [{ count: 0 }] }],
     book_cohort_members: [{ cohort_id: CIRCLE, member_id: ADA }],
     circle_private: [{ cohort_id: CIRCLE, online_url: 'https://meet.example.com/secret' }],
     circle_rsvps: [], circle_reports: [],
@@ -136,12 +137,17 @@ function seed(extra: Record<string, any[]> = {}) {
 }
 const ip = (n: number) => ({ 'x-forwarded-for': `203.0.113.${n}` });
 async function req(body: any, member?: string, url = 'http://localhost/api/circles', headers: Record<string, string> = ip(1)) {
-  return makeReq(body, { url, headers: { origin: 'http://localhost', ...headers }, cookies: member ? { soe_wallet_id: await walletCookie(member) } : {} });
+  return makeReq(body, { url, headers: { origin: 'http://localhost', ...headers }, cookies: member ? { ...selectedCookies('wallet', member), soe_wallet_id: await walletCookie(member) } : {} });
 }
 let requestSequence = 0;
-const keyed = (body: Record<string, unknown>, expectedRevision?: number) => ({ ...body,
+const keyed = (body: Record<string, unknown>, expectedRevision?: number, expectedMemberId = ADA) => ({ ...body, expectedMemberId,
   requestId: `aaaaaaaa-aaaa-4aaa-8aaa-${String(++requestSequence).padStart(12, '0')}`,
   ...(expectedRevision === undefined ? {} : { expectedRevision }) });
+const createBody = (body: Record<string, unknown>, actor: string) => {
+  const parsed = schedule.validateCircleInput(body, new Date(`${body.startDate}T12:00:00Z`));
+  if (!parsed.ok) throw Error('Invalid synthetic Circle listing');
+  return keyed(parsed.value, undefined, actor);
+};
 const P = (circleId: string) => ({ params: Promise.resolve({ circleId }) });
 function schemaMissing() {
   Reflect.set(db, 'rpc', async () => ({ data: null, error: { code: 'PGRST202' } }));
@@ -172,13 +178,13 @@ describe('circle API', () => {
   });
 
   test('POST requires sign-in, then the schema', async () => {
-    expect((await list.POST(await req(keyed(base)))).status).toBe(401);
+    expect((await list.POST(await req(createBody(base, BOB)))).status).toBe(401);
     schemaMissing();
-    expect((await list.POST(await req(keyed({ ...base, startDate: schedule.todayIn('America/New_York') }), BOB))).status).toBe(503);
+    expect((await list.POST(await req(createBody({ ...base, startDate: schedule.todayIn('America/New_York') }, BOB), BOB))).status).toBe(503);
   });
 
   test('POST creates a circle, adds the host and keeps the video link in circle_private', async () => {
-    const res = await list.POST(await req(keyed({ ...base, format: 'hybrid', onlineUrl: 'https://meet.example.com/new', startDate: schedule.todayIn('America/New_York') }), CARA));
+    const res = await list.POST(await req(createBody({ ...base, format: 'hybrid', onlineUrl: 'https://meet.example.com/new', startDate: schedule.todayIn('America/New_York') }, CARA), CARA));
     expect(res.status).toBe(200);
     const id = (await res.json()).circleId;
     const row = db.rows('book_cohorts').find((r) => r.id === id)!;
@@ -207,7 +213,7 @@ describe('circle API', () => {
     const dates = schedule.upcomingMeetings(circleRow().start_date as string, circleRow().circle_weekday as number, 'America/New_York', 4);
     const url = `http://localhost/api/circles/${CIRCLE}/rsvp`;
     expect((await rsvp.POST(await req(keyed({ date: dates[0], status: 'going' }, 0), undefined, url), P(CIRCLE))).status).toBe(401);
-    expect((await rsvp.POST(await req(keyed({ date: dates[0], status: 'going' }, 0), BOB, url), P(CIRCLE))).status).toBe(403);
+    expect((await rsvp.POST(await req(keyed({ date: dates[0], status: 'going' }, 0, BOB), BOB, url), P(CIRCLE))).status).toBe(403);
     expect((await rsvp.POST(await req(keyed({ date: '2030-01-01', status: 'going' }, 0), ADA, url), P(CIRCLE))).status).toBe(400);
     expect((await rsvp.POST(await req(keyed({ date: dates[0], status: 'maybe' }, 0), ADA, url), P(CIRCLE))).status).toBe(400);
     const ok = await rsvp.POST(await req(keyed({ date: dates[1], status: 'going' }, 0), ADA, url), P(CIRCLE));

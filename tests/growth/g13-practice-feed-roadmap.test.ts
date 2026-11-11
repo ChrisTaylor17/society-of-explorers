@@ -93,13 +93,14 @@ test('feed page has an error state with retry and honest recency copy', () => {
   expect(src).not.toContain("TODAY'S WISDOM MOMENTS");
 });
 
-test('roadmap is dated Oct 25, 2026 and shares tiers with /join', () => {
+test('roadmap dates its review and distinguishes the proposed pilot from a paid offer', () => {
   const src = read('app/roadmap/page.tsx');
-  expect(src).toContain("ROADMAP_LAST_UPDATED = 'October 25, 2026'");
+  expect(src).toMatch(/reviewed [A-Z][a-z]+ [0-9]{1,2}, 20[0-9]{2}/);
   expect(src).not.toContain('April 19, 2026');
-  expect(src).toContain("from '@/lib/join/content'");
+  expect(src).toContain('This is a development plan.');
   expect(src).not.toContain('pending a database migration');
-  expect(src).toContain('Project pledges are switched off');
+  expect(src).toContain('A paid second cycle would be a separate, clearly priced offer after the pilot.');
+  expect(src).toContain('Recovery, privacy and real account checks');
   expect(JOIN_TIERS.map(t => t.id)).toEqual(['explorer', 'supporter']);
 });
 

@@ -48,15 +48,21 @@ test('G4d /join has its own title, description and canonical without unverified 
   expect(serializeJsonLd({ a: '</script>' })).not.toContain('</script>');
 });
 
-test('G4e free sign-up opens create-account mode and lands on the Daily Practice', () => {
+test('G4e account links choose signup and public visitors can read first', () => {
   const u = new URL(FREE_SIGNUP_PATH, 'http://x');
   expect(u.pathname).toBe('/login');
   expect(u.searchParams.get('mode')).toBe('signup');
   expect(u.searchParams.get('next')).toBe('/practice');
   // The mode check moved into lib/auth/loginForm (G10); assert it behaviorally.
   expect(modeFromSearch(u.search)).toBe('signup');
-  expect(read('app/login/page.tsx')).toContain("modeFromSearch(window.location.search) === 'signup'");
-  expect(read('app/HomePageClient.tsx')).toContain('href={FREE_SIGNUP_PATH}');
+  expect(read('app/login/page.tsx')).toContain("query.get('mode') === 'signup'");
+  // Public visitors can read before creating an account.
+  expect(read('app/HomePageClient.tsx')).toContain('href="/try"');
+  const join = read('app/join/page.tsx').match(/href="(\/login[^"]+)"/);
+  expect(join).not.toBeNull();
+  const account = new URL(join![1], 'http://x');
+  expect(account.searchParams.get('mode')).toBe('signup');
+  expect(account.searchParams.get('next')).toBe('/circles');
 });
 
 test('G4f checkout error copy is specific and never claims a charge', () => {

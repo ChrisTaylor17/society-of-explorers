@@ -38,9 +38,9 @@ test('G7d project pledge / project detail id check accepts a real project id', (
 
 test('G7e book-salon join: a valid cohort id reaches the auth check (401) instead of 400', async () => {
   authed = null;
-  const r = await join_.POST(makeReq({ cohortId: V4 }));
+  const r = await join_.POST(makeReq({ cohortId: V4 }, { headers: { origin: 'http://localhost' } }));
   expect(r.status).toBe(401);
-  const bad = await join_.POST(makeReq({ cohortId: 'not-a-uuid' }));
+  const bad = await join_.POST(makeReq({ cohortId: 'not-a-uuid' }, { headers: { origin: 'http://localhost' } }));
   expect(bad.status).toBe(400);
 });
 
@@ -62,7 +62,6 @@ test('G7f fixed routes no longer carry the broken pattern; remaining copies are 
   // Deliberately left for a separate review: these routes call external providers
   // (Daily rooms, AI responses, Printful publish) or send invites once ids work.
   expect(offenders).toEqual([
-    'app/api/live/[sessionId]/route.ts',
     'app/api/merch/publish/route.ts',
     'app/api/merch/suggestions/[id]/route.ts',
     'app/api/projects/invite/route.ts',

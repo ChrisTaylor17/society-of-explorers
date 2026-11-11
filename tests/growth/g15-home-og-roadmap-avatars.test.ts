@@ -31,13 +31,15 @@ test('G15 roadmap title relies on the layout template instead of repeating the s
   expect(src).not.toContain("title: 'Roadmap — Society of Explorers'");
 });
 
-test('G15 thinker avatar initials on the reflection feed are at least 12px and colours clear 4.5:1', () => {
-  for (const f of ['app/feed/page.tsx']) {
-    const src = read(f);
-    const avatars = [...src.matchAll(/fontSize: '(\d+)px'[^}]*\}\}>\{(?:tAvatar|qThinkerAvatar)\}/g)];
-    expect(avatars.length).toBeGreaterThan(0);
-    for (const m of avatars) expect(Number(m[1])).toBeGreaterThanOrEqual(12);
-    const block = src.match(/THINKER_COLORS: Record<string, string> = \{([^}]*)\}/)![1];
-    for (const hex of block.match(/#[0-9A-Fa-f]{6}/g)!) expect(ratio(hex, '#0d0d0d')).toBeGreaterThanOrEqual(4.5);
+test('G15 current feed text and links retain readable size and contrast', () => {
+  const css = read('app/feed/feed.module.css');
+  expect(css).toContain('font-size: .9rem');
+  expect(css).toContain('font-size: 1.2rem');
+  expect(css).toContain('min-height: 44px');
+  expect(css).toContain(':focus-visible');
+  expect(css).toContain('#17130e');
+  for (const color of ['#e0c48a', '#c4b8a4', '#efd397']) {
+    expect(css).toContain(color);
+    expect(ratio(color, '#17130e')).toBeGreaterThanOrEqual(4.5);
   }
 });

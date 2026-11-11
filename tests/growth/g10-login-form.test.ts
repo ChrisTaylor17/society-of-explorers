@@ -75,11 +75,15 @@ test('G10h login page: labelled inputs, autocomplete, live status, no stuck spin
   expect(page).toContain('htmlFor="login-email"');
   expect(page).toContain('htmlFor="login-password"');
   expect(page).toContain('autoComplete="email"');
-  expect(page).toContain("'new-password' : 'current-password'");
+  expect(page).toContain('autoComplete="new-password"');
+  expect(page).toContain('autoComplete="current-password"');
   expect(page).toContain('aria-live="polite"');
-  expect(page).toContain('role="alert"');
-  // loading is always cleared, even when Supabase throws
-  expect(page).toMatch(/finally \{\s*setLoading\(false\);/);
+  expect(page).toContain('role="status"');
+  // Current lifecycle controllers own bounded requests and retire sensitive drafts.
+  expect(page).toContain('createBrowserWebAccount');
+  expect(page).toContain('createBrowserEmailSignup');
+  expect(page).toContain('controller.close()');
+  expect(page).toContain('aria-busy={model?.busy}');
   // the page no longer shows raw Supabase messages
   expect(page).not.toContain('setError(error.message)');
   // helpers come from the tested module, not an inline copy

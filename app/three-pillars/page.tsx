@@ -5,7 +5,7 @@ import PublicFooter from '@/components/PublicFooter';
 import styles from '@/components/ProjectDirection.module.css';
 
 export const metadata: Metadata = {
-  title: 'The Three Pillars — Society of Explorers',
+  title: 'The Three Pillars',
   description: 'Community, venture building and charitable purpose: proposed roles for Society of Explorers and Consilience, with ownership and governance still under review.',
 };
 

@@ -5,7 +5,7 @@ import PublicFooter from '@/components/PublicFooter';
 import styles from '@/components/ProjectDirection.module.css';
 
 export const metadata: Metadata = {
-  title: 'Roadmap — Society of Explorers',
+  title: 'Roadmap',
   description: 'The first salon pilot, what is being tested, and the wider Society of Explorers vision.',
 };
 
