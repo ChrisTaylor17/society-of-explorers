@@ -1,3 +1,5 @@
+/* Native anchors deliberately keep the recovery usable without JavaScript. */
+/* eslint-disable @next/next/no-html-link-for-pages */
 import 'server-only';
 import { getBook } from '@/lib/books/catalog';
 import { isEditionId, type BookEditionResponse } from '@/lib/books/bookmarks';

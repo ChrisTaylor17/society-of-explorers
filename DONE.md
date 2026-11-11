@@ -8,7 +8,7 @@ Restore point: `7020eb5` on `codex/soe-first-release` preserves all 93 pre-exist
 
 - [x] Save the existing work in a local restore commit without exposing credentials.
 - [ ] Inventory the repository, release records, open issues, tests and user-visible unfinished work; separate facts from earlier proposals.
-- [ ] Make the free reading journey recover without JavaScript, keeping exact edition checks and full source credits. Accept only after focused tests, a real built-browser journey and unchanged protected reader/security source.
+- [x] Make the free reading journey recover without JavaScript, keeping exact edition checks and full source credits. Six focused groups, lint, full build and twelve before/after browser observations pass. [Evidence](docs/integration/reader-noscript.md).
 - [ ] Make the public entry, onboarding and support paths clear and usable on a phone. Every promoted action must reach working content or explain its actual availability.
 - [ ] Run the existing offline security/growth/web checks and full lint, resolve failures, then build the combined current source. Record exclusions and failures rather than relabeling them as passes.
 - [ ] Check the combined public trial in a browser: navigation, Scripture/context, free book reading, salon plan, recovery and narrow-screen layout. No fabricated accounts or payments count as live acceptance.

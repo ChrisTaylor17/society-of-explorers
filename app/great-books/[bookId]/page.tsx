@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getBook } from '@/lib/books/catalog';
 import BookReader from '../BookReader';
+import NoScriptBookReader, { readingWithoutScripts } from '../NoScriptBookReader';
 
 type Props = { params: Promise<{ bookId: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -14,5 +15,13 @@ export default async function BookReaderPage({ params, searchParams }: Props) {
     if (!['book', 'edition', 'from', 'to', 'circle', 'passageBlock', 'passageStart', 'passageEnd'].includes(key)) continue;
     for (const part of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key, part);
   }
-  return <BookReader bookId={bookId} search={query.toString()} />;
+  const search = query.toString();
+  const reading = await readingWithoutScripts(bookId, search);
+  return <>
+    <noscript>
+      <style>{'#scripted-book-reader { display: none; }'}</style>
+      <NoScriptBookReader bookId={bookId} reading={reading} />
+    </noscript>
+    <div id="scripted-book-reader"><BookReader bookId={bookId} search={search} /></div>
+  </>;
 }
