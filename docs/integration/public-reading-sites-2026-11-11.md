@@ -20,7 +20,9 @@ Nine focused static groups passed: complete text and license preservation; all 1
 
 Local HTTP served every public file correctly. Main-site fellowship, salon-plan and home links returned 200; the existing reading and Root Kernel fragments were found. Browser checks followed the book anchor, returned to the reading choices, opened Scripture and expanded an interpretation. The home page at 390 px and Scripture at 320 px had no horizontal overflow. The live public homepage loaded in the browser at 390 px; normal viewport settings were restored afterward. This is desktop-browser viewport testing, not physical-device acceptance.
 
-The hosting platform adds a script to the delivered page; source-level “no scripts” does not imply the absence of platform code, request logs or analytics. No additional application tracker or member-data collection is supplied.
+Seventeen bounded anonymous HTTP checks passed after publication. Reading routes return 200; CSS, JSON and the original source ZIP match their reviewed hashes. Hosted HTML matches the supplied content after excluding one platform-added inline script. Member, login, API and missing routes return 404; that does not establish database authorization.
+
+The hosting platform adds a script and a response cookie. Their exact purpose and cookie name were not retained and remain unverified; no cookie value was recorded. Source-level “no scripts” does not imply the absence of platform code, cookies, request logs or analytics. No additional application tracker or member-data collection is supplied. Use the unchanged original ZIP when byte-identical original source is needed.
 
 The initial archive audit caught macOS AppleDouble metadata before upload. Packaging was repeated through the official helper with `COPYFILE_DISABLE=1`; the clean archive has exactly the eleven intended public files and the normalized deployment manifest. The original failed audit and clean readback remain recorded. A duplicated browser link label required scoping the test to the main content; no product change was needed.
 
@@ -31,6 +33,7 @@ Evidence directory: `/Users/christaylor/Documents/Mewest/RESEARCH/soe-reading-tr
 - [Publication receipt](/Users/christaylor/Documents/Mewest/RESEARCH/soe-reading-trial-site-2026-11-11/PUBLICATION.json)
 - [Exact local files and checks](/Users/christaylor/Documents/Mewest/RESEARCH/soe-reading-trial-site-2026-11-11/LOCAL_COMPLETION.json)
 - [Archive readback](/Users/christaylor/Documents/Mewest/RESEARCH/soe-reading-trial-site-2026-11-11/ARCHIVE_CHECK.json)
+- [Anonymous hosted acceptance](/Users/christaylor/Documents/Mewest/RESEARCH/soe-reading-trial-site-2026-11-11/PUBLIC_HTTP.json)
 - [Public phone-width screenshot](/Users/christaylor/Documents/Mewest/RESEARCH/soe-reading-trial-site-2026-11-11/PUBLIC_390.png)
 
 The source helper preserves the Site's Git history and saved version. This new preview can be rolled back to its saved version or made private through the native Sites controls; no existing production resource needs deletion or migration. The primary website remains available independently.
