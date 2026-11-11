@@ -259,9 +259,6 @@ export default function ThreadPage() {
               {weaveMode ? 'EXIT WEAVE' : '⬡ WEAVE'}
             </button>
           )}
-          {!root.minted && memberId && (
-            <button style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: '#000', background: gold, border: 'none', padding: '5px 12px', cursor: 'pointer' }}>⬡ MINT</button>
-          )}
         </div>
       </nav>
 

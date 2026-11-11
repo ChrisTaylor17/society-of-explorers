@@ -115,7 +115,6 @@ export default function MembersPage() {
   const [showThinkerPicker, setShowThinkerPicker] = useState(false)
   const [sendStatus, setSendStatus] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
-  const [recording, setRecording] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const authorityEpoch = useRef(0)
@@ -609,13 +608,6 @@ export default function MembersPage() {
                       placeholder={`Message ${displayName(selectedMember)}...`}
                       style={{ flex: 1, minWidth: 0, background: bgElevated, border: `1px solid ${goldBorder}`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', borderRadius: '4px' }}
                     />
-                    <button
-                      onClick={() => setRecording(r => !r)}
-                      title="Voice mode — coming soon"
-                      style={{ background: recording ? 'rgba(201,168,76,0.15)' : 'none', border: `1px solid ${recording ? gold : goldBorder}`, color: recording ? gold : muted, padding: '10px 12px', cursor: 'pointer', borderRadius: '4px', fontSize: '14px' }}
-                    >
-                      🎙
-                    </button>
                     <button
                       onClick={() => sendMessage()}
                       disabled={sending || !input.trim()}

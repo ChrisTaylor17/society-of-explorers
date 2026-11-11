@@ -64,6 +64,8 @@ The completion pass replaced the false-success waitlist handler with `app/music-
 
 Eight baseline test groups failed on the old actual page. Nine groups now pass against the actual component/event handlers with explicit hook, timer, transport and focus doubles, including HTTP/malformed receipts, preference parity, double submission, retry, timeout, stale completion, unmount and page wiring. Scoped Next/TypeScript ESLint reports zero errors and warnings. These are local behavioral checks, not a browser rendering, real waitlist submission, email delivery or hosted acceptance. No API or private data was called. Root owns composed build/browser acceptance.
 
+The subsequent presentation correction removes the non-recording member microphone and inert Waddle/Twiddle mint buttons. Actual message, voice and sharing behavior is preserved. Music now describes preset browser-generated tones, identifies EEG/heart-rate connections as proposals and makes no therapeutic or adaptive-AI claim. A direct source comparison confirms the complete audio logic and all preset IDs/frequencies/colors are unchanged. The three control removals contain no added product logic; four changed pages pass scoped lint with zero errors/warnings. These fixes do not activate hardware or minting.
+
 1. Preserve the restore commit; make `DONE.md` and `DECISIONS.md` authoritative for this finish pass.
 2. Complete the no-JavaScript reader fix, repair false success/error states, remove inert controls and fix broken recovery links.
 3. Present one useful free trial entry with clear available actions and truthful future boundaries; retain earlier work in Git.

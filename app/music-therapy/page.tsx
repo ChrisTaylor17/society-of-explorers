@@ -10,10 +10,10 @@ const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
 const SESSIONS = [
-  { id: 'focus', name: 'FOCUS', desc: 'Sharpen your mind. Alpha waves for deep concentration.', icon: '◆', binaural: 10, color: '#4169E1' },
-  { id: 'contemplation', name: 'CONTEMPLATION', desc: 'Slow down. Theta waves for philosophical reflection.', icon: '◇', binaural: 6, color: '#7B68EE' },
-  { id: 'flow', name: 'FLOW', desc: 'Enter the zone. Beta-alpha bridge for creative work.', icon: '○', binaural: 12, color: gold },
-  { id: 'stillness', name: 'STILLNESS', desc: 'Pure calm. Delta-theta for deep meditation.', icon: '●', binaural: 4, color: '#8B7355' },
+  { id: 'focus', name: 'FOCUS', desc: 'Steady tones for a quiet listening session.', icon: '◆', binaural: 10, color: '#4169E1' },
+  { id: 'contemplation', name: 'CONTEMPLATION', desc: 'A slower preset for reading or reflection.', icon: '◇', binaural: 6, color: '#7B68EE' },
+  { id: 'flow', name: 'FLOW', desc: 'A brighter preset for a creative break.', icon: '○', binaural: 12, color: gold },
+  { id: 'stillness', name: 'STILLNESS', desc: 'Low pulsing tones for a quiet pause.', icon: '●', binaural: 4, color: '#8B7355' },
 ];
 
 const QUOTES = [
@@ -274,12 +274,12 @@ export default function MusicTherapyPage() {
         }}
       >
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>MUSIC THERAPY</div>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>BROWSER SOUNDSCAPES</div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(36px, 7vw, 56px)', fontWeight: 400, lineHeight: 1.15, marginBottom: '1.5rem', color: parchment }}>
-            Sound as philosophy
+            Sound for reflection
           </h1>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, maxWidth: '600px', margin: '0 auto 2.5rem' }}>
-            AI-generated soundscapes tuned to your mental state. Choose a philosophical mode. Close your eyes. Let the sound reshape your thinking.
+            Choose a preset of tones synthesized in your browser, then adjust the volume or stop whenever you like. The player does not measure your mental state or provide medical treatment.
           </p>
           <a href="#sessions" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px', borderRadius: 0 }}>BEGIN A SESSION</a>
         </div>
@@ -365,19 +365,19 @@ export default function MusicTherapyPage() {
       <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.9s ease' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COMING SOON: HARDWARE INTEGRATION</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>PROPOSED HARDWARE CONNECTIONS</div>
             <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, maxWidth: '600px', margin: '0 auto 2.5rem' }}>
-              Muse S EEG headband reads your brainwaves in real time. Polar H10 chest strap monitors heart rate variability. The soundscape adapts to YOUR nervous system — not a preset.
+              EEG and heart-rate connections are ideas for a later version. This player uses presets; it does not connect to sensors or adapt to biofeedback. Compatible devices and a release date have not been confirmed.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: `${gold}10` }}>
             <div style={{ background: '#0a0a0a', padding: '2.5rem 2rem', border: `1px solid rgba(201,168,76,0.15)` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>MUSE S EEG</div>
-              <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>Real-time brainwave monitoring. Alpha, theta, delta, beta detection. The sound follows your mind.</p>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>EEG RESEARCH</div>
+              <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>A possible future study of voluntary brain-signal input. No brain-signal data is collected by this player.</p>
             </div>
             <div style={{ background: '#0a0a0a', padding: '2.5rem 2rem', border: `1px solid rgba(201,168,76,0.15)` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>POLAR H10 HRV</div>
-              <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>Heart rate variability tracking. Coherence scoring. The rhythm follows your heart.</p>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '1rem' }}>HEART-RATE RESEARCH</div>
+              <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>A possible future study of voluntary heart-rate input. The current sound controls use the preset you select.</p>
             </div>
           </div>
         </div>

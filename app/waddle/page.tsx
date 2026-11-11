@@ -493,9 +493,6 @@ export default function WaddleForge() {
                   }}>⬡ COPY IMAGE</button>
                 </>
               )}
-              <button style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, background: 'none', border: `1px solid ${gold}15`, padding: '8px 16px', cursor: 'default', opacity: 0.5 }}>
-                ⬡ MINT NFT (SOON)
-              </button>
             </div>
           </div>
         )}
