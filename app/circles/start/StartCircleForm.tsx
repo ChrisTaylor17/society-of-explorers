@@ -48,13 +48,15 @@ export default function StartCircleForm({ initialContext = null, invalidContext 
   const encodedReturn = initialContext || onlinePreset ? encodeURIComponent(returnPath) : returnPath;
   return <div className={styles.scope}>
     <p role="status" aria-live="polite" style={{ ...body, marginBottom: '1rem' }}>{notice}</p>
-    <p style={{ ...small, marginBottom: '1rem' }}>{hosting.uncertain || hosting.phase === 'review' || busy ? <span>Close this hosting view before changing sign-in.</span> : <><Link href={`/login?next=${encodedReturn}`}>Sign in</Link> · <Link href={`/login?mode=signup&next=${encodedReturn}`}>Create a free account</Link></>} · {hosting.uncertain || hosting.phase === 'review' || busy ? <span>My Circles (close this hosting view before leaving)</span> : <Link href="/circles/mine">My Circles</Link>}</p>
+    <p style={{ ...small, marginBottom: '1rem' }}>{hosting.phase === 'review' || busy ? <span>Close this hosting view before changing sign-in.</span> : <><Link href={`/login?next=${encodedReturn}`}>Sign in</Link> · <Link href={`/login?mode=signup&next=${encodedReturn}`}>Create a free account</Link></>} · {hosting.phase === 'review' || busy ? <span>My Circles (close this hosting view before leaving)</span> : <Link href="/circles/mine">My Circles</Link>}</p>
+    {hosting.recovery && !hosting.storageBlocked && <p style={small}>A sent creation reference is kept for this account in this tab session. You can leave for My Circles and return to check it. Private listing details are not saved. Clearing browser storage, closing the tab or using another device can lose that reference.</p>}
     {invalidContext && <p style={small}>The supplied book or reading selection could not be verified. It has not been used in this form. Choose a verified reading plan after checking hosting access.</p>}
     {initialContext && <p style={small}>{scripture
       ? `The ${scripture.shortTitle} study is selected for your first meeting. Check hosting access and verify the edition before listing.`
       : 'A public reader selection is available. After checking hosting access, explicitly choose it and verify the source edition before using it in the Circle.'}</p>}
     <div className={styles.row} style={{ marginBottom: '1rem' }}>
       <button type="button" style={button} disabled={disabled || hosting.phase === 'review' || !!created} onClick={hosting.load}>Check hosting access</button>
+      {hosting.canCheckReceipt && <button type="button" style={button} disabled={disabled} onClick={hosting.checkReceipt}>Check earlier creation result</button>}
       {hosting.canRetry && <button type="button" style={button} disabled={disabled} onClick={hosting.retryRequest}>Review exact Circle creation retry</button>}
       <button type="button" style={button} disabled={disabled} onClick={hosting.close}>Close hosting view</button>
       {created && <Link href={`/circles/${created}`} style={primary}>Open my Circle</Link>}
