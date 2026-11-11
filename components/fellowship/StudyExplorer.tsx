@@ -23,7 +23,7 @@ export default function StudyExplorer() {
         </select>
       </label>
     </div>
-    <p role="status">{visible.length} connections shown.</p>
+    <p role="status">{visible.length} {visible.length === 1 ? 'connection' : 'connections'} shown.</p>
     {!visible.length && <p>No connection has this combination. Choose another relationship or both studies.</p>}
     {STUDY_CLAIMS.map(claim => <article className={styles.claim} key={claim.id} id={claim.id} data-claim={claim.id} hidden={!visible.some(c => c.id === claim.id)}>
       <span className={styles.badge}>{claim.relationship}</span>

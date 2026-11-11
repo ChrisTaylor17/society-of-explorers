@@ -3,7 +3,7 @@ import Link from 'next/link';
 import styles from '../fellowship/fellowship.module.css';
 
 export const metadata: Metadata = {
-  title: 'Travel and reading — Society of Explorers',
+  title: 'Travel and reading',
   description: 'Bring a reading and a good question to your next journey. Explore original reflection prompts and the longer-term vision for shared places.',
 };
 

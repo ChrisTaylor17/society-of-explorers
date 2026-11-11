@@ -3,7 +3,7 @@ import Link from 'next/link';
 import styles from '../fellowship/fellowship.module.css';
 
 export const metadata: Metadata = {
-  title: 'Try Society of Explorers',
+  title: 'Try the fellowship',
   description: 'Read a complete book, compare Scripture in context and explore a practical salon plan. Start free, without an account.',
   alternates: { canonical: '/try' },
 };
