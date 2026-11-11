@@ -2,6 +2,8 @@
 
 ## What Chris can open now
 
+**Later November 11 update:** a separate [public reading preview](https://soe-reading-room.societyofexplorers.chatgpt.site) is now published using included Pro Sites hosting. It adds phone-accessible Apology and Scripture comparison without changing the existing primary domain or its member holds. [Publication record](public-reading-sites-2026-11-11.md).
+
 The existing public site already provides working, anonymous reading and planning pages:
 
 - [Fellowship and the Good Samaritan](https://www.societyofexplorers.com/fellowship)
@@ -26,6 +28,8 @@ The Next app's new `/try`, `/great-books/apology` and `/fellowship/scripture` cu
 | Separate Next source | `ChrisTaylor17/society-of-explorers`, canonical local checkout `Documents/Codex/soe-release`; it is not the public exhibition source. The canonical checkout has no `.vercel/project.json`. |
 
 The GitHub connector returned 404 for the public-source branch and configuration, but the existing authenticated CLI read both successfully; this is not a new login blocker. Vercel's filtered alias list returned no rows, while its exact-alias lookup and CLI both resolved the expected production build. Do not infer that the domain is unassigned from the list result. The `app.societyofexplorers.com` exact-alias connector read returned 404 in this team; its ownership was not independently established here and it is not a release target.
+
+Later readback found `app.societyofexplorers.com` serves the separately owned public Meridian Sites prototype with HTTP 200 and clearly labelled fictional examples. The earlier Vercel-team 404 was not evidence that this hostname was offline. Meridian was preserved; the reading preview uses its own new Site URL. [Alternative-hosting audit](/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/ALTERNATIVE_HOSTING_AUDIT.json).
 
 The public site's dated candidate is preserved at `/Users/christaylor/Documents/Mewest/RESEARCH/soe-archive-readability-2026-11-10/candidate`. Its local `AGENTS.md` identifies this separate release source and requires preservation of existing URLs and audit evidence. Current `vercel.json` has 87 redirects and 74 rewrites; the member/API holds are explicit. No environment values, credentials or member records were read.
 

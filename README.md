@@ -4,6 +4,8 @@ A community and reading app for Christian-rooted fellowship, Scripture, Great Bo
 
 ## What to open
 
+**Try and share the [live reading preview](https://soe-reading-room.societyofexplorers.chatgpt.site).** It includes the complete Apology, Scripture comparison with sources and links to the existing fellowship/salon guide. This is a separate public static Site on included Pro hosting, not a release of member accounts. [Publication and verification](docs/integration/public-reading-sites-2026-11-11.md).
+
 The existing public exhibition is a **different deployment and repository** from this app. These pages are currently reachable without an account:
 
 - [Christian fellowship and the Good Samaritan](https://www.societyofexplorers.com/fellowship)

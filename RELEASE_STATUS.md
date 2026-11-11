@@ -1,6 +1,8 @@
 # Society of Explorers release status
 
-Updated November 11, 2026, Eastern time. **Public trial verified locally; new public-site package unpublished. Member production clearance: false.**
+Updated November 11, 2026, Eastern time. **Separate public reading preview published; primary-domain update remains unpublished. Member production clearance: false.**
+
+The [reading preview](https://soe-reading-room.societyofexplorers.chatgpt.site) is now shareable through the verified Pro account's included Sites hosting. Its eleven public files preserve the complete book, Scripture and attribution, with links to the existing main-site fellowship and salon guide. New Site source `1afa92b8cd870062885cc1ebe26b5d941e4bd8c1`, version 1, deployed successfully on November 11. Existing domains, Meridian, private Field Alpha and member access remain unchanged. [Exact publication and verification](docs/integration/public-reading-sites-2026-11-11.md).
 
 The November 11 finish pass preserved the starting work in restore commit `7020eb5`, repaired concrete public journeys and verified the composed app. The final web build/type check of `7834733` passes with 1,263 unchanged inputs. The reconciled test matrix accounts for 251 files: 3,180 passed cases, zero unresolved failures and five explicit historical skips. Full lint has zero errors and 46 fixture/tool warnings. These are local results, not hosted or customer acceptance. [Checklist and exact open dependencies](DONE.md) · [Test provenance and limitations](docs/integration/finish-checks-2026-11-11.md).
 
@@ -10,7 +12,7 @@ The existing live public website is a separate static deployment. Its prepared u
 
 A new current-source Android debug APK also passes native types, thirty focused policy checks, offline linking, direct signature/content inspection and static 16 KB alignment. It includes the latest reader-size controls, preserves the prior APK and uses blank live configuration. It has not been run on a phone. Xcode/iOS and phone/headset/store acceptance remain open. [Current artifact and exact limits](docs/integration/android-current-source-2026-11-11.md).
 
-No code was pushed, no new deployment was made, no member data or credential was changed and no new money was spent in this finish pass. Native/store/device and actual hosted account acceptance remain separate. The dated November 9 record below is retained for provenance and is superseded by the current checklist wherever later evidence differs.
+The canonical app has not been pushed or deployed. The separate reading Site's exact source was synchronized and published through native Sites tools; no member data or existing credential was changed and no additional purchase was made. Native/store/device and actual hosted account acceptance remain separate. The dated November 9 record below is retained for provenance and is superseded by the current checklist wherever later evidence differs.
 
 ## Historical November 9 reconciliation
 
