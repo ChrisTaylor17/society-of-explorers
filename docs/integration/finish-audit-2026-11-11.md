@@ -58,6 +58,12 @@ Three evidence paths are cross-checks, not three failed password attempts or thr
 
 ## Completion order
 
+### Local follow-through: audio interest receipt
+
+The completion pass replaced the false-success waitlist handler with `app/music-therapy/MusicInterestForm.tsx`. Its choices match the unchanged endpoint's supported values; a successful HTTP response and exact success receipt are required. Details stay visible after failure, an in-flight snapshot cannot be edited or submitted twice, and a 20-second deadline/Stop waiting retires old callbacks without claiming to undo a save. An explicit retry warns about possible duplication. Confirmation describes saved interest, not a release date or delivered notification. The existing audio session implementation is unchanged.
+
+Eight baseline test groups failed on the old actual page. Nine groups now pass against the actual component/event handlers with explicit hook, timer, transport and focus doubles, including HTTP/malformed receipts, preference parity, double submission, retry, timeout, stale completion, unmount and page wiring. Scoped Next/TypeScript ESLint reports zero errors and warnings. These are local behavioral checks, not a browser rendering, real waitlist submission, email delivery or hosted acceptance. No API or private data was called. Root owns composed build/browser acceptance.
+
 1. Preserve the restore commit; make `DONE.md` and `DECISIONS.md` authoritative for this finish pass.
 2. Complete the no-JavaScript reader fix, repair false success/error states, remove inert controls and fix broken recovery links.
 3. Present one useful free trial entry with clear available actions and truthful future boundaries; retain earlier work in Git.

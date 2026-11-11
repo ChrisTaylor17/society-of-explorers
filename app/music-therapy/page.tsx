@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import MusicInterestForm from './MusicInterestForm';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -32,12 +33,6 @@ export default function MusicTherapyPage() {
   const [elapsed, setElapsed] = useState(0);
   const [volume, setVolume] = useState(0.6);
   const [pulseScale, setPulseScale] = useState(1);
-  const [iName, setIName] = useState('');
-  const [iEmail, setIEmail] = useState('');
-  const [hardware, setHardware] = useState('learn');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
   const audioCtxRef = useRef<AudioContext | null>(null);
   const nodesRef = useRef<{ master: GainNode; oscs: OscillatorNode[]; lfos: OscillatorNode[]; noise: AudioBufferSourceNode | null } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -264,27 +259,6 @@ export default function MusicTherapyPage() {
     }
   }, [volume]);
 
-  async function handleInterest(e: React.FormEvent) {
-    e.preventDefault();
-    if (!iName.trim() || !iEmail.trim()) return;
-    setSubmitting(true);
-    try {
-      await fetch('/api/music-therapy/interest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: iName.trim(), email: iEmail.trim(), hardware_status: hardware }),
-      });
-      setSubmitted(true);
-    } catch {}
-    setSubmitting(false);
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px',
-    fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment,
-    outline: 'none', boxSizing: 'border-box',
-  };
-
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
@@ -412,38 +386,12 @@ export default function MusicTherapyPage() {
       {/* ═══ INTEREST FORM ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
         <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>HARDWARE WAITLIST</div>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>FUTURE AUDIO TOOLS</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '2rem', lineHeight: 1.3 }}>
-            Be first when hardware integration launches
+            Help shape future audio tools
           </h2>
 
-          {submitted ? (
-            <div style={{ padding: '2rem', border: `1px solid ${gold}33`, background: `${gold}08` }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold, marginBottom: '0.75rem' }}>YOU&apos;RE ON THE LIST</div>
-              <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7 }}>We&apos;ll notify you when hardware integration is ready.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleInterest} style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
-              <input value={iName} onChange={e => setIName(e.target.value)} placeholder="Your name" required style={inputStyle} />
-              <input value={iEmail} onChange={e => setIEmail(e.target.value)} placeholder="Your email" type="email" required style={inputStyle} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 0' }}>
-                {[
-                  { value: 'muse', label: 'I have a Muse S' },
-                  { value: 'polar', label: 'I have a Polar H10' },
-                  { value: 'both', label: 'I have both' },
-                  { value: 'learn', label: 'I want to learn more' },
-                ].map(opt => (
-                  <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '15px', color: muted }}>
-                    <input type="radio" name="hardware" value={opt.value} checked={hardware === opt.value} onChange={() => setHardware(opt.value)} style={{ accentColor: gold }} />
-                    {opt.label}
-                  </label>
-                ))}
-              </div>
-              <button type="submit" disabled={submitting} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', opacity: submitting ? 0.5 : 1, borderRadius: 0 }}>
-                {submitting ? 'SUBMITTING...' : 'JOIN THE WAITLIST'}
-              </button>
-            </form>
-          )}
+          <MusicInterestForm />
         </div>
       </section>
 
