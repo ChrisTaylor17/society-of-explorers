@@ -1,11 +1,10 @@
+import { isUuid } from '@/lib/ids/uuid';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const MAX_CONTENT_LENGTH = 2_000;
 
 type TwiddlePatchBody = {
@@ -64,10 +63,6 @@ async function safeRequestJson(req: NextRequest): Promise<unknown> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function isUuid(value: unknown): value is string {
-  return typeof value === 'string' && UUID_PATTERN.test(value);
 }
 
 function boundedText(value: unknown, maxLength = MAX_CONTENT_LENGTH) {
@@ -134,7 +129,7 @@ function withReactionCounts(twiddle: TwiddleRow, reactionMap: Record<string, Rec
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
-  if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
+  if (!isUuid(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
 
   const supabaseAdmin = getSupabaseAdmin();
 
@@ -143,7 +138,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!twiddle) return privateJson({ error: 'Not found' }, { status: 404 });
 
     const twiddleRow = twiddle as TwiddleRow;
-    const rootId = twiddleRow.root_id && UUID_PATTERN.test(twiddleRow.root_id) ? twiddleRow.root_id : id;
+    const rootId = twiddleRow.root_id && isUuid(twiddleRow.root_id) ? twiddleRow.root_id : id;
     const { data: threadRows } = await supabaseAdmin
       .from('twiddles')
       .select('*')
@@ -151,7 +146,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .order('created_at', { ascending: true });
 
     const thread = (threadRows || []) as TwiddleRow[];
-    const threadIds = thread.map((threadTwiddle) => threadTwiddle.id).filter((threadId) => UUID_PATTERN.test(threadId));
+    const threadIds = thread.map((threadTwiddle) => threadTwiddle.id).filter((threadId) => isUuid(threadId));
 
     let reactions: ReactionRow[] = [];
     if (threadIds.length > 0) {
@@ -177,7 +172,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
-  if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
+  if (!isUuid(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
 
   const parsed = await safeRequestJson(req);
   if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });

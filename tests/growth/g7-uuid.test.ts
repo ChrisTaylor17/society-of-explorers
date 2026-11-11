@@ -53,25 +53,15 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-test('G7f fixed routes no longer carry the broken pattern; remaining copies are only the reviewed list', () => {
+test('G7f reviewed routes no longer carry the broken pattern', () => {
   const root = process.cwd();
   const offenders = [...walk(join(root, 'app')), ...walk(join(root, 'lib'))]
     .filter((f) => readFileSync(f, 'utf8').includes(BROKEN_LITERAL))
     .map((f) => f.slice(root.length + 1))
     .sort();
-  // Deliberately left for a separate review: these routes call external providers
-  // (Daily rooms, AI responses, Printful publish) or send invites once ids work.
-  expect(offenders).toEqual([
-    'app/api/merch/publish/route.ts',
-    'app/api/merch/suggestions/[id]/route.ts',
-    'app/api/projects/invite/route.ts',
-    'app/api/rooms/[roomId]/route.ts',
-    'app/api/rooms/route.ts',
-    'app/api/twiddle/[id]/react/route.ts',
-    'app/api/twiddle/[id]/respond/route.ts',
-    'app/api/twiddle/[id]/route.ts',
-    'app/api/twiddle/route.ts',
-  ]);
+  // Provider/authorization guards remain in place; dedicated offline route tests
+  // cover their refusal paths and the generic-room / Live Council boundary.
+  expect(offenders).toEqual([]);
   for (const fixed of ['lib/projects/publicProject.ts', 'app/api/book-salons/join/route.ts', 'app/api/book-salons/[cohortId]/route.ts', 'app/api/salons/route.ts']) {
     expect(readFileSync(join(root, fixed), 'utf8')).toContain("from '@/lib/ids/uuid'");
   }

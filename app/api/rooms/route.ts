@@ -1,3 +1,4 @@
+import { isUuid } from '@/lib/ids/uuid';
 import { NextRequest } from 'next/server';
 import { emitActivity } from '@/lib/feed/activityFeed';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
@@ -8,8 +9,6 @@ const THINKER_IDS = new Set(['socrates', 'plato', 'aurelius', 'nietzsche', 'eins
 const ROOM_TYPES = new Set(['open', 'project', 'council', 'salon']);
 const ROOM_LIST_FIELDS =
   'id,community_id,created_by,room_name,daily_room_url,title,room_type,project_id,council_session_id,active_thinkers,is_live,max_participants,started_at,ended_at,created_at,scheduled_for';
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 
 type RoomCreateBody = {
   title?: unknown;
@@ -35,7 +34,7 @@ function normalizeText(value: unknown, fallback: string, maxLength: number) {
 }
 
 function normalizeNullableUuid(value: unknown) {
-  return typeof value === 'string' && UUID_PATTERN.test(value) ? value : null;
+  return typeof value === 'string' && isUuid(value) ? value : null;
 }
 
 function normalizeThinkers(value: unknown) {
@@ -125,6 +124,10 @@ export async function POST(req: NextRequest) {
   const normalizedCommunitySlug = normalizeText(communitySlug, 'society-of-explorers', 80);
   const normalizedProjectId = normalizeNullableUuid(projectId);
   const normalizedThinkers = normalizeThinkers(thinkers);
+
+  if (projectId !== undefined && projectId !== null && projectId !== '' && !normalizedProjectId) {
+    return privateJson({ error: 'Invalid project id' }, { status: 400 });
+  }
 
   const auth = await getAuthenticatedMember(req);
   if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });

@@ -1,11 +1,10 @@
+import { isUuid } from '@/lib/ids/uuid';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const VALID_THINKERS = new Set(['socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs']);
 const TWIDDLE_TYPES = new Set(['text', 'voice', 'artifact', 'question', 'sketch']);
 const THREAD_TYPES = new Set(['solo', 'open', 'collaborative']);
@@ -63,10 +62,6 @@ async function safeRequestJson(req: NextRequest): Promise<unknown> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function isUuid(value: unknown): value is string {
-  return typeof value === 'string' && UUID_PATTERN.test(value);
 }
 
 function boundedText(value: unknown, maxLength = MAX_CONTENT_LENGTH) {
@@ -177,7 +172,7 @@ export async function POST(req: NextRequest) {
     if (!parent) return privateJson({ error: 'Parent Twiddle not found' }, { status: 404 });
 
     const parentRow = parent as ParentTwiddleRow;
-    rootId = parentRow.root_id && UUID_PATTERN.test(parentRow.root_id) ? parentRow.root_id : parentId;
+    rootId = parentRow.root_id && isUuid(parentRow.root_id) ? parentRow.root_id : parentId;
   }
 
   try {

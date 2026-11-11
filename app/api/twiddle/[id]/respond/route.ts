@@ -1,3 +1,4 @@
+import { isUuid } from '@/lib/ids/uuid';
 import { NextRequest } from 'next/server';
 import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt, getThinkerProfile } from '@/lib/claude/thinkers';
@@ -10,8 +11,6 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
 const VALID_THINKERS = new Set(['socrates', 'plato', 'nietzsche', 'aurelius', 'einstein', 'jobs']);
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const MAX_CONTEXT_ITEM_LENGTH = 400;
 const MAX_MEMBER_FIELD_LENGTH = 500;
 const MAX_RESPONSE_TEXT_LENGTH = 2_000;
@@ -181,7 +180,7 @@ async function loadRelationshipContext(
 
   const recentTwiddles = (recentRows || []) as RecentTwiddleRow[];
   const rootIds = Array.from(
-    new Set(recentTwiddles.map((twiddle) => twiddle.root_id || twiddle.id).filter((id) => UUID_PATTERN.test(id))),
+    new Set(recentTwiddles.map((twiddle) => twiddle.root_id || twiddle.id).filter((id) => isUuid(id))),
   );
 
   let pastResponses: PastResponseRow[] = [];
@@ -250,7 +249,7 @@ async function generateVoiceUrl({
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
-  if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid twiddle' }, { status: 400 });
+  if (!isUuid(id)) return privateJson({ error: 'Invalid twiddle' }, { status: 400 });
 
   const parsed = await safeRequestJson(req);
   if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
@@ -274,7 +273,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!twiddle) return privateJson({ error: 'Twiddle not found' }, { status: 404 });
 
   const twiddleRow = twiddle as TwiddleRow;
-  const rootId = twiddleRow.root_id && UUID_PATTERN.test(twiddleRow.root_id) ? twiddleRow.root_id : id;
+  const rootId = twiddleRow.root_id && isUuid(twiddleRow.root_id) ? twiddleRow.root_id : id;
   const { data: threadRows } = await supabaseAdmin
     .from('twiddles')
     .select('content, is_thinker_response, thinker_key, created_at')

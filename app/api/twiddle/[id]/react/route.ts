@@ -1,11 +1,10 @@
+import { isUuid } from '@/lib/ids/uuid';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { privateJson } from '@/lib/http/routeError';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { LEGACY_TWIDDLE_AVAILABLE, legacyTwiddleUnavailable } from '@/lib/twiddle/release';
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const VALID_REACTIONS = new Set(['illuminate', 'challenge', 'extend', 'question', 'mint_worthy']);
 
 type TwiddleReactionBody = {
@@ -39,7 +38,7 @@ function normalizeReactionType(value: unknown) {
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
-  if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
+  if (!isUuid(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
 
   const parsed = await safeRequestJson(req);
   if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
@@ -89,7 +88,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!LEGACY_TWIDDLE_AVAILABLE) return legacyTwiddleUnavailable();
   const { id } = await params;
-  if (!UUID_PATTERN.test(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
+  if (!isUuid(id)) return privateJson({ error: 'Invalid Twiddle' }, { status: 400 });
 
   const supabaseAdmin = getSupabaseAdmin();
 

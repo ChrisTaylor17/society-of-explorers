@@ -52,8 +52,8 @@ test('generic room routes preserve old null-typed rooms and cannot expose or mut
   const denied = await fixture.room.POST(request('/api/rooms/' + LIVE, {
     actor: A, body: { action: 'end' },
   }), { params: Promise.resolve({ roomId: LIVE }) });
-  // This inherited UUID gate rejects standard room IDs before a write.
-  assert.equal(denied.status, 400);
+  // Valid IDs reach an explicit room-kind boundary, never generic mutation.
+  assert.equal(denied.status, 409);
   assert.equal((await fixture.db.query('SELECT is_live FROM video_rooms WHERE id=$1', [LIVE])).rows[0].is_live, true);
 });
 

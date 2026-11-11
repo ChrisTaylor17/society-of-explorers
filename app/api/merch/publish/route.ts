@@ -1,3 +1,4 @@
+import { isUuid } from '@/lib/ids/uuid';
 import { NextRequest } from 'next/server';
 import { privateJson } from '@/lib/http/routeError';
 import { getMovementAccess } from '@/lib/movement/access';
@@ -36,7 +37,6 @@ export interface PublishBody {
   product_type: string;
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -65,7 +65,7 @@ function parsePublishBody(value: unknown): PublishBody | null {
   const suggestionId = boundedText(value.suggestionId, 80);
   const name = boundedText(value.name, 160);
   const price = safePrice(value.price);
-  if (!suggestionId || !UUID_RE.test(suggestionId) || !name || price === null) return null;
+  if (!suggestionId || !isUuid(suggestionId) || !name || price === null) return null;
 
   return {
     suggestionId,
