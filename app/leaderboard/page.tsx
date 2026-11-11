@@ -87,7 +87,7 @@ export default function LeaderboardPage() {
       <header style={{ borderBottom: `1px solid ${gold}22`, padding: '1.25rem 1.5rem' }}>
         <nav aria-label="Public navigation" style={{ maxWidth: 900, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
           <span style={{ color: gold, minHeight: 44, display: 'inline-flex', alignItems: 'center', fontFamily: 'Cinzel, serif', fontSize: 12 }}>SOCIETY OF EXPLORERS</span>
-          <a href="/community" style={{ color: parchment, minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>Explore the community</a>
+          <a href="/explore" style={{ color: parchment, minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>Explore the community</a>
         </nav>
       </header>
       <main style={{ maxWidth: 700, minHeight: '55vh', margin: '0 auto', padding: '5rem 1.5rem' }}>
@@ -99,7 +99,7 @@ export default function LeaderboardPage() {
           <button type="button" onClick={retry} aria-label="Retry leaderboard availability" style={{ minHeight: 44, padding: '0.65rem 1rem', background: gold, color: '#0a0a0a', border: 0, cursor: 'pointer', fontSize: 14 }}>Check again</button>
         </section>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', marginTop: '1.5rem' }}>
-          <a href="/community" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', color: gold }}>Find a community</a>
+          <a href="/explore" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', color: gold }}>Find a community</a>
           <a href="/members" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', color: gold }}>Browse published profiles</a>
         </div>
       </main>
