@@ -16,10 +16,8 @@ const SPACE_INSERT_SELECT = SPACE_LIST_SELECT;
 const MEMBER_EXP_SELECT = 'exp_tokens';
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ALLOWED_SPACE_TYPES = new Set(['salon', 'library', 'temple', 'garden', 'waypoint', 'outpost']);
-const ALLOWED_SPACE_STATUSES = new Set(['active', 'archived', 'pending']);
 
 type SpaceType = 'salon' | 'library' | 'temple' | 'garden' | 'waypoint' | 'outpost';
-type SpaceStatus = 'active' | 'archived' | 'pending';
 
 type SpaceSummaryRow = {
   id: string;
@@ -95,12 +93,6 @@ function normalizeSpaceType(value: unknown): SpaceType | null {
   if (typeof value !== 'string') return null;
   const spaceType = value.trim().toLowerCase();
   return ALLOWED_SPACE_TYPES.has(spaceType) ? (spaceType as SpaceType) : null;
-}
-
-function normalizeSpaceStatus(value: string | null): SpaceStatus | null {
-  if (!value) return 'active';
-  const status = value.trim().toLowerCase();
-  return ALLOWED_SPACE_STATUSES.has(status) ? (status as SpaceStatus) : null;
 }
 
 function normalizeCoordinate(value: unknown, min: number, max: number): number | null {
@@ -179,17 +171,27 @@ function worldSpacesCreateFailure() {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
-    const city = normalizeOptionalText(searchParams.get('city'), MAX_SPACE_LOCATION_LENGTH);
-    const status = normalizeSpaceStatus(searchParams.get('status'));
-
-    if (!status) return privateJson({ error: 'Invalid status' }, { status: 400 });
+    if (Array.from(searchParams.keys()).some(key => !['city', 'status'].includes(key) || searchParams.getAll(key).length !== 1)) {
+      return privateJson({ error: 'Invalid directory query' }, { status: 400 });
+    }
+    const status = searchParams.get('status');
+    if (status !== null && status !== 'active') {
+      return privateJson({ error: 'Only active spaces are available in the public directory' }, { status: 400 });
+    }
+    const cityValue = searchParams.get('city');
+    if (cityValue !== null && cityValue.length > MAX_SPACE_LOCATION_LENGTH) {
+      return privateJson({ error: 'Invalid city' }, { status: 400 });
+    }
+    const city = cityValue?.trim() || null;
 
     const supabaseAdmin = getSupabaseAdmin();
 
+    // This anonymous directory must never enumerate host-only pending or
+    // archived spaces, even when a caller supplies a different status.
     let query = supabaseAdmin
       .from('spaces')
       .select(SPACE_LIST_SELECT)
-      .eq('status', status)
+      .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (city) query = query.ilike('city', `%${city}%`);

@@ -255,12 +255,17 @@ function worldSpaceDeleteFailure() {
   return privateJson({ error: 'Failed to delete space' }, { status: 500 });
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const spaceId = normalizeUuid(id);
 
     if (!spaceId) return privateJson({ error: 'Invalid space id' }, { status: 400 });
+
+    // Full locations, scans and annotations are member-only. The anonymous
+    // directory has a separate coarse projection; private space reads stay held.
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
     const supabaseAdmin = getSupabaseAdmin();
 
@@ -268,6 +273,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .from('spaces')
       .select(SPACE_DETAIL_SELECT)
       .eq('id', spaceId)
+      .eq('status', 'active')
       .maybeSingle();
 
     if (error) return worldSpaceDetailFailure();
