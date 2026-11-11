@@ -7,7 +7,9 @@ export const UNICODE_SQL=await readFile(new URL('../../../../docs/sql/circle-dis
 export const SEARCH_SQL=await readFile(new URL('../../../../docs/sql/circle-discovery-search.sql',import.meta.url),'utf8');
 export const CATALOG=JSON.parse(JSON.stringify(offlineApp().load('lib/circles/discovery-catalog.ts').DISCOVERY_SEARCH_CATALOG));
 export const createBaseDb=threadDb;
-export async function createDb(){const db=await threadDb();try{await db.exec(UNICODE_SQL);await db.exec(SEARCH_SQL);return db;}catch(error){await db.close();throw error;}}
+export async function createDb(){const db=await threadDb();try{
+ for (const file of ['circle-indexed-passage-guard-apply.sql','circle-luke-good-samaritan-edition-apply.sql']) await db.exec(await readFile(new URL('../../../../docs/sql/'+file,import.meta.url),'utf8'));
+ await db.exec(UNICODE_SQL);await db.exec(SEARCH_SQL);return db;}catch(error){await db.close();throw error;}}
 export const query=(overrides={})=>({terms:[],cityTerms:[],format:'',open:false,sort:'next',book:null,edition:null,...overrides});
 export function search(db,{q=query(),catalog=CATALOG,after=null,calendarKey=null,limit=25}={}){return rpc(db,'soe_circle_discovery_search',[q,catalog,after,calendarKey,limit]);}
 export const circleId=n=>`f2000000-0000-4000-8000-${String(n).padStart(12,'0')}`;

@@ -159,6 +159,8 @@ export const CIRCLE_SQL_CHAIN = Object.freeze([
   'docs/sql/circle-participation.sql',
   'docs/sql/circle-reading-programs.sql',
   'docs/sql/circle-passage-posts.sql',
+  'docs/sql/circle-indexed-passage-guard-apply.sql',
+  'docs/sql/circle-luke-good-samaritan-edition-apply.sql',
   'docs/sql/circle-discussion-threads.sql',
   'docs/sql/circle-discovery-unicode.sql',
   'docs/sql/circle-discovery-search.sql',

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {offlineApp} from './offline-app.mjs';
 import {evidence,source,IDS,requestId,asRole,rpc,scalar,execute} from './full-chain-migration-db.mjs';
 const refused=(work,code='PT409')=>assert.rejects(work,error=>{assert.equal(error.code,code,error.message);return true;});
 const POLICY='anthropic-message-review-v1';
@@ -40,7 +41,9 @@ export async function exerciseFullChain(f,{eventContainment=false}={}){
   return{membershipNoopAdvanced:true,attendanceNoopAdvanced:true,exactAttendanceReplay:true};
  });
  await observe('public discovery reads the created programmed Circle through installed Unicode and search functions',async()=>{
-  const editions=JSON.parse(await source('lib/circles/reading-program-editions.json'));
+  // The current search validator pins all published editions, including the
+  // two Scripture studies; use their actual immutable catalog coordinates.
+  const editions=offlineApp().load('lib/circles/discovery-catalog.ts').DISCOVERY_SEARCH_CATALOG.editions;
   const catalog={version:1,starter:Array.from({length:12},(_,i)=>({week:i+1,title:'Synthetic starter',author:'Synthetic author',selection:'Synthetic selection'})),
    editions:editions.map(e=>({bookId:e.bookId,editionId:e.editionId,blockCount:e.blockCount,title:'Synthetic book label',author:'Synthetic author',sourceTitle:e.sourceTitle,contents:e.contents.map(({readingIndex,label})=>({readingIndex,label}))}))};
   const page=await rpc(f,'soe_circle_discovery_search',[{terms:['composed'],cityTerms:[],format:'',open:false,sort:'next',book:null,edition:null},catalog,null,null,25]);

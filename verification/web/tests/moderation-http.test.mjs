@@ -224,7 +224,8 @@ test('invalid circle ids and malformed JSON cannot trigger a write', async () =>
   const a = fixture();
   assert.equal((await a.detail().GET(a.request(undefined), context('..'))).status, 400);
   assert.equal((await a.detail().POST(a.request(input()), context('..'))).status, 400);
-  const request = a.request(input()); request.text = async () => '{';
+  const request = a.request(input());
+  request.body = new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('{')); controller.close(); } });
   assert.equal((await a.detail().POST(request, context(CIRCLE))).status, 400);
   assert.equal(a.calls.length, 0);
 });

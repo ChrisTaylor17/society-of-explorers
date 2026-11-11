@@ -9,7 +9,7 @@ import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const tooling = createRequire(path.join(projectRoot, '..', 'tooling', 'package.json'));
+const tooling = createRequire(path.join(projectRoot, 'verification', 'web', 'tooling', 'package.json'));
 const project = createRequire(path.join(projectRoot, 'package.json'));
 const { JSDOM } = tooling('jsdom');
 const postcss = project('postcss');

@@ -8,7 +8,7 @@ const {sourceLoader}=await import('../../../platforms/tests/load-source.mjs');
 const {createCircleHost}=sourceLoader()('platforms/native/src/circles/host.ts');
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};}
 async function fixture(t,{actor='reporter',keyFactory=async()=>requestId(),timeoutMs=15000}={}){
- const f=await createPlatformsMessageActionsApp({actor});t.after(()=>f.close());
+ const f=await createPlatformsMessageActionsApp({actor,profileAware:true});t.after(()=>f.close());
  let scope='synthetic-safety-owner',credentialGate=null;const listeners=new Set(),requests=[];
  const owner={scope:()=>scope,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},async bearer(expected){if(credentialGate)await credentialGate.promise;return expected===scope?TOKENS[actor]:null;}};
  const host=createCircleHost({circleId:f.circleId,origin:ORIGIN,owner,timeoutMs,...(keyFactory===null?{}:{newRequestId:keyFactory}),transport:async(url,init)=>{
@@ -34,7 +34,7 @@ test('author loaded archive before leaving can freshly inspect and withdraw afte
  const detail=await rpc(f.db,'soe_circle_review_detail',[f.reviewerId,f.circleId]);await rpc(f.db,'soe_circle_review_decide',[f.reviewerId,f.circleId,detail.revision,requestId(),'hide','safety','A synthetic human reviewer recorded a host-facing explanation.',null,detail.circle.description.slice(0,20)]);
  await f.host.messageOpen(f.messageId);const state=f.host.model().messageSafety.state;assert.equal(state.message.is_mine,true);assert.equal(state.canReport,false);assert.equal(state.canWithdraw,true);f.host.messageConfirm(true);await f.host.messageSubmit('withdraw');
  const m=f.host.model().messageSafety;assert.equal(m.phase,'confirmed');assert.equal(m.receipt.withdrawn,true);assert.equal(m.state.message.visibility,'withdrawn');assert.equal(m.state.message.content,null);assert.equal(m.state.canWithdraw,false);assert.equal((await f.db.query('SELECT content FROM seminar_messages WHERE id=$1',[f.messageId])).rows[0].content.length>0,true,'Restricted original evidence remains; withdrawal is not erasure');
- assert.equal(f.calls.filter(x=>x.name==='soe_circle_message_state').length,1,'No added blanket membership gate');
+ assert.equal(f.calls.filter(x=>x.name==='soe_circle_message_state_profiles').length,1,'No added blanket membership gate');
 });
 test('lost committed report stays unknown after state refresh; only exact POST replay confirms current hidden tombstone',async t=>{
  const f=await fixture(t);await openSafety(f);prepareReport(f);let lost=false;f.transformRpc((name,args,result)=>{if(name==='soe_circle_message_action'&&!lost){lost=true;throw Error('SYNTHETIC_LOST_AFTER_COMMIT');}return result;});await f.host.messageSubmit('report');

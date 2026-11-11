@@ -28,6 +28,28 @@ function lacksModuleScopeClients(source) {
   );
 }
 
+// A retired route may import only local response/request types. Active routes
+// retain their separate authorization, consent and lazy-client checks below.
+function hasNoExternalEffects(source) {
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const imports = [...code.matchAll(/^import .*? from ['"]([^'"]+)['"];?$/gm)].map(match => match[1]);
+  return imports.length > 0 && imports.every(name => ['@/lib/http/routeError', 'next/server'].includes(name)) &&
+    !/\b(?:fetch|require|import|WebSocket|XMLHttpRequest)\s*\(/.test(code) &&
+    !/getSupabaseAdmin|createAnthropicClient|getResend|storeConversationEmbedding|\.rpc\(|\.from\(/.test(code);
+}
+
+function retiredMemoryRoute(source) {
+  return hasNoExternalEffects(source) && source.includes('export async function POST()') &&
+    source.includes('return privateJson(') && source.includes('memoryReviewRequired: true') && source.includes('{ status: 410 }');
+}
+
+function disabledProactiveRoute(source) {
+  return hasNoExternalEffects(source) && source.includes('const cronSecret = process.env.CRON_SECRET?.trim()') &&
+    source.includes("!cronSecret || req.headers.get('authorization') !== `Bearer ${cronSecret}`") &&
+    source.includes('processed: 0') && source.includes('{ status: 503 }') &&
+    precedes(source, '{ status: 401 }', '{ status: 503 }');
+}
+
 function appendVaryPattern(token) {
   return new RegExp(
     String.raw`appendVary\(\s*(?:response(?:\.headers)?|headers)\s*,\s*['"]${token}['"]\s*\)`,
@@ -186,6 +208,9 @@ const helpers = {
   liveScheduler: read('lib/live/scheduler.ts'),
   matching: read('lib/matching/index.ts'),
   salons: read('lib/salons/index.ts'),
+  guideProgram: read('lib/salons/browser-program.ts'),
+  bookSalonAccount: read('lib/book-salons/browser-account.ts'),
+  bookSalonDiscovery: read('lib/books/useBookSalonDiscovery.ts'),
   agentWallet: read('lib/wallets/agentWallet.ts'),
   disburse: read('lib/wallets/disburse.ts'),
   publicExplorerProfile: read('lib/explorer/publicProfile.ts'),
@@ -579,7 +604,10 @@ const checks = [
       !routes.salons.includes('guide_since') &&
       !routes.salons.includes('exp_tokens') &&
       pages.salon.includes("fetch('/api/salons?status=recruiting,active', { cache: 'no-store', signal: controller.signal })") &&
-      pages.salon.includes("fetch('/api/salons/my-salon', { headers: { 'Authorization': `Bearer ${authToken}` }, cache: 'no-store' })") &&
+      pages.salon.includes('useGuideProgram()') &&
+      helpers.guideProgram.includes("'/api/salons/my-salon'") &&
+      helpers.guideProgram.includes("credentials: 'same-origin', cache: 'no-store'") &&
+      helpers.guideProgram.includes('[AUTH_INTENT_HEADER]: activeIntent!') &&
       routes.salons.indexOf('Title required') < routes.salons.lastIndexOf('getSupabaseAdmin()') &&
       routes.salonDetail.includes('SALON_DETAIL_SELECT') &&
       routes.salonDetail.includes('SALON_MEMBER_SELECT') &&
@@ -708,7 +736,7 @@ const checks = [
       precedes(routes.bookSalonDetail, 'readCircleReviewJson(req)', "rpc('soe_circle_messages_post'") &&
       precedes(routes.bookSalonDetail, 'Empty message', "rpc('soe_book_salon_messages_post'") &&
       !routes.bookSalonDetail.includes(".from('seminar_messages')") &&
-      routes.bookSalonJoin.indexOf('Missing fields') < routes.bookSalonJoin.indexOf('getSupabaseAdmin()'),
+      precedes(routes.bookSalonJoin.slice(routes.bookSalonJoin.indexOf('export async function POST')), 'Missing fields', 'getSupabaseAdmin()'),
   },
   {
     name: 'book salon writes check the origin and bind the verified actor',
@@ -732,7 +760,8 @@ const checks = [
       // legacy join rechecks ordinary-salon kind and capacity under a lock.
       routes.bookSalonJoin.includes("rpc('soe_circle_legacy_salon_join', { p_actor: auth.memberId, p_cohort_id: cohortId })") &&
       routes.bookSalonJoin.includes("if (cohort.book_id === CIRCLE_BOOK_ID) return circleMutation(req, cohortId, 'join', body)") &&
-      !routes.bookSalonJoin.includes("from('book_cohort_members')") &&
+      !routes.bookSalonJoin.slice(routes.bookSalonJoin.indexOf('export async function POST')).includes("from('book_cohort_members')") &&
+      routes.bookSalonJoin.includes(".eq('member_id', auth.memberId).maybeSingle()") &&
       routes.bookSalonJoin.indexOf('getAuthenticatedMember(req)') < routes.bookSalonJoin.indexOf('getSupabaseAdmin()') &&
       [routes.bookSalons, routes.bookSalonJoin, routes.bookSalonDetail].every(source => {
         const post = source.slice(source.indexOf('export async function POST'));
@@ -744,13 +773,17 @@ const checks = [
       routes.bookSalonDetail.includes('p_member_name: memberName') &&
       routes.bookSalonDetail.includes('ordinaryPost.expectedMemberId !== auth.memberId.toLowerCase()') &&
       routes.bookSalonDetail.includes('parseSalonMessage(receipt.message, true)') &&
-      pages.bookSalons.includes('getSupabaseAccessToken') &&
-      pages.bookSalons.includes('Authorization: `Bearer ${accessToken}`') &&
-      pages.bookSalons.includes("cache: 'no-store'") &&
+      pages.bookSalons.includes('useBookSalonAccount()') &&
+      helpers.bookSalonAccount.includes("credentials: 'same-origin', cache: 'no-store'") &&
+      helpers.bookSalonAccount.includes('[AUTH_INTENT_HEADER]: intent!') &&
+      helpers.bookSalonAccount.includes('[EXPECTED_MEMBER_HEADER]: owner.memberId') &&
+      helpers.bookSalonAccount.includes('await verifyOwner(owner, g, controller.signal)') &&
       pages.bookSalonLegacy.includes('circleHeaders(true)') &&
       pages.bookSalonLegacy.includes("cache: 'no-store'") &&
-      pages.bookSalons.includes("fetch('/api/book-salons'") &&
-      pages.bookSalons.includes("fetch('/api/book-salons/join'") &&
+      helpers.bookSalonAccount.includes("json('/api/book-salons'") &&
+      helpers.bookSalonAccount.includes("json('/api/book-salons/join'") &&
+      pages.bookSalons.includes('useBookSalonDiscovery()') &&
+      helpers.bookSalonDiscovery.includes("cache: 'no-store', credentials: 'omit'") &&
       pages.bookSalonLegacy.includes('fetch(`/api/book-salons/${cohortId}`') &&
       pages.bookSalonLegacy.includes('expectedMemberId: expectedActor.memberId') &&
       pages.bookSalonLegacy.includes('!observed.is_mine') &&
@@ -1854,14 +1887,14 @@ const checks = [
       routes.practiceDailyEmail.indexOf('authorization') < routes.practiceDailyEmail.indexOf('getResend()') &&
       routes.testProvocation.indexOf('authorization') < routes.testProvocation.indexOf('getResend()') &&
       routes.weeklyProvocation.indexOf('authorization') < routes.weeklyProvocation.indexOf('getResend()') &&
-      routes.proactiveCron.indexOf('authorization') < routes.proactiveCron.indexOf('getResend()') &&
+      disabledProactiveRoute(routes.proactiveCron) &&
       routes.onboardingTrigger.indexOf('authorization') < routes.onboardingTrigger.indexOf('getResend()'),
   },
   {
-    name: 'proactive and onboarding emails are lazy, no-store, escaped, and flag-gated',
+    name: 'proactive email stays disabled and onboarding is lazy, private, escaped, and flag-gated',
     ok:
       [routes.proactiveCron, routes.onboardingTrigger].every(lacksModuleScopeClients) &&
-      [routes.proactiveCron, routes.onboardingTrigger].every(
+      [routes.onboardingTrigger].every(
         (source) =>
           source.includes('getSupabaseAdmin()') &&
           source.includes('getResend()') &&
@@ -1875,9 +1908,7 @@ const checks = [
           !source.includes('as any') &&
           !source.includes(': any'),
       ) &&
-      routes.proactiveCron.includes("process.env.PROACTIVE_EMAIL_NOTIFICATIONS_ENABLED === 'true'") &&
-      routes.proactiveCron.includes('safeMessage') &&
-      routes.proactiveCron.indexOf('PROACTIVE_EMAIL_NOTIFICATIONS_ENABLED') < routes.proactiveCron.indexOf('getResend()') &&
+      disabledProactiveRoute(routes.proactiveCron) &&
       routes.onboardingTrigger.includes("process.env.ONBOARDING_EMAIL_NOTIFICATIONS_ENABLED === 'true'") &&
       routes.onboardingTrigger.includes('safeRequestJson(req)') &&
       routes.onboardingTrigger.includes('renderMessageHtml') &&
@@ -2281,58 +2312,24 @@ const checks = [
       pages.match.includes("'Authorization': `Bearer ${authToken}`"),
   },
   {
-    name: 'memory extraction routes and helpers use lazy Anthropic and Supabase admin clients',
+    name: 'legacy memory extraction routes stay retired while retained helpers use lazy clients',
     ok:
-      [routes.thinkerExtractFacts, helpers.memoryExtractFacts, helpers.thinkerMemory].every(lacksModuleScopeClients) &&
-      [routes.thinkerExtractFacts, helpers.memoryExtractFacts, helpers.thinkerMemory].every(
+      [routes.thinkerExtractFacts, routes.thinkerMemory].every(retiredMemoryRoute) &&
+      [helpers.memoryExtractFacts, helpers.thinkerMemory].every(lacksModuleScopeClients) &&
+      [helpers.memoryExtractFacts, helpers.thinkerMemory].every(
         (source) => source.includes('createAnthropicClient()') && source.includes("resolveClaudeModel('memory'"),
       ) &&
-      [routes.thinkerExtractFacts, helpers.memoryExtractFacts, helpers.thinkerMemory].every((source) =>
+      [helpers.memoryExtractFacts, helpers.thinkerMemory].every((source) =>
         source.includes('getSupabaseAdmin()'),
       ),
   },
   {
-    name: 'thinker fact extraction route is auth-or-cron scoped, self-scoped, and private',
-    ok:
-      lacksModuleScopeClients(routes.thinkerExtractFacts) &&
-      routes.thinkerExtractFacts.includes('privateJson') &&
-      routes.thinkerExtractFacts.includes('getAuthenticatedMember(req)') &&
-      routes.thinkerExtractFacts.includes('const cronAuthorized = Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`);') &&
-      routes.thinkerExtractFacts.includes('memberId required for cron extraction') &&
-      routes.thinkerExtractFacts.includes('Cannot extract facts for another member') &&
-      routes.thinkerExtractFacts.includes('const targetMemberId = auth?.memberId || requestedMemberId') &&
-      routes.thinkerExtractFacts.includes(".eq('member_id', targetMemberId)") &&
-      routes.thinkerExtractFacts.includes('member_id: targetMemberId') &&
-      routes.thinkerExtractFacts.indexOf('thinkerId and messages required') <
-        routes.thinkerExtractFacts.indexOf('getAuthenticatedMember(req)') &&
-      routes.thinkerExtractFacts.indexOf('getAuthenticatedMember(req)') <
-        routes.thinkerExtractFacts.indexOf('createAnthropicClient()') &&
-      !routes.thinkerExtractFacts.includes('NextResponse') &&
-      !routes.thinkerExtractFacts.includes('as any') &&
-      !routes.thinkerExtractFacts.includes(': any') &&
-      !routes.thinkerExtractFacts.includes('error.message') &&
-      !routes.thinkerExtractFacts.includes('String(err)') &&
-      !routes.thinkerExtractFacts.includes('console.error'),
+    name: 'legacy automatic fact extraction is a private 410 with no model or storage effects',
+    ok: retiredMemoryRoute(routes.thinkerExtractFacts),
   },
   {
-    name: 'thinker memory embedding route is authenticated, self-scoped, and private',
-    ok:
-      lacksModuleScopeClients(routes.thinkerMemory) &&
-      routes.thinkerMemory.includes('privateJson') &&
-      routes.thinkerMemory.includes('getAuthenticatedMember(req)') &&
-      routes.thinkerMemory.includes('Cannot store memory for another member') &&
-      routes.thinkerMemory.includes('memberId: auth.memberId') &&
-      routes.thinkerMemory.includes("metadata: { source: 'conversation' }") &&
-      routes.thinkerMemory.indexOf('thinkerKey and messages required') <
-        routes.thinkerMemory.indexOf('getAuthenticatedMember(req)') &&
-      routes.thinkerMemory.indexOf('getAuthenticatedMember(req)') <
-        routes.thinkerMemory.lastIndexOf('storeConversationEmbedding') &&
-      !routes.thinkerMemory.includes('NextResponse') &&
-      !routes.thinkerMemory.includes('as any') &&
-      !routes.thinkerMemory.includes(': any') &&
-      !routes.thinkerMemory.includes('error.message') &&
-      !routes.thinkerMemory.includes('String(err)') &&
-      !routes.thinkerMemory.includes('console.error'),
+    name: 'legacy unreviewed memory embedding is a private 410 with no model or storage effects',
+    ok: retiredMemoryRoute(routes.thinkerMemory),
   },
   {
     name: 'memory episode writes use lazy Supabase admin clients',
@@ -2590,10 +2587,11 @@ const checks = [
         helpers.sharedMemory,
         helpers.memoryEmbeddings,
       ].every(lacksModuleScopeClients) &&
-      [routes.proactiveCron, routes.onboardingTrigger, routes.merchGenerateProducts, helpers.sharedMemory].every(
+      disabledProactiveRoute(routes.proactiveCron) &&
+      [routes.onboardingTrigger, routes.merchGenerateProducts, helpers.sharedMemory].every(
         (source) => source.includes('createAnthropicClient()') && source.includes('resolveClaudeModel('),
       ) &&
-      [routes.proactiveCron, routes.onboardingTrigger, helpers.sharedMemory, helpers.memoryEmbeddings].every(
+      [routes.onboardingTrigger, helpers.sharedMemory, helpers.memoryEmbeddings].every(
         (source) => source.includes('getSupabaseAdmin()'),
       ) &&
       !routes.merchGenerateProducts.includes('getSupabaseAdmin()'),

@@ -69,7 +69,15 @@ test('the affected metadata uses the existing text share card and six background
   }
   for (const path of ['app/92b/page.tsx', 'app/92b/fund/page.tsx', 'app/renaissance/page.tsx', 'app/projects/page.tsx', 'app/salons/page.tsx', 'app/music-therapy/page.tsx']) {
     const source = read(path);
-    assert.match(source, /backgroundImage: 'radial-gradient\([^'\n]+linear-gradient\(/, path);
+    if (source.includes("import styles from '@/components/ProjectDirection.module.css'")) {
+      assert.match(source, /className=\{styles\.page\}/, path);
+      const css = read('components/ProjectDirection.module.css');
+      assert.match(css, /\.page\s*\{[^}]*background:\s*#[0-9a-f]+/i);
+      assert.doesNotMatch(css, /url\s*\(|@import/i, 'the shared proposal background needs no third-party image');
+    } else {
+      assert.match(source, /backgroundImage: 'radial-gradient\([^'\n]+linear-gradient\(/, path);
+    }
+    assert.doesNotMatch(source, /background(?:Image)?\s*:\s*['"][^'"]*url\s*\(/i, path);
     assert.doesNotMatch(source, /\/images\/hero-/);
   }
 });

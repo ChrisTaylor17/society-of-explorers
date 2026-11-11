@@ -75,7 +75,12 @@ async function run({ group, file }) {
       const pass = isBun ? text.match(/\b(\d+) pass\b/) : text.match(/^# pass (\d+)$/m);
       const skip = isBun ? text.match(/\b(\d+) skip\b/) : text.match(/^# skipped (\d+)$/m);
       const fail = isBun ? text.match(/\b(\d+) fail\b/) : text.match(/^# fail (\d+)$/m);
-      const result = { group, file, status: expired ? 'timeout' : !error && code === 0 && pass && Number(pass[1]) > 0 && (!fail || Number(fail[1]) === 0) ? 'passed' : !error && code === 0 && Number(skip?.[1] ?? 0) > 0 && Number(fail?.[1] ?? 0) === 0 ? 'skipped' : 'failed', exitCode: code, signal, seconds: Math.round((Date.now() - start) / 10) / 100, passedTests: Number(pass?.[1] ?? 0), failedTests: Number(fail?.[1] ?? 0), skippedTests: Number(skip?.[1] ?? 0), log: path.relative(root, log), ...(error ? { error: error.message } : {}) };
+      // Node treats a file containing no registered tests as one passing file
+      // wrapper. That is process success, not an executed acceptance check.
+      const subtests = [...text.matchAll(/^# Subtest: (.+)$/gm)].map(match => match[1]);
+      const emptyNodeFile = !isBun && subtests.length === 1 && path.resolve(cwd, subtests[0]) === path.resolve(cwd, relative);
+      const passedTests = emptyNodeFile ? 0 : Number(pass?.[1] ?? 0);
+      const result = { group, file, status: expired ? 'timeout' : !error && code === 0 && passedTests > 0 && (!fail || Number(fail[1]) === 0) ? 'passed' : !error && code === 0 && Number(skip?.[1] ?? 0) > 0 && Number(fail?.[1] ?? 0) === 0 ? 'skipped' : 'failed', exitCode: code, signal, seconds: Math.round((Date.now() - start) / 10) / 100, passedTests, failedTests: Number(fail?.[1] ?? 0), skippedTests: Number(skip?.[1] ?? 0), log: path.relative(root, log), ...(error ? { error: error.message } : {}), ...(emptyNodeFile ? { error: 'No registered test cases executed' } : {}) };
       record(result); resolve();
     };
     child.once('error', error => finish(null, null, error));

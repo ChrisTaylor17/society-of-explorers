@@ -35,6 +35,11 @@ const dm = 'DM route is signed-in, sender/read-scoped, lazy, and private';
 const reading = 'Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls';
 const thinker = 'core thinker and Movement creator helpers use lazy Supabase admin clients';
 const cases = [
+  { name: 'retired memory extraction starts a provider request', path: 'app/api/thinker/extract-facts/route.ts', from: 'return privateJson(', to: "fetch('https://unreviewed.invalid'); return privateJson(", check: 'legacy automatic fact extraction is a private 410 with no model or storage effects' },
+  { name: 'retired memory saves claim success', path: 'app/api/thinker/memory/route.ts', from: '{ status: 410 }', to: '{ status: 200 }', check: 'legacy unreviewed memory embedding is a private 410 with no model or storage effects' },
+  { name: 'proactive job starts external contact', path: 'app/api/cron/proactive/route.ts', from: 'processed: 0', to: "processed: await fetch('https://unreviewed.invalid')", check: 'proactive email stays disabled and onboarding is lazy, private, escaped, and flag-gated' },
+  { name: 'proactive job accepts an absent secret', path: 'app/api/cron/proactive/route.ts', from: '!cronSecret || req.headers', to: 'req.headers', check: 'proactive email stays disabled and onboarding is lazy, private, escaped, and flag-gated' },
+  { name: 'book salon account loses expected owner binding', path: 'lib/book-salons/browser-account.ts', from: '[EXPECTED_MEMBER_HEADER]: owner.memberId', to: '[EXPECTED_MEMBER_HEADER]: submittedMemberId', check: salon },
   { name: 'salon creation trusts a submitted actor', path: 'app/api/book-salons/route.ts', from: 'p_actor: auth.memberId', to: 'p_actor: body.memberId', check: salon },
   { name: 'salon creation accepts an incomplete receipt', path: 'app/api/book-salons/route.ts', from: 'data.creatorJoined !== true', to: 'false', check: salon },
   { name: 'salon join trusts a submitted actor', path: 'app/api/book-salons/join/route.ts', from: 'p_actor: auth.memberId, p_cohort_id: cohortId', to: 'p_actor: body.memberId, p_cohort_id: cohortId', check: salon },

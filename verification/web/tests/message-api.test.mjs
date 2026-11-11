@@ -5,7 +5,7 @@ import { IDS, CONTENT, requestId } from './support/message-db.mjs';
 
 const path=`/api/circles/${IDS.circle}/messages/${IDS.message}`;
 const time='2026-11-03T12:00:00.000Z';
-const state=()=>({circleId:IDS.circle,message:{id:IDS.message,member_name:'Synthetic Author',content:CONTENT,created_at:time,is_mine:false,visibility:'visible'},revision:0,contentHash:'a'.repeat(64),canReport:true,canWithdraw:false,explanations:[]});
+const state=()=>({circleId:IDS.circle,message:{id:IDS.message,member_name:'Synthetic Author',content:CONTENT,created_at:time,is_mine:false,visibility:'visible',publicProfileId:null},revision:0,contentHash:'a'.repeat(64),canReport:true,canWithdraw:false,explanations:[]});
 function setup() {
  const app=offlineApp(),calls=[]; let actor=IDS.reader,reply={data:state(),error:null},limited=false;
  app.setMock('@/lib/getAuthenticatedMember',()=>({getAuthenticatedMember:async()=>actor?{memberId:actor,member:{id:actor}}:null}));

@@ -8,26 +8,28 @@ const MESSAGE = '55555555-5555-4555-8555-555555555555';
 const ORIGIN = 'https://offline.invalid';
 const DATE = '2026-11-03T15:00:00.000Z';
 const circleBook = 'soe-circles-path';
+const intent = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const cookies = { soe_auth_intent: intent, soe_auth_provider: 'supabase', soe_auth_selection_v1: `v1.${intent}.supabase.bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb` };
 const plain = value => JSON.parse(JSON.stringify(value));
 const context = id => ({ params: Promise.resolve({ cohortId: id }) });
 
 function fixture() {
   const app = offlineApp();
   const { ADA, JULES } = app.fakes;
-  app.setUser({ id: 'fixture-jules' });
+  app.setUser({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' });
   const cohort = { id: CIRCLE, book_id: circleBook, title: 'Fictional Circle', description: null,
     max_members: 8, start_date: '2026-11-03', thinker_id: 'socrates', status: 'forming', created_at: DATE, circle_hidden: false };
-  const db = app.fakes.resetDb({ members: [{ id: ADA, display_name: 'Ada' }, { id: JULES, supabase_auth_id: 'fixture-jules', display_name: 'Jules' }],
+  const db = app.fakes.resetDb({ members: [{ id: ADA, display_name: 'Ada' }, { id: JULES, supabase_auth_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', display_name: 'Jules' }],
     book_cohorts: [cohort], book_cohort_members: [{ id: 'membership-jules', cohort_id: CIRCLE, member_id: JULES }], seminar_messages: [] });
   const calls = [];
   const data = { cohort, members: [{ id: 'membership-jules', members: { display_name: 'Jules' } }], messages: [], history: { truncated: false, limit: 100 } };
-  const a = { app, ADA, JULES, db, calls, data, respond: name => ({ data: name === 'soe_circle_messages_read' ? data : null, error: null }) };
+  const a = { app, ADA, JULES, db, calls, data, respond: name => ({ data: name === 'soe_circle_messages_read_profiles' ? data : null, error: null }) };
   db.rpc = async (name, args) => { calls.push({ name, args: plain(args) }); return a.respond(name, args); };
   a.route = app.load('app/api/book-salons/[cohortId]/route.ts');
-  a.request = (body, headers = { origin: ORIGIN }) => app.fakes.makeReq(body, { url: `${ORIGIN}/api/book-salons/${CIRCLE}`, headers });
+  a.request = (body, headers = { origin: ORIGIN }) => app.fakes.makeReq(body, { url: `${ORIGIN}/api/book-salons/${CIRCLE}`, headers, cookies: headers.authorization ? {} : cookies });
   return a;
 }
-const message = (extra = {}) => ({ id: MESSAGE, member_name: 'Jules', content: 'Fictional visible text.', created_at: DATE, is_mine: true, visibility: 'visible', ...extra });
+const message = (extra = {}) => ({ id: MESSAGE, member_name: 'Jules', content: 'Fictional visible text.', created_at: DATE, is_mine: true, visibility: 'visible', publicProfileId: null, ...extra });
 function privateHeaders(response) {
   assert.match(response.headers.get('cache-control'), /private.*no-store/);
   assert.match(response.headers.get('vary'), /Cookie/);
@@ -41,7 +43,7 @@ test('Circle reads use only the atomic service RPC and whitelist its legacy-comp
   const response = await a.route.GET(a.request(undefined), context(CIRCLE));
   assert.equal(response.status, 200); privateHeaders(response);
   const value = await response.json();
-  assert.deepEqual(a.calls, [{ name: 'soe_circle_messages_read', args: { p_actor: a.JULES, p_circle_id: CIRCLE } }]);
+  assert.deepEqual(a.calls, [{ name: 'soe_circle_messages_read_profiles', args: { p_actor: a.JULES, p_circle_id: CIRCLE } }]);
   assert.equal(value.messages[0].content, 'Fictional visible text.');
   assert.deepEqual(value.history, { limit: 100, truncated: false });
   assert.doesNotMatch(JSON.stringify(value), /PRIVATE_|member_id|circle_hidden/);
@@ -132,7 +134,7 @@ test('Circle posting forwards only canonical identity and content to the atomic 
 test('bearer-only nonbrowser writes remain permitted while failed or malformed confirmations stay unknown', async () => {
   const a = fixture();
   // This case tests origin handling with an already verified nonbrowser actor.
-  a.app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({ auth: { getUser: async token => ({ data: { user: token === 'FICTIONAL_TOKEN' ? { id: 'fixture-jules' } : null }, error: null }) } }) }));
+  a.app.setMock('@supabase/supabase-js', () => ({ createClient: () => ({ auth: { getUser: async token => ({ data: { user: token === 'FICTIONAL_TOKEN' ? { id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' } : null }, error: null }) } }) }));
   for (const data of [null, {}, { outcome: 'confirmed', circleId: OTHER, message: message() },
     { outcome: 'confirmed', circleId: CIRCLE, message: message({ content: 'hello', visibility: 'hidden' }) }]) {
     a.respond = () => ({ data, error: null });
@@ -161,7 +163,7 @@ test('ordinary salon retains public reads through its explicit service projectio
     : {outcome:'confirmed',cohortId:CIRCLE,message:{...ordinaryMessage,content:'Ordinary reply.',is_mine:true}}, error:null });
   const read = await a.route.GET(a.request(undefined), context(CIRCLE));
   assert.equal(read.status, 200); assert.equal((await read.json()).messages[0].content, 'Ordinary salon text.');
-  a.app.setUser({ id: 'fixture-jules' });
+  a.app.setUser({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' });
   const write = await a.route.POST(a.request({ content: 'Ordinary reply.', expectedMemberId:a.JULES }), context(CIRCLE));
   assert.equal(write.status, 200); assert.equal((await write.json()).message.content, 'Ordinary reply.');
   assert.deepEqual(a.calls.map(call=>call.name), ['soe_book_salon_messages_read','soe_book_salon_messages_post']);

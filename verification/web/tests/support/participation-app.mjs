@@ -6,7 +6,7 @@ export { IDS };
 // Real TypeScript route handlers and real candidate SQL. Only canonical server
 // identity and the PostgREST transport are fixtures. Every database read/write
 // runs as the disposable service role, not as the database owner.
-export async function participationApp() {
+export async function participationApp({ previousEditions = false } = {}) {
   const db = await createDb(), app = offlineApp();
   try {
     // Add the contained legacy profile fields required by the real publication
@@ -27,6 +27,8 @@ export async function participationApp() {
       'circle-luke-good-samaritan-edition-apply.sql',
       'circle-legacy-salon-membership.sql',
     ]) {
+      // Explicit historical fixture for the catalog-version failure test.
+      if (previousEditions && name === 'circle-luke-good-samaritan-edition-apply.sql') continue;
       await db.exec(await readFile(new URL('../../../../docs/sql/' + name, import.meta.url), 'utf8'));
     }
   } catch (error) {

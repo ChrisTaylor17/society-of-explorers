@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { participationApp, IDS } from './participation-app.mjs';
 import { requestId } from './participation-db.mjs';
 export { IDS, requestId };
@@ -6,15 +5,7 @@ export { IDS, requestId };
 // Actual Route Handler and candidate SQL. Only canonical identity and the
 // PostgREST transport are synthetic. No live project, credential or provider.
 export async function discoveryApp({ previousEditions = false } = {}) {
-  const base = await participationApp();
-  if (!previousEditions) {
-    try {
-      await base.db.exec(await readFile(new URL('../../../../docs/sql/circle-luke-good-samaritan-edition-apply.sql', import.meta.url), 'utf8'));
-    } catch (error) {
-      await base.close();
-      throw error;
-    }
-  }
+  const base = await participationApp({ previousEditions });
   let transform = null, sequence = 0;
   const originalRpc = base.admin.rpc;
   base.admin.rpc = async (name, args) => {

@@ -1,12 +1,15 @@
-import { offlineApp } from './offline-app.mjs';
-import { createDb, rpc, IDS } from './message-db.mjs';
+import { participationApp } from './participation-app.mjs';
+import { rpc, IDS } from './message-db.mjs';
 export { IDS };
 
 // Actual route modules and candidate SQL. Only server identity and the transport
 // to the disposable PostgreSQL backend are substituted; no authorization result
 // or moderation decision is mocked. This is not live-provider acceptance.
 export async function messageApp() {
-  const db = await createDb(), app = offlineApp();
+  // Current routes intentionally require the public-profile RPC projections.
+  // Reuse the real current migration fixture instead of aliasing new RPC names
+  // to older functions or bypassing their publication checks.
+  const { db, app } = await participationApp();
   let actor = IDS.reader;
   const calls = [], argumentNames = new Map();
   app.setMock('@/lib/getAuthenticatedMember', () => ({ getAuthenticatedMember: async () => actor

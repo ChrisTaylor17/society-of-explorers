@@ -8,7 +8,7 @@ const {sourceLoader}=await import('../../../platforms/tests/load-source.mjs');
 const {createCircleHost}=sourceLoader()('platforms/native/src/circles/host.ts');
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};}
 async function fixture(t){
- const f=await createPlatformsThreadApp();t.after(()=>f.close());
+ const f=await createPlatformsThreadApp({profileAware:true});t.after(()=>f.close());
  let scope='fixture-author-lifetime',credentialGate=null;const listeners=new Set(),requests=[];
  const owner={scope:()=>scope,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},async bearer(expected){if(credentialGate)await credentialGate.promise;return expected===scope?TOKENS.author:null;}};
  const host=createCircleHost({circleId:f.circleId,origin:ORIGIN,owner,newRequestId:async()=>requestId(),transport:async(url,init)=>{

@@ -132,7 +132,7 @@ test('changed edition, invalid bounds and nontext quotation fail explicitly; blo
 
 function isolatedSource() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'soe-passage-source-'));
-  for (const directory of ['lib', 'tests/security']) fs.cpSync(path.resolve('../..', directory), path.join(root, directory), { recursive: true });
+  for (const directory of ['lib', 'tests/security', 'content/root-kernel']) fs.cpSync(path.resolve('../..', directory), path.join(root, directory), { recursive: true });
   fs.copyFileSync('../../package.json', path.join(root, 'package.json'));
   fs.symlinkSync(fs.realpathSync('../../node_modules'), path.join(root, 'node_modules'));
   const book = pins[0].bookId, folder = path.join(root, 'content/great-books', book); fs.mkdirSync(folder, { recursive: true });
