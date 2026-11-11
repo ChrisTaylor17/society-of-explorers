@@ -7,6 +7,7 @@ import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewa
 import { readGuideReply, guideReplyNotice } from '@/lib/claude/guideReply';
 import { useGuideRequest } from '@/lib/claude/useGuideRequest';
 import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
+import CopyWaddleButton from './CopyWaddleButton';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -50,7 +51,6 @@ export default function WaddleForge() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [publishError, setPublishError] = useState('');
-  const [copied, setCopied] = useState(false);
   const [cardStatus, setCardStatus] = useState<'idle' | 'generating' | 'done'>('idle');
   const [feed, setFeed] = useState<WaddleFeedItem[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -471,13 +471,7 @@ export default function WaddleForge() {
               }}>
                 {saved ? 'Published' : saving ? 'Publishing…' : 'Publish recording and transcript'}
               </button>
-              <button onClick={() => {
-                const text = `"${transcription}" — recorded in the Society of Explorers temple. societyofexplorers.com/waddle`;
-                try { navigator.clipboard.writeText(text); } catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
-                setCopied(true); setTimeout(() => setCopied(false), 2000);
-              }} style={{
-                fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: copied ? '#6B9E6B' : gold, background: 'none', border: `1px solid ${copied ? '#6B9E6B' : gold}33`, padding: '8px 16px', cursor: 'pointer',
-              }}>{copied ? '⬡ COPIED!' : '⬡ SHARE'}</button>
+              <CopyWaddleButton key={transcription} transcription={transcription} />
               {reactionComplete && thinkerReaction && (
                 <>
                   <button onClick={() => generateCard('download')} disabled={cardStatus === 'generating'} style={{
