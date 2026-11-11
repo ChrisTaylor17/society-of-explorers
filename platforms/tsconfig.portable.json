@@ -5,5 +5,5 @@
     "noEmit": true, "skipLibCheck": true, "baseUrl": "..", "paths": { "@/*": ["./*"] }
   },
   "include": ["shared/**/*.ts", "native/src/circles/**/*.ts", "native/src/auth/**/*.ts", "native/src/reading/**/*.ts"],
-  "exclude": ["native/src/circles/android-member.ts", "native/src/auth/android-owned-account.ts", "native/src/circles/installed-member.ts", "native/src/auth/installed-owned-account.ts"]
+  "exclude": ["native/src/circles/android-member.ts", "native/src/auth/android-owned-account.ts", "native/src/circles/installed-member.ts", "native/src/auth/installed-owned-account.ts", "native/src/auth/account-deletion.ts"]
 }

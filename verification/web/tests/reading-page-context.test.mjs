@@ -32,9 +32,22 @@ test('reader page preserves duplicate context fields until strict validation, wi
   const app = setup(), e = app.load('lib/circles/reading-program.ts').getReadingEdition('hamlet');
   const Page = app.load('app/great-books/[bookId]/page.tsx').default;
   const result = await Page({ params: Promise.resolve({ bookId: 'hamlet' }), searchParams: Promise.resolve({ edition: e.editionId, from: ['40', '40'], to: '150', memberId: 'forged-actor', onlineUrl: 'PRIVATE_UNTRUSTED_HINT' }) });
-  const parsed = app.load('lib/circles/reading-program.ts').parseReaderContext('hamlet', new URLSearchParams(result.props.search));
+  const BookReader = app.load('app/great-books/BookReader.tsx').default;
+  const readers = [];
+  function collect(element) {
+    if (!React.isValidElement(element)) return;
+    if (element.type === BookReader) readers.push(element);
+    React.Children.forEach(element.props.children, collect);
+  }
+  collect(result);
+  assert.equal(readers.length, 1, 'the page keeps one scripted reader alongside its no-script reading');
+  const search = readers[0].props.search;
+  assert.equal(typeof search, 'string');
+  const query = new URLSearchParams(search);
+  assert.deepEqual(query.getAll('from'), ['40', '40'], 'duplicate inputs reach strict validation intact');
+  const parsed = app.load('lib/circles/reading-program.ts').parseReaderContext('hamlet', query);
   assert.equal(parsed.invalid, true);
-  assert.doesNotMatch(result.props.search, /memberId|onlineUrl|PRIVATE_UNTRUSTED_HINT/);
+  assert.doesNotMatch(search, /memberId|onlineUrl|PRIVATE_UNTRUSTED_HINT/);
 });
 test('all starter guides retain a validated Circle return; only the two verified editions offer local reading', async () => {
   const app = setup(), Page = app.load('app/circles/path/[week]/page.tsx').default;

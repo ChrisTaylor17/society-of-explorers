@@ -38,8 +38,24 @@ test('STATIC: installed-variant callback is exact and cold/warm intents are scru
  assert.match(manifest,/android:scheme="\$\{applicationId\}\.email" android:host="auth" android:path="\/callback"/);
  assert.doesNotMatch(manifest,/autoVerify="true"/);
  const cold=activity.slice(activity.indexOf('override fun onCreate'),activity.indexOf('override fun onPause'));
- assert(cold.indexOf('intent?.data = null')<cold.indexOf('super.onCreate'));assert(cold.indexOf('intent?.clipData = null')<cold.indexOf('super.onCreate'));assert(cold.indexOf('EmailLinkLifecycle.capture')<cold.indexOf('super.onCreate'));
- assert.match(activity,/Intent\(incoming\)\.apply \{ data = null; clipData = null \}/);assert.match(activity,/setIntent\(sanitized\)\s+super\.onNewIntent\(sanitized\)/);
+ const coldConsume = cold.indexOf('intent?.let { setIntent(consumeLink(it)) }');
+ assert(coldConsume >= 0 && coldConsume < cold.indexOf('super.onCreate'), 'sanitize before cold React delivery');
+ const consume = activity.slice(activity.indexOf('  private fun consumeLink('), activity.indexOf('  /**', activity.indexOf('  private fun consumeLink(')));
+ assert.match(consume,/BuildConfig\.SOE_REEL_LINKS_ENABLED && incoming\.action == Intent\.ACTION_VIEW/);
+ assert.match(consume,/publicAppLink\(raw, BuildConfig\.SOE_MEMBER_ORIGIN\) else null/);
+ assert.match(consume,/if \(publicLink == null\) EmailLinkLifecycle\.capture\(applicationContext, raw\)/);
+ assert.match(consume,/Intent\(incoming\)\.apply \{\s+data = publicLink\?\.let \{ Uri\.parse\(it\) \}\s+clipData = null\s+\}/);
+ assert.doesNotMatch(consume,/data = (?:raw|incoming\.data)|putExtra|clipData = incoming/);
+ assert.match(activity,/val sanitized = consumeLink\(incoming\)\s+setIntent\(sanitized\)\s+super\.onNewIntent\(sanitized\)/);
+ // Only the exact reviewed public paths may survive that filter. Auth schemes,
+ // credential queries/fragments and arbitrary addresses remain native-only.
+ const publicLinks = read(native+'PublicReelLink.kt');
+ assert(publicLinks.includes('val invite = "${origin}/circles/invite/"'));
+ assert(publicLinks.includes('val prefix = "${origin}/clips/watch/"'));
+ assert.match(publicLinks,/Regex\("\[0-9a-f\].*\"\)\.matches\(id\)/);
+ assert.match(publicLinks,/if \(!secure\.startsWith\(prefix\)\) return null/);
+ assert.match(publicLinks,/slug == "night-sky-traffic"/);
+ assert.match(publicLinks,/else null/);
  const capture=session().slice(session().indexOf('  fun capture(raw:'),session().indexOf('  /** Validation'));
  for(const guard of ['uri.rawAuthority == "auth"','uri.rawPath == "/callback"','uri.rawFragment == null','!fields.containsKey(pair[0])','value.flowId != flow || !value.started || value.phase != "waiting"'])assert(capture.includes(guard));
  assert.doesNotMatch(capture,/transmit\(|enqueue\(|sendAuth\(|sendEmailAuth\(|Log\./);

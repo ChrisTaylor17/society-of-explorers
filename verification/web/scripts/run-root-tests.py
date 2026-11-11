@@ -1,7 +1,8 @@
 """Run root tests in a clean, externally denied Node process.
 
---non-dom selects transitive non-JSDOM suites while the reused exact DOM
-runtime is dataless. It does not change, skip assertions inside, or fake a test.
+--non-dom is a historical partial-run option for environments without a
+materialized DOM runtime. The current root scripts/run-tests.mjs includes DOM.
+This option does not change assertions inside a suite or fake a test.
 The JSON selection makes the excluded files explicit.
 """
 from pathlib import Path

@@ -1,20 +1,66 @@
 # Canonical web verification
 
-This directory imports the regression drivers from the complete web milestone and its current discovery-search descendant. The drivers resolve the canonical app root directly, two levels above this directory. There is no recursive app-root symlink. `tooling/node_modules` and the root `node_modules` reuse existing local runtimes; no dependency installation is implied.
+Run the current offline checks from a materialized repository or verification snapshot root, using the existing installed application and verification dependencies:
 
-Run from this directory:
+```sh
+npm test
+npm run test:web
+npm run test:platforms
+npm run test:all
+```
+
+`npm test` runs security and growth suites. `test:web` includes the DOM suites; it no longer requires a `--non-dom` exclusion. `test:platforms` runs the Node-based shared/native/Quest contract tests, not an Android or iOS build, a simulator, or a real headset. `platforms/tsconfig.portable.json` similarly excludes React Native adapters, including the account-deletion Linking handoff; those still require the actual native dependency/build lane. The combined command runs all four groups.
+
+For a bounded selection or separately named evidence:
+
+```sh
+node scripts/run-tests.mjs --groups=web --files=verification/web/tests/message-api.test.mjs --output=message-api
+node scripts/run-tests.mjs --groups=web,platforms --concurrency=2 --timeout=180 --output=review
+node scripts/run-tests.mjs --groups=security,growth,web,platforms --list
+```
+
+The runner starts each suite in its own clean process, supplies no issued credentials, denies external HTTP/fetch at startup, and does not load dotenv files or install packages. It continues after a failed or timed-out suite and reports the failure in its exit code. It stops only the process group it created on timeout. Empty Node file wrappers are not counted as successful tests. Entirely skipped historical suites remain separately labelled. Logs and incremental `summary.json` files are under ignored `verification/web/evidence/<output>/`.
+
+The canonical checkout is under cloud-managed Documents. Some unchanged source and historical documents there are offloaded: direct canonical runs can fail residency checks or stall while macOS retrieves a file. Use the materialized finish-checks snapshot recorded in the integration report for current repeatable local verification. Do not replace or silently ignore an offloaded file or an uncommitted change.
+
+These are local checks. The guard is not OS-level network isolation. Synthetic identities, PGlite fixtures, DOM mocks and local transport do not establish hosted privacy, real sign-in, customer use, transactions or device acceptance. SQL is executed only in disposable local databases; migration files and fixtures retain their source/hash guards.
+
+## Installed tools and reproducibility
+
+The application's `node_modules` and `verification/web/tooling/node_modules` are ignored local dependency links. On the current Mac they are already prepared; the previous root link is preserved as ignored `node_modules.before-finish-2026-11-11`. The previous tooling link was preserved as `tooling/node_modules.before-finish-2026-11-11`; its offloaded files were not replaced or deleted. Current test tools live in the private finish-checks verification folder recorded in `docs/integration/finish-checks-2026-11-11.md`.
+
+The versioned `verification/web/runtime/package-lock.json` restores the **existing exact** Bun 1.4.4 and JSDOM 30.1.3 graph. It is a macOS Apple Silicon lock because Bun is pinned as `@oven/bun-darwin-aarch64`, rather than an automatic platform download. The runner also accepts an existing Bun on PATH or `SOE_BUN_BIN`. No install runs automatically.
+
+When an operator needs to restore those locked tools, this is the explicit no-lifecycle-script command, run from the repository root:
+
+```sh
+npm ci --prefix verification/web/runtime --ignore-scripts --no-audit --no-fund
+```
+
+Use an empty npm user/global configuration if a workstation normally carries private registry credentials. The restored packages are from the public npm registry. The application dependencies must also already be available from the root lockfile. Full web/database verification additionally uses the existing **PGlite 0.4.1** package under `tooling/node_modules/@electric-sql/pglite`, plus existing bundle tools for the separately invoked browser scripts. The two-dependency runtime lock is not a fresh-machine installer for all historical browser tooling. Preserve an existing tooling directory or link before repointing it; never merge installs into a shared historical runtime.
+
+For an existing complete, materialized test tool directory on another checkout, the explicit link is:
+
+```sh
+# Set this to the reviewed existing node_modules directory, not a download URL.
+SOE_TEST_MODULES='/absolute/path/to/existing/test/node_modules'
+# Only when this destination does not already exist; preserve an old link first.
+ln -s "$SOE_TEST_MODULES" verification/web/tooling/node_modules
+```
+
+JSDOM 30.1.3 declares Node `^22.22.2 || ^24.15.0 || >=26.0.0`. This Mac's observed runtime is Node 22.22.1, one patch below the declared minimum. The current local DOM results are recorded as observed compatibility, not supported-engine certification. No global Node installation or upgrade was made. A release verification machine should use a Node version satisfying the declared range.
+
+## Builds, browser stories and historical evidence
+
+The offline build remains a separate action, run from this directory:
 
 ```sh
 python3 scripts/build-offline.py --webpack --fixture-public-config
-python3 scripts/run-root-tests.py --non-dom --output-name canonical-backend-tests
-python3 scripts/run-backend-checks.py suites --output-dir evidence/canonical-suites
 ```
 
-These wrappers start app/test code in a clean environment under `scripts/deny-build-network.cjs`. Invalid public build placeholders are fixtures, not issued credentials. Real account/provider/production calls remain prohibited. Browser scripts require explicitly configured already-installed Playwright and Chromium paths.
+Invalid public build placeholders are fixtures, not issued credentials. Browser scripts require explicitly configured, already-installed Playwright and Chromium paths. `scripts/run-root-tests.py --non-dom` remains a historical partial-run option for a machine without a materialized DOM runtime; its selection receipt must not be described as a complete test pass. Prefer the current bounded runner above.
 
-`evidence/` holds fresh local outputs and is ignored by Git. Source/test code is versioned; historical evidence stays in its original milestone directories. Older delivery/patch verifiers in `scripts/` describe those historical envelopes; they are not a canonical release gate and require their original metadata. Use canonical source provenance in `docs/integration/` and fresh acceptance results instead.
-
-The exact reused JSDOM runtime currently has dataless files. `--non-dom` records the excluded suite list rather than claiming a complete DOM run. Built-browser checks cover their explicitly listed stories; they do not replace all excluded suites or device acceptance.
+Source and test code are versioned; historical evidence stays in its original milestone directories. Older delivery/patch verifiers describe their original envelopes and are not a canonical release gate. Use current provenance in `docs/integration/` and fresh acceptance receipts. The five ordering observations in `circle-participation-ordering-audit.test.mjs` deliberately skip when the pinned historical implementation has changed; the current fixed contract is exercised in `circle-hosting-backend.test.mjs`.
 
 The strict Circle rehearsal reads the tracked sanitized catalog in `tests/fixtures/circle-live-catalog-2026-11-04.json`, not an ignored evidence file. Run `node --require ./scripts/deny-build-network.cjs scripts/verify-circle-live-chain.mjs` under the same clean environment. The fixture explicitly labels its redacted-default, minimal external-table and runtime exceptions. Ordinary salon SQL/HTTP is `tests/book-salon-conversation.test.mjs`; actual component and composed scripts are `tests/browser-legacy-salon.mjs` and `tests/browser-legacy-salon-composed.mjs`, after `scripts/bundle-legacy-salon-test.mjs` using the existing cached tools. Their generated bundle and outputs remain ignored. Current source/evidence digests and boundaries are recorded in `docs/integration/circle-salon-verification.json`.
 
