@@ -46,13 +46,19 @@ npm run start -- --hostname 127.0.0.1
 
 Open `http://127.0.0.1:3000/try`. These standard scripts load the checkout's normal environment; they are not an isolated recovery or provider test. Public readings work without member credentials. Member-dependent actions should report unavailable in an unconfigured environment. Do not point a test at production merely to remove that message.
 
-The verified November 11 app preview is running on this Mac at [the local trial](http://127.0.0.1:41780/try). Its source is commit `8bb9f12`; the production build/type check passed with all 1,266 recorded inputs unchanged and matched to Git. This address is local to the Mac, not a shareable phone URL; use the public reading Site above on a phone. To restart the same verified preview after it is stopped:
+The verified November 11 app preview is served on this Mac, while its launcher is running, at [the local trial](http://127.0.0.1:41780/try). Its source is commit `8bb9f12`; the production build/type check passed with all 1,266 recorded inputs unchanged and matched to Git. This address is local to the Mac, not a shareable phone URL; use the public reading Site above on a phone. To restart the same verified preview after it is stopped:
 
 ```sh
 python3 '/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/start_verified_preview.py'
 ```
 
 That launcher checks the successful build receipt and all recorded source hashes, refuses runtime environment files, supplies only invalid public placeholders, denies outbound application requests and binds to the Mac alone. Stop its own process with Control-C. It does not create an account, restore a database or deploy the app.
+
+Neither local preview keeps running by itself; when checked on November 15 the address above was not being served. A newer verified build of commit `d9c3071`, which adds the native Circle and deletion-progress corrections, is kept in a separate folder so the November 11 build stays intact. Start it at `http://127.0.0.1:41790/try` with the same safeguards:
+
+```sh
+python3 '/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-15-handoff-web-build/start_handoff_preview.py'
+```
 
 The separate [static public-site candidate](http://127.0.0.1:8786/try) is also available on this Mac. It is the proposed update for `www.societyofexplorers.com`, with the complete Apology and Scripture comparison. [Review, source and restart instructions](docs/integration/static-public-reading-candidate-2026-11-11.md). It has not been published; new metered hosting usage remains an owner decision.
 
