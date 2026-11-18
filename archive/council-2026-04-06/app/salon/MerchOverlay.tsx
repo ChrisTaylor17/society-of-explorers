@@ -1,0 +1,978 @@
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+interface Product {
+  id: string;
+  thinker: string;
+  symbol: string;
+  accent: string;
+  type: string;
+  name: string;
+  tagline: string;
+  price: number;
+  // Set these once you create the products in your Printful store:
+  // Printful → Dashboard → Stores → your store → Sync products → variant ID
+  printfulVariantId: number | null;
+}
+
+interface ShippingForm {
+  name:         string;
+  email:        string;
+  address1:     string;
+  city:         string;
+  state_code:   string;
+  country_code: string;
+  zip:          string;
+}
+
+interface GeneratedProduct {
+  name:        string;
+  type:        string;
+  tagline:     string;
+  price:       number;
+  description: string;
+}
+
+// ── Products ───────────────────────────────────────────────────────────────────
+// printfulVariantId: replace with real IDs from Printful Dashboard →
+//   Stores → your store → Sync products → click product → variant ID column.
+const PRODUCTS: Product[] = [
+  {
+    id: 'socrates-journal', thinker: 'Socrates', symbol: 'Σ', accent: '#C9A84C',
+    type: 'Journal', name: 'The Examined Life',
+    tagline: 'Know thyself — 160 pages, lay-flat binding, dark linen cover.',
+    price: 24.99, printfulVariantId: 12345678, // ← replace with real variant ID
+  },
+  {
+    id: 'plato-poster', thinker: 'Plato', symbol: 'Π', accent: '#7B9FD4',
+    type: 'Art Print', name: 'Allegory of the Cave',
+    tagline: 'Archival-quality 18×24 print on 100lb matte stock.',
+    price: 19.99, printfulVariantId: 12345679, // ← replace with real variant ID
+  },
+  {
+    id: 'nietzsche-mug', thinker: 'Nietzsche', symbol: 'N', accent: '#C0392B',
+    type: 'Mug', name: 'Will to Power',
+    tagline: '15oz ceramic, dishwasher safe. Become who you are.',
+    price: 18.99, printfulVariantId: 12345680, // ← replace with real variant ID
+  },
+  {
+    id: 'aurelius-notebook', thinker: 'Marcus Aurelius', symbol: 'M', accent: '#8E7CC3',
+    type: 'Notebook', name: 'Meditations',
+    tagline: 'Stoic hardcover, 200 ruled pages. The obstacle is the way.',
+    price: 22.99, printfulVariantId: 12345681, // ← replace with real variant ID
+  },
+  {
+    id: 'einstein-tote', thinker: 'Einstein', symbol: 'E', accent: '#5DADE2',
+    type: 'Tote Bag', name: 'Thought Experiment',
+    tagline: 'Heavy cotton canvas, 15×16". Carry your relativity daily.',
+    price: 16.99, printfulVariantId: 12345682, // ← replace with real variant ID
+  },
+  {
+    id: 'jobs-poster', thinker: 'Steve Jobs', symbol: 'J', accent: '#ABEBC6',
+    type: 'Art Print', name: 'Think Different',
+    tagline: 'Minimalist 12×18 foil print on premium paper.',
+    price: 21.99, printfulVariantId: 12345683, // ← replace with real variant ID
+  },
+];
+
+// ── SVG Mockup ────────────────────────────────────────────────────────────────
+function ProductMockup({ product }: { product: Product }) {
+  const { symbol, accent, type, id } = product;
+  return (
+    <svg viewBox="0 0 240 240" width="100%" style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id={`bg-${id}`} cx="50%" cy="40%" r="70%">
+          <stop offset="0%" stopColor="#1a1209" />
+          <stop offset="100%" stopColor="#080808" />
+        </radialGradient>
+      </defs>
+      <rect width="240" height="240" fill={`url(#bg-${id})`} />
+      <rect x="8" y="8" width="224" height="224" rx="3" fill="none" stroke={accent} strokeWidth="0.8" opacity="0.5" />
+      <line x1="8" y1="28" x2="8" y2="8" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <line x1="8" y1="8" x2="28" y2="8" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <line x1="232" y1="28" x2="232" y2="8" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <line x1="232" y1="8" x2="212" y2="8" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <line x1="8" y1="212" x2="8" y2="232" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <line x1="8" y1="232" x2="28" y2="232" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <line x1="232" y1="212" x2="232" y2="232" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <line x1="232" y1="232" x2="212" y2="232" stroke={accent} strokeWidth="1.5" opacity="0.7" />
+      <circle cx="120" cy="112" r="60" fill={accent} opacity="0.04" />
+      <circle cx="120" cy="112" r="36" fill={accent} opacity="0.06" />
+      <text x="120" y="135" fontFamily="Georgia,serif" fontSize="72" textAnchor="middle" dominantBaseline="middle" fill={accent} opacity="0.92">{symbol}</text>
+      <line x1="36" y1="163" x2="204" y2="163" stroke={accent} strokeWidth="0.5" opacity="0.4" />
+      <text x="120" y="180" fontFamily="Courier New,monospace" fontSize="8" letterSpacing="3" textAnchor="middle" fill={accent} opacity="0.5">{type.toUpperCase()}</text>
+      <text x="120" y="216" fontFamily="Georgia,serif" fontSize="7" letterSpacing="3" textAnchor="middle" fill={accent} opacity="0.3">SOCIETY OF EXPLORERS</text>
+    </svg>
+  );
+}
+
+// ── Checkout Drawer ───────────────────────────────────────────────────────────
+function CheckoutDrawer({
+  product,
+  onClose,
+}: {
+  product: Product;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState<ShippingForm>({
+    name: '', email: '', address1: '', city: '',
+    state_code: '', country_code: 'US', zip: '',
+  });
+  const [loading,   setLoading]   = useState(false);
+  const [orderId,   setOrderId]   = useState<number | null>(null);
+  const [orderCost, setOrderCost] = useState<Record<string, string> | null>(null);
+  const [error,     setError]     = useState('');
+
+  const accent = product.accent;
+
+  function field(label: string, key: keyof ShippingForm, placeholder = '') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <label style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', color: accent, opacity: 0.7 }}>
+          {label}
+        </label>
+        <input
+          value={form[key]}
+          onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+          placeholder={placeholder}
+          style={{
+            background: '#0d0d0d', border: `1px solid ${accent}33`,
+            borderRadius: '2px', padding: '8px 10px',
+            color: 'var(--ivory)', fontSize: '13px',
+            fontFamily: 'Cormorant Garamond,serif',
+            outline: 'none', width: '100%', boxSizing: 'border-box',
+          }}
+        />
+      </div>
+    );
+  }
+
+  async function submitOrder() {
+    if (!form.name || !form.email || !form.address1 || !form.city || !form.zip || !form.state_code) {
+      setError('Please fill in all fields.');
+      return;
+    }
+    if (!product.printfulVariantId) {
+      setError('This product is not yet linked to Printful. Variant ID pending.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/merch/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          variantId: product.printfulVariantId,
+          quantity: 1,
+          recipient: {
+            name:         form.name,
+            email:        form.email,
+            address1:     form.address1,
+            city:         form.city,
+            state_code:   form.state_code,
+            country_code: form.country_code,
+            zip:          form.zip,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? 'Order failed'); return; }
+      setOrderId(data.orderId);
+      setOrderCost(data.costs);
+    } catch {
+      setError('Network error — please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    /* Backdrop */
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {/* Drawer */}
+      <div style={{
+        width: '420px', maxWidth: '100vw', height: '100%',
+        background: 'var(--bg-deep)', borderLeft: `1px solid ${accent}33`,
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        {/* Drawer header */}
+        <div style={{
+          padding: '16px 20px', borderBottom: `1px solid ${accent}22`,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
+        }}>
+          <div>
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: accent, letterSpacing: '0.12em' }}>
+              ORDER — {product.type.toUpperCase()}
+            </div>
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '16px', color: 'var(--gold-light)', marginTop: '2px' }}>
+              {product.name}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
+        </div>
+
+        {orderId ? (
+          /* ── Success ── */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', gap: '16px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '32px', color: accent }}>⬡</div>
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.1em' }}>ORDER PLACED</div>
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', fontStyle: 'italic' }}>
+              Draft #{orderId} created in Printful.
+            </div>
+            {orderCost && (
+              <div style={{ background: '#0d0d0d', border: `1px solid ${accent}22`, borderRadius: '4px', padding: '14px 18px', width: '100%', textAlign: 'left' }}>
+                {Object.entries(orderCost).map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', marginBottom: '4px' }}>
+                    <span style={{ textTransform: 'capitalize' }}>{k}</span>
+                    <span style={{ color: k === 'total' ? accent : undefined }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '12px', color: 'var(--ivory-muted)', fontStyle: 'italic', lineHeight: 1.6 }}>
+              Review and confirm this order in your Printful dashboard to begin fulfillment.
+            </div>
+            <button onClick={onClose} style={{ marginTop: '8px', background: 'none', border: `1px solid ${accent}55`, color: accent, fontFamily: 'Cinzel,serif', fontSize: '10px', letterSpacing: '0.12em', padding: '8px 20px', cursor: 'pointer', borderRadius: '2px' }}>
+              CLOSE
+            </button>
+          </div>
+        ) : (
+          /* ── Form ── */
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+              {/* Product summary */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#0d0d0d', border: `1px solid ${accent}22`, borderRadius: '4px', padding: '10px 12px', marginBottom: '6px' }}>
+                <div style={{ width: '48px', flexShrink: 0 }}>
+                  <ProductMockup product={product} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold-light)' }}>{product.name}</div>
+                  <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: accent, marginTop: '2px' }}>${product.price.toFixed(2)} + shipping</div>
+                </div>
+              </div>
+
+              {!product.printfulVariantId && (
+                <div style={{ background: '#1a0f00', border: '1px solid #c9a84c44', borderRadius: '4px', padding: '10px 14px', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#c9a84c', fontStyle: 'italic', lineHeight: 1.5 }}>
+                  This product's Printful variant ID is not yet set. Add it to PRODUCTS in MerchOverlay.tsx after creating the product in your Printful store.
+                </div>
+              )}
+
+              <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--gold-dim)', letterSpacing: '0.15em', marginTop: '4px' }}>SHIPPING ADDRESS</div>
+
+              {field('FULL NAME', 'name', 'Jane Explorer')}
+              {field('EMAIL', 'email', 'jane@example.com')}
+              {field('ADDRESS', 'address1', '123 Main St')}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', color: accent, opacity: 0.7 }}>CITY</label>
+                  <input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="Austin"
+                    style={{ background: '#0d0d0d', border: `1px solid ${accent}33`, borderRadius: '2px', padding: '8px 10px', color: 'var(--ivory)', fontSize: '13px', fontFamily: 'Cormorant Garamond,serif', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', color: accent, opacity: 0.7 }}>STATE</label>
+                  <input value={form.state_code} onChange={e => setForm(f => ({ ...f, state_code: e.target.value.toUpperCase() }))} placeholder="TX" maxLength={2}
+                    style={{ background: '#0d0d0d', border: `1px solid ${accent}33`, borderRadius: '2px', padding: '8px 10px', color: 'var(--ivory)', fontSize: '13px', fontFamily: 'Cormorant Garamond,serif', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', color: accent, opacity: 0.7 }}>ZIP</label>
+                  <input value={form.zip} onChange={e => setForm(f => ({ ...f, zip: e.target.value }))} placeholder="78701"
+                    style={{ background: '#0d0d0d', border: `1px solid ${accent}33`, borderRadius: '2px', padding: '8px 10px', color: 'var(--ivory)', fontSize: '13px', fontFamily: 'Cormorant Garamond,serif', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', color: accent, opacity: 0.7 }}>COUNTRY</label>
+                  <input value={form.country_code} onChange={e => setForm(f => ({ ...f, country_code: e.target.value.toUpperCase() }))} placeholder="US" maxLength={2}
+                    style={{ background: '#0d0d0d', border: `1px solid ${accent}33`, borderRadius: '2px', padding: '8px 10px', color: 'var(--ivory)', fontSize: '13px', fontFamily: 'Cormorant Garamond,serif', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+
+              {error && (
+                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>
+                  {error}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!orderId && (
+          <div style={{ padding: '16px 20px', borderTop: `1px solid ${accent}22`, flexShrink: 0 }}>
+            <button
+              onClick={submitOrder}
+              disabled={loading}
+              style={{
+                width: '100%',
+                background: loading ? 'transparent' : `linear-gradient(135deg,#1c1500,#2a1e00)`,
+                border: `1px solid ${accent}${loading ? '44' : '88'}`,
+                color: accent, opacity: loading ? 0.5 : 1,
+                fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em',
+                padding: '12px 0', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: '2px',
+              }}
+            >
+              {loading ? 'PLACING ORDER...' : `⬡ PLACE ORDER — $${product.price.toFixed(2)}`}
+            </button>
+            <div style={{ marginTop: '8px', fontFamily: 'Cormorant Garamond,serif', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>
+              Draft order — reviewed in Printful before shipping
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AI Suggestion Panel ───────────────────────────────────────────────────────
+const SUGGEST_THINKERS = [
+  { id: 'socrates',  name: 'Socrates',        accent: '#C9A84C' },
+  { id: 'nietzsche', name: 'Nietzsche',       accent: '#C0392B' },
+  { id: 'jobs',      name: 'Steve Jobs',      accent: '#ABEBC6' },
+  { id: 'aurelius',  name: 'Marcus Aurelius', accent: '#8E7CC3' },
+  { id: 'einstein',  name: 'Einstein',        accent: '#5DADE2' },
+  { id: 'plato',     name: 'Plato',           accent: '#7B9FD4' },
+];
+
+function stripMd(s: string) {
+  return s.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+}
+
+function AISuggestPanel({ onClose }: { onClose: () => void }) {
+  const supabase = createClient();
+  const [thinker,       setThinker]       = useState(SUGGEST_THINKERS[0]);
+  const [theme,         setTheme]         = useState('');
+  const [product,       setProduct]       = useState<GeneratedProduct | null>(null);
+  const [loading,       setLoading]       = useState(false);
+  const [mockupImage,   setMockupImage]   = useState<string | null>(null);
+  const [mockupLoading, setMockupLoading] = useState(false);
+  const [mockupError,   setMockupError]   = useState('');
+  const [publishing,    setPublishing]    = useState(false);
+  const [published,     setPublished]     = useState<{ id: number } | null>(null);
+  const [publishError,  setPublishError]  = useState('');
+  const [genError,      setGenError]      = useState('');
+
+  async function generate() {
+    setLoading(true);
+    setProduct(null);
+    setMockupImage(null);
+    setMockupError('');
+    setPublished(null);
+    setPublishError('');
+    setGenError('');
+    try {
+      const res = await fetch('/api/merch/generate-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ thinkerId: thinker.id, theme: theme.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.product) throw new Error(data.error ?? 'Generation failed');
+      setProduct(data.product);
+    } catch (e: unknown) {
+      setGenError(e instanceof Error ? e.message : 'Generation failed — try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateMockup() {
+    if (!product) return;
+    setMockupLoading(true);
+    setMockupError('');
+    try {
+      const brief = `${product.name} — ${product.type}. ${product.description} Thinker: ${thinker.name}. Style: Society of Explorers, philosophical luxury brand.`;
+      const res = await fetch('/api/merch/generate-mockup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visual_brief: brief }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.image_url) throw new Error(data.error ?? 'Mockup failed');
+      setMockupImage(data.image_url);
+    } catch (e: unknown) {
+      setMockupError(e instanceof Error ? e.message : 'Mockup failed');
+    } finally {
+      setMockupLoading(false);
+    }
+  }
+
+  async function saveAndPublish() {
+    if (!product) return;
+    setPublishing(true);
+    setPublishError('');
+    // 1. Insert row to get the ID (needed for publish route to fetch image_url)
+    const { data: row, error: insertErr } = await supabase
+      .from('merch_suggestions')
+      .insert({
+        thinker_id:     thinker.id,
+        product_type:   product.type,
+        name:           stripMd(product.name),
+        tagline:        stripMd(product.tagline),
+        price:          product.price,
+        raw_suggestion: stripMd(product.description).slice(0, 500),
+        image_url:      mockupImage ?? null,
+        status:         'pending',
+        suggested_by:   'ai',
+      })
+      .select('id')
+      .single();
+    if (insertErr || !row) {
+      setPublishError(insertErr?.message ?? 'Failed to save');
+      setPublishing(false);
+      return;
+    }
+    // 2. Publish directly to Printful
+    const res = await fetch('/api/merch/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        suggestionId: row.id,
+        name:         stripMd(product.name),
+        tagline:      stripMd(product.tagline),
+        price:        product.price,
+        thinker_id:   thinker.id,
+        product_type: product.type,
+      }),
+    });
+    const data = await res.json();
+    setPublishing(false);
+    if (!res.ok) {
+      setPublishError(data.error ?? 'Publish failed');
+      return;
+    }
+    setPublished({ id: data.printful_product_id });
+  }
+
+  const done = !loading && !!product;
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: '500px', maxWidth: '100vw', height: '100%', background: 'var(--bg-deep)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold-dim)', letterSpacing: '0.12em' }}>AI PRODUCT GENERATOR</div>
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--gold-light)', marginTop: '2px' }}>Let a thinker design your next product</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Thinker selector */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--gold-dim)', letterSpacing: '0.12em', marginBottom: '10px' }}>SELECT MIND</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {SUGGEST_THINKERS.map(t => (
+              <button key={t.id} onClick={() => { setThinker(t); setProduct(null); setMockupImage(null); setPublished(null); setPublishError(''); }}
+                style={{ background: thinker.id === t.id ? 'var(--glow)' : 'transparent', border: `1px solid ${thinker.id === t.id ? t.accent : 'var(--border)'}`, color: thinker.id === t.id ? t.accent : 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                {t.name.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            placeholder="Optional theme (e.g. mortality, courage, beauty)"
+            value={theme}
+            onChange={e => setTheme(e.target.value)}
+            style={{ marginTop: '10px', width: '100%', background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory)', fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', padding: '6px 10px', outline: 'none', borderRadius: '2px', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        {/* Output */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {genError && (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>{genError}</div>
+          )}
+
+          {product ? (
+            <div style={{ border: `1px solid ${thinker.accent}44`, borderRadius: '4px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: thinker.accent, letterSpacing: '0.08em' }}>{stripMd(product.name)}</div>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '10px', color: 'var(--gold-dim)', whiteSpace: 'nowrap' }}>
+                  {product.type.toUpperCase()} · ${product.price}
+                </div>
+              </div>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--ivory)', fontStyle: 'italic', lineHeight: 1.5 }}>{stripMd(product.tagline)}</div>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.6 }}>{stripMd(product.description)}</div>
+
+              {mockupImage && (
+                <img src={mockupImage} alt={product.name} style={{ width: '100%', borderRadius: '4px', display: 'block' }} />
+              )}
+              {mockupError && (
+                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '12px', color: '#e07070', fontStyle: 'italic' }}>{mockupError}</div>
+              )}
+
+              <button
+                onClick={generateMockup}
+                disabled={mockupLoading}
+                style={{ alignSelf: 'flex-start', background: 'transparent', border: `1px solid ${thinker.accent}55`, color: thinker.accent, fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.1em', padding: '4px 10px', cursor: mockupLoading ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: mockupLoading ? 0.5 : 1 }}
+              >
+                {mockupLoading ? 'GENERATING MOCKUP...' : mockupImage ? '⬡ REGENERATE MOCKUP' : '⬡ GENERATE MOCKUP'}
+              </button>
+            </div>
+          ) : !loading && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'Cinzel,serif', fontSize: '32px', color: thinker.accent, opacity: 0.4 }}>⬡</div>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', lineHeight: 1.6 }}>
+                {thinker.name} will propose a product idea<br />drawn from their philosophy.
+              </div>
+            </div>
+          )}
+
+          {published && (
+            <div style={{ background: '#0d1a0d', border: '1px solid #4a8a4a55', borderRadius: '4px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#7fc87f', fontStyle: 'italic' }}>
+                ⬡ Published to Printful — product #{published.id}
+              </div>
+              <a href={`https://www.printful.com/dashboard/sync?store=17946118`} target="_blank" rel="noopener noreferrer"
+                style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: thinker.accent, letterSpacing: '0.1em', textDecoration: 'none' }}>
+                VIEW IN PRINTFUL ↗
+              </a>
+            </div>
+          )}
+          {publishError && (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: '#e07070', fontStyle: 'italic' }}>
+              {publishError}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {done && !published && (
+            <button
+              onClick={saveAndPublish}
+              disabled={publishing}
+              style={{ width: '100%', background: publishing ? 'transparent' : `linear-gradient(135deg,#0d1a0d,#1a2e0d)`, border: `1px solid ${thinker.accent}88`, color: thinker.accent, opacity: publishing ? 0.5 : 1, fontFamily: 'Cinzel,serif', fontSize: '10px', letterSpacing: '0.14em', padding: '11px 0', cursor: publishing ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
+            >
+              {publishing ? 'PUBLISHING...' : '⬡ SAVE & PUBLISH TO PRINTFUL'}
+            </button>
+          )}
+          <button
+            onClick={generate}
+            disabled={loading}
+            style={{ width: '100%', background: loading ? 'transparent' : `linear-gradient(135deg,#1c1500,#2a1e00)`, border: `1px solid ${thinker.accent}${loading ? '44' : '88'}`, color: thinker.accent, opacity: loading ? 0.6 : 1, fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em', padding: '12px 0', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: '2px' }}
+          >
+            {loading ? `${thinker.name.toUpperCase()} IS THINKING...` : done ? '⬡ REGENERATE' : `⬡ ASK ${thinker.name.toUpperCase()}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Buy Now Button ────────────────────────────────────────────────────────────
+function BuyNowButton({ productId, price, accent }: { productId: string; price: number; accent: string }) {
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function handleBuy() {
+    setLoading(true);
+    setErr('');
+    try {
+      const res = await fetch('/api/merch/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity: 1 }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error ?? 'Checkout failed');
+      window.location.href = data.url;
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Checkout failed');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ padding: '0 14px 10px' }}>
+      <button
+        onClick={handleBuy}
+        disabled={loading}
+        style={{ width: '100%', background: loading ? 'transparent' : `linear-gradient(135deg,#0d1a0d,#1a2e0d)`, border: `1px solid ${accent}88`, color: accent, fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.14em', padding: '9px 0', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, borderRadius: '2px' }}
+      >
+        {loading ? 'REDIRECTING...' : `⬡ BUY NOW · $${price}`}
+      </button>
+      {err && <div style={{ marginTop: '4px', fontFamily: 'Cormorant Garamond,serif', fontSize: '11px', color: '#e07070', fontStyle: 'italic' }}>{err}</div>}
+    </div>
+  );
+}
+
+// ── Review Panel ──────────────────────────────────────────────────────────────
+type SuggestionStatus = 'pending' | 'approved' | 'rejected' | 'live';
+
+interface MerchSuggestion {
+  id: string;
+  thinker_id: string;
+  name: string;
+  product_type: string | null;
+  tagline: string | null;
+  price: number;
+  raw_suggestion: string | null;
+  mockup_prompt: string | null;
+  status: SuggestionStatus;
+  printful_product_id: number | null;
+  created_at: string;
+}
+
+const STATUS_FILTERS: { label: string; value: SuggestionStatus | 'all' }[] = [
+  { label: 'PENDING',  value: 'pending'  },
+  { label: 'APPROVED', value: 'approved' },
+  { label: 'LIVE',     value: 'live'     },
+  { label: 'REJECTED', value: 'rejected' },
+  { label: 'ALL',      value: 'all'      },
+];
+
+const THINKER_ACCENT: Record<string, string> = {
+  socrates: '#C9A84C', plato: '#7B9FD4', nietzsche: '#C0392B',
+  aurelius: '#8E7CC3', einstein: '#5DADE2', jobs: '#ABEBC6',
+};
+
+function ReviewPanel({ onClose }: { onClose: () => void }) {
+  const supabase = createClient();
+  const [rows,        setRows]        = useState<MerchSuggestion[]>([]);
+  const [filter,      setFilter]      = useState<SuggestionStatus | 'all'>('pending');
+  const [loading,     setLoading]     = useState(true);
+  const [expanded,    setExpanded]    = useState<string | null>(null);
+  const [updating,    setUpdating]    = useState<string | null>(null);
+  const [publishErr,  setPublishErr]  = useState<Record<string, string>>({});
+
+  async function load() {
+    setLoading(true);
+    const q = supabase
+      .from('merch_suggestions')
+      .select('id,thinker_id,name,product_type,tagline,price,raw_suggestion,mockup_prompt,status,printful_product_id,created_at')
+      .order('created_at', { ascending: false });
+    const { data, error } = filter === 'all' ? await q : await q.eq('status', filter);
+    if (!error) setRows((data as MerchSuggestion[]) ?? []);
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, [filter]);
+
+  async function setStatus(id: string, status: SuggestionStatus) {
+    setUpdating(id);
+    await supabase.from('merch_suggestions').update({ status }).eq('id', id);
+    setUpdating(null);
+    setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r).filter(r => filter === 'all' || r.status === filter));
+  }
+
+  async function approveAndPublish(row: MerchSuggestion) {
+    setUpdating(row.id);
+    setPublishErr(prev => { const n = {...prev}; delete n[row.id]; return n; });
+    try {
+      const res = await fetch('/api/merch/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          suggestionId: row.id,
+          name:         row.name,
+          tagline:      row.tagline ?? row.raw_suggestion?.slice(0, 200) ?? '',
+          price:        row.price || 24.99,
+          thinker_id:   row.thinker_id,
+          product_type: row.product_type ?? 'poster',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPublishErr(prev => ({ ...prev, [row.id]: data.error ?? 'Publish failed' }));
+        // Still mark approved in Supabase even if Printful isn't ready yet
+        await setStatus(row.id, 'approved');
+        return;
+      }
+      // Success: mark live in the local list
+      setRows(prev =>
+        prev.map(r => r.id === row.id ? { ...r, status: 'live' as const, printful_product_id: data.printful_product_id as number } : r)
+            .filter(r => filter === 'all' || r.status === filter),
+      );
+    } catch {
+      setPublishErr(prev => ({ ...prev, [row.id]: 'Network error — check Printful config' }));
+      await setStatus(row.id, 'approved');
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 50, display: 'flex', justifyContent: 'flex-end' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: '540px', maxWidth: '100vw', height: '100%', background: 'var(--bg-deep)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold-dim)', letterSpacing: '0.12em' }}>AI ARMY — REVIEW QUEUE</div>
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: 'var(--gold-light)', marginTop: '2px' }}>Approve ideas to publish them to the store</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Filter tabs */}
+        <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '6px', flexShrink: 0 }}>
+          {STATUS_FILTERS.map(f => (
+            <button key={f.value} onClick={() => setFilter(f.value)}
+              style={{ background: filter === f.value ? 'var(--glow)' : 'transparent', border: `1px solid ${filter === f.value ? 'var(--gold)' : 'var(--border)'}`, color: filter === f.value ? 'var(--gold)' : 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* List */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {loading ? (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', textAlign: 'center', paddingTop: '40px' }}>
+              Loading suggestions...
+            </div>
+          ) : rows.length === 0 ? (
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', textAlign: 'center', paddingTop: '40px', lineHeight: 1.7 }}>
+              No {filter === 'all' ? '' : filter} suggestions yet.<br />
+              <span style={{ fontSize: '12px', color: 'var(--gold-dim)' }}>Generate ideas in the AI IDEAS panel first.</span>
+            </div>
+          ) : rows.map(row => {
+            const accent = THINKER_ACCENT[row.thinker_id] ?? '#C9A84C';
+            const isExpanded = expanded === row.id;
+            const isUpdating = updating === row.id;
+            const statusColor = row.status === 'approved' ? '#7fc87f' : row.status === 'rejected' ? '#e07070' : accent;
+            return (
+              <div key={row.id} style={{ background: 'var(--bg-elevated)', border: `1px solid ${accent}22`, borderRadius: '4px' }}>
+                {/* Row header */}
+                <div style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', color: accent, border: `1px solid ${accent}44`, padding: '1px 6px', borderRadius: '2px', flexShrink: 0 }}>
+                        {row.thinker_id.toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.08em', color: statusColor, opacity: 0.8 }}>
+                        {row.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {row.name}
+                    </div>
+                    <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', letterSpacing: '0.05em' }}>
+                      {new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setExpanded(isExpanded ? null : row.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', cursor: 'pointer', fontSize: '12px', padding: '2px 6px', flexShrink: 0 }}
+                  >
+                    {isExpanded ? '▲' : '▼'}
+                  </button>
+                </div>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {row.raw_suggestion && (
+                      <div style={{ background: '#0d0d0d', border: `1px solid ${accent}18`, borderRadius: '3px', padding: '10px 12px' }}>
+                        <div style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.1em', opacity: 0.6, marginBottom: '6px' }}>FULL SUGGESTION</div>
+                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
+                          {row.raw_suggestion}
+                        </div>
+                      </div>
+                    )}
+                    {row.mockup_prompt && (
+                      <div style={{ background: '#0d0d0d', border: `1px solid ${accent}18`, borderRadius: '3px', padding: '10px 12px' }}>
+                        <div style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.1em', opacity: 0.6, marginBottom: '6px' }}>VISUAL BRIEF</div>
+                        <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap', maxHeight: '160px', overflowY: 'auto' }}>
+                          {row.mockup_prompt}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Publish error */}
+                {publishErr[row.id] && (
+                  <div style={{ padding: '8px 14px', background: '#1a0808', borderTop: `1px solid #e0707022` }}>
+                    <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '12px', color: '#e07070', fontStyle: 'italic', lineHeight: 1.5 }}>
+                      Printful: {publishErr[row.id]}
+                    </div>
+                    <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
+                      Marked approved — fix variant IDs then retry.
+                    </div>
+                  </div>
+                )}
+
+                {/* Action bar */}
+                {row.status === 'pending' && (
+                  <div style={{ borderTop: `1px solid ${accent}18`, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                    <button
+                      onClick={() => approveAndPublish(row)}
+                      disabled={isUpdating}
+                      style={{ background: 'transparent', border: 'none', borderRight: `1px solid ${accent}18`, color: '#7fc87f', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '10px 0', cursor: isUpdating ? 'not-allowed' : 'pointer', opacity: isUpdating ? 0.5 : 1 }}
+                    >
+                      {isUpdating ? 'PUBLISHING...' : '⬡ APPROVE & PUBLISH'}
+                    </button>
+                    <button
+                      onClick={() => setStatus(row.id, 'rejected')}
+                      disabled={isUpdating}
+                      style={{ background: 'transparent', border: 'none', color: '#e07070', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', padding: '10px 0', cursor: isUpdating ? 'not-allowed' : 'pointer', opacity: isUpdating ? 0.5 : 0.7 }}
+                    >
+                      REJECT
+                    </button>
+                  </div>
+                )}
+                {(row.status === 'approved') && (
+                  <div style={{ borderTop: `1px solid ${accent}18`, display: 'flex' }}>
+                    <button
+                      onClick={() => setStatus(row.id, 'pending')}
+                      disabled={isUpdating}
+                      style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em', padding: '10px 0', cursor: isUpdating ? 'not-allowed' : 'pointer', opacity: isUpdating ? 0.5 : 0.6 }}
+                    >
+                      MOVE BACK TO PENDING
+                    </button>
+                  </div>
+                )}
+                {row.status === 'live' && (
+                  <div style={{ borderTop: `1px solid ${accent}18` }}>
+                    <div style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: '#7fc87f', letterSpacing: '0.1em' }}>
+                        ⬡ LIVE {row.printful_product_id ? `· #${row.printful_product_id}` : ''}
+                      </span>
+                      <a href="https://www.printful.com/dashboard/sync?store=17946118" target="_blank" rel="noopener noreferrer"
+                        style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', color: accent, letterSpacing: '0.08em', textDecoration: 'none', opacity: 0.7 }}>
+                        VIEW IN PRINTFUL ↗
+                      </a>
+                    </div>
+                    <BuyNowButton productId={row.id} price={row.price} accent={accent} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-deep)', flexShrink: 0 }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', textAlign: 'center' }}>
+            Live products are purchasable via Stripe → auto-fulfilled by Printful
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Overlay ──────────────────────────────────────────────────────────────
+export default function MerchOverlay({ onClose }: { onClose: () => void }) {
+  const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
+  const [showAISuggest,   setShowAISuggest]   = useState(false);
+  const [showReview,      setShowReview]      = useState(false);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, top: '52px',
+      background: 'var(--bg-void)', zIndex: 30,
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 16px', borderBottom: '1px solid var(--border)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        background: 'var(--bg-deep)', flexShrink: 0,
+      }}>
+        <div>
+          <div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.12em' }}>
+            Society Merch
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--ivory-muted)', fontStyle: 'italic', marginTop: '1px', fontFamily: 'Cormorant Garamond,serif' }}>
+            Artifacts for the physical realm · Designed by the minds of history
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setShowAISuggest(true)}
+            style={{ background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', color: 'var(--gold)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 10px', cursor: 'pointer', borderRadius: '2px' }}
+          >
+            ⬡ AI IDEAS
+          </button>
+          <button
+            onClick={() => setShowReview(true)}
+            style={{ background: 'none', border: '1px solid var(--gold-dim)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 10px', cursor: 'pointer', borderRadius: '2px' }}
+          >
+            REVIEW
+          </button>
+          <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 8px', cursor: 'pointer', borderRadius: '2px' }}>
+            CLOSE
+          </button>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+          {PRODUCTS.map(product => (
+            <div
+              key={product.id}
+              style={{ background: 'var(--bg-elevated)', border: `1px solid ${product.accent}33`, borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = product.accent + '77')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = product.accent + '33')}
+            >
+              <div style={{ aspectRatio: '1', background: '#080808' }}>
+                <ProductMockup product={product} />
+              </div>
+              <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.12em', color: product.accent, border: `1px solid ${product.accent}55`, padding: '2px 6px', borderRadius: '2px' }}>
+                    {product.type.toUpperCase()}
+                  </span>
+                  <span style={{ fontFamily: 'Cinzel,serif', fontSize: '14px', color: 'var(--gold)' }}>
+                    ${product.price.toFixed(2)}
+                  </span>
+                </div>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.05em' }}>{product.name}</div>
+                <div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color: product.accent, letterSpacing: '0.1em', opacity: 0.7 }}>by {product.thinker.toUpperCase()}</div>
+                <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>{product.tagline}</div>
+              </div>
+              <div style={{ padding: '0 16px 16px' }}>
+                <button
+                  onClick={() => setCheckoutProduct(product)}
+                  style={{ width: '100%', background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: `1px solid ${product.accent}66`, color: product.accent, fontFamily: 'Cinzel,serif', fontSize: '10px', letterSpacing: '0.15em', padding: '8px 0', cursor: 'pointer', borderRadius: '2px', transition: 'all 0.2s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,#2a1e00,#3a2c00)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,#1c1500,#2a1e00)'; }}
+                >
+                  ⬡ ORDER NOW
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-deep)', flexShrink: 0 }}>
+        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.6 }}>
+          Print-on-demand via Printful · Ships worldwide · No inventory risk · Draft orders reviewed before fulfillment
+        </div>
+      </div>
+
+      {/* Checkout Drawer */}
+      {checkoutProduct && (
+        <CheckoutDrawer product={checkoutProduct} onClose={() => setCheckoutProduct(null)} />
+      )}
+
+      {/* AI Suggest Panel */}
+      {showAISuggest && (
+        <AISuggestPanel onClose={() => setShowAISuggest(false)} />
+      )}
+
+      {/* Review Panel */}
+      {showReview && (
+        <ReviewPanel onClose={() => setShowReview(false)} />
+      )}
+    </div>
+  );
+}

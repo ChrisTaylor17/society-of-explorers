@@ -1,0 +1,3250 @@
+{
+  "destination": "/Users/christaylor/Codex-Preservation-20261022-4uqw00b1/historical-ui-20261022-5hug2mw7",
+  "source_repository": "/Users/christaylor/society-of-explorers",
+  "variants": [
+    {
+      "label": "salon-2026-03-22",
+      "commit": "ed72ee4a8b612560bff52281fb1ed07b5ee4e1b3",
+      "file_count": 24,
+      "bytes": 365968,
+      "files": [
+        {
+          "path": ".gitignore",
+          "git_blob": "5ef6a520780202a1d6addd833d800ccb1ecac0bb",
+          "sha256": "207e265ff4901f9ad9f96d8ce08530e04f9fc600815472a66d0a446096d654cd",
+          "bytes": 480,
+          "snapshot_relative_path": "salon-2026-03-22/.gitignore"
+        },
+        {
+          "path": "README.md",
+          "git_blob": "e215bc4ccf138bbc38ad58ad57e92135484b3c0f",
+          "sha256": "60b55ff7df79af72590f9524208e46642bc32bdc175cdad41349681c0e2f958f",
+          "bytes": 1450,
+          "snapshot_relative_path": "salon-2026-03-22/README.md"
+        },
+        {
+          "path": "app/book/page.tsx",
+          "git_blob": "de675ba88ddbb38fce7bc13edfa572ab128a43d8",
+          "sha256": "340c76c531298f18ecac174812f82e26119eae1ad2af5848609295a3ce8d35e5",
+          "bytes": 12898,
+          "snapshot_relative_path": "salon-2026-03-22/app/book/page.tsx"
+        },
+        {
+          "path": "app/favicon.ico",
+          "git_blob": "718d6fea4835ec2d246af9800eddb7ffb276240c",
+          "sha256": "2b8ad2d33455a8f736fc3a8ebf8f0bdea8848ad4c0db48a2833bd0f9cd775932",
+          "bytes": 25931,
+          "snapshot_relative_path": "salon-2026-03-22/app/favicon.ico"
+        },
+        {
+          "path": "app/globals.css",
+          "git_blob": "2c07e25b0ccb393fd70f5d3440f79b4abb2fead3",
+          "sha256": "d7153c96911220663fdd73787a522a82c5ba3fb1e6e40bae02f1d3ccd7b30b16",
+          "bytes": 1863,
+          "snapshot_relative_path": "salon-2026-03-22/app/globals.css"
+        },
+        {
+          "path": "app/join/page.tsx",
+          "git_blob": "3b6508f206fad987df6ded7aea1afe429014ff39",
+          "sha256": "5dbc1be6fe07169391aaf4b9fe558c9b9a436a6e7a12e06ecb764268ffacbb59",
+          "bytes": 5469,
+          "snapshot_relative_path": "salon-2026-03-22/app/join/page.tsx"
+        },
+        {
+          "path": "app/layout.tsx",
+          "git_blob": "7a0b3d9cf2cc4cfe47cf6b2e021298b454d54aa4",
+          "sha256": "a6ee7c2bae778cf2aa946e26ef07b3ab04de613c8d2c2bd61020d45529ec9462",
+          "bytes": 679,
+          "snapshot_relative_path": "salon-2026-03-22/app/layout.tsx"
+        },
+        {
+          "path": "app/members/page.tsx",
+          "git_blob": "96362bc1268a9b63f747d6b2767bee7661e1fe1b",
+          "sha256": "8254cf2915d19d782f89843569e2f40545e9d6c5be2aa1e4f2799b2f464db08a",
+          "bytes": 16839,
+          "snapshot_relative_path": "salon-2026-03-22/app/members/page.tsx"
+        },
+        {
+          "path": "app/page.tsx",
+          "git_blob": "aff80f4f79ff02b7fcd882bf0752743f0d6d785d",
+          "sha256": "4c4a650b469162bf29f8aa43ef3bb1619b34108afe1f7e9e7ec855bfe5eb2078",
+          "bytes": 8924,
+          "snapshot_relative_path": "salon-2026-03-22/app/page.tsx"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "git_blob": "31aa4513e42ba21d10274ea8d9564dee87e91649",
+          "sha256": "aedb600ce9394f244edf56bce52b0670e183eeed8d458f4fb9a959086e326ab4",
+          "bytes": 13510,
+          "snapshot_relative_path": "salon-2026-03-22/app/salon/page.tsx"
+        },
+        {
+          "path": "components/shared/Providers.tsx",
+          "git_blob": "56083956edb7a68434651e54fe076edbc1f4066b",
+          "sha256": "1ab4906a1bcf5b9140e991258db6f421f005b24291ca7ece3f4a83307fa4b24d",
+          "bytes": 460,
+          "snapshot_relative_path": "salon-2026-03-22/components/shared/Providers.tsx"
+        },
+        {
+          "path": "lib/claude/thinkers.ts",
+          "git_blob": "21d7e248a8c7aeebc2718e7a19271f8c8a54777a",
+          "sha256": "cdde76df5236f0256e386a21c80bcb1b1588a977e3e47460651b065d724857d6",
+          "bytes": 7185,
+          "snapshot_relative_path": "salon-2026-03-22/lib/claude/thinkers.ts"
+        },
+        {
+          "path": "lib/supabase/client.ts",
+          "git_blob": "d5b0bcbc4ffe796ed1438d39f8c2b446102406af",
+          "sha256": "8cf5010fea091aff81b8e8fe1aaf86cb25f1b94ba96be640b2faaed3ed20dc08",
+          "bytes": 199,
+          "snapshot_relative_path": "salon-2026-03-22/lib/supabase/client.ts"
+        },
+        {
+          "path": "lib/wagmi/config.ts",
+          "git_blob": "b2349518f003488462821d0c957e2f32f8759f02",
+          "sha256": "30e3b732fafedb568bc3545177585fedf7319195f8005d0108c5fdca65063bf6",
+          "bytes": 344,
+          "snapshot_relative_path": "salon-2026-03-22/lib/wagmi/config.ts"
+        },
+        {
+          "path": "next.config.ts",
+          "git_blob": "e9ffa3083ad279ecf95fd8eae59cb253e9a539c4",
+          "sha256": "614bce25b089c3f19b1e17a6346c74b858034040154c6621e7d35303004767cc",
+          "bytes": 133,
+          "snapshot_relative_path": "salon-2026-03-22/next.config.ts"
+        },
+        {
+          "path": "package-lock.json",
+          "git_blob": "e24c19309863c7b6de2194ad197bfc97787302c5",
+          "sha256": "1018238896cf28b58d2031f407eadc8fe57365c4d9d8dfa6dc264496aaaf76fc",
+          "bytes": 264604,
+          "snapshot_relative_path": "salon-2026-03-22/package-lock.json"
+        },
+        {
+          "path": "package.json",
+          "git_blob": "05e4a53bfea9cba948b468b82f63f67fd1d61f44",
+          "sha256": "3ba435ddc037e6fca5cf857ef8bca3bcb1aab9150a602daa2ce40bf99c775794",
+          "bytes": 926,
+          "snapshot_relative_path": "salon-2026-03-22/package.json"
+        },
+        {
+          "path": "postcss.config.mjs",
+          "git_blob": "61e36849cf7cfa9f1f71b4a3964a4953e3e243d3",
+          "sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
+          "bytes": 94,
+          "snapshot_relative_path": "salon-2026-03-22/postcss.config.mjs"
+        },
+        {
+          "path": "public/file.svg",
+          "git_blob": "004145cddf3f9db91b57b9cb596683c8eb420862",
+          "sha256": "2b67812c325c199a02536cdbeea0c593a72f707d323b72ee3e08dbab06753bd4",
+          "bytes": 391,
+          "snapshot_relative_path": "salon-2026-03-22/public/file.svg"
+        },
+        {
+          "path": "public/globe.svg",
+          "git_blob": "567f17b0d7c7fb662c16d4357dd74830caf2dccb",
+          "sha256": "b614b9bf183925957661ac851498fe1d8029fd43a62fbfed86f9e2624a57e7cf",
+          "bytes": 1035,
+          "snapshot_relative_path": "salon-2026-03-22/public/globe.svg"
+        },
+        {
+          "path": "public/next.svg",
+          "git_blob": "5174b28c565c285e3e312ec5178be64fbeca8398",
+          "sha256": "55995dfad6ecb4945a1e856ddca03c5e16aa5bf13fd21b4df6a74ae79357bcfc",
+          "bytes": 1375,
+          "snapshot_relative_path": "salon-2026-03-22/public/next.svg"
+        },
+        {
+          "path": "public/vercel.svg",
+          "git_blob": "77053960334e2e34dc584dea8019925c3b4ccca9",
+          "sha256": "f081337b2fee635b455b63275406a3e7f39d6a014e25ad90dab5a67e62a12ac4",
+          "bytes": 128,
+          "snapshot_relative_path": "salon-2026-03-22/public/vercel.svg"
+        },
+        {
+          "path": "public/window.svg",
+          "git_blob": "b2b2a44f6ebc70c450043c05a002e7a93ba5d651",
+          "sha256": "644768c4aaeb4767bce293344eeb0c125fb804a94d801440424072202d85e3a1",
+          "bytes": 385,
+          "snapshot_relative_path": "salon-2026-03-22/public/window.svg"
+        },
+        {
+          "path": "tsconfig.json",
+          "git_blob": "3a13f90a773b0facb675bf5b1a8239c8f33d36f5",
+          "sha256": "be18523b23b78b6e1a876ddd107d330f0168bddf09d751b57e0b5edce69c66f3",
+          "bytes": 666,
+          "snapshot_relative_path": "salon-2026-03-22/tsconfig.json"
+        }
+      ],
+      "omissions": [],
+      "batch_errors": [],
+      "font_declarations": [
+        {
+          "path": "app/globals.css",
+          "line": 6,
+          "declaration": "html,body{height:100%;background:var(--bg-void);color:var(--text-primary);font-family:'EB Garamond',Georgia,serif;}"
+        },
+        {
+          "path": "app/layout.tsx",
+          "line": 8,
+          "declaration": "<head><link href=\"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap\" rel=\"stylesheet\"/></head>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 84,
+          "declaration": "const inp:React.CSSProperties={width:'100%',background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:'3px',padding:'10px 14px',color:'var(--ivory)',fontFamily:'EB Garamond,serif',fontSize:'15px',outline:'none'}"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 85,
+          "declaration": "const lbl:React.CSSProperties={display:'block',fontFamily:'Cinzel,serif',fontSize:'9px',letterSpacing:'0.25em',color:'var(--gold-dim)',textTransform:'uppercase',marginBottom:'7px'}"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 91,
+          "declaration": "<div style={{fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'0.4em',color:'var(--gold-dim)',marginBottom:'14px'}}>Est. 2026 · Boston</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 92,
+          "declaration": "<h1 style={{fontFamily:'Cinzel,serif',fontSize:'clamp(24px,5vw,42px)',fontWeight:400,color:'var(--gold-light)',letterSpacing:'0.15em',textShadow:'0 0 40px rgba(200,168,75,0.3)',marginBottom:'8px'}}>Society of Explorers</h1>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 93,
+          "declaration": "<p style={{fontFamily:'Cormorant Garamond,serif',fontStyle:'italic',fontSize:'18px',color:'var(--ivory-muted)'}}>Where great minds converge across time</p>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 97,
+          "declaration": "<div style={{fontFamily:'Cinzel,serif',fontSize:'10px',letterSpacing:'0.3em',color:'var(--gold-dim)',textTransform:'uppercase',marginBottom:'24px',textAlign:'center'}}>{isSignUp?'Request Admission':'Enter the Salon'}</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 100,
+          "declaration": "<div style={{fontFamily:'Cinzel,serif',fontSize:'9px',letterSpacing:'0.25em',color:'var(--gold-dim)',textTransform:'uppercase',marginBottom:'10px'}}>Connect Wallet</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 101,
+          "declaration": "<button onClick={connectWallet} disabled={walletLoading} style={{width:'100%',padding:'12px',background:'linear-gradient(135deg,#0a1220,#111a2e)',border:'1px solid rgba(100,150,220,0.4)',borderRadius:'3px',color:'#8ab0d8',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'0.15em',cursor:walletLoading?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',opacity:walletLoading?0.7:1}}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 114,
+          "declaration": "<button type=\"submit\" disabled={loading} style={{width:'100%',padding:'12px',background:'linear-gradient(135deg,#1c1500,#2a1e00)',border:'1px solid var(--gold-dim)',borderRadius:'3px',color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'0.2em',textTransform:'uppercase',cursor:'pointer'}}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 120,
+          "declaration": "<button onClick={()=>{setIsSignUp(!isSignUp);setError('');setMessage('')}} style={{width:'100%',padding:'10px',background:'transparent',border:'1px solid var(--border)',borderRadius:'3px',color:'var(--ivory-muted)',fontFamily:'Cormorant Garamond,serif',fontSize:'14px',fontStyle:'italic',cursor:'pointer'}}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 124,
+          "declaration": "<div style={{marginTop:'28px',textAlign:'center',fontFamily:'Cormorant Garamond,serif',fontStyle:'italic',fontSize:'12px',color:'var(--text-muted)',lineHeight:1.8}}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 126,
+          "declaration": "<div style={{marginTop:'4px',color:'var(--gold-dim)',fontSize:'11px',fontStyle:'normal',fontFamily:'Cinzel,serif',letterSpacing:'0.1em'}}>Consilience LLC · Society of Explorers DAO</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 127,
+          "declaration": "<div style={{marginTop:'12px'}}><a href=\"/join\" style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'0.15em',textDecoration:'none'}}>VIEW MEMBERSHIP OPTIONS →</a></div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 76,
+          "declaration": "if(!authReady)return(<div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg-void)'}}><div style={{fontFamily:'Cinzel,serif',fontSize:'12px',letterSpacing:'0.3em',color:'var(--gold-dim)'}}>ENTERING THE SALON...</div></div>)"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 83,
+          "declaration": "<div style={{fontFamily:'Cinzel,serif',fontSize:'13px',letterSpacing:'0.2em',color:'var(--gold)'}}>Society of Explorers</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 85,
+          "declaration": "<button onClick={()=>setShowThinkers(!showThinkers)} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>MINDS</button>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 86,
+          "declaration": "<button onClick={()=>router.push('/members')} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>MEMBERS</button>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 87,
+          "declaration": "<button onClick={()=>router.push('/book')} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>BOOK</button>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 88,
+          "declaration": "<button onClick={signOut} style={{background:'none',border:'1px solid var(--border)',color:'var(--gold-dim)',fontSize:'10px',fontFamily:'Cinzel,serif',letterSpacing:'0.08em',padding:'3px 8px',cursor:'pointer',borderRadius:'2px'}}>LEAVE</button>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 97,
+          "declaration": "<span style={{fontFamily:'Cormorant Garamond,serif',fontSize:'16px',color:selectedThinker.id===t.id?'var(--gold-light)':'var(--ivory)'}}>{t.name}</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 109,
+          "declaration": "<div style={{fontFamily:'Cinzel,serif',fontSize:'13px',color:'var(--gold-light)',letterSpacing:'0.1em'}}>The Salon of Great Minds</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 110,
+          "declaration": "<div style={{fontSize:'11px',color:'var(--ivory-muted)',fontStyle:'italic',marginTop:'1px',fontFamily:'Cormorant Garamond,serif'}}>Addressing {selectedThinker.name}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 113,
+          "declaration": "<div style={{fontFamily:'Cinzel,serif',fontSize:'18px',color:'var(--gold-light)'}}>{member?.exp_tokens||0}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 121,
+          "declaration": "<div style={{textAlign:'center',padding:'32px 16px',fontFamily:'Cormorant Garamond,serif',fontStyle:'italic',fontSize:'15px',color:'var(--text-muted)',lineHeight:1.8}}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 129,
+          "declaration": "<div style={{fontFamily:'Cormorant Garamond,serif',fontStyle:'italic',fontSize:'11px',color:'var(--gold-dim)',padding:'4px 12px',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)',background:'var(--glow)',textAlign:'center'}} dangerouslySetInnerHTML={{__html:msg.content}}/>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 132,
+          "declaration": "<div style={{width:'32px',height:'32px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Cinzel,serif',fontSize:'11px',fontWeight:600,flexShrink:0,marginTop:'2px',border:'1px solid var(--border-bright)',background:msg.sender_type==='member'?'var(--sapphire)':'var(--bg-elevated)',color:msg.sender_type==='member'?'#8ab0d8':'var(--gold)'}}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 136,
+          "declaration": "<div style={{fontFamily:'Cinzel,serif',fontSize:'9px',letterSpacing:'0.15em',color:msg.sender_type==='member'?'rgba(100,150,200,0.6)':'var(--gold-dim)',marginBottom:'4px',textTransform:'uppercase'}}>{msg.sender_name}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 148,
+          "declaration": "<div style={{width:'32px',height:'32px',borderRadius:'50%',background:'var(--bg-elevated)',border:'1px solid var(--border-bright)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Cinzel,serif',fontSize:'11px',color:'var(--gold)',flexShrink:0}}>{selectedThinker.avatar}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 163,
+          "declaration": "style={{flex:1,background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:'6px',padding:'10px 14px',fontFamily:'EB Garamond,serif',fontSize:'16px',color:'var(--ivory)',resize:'none',outline:'none',minHeight:'44px',maxHeight:'100px',lineHeight:1.5,WebkitAppearance:'none'}}/>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 164,
+          "declaration": "<button onClick={send} disabled={isLoading} style={{padding:'10px 16px',height:'44px',background:'linear-gradient(135deg,#1c1500,#2a1e00)',border:'1px solid var(--gold-dim)',borderRadius:'4px',color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'0.15em',cursor:isLoading?'not-allowed':'pointer',flexShrink:0}}>SPEAK</button>"
+        }
+      ],
+      "persona_paths": {
+        "Aristotle": [
+          "lib/claude/thinkers.ts"
+        ],
+        "Socrates": [
+          "lib/claude/thinkers.ts"
+        ],
+        "Marcus Aurelius": [
+          "lib/claude/thinkers.ts"
+        ],
+        "Plato": [
+          "lib/claude/thinkers.ts"
+        ],
+        "Nietzsche": [
+          "lib/claude/thinkers.ts"
+        ],
+        "Einstein": [
+          "lib/claude/thinkers.ts"
+        ],
+        "Steve Jobs": [
+          "lib/claude/thinkers.ts"
+        ]
+      },
+      "external_asset_urls_not_fetched": [
+        "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
+      ],
+      "dependency_metadata": {
+        "name": "society-of-explorers",
+        "version": "0.1.0",
+        "dependencies": {
+          "lucide-react": "^0.577.0",
+          "next": "16.2.1",
+          "react": "19.2.4",
+          "react-dom": "19.2.4"
+        }
+      },
+      "screenshot_claim": "No historical rendered screenshot has been reconstructed or authenticated.",
+      "saved_deployment_metadata_matches": []
+    },
+    {
+      "label": "council-2026-04-06",
+      "commit": "c89e98fae648ea1f2c0c1e2fbc789cbb27ef0f4b",
+      "file_count": 74,
+      "bytes": 1065604,
+      "files": [
+        {
+          "path": ".gitignore",
+          "git_blob": "289f34406b4a58c8026b83410498c1a9eb6e2a2b",
+          "sha256": "aecb45a5635a099352366af949788b6a8690043fc508da21fae8d7a4dcc608d9",
+          "bytes": 644,
+          "snapshot_relative_path": "council-2026-04-06/.gitignore"
+        },
+        {
+          "path": "README.md",
+          "git_blob": "e215bc4ccf138bbc38ad58ad57e92135484b3c0f",
+          "sha256": "60b55ff7df79af72590f9524208e46642bc32bdc175cdad41349681c0e2f958f",
+          "bytes": 1450,
+          "snapshot_relative_path": "council-2026-04-06/README.md"
+        },
+        {
+          "path": "app/access/page.tsx",
+          "git_blob": "f603c392f0201c1d191cff6cdc1bfe76e023bc18",
+          "sha256": "09520c21a61915aee77ed09320597d1224775c91c49499a769ea364bb5377d7d",
+          "bytes": 13473,
+          "snapshot_relative_path": "council-2026-04-06/app/access/page.tsx"
+        },
+        {
+          "path": "app/archive/page.tsx",
+          "git_blob": "f169f46e0059d1ca547bc3a48a3cb5f059ffb552",
+          "sha256": "c5e6075810ed66ed883eb1b8c9363c1af4b2c13aebc00ff47b483984c82aee10",
+          "bytes": 21878,
+          "snapshot_relative_path": "council-2026-04-06/app/archive/page.tsx"
+        },
+        {
+          "path": "app/book-salons/[cohortId]/page.tsx",
+          "git_blob": "65fa73e1e26af1e6dff5b4ae8ab248e6d9364935",
+          "sha256": "6e977ef9e846d10aeb091365414aafcda3488a28616d6a3f48c2a6fa1bce37ed",
+          "bytes": 7757,
+          "snapshot_relative_path": "council-2026-04-06/app/book-salons/[cohortId]/page.tsx"
+        },
+        {
+          "path": "app/book-salons/page.tsx",
+          "git_blob": "101bcc3c4c06927784c5ed1b34ae36a0f8fbf493",
+          "sha256": "4cd7c39bb88b1699c5db8b6551b00b4a7210103901609368ee40bf09504697ca",
+          "bytes": 13688,
+          "snapshot_relative_path": "council-2026-04-06/app/book-salons/page.tsx"
+        },
+        {
+          "path": "app/book/page.tsx",
+          "git_blob": "261c0f70d34b70a8174a8097aafa7d25eed08280",
+          "sha256": "8bbecf000e21e44a21b9aba2ac96cb211ad0b78b83482ff494c99e2bfcca4005",
+          "bytes": 13608,
+          "snapshot_relative_path": "council-2026-04-06/app/book/page.tsx"
+        },
+        {
+          "path": "app/components/ServiceWorkerRegistration.tsx",
+          "git_blob": "e215e1d6c85d242d60483febbf43a12e9f9a4dae",
+          "sha256": "7007ac63a805e596cad852c5ebac00b586995d5ff04fb4ea12091711f1d465cf",
+          "bytes": 322,
+          "snapshot_relative_path": "council-2026-04-06/app/components/ServiceWorkerRegistration.tsx"
+        },
+        {
+          "path": "app/dashboard/page.tsx",
+          "git_blob": "f2f9400d3937d7673114c78a1ec5b349be8cf0a3",
+          "sha256": "99ff291d303d08c1c03a2b84f50900fa33a5695740af9e1a5311fbb7a1574bba",
+          "bytes": 18619,
+          "snapshot_relative_path": "council-2026-04-06/app/dashboard/page.tsx"
+        },
+        {
+          "path": "app/data-layer/page.tsx",
+          "git_blob": "ca48008166d165acc6398572e57a02885a33b09e",
+          "sha256": "a791ef4ac79e0d1a2065f3d15274dd11f2949cd1a16afc3ee395ab5cbc05e9b9",
+          "bytes": 14906,
+          "snapshot_relative_path": "council-2026-04-06/app/data-layer/page.tsx"
+        },
+        {
+          "path": "app/experience/page.tsx",
+          "git_blob": "54e8cb108f048c4b1bfa44dd789c7aa7d74772c4",
+          "sha256": "11d3ec3f5578a4ca734442be7e4a6d695c3e467f9844d03fed035dccd4822807",
+          "bytes": 18629,
+          "snapshot_relative_path": "council-2026-04-06/app/experience/page.tsx"
+        },
+        {
+          "path": "app/favicon.ico",
+          "git_blob": "718d6fea4835ec2d246af9800eddb7ffb276240c",
+          "sha256": "2b8ad2d33455a8f736fc3a8ebf8f0bdea8848ad4c0db48a2833bd0f9cd775932",
+          "bytes": 25931,
+          "snapshot_relative_path": "council-2026-04-06/app/favicon.ico"
+        },
+        {
+          "path": "app/globals.css",
+          "git_blob": "555488d5fbaa5d2d438b27f11388cad18d178e2f",
+          "sha256": "a81062e3f16aab0f5a103562e6ef4f48cc934ff54c357bbcfed9ac6cec053c0e",
+          "bytes": 1916,
+          "snapshot_relative_path": "council-2026-04-06/app/globals.css"
+        },
+        {
+          "path": "app/great-books/[bookId]/page.tsx",
+          "git_blob": "7249c48533298137124064b808811e3b3ed32d32",
+          "sha256": "dd70b508716b8342302335e65c31827e95e87ebad2076ac1a141b78cb3ac1997",
+          "bytes": 22967,
+          "snapshot_relative_path": "council-2026-04-06/app/great-books/[bookId]/page.tsx"
+        },
+        {
+          "path": "app/great-books/[bookId]/seminar/page.tsx",
+          "git_blob": "c7afce34a248b99fc5745ce5e19ec16087f7eaa6",
+          "sha256": "dbf39ae9f3ee6cbfd52fbdb0945260e6f6333cbd6ec7e100caaadc268f5ecf6f",
+          "bytes": 7569,
+          "snapshot_relative_path": "council-2026-04-06/app/great-books/[bookId]/seminar/page.tsx"
+        },
+        {
+          "path": "app/great-books/page.tsx",
+          "git_blob": "d75878c02ea39a3a8676fc3838dd17f23a48c094",
+          "sha256": "a126567fb4f48d2ef36b6438b248595352bd94cdf090820072132777837ecefa",
+          "bytes": 5252,
+          "snapshot_relative_path": "council-2026-04-06/app/great-books/page.tsx"
+        },
+        {
+          "path": "app/hall/page.tsx",
+          "git_blob": "9c059181710fbe390eaa2b0ed0442f99911a641a",
+          "sha256": "690561e752ee844323f236c5a385530c83bf626b4fadcb9c843c2c9267d8f216",
+          "bytes": 8411,
+          "snapshot_relative_path": "council-2026-04-06/app/hall/page.tsx"
+        },
+        {
+          "path": "app/join/page.tsx",
+          "git_blob": "0630ada3a214523fb8537cea628c12e683957b4b",
+          "sha256": "cbfa0ad1b17fa4eb2ce05b1d34e61109f6bfb3d4a0f56a0196ba53ab93134afb",
+          "bytes": 14961,
+          "snapshot_relative_path": "council-2026-04-06/app/join/page.tsx"
+        },
+        {
+          "path": "app/labyrinth/page.tsx",
+          "git_blob": "8f7f8cf32fcdd337cac29149f6182035f90b3665",
+          "sha256": "54ef0249b36e79f6e071e2e434853a6099708440d66f2787c78801d6d7902310",
+          "bytes": 37089,
+          "snapshot_relative_path": "council-2026-04-06/app/labyrinth/page.tsx"
+        },
+        {
+          "path": "app/layout.tsx",
+          "git_blob": "ef37de63e5bbcbd18ec8706dd4e9a87811508bde",
+          "sha256": "2aa7f3dc4c4b62548ad93e11b90e204396a06d9407435c64dcffb462dbc1366d",
+          "bytes": 1164,
+          "snapshot_relative_path": "council-2026-04-06/app/layout.tsx"
+        },
+        {
+          "path": "app/login/page.tsx",
+          "git_blob": "7b439cc0ec57df351298bc96135573bc57b97c48",
+          "sha256": "8aa4f010dc2984ec91224123490c61373bcf33580f73f7653ab2bd073140a856",
+          "bytes": 9832,
+          "snapshot_relative_path": "council-2026-04-06/app/login/page.tsx"
+        },
+        {
+          "path": "app/members/page.tsx",
+          "git_blob": "fb727d7685929ffaa776cc66497c731d94add6cc",
+          "sha256": "aa9f24b9b1a1f202061fc9eac34a6128efc69a5c2a988294422f21173ecce716",
+          "bytes": 31534,
+          "snapshot_relative_path": "council-2026-04-06/app/members/page.tsx"
+        },
+        {
+          "path": "app/page.tsx",
+          "git_blob": "90f7edd35d8d35bcab8256d70ad63e4f6ea0fa5d",
+          "sha256": "a64e6135c6b299da177727b5a3ca14368a6e6c97026b0b6a65917919040636d4",
+          "bytes": 21487,
+          "snapshot_relative_path": "council-2026-04-06/app/page.tsx"
+        },
+        {
+          "path": "app/salon/HubOverlay.tsx",
+          "git_blob": "cb2446931698e685ef132f48746498a1202ee215",
+          "sha256": "a37d7c576ad66a8ac613f8ff9831946dce7b643567be23fb063eece6608d0f90",
+          "bytes": 19568,
+          "snapshot_relative_path": "council-2026-04-06/app/salon/HubOverlay.tsx"
+        },
+        {
+          "path": "app/salon/MerchOverlay.tsx",
+          "git_blob": "b05bdb2acb0bcf810f72ee3b9e1a28771d26e9c7",
+          "sha256": "bb6e32a53398ea70c558f49404331c8837d0259de4d58739954f8746c8a571d8",
+          "bytes": 53879,
+          "snapshot_relative_path": "council-2026-04-06/app/salon/MerchOverlay.tsx"
+        },
+        {
+          "path": "app/salon/SalonOnboarding.tsx",
+          "git_blob": "77b294065c3c809dd273bf1b78bd3d49829539bb",
+          "sha256": "fbc3175bfb215092236b04e390d22b85897fac0b35b9fb203377959c7bbdc18e",
+          "bytes": 6844,
+          "snapshot_relative_path": "council-2026-04-06/app/salon/SalonOnboarding.tsx"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "git_blob": "c1c9f710b090db35d001d8123a3862e2b2f03039",
+          "sha256": "10173997a6ad6ad0b52b821960f0c12caa23911a7a7ce758bcf279843ae11d95",
+          "bytes": 72965,
+          "snapshot_relative_path": "council-2026-04-06/app/salon/page.tsx"
+        },
+        {
+          "path": "app/structure/page.tsx",
+          "git_blob": "473ec0fb320fa9153ee86624a2f1fdcb9a2a5995",
+          "sha256": "f0d87cbb4cefe15b020ede01b9726fcf76dd16fa5c083c9a26c23fccaeb3bbb8",
+          "bytes": 17234,
+          "snapshot_relative_path": "council-2026-04-06/app/structure/page.tsx"
+        },
+        {
+          "path": "app/temple-quest/page.tsx",
+          "git_blob": "e3b0c87087956585cd2f602b09fbd5c110cdbe6e",
+          "sha256": "f4e1214e9ea6fb46c6693915af7a2d090782cb444ffac52a5b76af35598e96d9",
+          "bytes": 27127,
+          "snapshot_relative_path": "council-2026-04-06/app/temple-quest/page.tsx"
+        },
+        {
+          "path": "app/temple/page.tsx",
+          "git_blob": "a6620327a0bbf6f90a25c082f998bacdc0db3e30",
+          "sha256": "dde69aadd96a36e6714d29c3738e4bf55639bcfae30ded264967022ff1fdd677",
+          "bytes": 1542,
+          "snapshot_relative_path": "council-2026-04-06/app/temple/page.tsx"
+        },
+        {
+          "path": "app/three-pillars/page.tsx",
+          "git_blob": "3e679aec050948d823a7022dbea68a8279085eed",
+          "sha256": "4b6933924702516b96ea0e4674cd6cc77c375a4f5b77a0b6c73106582ed8a69c",
+          "bytes": 18657,
+          "snapshot_relative_path": "council-2026-04-06/app/three-pillars/page.tsx"
+        },
+        {
+          "path": "app/tokenomics/page.tsx",
+          "git_blob": "db5719c25c5d0a004c4b5382a318adab40e50afb",
+          "sha256": "e8be7aa83fa4b05f0c8cf5bd8f873cac9cca5531f251f74427308145371a9156",
+          "bytes": 18078,
+          "snapshot_relative_path": "council-2026-04-06/app/tokenomics/page.tsx"
+        },
+        {
+          "path": "app/tokens/page.tsx",
+          "git_blob": "4e303552a9a260229db5dc5a0a96a1d74ba3bd97",
+          "sha256": "d3a5b8b0d23ba2786772abaf7616ffc7addac9caa6ecff1f44f42e187098eaa2",
+          "bytes": 13566,
+          "snapshot_relative_path": "council-2026-04-06/app/tokens/page.tsx"
+        },
+        {
+          "path": "app/transparency/page.tsx",
+          "git_blob": "51d934a8e66ad71cd90f4f5ab7ba72c7389c31cb",
+          "sha256": "a004672f03a15d8f0b7d6644977114f7e75a3ec8ce9784a1f7b4029a6d66bd86",
+          "bytes": 15224,
+          "snapshot_relative_path": "council-2026-04-06/app/transparency/page.tsx"
+        },
+        {
+          "path": "app/travel/page.tsx",
+          "git_blob": "5d2849cf451f847ea1dca6311976a62a3ee0014a",
+          "sha256": "0ad056096e3b9a8cd251ee68b2a98be64e9e03f8d0dc77d8b2a82cd2e9aa0043",
+          "bytes": 38145,
+          "snapshot_relative_path": "council-2026-04-06/app/travel/page.tsx"
+        },
+        {
+          "path": "app/tribekey/page.tsx",
+          "git_blob": "66e714ef7a33d022a08d30a58696353d33e5646b",
+          "sha256": "1922046ac0bb2ba74516c34f649215b54dba54d4a521d860851bc7fafb5d86ee",
+          "bytes": 20503,
+          "snapshot_relative_path": "council-2026-04-06/app/tribekey/page.tsx"
+        },
+        {
+          "path": "app/twiddle/[id]/page.tsx",
+          "git_blob": "dacd725ce920019e455e4177332f9bbe199ac103",
+          "sha256": "a8c6c06fea168492ed0930d9ff4d80f4acb8b022c8d6c4c2bfd4c1ffaa5a6280",
+          "bytes": 17277,
+          "snapshot_relative_path": "council-2026-04-06/app/twiddle/[id]/page.tsx"
+        },
+        {
+          "path": "app/twiddle/constellation/page.tsx",
+          "git_blob": "32edd4b3c786e6c4587fbaf1e49ce746ff2ef1ea",
+          "sha256": "ce212c8c759e5ea7ee09c90adda6fc92f6b40c359e039c9b00b102488052ab1b",
+          "bytes": 15048,
+          "snapshot_relative_path": "council-2026-04-06/app/twiddle/constellation/page.tsx"
+        },
+        {
+          "path": "app/twiddle/page.tsx",
+          "git_blob": "0687e3029d81ad00bc20121bcc06b66a0e357cbb",
+          "sha256": "b608caf5af316e1b52db6a19327ca2779d489a3a73886671d0ea11439a585e79",
+          "bytes": 18508,
+          "snapshot_relative_path": "council-2026-04-06/app/twiddle/page.tsx"
+        },
+        {
+          "path": "app/waddle/page.tsx",
+          "git_blob": "0afab93110b404208704ddcae09a95d21d59fa73",
+          "sha256": "0f105453badc6f448d90b804562fae8e56bd197525ebf0cbedec1d070d974cab",
+          "bytes": 22998,
+          "snapshot_relative_path": "council-2026-04-06/app/waddle/page.tsx"
+        },
+        {
+          "path": "app/world/match/page.tsx",
+          "git_blob": "3f6b3b0b1c534afb839e7814debf6068f1f7b2e9",
+          "sha256": "933622f7fb2af8813f5340645f493a8029cafa7ecbefb9154eef5c478b72be54",
+          "bytes": 9445,
+          "snapshot_relative_path": "council-2026-04-06/app/world/match/page.tsx"
+        },
+        {
+          "path": "app/world/page.tsx",
+          "git_blob": "218a262273f166032a38afd9a4b092a7195401ff",
+          "sha256": "2caf04a9c3c9d68ed1ae7acca18508f8edf7565b525b2810336bac720d1517de",
+          "bytes": 7602,
+          "snapshot_relative_path": "council-2026-04-06/app/world/page.tsx"
+        },
+        {
+          "path": "components/ArtifactGenerator.tsx",
+          "git_blob": "c7e6be95dde8ad17973de5138a6d47c1b26c7077",
+          "sha256": "52dbb17eecd20be8c3e9819ed12dc198560a3002bd2a29200cca11b7c518b1a2",
+          "bytes": 5177,
+          "snapshot_relative_path": "council-2026-04-06/components/ArtifactGenerator.tsx"
+        },
+        {
+          "path": "components/PublicFooter.tsx",
+          "git_blob": "356c5f3efcce519602bfef82a0ad6787701dbd89",
+          "sha256": "92c12ef0aa87544d149182e75584422025c65496fd5285132a4ce5dbffacc4ff",
+          "bytes": 1484,
+          "snapshot_relative_path": "council-2026-04-06/components/PublicFooter.tsx"
+        },
+        {
+          "path": "components/PublicNav.tsx",
+          "git_blob": "2bc46b1c0ec8cab83a7520c07a6055dd36da86fc",
+          "sha256": "4de63f7350dbe7b90ec061c5ece81b15b7f27d8223febe094f74724a1e26f7de",
+          "bytes": 3133,
+          "snapshot_relative_path": "council-2026-04-06/components/PublicNav.tsx"
+        },
+        {
+          "path": "components/shared/Providers.tsx",
+          "git_blob": "56083956edb7a68434651e54fe076edbc1f4066b",
+          "sha256": "1ab4906a1bcf5b9140e991258db6f421f005b24291ca7ece3f4a83307fa4b24d",
+          "bytes": 460,
+          "snapshot_relative_path": "council-2026-04-06/components/shared/Providers.tsx"
+        },
+        {
+          "path": "components/temple/SalonRoom.tsx",
+          "git_blob": "92adc779e0b04e5ad91131bbec45fabf13896d17",
+          "sha256": "06733ddb4ef42820ef92a37b95825f881c93b7e82d0a2914633875554b355ff6",
+          "bytes": 2774,
+          "snapshot_relative_path": "council-2026-04-06/components/temple/SalonRoom.tsx"
+        },
+        {
+          "path": "components/temple/TempleEnvironment.tsx",
+          "git_blob": "c5fa692f50e47de1508ca3aef0e861bce9049f68",
+          "sha256": "2890194a05e52009db8b347452bacbaf450f49d668a27a497f95b7e69e1971e2",
+          "bytes": 2483,
+          "snapshot_relative_path": "council-2026-04-06/components/temple/TempleEnvironment.tsx"
+        },
+        {
+          "path": "components/temple/TempleScene.tsx",
+          "git_blob": "2109af843714156125547a6e825cded687c13f64",
+          "sha256": "375f6977a8d3cfaa813233e17bbee6297a6fdc8ad77c8231cd67a89f065189d5",
+          "bytes": 1361,
+          "snapshot_relative_path": "council-2026-04-06/components/temple/TempleScene.tsx"
+        },
+        {
+          "path": "components/temple/ThinkerAvatar.tsx",
+          "git_blob": "c4b427c717e848ef91d8901b41f45e0cc649aca5",
+          "sha256": "5ba23309df4ceaad674a263232a042eaf7e7374086d56262ad02b05ffe0f212f",
+          "bytes": 2919,
+          "snapshot_relative_path": "council-2026-04-06/components/temple/ThinkerAvatar.tsx"
+        },
+        {
+          "path": "lib/audioUnlock.ts",
+          "git_blob": "c3300a91967131251282e191139d8420ed11791a",
+          "sha256": "f5bb80160fe4916ff001824cb6cbe0c82cff44010bd7dfa68f0f492adb68528d",
+          "bytes": 1059,
+          "snapshot_relative_path": "council-2026-04-06/lib/audioUnlock.ts"
+        },
+        {
+          "path": "lib/auth/checkAccess.ts",
+          "git_blob": "bf479599f9526da68c790105363a5c8274eab8b6",
+          "sha256": "3f31d714fbceb415bf13a65f86674d910e01d9a99ec0cdd5f12c31cb15b9458d",
+          "bytes": 652,
+          "snapshot_relative_path": "council-2026-04-06/lib/auth/checkAccess.ts"
+        },
+        {
+          "path": "lib/books/catalog.ts",
+          "git_blob": "011f017705e891749a03baa32729255a4eee9fcc",
+          "sha256": "bb07ef2d0cce2b0e2fe841c9b91ad0c7b81fe3e09397c374721ffc5f9466ecf8",
+          "bytes": 3031,
+          "snapshot_relative_path": "council-2026-04-06/lib/books/catalog.ts"
+        },
+        {
+          "path": "lib/contracts.ts",
+          "git_blob": "28e1add4f16f67619378e32e5fb7d656993cd06f",
+          "sha256": "2cef7756efcbbb3e3d137317193b3b6375881d13ec0506a388ac20865363b39c",
+          "bytes": 4689,
+          "snapshot_relative_path": "council-2026-04-06/lib/contracts.ts"
+        },
+        {
+          "path": "lib/renderMarkdown.ts",
+          "git_blob": "71e10fffe2f24932ee89c1b4d6583349704365e4",
+          "sha256": "a0a8f3776a199087e9210a8de294aaf35091d4fe44056ba13b7ab26fcd05a3e6",
+          "bytes": 1180,
+          "snapshot_relative_path": "council-2026-04-06/lib/renderMarkdown.ts"
+        },
+        {
+          "path": "lib/supabase/client.ts",
+          "git_blob": "e6aa3fcb97a4619fc472f2161a1e890c3cbb23f0",
+          "sha256": "79d28b7cc5e3dbbf81641d19425c5f83976c66fbe9acc5a183cb74ca5d01db25",
+          "bytes": 738,
+          "snapshot_relative_path": "council-2026-04-06/lib/supabase/client.ts"
+        },
+        {
+          "path": "lib/temple/templeConstants.ts",
+          "git_blob": "7b3b550ef1b8b255686cce980eb09016bf87f7e4",
+          "sha256": "1cf31c772a0ac233a35c8deff6c644b5d93044bf8ad6c26f74060eee6d2778f3",
+          "bytes": 645,
+          "snapshot_relative_path": "council-2026-04-06/lib/temple/templeConstants.ts"
+        },
+        {
+          "path": "lib/tts.ts",
+          "git_blob": "7fbfd927c56a62fd599aefb29a4ebf007772c3b1",
+          "sha256": "d795180686c85fba8291bd60964f21861954a799ff0eb1bcb619dfb35377b191",
+          "bytes": 3047,
+          "snapshot_relative_path": "council-2026-04-06/lib/tts.ts"
+        },
+        {
+          "path": "lib/voiceRecorder.ts",
+          "git_blob": "17dc9e2a4ea3eff234d3acb7d2ec3eaaa1703346",
+          "sha256": "0ccc6e7a720f1f2e66b9baef3027d4f4c2496868bc9d7ea553050d345ca0a45f",
+          "bytes": 1596,
+          "snapshot_relative_path": "council-2026-04-06/lib/voiceRecorder.ts"
+        },
+        {
+          "path": "lib/wagmi/config.ts",
+          "git_blob": "2918fff822af7bccc26df33e8942209be81c2c16",
+          "sha256": "c8ce5f7b8306d11eb7b7ebd7cef39f7b41f7b180b22748683b274a94a9a74ecd",
+          "bytes": 382,
+          "snapshot_relative_path": "council-2026-04-06/lib/wagmi/config.ts"
+        },
+        {
+          "path": "lib/world/frequency.ts",
+          "git_blob": "497491e3e10c0a2c3a2165d23b394d501e4d08dc",
+          "sha256": "6376d96266636c658a50e2269d5a3db4c4c9e8fc27b9f7771fda8977fe5f5a41",
+          "bytes": 3754,
+          "snapshot_relative_path": "council-2026-04-06/lib/world/frequency.ts"
+        },
+        {
+          "path": "next.config.ts",
+          "git_blob": "e9ffa3083ad279ecf95fd8eae59cb253e9a539c4",
+          "sha256": "614bce25b089c3f19b1e17a6346c74b858034040154c6621e7d35303004767cc",
+          "bytes": 133,
+          "snapshot_relative_path": "council-2026-04-06/next.config.ts"
+        },
+        {
+          "path": "package-lock.json",
+          "git_blob": "4c7f1e7db6912946083ce5b01cae2780364f2222",
+          "sha256": "d0f36104726506b44a19ec52015e21e1c2067ad589ccb94474b78eeb80f36af5",
+          "bytes": 289154,
+          "snapshot_relative_path": "council-2026-04-06/package-lock.json"
+        },
+        {
+          "path": "package.json",
+          "git_blob": "fa3f1a7bc3d84cbfcf7e4beb9e915b71ccee2aa2",
+          "sha256": "3dbcbd52da67f92cb0419aa8cfac49f9f04a86fb2d95443dd360e58aea3b060c",
+          "bytes": 1080,
+          "snapshot_relative_path": "council-2026-04-06/package.json"
+        },
+        {
+          "path": "postcss.config.mjs",
+          "git_blob": "61e36849cf7cfa9f1f71b4a3964a4953e3e243d3",
+          "sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
+          "bytes": 94,
+          "snapshot_relative_path": "council-2026-04-06/postcss.config.mjs"
+        },
+        {
+          "path": "public/file.svg",
+          "git_blob": "004145cddf3f9db91b57b9cb596683c8eb420862",
+          "sha256": "2b67812c325c199a02536cdbeea0c593a72f707d323b72ee3e08dbab06753bd4",
+          "bytes": 391,
+          "snapshot_relative_path": "council-2026-04-06/public/file.svg"
+        },
+        {
+          "path": "public/globe.svg",
+          "git_blob": "567f17b0d7c7fb662c16d4357dd74830caf2dccb",
+          "sha256": "b614b9bf183925957661ac851498fe1d8029fd43a62fbfed86f9e2624a57e7cf",
+          "bytes": 1035,
+          "snapshot_relative_path": "council-2026-04-06/public/globe.svg"
+        },
+        {
+          "path": "public/icon-192.png",
+          "git_blob": "13b970240ba3da945f4dd208719b1f8e0ad0ecad",
+          "sha256": "391b9a899be6289cd5b93f67c9faf8569109a4b7827f01f4e10baa3425c68847",
+          "bytes": 601,
+          "snapshot_relative_path": "council-2026-04-06/public/icon-192.png"
+        },
+        {
+          "path": "public/icon-512.png",
+          "git_blob": "ad47bc81141a1c220d2da38682be9ad6722ae210",
+          "sha256": "bdb116f4579400cd81483954d8c08200d595176a4718cdf1828280bfec2d3d0f",
+          "bytes": 2209,
+          "snapshot_relative_path": "council-2026-04-06/public/icon-512.png"
+        },
+        {
+          "path": "public/manifest.json",
+          "git_blob": "6ba8339486ffc416ecdcdaf6c3e5cba459910c7a",
+          "sha256": "d71508ab41be96f469171406c64387e733a345def50d5567c19ec55bd4e01452",
+          "bytes": 482,
+          "snapshot_relative_path": "council-2026-04-06/public/manifest.json"
+        },
+        {
+          "path": "public/next.svg",
+          "git_blob": "5174b28c565c285e3e312ec5178be64fbeca8398",
+          "sha256": "55995dfad6ecb4945a1e856ddca03c5e16aa5bf13fd21b4df6a74ae79357bcfc",
+          "bytes": 1375,
+          "snapshot_relative_path": "council-2026-04-06/public/next.svg"
+        },
+        {
+          "path": "public/vercel.svg",
+          "git_blob": "77053960334e2e34dc584dea8019925c3b4ccca9",
+          "sha256": "f081337b2fee635b455b63275406a3e7f39d6a014e25ad90dab5a67e62a12ac4",
+          "bytes": 128,
+          "snapshot_relative_path": "council-2026-04-06/public/vercel.svg"
+        },
+        {
+          "path": "public/window.svg",
+          "git_blob": "b2b2a44f6ebc70c450043c05a002e7a93ba5d651",
+          "sha256": "644768c4aaeb4767bce293344eeb0c125fb804a94d801440424072202d85e3a1",
+          "bytes": 385,
+          "snapshot_relative_path": "council-2026-04-06/public/window.svg"
+        },
+        {
+          "path": "tsconfig.json",
+          "git_blob": "0994d3777533bdac196e74ac6f5fa7934f66cc53",
+          "sha256": "3f47b0d42d994c99790f3989cb57e8adb32036bade174e0585f11fb97073b3b4",
+          "bytes": 676,
+          "snapshot_relative_path": "council-2026-04-06/tsconfig.json"
+        }
+      ],
+      "omissions": [],
+      "batch_errors": [],
+      "font_declarations": [
+        {
+          "path": "app/globals.css",
+          "line": 6,
+          "declaration": "html,body{height:100%;background:var(--bg-void);color:var(--text-primary);font-family:'EB Garamond',Georgia,serif;}"
+        },
+        {
+          "path": "app/layout.tsx",
+          "line": 11,
+          "declaration": "<link href=\"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap\" rel=\"stylesheet\"/>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 155,
+          "declaration": "<div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 162,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.6, marginBottom: '1.5rem' }}>SOCIETY OF EXPLORERS</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 163,
+          "declaration": "<h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2.2rem, 5.5vw, 4rem)', fontWeight: 400, letterSpacing: '0.02em', lineHeight: 1.2, marginBottom: '1.5rem', color: '#f5f0e8' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 170,
+          "declaration": "<a href=\"#demo\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '14px 32px', textDecoration: 'none' }}>Talk to Socrates — Free →</a>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 171,
+          "declaration": "<a href=\"#features\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}55`, padding: '14px 32px', textDecoration: 'none' }}>See What We Do</a>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 180,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>THE EXPERIENCE</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 181,
+          "declaration": "<h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8' }}>Three Ways to Think Together</h2>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 190,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.3, marginBottom: '1rem' }}>{p.icon}</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 191,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.12em', color: gold, marginBottom: '0.75rem' }}>{p.title.toUpperCase()}</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 203,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>TRY IT NOW</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 204,
+          "declaration": "<h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '0.5rem' }}>Ask Socrates anything.</h2>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 213,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '24px', color: gold, opacity: 0.15, marginBottom: '0.75rem' }}>Σ</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 229,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: gold, opacity: 0.5 }}>Σ</span>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 230,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.4 }}>SOCRATES</span>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 252,
+          "declaration": "<a href=\"/join\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '12px 28px', textDecoration: 'none', display: 'inline-block' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 261,
+          "declaration": "style={{ display: 'block', margin: '0.75rem auto 0', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, background: 'none', border: 'none', cursor: 'pointer' }}"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 276,
+          "declaration": "fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment,"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 284,
+          "declaration": "fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em',"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 297,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: muted, opacity: 0.4 }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 312,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, opacity: 0.4 }}>92B SOUTH ST · BOSTON</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 317,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>THE SPACE</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 318,
+          "declaration": "<h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 324,
+          "declaration": "<a href=\"/experience\" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>See the Experience →</a>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 334,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>MEMBERSHIP</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 335,
+          "declaration": "<h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8' }}>Choose Your Path</h2>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 349,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, marginBottom: '0.75rem' }}>MOST POPULAR</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 351,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.12em', color: '#f5f0e8', marginBottom: '0.5rem' }}>{t.name.toUpperCase()}</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 353,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '28px', color: gold }}>{t.price}</span>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 373,
+          "declaration": "<h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', fontStyle: 'italic' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 377,
+          "declaration": "<a href=\"/join\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '14px 36px', textDecoration: 'none', display: 'inline-block' }}>Join the Society →</a>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 712,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '12px', letterSpacing: '0.3em', color: 'var(--gold-dim)' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 738,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', letterSpacing: '0.2em', color: 'var(--gold)' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 754,
+          "declaration": "fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 766,
+          "declaration": "fontSize: '12px', fontFamily: 'Cinzel,serif',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 799,
+          "declaration": "color: 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '8px',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 807,
+          "declaration": "color: '#7a4040', fontFamily: 'Cinzel,serif', fontSize: '8px',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 823,
+          "declaration": "<span style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '16px', color: selectedThinker.id === t.id ? 'var(--gold-light)' : 'var(--ivory)' }}>{t.name}</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 835,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.12em' }}>Ritual Marketplace</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 836,
+          "declaration": "<div style={{ fontSize: '11px', color: 'var(--ivory-muted)', fontStyle: 'italic', marginTop: '1px', fontFamily: 'Cormorant Garamond,serif' }}>Pay $SOE · Unlock wisdom · Own your access forever</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 838,
+          "declaration": "<button onClick={() => { setShowMarket(false); setRitualTx({ status: 'idle' }); }} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 8px', cursor: 'pointer', borderRadius: '2px' }}>CLOSE</button>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 849,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '12px', color: 'var(--gold-light)', letterSpacing: '0.08em', marginBottom: '4px' }}>{ritual.name}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 850,
+          "declaration": "<div style={{ fontSize: '10px', color: 'var(--gold-dim)', letterSpacing: '0.1em', fontFamily: 'Cinzel,serif', marginBottom: '6px' }}>with {ritual.thinker}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 851,
+          "declaration": "<div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>{ritual.tagline}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 854,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '14px', color: 'var(--gold)' }}>{ritual.price} $SOE</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 858,
+          "declaration": "<button onClick={() => handleRunRitual(ritual)} disabled={isRunning || isSuccess} style={{ background: isSuccess ? 'var(--glow)' : 'linear-gradient(135deg,#1c1500,#2a1e00)', border: `1px solid ${isSuccess ? 'var(--gold)' : 'var(--gold-dim)'}`, color: 'var(--gold)', fontFamily: 'Cinzel,serif', fontSize: '10px', letterSpacing: '0.15em', padding: '6px 14px', cursor: isRunning || isSuccess ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: isRunning ? 0.6 : 1, transition: 'all 0.2s' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 862,
+          "declaration": "{isError && <div style={{ marginTop: '8px', fontSize: '11px', color: '#e07070', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic' }}>{ritualTx.error}</div>}"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 871,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.2em', color: '#c9a84c', marginBottom: '16px' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 875,
+          "declaration": "<div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '15px', color: '#d4c9a8', lineHeight: 1.8 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 880,
+          "declaration": "<div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(201,168,76,0.1)', fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#6a6050' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 888,
+          "declaration": "<div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.6 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 902,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.12em' }}>Artifact Collection</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 903,
+          "declaration": "<div style={{ fontSize: '11px', color: 'var(--ivory-muted)', fontStyle: 'italic', marginTop: '1px', fontFamily: 'Cormorant Garamond,serif' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 907,
+          "declaration": "<button onClick={() => setShowArtifacts(false)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.08em', padding: '3px 8px', cursor: 'pointer', borderRadius: '2px' }}>CLOSE</button>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 913,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold)', letterSpacing: '0.1em', marginBottom: '3px' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 916,
+          "declaration": "<div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--ivory-muted)', fontStyle: 'italic' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 922,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '16px', color: 'var(--gold)' }}>{NFT_MINT_PRICE} $SOE</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 930,
+          "declaration": "color: 'var(--gold-dim)', fontFamily: 'Cinzel,serif', fontSize: '9px',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 943,
+          "declaration": "color: 'var(--gold)', fontFamily: 'Cinzel,serif', fontSize: '10px',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 958,
+          "declaration": "<div style={{ padding: '8px 16px', background: 'var(--bg-deep)', borderBottom: '1px solid var(--border)', fontSize: '11px', color: '#e07070', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', flexShrink: 0 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 966,
+          "declaration": "<div style={{ textAlign: 'center', padding: '60px 24px', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.9 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 971,
+          "declaration": "<div style={{ textAlign: 'center', padding: '60px 24px', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '14px', color: 'var(--text-muted)' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 975,
+          "declaration": "<div style={{ textAlign: 'center', padding: '60px 24px', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.9 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1005,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '10px', color: token.color, letterSpacing: '0.08em', marginBottom: '4px' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1008,
+          "declaration": "<div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '14px', color: 'var(--ivory)', lineHeight: 1.4 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1020,
+          "declaration": "<div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.6 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1043,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '13px', color: 'var(--gold-light)', letterSpacing: '0.1em' }}>The Salon of Great Minds</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1044,
+          "declaration": "<div style={{ fontSize: '11px', color: 'var(--ivory-muted)', fontStyle: 'italic', marginTop: '1px', fontFamily: 'Cormorant Garamond,serif' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1051,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '18px', color: 'var(--gold-light)' }}>{member?.exp_tokens || 0}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1059,
+          "declaration": "<span style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#c9a84c', opacity: 0.7 }}>FREE ACCESS — Upgrade to unlock voice mode, private sessions, and thinker memory</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1060,
+          "declaration": "<a href=\"/join\" style={{ fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em', color: '#000', background: '#c9a84c', padding: '4px 12px', textDecoration: 'none' }}>UPGRADE →</a>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1066,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.2em', color: '#c9a84c', opacity: 0.4, textAlign: 'center', padding: '0.5rem', borderBottom: '1px solid rgba(201,168,76,0.1)', flexShrink: 0 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1074,
+          "declaration": "<div style={{ textAlign: 'center', padding: '32px 16px', fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.8 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1095,
+          "declaration": "<div style={{ fontFamily: 'Cormorant Garamond,serif', fontStyle: 'italic', fontSize: '11px', color: 'var(--gold-dim)', padding: '4px 12px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--glow)', textAlign: 'center' }}"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1099,
+          "declaration": "<div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel,serif', fontSize: '11px', fontWeight: 600, flexShrink: 0, marginTop: '2px', border: '1px solid var(--border-bright)', background: msg.sender_type === 'member' ? 'var(--sapphire)' : 'var(--bg-elevated)', color: msg.sender_type === 'member' ? '#8ab0d8' : 'var(--gold)' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1103,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.15em', color: msg.sender_type === 'member' ? 'rgba(100,150,200,0.6)' : 'var(--gold-dim)', marginBottom: '4px', textTransform: 'uppercase' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1126,
+          "declaration": "<button onClick={() => { setShowMarket(true); setRitualTx({ status: 'idle' }); setShowArtifacts(false); }} style={{ background: 'none', border: 'none', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', cursor: 'pointer', padding: '0', opacity: 0.7 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1135,
+          "declaration": "style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-dim)', fontSize: '10px', fontFamily: 'Cinzel,serif', letterSpacing: '0.1em', padding: '0', opacity: 0.5 }}"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1152,
+          "declaration": "<div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border-bright)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel,serif', fontSize: '11px', color: 'var(--gold)', flexShrink: 0 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1167,
+          "declaration": "<div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-elevated)', border: `1.5px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel,serif', fontSize: '11px', color, flexShrink: 0 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1171,
+          "declaration": "<span style={{ fontFamily: 'Cinzel,serif', fontSize: '9px', color, letterSpacing: '0.1em' }}>{ct?.name}</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1188,
+          "declaration": "fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1208,
+          "declaration": "fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1221,
+          "declaration": "fontFamily: 'Cinzel,serif', fontSize: '8px', letterSpacing: '0.15em',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1259,
+          "declaration": "fontFamily: 'Cinzel,serif', fontSize: '8px', color: active ? color : '#5a5040',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1261,
+          "declaration": "<span style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.1em', color: active ? color : '#5a5040' }}>{t.name.toUpperCase()}</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1271,
+          "declaration": "<div style={{ fontFamily: 'Cinzel,serif', fontSize: '7px', letterSpacing: '0.2em', color: '#c9a84c', opacity: 0.3, textAlign: 'center', padding: '4px' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1276,
+          "declaration": "<div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: '13px', color: 'var(--gold-dim)', fontStyle: 'italic', padding: '0 0 6px', opacity: 0.7 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1288,
+          "declaration": "style={{ flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '6px', padding: '10px 14px', fontFamily: 'EB Garamond,serif', fontSize: '16px', color: 'var(--ivory)', resize: 'none', outline: 'none', minHeight: '44px', maxHeight: '100px', lineHeight: 1.5 }}"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1297,
+          "declaration": "fontFamily: 'Cinzel,serif', fontSize: '9px', letterSpacing: '0.1em',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1304,
+          "declaration": "<button onClick={() => send()} disabled={isLoading} style={{ padding: '10px 16px', height: '44px', background: 'linear-gradient(135deg,#1c1500,#2a1e00)', border: '1px solid var(--gold-dim)', borderRadius: '4px', color: 'var(--gold)', fontFamily: 'Cinzel,serif', fontSize: '11px', letterSpacing: '0.15em', cursor: isLoading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1329,
+          "declaration": "fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '2px',"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 1342,
+          "declaration": "style={{ fontFamily: 'Cinzel, serif' }}"
+        }
+      ],
+      "persona_paths": {
+        "Socrates": [
+          "app/access/page.tsx",
+          "app/archive/page.tsx",
+          "app/book-salons/page.tsx",
+          "app/book/page.tsx",
+          "app/experience/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/great-books/page.tsx",
+          "app/join/page.tsx",
+          "app/login/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salon/page.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tokens/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "lib/books/catalog.ts"
+        ],
+        "Einstein": [
+          "app/archive/page.tsx",
+          "app/book-salons/page.tsx",
+          "app/book/page.tsx",
+          "app/experience/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/join/page.tsx",
+          "app/members/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salon/page.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "lib/books/catalog.ts"
+        ],
+        "Plato": [
+          "app/book-salons/page.tsx",
+          "app/book/page.tsx",
+          "app/experience/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/join/page.tsx",
+          "app/labyrinth/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salon/page.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "lib/books/catalog.ts"
+        ],
+        "Nietzsche": [
+          "app/book-salons/page.tsx",
+          "app/experience/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/great-books/page.tsx",
+          "app/join/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salon/page.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tokens/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "lib/books/catalog.ts"
+        ],
+        "Marcus Aurelius": [
+          "app/experience/page.tsx",
+          "app/join/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salon/page.tsx",
+          "app/tribekey/page.tsx",
+          "lib/books/catalog.ts"
+        ],
+        "Steve Jobs": [
+          "app/experience/page.tsx",
+          "app/join/page.tsx",
+          "app/members/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salon/page.tsx"
+        ]
+      },
+      "external_asset_urls_not_fetched": [
+        "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap",
+        "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/DATA.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Giovanni-DeCunto-Little-Wings-compressed-600x596.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Overpopulation.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Prometheus.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Radioactive_Rihanna.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/solar-energy.jpg"
+      ],
+      "dependency_metadata": {
+        "name": "society-of-explorers",
+        "version": "0.1.0",
+        "dependencies": {
+          "lucide-react": "^0.577.0",
+          "next": "16.2.1",
+          "react": "19.2.4",
+          "react-dom": "19.2.4"
+        }
+      },
+      "screenshot_claim": "No historical rendered screenshot has been reconstructed or authenticated.",
+      "saved_deployment_metadata_matches": []
+    },
+    {
+      "label": "six-persona-main",
+      "commit": "47fecac81619c369ebd9d94bf926e815f300184e",
+      "file_count": 128,
+      "bytes": 5712345,
+      "files": [
+        {
+          "path": ".gitignore",
+          "git_blob": "289f34406b4a58c8026b83410498c1a9eb6e2a2b",
+          "sha256": "aecb45a5635a099352366af949788b6a8690043fc508da21fae8d7a4dcc608d9",
+          "bytes": 644,
+          "snapshot_relative_path": "six-persona-main/.gitignore"
+        },
+        {
+          "path": "README.md",
+          "git_blob": "e215bc4ccf138bbc38ad58ad57e92135484b3c0f",
+          "sha256": "60b55ff7df79af72590f9524208e46642bc32bdc175cdad41349681c0e2f958f",
+          "bytes": 1450,
+          "snapshot_relative_path": "six-persona-main/README.md"
+        },
+        {
+          "path": "app/92b/fund/page.tsx",
+          "git_blob": "453b8f51f4573a8ff5dc7cca4c96dc648cdca572",
+          "sha256": "ca74956eb2b6d3a51429576c7c570eb41515b754d187bfd146ff6505b487c56b",
+          "bytes": 13203,
+          "snapshot_relative_path": "six-persona-main/app/92b/fund/page.tsx"
+        },
+        {
+          "path": "app/92b/page.tsx",
+          "git_blob": "32cc4ea97ade85c8abe49a5190573766ab87c5d9",
+          "sha256": "30c673df48e806cd8df53b51dbfb001ef4c9dd708682708a5faa463f7d651091",
+          "bytes": 15695,
+          "snapshot_relative_path": "six-persona-main/app/92b/page.tsx"
+        },
+        {
+          "path": "app/access/page.tsx",
+          "git_blob": "f603c392f0201c1d191cff6cdc1bfe76e023bc18",
+          "sha256": "09520c21a61915aee77ed09320597d1224775c91c49499a769ea364bb5377d7d",
+          "bytes": 13473,
+          "snapshot_relative_path": "six-persona-main/app/access/page.tsx"
+        },
+        {
+          "path": "app/activity/page.tsx",
+          "git_blob": "7fa9c389b94bb86e9d0737ab9e747575295cfa3d",
+          "sha256": "395b5bef83edf62d2320f2f48eb36bba422ea21af514c925e5ac318c8f801335",
+          "bytes": 3030,
+          "snapshot_relative_path": "six-persona-main/app/activity/page.tsx"
+        },
+        {
+          "path": "app/archive/page.tsx",
+          "git_blob": "f169f46e0059d1ca547bc3a48a3cb5f059ffb552",
+          "sha256": "c5e6075810ed66ed883eb1b8c9363c1af4b2c13aebc00ff47b483984c82aee10",
+          "bytes": 21878,
+          "snapshot_relative_path": "six-persona-main/app/archive/page.tsx"
+        },
+        {
+          "path": "app/book-salons/[cohortId]/page.tsx",
+          "git_blob": "65fa73e1e26af1e6dff5b4ae8ab248e6d9364935",
+          "sha256": "6e977ef9e846d10aeb091365414aafcda3488a28616d6a3f48c2a6fa1bce37ed",
+          "bytes": 7757,
+          "snapshot_relative_path": "six-persona-main/app/book-salons/[cohortId]/page.tsx"
+        },
+        {
+          "path": "app/book-salons/page.tsx",
+          "git_blob": "101bcc3c4c06927784c5ed1b34ae36a0f8fbf493",
+          "sha256": "4cd7c39bb88b1699c5db8b6551b00b4a7210103901609368ee40bf09504697ca",
+          "bytes": 13688,
+          "snapshot_relative_path": "six-persona-main/app/book-salons/page.tsx"
+        },
+        {
+          "path": "app/book/page.tsx",
+          "git_blob": "261c0f70d34b70a8174a8097aafa7d25eed08280",
+          "sha256": "8bbecf000e21e44a21b9aba2ac96cb211ad0b78b83482ff494c99e2bfcca4005",
+          "bytes": 13608,
+          "snapshot_relative_path": "six-persona-main/app/book/page.tsx"
+        },
+        {
+          "path": "app/c/[slug]/page.tsx",
+          "git_blob": "206fb843dfc0ff646c054fe4ce306151b435adb9",
+          "sha256": "3d71f53511c02a0c55100c5b4a0586f4322f3062cc1746df23062e124c47340c",
+          "bytes": 33712,
+          "snapshot_relative_path": "six-persona-main/app/c/[slug]/page.tsx"
+        },
+        {
+          "path": "app/components/ServiceWorkerRegistration.tsx",
+          "git_blob": "e215e1d6c85d242d60483febbf43a12e9f9a4dae",
+          "sha256": "7007ac63a805e596cad852c5ebac00b586995d5ff04fb4ea12091711f1d465cf",
+          "bytes": 322,
+          "snapshot_relative_path": "six-persona-main/app/components/ServiceWorkerRegistration.tsx"
+        },
+        {
+          "path": "app/council-preview/page.tsx",
+          "git_blob": "7914999f8ecafdeffd597d95725c56e5a0621f04",
+          "sha256": "54eb0e10ed55b17dab54c5f9d6dfc24bace081343dc7e127c0c34a38d75f3f4d",
+          "bytes": 255,
+          "snapshot_relative_path": "six-persona-main/app/council-preview/page.tsx"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "git_blob": "fc3372407805155b2bbd33d71a5aa3404b56348f",
+          "sha256": "78e21930685cf5a43b2770a0498c533c7cb470e954c920f5c8f354e126f91dbb",
+          "bytes": 29962,
+          "snapshot_relative_path": "six-persona-main/app/council/page.tsx"
+        },
+        {
+          "path": "app/council/verdict/[slug]/page.tsx",
+          "git_blob": "6fa53e98c7ca846e1a86560e08834f4160dedb30",
+          "sha256": "cecab7bc9b22d976b5445e2c0fe34130440e855cdd2e24d23f5fc48f71eb0114",
+          "bytes": 5461,
+          "snapshot_relative_path": "six-persona-main/app/council/verdict/[slug]/page.tsx"
+        },
+        {
+          "path": "app/create-community/page.tsx",
+          "git_blob": "7483f36138e60a01ceb1e45f9b668bdb31b5e024",
+          "sha256": "b09693c35f4522fad5ea70b8bd724ae722176993f7b606082ed000c31722c485",
+          "bytes": 31911,
+          "snapshot_relative_path": "six-persona-main/app/create-community/page.tsx"
+        },
+        {
+          "path": "app/dashboard/page.tsx",
+          "git_blob": "422e9a62812403fc6873fece796d93b81ae79bcd",
+          "sha256": "6377f8d64de8918d648433289a98e1c30b417e6f77cee5efb9b592f1a04f9803",
+          "bytes": 24541,
+          "snapshot_relative_path": "six-persona-main/app/dashboard/page.tsx"
+        },
+        {
+          "path": "app/data-layer/page.tsx",
+          "git_blob": "ca48008166d165acc6398572e57a02885a33b09e",
+          "sha256": "a791ef4ac79e0d1a2065f3d15274dd11f2949cd1a16afc3ee395ab5cbc05e9b9",
+          "bytes": 14906,
+          "snapshot_relative_path": "six-persona-main/app/data-layer/page.tsx"
+        },
+        {
+          "path": "app/discover/page.tsx",
+          "git_blob": "6816ceb74ba30247ee178dd62c9ef595166c8215",
+          "sha256": "5eebd55d672fae8276b5aafd1ea0735d8bdb06969ce329aa0e51495fa56267df",
+          "bytes": 4080,
+          "snapshot_relative_path": "six-persona-main/app/discover/page.tsx"
+        },
+        {
+          "path": "app/experience/page.tsx",
+          "git_blob": "54e8cb108f048c4b1bfa44dd789c7aa7d74772c4",
+          "sha256": "11d3ec3f5578a4ca734442be7e4a6d695c3e467f9844d03fed035dccd4822807",
+          "bytes": 18629,
+          "snapshot_relative_path": "six-persona-main/app/experience/page.tsx"
+        },
+        {
+          "path": "app/explore/page.tsx",
+          "git_blob": "4b8bc01fec1e9c10fbe2a8b991ed0f1e99455a01",
+          "sha256": "156908e194536b9bb37ea4e432b470ffdb57ad5c276133fef9e260a18b2491ac",
+          "bytes": 7054,
+          "snapshot_relative_path": "six-persona-main/app/explore/page.tsx"
+        },
+        {
+          "path": "app/explorer/[id]/page.tsx",
+          "git_blob": "b8bfe3c1b16327529b827ea0cd8ede80b38b01d9",
+          "sha256": "923ad8ead07cb0de8fde9e36df527a0d8223a8cc9a208bb36e6b285391cd4302",
+          "bytes": 15025,
+          "snapshot_relative_path": "six-persona-main/app/explorer/[id]/page.tsx"
+        },
+        {
+          "path": "app/favicon.ico",
+          "git_blob": "718d6fea4835ec2d246af9800eddb7ffb276240c",
+          "sha256": "2b8ad2d33455a8f736fc3a8ebf8f0bdea8848ad4c0db48a2833bd0f9cd775932",
+          "bytes": 25931,
+          "snapshot_relative_path": "six-persona-main/app/favicon.ico"
+        },
+        {
+          "path": "app/feed/layout.tsx",
+          "git_blob": "b74fac5450014547a8da522fb3b993ee0fb0785f",
+          "sha256": "5afb4c49802014dcd2c9a9b13b14e42b6a575b4e9288c03a39c07497210b715f",
+          "bytes": 1441,
+          "snapshot_relative_path": "six-persona-main/app/feed/layout.tsx"
+        },
+        {
+          "path": "app/feed/page.tsx",
+          "git_blob": "d1d5d77ebfb7113e033dea55787b2b5f0b381a67",
+          "sha256": "501f4e41cf95389c0ae878a16cf0440a74ce4c37031458165f1cae3c832c9f6b",
+          "bytes": 22352,
+          "snapshot_relative_path": "six-persona-main/app/feed/page.tsx"
+        },
+        {
+          "path": "app/globals.css",
+          "git_blob": "c3fc9671c1284689dba906f528c97722b0c41abe",
+          "sha256": "7ccfac330f4f60146106c7dd4255337b4ade7f3d8574d1a5439838dcbac8b213",
+          "bytes": 2050,
+          "snapshot_relative_path": "six-persona-main/app/globals.css"
+        },
+        {
+          "path": "app/great-books/[bookId]/page.tsx",
+          "git_blob": "7249c48533298137124064b808811e3b3ed32d32",
+          "sha256": "dd70b508716b8342302335e65c31827e95e87ebad2076ac1a141b78cb3ac1997",
+          "bytes": 22967,
+          "snapshot_relative_path": "six-persona-main/app/great-books/[bookId]/page.tsx"
+        },
+        {
+          "path": "app/great-books/[bookId]/seminar/page.tsx",
+          "git_blob": "c7afce34a248b99fc5745ce5e19ec16087f7eaa6",
+          "sha256": "dbf39ae9f3ee6cbfd52fbdb0945260e6f6333cbd6ec7e100caaadc268f5ecf6f",
+          "bytes": 7569,
+          "snapshot_relative_path": "six-persona-main/app/great-books/[bookId]/seminar/page.tsx"
+        },
+        {
+          "path": "app/great-books/page.tsx",
+          "git_blob": "d75878c02ea39a3a8676fc3838dd17f23a48c094",
+          "sha256": "a126567fb4f48d2ef36b6438b248595352bd94cdf090820072132777837ecefa",
+          "bytes": 5252,
+          "snapshot_relative_path": "six-persona-main/app/great-books/page.tsx"
+        },
+        {
+          "path": "app/guide/page.tsx",
+          "git_blob": "560657234e53c5e5427f2f7ea264ae5c2b9dc3e7",
+          "sha256": "2e8d6f451d44930d6fffb66a6750de4f9e2844eaeb2179ab5dc9d47bef845cd9",
+          "bytes": 11961,
+          "snapshot_relative_path": "six-persona-main/app/guide/page.tsx"
+        },
+        {
+          "path": "app/hall/page.tsx",
+          "git_blob": "9c059181710fbe390eaa2b0ed0442f99911a641a",
+          "sha256": "690561e752ee844323f236c5a385530c83bf626b4fadcb9c843c2c9267d8f216",
+          "bytes": 8411,
+          "snapshot_relative_path": "six-persona-main/app/hall/page.tsx"
+        },
+        {
+          "path": "app/insights/page.tsx",
+          "git_blob": "b5a7f46d59a706ac6a9e87c168b36424ad3f6c4d",
+          "sha256": "4744b24ce9dd946e0d0894c7bc10b3ba5575f8787cd904a07bd291f5456ec668",
+          "bytes": 19673,
+          "snapshot_relative_path": "six-persona-main/app/insights/page.tsx"
+        },
+        {
+          "path": "app/join/page.tsx",
+          "git_blob": "528b3fc7c1f1760d58f3a2755c77739310572cb8",
+          "sha256": "a854779fa4f10b20051d2110c0c9f0536dbfd84a7e3fbc1124ace092e35d02dd",
+          "bytes": 11356,
+          "snapshot_relative_path": "six-persona-main/app/join/page.tsx"
+        },
+        {
+          "path": "app/labyrinth/page.tsx",
+          "git_blob": "8f7f8cf32fcdd337cac29149f6182035f90b3665",
+          "sha256": "54ef0249b36e79f6e071e2e434853a6099708440d66f2787c78801d6d7902310",
+          "bytes": 37089,
+          "snapshot_relative_path": "six-persona-main/app/labyrinth/page.tsx"
+        },
+        {
+          "path": "app/layout.tsx",
+          "git_blob": "add352ab6dcc99ebe4c8d6567bdf7a28d498ee58",
+          "sha256": "cce61a697280b66eb198aa165e28bc42c6a6783976b374e809e9c6b0fac31c7f",
+          "bytes": 1312,
+          "snapshot_relative_path": "six-persona-main/app/layout.tsx"
+        },
+        {
+          "path": "app/leaderboard/page.tsx",
+          "git_blob": "ad0e4cedc1156a673e868cc988da7ba5c9eaf624",
+          "sha256": "f2ed777d9a8456140807d9c932ed0d9ac55f5b12c84402e12fc15e71880073fc",
+          "bytes": 9035,
+          "snapshot_relative_path": "six-persona-main/app/leaderboard/page.tsx"
+        },
+        {
+          "path": "app/live/page.tsx",
+          "git_blob": "cea6e0398b997267eeaa21fc805dc38e40527790",
+          "sha256": "904b6c61394e514b1f39dfd3d929d54a8523c9321df900a4af3b5126622b230e",
+          "bytes": 8723,
+          "snapshot_relative_path": "six-persona-main/app/live/page.tsx"
+        },
+        {
+          "path": "app/login/page.tsx",
+          "git_blob": "7b439cc0ec57df351298bc96135573bc57b97c48",
+          "sha256": "8aa4f010dc2984ec91224123490c61373bcf33580f73f7653ab2bd073140a856",
+          "bytes": 9832,
+          "snapshot_relative_path": "six-persona-main/app/login/page.tsx"
+        },
+        {
+          "path": "app/manifesto/page.tsx",
+          "git_blob": "1a42f7118766151ec7e884a01f19fc6ed8440d64",
+          "sha256": "8a980246c1c69c249dce4042a77ad5b4db052ca5761b663c8f91b340e2342cb5",
+          "bytes": 3019,
+          "snapshot_relative_path": "six-persona-main/app/manifesto/page.tsx"
+        },
+        {
+          "path": "app/match/page.tsx",
+          "git_blob": "c05e1765e31d805ce0194d4ba877d7a69db22e05",
+          "sha256": "1cdbc73bfee4548e9a820bb2a1cceae677f83974f6c0afdbec572798457cb7b5",
+          "bytes": 11240,
+          "snapshot_relative_path": "six-persona-main/app/match/page.tsx"
+        },
+        {
+          "path": "app/members/page.tsx",
+          "git_blob": "fb727d7685929ffaa776cc66497c731d94add6cc",
+          "sha256": "aa9f24b9b1a1f202061fc9eac34a6128efc69a5c2a988294422f21173ecce716",
+          "bytes": 31534,
+          "snapshot_relative_path": "six-persona-main/app/members/page.tsx"
+        },
+        {
+          "path": "app/movement/page.tsx",
+          "git_blob": "f9b6d8746dea8c0a7a790c5a42c687b9dee67ff5",
+          "sha256": "6f14584c31a94c268fac92bcb8f2516fe3e05d9deb946d961e789d58fcf18073",
+          "bytes": 8300,
+          "snapshot_relative_path": "six-persona-main/app/movement/page.tsx"
+        },
+        {
+          "path": "app/movement/personal-ai/page.tsx",
+          "git_blob": "c16d5f6eab200eff77fb40e399fd56cd2bf7baeb",
+          "sha256": "831ae5cc29c45c4e8ba73501f59758164aea6bd6e085ff63c3421beb68646bef",
+          "bytes": 12391,
+          "snapshot_relative_path": "six-persona-main/app/movement/personal-ai/page.tsx"
+        },
+        {
+          "path": "app/movement/pod/page.tsx",
+          "git_blob": "88155a67118eecae904459d3af96a698b3074d30",
+          "sha256": "a4178b9106f55ad58b64e5066662cb9294aa3c1d61a457e102d335743e3a05b9",
+          "bytes": 8235,
+          "snapshot_relative_path": "six-persona-main/app/movement/pod/page.tsx"
+        },
+        {
+          "path": "app/movement/studio/page.tsx",
+          "git_blob": "a87db73ec924e97e830b6fdc37622eb1b3312aa7",
+          "sha256": "520150ca4ce63236ce0eb758455260f9a1e8c59a5d493e16240f8375794a5942",
+          "bytes": 11761,
+          "snapshot_relative_path": "six-persona-main/app/movement/studio/page.tsx"
+        },
+        {
+          "path": "app/music-therapy/page.tsx",
+          "git_blob": "e04e5b1119e9c844ef4df49fc9ee7273b3cad7e8",
+          "sha256": "eacb2c5ac0b59f4faa71c36e1e109eded99f07260a3ce3ec60514b67d8b4c834",
+          "bytes": 21428,
+          "snapshot_relative_path": "six-persona-main/app/music-therapy/page.tsx"
+        },
+        {
+          "path": "app/page.tsx",
+          "git_blob": "7fbd2c54956000e71d8208b7b0018891a625438b",
+          "sha256": "278d92d8bfcb8e817ac6ed219f78d8310ef6c96f5fc2c9b3bd56931bf144d836",
+          "bytes": 27443,
+          "snapshot_relative_path": "six-persona-main/app/page.tsx"
+        },
+        {
+          "path": "app/practice/page.tsx",
+          "git_blob": "f98935c6a1c55f513a8bcf9055b03efade58cade",
+          "sha256": "5ea0f7b84a0d996db757a566551d5f9d219711be76a1318619894ec12253c4c1",
+          "bytes": 29540,
+          "snapshot_relative_path": "six-persona-main/app/practice/page.tsx"
+        },
+        {
+          "path": "app/projects/[id]/page.tsx",
+          "git_blob": "0da6e15814dd865c538d6b3b772561aec0626ff3",
+          "sha256": "8b33f52ceb54801e2b80809f1ad02353224bb0e01b2a64bdd793d274432ba95a",
+          "bytes": 12317,
+          "snapshot_relative_path": "six-persona-main/app/projects/[id]/page.tsx"
+        },
+        {
+          "path": "app/projects/page.tsx",
+          "git_blob": "3de090c41b941ed86e443a14ce016b953e639bde",
+          "sha256": "7a4ff4187123f249492e4a5e8f003dcabbc6fb3beba39ae7279655c87256f942",
+          "bytes": 16518,
+          "snapshot_relative_path": "six-persona-main/app/projects/page.tsx"
+        },
+        {
+          "path": "app/renaissance/page.tsx",
+          "git_blob": "f51f97777db19e2764544df1f8114a604b040af7",
+          "sha256": "1aa17077fb3c8b2e1218999740b21e2ec6cca33ba97586dda216cab6078fa918",
+          "bytes": 8880,
+          "snapshot_relative_path": "six-persona-main/app/renaissance/page.tsx"
+        },
+        {
+          "path": "app/roadmap/page.tsx",
+          "git_blob": "6535b2a3290b53ddb89301b6c6a05c83903274e7",
+          "sha256": "f8bde50632677115beb5e4d8458af965d9a8a75fdadb089f1d83da56d83dfe46",
+          "bytes": 17900,
+          "snapshot_relative_path": "six-persona-main/app/roadmap/page.tsx"
+        },
+        {
+          "path": "app/salon/HubOverlay.tsx",
+          "git_blob": "cb2446931698e685ef132f48746498a1202ee215",
+          "sha256": "a37d7c576ad66a8ac613f8ff9831946dce7b643567be23fb063eece6608d0f90",
+          "bytes": 19568,
+          "snapshot_relative_path": "six-persona-main/app/salon/HubOverlay.tsx"
+        },
+        {
+          "path": "app/salon/MerchOverlay.tsx",
+          "git_blob": "b05bdb2acb0bcf810f72ee3b9e1a28771d26e9c7",
+          "sha256": "bb6e32a53398ea70c558f49404331c8837d0259de4d58739954f8746c8a571d8",
+          "bytes": 53879,
+          "snapshot_relative_path": "six-persona-main/app/salon/MerchOverlay.tsx"
+        },
+        {
+          "path": "app/salon/SalonOnboarding.tsx",
+          "git_blob": "77b294065c3c809dd273bf1b78bd3d49829539bb",
+          "sha256": "fbc3175bfb215092236b04e390d22b85897fac0b35b9fb203377959c7bbdc18e",
+          "bytes": 6844,
+          "snapshot_relative_path": "six-persona-main/app/salon/SalonOnboarding.tsx"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "git_blob": "b412747f812167ab1d6058e306c959c1438f7345",
+          "sha256": "7e23f45a87a5681479614557a1cb10264ecd43bfe5d0cdaa53d457a6b7a92c53",
+          "bytes": 22405,
+          "snapshot_relative_path": "six-persona-main/app/salon/page.tsx"
+        },
+        {
+          "path": "app/salons/page.tsx",
+          "git_blob": "ca8b26bee341a39b2c706ae3e08abe3d71acd31a",
+          "sha256": "251e9114092ff61de4ef482760ef062e0b8923cabc019b737b5cd90a29d0605f",
+          "bytes": 20867,
+          "snapshot_relative_path": "six-persona-main/app/salons/page.tsx"
+        },
+        {
+          "path": "app/scan/page.tsx",
+          "git_blob": "f23e970505571c0bd3dd8a403fa603bf0e2db0c7",
+          "sha256": "81cf8f0cbbd6c6a71f6a7214de13325dccd4941293ee821e0ad4fbcda487d675",
+          "bytes": 30660,
+          "snapshot_relative_path": "six-persona-main/app/scan/page.tsx"
+        },
+        {
+          "path": "app/soe/page.tsx",
+          "git_blob": "8e27dc0c47ba9d1b72754114ad7b84f4d40780d0",
+          "sha256": "2e828c16fcde9a87091099881948475f26a4323c51ea6979bfabd7e8c6f982c9",
+          "bytes": 6687,
+          "snapshot_relative_path": "six-persona-main/app/soe/page.tsx"
+        },
+        {
+          "path": "app/structure/page.tsx",
+          "git_blob": "473ec0fb320fa9153ee86624a2f1fdcb9a2a5995",
+          "sha256": "f0d87cbb4cefe15b020ede01b9726fcf76dd16fa5c083c9a26c23fccaeb3bbb8",
+          "bytes": 17234,
+          "snapshot_relative_path": "six-persona-main/app/structure/page.tsx"
+        },
+        {
+          "path": "app/temple-quest/page.tsx",
+          "git_blob": "e3b0c87087956585cd2f602b09fbd5c110cdbe6e",
+          "sha256": "f4e1214e9ea6fb46c6693915af7a2d090782cb444ffac52a5b76af35598e96d9",
+          "bytes": 27127,
+          "snapshot_relative_path": "six-persona-main/app/temple-quest/page.tsx"
+        },
+        {
+          "path": "app/temple/page.tsx",
+          "git_blob": "a6620327a0bbf6f90a25c082f998bacdc0db3e30",
+          "sha256": "dde69aadd96a36e6714d29c3738e4bf55639bcfae30ded264967022ff1fdd677",
+          "bytes": 1542,
+          "snapshot_relative_path": "six-persona-main/app/temple/page.tsx"
+        },
+        {
+          "path": "app/three-pillars/page.tsx",
+          "git_blob": "3e679aec050948d823a7022dbea68a8279085eed",
+          "sha256": "4b6933924702516b96ea0e4674cd6cc77c375a4f5b77a0b6c73106582ed8a69c",
+          "bytes": 18657,
+          "snapshot_relative_path": "six-persona-main/app/three-pillars/page.tsx"
+        },
+        {
+          "path": "app/tokenomics/page.tsx",
+          "git_blob": "db5719c25c5d0a004c4b5382a318adab40e50afb",
+          "sha256": "e8be7aa83fa4b05f0c8cf5bd8f873cac9cca5531f251f74427308145371a9156",
+          "bytes": 18078,
+          "snapshot_relative_path": "six-persona-main/app/tokenomics/page.tsx"
+        },
+        {
+          "path": "app/tokens/page.tsx",
+          "git_blob": "4e303552a9a260229db5dc5a0a96a1d74ba3bd97",
+          "sha256": "d3a5b8b0d23ba2786772abaf7616ffc7addac9caa6ecff1f44f42e187098eaa2",
+          "bytes": 13566,
+          "snapshot_relative_path": "six-persona-main/app/tokens/page.tsx"
+        },
+        {
+          "path": "app/transparency/page.tsx",
+          "git_blob": "51d934a8e66ad71cd90f4f5ab7ba72c7389c31cb",
+          "sha256": "a004672f03a15d8f0b7d6644977114f7e75a3ec8ce9784a1f7b4029a6d66bd86",
+          "bytes": 15224,
+          "snapshot_relative_path": "six-persona-main/app/transparency/page.tsx"
+        },
+        {
+          "path": "app/travel/page.tsx",
+          "git_blob": "8b0dfff3813713561532a0aab4353d340039a56a",
+          "sha256": "2322b11b29637de90782d29b8fc95d435bdb6e11179571a47272ac486037ded4",
+          "bytes": 38347,
+          "snapshot_relative_path": "six-persona-main/app/travel/page.tsx"
+        },
+        {
+          "path": "app/tribekey/page.tsx",
+          "git_blob": "66e714ef7a33d022a08d30a58696353d33e5646b",
+          "sha256": "1922046ac0bb2ba74516c34f649215b54dba54d4a521d860851bc7fafb5d86ee",
+          "bytes": 20503,
+          "snapshot_relative_path": "six-persona-main/app/tribekey/page.tsx"
+        },
+        {
+          "path": "app/twiddle/[id]/page.tsx",
+          "git_blob": "dacd725ce920019e455e4177332f9bbe199ac103",
+          "sha256": "a8c6c06fea168492ed0930d9ff4d80f4acb8b022c8d6c4c2bfd4c1ffaa5a6280",
+          "bytes": 17277,
+          "snapshot_relative_path": "six-persona-main/app/twiddle/[id]/page.tsx"
+        },
+        {
+          "path": "app/twiddle/constellation/page.tsx",
+          "git_blob": "32edd4b3c786e6c4587fbaf1e49ce746ff2ef1ea",
+          "sha256": "ce212c8c759e5ea7ee09c90adda6fc92f6b40c359e039c9b00b102488052ab1b",
+          "bytes": 15048,
+          "snapshot_relative_path": "six-persona-main/app/twiddle/constellation/page.tsx"
+        },
+        {
+          "path": "app/twiddle/page.tsx",
+          "git_blob": "0687e3029d81ad00bc20121bcc06b66a0e357cbb",
+          "sha256": "b608caf5af316e1b52db6a19327ca2779d489a3a73886671d0ea11439a585e79",
+          "bytes": 18508,
+          "snapshot_relative_path": "six-persona-main/app/twiddle/page.tsx"
+        },
+        {
+          "path": "app/unsubscribe/page.tsx",
+          "git_blob": "dcccaebaba92f112c84f3dd47146de9fa910dc7a",
+          "sha256": "8735f2baf24f70d06b3ae2e69a1f3594016f4c2aa356636f016f0ff523f1a3a4",
+          "bytes": 2121,
+          "snapshot_relative_path": "six-persona-main/app/unsubscribe/page.tsx"
+        },
+        {
+          "path": "app/vision/page.tsx",
+          "git_blob": "012969dd02cd18471789e51cbbba83dabd263f60",
+          "sha256": "7c114f36a80698a4bf1d9c5e7c1333324fd24a1332211c22e483b3d055dfb4e6",
+          "bytes": 4323,
+          "snapshot_relative_path": "six-persona-main/app/vision/page.tsx"
+        },
+        {
+          "path": "app/waddle/page.tsx",
+          "git_blob": "0afab93110b404208704ddcae09a95d21d59fa73",
+          "sha256": "0f105453badc6f448d90b804562fae8e56bd197525ebf0cbedec1d070d974cab",
+          "bytes": 22998,
+          "snapshot_relative_path": "six-persona-main/app/waddle/page.tsx"
+        },
+        {
+          "path": "app/world/match/page.tsx",
+          "git_blob": "3f6b3b0b1c534afb839e7814debf6068f1f7b2e9",
+          "sha256": "933622f7fb2af8813f5340645f493a8029cafa7ecbefb9154eef5c478b72be54",
+          "bytes": 9445,
+          "snapshot_relative_path": "six-persona-main/app/world/match/page.tsx"
+        },
+        {
+          "path": "app/world/page.tsx",
+          "git_blob": "218a262273f166032a38afd9a4b092a7195401ff",
+          "sha256": "2caf04a9c3c9d68ed1ae7acca18508f8edf7565b525b2810336bac720d1517de",
+          "bytes": 7602,
+          "snapshot_relative_path": "six-persona-main/app/world/page.tsx"
+        },
+        {
+          "path": "components/ArtifactGenerator.tsx",
+          "git_blob": "c7e6be95dde8ad17973de5138a6d47c1b26c7077",
+          "sha256": "52dbb17eecd20be8c3e9819ed12dc198560a3002bd2a29200cca11b7c518b1a2",
+          "bytes": 5177,
+          "snapshot_relative_path": "six-persona-main/components/ArtifactGenerator.tsx"
+        },
+        {
+          "path": "components/PublicFooter.tsx",
+          "git_blob": "a45cb1289b3ae582cf23b6f2de66fceb5ddfeae9",
+          "sha256": "a4a3f6015c9bb7d2fd342346942f96bba9a71151da032a781c5395ddbdcb31d9",
+          "bytes": 1425,
+          "snapshot_relative_path": "six-persona-main/components/PublicFooter.tsx"
+        },
+        {
+          "path": "components/PublicNav.tsx",
+          "git_blob": "f1f479b26bc697742ed58ef4920c5a1568408951",
+          "sha256": "5277f4ca227653132c485aa58a28ff4616c73afcfc11bae5e3e7fc6c20b6a8c6",
+          "bytes": 4118,
+          "snapshot_relative_path": "six-persona-main/components/PublicNav.tsx"
+        },
+        {
+          "path": "components/WelcomeModal.tsx",
+          "git_blob": "7db3e77f9ed6c2a93ce3c61e4a9d558c8e98de9e",
+          "sha256": "93956d6e971d49a707d43c8c3e212f26a801af8b5a585152452d4ba111d4dccc",
+          "bytes": 7916,
+          "snapshot_relative_path": "six-persona-main/components/WelcomeModal.tsx"
+        },
+        {
+          "path": "components/onboarding/PhilosophicalSurvey.tsx",
+          "git_blob": "6c58e01373dfae5c75823ff1094f3d493d42ad06",
+          "sha256": "e5fb417d4b99a371126a73a56d86fbe82761cb55b032e71fe844d58c63936e15",
+          "bytes": 8469,
+          "snapshot_relative_path": "six-persona-main/components/onboarding/PhilosophicalSurvey.tsx"
+        },
+        {
+          "path": "components/scan/ScanUploadWidget.tsx",
+          "git_blob": "31e5eca73719287e47f857639148a0888241c641",
+          "sha256": "802f3754086b2054f2ed240971138fedcf3cd3dab6e11d1e68b234dc53268b6c",
+          "bytes": 14215,
+          "snapshot_relative_path": "six-persona-main/components/scan/ScanUploadWidget.tsx"
+        },
+        {
+          "path": "components/shared/Providers.tsx",
+          "git_blob": "56083956edb7a68434651e54fe076edbc1f4066b",
+          "sha256": "1ab4906a1bcf5b9140e991258db6f421f005b24291ca7ece3f4a83307fa4b24d",
+          "bytes": 460,
+          "snapshot_relative_path": "six-persona-main/components/shared/Providers.tsx"
+        },
+        {
+          "path": "components/temple/SalonRoom.tsx",
+          "git_blob": "92adc779e0b04e5ad91131bbec45fabf13896d17",
+          "sha256": "06733ddb4ef42820ef92a37b95825f881c93b7e82d0a2914633875554b355ff6",
+          "bytes": 2774,
+          "snapshot_relative_path": "six-persona-main/components/temple/SalonRoom.tsx"
+        },
+        {
+          "path": "components/temple/TempleEnvironment.tsx",
+          "git_blob": "c5fa692f50e47de1508ca3aef0e861bce9049f68",
+          "sha256": "2890194a05e52009db8b347452bacbaf450f49d668a27a497f95b7e69e1971e2",
+          "bytes": 2483,
+          "snapshot_relative_path": "six-persona-main/components/temple/TempleEnvironment.tsx"
+        },
+        {
+          "path": "components/temple/TempleScene.tsx",
+          "git_blob": "2109af843714156125547a6e825cded687c13f64",
+          "sha256": "375f6977a8d3cfaa813233e17bbee6297a6fdc8ad77c8231cd67a89f065189d5",
+          "bytes": 1361,
+          "snapshot_relative_path": "six-persona-main/components/temple/TempleScene.tsx"
+        },
+        {
+          "path": "components/temple/ThinkerAvatar.tsx",
+          "git_blob": "c4b427c717e848ef91d8901b41f45e0cc649aca5",
+          "sha256": "5ba23309df4ceaad674a263232a042eaf7e7374086d56262ad02b05ffe0f212f",
+          "bytes": 2919,
+          "snapshot_relative_path": "six-persona-main/components/temple/ThinkerAvatar.tsx"
+        },
+        {
+          "path": "components/workspace/CollaborationSandbox.tsx",
+          "git_blob": "04e1d60f7f06d5bd298becf330a48d560d0af964",
+          "sha256": "cc59e3b1cbb5472775b99833faaf24989e4def2fe9f554655619280158c1110b",
+          "bytes": 22806,
+          "snapshot_relative_path": "six-persona-main/components/workspace/CollaborationSandbox.tsx"
+        },
+        {
+          "path": "lib/auth/checkAccess.ts",
+          "git_blob": "bf479599f9526da68c790105363a5c8274eab8b6",
+          "sha256": "3f31d714fbceb415bf13a65f86674d910e01d9a99ec0cdd5f12c31cb15b9458d",
+          "bytes": 652,
+          "snapshot_relative_path": "six-persona-main/lib/auth/checkAccess.ts"
+        },
+        {
+          "path": "lib/blockchain/liveBaseProfile.ts",
+          "git_blob": "286379ef4e5c3e3f635fdf5648779110e922c0bd",
+          "sha256": "01dcc3c397832cec2fcc8fb58470c89c9a2f28dd33283e23d9b1fb6025e17eba",
+          "bytes": 7335,
+          "snapshot_relative_path": "six-persona-main/lib/blockchain/liveBaseProfile.ts"
+        },
+        {
+          "path": "lib/books/catalog.ts",
+          "git_blob": "011f017705e891749a03baa32729255a4eee9fcc",
+          "sha256": "bb07ef2d0cce2b0e2fe841c9b91ad0c7b81fe3e09397c374721ffc5f9466ecf8",
+          "bytes": 3031,
+          "snapshot_relative_path": "six-persona-main/lib/books/catalog.ts"
+        },
+        {
+          "path": "lib/hooks/usePodSync.ts",
+          "git_blob": "a23176a08d4f2258308e4f28f9e13f0976e3a916",
+          "sha256": "0ff24c0e67a2e0a19af3c0496aac95f0772b9e4b3fc881e6a53ae4dff14fdfdb",
+          "bytes": 48130,
+          "snapshot_relative_path": "six-persona-main/lib/hooks/usePodSync.ts"
+        },
+        {
+          "path": "lib/hooks/useProjectEscrow.ts",
+          "git_blob": "ddf011e7d44b6649c3df2221f50a4e4f5d86ee84",
+          "sha256": "6ca205e43ee2d13ddf48aa090e2a226e6393502ff330a29efd2f3415b473816a",
+          "bytes": 20013,
+          "snapshot_relative_path": "six-persona-main/lib/hooks/useProjectEscrow.ts"
+        },
+        {
+          "path": "lib/manifesto.ts",
+          "git_blob": "1e6da132c53cc77b162e6291fad534c36b0fefc7",
+          "sha256": "e0448eb83f329448e4154af631a25bf1e71ba10095c48050f1894045d7f40add",
+          "bytes": 8977,
+          "snapshot_relative_path": "six-persona-main/lib/manifesto.ts"
+        },
+        {
+          "path": "lib/movement/explorerGraph.ts",
+          "git_blob": "19920f80ac936975d66521ffa3efbae3dd351881",
+          "sha256": "aaee3743079d860870316fe0366ce69f7e1b0fba4cfe670643334bd6e1b5f08d",
+          "bytes": 2020,
+          "snapshot_relative_path": "six-persona-main/lib/movement/explorerGraph.ts"
+        },
+        {
+          "path": "lib/movement/podSync.ts",
+          "git_blob": "a246848868235c6ab1adb00932d13afd73091c6b",
+          "sha256": "69f1cf79e4b4c9451ebc95d699864c59e4eab64612089c01574dd4d39f42b3d3",
+          "bytes": 2273,
+          "snapshot_relative_path": "six-persona-main/lib/movement/podSync.ts"
+        },
+        {
+          "path": "lib/renderMarkdown.ts",
+          "git_blob": "71e10fffe2f24932ee89c1b4d6583349704365e4",
+          "sha256": "a0a8f3776a199087e9210a8de294aaf35091d4fe44056ba13b7ab26fcd05a3e6",
+          "bytes": 1180,
+          "snapshot_relative_path": "six-persona-main/lib/renderMarkdown.ts"
+        },
+        {
+          "path": "lib/supabase/client.ts",
+          "git_blob": "e6aa3fcb97a4619fc472f2161a1e890c3cbb23f0",
+          "sha256": "79d28b7cc5e3dbbf81641d19425c5f83976c66fbe9acc5a183cb74ca5d01db25",
+          "bytes": 738,
+          "snapshot_relative_path": "six-persona-main/lib/supabase/client.ts"
+        },
+        {
+          "path": "lib/temple/templeConstants.ts",
+          "git_blob": "7b3b550ef1b8b255686cce980eb09016bf87f7e4",
+          "sha256": "1cf31c772a0ac233a35c8deff6c644b5d93044bf8ad6c26f74060eee6d2778f3",
+          "bytes": 645,
+          "snapshot_relative_path": "six-persona-main/lib/temple/templeConstants.ts"
+        },
+        {
+          "path": "lib/tts.ts",
+          "git_blob": "7fbfd927c56a62fd599aefb29a4ebf007772c3b1",
+          "sha256": "d795180686c85fba8291bd60964f21861954a799ff0eb1bcb619dfb35377b191",
+          "bytes": 3047,
+          "snapshot_relative_path": "six-persona-main/lib/tts.ts"
+        },
+        {
+          "path": "lib/voiceRecorder.ts",
+          "git_blob": "17dc9e2a4ea3eff234d3acb7d2ec3eaaa1703346",
+          "sha256": "0ccc6e7a720f1f2e66b9baef3027d4f4c2496868bc9d7ea553050d345ca0a45f",
+          "bytes": 1596,
+          "snapshot_relative_path": "six-persona-main/lib/voiceRecorder.ts"
+        },
+        {
+          "path": "lib/wagmi/config.ts",
+          "git_blob": "9b06dc4e1098ed257c181e4b5b8d4de696633da0",
+          "sha256": "9ea7b7d1ed79a71a5c10d4b2972dbbaa634d52a8837459715951b813aca61dea",
+          "bytes": 616,
+          "snapshot_relative_path": "six-persona-main/lib/wagmi/config.ts"
+        },
+        {
+          "path": "lib/world/frequency.ts",
+          "git_blob": "497491e3e10c0a2c3a2165d23b394d501e4d08dc",
+          "sha256": "6376d96266636c658a50e2269d5a3db4c4c9e8fc27b9f7771fda8977fe5f5a41",
+          "bytes": 3754,
+          "snapshot_relative_path": "six-persona-main/lib/world/frequency.ts"
+        },
+        {
+          "path": "next.config.ts",
+          "git_blob": "09d37219a282c9be43e95be707c2287df77ab1c6",
+          "sha256": "8494772620bc2d34a6b60f4c39348e07268c438ecf856c27c6b45f3955870f95",
+          "bytes": 158,
+          "snapshot_relative_path": "six-persona-main/next.config.ts"
+        },
+        {
+          "path": "package-lock.json",
+          "git_blob": "b82ea6b96488b475e7884052f8fe14b7e05d2c12",
+          "sha256": "2afa22e24fecfb3c05aaa134df6c79de3c97f665e3b5bcafb26c2d3bcf3298b6",
+          "bytes": 291923,
+          "snapshot_relative_path": "six-persona-main/package-lock.json"
+        },
+        {
+          "path": "package.json",
+          "git_blob": "db4fc3c5612ec0eb2211c7a8d1c63897cc77a57d",
+          "sha256": "ec06e083112d80212eb9f2cbcfd1411c876d0e730b76a565a7c5c767f2a268ba",
+          "bytes": 1105,
+          "snapshot_relative_path": "six-persona-main/package.json"
+        },
+        {
+          "path": "postcss.config.mjs",
+          "git_blob": "61e36849cf7cfa9f1f71b4a3964a4953e3e243d3",
+          "sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
+          "bytes": 94,
+          "snapshot_relative_path": "six-persona-main/postcss.config.mjs"
+        },
+        {
+          "path": "public/file.svg",
+          "git_blob": "004145cddf3f9db91b57b9cb596683c8eb420862",
+          "sha256": "2b67812c325c199a02536cdbeea0c593a72f707d323b72ee3e08dbab06753bd4",
+          "bytes": 391,
+          "snapshot_relative_path": "six-persona-main/public/file.svg"
+        },
+        {
+          "path": "public/globe.svg",
+          "git_blob": "567f17b0d7c7fb662c16d4357dd74830caf2dccb",
+          "sha256": "b614b9bf183925957661ac851498fe1d8029fd43a62fbfed86f9e2624a57e7cf",
+          "bytes": 1035,
+          "snapshot_relative_path": "six-persona-main/public/globe.svg"
+        },
+        {
+          "path": "public/icon-192.png",
+          "git_blob": "13b970240ba3da945f4dd208719b1f8e0ad0ecad",
+          "sha256": "391b9a899be6289cd5b93f67c9faf8569109a4b7827f01f4e10baa3425c68847",
+          "bytes": 601,
+          "snapshot_relative_path": "six-persona-main/public/icon-192.png"
+        },
+        {
+          "path": "public/icon-512.png",
+          "git_blob": "ad47bc81141a1c220d2da38682be9ad6722ae210",
+          "sha256": "bdb116f4579400cd81483954d8c08200d595176a4718cdf1828280bfec2d3d0f",
+          "bytes": 2209,
+          "snapshot_relative_path": "six-persona-main/public/icon-512.png"
+        },
+        {
+          "path": "public/images/hero-africa.jpeg",
+          "git_blob": "870952acb40bb986d97eaad18087ff1ceed82633",
+          "sha256": "db131986f373ed6f40e89e297662507258ff35665c3f4331f51a6cf155d83d09",
+          "bytes": 305146,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-africa.jpeg"
+        },
+        {
+          "path": "public/images/hero-agora-purple.jpeg",
+          "git_blob": "13f790c9c208d3a36199156784bef12643e1769b",
+          "sha256": "ea85f8db593426dae111c8f2937ee99e9933427ec8cbd36a32e00bd65d97638f",
+          "bytes": 403728,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-agora-purple.jpeg"
+        },
+        {
+          "path": "public/images/hero-council-mode.jpeg",
+          "git_blob": "cd1de6605b1d849384b02469f1e882be4debdc3d",
+          "sha256": "7783285ca6975edaccb263111fca85232baa0b7d17ca0d91d9af3a44445fa4d9",
+          "bytes": 296363,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-council-mode.jpeg"
+        },
+        {
+          "path": "public/images/hero-council.jpeg",
+          "git_blob": "8ec3815a8f19ab1e1956122d2283268f139a2c14",
+          "sha256": "a8caa4dc3e3c2141dd6397bcd9b35c9b74bb7b3a0dbb9a0940824e46b8b30cb1",
+          "bytes": 312862,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-council.jpeg"
+        },
+        {
+          "path": "public/images/hero-guild.jpeg",
+          "git_blob": "2dad95a7e122d3852dbbd5654f73e88ad3f63344",
+          "sha256": "99a955241b2a71f87ceeac2345160485fb8b93817bc783e5a52e689b8506dc3f",
+          "bytes": 345407,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-guild.jpeg"
+        },
+        {
+          "path": "public/images/hero-mission.jpeg",
+          "git_blob": "d3f2c1c1405af81ddd3a4a14fa7358e043ba425d",
+          "sha256": "583447f4713bf2ca9aa67e23358a399bfae3224ce8e3e95731999330920dceb6",
+          "bytes": 299905,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-mission.jpeg"
+        },
+        {
+          "path": "public/images/hero-music-dark.jpeg",
+          "git_blob": "5f024514a88218b4118e6c494381b6fb512db628",
+          "sha256": "709bd873f1768fdcc39156833c396421a12b3ca87ce7699c1a426d5ec2073b8b",
+          "bytes": 373391,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-music-dark.jpeg"
+        },
+        {
+          "path": "public/images/hero-music-therapy.jpeg",
+          "git_blob": "76df0289293382950098c97e6c0a0805c3bd578f",
+          "sha256": "08ee52a4f750e2dc2303e7ede5fc912f7f4635b1109ecd83aba4728740eed46d",
+          "bytes": 339694,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-music-therapy.jpeg"
+        },
+        {
+          "path": "public/images/hero-physical-salon.jpeg",
+          "git_blob": "7cbb9d43797abc44a86e369b28c10359e8e5e9f9",
+          "sha256": "8c81a3d16a62445a929c57f3ed235eece6e4e61b47b27b4658319c9e149e6213",
+          "bytes": 354787,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-physical-salon.jpeg"
+        },
+        {
+          "path": "public/images/hero-renaissance.jpeg",
+          "git_blob": "bbdc9fda5b266ef5ddf02040afd89fc8e9ae43d6",
+          "sha256": "4c0e25cb48acc121b475941bca3834bc2b49f724436c64d5cb9e63c0e730a5f2",
+          "bytes": 355506,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-renaissance.jpeg"
+        },
+        {
+          "path": "public/images/hero-salon.jpeg",
+          "git_blob": "112e3d93c05d2b44937906c8470fe25e34b2024a",
+          "sha256": "7ebcaff4760696df90c4f99ce63dc5c51491f6e345b19c75c7085104620488b1",
+          "bytes": 374560,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-salon.jpeg"
+        },
+        {
+          "path": "public/images/hero-storefront.jpeg",
+          "git_blob": "f8069cb99cc2435cf3397292878d7565fc43f219",
+          "sha256": "0d039378f3096dd19f78b841f2dbfc3c07f77c6f8dd9c788b0413947e4cb6875",
+          "bytes": 328050,
+          "snapshot_relative_path": "six-persona-main/public/images/hero-storefront.jpeg"
+        },
+        {
+          "path": "public/manifest.json",
+          "git_blob": "6ba8339486ffc416ecdcdaf6c3e5cba459910c7a",
+          "sha256": "d71508ab41be96f469171406c64387e733a345def50d5567c19ec55bd4e01452",
+          "bytes": 482,
+          "snapshot_relative_path": "six-persona-main/public/manifest.json"
+        },
+        {
+          "path": "public/next.svg",
+          "git_blob": "5174b28c565c285e3e312ec5178be64fbeca8398",
+          "sha256": "55995dfad6ecb4945a1e856ddca03c5e16aa5bf13fd21b4df6a74ae79357bcfc",
+          "bytes": 1375,
+          "snapshot_relative_path": "six-persona-main/public/next.svg"
+        },
+        {
+          "path": "public/vercel.svg",
+          "git_blob": "77053960334e2e34dc584dea8019925c3b4ccca9",
+          "sha256": "f081337b2fee635b455b63275406a3e7f39d6a014e25ad90dab5a67e62a12ac4",
+          "bytes": 128,
+          "snapshot_relative_path": "six-persona-main/public/vercel.svg"
+        },
+        {
+          "path": "public/window.svg",
+          "git_blob": "b2b2a44f6ebc70c450043c05a002e7a93ba5d651",
+          "sha256": "644768c4aaeb4767bce293344eeb0c125fb804a94d801440424072202d85e3a1",
+          "bytes": 385,
+          "snapshot_relative_path": "six-persona-main/public/window.svg"
+        },
+        {
+          "path": "tsconfig.json",
+          "git_blob": "0994d3777533bdac196e74ac6f5fa7934f66cc53",
+          "sha256": "3f47b0d42d994c99790f3989cb57e8adb32036bade174e0585f11fb97073b3b4",
+          "bytes": 676,
+          "snapshot_relative_path": "six-persona-main/tsconfig.json"
+        }
+      ],
+      "omissions": [],
+      "batch_errors": [],
+      "font_declarations": [
+        {
+          "path": "app/council/page.tsx",
+          "line": 334,
+          "declaration": "<div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 341,
+          "declaration": "<a href=\"/login\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: gold, textDecoration: 'none' }}>SIGN IN</a>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 365,
+          "declaration": "fontFamily: 'Cinzel, serif', fontSize: '11px', color: t.color,"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 372,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: active ? t.color : '#555' }}>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 385,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 386,
+          "declaration": "<h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.3 }}>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 395,
+          "declaration": "style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 403,
+          "declaration": "style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 411,
+          "declaration": "style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 419,
+          "declaration": "style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 426,
+          "declaration": "<button onClick={() => setOnboardStep(s => s + 1)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', padding: '0 24px', height: '44px', cursor: 'pointer', borderRadius: 0 }}>NEXT</button>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 428,
+          "declaration": "<button onClick={() => completeOnboarding()} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', padding: '0 24px', height: '44px', cursor: 'pointer', borderRadius: 0 }}>START</button>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 430,
+          "declaration": "<button onClick={() => completeOnboarding(true)} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: muted, background: 'none', border: 'none', cursor: 'pointer' }}>SKIP</button>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 437,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 438,
+          "declaration": "<h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem', lineHeight: 1.3 }}>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 449,
+          "declaration": "fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory85,"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 475,
+          "declaration": "fontFamily: 'Cinzel, serif', fontSize: '9px', color: msg.thinkerColor, marginTop: '2px',"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 480,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: msg.thinkerColor, marginBottom: '4px' }}>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 497,
+          "declaration": "fontSize: '10px', letterSpacing: '0.1em', fontFamily: 'Cinzel, serif',"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 519,
+          "declaration": "style={{ flex: 1, background: '#111', border: `1px solid ${gold}22`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none' }} />"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 520,
+          "declaration": "<button type=\"submit\" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.12em', color: '#0a0a0a', background: gold, border: 'none', padding: '10px 16px', cursor: 'pointer', borderRadius: 0 }}>CREATE</button>"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 531,
+          "declaration": "style={{ background: 'none', border: 'none', cursor: verdictLoading ? 'wait' : 'pointer', color: lastVerdictUrl ? `${gold}ee` : `${gold}88`, fontSize: '10px', letterSpacing: '0.15em', fontFamily: 'Cinzel, serif', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s' }}"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 537,
+          "declaration": "<button onClick={() => setShowTaskForm(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: muted, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'Cinzel, serif', letterSpacing: '0.08em' }}"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 554,
+          "declaration": "fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment,"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 559,
+          "declaration": "fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em',"
+        },
+        {
+          "path": "app/council/page.tsx",
+          "line": 571,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: gold }}>{toast}</span>"
+        },
+        {
+          "path": "app/globals.css",
+          "line": 6,
+          "declaration": "html,body{height:100%;background:var(--bg-void);color:var(--text-primary);font-family:'EB Garamond',Georgia,serif;}"
+        },
+        {
+          "path": "app/layout.tsx",
+          "line": 11,
+          "declaration": "<link href=\"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:wght@400;500;600&display=swap\" rel=\"stylesheet\"/>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 192,
+          "declaration": "<div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 198,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 201,
+          "declaration": "<h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.2, marginBottom: '1.5rem', color: parchment }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 204,
+          "declaration": "<p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '18px', color: ivory85, lineHeight: 1.7, maxWidth: '540px', margin: '0 auto 2.5rem' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 208,
+          "declaration": "<a href=\"/practice\" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 212,
+          "declaration": "<a href=\"/manifesto\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: muted, textDecoration: 'none', opacity: 0.8 }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 223,
+          "declaration": "<div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${tColor}18`, border: `1.5px solid ${tColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '9px', color: tColor }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 226,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: tColor }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 230,
+          "declaration": "<p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.5, color: parchment, textAlign: 'center', margin: 0, marginBottom: '1.75rem' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 234,
+          "declaration": "<a href=\"/practice\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 246,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 249,
+          "declaration": "<h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 277,
+          "declaration": "fontFamily: 'Cinzel, serif',"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 293,
+          "declaration": "fontFamily: 'Cinzel, serif',"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 366,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>TRY IT NOW</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 367,
+          "declaration": "<h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>Ask Socrates anything.</h2>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 375,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '24px', color: gold, opacity: 0.15, marginBottom: '0.75rem' }}>{'\\u03A3'}</div>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 390,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: gold, opacity: 0.5 }}>{'\\u03A3'}</span>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 391,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.2em', color: gold, opacity: 0.4 }}>SOCRATES</span>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 409,
+          "declaration": "<a href=\"/join\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '44px' }}>Create Free Account</a>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 411,
+          "declaration": "style={{ display: 'block', margin: '0.75rem auto 0', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, background: 'none', border: 'none', cursor: 'pointer' }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 421,
+          "declaration": "style={{ flex: 1, background: '#111', border: `1px solid ${gold}18`, padding: '11px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: parchment, outline: 'none', boxSizing: 'border-box' }}"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 424,
+          "declaration": "style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', padding: '11px 20px', cursor: 'pointer', opacity: streaming || !input.trim() ? 0.4 : 1 }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 432,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: muted, opacity: 0.5 }}>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 443,
+          "declaration": "<h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 28px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>Start your practice.</h2>"
+        },
+        {
+          "path": "app/page.tsx",
+          "line": 445,
+          "declaration": "<a href=\"/practice\" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>TODAY&apos;S QUESTION &rarr;</a>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 98,
+          "declaration": "if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><PublicNav /><span style={{ color: muted, fontFamily: 'Cinzel, serif', fontSize: '11px' }}>LOADING...</span></div>;"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 111,
+          "declaration": "<div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 117,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>YOUR SALON</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 118,
+          "declaration": "<h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>{mySalon.title}</h1>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 122,
+          "declaration": "{guide.guide_level > 0 && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: gold, marginLeft: '8px' }}>{GUIDE_LEVELS[guide.guide_level]}</span>}"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 130,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: gold, border: `1px solid ${gold}44`, padding: '4px 14px', borderRadius: '10px' }}>WEEK {stats.current_week} OF 7</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 131,
+          "declaration": "{mySalon.status === 'graduating' && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: '#4CAF50', border: '1px solid rgba(76,175,80,0.4)', padding: '4px 14px', borderRadius: '10px' }}>GRADUATING</span>}"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 145,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>GRADUATION PROGRESS</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 148,
+          "declaration": "<div style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', color: sessionsAttended > 0 ? parchment : muted }}>{sessionsAttended}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 149,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>ATTENDED</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 152,
+          "declaration": "<div style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', color: sessionsLed >= graduationReq ? gold : sessionsLed > 0 ? parchment : muted }}>{sessionsLed}/{graduationReq}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 153,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>SESSIONS LED</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 156,
+          "declaration": "<div style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', color: isGuideCandidate ? gold : muted }}>{isGuideCandidate ? '\\u2713' : '\\u2014'}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 157,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>GUIDE CANDIDATE</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 172,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 182,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: parchment }}>{new Date(s.session_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 188,
+          "declaration": "{s.track && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: TRACK_COLORS[s.track] || gold, border: `1px solid ${TRACK_COLORS[s.track] || gold}44`, padding: '2px 8px', borderRadius: '10px' }}>{s.track.toUpperCase()}</span>}"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 196,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '0.5rem' }}>{completedSessions.length} SESSION{completedSessions.length !== 1 ? 'S' : ''} COMPLETED</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 207,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>MEMBERS ({members.length})</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 213,
+          "declaration": "<div style={{ width: '30px', height: '30px', borderRadius: '50%', background: m.role === 'guide' ? `${gold}22` : '#1a1a1a', border: `1px solid ${m.role === 'guide' ? gold : `${gold}44`}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '11px', color: m.role === 'guide' ? gold : parchment }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 218,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: m.role === 'guide' ? gold : m.is_guide_candidate ? '#4CAF50' : muted, marginLeft: '8px' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 240,
+          "declaration": "<div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 246,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>FIND YOUR SALON</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 247,
+          "declaration": "<h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 265,
+          "declaration": "<div style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', color: gold, marginBottom: '0.5rem' }}>{step.num}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 266,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: parchment, marginBottom: '0.5rem' }}>{step.title}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 276,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem', textAlign: 'center' }}>THREE TRACKS, ROTATED WEEKLY</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 280,
+          "declaration": "<span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: TRACK_COLORS[key] }}>{label}</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 290,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 299,
+          "declaration": "<a href=\"/practice\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '0 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '40px' }}>DAILY PRACTICE</a>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 300,
+          "declaration": "<a href=\"/join\" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '0 20px', display: 'inline-flex', alignItems: 'center', height: '40px' }}>JOIN THE SOCIETY</a>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 311,
+          "declaration": "<div style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: gold, marginBottom: '4px' }}>{s.title}</div>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 317,
+          "declaration": "<span key={t} style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.08em', color: TRACK_COLORS[t] || muted, border: `1px solid ${TRACK_COLORS[t] || muted}44`, padding: '2px 6px', borderRadius: '8px' }}>{t.toUpperCase()}</span>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 329,
+          "declaration": "style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', padding: '0 20px', cursor: 'pointer', borderRadius: 0, opacity: (joining === s.id || s.member_count >= s.max_members) ? 0.4 : 1, transition: 'opacity 0.2s' }}>"
+        },
+        {
+          "path": "app/salon/page.tsx",
+          "line": 344,
+          "declaration": "<a href=\"/leaderboard\" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, textDecoration: 'none' }}>VIEW THE LEADERBOARD &rarr;</a>"
+        }
+      ],
+      "persona_paths": {
+        "Socrates": [
+          "app/92b/page.tsx",
+          "app/access/page.tsx",
+          "app/archive/page.tsx",
+          "app/book-salons/page.tsx",
+          "app/book/page.tsx",
+          "app/council/page.tsx",
+          "app/council/verdict/[slug]/page.tsx",
+          "app/experience/page.tsx",
+          "app/explorer/[id]/page.tsx",
+          "app/feed/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/great-books/page.tsx",
+          "app/insights/page.tsx",
+          "app/join/page.tsx",
+          "app/login/page.tsx",
+          "app/match/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/practice/page.tsx",
+          "app/renaissance/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salons/page.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tokens/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "components/WelcomeModal.tsx",
+          "lib/books/catalog.ts",
+          "lib/manifesto.ts"
+        ],
+        "Einstein": [
+          "app/archive/page.tsx",
+          "app/book-salons/page.tsx",
+          "app/book/page.tsx",
+          "app/council/page.tsx",
+          "app/council/verdict/[slug]/page.tsx",
+          "app/experience/page.tsx",
+          "app/explorer/[id]/page.tsx",
+          "app/feed/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/insights/page.tsx",
+          "app/join/page.tsx",
+          "app/match/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/practice/page.tsx",
+          "app/renaissance/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "lib/books/catalog.ts",
+          "lib/manifesto.ts"
+        ],
+        "Plato": [
+          "app/book-salons/page.tsx",
+          "app/book/page.tsx",
+          "app/council/page.tsx",
+          "app/council/verdict/[slug]/page.tsx",
+          "app/experience/page.tsx",
+          "app/explorer/[id]/page.tsx",
+          "app/feed/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/insights/page.tsx",
+          "app/join/page.tsx",
+          "app/labyrinth/page.tsx",
+          "app/match/page.tsx",
+          "app/members/page.tsx",
+          "app/music-therapy/page.tsx",
+          "app/page.tsx",
+          "app/practice/page.tsx",
+          "app/renaissance/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "lib/books/catalog.ts",
+          "lib/manifesto.ts"
+        ],
+        "Nietzsche": [
+          "app/book-salons/page.tsx",
+          "app/council/page.tsx",
+          "app/council/verdict/[slug]/page.tsx",
+          "app/experience/page.tsx",
+          "app/explorer/[id]/page.tsx",
+          "app/feed/page.tsx",
+          "app/great-books/[bookId]/page.tsx",
+          "app/great-books/[bookId]/seminar/page.tsx",
+          "app/great-books/page.tsx",
+          "app/insights/page.tsx",
+          "app/join/page.tsx",
+          "app/match/page.tsx",
+          "app/members/page.tsx",
+          "app/music-therapy/page.tsx",
+          "app/page.tsx",
+          "app/practice/page.tsx",
+          "app/renaissance/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/salons/page.tsx",
+          "app/temple-quest/page.tsx",
+          "app/tokens/page.tsx",
+          "app/tribekey/page.tsx",
+          "app/twiddle/[id]/page.tsx",
+          "app/twiddle/page.tsx",
+          "app/waddle/page.tsx",
+          "lib/books/catalog.ts",
+          "lib/manifesto.ts"
+        ],
+        "Marcus Aurelius": [
+          "app/council/verdict/[slug]/page.tsx",
+          "app/experience/page.tsx",
+          "app/explorer/[id]/page.tsx",
+          "app/feed/page.tsx",
+          "app/insights/page.tsx",
+          "app/join/page.tsx",
+          "app/match/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/practice/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx",
+          "app/tribekey/page.tsx",
+          "lib/books/catalog.ts"
+        ],
+        "Steve Jobs": [
+          "app/council/verdict/[slug]/page.tsx",
+          "app/experience/page.tsx",
+          "app/explorer/[id]/page.tsx",
+          "app/feed/page.tsx",
+          "app/insights/page.tsx",
+          "app/join/page.tsx",
+          "app/match/page.tsx",
+          "app/members/page.tsx",
+          "app/page.tsx",
+          "app/practice/page.tsx",
+          "app/salon/HubOverlay.tsx",
+          "app/salon/MerchOverlay.tsx",
+          "app/salon/SalonOnboarding.tsx"
+        ]
+      },
+      "external_asset_urls_not_fetched": [
+        "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:wght@400;500;600&display=swap",
+        "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/DATA.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Giovanni-DeCunto-Little-Wings-compressed-600x596.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Overpopulation.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Prometheus.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/Radioactive_Rihanna.jpg",
+        "https://www.giovannidecunto.com/wp-content/uploads/2019/07/solar-energy.jpg"
+      ],
+      "dependency_metadata": {
+        "name": "society-of-explorers",
+        "version": "0.1.0",
+        "dependencies": {
+          "lucide-react": "^0.577.0",
+          "next": "16.2.1",
+          "react": "19.2.4",
+          "react-dom": "19.2.4"
+        }
+      },
+      "screenshot_claim": "No historical rendered screenshot has been reconstructed or authenticated.",
+      "saved_deployment_metadata_matches": [
+        {
+          "id": "dpl_4c7EWRLQiHFDgmgm7dT1wLJvcqgA",
+          "createdAt": "2026-05-17T17:30:30.160Z",
+          "deploymentUrl": "https://society-of-explorers-84rehmml3-chris-projects-03dec906.vercel.app",
+          "inspectorUrl": "https://vercel.com/chris-projects-03dec906/society-of-explorers/4c7EWRLQiHFDgmgm7dT1wLJvcqgA",
+          "gitSha": "47fecac81619c369ebd9d94bf926e815f300184e",
+          "gitBranch": "main"
+        }
+      ]
+    }
+  ],
+  "supplemental_current_fonts": [
+    {
+      "filename": "cormorant-garamond-latin-400-normal.1fm7t8dmldrtt.woff2",
+      "bytes": 22876,
+      "sha256": "8048ac209bec741e1c29cd0cfac5aac1c0c2ba8c3ddbd4a58fa9bd92ef5c63c2",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "eb-garamond-latin-400-italic.0yu9-ue6oo7gj.woff",
+      "bytes": 27136,
+      "sha256": "1b239e9dc3f4b5e9489c6d9511fc704f00e2e70f6f53cfcf04bcae567792b9a8",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cinzel-latin-400-normal.296sa8iujcy2w.woff",
+      "bytes": 16616,
+      "sha256": "99c6477f06f0c717d31f2bb41013582c347be65366179d5726d107ad908ff3b0",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cinzel-latin-400-normal.0n_taxp8j46rv.woff2",
+      "bytes": 14128,
+      "sha256": "b873cdd90d6bd9ca4793c805b4175abfae00b3611ee8afccf63067133dcf1217",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-500-normal.410p0bora3wvy.woff",
+      "bytes": 31372,
+      "sha256": "314ee3edd5ddcdef5cf2374c1126b8be9f7f1ebd6c5c66a23c237f3b836a3ec1",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-400-italic.1zhb_kb4w2oq1.woff2",
+      "bytes": 23660,
+      "sha256": "e48e58027030df56869b795ca6f19b7012158275f7ad7cde1900b4a0b68d02e2",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "playfair-display-latin-400-normal.3kms1j4ya76vw.woff",
+      "bytes": 26900,
+      "sha256": "3afd64d114a27e2f6604684c30f72d6dbb6ba3e6f6b1675f15a942efc7a56410",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cinzel-latin-500-normal.3n_gogq5mxma1.woff2",
+      "bytes": 15040,
+      "sha256": "2864b2c9db377e10db43d3ca1ab268c0e10cf3ee94b1a325d104b8e4a74dc7da",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "eb-garamond-latin-500-normal.1vq4ajh_zhpzu.woff",
+      "bytes": 27868,
+      "sha256": "808afe71061f14060c9b98b8dc9c833b7a280f1fc0abb10c4256d19d38c119c8",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-300-italic.2tfo10r16xqyf.woff",
+      "bytes": 31772,
+      "sha256": "f1fcfb1d2ffbc32dc96f9ade4e6b86cf30d012e51bfc6566ce06a95d9f1f8185",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "playfair-display-latin-600-normal.3i0fymmczhoiz.woff",
+      "bytes": 28356,
+      "sha256": "5798aa5a8bab09880d5e1dd9bfbc8e952fb0c80ec78e695cc339e15f006e8bb8",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-600-normal.2k7r9iymu8ux8.woff2",
+      "bytes": 23396,
+      "sha256": "ae062b6d5ae308e7edf61b28b07b9984bbb6e961b1f34d9b2c2f4389c33f21ea",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "eb-garamond-latin-500-normal.3h21p6yf3czuq.woff2",
+      "bytes": 23012,
+      "sha256": "d2bb3f624516d0233ef8a03bd7b2be47489c36809a02e83ac1bc859e85f4874a",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "playfair-display-latin-500-normal.1to3h1yjpwzkk.woff2",
+      "bytes": 23048,
+      "sha256": "1e3429a2122b4171bf393c8de5c501820e17ca2074c498d7080e2326975d825c",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "playfair-display-latin-500-normal.2etqo_g9osh4b.woff",
+      "bytes": 28100,
+      "sha256": "29bceb26218e4d06f84792d571112cb7447448ef375ac3c07a367a14f756bd37",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "eb-garamond-latin-400-italic.26b1s2-tuy1y0.woff2",
+      "bytes": 22172,
+      "sha256": "1bd1b20fd55986b334ba42dbcb0d9bed7e2d08fd7a713000e8041bfafa37e8ec",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-500-normal.1ua6lqq3rsqyo.woff2",
+      "bytes": 23312,
+      "sha256": "8197bf53615ddc8c423f444c7f0eec63b7fa0ba093fcfbec60dfdd28429b0fc8",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "playfair-display-latin-400-normal.2zfucbp6idj7x.woff2",
+      "bytes": 21856,
+      "sha256": "1fe9ad5d8b2ebd8ecb8fbd05bed1e3fdfa52dae3f1a04e1c219918442fe9394d",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-600-normal.0ya_yl54k7n41.woff",
+      "bytes": 31304,
+      "sha256": "6d837ba78b1d06e83248201bfc5de93b6e1c67aed36820021cff3db9602542c8",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cinzel-latin-600-normal.2kktoxdq6k5qd.woff2",
+      "bytes": 15204,
+      "sha256": "61efc27ceb7d08bb841652fa8979c0b6833b92548b7f9544c07968a6c02f28e4",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "eb-garamond-latin-400-normal.0n4cvy-el8no5.woff2",
+      "bytes": 21704,
+      "sha256": "b63448e2680a0dbde70ebb2f3de78f6c515122835491f938e8a8595b46f29210",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cinzel-latin-600-normal.0s-gj738stn36.woff",
+      "bytes": 17504,
+      "sha256": "7cffb40d1c02861fd0f2fedf9446f36b9d38ce312c723927667ebcffc8690894",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cinzel-latin-500-normal.0hd31tuk9b-us.woff",
+      "bytes": 17392,
+      "sha256": "9a9d232ab20440ff2571ebd2ef69ef562ff16b85af6a4c4eb62c1a75f986fa0f",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-300-normal.38yw8d6f55elc.woff",
+      "bytes": 29960,
+      "sha256": "7e0ceef064d516c531f4634b93ccd035bfefec833f7c03c500c284f12c777d77",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-300-normal.075cfscyyepu7.woff2",
+      "bytes": 21908,
+      "sha256": "8973d65ce70fb03cee5788acbcc36bc9e74bda2227bbef99f26c826514cc79f7",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "eb-garamond-latin-400-normal.1a85xojbvlmia.woff",
+      "bytes": 26268,
+      "sha256": "84e7b64e54398a1a7b403c93eaedf27ab757f28575144fa0c0563cd5af08d071",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-400-italic.3qhckdzyyfe93.woff",
+      "bytes": 32888,
+      "sha256": "337d07118277acbf5a0eb19c602aaf917b2485585360f2c7139ce42d9d4e6cc1",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-300-italic.23--1mrehwamr.woff2",
+      "bytes": 22484,
+      "sha256": "b931f0a45f9d8a362e45e950c004ff00c8ab7932c2c401b4db9c2b7b9247f01a",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "playfair-display-latin-600-normal.2hfg4ls1gllkc.woff2",
+      "bytes": 23228,
+      "sha256": "5d2286941a6b02a29387efa94809a064f8917598eafa67b938261cf13bb887cd",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    },
+    {
+      "filename": "cormorant-garamond-latin-400-normal.38f0-_0_stt74.woff",
+      "bytes": 30980,
+      "sha256": "b926f33f9d3d5cb64e639b8fe9ad5380560a63f3e7a29d212f2b80a2d22ec051",
+      "provenance": "Current local build font cache; NOT authenticated as a historic deployed font binary"
+    }
+  ],
+  "historic_variant_files": 226,
+  "historic_variant_bytes": 7143917,
+  "omitted_historic_files": 0,
+  "source_mutations": 0,
+  "git_history_exported": false,
+  "rendered_screenshots_created": 0,
+  "services_run": false,
+  "remote_uploads": false
+}
