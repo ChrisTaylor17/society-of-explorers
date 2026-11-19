@@ -97,7 +97,7 @@ function Reader({ bookId, search }: { bookId: string; search?: string }) {
   return <div className={styles.page}>
     <ReadingNav />
     <main id="main" className={styles.main}>
-      <nav className={styles.nav} aria-label="Reader links"><Link href="/great-books">Back to free library</Link><Link href={discussionHref}>{discussionHref === '/circles' ? 'Browse reading Circles' : 'Discuss this edition in a Circle'}</Link></nav>
+      <nav className={styles.nav} aria-label="Reader links"><Link href="/great-books">Back to free library</Link><Link href={`/notebook?book=${encodeURIComponent(bookId)}`}>Write in your notebook</Link><Link href={discussionHref}>{discussionHref === '/circles' ? 'Browse reading Circles' : 'Discuss this edition in a Circle'}</Link></nav>
       <h1 className={styles.title}>{book?.title || 'Book not found'}</h1>
       {book && <p className={styles.lead}>{book.author} · {book.year}</p>}
       {state.status === 'loading' && <p role="status" className={styles.status}>Loading the complete local edition…</p>}
