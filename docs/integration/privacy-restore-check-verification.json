@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T00:27:53.950769+00:00",
+  "baseCheckpoint": "96c36e727c37ef4482c1cac3825a8d755782de8f",
+  "status": "LOCAL_SCOPED_RESTORE_COMPARISON_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "productionRestoreVerified": false,
+  "tablesCompared": 11,
+  "rehearsal": {
+    "path": "verification/web/evidence/privacy-restore-check-2026-11-05/rehearsal.json",
+    "sha256": "97d416f5ef375def5dac3842dd140451f94965ae417d2b4adafe7550e18d34e0",
+    "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+    "checks": [
+      "The reference query refuses to run outside a repeatable-read, read-only snapshot.",
+      "A real dump and its private reference share an exported snapshot across a later source write. All 11 restored tables match.",
+      "A replacement answer with the same row count is detected and the receipt names only the affected table.",
+      "With all rows intact, the comparison detects changed RLS, a column grant and an inherited role grant.",
+      "A missing table, shared reference, linked socket and different PostgreSQL major each refuse comparison.",
+      "The exact Core and Practice changes preserve all restored rows. Both browser roles lose reads and service reads survive on all 11 tables."
+    ],
+    "fixtureEmbeddingType": "real[]",
+    "cleanup": {
+      "source": "stopped",
+      "target": "stopped"
+    },
+    "temporaryDirectoryRemoved": true,
+    "sourceHashes": {
+      "verification/web/scripts/test-privacy-restore-check.py": "9197b80c89c2a450aec3a27c60017518cab35be7c3a6fdf5e71b010906def86f",
+      "verification/web/scripts/verify-privacy-restore.py": "3c11e5ee1e2ab0af5967d914da9288b2ee3b5089b5658aa459fbceb057980b81",
+      "verification/web/scripts/rehearse-native-core-restore.py": "62dec9ba2625f81605463089782bb0e2466283f84885bc085355e20a063ea312",
+      "docs/sql/privacy-restore-reference.sql": "b9b6689757786e017314dd99e9bb8bb04675a38f0f9fbc9d11cfe75b55fd0958",
+      "docs/sql/practice-data-containment-apply.sql": "0e1c494fb39add6b9e6c656faa32dd4e888f4baedc5468905af6011841b88593",
+      "supabase/migrations/20260414_daily_practice.sql": "a928960a7db0429aaedcea5f177f7eb6b0f41b475e8c54977ba0b3cbe3be0457",
+      "supabase/migrations/20260418_practice_reflections.sql": "47529879d0d0b39b51722a1e4a69e9f2a3285eb066e21dc404f5153d1fb8deac",
+      "verification/web/tests/fixtures/core-containment-synthetic.sql": "c09a83634f7feb6ea58b02600070dccaaf67d7086949adffc40b44d2b0098433",
+      "docs/sql/first-release-core-containment-preflight.sql": "17db6ff8b73d65de0b3d87fb60fc43a84d84437341a062cb2e195f078a2f34d1",
+      "docs/sql/first-release-core-containment-apply.sql": "b88ffa86bb265f467dbf9fe9d7ba17ce246df8a8d2618db86ade8a6401fb1b1b"
+    }
+  },
+  "coreAndPracticeChecks": {
+    "path": "verification/web/evidence/privacy-restore-check-2026-11-05/api-checks.tap",
+    "sha256": "462715f5798d23ee07e65dafba93479da759304b757cb43d2ecf64fced239576",
+    "passed": 28,
+    "sources": {
+      "verification/web/tests/core-containment-db.test.mjs": "4cd6032acd42ff3b320987b470f23aa27f4c6240c3e2da18236f8972a8018c8c",
+      "verification/web/tests/practice-data-containment.test.mjs": "cea46aa926c95448879f89174826fc7816d052e23effa70d6c218762f66bb1e7",
+      "verification/web/tests/practice-privacy-api.test.mjs": "5965677c791fc82abd399f7d49ac1c243600c113cb5db40c9ed11803448745cf"
+    }
+  },
+  "scope": "Both clusters and data are disposable local fixtures. The checker compares restored row contents and catalog permissions for the first 11 tables. The approved production export, hosted behavior and full project recovery remain open."
+}

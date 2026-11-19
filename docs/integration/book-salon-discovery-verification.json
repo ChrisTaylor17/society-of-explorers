@@ -1,0 +1,73 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-11-08T13:50:57.285082+00:00",
+  "baseCommit": "36c7458f77ff18e1d24fbf823913881e89e87ec3",
+  "sourceHashes": {
+    "app/book-salons/page.tsx": "2b981d50e7ba40cba7c0e2c42e2239c9562722c589f43e45e0047a8b90c0bd22",
+    "app/api/book-salons/route.ts": "e52706355fe6166e5b5b15f72fafba599411693dbd71e0a7c5275f1e12a05db0",
+    "lib/books/salon-discovery.ts": "7bcb50c2386c5649fdc4626a91701f9ed853a0166a78df51636495f40552c731",
+    "lib/books/useBookSalonDiscovery.ts": "d9a12c5687de2fff91415010f98ebaa84a15fd7240ac9870da6c97668bb385b8",
+    "verification/web/tests/book-salon-discovery.test.mjs": "ae6e520d21f3f4fcaefc1eb6012c710d0a527ef9da37c0ecd13e62e981daf754",
+    "verification/web/tests/support/book-salon-discovery-fixture.mjs": "123dad7b0a1e7afacc1afc70f7efe5a57a6ddb80496f2e9db5776a378274790c",
+    "verification/web/scripts/browser-book-salon-discovery.mjs": "01f2ed815d5f6ae079311a3eac4a19854cb5592a8c74b742ea4fcc354fbbe674",
+    "verification/web/scripts/browser-book-salon-create.mjs": "477d872ab8fd49e927eabcfa4aef2498173fa96ad7032ec01ffd0552c689afa5",
+    "verification/web/scripts/browser-salon-journeys.mjs": "f0257b3798eb2945a936f16d0b981cfcbf3cd30ecee4615aea598090bc66ca3e",
+    "verification/web/scripts/browser-matching-boundary.mjs": "bbf10808e2396159426153c4cdee90434670eb1fda1d6796f015e38efbb67068"
+  },
+  "canonicalInputCount": 1241,
+  "canonicalInputMismatches": [],
+  "checks": {
+    "fullBuildAndTypecheck": true,
+    "scopedLint": true,
+    "routeSdkDisposableSqlCases": 6,
+    "compiledDiscoveryStories": 9,
+    "actualCompiledDiscoveryHttpChecks": 4,
+    "existingCreationStories": 6,
+    "existingSalonJourneys": 8,
+    "matchingNavigationRegressionStories": 5,
+    "matchingHttpRefusals": 9
+  },
+  "privateEvidenceDirectory": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-discovery",
+  "stageReceipts": [
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-discovery-build-03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-discovery-data-03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-discovery-lint-02.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-discovery-ui-03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-discovery-creation-101.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-discovery-journeys-07.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/book-salon-discovery-matching-109.json"
+  ],
+  "buildReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-book-salon-discovery-03-next-build.json",
+  "buildInputEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-discovery/FINAL_INPUT_RECHECK.json",
+  "browserRuns": [
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-discovery/BROWSER_RUN_03.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-discovery/BROWSER_RUN_101.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-discovery/BROWSER_RUN_07.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-discovery/BROWSER_RUN_109.json"
+  ],
+  "preservedOperationsEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-book-salon-discovery/PRESERVED_OPERATIONS.json",
+  "creationJoinAndAuthHandlersPreserved": true,
+  "databaseSchemaChanged": false,
+  "hostedCalls": false,
+  "productionClearance": false,
+  "deployment": false,
+  "spentUsd": 0,
+  "minimumSampledFreeBytes": 15655309312,
+  "maximumSampledPrivateAllocatedBytes": 19083542528,
+  "limitations": [
+    "Listing success is exercised using the actual source handler and locked Supabase client over a bounded transport adapter and disposable PostgreSQL, not hosted PostgREST/RLS.",
+    "Compiled browser tests use fictional identity/groups and explicit failed, malformed and held response fixtures. Actual compiled listing requests only accept refusal paths without issued credentials.",
+    "Offset pages are not a snapshot; intervening mutations may move rows. Refresh is available.",
+    "Ordinary public discussion is distinct from member-restricted Circle discussion. A listed group does not confirm a host, schedule, current-person membership or demand.",
+    "Private create/join account and draft retirement and an owned join receipt/error contract remain separate review work.",
+    "No hosted recovery, permission repair, real sign-in, physical-device, paid-member or production acceptance."
+  ],
+  "priorAttempts": [
+    "Data01 failed on a fixture Request.url() call; corrected to Request.url. Data02/03 pass.",
+    "UI02 correctly refused native Node fetch under the network-denial harness. UI03 uses same-origin-only browser navigations for compiled loopback checks; network denial remains enabled.",
+    "Journey06 expected superseded optional AI guide wording; the assertion now matches the intentional optional AI perspective copy. Journey07 passes.",
+    "Matching108 used the wrong working directory for the existing offline fixture. Matching109 corrects only the wrapper working directory and passes."
+  ],
+  "allOwnedServersStopped": true,
+  "allOwnedPortsClosed": true
+}

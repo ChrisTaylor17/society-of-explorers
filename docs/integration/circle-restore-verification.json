@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "baseCommit": "01a1f6b3d1b27191893fbab1b57881388ba15736",
+  "verifiedAt": "2026-11-06T10:22:00.381351+00:00",
+  "status": "LOCAL_CIRCLE_RESTORE_CHECK_PASS_PRODUCTION_HOLD",
+  "productionRestoreVerified": false,
+  "productionCleared": false,
+  "baseline": {
+    "scope": "soe-privacy-restore-v5",
+    "tablesCompared": 17,
+    "incompleteArchive": "MATCH",
+    "omittedCircleRowSets": [
+      "book_cohort_members",
+      "book_cohorts",
+      "seminar_messages"
+    ]
+  },
+  "current": {
+    "scope": "soe-privacy-restore-v7",
+    "tablesCompared": 20,
+    "completeArchive": "MATCH",
+    "incompleteArchive": "MISMATCH",
+    "omittedCircleRowSetsDetected": [
+      "book_cohort_members",
+      "book_cohorts",
+      "seminar_messages"
+    ],
+    "sameCountChangesDetected": true,
+    "grantRowSecurityAndRealtimeDriftDetected": true
+  },
+  "withWalletState": {
+    "scope": "soe-privacy-restore-v8",
+    "tablesCompared": 22,
+    "completeArchive": "MATCH",
+    "incompleteArchive": "MISMATCH",
+    "omittedRowSetsDetected": [
+      "book_cohort_members",
+      "book_cohorts",
+      "seminar_messages",
+      "soe_wallet_private.revoked_sessions",
+      "soe_wallet_private.used_challenges"
+    ]
+  },
+  "verification": {
+    "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+    "restoreChecksPassed": 43,
+    "previousFormatsByteIdentical": [
+      "soe-privacy-restore-v1",
+      "soe-privacy-restore-v2",
+      "soe-privacy-restore-v3",
+      "soe-privacy-restore-v4",
+      "soe-privacy-restore-v5",
+      "soe-privacy-restore-v6"
+    ],
+    "circleCutoverMigrations": 41,
+    "circleCutoverOriginalTablesPreserved": 12,
+    "circleCutoverIndependentLockScenarios": 5,
+    "clustersStoppedAndSyntheticFixturesRemoved": true
+  },
+  "limits": "Socket-only PostgreSQL used synthetic data. The Circle comparison covers the three original tables at the backup snapshot. New Circle workflow tables, provider access, the hosted backup and cutover require separate verification.",
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "792e38dfb01841fc7c67c2b52c88ac8cc7aee3141be67b24e92211375e8efb4b",
+    "docs/integration/privacy-restore-check.md": "e1240d12b253c069300825a4edc66c839494f093e853b545ff712548d0e11446",
+    "docs/integration/production-migration-plan.md": "dc0be6a50bb743de20693cca01ea102cb9d63ffd15dabfacfc121262d4ba7fe9",
+    "docs/sql/privacy-restore-reference.sql": "10e4e7ecc0bceefc6158e18638f176c6eeb583f4d053809f548cb296e9cfcda5",
+    "verification/web/scripts/test-privacy-restore-check.py": "56be7cc37562ea613ff4a88e5dbc57bc65f5788163199b939468edfa183eb1f1",
+    "verification/web/scripts/verify-privacy-restore.py": "6c740dbddee8ab24b26e0a32979d100a6f5739f6d783e62ed68f118fcd191e05"
+  },
+  "localEvidenceFolder": "verification/web/evidence/circle-restore-2026-11-06",
+  "localEvidenceSha256": {
+    "baseline-test.patch": "bc92fa8a3f007c849c22cd987854e04ef7a767733216fa5d18fb2db45673d5e6",
+    "baseline.json": "3621951753f398416f23883aaad8aec2fff495c8bf83387d6cfea572db0fb8b6",
+    "circle-cutover-regression.json": "ac46f6930d3ab3884a34c9790011a8dc9760a2a874760c153cdb8969ade2b6f0",
+    "existing-reference-formats.json": "43790cd2d9dc8b159aaf14d210553078ca8a7a72554a121df3de8f89dce0e1a7",
+    "restore-rehearsal.json": "6ed9d339dc46410d0d4f87213117c859732efa8597a8706ef52a0c65b3278e4f",
+    "scope-conflict.log": "b0c4c656a742bfff494e0d5e8283d2f7e2447d09cd3b965a3501c88c869ced9f"
+  }
+}

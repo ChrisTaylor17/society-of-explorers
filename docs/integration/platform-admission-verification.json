@@ -1,0 +1,296 @@
+{
+  "status": "LOCAL_SOURCE_MILESTONE_VERIFIED",
+  "recordedAtUtc": "2026-11-08T00:46:21.054365+00:00",
+  "baseCommit": "664987c5716b4187cb93c796493c9fd09f56989f",
+  "productionCleared": false,
+  "surface": "Reachable native salon invitation screens with retained controller,plus Quest regular-browser invitation controls fenced during permission-pending/active immersive use.",
+  "verifiedSourceSha256": {
+    "platforms/shared/circle-admission.ts": "77d68dbca351dfc0d508da732d2b66c6385c2abf86e5c4a6b74ad6448e8bdf9b",
+    "platforms/native/CircleAdmissionScreen.tsx": "677ee63d76745c7107446fd7d3ea9e97d0d45332077ccf835aee37a5c65c5e4d",
+    "platforms/native/MemberCircleScreen.tsx": "a21ccb1dbdadc431c12f465e489affeab7c81ea719bc7a6202035982d3897587",
+    "platforms/native/CircleDirectoryScreen.tsx": "1bffffdceeb4c4e05c2f6175286d9840855a4407c9f695ceb76dc385121bbf92",
+    "lib/circles/admission-activity.ts": "9ed5eae10682c0408a7afda2ab9f871e49d24c4d564e49ce48fdd02913385b6c",
+    "lib/circles/useCircleAdmission.ts": "5e60d0689b65ab9e27bd51d1dc113be5b47906261c991df6f29d51098235117a",
+    "app/circles/[circleId]/CircleAdmission.tsx": "f550c7273e3e2e70db093eac011828cf993849322bb9ab117b08e89d01964a2e",
+    "app/quest/[circleId]/QuestCircle.tsx": "46a28054a2bd976bab23f3d1825a2ac966636a1ddd5a42856aa6408229695682",
+    "platforms/quest/member-circle-page.mjs": "ddac4f106f53d4a0ef33095b5f1ab8c73fd605640a4300ce6a1d79860e16d88c",
+    "verification/web/tests/platform-admission-flow.test.mjs": "d67632b34f6f8149f177049e7743b2193ce370c923021c20a14f0b7b7f996fc0",
+    "platforms/tests/native-admission-flow-entry.tsx": "f26706fe4757fac1480283c89eaa8a4334918c268acfb07208aad3985805fd51",
+    "platforms/tests/quest-admission-client.ts": "b0b82bad1bbf79d5a90af9540582cae8b5eafa7ba55ac29c7a964da427706583",
+    "platforms/tests/admission-link-double.tsx": "3fb451a9449a7adb28aa4f259a3f7151f643fab729c2171a271d3194f3c365a6",
+    "platforms/tests/quest-admission-flow-entry.tsx": "95b3c100457148e4753a57897ab7f942d3b43beeb94974184544327e57419804",
+    "platforms/tests/bundle-platform-admission.mjs": "5520d7711f067446db219aa659eab42ea29701d37d94ed6a875b190ed43691b0",
+    "platforms/tests/native-connectivity.test.mjs": "9618bb264c013e1b5fb5d83d4afab2488a5c1b72ffc4e880cd25e4cdfbe0edd9",
+    "platforms/tests/browser-platform-admission.mjs": "f9d50f19afb979e427ad0cb57551cbad9e2580a347adbf4df4248077a9ef7905"
+  },
+  "verification": {
+    "nativeRegressions": {
+      "status": "PASS",
+      "reportedTests": 140,
+      "steps": [
+        {
+          "name": "native-regressions",
+          "exitCode": 0,
+          "seconds": 21.84,
+          "argv": [
+            "/opt/homebrew/bin/node",
+            "--require",
+            "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+            "--test",
+            "--test-concurrency=1",
+            "platforms/tests/native-admission-policy.test.mjs",
+            "platforms/tests/circle-directory.test.mjs",
+            "platforms/tests/circle-hosting.test.mjs",
+            "platforms/tests/native-auth-ports.test.mjs",
+            "platforms/tests/native-durable-ports.test.mjs",
+            "platforms/tests/installed-member-adapter.test.mjs",
+            "platforms/tests/quest-member-auth.test.mjs",
+            "platforms/tests/native-connectivity.test.mjs"
+          ],
+          "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+          "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/native-regressions-sealed.log"
+        },
+        {
+          "name": "registered-native-contract",
+          "exitCode": 0,
+          "seconds": 1.84,
+          "argv": [
+            "/opt/homebrew/bin/node",
+            "--require",
+            "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+            "node_modules/typescript/bin/tsc",
+            "--noEmit",
+            "--project",
+            "platforms/tests/tsconfig.native-installed-account.json",
+            "--pretty",
+            "false"
+          ],
+          "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+          "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/registered-native-contract-sealed.log"
+        },
+        {
+          "name": "scoped-product-lint",
+          "exitCode": 0,
+          "seconds": 2.19,
+          "argv": [
+            "/opt/homebrew/bin/node",
+            "--require",
+            "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+            "node_modules/eslint/bin/eslint.js",
+            "--max-warnings",
+            "0",
+            "platforms/shared/circle-admission.ts",
+            "platforms/native/CircleAdmissionScreen.tsx",
+            "platforms/native/MemberCircleScreen.tsx",
+            "platforms/native/CircleDirectoryScreen.tsx",
+            "lib/circles/admission-activity.ts",
+            "lib/circles/useCircleAdmission.ts",
+            "app/circles/[circleId]/CircleAdmission.tsx",
+            "app/quest/[circleId]/QuestCircle.tsx",
+            "platforms/quest/member-circle-page.mjs"
+          ],
+          "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+          "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/scoped-product-lint-sealed.log"
+        }
+      ],
+      "sourceInputs": 1400,
+      "allSourcesStillMatch": true
+    },
+    "serverAndController": {
+      "status": "PASS",
+      "reportedTests": 88,
+      "countIncludesGroupedTests": true,
+      "step": {
+        "name": "web-api-and-controller",
+        "exitCode": 0,
+        "seconds": 66.03,
+        "argv": [
+          "/opt/homebrew/bin/node",
+          "--require",
+          "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/scripts/deny-build-network.cjs",
+          "--test",
+          "--test-concurrency=1",
+          "tests/circle-admission-db.test.mjs",
+          "tests/circle-admission-http.test.mjs",
+          "tests/circle-admission-web-http.test.mjs",
+          "tests/circle-hosting-backend.test.mjs",
+          "tests/participation-public.test.mjs",
+          "tests/participation-http.test.mjs",
+          "tests/participation-integration.test.mjs",
+          "tests/participation-recovery-http.test.mjs",
+          "tests/platform-admission-flow.test.mjs"
+        ],
+        "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web",
+        "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/web-api-and-controller-final.log"
+      },
+      "laterChangedUnrelatedFiles": [
+        "platforms/native/CircleAdmissionScreen.tsx",
+        "platforms/tests/browser-platform-admission.mjs",
+        "platforms/tests/native-connectivity.test.mjs"
+      ],
+      "note": "The later fixes affect native presentation and browser/connectivity test harnesses; no server,route,SQL,shared controller or web-hook source used by these88 checks changed."
+    },
+    "browser": {
+      "native": {
+        "status": "PASS",
+        "stories": [
+          "ios member account → selected salon → invitations supports explicit sharing and host review/confirmed approval through real routes/SQL.",
+          "ios background/blur clears review and codes; stale confirmation is inert; a lost join survives retained-parent reentry and recovers read-only with one join.",
+          "ios host revocation deliberately retries the exact request after a lost reply and preserves current members.",
+          "ios explicit discard clears the retained private controller and returns to the real member screen.",
+          "android member account → selected salon → invitations supports explicit sharing and host review/confirmed approval through real routes/SQL.",
+          "android background/blur clears review and codes; stale confirmation is inert; a lost join survives retained-parent reentry and recovers read-only with one join.",
+          "android host revocation deliberately retries the exact request after a lost reply and preserves current members.",
+          "android explicit discard clears the retained private controller and returns to the real member screen."
+        ],
+        "sourceInputs": 107,
+        "allSourcesStillMatch": true,
+        "cleanup": {
+          "browser": true,
+          "database": true
+        },
+        "scope": "Actual MemberCircleScreen,retained member connection,directory,admission screen/controller and native JS ports with actual local route/SQL. React Native,provider,bridge and network delivery are explicit doubles. No installed app,device,Hermes,secure store or native HTTP acceptance."
+      },
+      "quest": {
+        "status": "PASS",
+        "stories": [
+          "Actual QuestCircle does no private/provider work before Connect; permission-pending and active immersive entry clear private codes/review and require a fresh regular-window check after exit.",
+          "Quest regular-window sharing,host approval,recipient confirmation and lost-join read-only recovery use current routes/SQL and create one membership.",
+          "Quest offline/account change clears the invitation view; account disconnect ends that connected view and removes SDK observers."
+        ],
+        "sourceInputs": 54,
+        "allSourcesStillMatch": true,
+        "cleanup": {
+          "browser": true,
+          "database": true
+        },
+        "scope": "Actual QuestCircle,web invitation component/hook,platform DOM and XR canvas with actual local route/SQL. Provider SDK,Next Link,network delivery and XR session/input are explicit doubles. No physical Quest or real-provider acceptance."
+      },
+      "web": {
+        "status": "PASS",
+        "stories": [
+          "Actual hosting screen reviews public disclosure and creates a host-approved salon only after explicit confirmation.",
+          "Recipient sharing requires opt-in, grants no membership, and clears the raw code on blur.",
+          "Host reviews the code owner and issues an account-bound approval without admitting them.",
+          "A forwarded approval is refused before any membership write.",
+          "Blur clears an unconfirmed approval; a retained stale confirm callback transmits nothing.",
+          "Lost post-commit reply stays uncertain, hides recovery from another account, and recovers with no token, signing key or second join.",
+          "Lost revocation uses the exact original request on explicit retry, advances once and preserves members.",
+          "320px controls fit, browser storage stays empty, and all requests remain on intercepted local fixture paths.",
+          "Keyboard opens the review, cancellation restores focus to status, and desktop controls fit."
+        ],
+        "sourceInputs": 34,
+        "allSourcesStillMatch": true,
+        "cleanup": {
+          "browser": true,
+          "database": true
+        },
+        "scope": "Actual React web invitation and creation screens plus real route handlers and current PGlite SQL. Browser credentials/account endpoint, canonical server identity, PostgREST and Next Link are explicit doubles. All Chromium requests intercepted; no hosted identity, provider, device or deployment acceptance. Raw codes are not written in the HTTP log."
+      }
+    },
+    "webBuild": {
+      "argv": [
+        "node",
+        "node_modules/next/dist/bin/next",
+        "build",
+        "--webpack"
+      ],
+      "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+      "status": "completed",
+      "exitCode": 0,
+      "seconds": 54.89,
+      "externalNetworkBlocked": true,
+      "providerCredentialsNotPassed": true,
+      "compiler": "webpack",
+      "publicBuildConfig": "invalid offline placeholders",
+      "privateOrIssuedCredentialsSupplied": false,
+      "deploymentOrServerLaunch": false,
+      "sourceFiles": 1208,
+      "sourceSha256": "c3899c52379578060213031ccc929ab65bc22448c3998a879f17d130eb0c4267",
+      "sourceUnchangedDuringBuild": true,
+      "log": "evidence/platform-admission-final-next-build.log"
+    },
+    "failureCalibration": {
+      "calibration": "PASS",
+      "expectedFailureExitCode": 1,
+      "actualExitCode": 1,
+      "actualReceiptStatus": "FAIL",
+      "cleanup": {
+        "browser": true,
+        "database": true
+      },
+      "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/platform-admission-native-sealed-failure-probe-browser.json",
+      "receiptSha256": "8660944b8131a8a28fab43dfb861c374a74ab0c03b2d7a9ba4c79b2e34768c94",
+      "runnerSha256": "f9d50f19afb979e427ad0cb57551cbad9e2580a347adbf4df4248077a9ef7905",
+      "purpose": "An intentional assertion after actual database setup must remain failed after browser/database cleanup."
+    }
+  },
+  "behavior": [
+    "Native entry runs through the actual member screen,canonical member check,selected salon,directory action and owned invitation controller.",
+    "Sharing a one-hour recipient code requires per-code consent; host review and approval never join the recipient.",
+    "Native account/provider/member/salon are freshly checked before each operation; confirmation is a separate action.",
+    "Private names,codes and unsent review clear on background,Android blur,offline,account retirement and disconnect. Earlier form/confirmation callbacks cannot act on a newer review.",
+    "A sent join retains only its account-bound read-only receipt reference in the same retained controller. Recovery never resends a join; another account cannot load it.",
+    "Uncertain revocation retains only the original request/revisions and requires deliberate review/confirmation before its exact retry. Members remain.",
+    "Explicit native discard removes the retained controller and returns to the real member screen. Recovery does not survive app termination,new controller or explicit discard.",
+    "Quest mounts the form only after explicit Connect. The per-view activity boundary pauses synchronously when XR permission is requested,before awaiting the headset.",
+    "Quest entry/exit/blur/offline requires an explicit fresh account/access check; there is no automatic invitation request. Account selection change or disconnect ends that connected form and discards its receipt reference.",
+    "Phone review hides earlier entry forms while presenting the account,recipient,effects and community norms."
+  ],
+  "privateEvidence": [
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/source-sealed-checks.json",
+      "sha256": "b5591ede786a2805eb6f28ef5ee0e82efcfaf0689a781626674b4e65a1199e64"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/source-final-checks.json",
+      "sha256": "181dfd86edcd116d7778ff7629262f59a6036ef3fb25ca12a64f6a66eb1e81e6"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/browser-runner-failure-calibration-sealed.json",
+      "sha256": "8f51ecd070f01e108577317d5204693b9d6ff23ccf62ada20d0b2366fd3c0d28"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/platform-admission-native-sealed-browser.json",
+      "sha256": "3ef81f15301a765737cdbbfe10d943de007cd92cccf18ab6752af6662c2cdbe9"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/platform-admission-quest-sealed-browser.json",
+      "sha256": "65cab5d674a7fcfde09a3d682ade960a6884c644569bf021a7800915c8c1a28a"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/circle-admission-web-browser-platform-parity.json",
+      "sha256": "3ca679f3aeb5ee1aff17fff89b9ca95d3cd1fd0dad6ecb0aeb43b6ac187c67cd"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/platform-admission-final-next-build.json",
+      "sha256": "c0fab946386bc4262aa22509cd01a57699c43fc61289bc98595b8b6a1c185db7"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-admission-platform-flow/sealed-browser-steps.json",
+      "sha256": "0dbf6227e86736f86426f2da4acdde25378276632fa1b8a1f17295bf7b224546"
+    }
+  ],
+  "rejectedEvidence": [
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/platform-admission-quest-verified-browser.json",
+      "reason": "Earlier runner could write PASS after a failed timing assertion because WASM database cleanup reset process.exitCode. Its nonempty failure field makes that receipt unusable. Replaced by an owned failure flag,an explicit render-state wait,negative calibration,and the sealed runs."
+    }
+  ],
+  "limits": [
+    "React Native primitives,provider methods,bridge and HTTP delivery are explicit doubles. Actual native member/directory/admission components/controllers and current canonical routes/SQL run; no installed app,Hermes,device,secure-store or native-network acceptance is claimed.",
+    "Quest uses the actual component,web hook,platform DOM and WebGL rendering with a synthetic XR session/input; this is not a physical-headset or real-provider check.",
+    "Native type proof uses the existing narrow ambient platform contracts. Full native package installation,code generation,signing and device checks remain open.",
+    "Chromium verification does not establish Safari/WebKit or real Quest Browser acceptance for these new controls.",
+    "Hosted SQL/access remains unchanged. Matching97-table source recovery,privacy repair,real sign-in/recovery and coordinated cutover remain prerequisites. Listings remain public and hosts manage external video-room entry."
+  ],
+  "operations": {
+    "newToolsInstalled": false,
+    "spending": false,
+    "hostedChanges": false,
+    "credentialChanges": false,
+    "push": false,
+    "deployment": false,
+    "storageCleanup": "The separate owner-approved27-cache cleanup is recorded in native-storage-cleanup-verification.json; it does not authorize installations."
+  }
+}

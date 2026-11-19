@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>92B Window Sign Draft</title>
+  <style>
+    :root {
+      --black: #050505;
+      --panel: #0d0d0d;
+      --gold: #c9a84c;
+      --paper: #f5f0e8;
+      --muted: #a89c86;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--black);
+      color: var(--paper);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .page {
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0 auto;
+      padding: 0.6in;
+      display: flex;
+      align-items: stretch;
+      background:
+        linear-gradient(rgba(0,0,0,0.78), rgba(0,0,0,0.92)),
+        radial-gradient(circle at 50% 15%, rgba(201,168,76,0.18), transparent 32%),
+        var(--black);
+    }
+
+    .frame {
+      width: 100%;
+      border: 2px solid rgba(201,168,76,0.52);
+      padding: 0.42in;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+    }
+
+    .eyebrow,
+    .footer,
+    .qr-label {
+      font-family: "Times New Roman", Georgia, serif;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--gold);
+    }
+
+    .eyebrow {
+      font-size: 13px;
+      margin-bottom: 0.35in;
+    }
+
+    h1 {
+      font-weight: 400;
+      font-size: 50px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      margin: 0 0 0.22in;
+    }
+
+    .subhead {
+      max-width: 6.1in;
+      margin: 0 auto;
+      font-size: 21px;
+      line-height: 1.45;
+      color: rgba(245,240,232,0.88);
+    }
+
+    .campaign {
+      margin: 0.45in auto 0;
+      max-width: 6.3in;
+      border-top: 1px solid rgba(201,168,76,0.34);
+      border-bottom: 1px solid rgba(201,168,76,0.34);
+      padding: 0.26in 0;
+      font-size: 18px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .qr-row {
+      display: grid;
+      grid-template-columns: 2in 1fr;
+      gap: 0.3in;
+      align-items: center;
+      margin: 0.45in auto;
+      max-width: 6.1in;
+      text-align: left;
+    }
+
+    .qr-box {
+      width: 2in;
+      height: 2in;
+      border: 2px solid var(--gold);
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.12in;
+    }
+
+    .qr-box img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .qr-label {
+      font-size: 14px;
+      margin-bottom: 0.12in;
+    }
+
+    .url {
+      font-family: Arial, sans-serif;
+      font-size: 22px;
+      line-height: 1.25;
+      word-break: break-word;
+      color: var(--paper);
+    }
+
+    .footer {
+      font-size: 10px;
+      line-height: 1.7;
+      color: rgba(201,168,76,0.88);
+    }
+
+    @media print {
+      body { background: white; }
+      .page { margin: 0; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="frame" aria-label="92B window sign draft">
+      <div>
+        <div class="eyebrow">Society of Explorers</div>
+        <h1>The first Society of Explorers node may begin here.</h1>
+        <p class="subhead">
+          A private, human-centric AI network for philosophy, sovereign data, personal AI mirrors, and real community rituals.
+        </p>
+        <p class="campaign">
+          We are raising toward $120,000 to secure and build the first Boston physical node if lease terms, repairs, access, and landlord alignment make the path viable.
+        </p>
+      </div>
+
+      <div class="qr-row">
+        <div class="qr-box">
+          <img src="../public/images/92b-window-qr.svg" alt="QR code for the 92B founding patron campaign">
+        </div>
+        <div>
+          <div class="qr-label">Become a founding patron</div>
+          <div class="url">societyofexplorers.com/92b/fund</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        Patronage gives access, recognition, community artifacts, and ritual priority. It is not equity, debt, a security, or a promise of financial return.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

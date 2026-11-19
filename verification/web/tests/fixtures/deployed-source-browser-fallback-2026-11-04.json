@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "observedAtUTC": "2026-11-04T19:08:25Z",
+  "status": "INCOMPLETE_PROVENANCE",
+  "boundary": "Read-only authenticated Vercel dashboard Source inspection. No sign-in, application endpoint invocation, environment/credential retrieval, source download/execution, deployment or production mutation.",
+  "deployment": {
+    "id": "dpl_FqmzK79EiKmDcur1of6RFPpbUyFX",
+    "project": "society-of-explorers",
+    "dashboardOverview": "https://vercel.com/chris-projects-03dec906/society-of-explorers",
+    "sourceBrowser": "https://vercel.com/chris-projects-03dec906/society-of-explorers/FqmzK79EiKmDcur1of6RFPpbUyFX/source",
+    "overviewProductionDeploymentURL": "society-of-explorers-3e2nw3sne-chris-projects-03dec906.vercel.app",
+    "overviewDomain": "society-of-explorers.vercel.app",
+    "overviewStatus": "Ready",
+    "overviewSource": "vercel deploy",
+    "overviewViewCodeTargetsExactDeployment": true,
+    "matchesPriorControlPlaneReceipt": true
+  },
+  "sourceTree": {
+    "observedRootDirectories": [".next", ".vercel", "app", "docs", "node_modules", "public", "scripts", "supabase"],
+    "observedUploadedAppChildren": ["92b", "capital", "projects"],
+    "requiredChunks": [
+      {
+        "path": "src/.next/server/chunks/[root-of-the-server]__15bjnu5._.js",
+        "listed": true,
+        "selectedPathConfirmed": true,
+        "previewMessage": "Large files cannot be previewed",
+        "copyControlEnabled": true,
+        "downloadControlAccessibilityRole": "button",
+        "downloadControlHasAccessibleHref": false,
+        "fileIdRetrieved": false,
+        "completeContentRetrieved": false,
+        "contentLength": null,
+        "sha256": null
+      },
+      {
+        "path": "src/.next/server/chunks/[root-of-the-server]__1c4a4_u._.js",
+        "listed": true,
+        "selectedPathConfirmed": true,
+        "previewMessage": "Large files cannot be previewed",
+        "copyControlEnabled": true,
+        "copyControlActivated": true,
+        "copyCompletionVerified": false,
+        "downloadControlAccessibilityRole": "button",
+        "downloadControlHasAccessibleHref": false,
+        "fileIdRetrieved": false,
+        "completeContentRetrieved": false,
+        "contentLength": null,
+        "sha256": null
+      }
+    ],
+    "downloadTargetLimitation": "Native accessibility exposes Download file as a button without a URL/value, not an accessible link. The DOM adapter is unavailable. This does not claim the underlying implementation has no URL.",
+    "rewardCallerControlFlowVerified": false,
+    "verifiedIdentityImplementationRetrieved": false
+  },
+  "browserControlLimitations": {
+    "nativeAccessibilityNavigationWorked": true,
+    "authenticatedSessionAlreadyPresent": true,
+    "documentedNewTabAndTabBindingAdapters": "Failed with an internal undefined timeoutMs error; two blank tabs had been created before the failures. Native navigation reused one owned blank tab.",
+    "supportedClipboardReadText": "Failed with an internal undefined timeoutMs error before returning any source text or length.",
+    "clipboardPermissionPromptObserved": false,
+    "unsupportedDOMHiddenStateNetworkDevtoolsUsed": false,
+    "sourceDownloadClicked": false,
+    "sourceContentPrintedOrSavedToFile": false
+  },
+  "connectorLimits": {
+    "priorReceipt": "verification/web/tests/fixtures/release-control-plane-2026-11-04.json",
+    "rawResultReinspectionByParent": "Parent confirmed the prior response itself has truncated:true and an explicit response-budget-exceeded marker, with no structuredContent. No identical list API request was repeated.",
+    "cliFileReadRequiresFileId": true,
+    "pathParameterDocumentedForGitDeploymentsOnly": true,
+    "fileListingExposesNoPaginationOrPathFilter": true
+  },
+  "cleanup": {
+    "ownedSourceTabClosed": true,
+    "ownedBlankTabRemainingAtManualCleanup": 1,
+    "reason": "Closing the last owned group tab prompted synced group deletion; deletion was canceled. No unrelated tab was modified.",
+    "deletionConfirmed": false
+  },
+  "conclusion": "The dashboard confirms the exact current CLI deployment and required chunk names, but complete implementation bytes, digests and caller correspondence remain unavailable within the supported copy-only read boundary. This is a bounded control-surface limit, not evidence that the deployment lacks reward callers. Production caller-impact/provenance gates remain open."
+}

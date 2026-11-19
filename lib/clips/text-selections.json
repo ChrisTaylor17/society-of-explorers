@@ -1,0 +1,38 @@
+[
+  {
+    "id": "text-apology",
+    "title": "A life examined together",
+    "reference": {
+      "version": 1,
+      "bookId": "apology",
+      "editionId": "pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+      "blockIndex": 111,
+      "start": 216,
+      "end": 631
+    }
+  },
+  {
+    "id": "text-meditations",
+    "title": "Our place in a larger community",
+    "reference": {
+      "version": 1,
+      "bookId": "meditations",
+      "editionId": "pg-2680-299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+      "blockIndex": 106,
+      "start": 792,
+      "end": 1080
+    }
+  },
+  {
+    "id": "text-relativity",
+    "title": "Ask what an observation means",
+    "reference": {
+      "version": 1,
+      "bookId": "relativity",
+      "editionId": "pg-5001-14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+      "blockIndex": 151,
+      "start": 804,
+      "end": 1176
+    }
+  }
+]

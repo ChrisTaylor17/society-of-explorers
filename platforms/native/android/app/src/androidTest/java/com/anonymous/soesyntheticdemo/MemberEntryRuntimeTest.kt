@@ -1,0 +1,199 @@
+package com.anonymous.soesyntheticdemo
+
+import android.os.SystemClock
+import android.view.View
+import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.VideoView
+import androidx.lifecycle.Lifecycle
+import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.anonymous.soesyntheticdemo.member.EmailLinkLifecycle
+import com.anonymous.soesyntheticdemo.member.NativeSoeMemberModule
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicLong
+
+/** Runs only in the embedded synthetic app with member and provider policy unset. */
+@RunWith(AndroidJUnit4::class)
+class MemberEntryRuntimeTest {
+    private val heading = "Your account, on this device"
+    private val connect = "Connect my account"
+    private val initial = "Connect to sign in or manage your account."
+    private val unavailable = "Sign-in is unavailable in this build. Your account has not been connected."
+
+    @Test
+    fun embeddedMemberEntryClosesWithoutInstalledAccountPolicy() {
+        assumeTrue("Requires the synthetic build variant", BuildConfig.SOE_EMBEDDED_SYNTHETIC)
+        val app = ApplicationProvider.getApplicationContext<MainApplication>()
+        assertEquals("com.anonymous.soesyntheticdemo.embedded", app.packageName)
+        assertTrue("Requires a build without member or provider configuration",
+            BuildConfig.SOE_MEMBER_ORIGIN.isEmpty() &&
+                BuildConfig.SOE_MEMBER_STORAGE_KEY.isEmpty() &&
+                BuildConfig.SOE_PROVIDER_ORIGIN.isEmpty() &&
+                BuildConfig.SOE_PUBLISHABLE_KEY.isEmpty())
+
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            awaitEntry(scenario, initial)
+            scenario.onActivity {
+                val context = app.reactHost.currentReactContext
+                    ?: throw AssertionError("The rendered entry has no React context")
+                assertEquals("The member entry loads from the packaged bundle",
+                    "assets://index.android.bundle", context.sourceURL)
+            }
+
+            press(scenario, "Find an online Circle")
+            awaitStudyText(scenario, "Online Circles")
+            awaitStudyText(scenario, "Public Circle search is unavailable in this build.")
+            press(scenario, "Back from online Circles")
+            awaitEntry(scenario, initial)
+
+            press(scenario, "Read Philemon")
+            awaitStudyText(scenario, "Paul’s Letter to Philemon")
+            awaitStudyText(scenario, "Grace to you and peace from God our Father and the Lord Jesus Christ.")
+            press(scenario, "Compare readings")
+            awaitStudyText(scenario, "Two readings of the greeting")
+            press(scenario, "Host guide")
+            awaitStudyText(scenario, "Host a Philemon salon online")
+            press(scenario, "Back to account")
+            awaitEntry(scenario, initial)
+
+            press(scenario, connect)
+            awaitEntry(scenario, unavailable)
+            scenario.onActivity {
+                assertTrue("The installed package registers the actual member module",
+                    app.reactHost.currentReactContext?.getNativeModule("NativeSoeMember") is NativeSoeMemberModule)
+            }
+
+            scenario.moveToState(Lifecycle.State.CREATED)
+            scenario.moveToState(Lifecycle.State.RESUMED)
+            awaitEntry(scenario, unavailable)
+
+            scenario.recreate()
+            awaitEntry(scenario, initial)
+        }
+    }
+
+    @Test
+    fun foregroundRequestEpochRetiresAcrossActivityPauseAndResume() {
+        assumeTrue("Requires the synthetic build variant", BuildConfig.SOE_EMBEDDED_SYNTHETIC)
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val retiredBefore = AtomicLong(0)
+            val unsubscribe = EmailLinkLifecycle.onRetirement { cutoff ->
+                retiredBefore.updateAndGet { previous -> maxOf(previous, cutoff) }
+            }
+            try {
+                var beforePause = 0L
+                scenario.onActivity { beforePause = EmailLinkLifecycle.stamp() }
+
+                scenario.moveToState(Lifecycle.State.CREATED)
+                assertTrue("Pause reports a cutoff newer than the captured epoch", retiredBefore.get() > beforePause)
+                assertTrue("The paused activity cannot grant a new epoch",
+                    runCatching { EmailLinkLifecycle.stamp() }.exceptionOrNull() is IllegalStateException)
+
+                scenario.moveToState(Lifecycle.State.RESUMED)
+                scenario.onActivity {
+                    assertTrue("Resume grants a fresh epoch", EmailLinkLifecycle.stamp() > beforePause)
+                    assertTrue("Resume cannot reauthorize work from before pause",
+                        runCatching { EmailLinkLifecycle.withCurrent(beforePause) {} }.exceptionOrNull() is IllegalStateException)
+                }
+            } finally {
+                unsubscribe()
+            }
+        }
+    }
+
+    @Test
+    fun packagedClipsPlayBeforeAccountConnectionAndRetireOnPause() {
+        assumeTrue("Requires the synthetic build variant", BuildConfig.SOE_EMBEDDED_SYNTHETIC)
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            awaitEntry(scenario, initial)
+            press(scenario, "Explore Clips")
+            awaitStudyText(scenario, "Grace and peace")
+            awaitVideo(scenario, playing = false)
+            press(scenario, "Play Who gets the night sky?")
+            awaitVideo(scenario, playing = true)
+            scenario.moveToState(Lifecycle.State.CREATED)
+            scenario.moveToState(Lifecycle.State.RESUMED)
+            awaitStudyText(scenario, "Grace and peace")
+            awaitVideo(scenario, playing = false)
+            press(scenario, "Back to account")
+            awaitEntry(scenario, initial)
+        }
+    }
+
+    private fun awaitVideo(scenario: ActivityScenario<MainActivity>, playing: Boolean) {
+        val deadline = SystemClock.elapsedRealtime() + 20_000L
+        while (SystemClock.elapsedRealtime() < deadline) {
+            var ready = false
+            scenario.onActivity { activity ->
+                val videos = descendants(activity.window.decorView).filterIsInstance<VideoView>().toList()
+                ready = if (playing) videos.singleOrNull()?.let {
+                    it.isPlaying && it.currentPosition > 250 && it.duration in 23_750..24_250
+                } == true else videos.isEmpty()
+            }
+            if (ready) return
+            SystemClock.sleep(50L)
+        }
+        throw AssertionError("The packaged clip did not enter the expected playing state $playing")
+    }
+
+    private fun press(scenario: ActivityScenario<MainActivity>, label: String) {
+        scenario.onActivity { activity ->
+            val button = descendants(activity.window.decorView).single {
+                it.isShown && it.isEnabled && it.isClickable && it.contentDescription?.toString() == label
+            }
+            assertTrue("Dispatch the app action: $label", button.performClick())
+        }
+    }
+
+    private fun awaitStudyText(scenario: ActivityScenario<MainActivity>, marker: String) {
+        val deadline = SystemClock.elapsedRealtime() + 20_000L
+        while (SystemClock.elapsedRealtime() < deadline) {
+            var ready = false
+            scenario.onActivity { activity ->
+                val views = descendants(activity.window.decorView).toList()
+                ready = views.filterIsInstance<TextView>().any { it.isShown && marker in it.text.toString() }
+                if (ready) assertFalse("The public study must not show credential inputs", views.any { it is EditText })
+            }
+            if (ready) return
+            SystemClock.sleep(50L)
+        }
+        throw AssertionError("The bundled study did not show: $marker")
+    }
+
+    private fun awaitEntry(scenario: ActivityScenario<MainActivity>, notice: String) {
+        val deadline = SystemClock.elapsedRealtime() + 20_000L
+        while (SystemClock.elapsedRealtime() < deadline) {
+            var ready = false
+            scenario.onActivity { activity ->
+                val views = descendants(activity.window.decorView).toList()
+                val text = views.filterIsInstance<TextView>().filter { it.isShown }.map { it.text.toString() }
+                if (heading in text) {
+                    assertFalse("No credential inputs may mount in the unconfigured app", views.any { it is EditText })
+                    assertFalse("No connected member action may mount in the unconfigured app",
+                        views.any { it.contentDescription?.toString() == "Continue to my member account" })
+                    ready = notice in text && views.any {
+                        it.isShown && it.isEnabled && it.isClickable && it.contentDescription?.toString() == connect
+                    }
+                }
+            }
+            if (ready) return
+            SystemClock.sleep(50L)
+        }
+        throw AssertionError("The embedded member entry did not show its expected state: $notice")
+    }
+
+    private fun descendants(view: View): Sequence<View> = sequence {
+        yield(view)
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) yieldAll(descendants(view.getChildAt(index)))
+        }
+    }
+}

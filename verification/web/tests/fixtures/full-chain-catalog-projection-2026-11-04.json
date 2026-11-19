@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "observedOn": "2026-11-04",
+  "sourceReceipt": {
+    "name": "live-service-metadata-2026-11-04.json",
+    "sha256": "f4f51612132614950e19eb4f896444c4ad1062e39004a7dfccaa896fb6f42ab2",
+    "grantsPointers": [
+      "/queries/grants/data/6",
+      "/queries/grants/data/7",
+      "/queries/grants/data/8",
+      "/queries/grants/data/12",
+      "/queries/grants/data/13",
+      "/queries/grants/data/14",
+      "/queries/grants/data/30",
+      "/queries/grants/data/31",
+      "/queries/grants/data/32"
+    ],
+    "policiesPointers": [
+      "/queries/policies/query",
+      "/queries/policies/data/0"
+    ]
+  },
+  "event": {
+    "grants": [
+      {
+        "table_name": "exp_events",
+        "rls": true,
+        "role": "anon",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      },
+      {
+        "table_name": "exp_events",
+        "rls": true,
+        "role": "authenticated",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      },
+      {
+        "table_name": "exp_events",
+        "rls": true,
+        "role": "service_role",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      }
+    ],
+    "policies": [
+      {
+        "table_name": "exp_events",
+        "policy_name": "EXP events visible to owner",
+        "command": "r",
+        "permissive": true,
+        "roles": "{PUBLIC}",
+        "using_expression": "(member_id IN ( SELECT members.id\n   FROM members\n  WHERE (members.supabase_auth_id = auth.uid())))",
+        "check_expression": null
+      }
+    ]
+  },
+  "reading": {
+    "tables": [
+      "reading_progress",
+      "book_highlights"
+    ],
+    "grants": [
+      {
+        "table_name": "book_highlights",
+        "rls": false,
+        "role": "anon",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      },
+      {
+        "table_name": "book_highlights",
+        "rls": false,
+        "role": "authenticated",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      },
+      {
+        "table_name": "book_highlights",
+        "rls": false,
+        "role": "service_role",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      },
+      {
+        "table_name": "reading_progress",
+        "rls": false,
+        "role": "anon",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      },
+      {
+        "table_name": "reading_progress",
+        "rls": false,
+        "role": "authenticated",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      },
+      {
+        "table_name": "reading_progress",
+        "rls": false,
+        "role": "service_role",
+        "can_select": true,
+        "can_insert": true,
+        "can_update": true,
+        "can_delete": true,
+        "can_truncate": true,
+        "explicit_acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+      }
+    ],
+    "policyQueryIncludedTables": [
+      "reading_progress",
+      "book_highlights"
+    ],
+    "policies": []
+  },
+  "limits": [
+    "Dated catalog projection, not current hosted state or a complete restore.",
+    "No private rows, project references, issued identities, or credentials.",
+    "Zero returned reading policies are bound to the original query that included both reading tables."
+  ]
+}

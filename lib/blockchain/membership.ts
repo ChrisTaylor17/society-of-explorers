@@ -57,7 +57,7 @@ export async function mintMembershipNFT({
   // Wait for receipt to get token ID from event logs
   let tokenId: bigint | null = null;
   try {
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
     // Token ID is the return value, but we can also read totalMinted
     const total = await publicClient.readContract({
       address: SOE_MEMBERSHIP_ADDRESS,

@@ -1,0 +1,42 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "99b6de402d299e105ccb70c26a3a5ace30302be7",
+  "recordedAt": "2026-11-06T23:17:09.583829+00:00",
+  "buildSourceFiles": 1108,
+  "buildSourceSha256": "1e50fbe784a42eb159c8fa6c4d3d471c1fdd255451d5aae12278b45b50d34cf3",
+  "reviewerSignOut": {
+    "signedWalletCheck": "actual account resolver and logout against current disposable SQL",
+    "revokedAfterDebit": true,
+    "outboundBeforeFix": 1,
+    "outboundAfterFix": 0,
+    "refusalStatus": 403,
+    "debitRetained": true,
+    "freshEligibleSession": "one intercepted request containing only the author-approved text"
+  },
+  "focusedRegressions": 68,
+  "compiledDefaultDisabledStatus": 503,
+  "scope": "Local signed wallet revocation, current Circle SQL, actual Anthropic SDK with intercepted transport, and compiled web smoke. The checks run before transmission and after response in separate systems. No live provider, hosted privacy repair or physical-device acceptance is established.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "f7d956df63bfa74bcc73b92e0c81c3058c786d4c5c229043a05226b87958532f",
+    "app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts": "97fee4a5d3f3b81e9857bae3cb153927cc9c1599d3689f1c7e16d32cdb556cf7",
+    "docs/integration/message-ai-moderation.md": "52daf2a391974ec83a3ede33bd82b2501cedb36349dc5f58419e9e4f13f34090",
+    "verification/web/tests/message-ai-advice-api.test.mjs": "f0a31ee7b408852d2922a9c087973d77ec560b9a704b22cf502d93c4d8f197f1",
+    "verification/web/tests/message-ai-integration.test.mjs": "b549c626956ff2fb7949dc2e85526186893c606f454392a688d895c6f50636ab",
+    "verification/web/tests/support/current-message-ai-consent-app.mjs": "fc6f9aa85f129b280ff6e788ed425833e35af06e2ed9abf466189bbe57bb658e",
+    "verification/web/tests/support/message-ai-app.mjs": "5fed89cbf5adec260d9b3c198cc3cbf71a9d5a1c48fde1746ae9c43457b469ee"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-ai-reviewer-signout",
+  "evidenceSha256": {
+    "next-build.json": "275f91cc960b0e5c4f5b2ae39283cc9fec2916eb5e21cd1c3db3f525529c448f",
+    "next-build.log": "ceb845abf21345031fc731e273a55cfe378e32c5277576cbc9fbe72464e4672b",
+    "build-source-sha256.json": "3f3655bbe23544c1564f1f22e64cc0aef31498090ed110333ebf046672308136",
+    "server-ready.json": "10bfd115f02a2241d3f5927a0e60b59b205c8b81119bbdf21cad2ad1a7aedc71",
+    "server-stopped.json": "a93de62cc4226b48b8101ac0d233b61b8f17bc3f56e01f12ea0bb6c806f12f47",
+    "before-fix.tap": "7729d999b6491fddb8844d7b0376a1bcb7742b89c468cbf61503e1ad85c02d6e",
+    "focused-regressions.tap": "19b2493b7320f00d080f724610c50a0b1f27e27a791fae6f472cb4384d32917c",
+    "browser-disabled.json": "068becec135bc36d907f110ba1c86abcdc374b05e99bff95516017f61e590318",
+    "browser-probe.mjs": "b8e2533706e2f499f7fd099db13781df940478b1a1d5c3c4c7e3380b8ae3a66b",
+    "eslint.log": "66491f283a04613b99bee3520e86e4bfde0dd579e2562d092366702080e4c2b3"
+  }
+}

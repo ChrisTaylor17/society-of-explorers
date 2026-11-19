@@ -1,0 +1,388 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-07T21:14:35.827544+00:00",
+  "baseCommit": "2cd89a3d784f852e94fecd5dfd693a24505a59dc",
+  "status": "PASS_LOCAL_SAFARI_PILOT_PRINT_RELEASE_HOLD",
+  "productionCleared": false,
+  "deployed": false,
+  "newSoftwareInstalled": false,
+  "filesDeletedForCleanup": false,
+  "credentialChanges": false,
+  "hostedWrites": false,
+  "spendUsd": 0,
+  "changedApplicationFiles": {
+    "app/salons/pilot/pilot.module.css": "756b8cfb0c98aaaee68aab5524b92028657f2d4f9ecb61d29da52e41702b368f"
+  },
+  "screenCssByteIdentical": true,
+  "otherBuildInputsUnchanged": true,
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 54.18,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1191,
+    "sourceSha256": "8f459d811c50a0c2e8601c297283ce2b6f0cc303f70b91f148ef245a22fed45a",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/built-shell-safari-print-accepted-next-build.log",
+    "fullWebTypecheck": "PASS",
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate/verification/web/evidence/built-shell-safari-print-accepted-next-build.json"
+  },
+  "safari": {
+    "app": "com.apple.Safari",
+    "version": "27.3",
+    "build": "22626.1.12.11.4",
+    "environment": "Actual Mac Safari application; private window; loopback compiled build",
+    "navigationTestSource": "Baseline 2cd89a3 before the print-only change; all other application inputs and screen CSS remain byte-identical.",
+    "observedChecks": [
+      {
+        "case": "Keyboard navigation",
+        "result": "PASS",
+        "evidence": [
+          "02-keyboard-skip-focus.png",
+          "03-keyboard-main-focus.png",
+          "04-keyboard-weeks.ax.txt"
+        ],
+        "detail": "Option-Tab showed focus rings; Return opened #main and #weeks. Safari preferences were not changed."
+      },
+      {
+        "case": "Luke study",
+        "result": "PASS",
+        "evidence": [
+          "06-luke-loaded.ax.txt",
+          "06-luke.png"
+        ],
+        "detail": "Opened Luke 10:25-37, its Scripture anchor, source text and study notes."
+      },
+      {
+        "case": "Philemon study",
+        "result": "PASS",
+        "evidence": [
+          "08-philemon.ax.txt",
+          "08-philemon.png"
+        ],
+        "detail": "Opened the complete letter and publisher footnotes."
+      },
+      {
+        "case": "Apology exact reading",
+        "result": "PASS",
+        "evidence": [
+          "11-apology-initial.ax.txt",
+          "11-apology.png"
+        ],
+        "detail": "Observed the pinned Jowett edition, displayed positions45-52 and the automatic focus on the opening How you, O Athenians paragraph."
+      },
+      {
+        "case": "Host guide",
+        "result": "PASS",
+        "evidence": [
+          "14-host-guide.ax.txt",
+          "14-host-guide.png"
+        ],
+        "detail": "Opened #host-guide with all five agenda intervals and optional prayer."
+      },
+      {
+        "case": "Actual paginated print preview after fix",
+        "result": "PASS_PREVIEW_ONLY",
+        "evidence": [
+          "26-accepted-print-preview.ax.txt",
+          "27-accepted-print-pages-1-2.png",
+          "28-accepted-print-pages-3-4.ax.txt",
+          "28-accepted-print-pages-3-4.png",
+          "29-accepted-print-cancelled.ax.txt"
+        ],
+        "detail": "Visually inspected all four US Letter portrait pages at100%, backgrounds off. Each reading card retains its link; host guide heading, introduction and five agenda rows begin together on page3; host notes and reading sources remain on page4. Cancelled preview; no print job or PDF save submitted."
+      }
+    ],
+    "privateWindow": "4FB38586-D4F4-4CE7-8F14-126A39F1233D",
+    "printPanelCancelled": true,
+    "privateWindowClose": "Attempted only the owned private window close button; subsequent UI inspection timed out, so closure and restoration of the original Start Page are not independently confirmed.",
+    "safariPreferencesChanged": false,
+    "networkScope": "Build/server network denials and unchanged sources were checked. Safari background traffic was not instrumented; navigation used public loopback pages without issued credentials."
+  },
+  "diagnostics": [
+    {
+      "finding": "Initial native print preview split week1/2 reading links onto the following sheet despite break-inside avoid.",
+      "evidence": "15-print-preview.png"
+    },
+    {
+      "finding": "Block print layout kept reading cards intact; keep-with-next headings alone still left the host heading on page2.",
+      "evidence": [
+        "19-print-fix-preview-pages-1-2.png",
+        "20-print-fix-preview-pages-3-4.png",
+        "24-final-print-pages-1-2.png"
+      ]
+    },
+    {
+      "finding": "Explicit host-guide print-page start resolved the orphaned heading in the accepted build.",
+      "evidence": "28-accepted-print-pages-3-4.png"
+    },
+    {
+      "finding": "Native UI bridge timed out once during preview capture; reconnected without changing browser settings. Preview scrollbar navigation was used after app scrolling failed.",
+      "evidence": "19-print-fix-preview-rendered.ax.txt"
+    }
+  ],
+  "server": {
+    "status": "STOPPED",
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate/verification/web/evidence/built-shell-safari-print-accepted-check-server.json",
+    "sourceMismatches": [],
+    "builtMismatches": [],
+    "inputMismatches": [],
+    "runtimeMismatches": []
+  },
+  "admissionAudit": {
+    "scope": "Read-only current application contract, not hosted behavior verification.",
+    "sources": [
+      {
+        "path": "lib/circles/invite.ts",
+        "lines": "3-10"
+      },
+      {
+        "path": "docs/sql/circle-membership-intent-apply.sql",
+        "lines": "98-115"
+      }
+    ],
+    "finding": "Invitation is a shareable public listing UUID URL. The join contract checks actor, revision, replay, listing availability, closure and capacity, then inserts membership; it does not require host approval or a private invitation entitlement. Caller review/confirmation is not host approval.",
+    "action": "No access or database change. Actual private cohort admission remains an explicit pilot gate."
+  },
+  "limitations": [
+    "Static unscheduled plan and public reading routes only; no actual cohort, hosted sign-in, member data, provider usage, invitation delivery or attendance verified.",
+    "This Mac Safari sample does not establish installed iOS/Android, physical Quest, screen-reader or broader Safari application acceptance.",
+    "Print preview only; no physical paper output, saved PDF, alternate paper size, margin or browser/printer combination was verified.",
+    "Hosted backup/restore, privacy repair, real authentication/recovery and private admission remain release gates.",
+    "Owner expects to return to Mac November8 evening. Secure password entry is prepared, not run. Exact27-cache cleanup proposal remains pending; no installation or spending authorized."
+  ],
+  "artifactManifest": {
+    "01-pilot.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/01-pilot.ax.txt",
+      "bytes": 11755,
+      "sha256": "688016165c413d932309ac61cf10761e43c6fc212884db09bc1291029494d9f8"
+    },
+    "01-pilot.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/01-pilot.png",
+      "bytes": 553527,
+      "sha256": "9e453ec27a89cee71c09ce1a198e1b5b985d3b3ccdb1c0ba00e089d3526927ea"
+    },
+    "02-keyboard-skip-focus.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/02-keyboard-skip-focus.png",
+      "bytes": 558253,
+      "sha256": "738e3ec0fb1f0f7f26e8ad6a6d183d708d388560a2ea2bd839eb36c561e93d44"
+    },
+    "03-keyboard-main-focus.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/03-keyboard-main-focus.png",
+      "bytes": 577237,
+      "sha256": "39f382f3e48bfbd451de7c03ad68840299d01414324c8652ad715c655c558d43"
+    },
+    "04-keyboard-weeks.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/04-keyboard-weeks.ax.txt",
+      "bytes": 11775,
+      "sha256": "6a318c52b16a39a715529696d02ee7addc05676bd36925d84d5e4e00f6717594"
+    },
+    "05-luke.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/05-luke.ax.txt",
+      "bytes": 11775,
+      "sha256": "6a318c52b16a39a715529696d02ee7addc05676bd36925d84d5e4e00f6717594"
+    },
+    "06-luke-loaded.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/06-luke-loaded.ax.txt",
+      "bytes": 11841,
+      "sha256": "1d6690003e5ef9ab5fc00810a01f09251162b14f10ece9a9f22b753c6d193186"
+    },
+    "06-luke.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/06-luke.png",
+      "bytes": 879663,
+      "sha256": "ca95430f44bfdc465925136db647ccbfa9b15db076283e750a81e45910d0f9ac"
+    },
+    "07-return-from-luke.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/07-return-from-luke.ax.txt",
+      "bytes": 11797,
+      "sha256": "7dabb651271ce929713b19228f142f50b20939dccc26f59e5f1396700f252b7d"
+    },
+    "08-philemon.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/08-philemon.ax.txt",
+      "bytes": 11381,
+      "sha256": "a41821944210ebb79740741139d52e5942218aa39dddba511f59819ed31b6552"
+    },
+    "08-philemon.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/08-philemon.png",
+      "bytes": 921103,
+      "sha256": "da912c01de436eb548a895708769b700a1934e47455dc4f27340f89c5d0637b4"
+    },
+    "09-philemon-return.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/09-philemon-return.ax.txt",
+      "bytes": 11381,
+      "sha256": "a41821944210ebb79740741139d52e5942218aa39dddba511f59819ed31b6552"
+    },
+    "10-return-from-philemon.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/10-return-from-philemon.ax.txt",
+      "bytes": 11797,
+      "sha256": "7dabb651271ce929713b19228f142f50b20939dccc26f59e5f1396700f252b7d"
+    },
+    "11-apology-initial.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/11-apology-initial.ax.txt",
+      "bytes": 83508,
+      "sha256": "5982fcad840a39bce65e6ab119b0d3f72c41ee777f171b5f69ef64e327b48ed9"
+    },
+    "11-apology.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/11-apology.png",
+      "bytes": 901515,
+      "sha256": "1aff550e265c15c057dcfc1096e86e7ac61284e5c4768dfb6491ee581c9250d4"
+    },
+    "12-apology-return.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/12-apology-return.ax.txt",
+      "bytes": 83508,
+      "sha256": "5982fcad840a39bce65e6ab119b0d3f72c41ee777f171b5f69ef64e327b48ed9"
+    },
+    "13-return-from-plato.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/13-return-from-plato.ax.txt",
+      "bytes": 11797,
+      "sha256": "7dabb651271ce929713b19228f142f50b20939dccc26f59e5f1396700f252b7d"
+    },
+    "14-host-guide.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/14-host-guide.ax.txt",
+      "bytes": 11827,
+      "sha256": "40a2dc028fa46d92c977ddf4b2212c7299424ef0a7c827343faf3f8baf2b6cef"
+    },
+    "14-host-guide.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/14-host-guide.png",
+      "bytes": 587934,
+      "sha256": "15393074b3d9aee79bea6ec35db576187791f9477f01ebf2ff4c46a73714968f"
+    },
+    "15-print-preview.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/15-print-preview.ax.txt",
+      "bytes": 3840,
+      "sha256": "e11486ddc73acae0eedd309ba745ddca69a17625eb0633efba6bddd1cffaed98"
+    },
+    "15-print-preview.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/15-print-preview.png",
+      "bytes": 278992,
+      "sha256": "5780b19776b1970067eaf2933a21e2e5b2417f2ab707e9bb9258e80f3978f9f1"
+    },
+    "16-print-cancelled.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/16-print-cancelled.ax.txt",
+      "bytes": 11827,
+      "sha256": "40a2dc028fa46d92c977ddf4b2212c7299424ef0a7c827343faf3f8baf2b6cef"
+    },
+    "17-print-fix-loaded.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/17-print-fix-loaded.ax.txt",
+      "bytes": 15558,
+      "sha256": "58f23495c14fd8ae46b6b6c5e3af3f76d012bfec812c01d27dc295bf4fe4a684"
+    },
+    "17-print-fix-screen.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/17-print-fix-screen.png",
+      "bytes": 553527,
+      "sha256": "9e453ec27a89cee71c09ce1a198e1b5b985d3b3ccdb1c0ba00e089d3526927ea"
+    },
+    "18-print-fix-preview.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/18-print-fix-preview.ax.txt",
+      "bytes": 3292,
+      "sha256": "7048a03f8fe78e9dff24ad5fa86aa4f6cedcdd6c0c5f04e83d921854216def65"
+    },
+    "19-print-fix-preview-pages-1-2.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/19-print-fix-preview-pages-1-2.png",
+      "bytes": 242061,
+      "sha256": "eab0cb76544a414c7a4e1491a7955811504e34b16830e70a68fc5b4654f653e0"
+    },
+    "19-print-fix-preview-rendered.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/19-print-fix-preview-rendered.ax.txt",
+      "bytes": 3797,
+      "sha256": "96d2dac821abdb3d18ebeb3de495e42d83835ffbfe3c3b7aa10a3ab6795e0fa0"
+    },
+    "20-print-fix-later-pages.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/20-print-fix-later-pages.ax.txt",
+      "bytes": 835,
+      "sha256": "eab179376658eaa138cfbf56893afbbc4cd28fa32f3c3fca4c7f8d684c26fddc"
+    },
+    "20-print-fix-preview-pages-3-4.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/20-print-fix-preview-pages-3-4.png",
+      "bytes": 245046,
+      "sha256": "77a7a7aad34e7df54e0ef34acf039d3d7fc4146bf9f426df4952ce200666865b"
+    },
+    "21-print-card-fix-cancelled.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/21-print-card-fix-cancelled.ax.txt",
+      "bytes": 12013,
+      "sha256": "435f8ab3da834e9a0735971bac0d76650c079e0663e0edae7344b8c12d1c6666"
+    },
+    "22-final-pilot-loaded.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/22-final-pilot-loaded.ax.txt",
+      "bytes": 271,
+      "sha256": "e771bd73161fe9ea8347a1c675d745cfc567cd2752f0f28b62bcdcfab0ebb34c"
+    },
+    "22-final-pilot-safari.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/22-final-pilot-safari.png",
+      "bytes": 553527,
+      "sha256": "9e453ec27a89cee71c09ce1a198e1b5b985d3b3ccdb1c0ba00e089d3526927ea"
+    },
+    "23-final-print-opened.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/23-final-print-opened.ax.txt",
+      "bytes": 4043,
+      "sha256": "8050a8a6f5050bc5424c28b4c40df13dc99e783b3da45af44453cfd570d07543"
+    },
+    "24-final-print-pages-1-2.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/24-final-print-pages-1-2.png",
+      "bytes": 242114,
+      "sha256": "22698ba194ac3f5f3e0eb640906ea125bf9b1923fcfc5878927aeeea9947d834"
+    },
+    "25-accepted-pilot-loaded.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/25-accepted-pilot-loaded.ax.txt",
+      "bytes": 271,
+      "sha256": "8cb7da9adc44369cd2088df96df1a8be505d4ad224fe48520faaf023f295b2ff"
+    },
+    "25-accepted-pilot-safari.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/25-accepted-pilot-safari.png",
+      "bytes": 553527,
+      "sha256": "9e453ec27a89cee71c09ce1a198e1b5b985d3b3ccdb1c0ba00e089d3526927ea"
+    },
+    "26-accepted-print-preview.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/26-accepted-print-preview.ax.txt",
+      "bytes": 3840,
+      "sha256": "e11486ddc73acae0eedd309ba745ddca69a17625eb0633efba6bddd1cffaed98"
+    },
+    "27-accepted-print-pages-1-2.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/27-accepted-print-pages-1-2.png",
+      "bytes": 240684,
+      "sha256": "e22c0907944abf76a2122b4a75028b43883cb18d5ad793a3958af67935ca8e9b"
+    },
+    "28-accepted-print-pages-3-4.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/28-accepted-print-pages-3-4.ax.txt",
+      "bytes": 3840,
+      "sha256": "8a61b6854e812da716f538fcd3175ce8d0616b9b581e6bf590e45579052d6696"
+    },
+    "28-accepted-print-pages-3-4.png": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/28-accepted-print-pages-3-4.png",
+      "bytes": 251362,
+      "sha256": "463dad90c9ee7d5aeba01bab7c6dd7ac28a725381609657889b51b0010d7bba4"
+    },
+    "29-accepted-print-cancelled.ax.txt": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/29-accepted-print-cancelled.ax.txt",
+      "bytes": 11755,
+      "sha256": "29abf1a1e4902bff82576ff5566074d0a464d20fd8c88d0f46e626a9dc5deb16"
+    },
+    "30-safari-window-inventory.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/30-safari-window-inventory.json",
+      "bytes": 93,
+      "sha256": "82f2a53b8999a26fe2acc5717a32f01ce91bf1278125abbd6e039bf99ea72dac"
+    },
+    "before-print-fix.json": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/before-print-fix.json",
+      "bytes": 440,
+      "sha256": "5f340071cdb4e122a0d503616d195ca9251616e6d48604291411115b07c61071"
+    },
+    "pilot-before-print-fix.module.css": {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/safari-actual-20261107/pilot-before-print-fix.module.css",
+      "bytes": 5273,
+      "sha256": "2935f797fd769049a3287ea13284f51e1a566331c7501c170cae1c02f0e960e2"
+    }
+  }
+}

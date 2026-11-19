@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "assetSha256": "71b6c3ce2460f63eb68273fe430d7ba5297bd2bb47d80ae15723d6a74c46a75a",
+  "sourceSha256": "2dc4150cbafc97acb7dc9520daa69da9387e744b3d6bc80a55f0bbab3750698c",
+  "captionsSha256": "488a3bbeaed512da01f36c31428c68fd19498b021bc8755390a58107d57ad4fe",
+  "durationMs": 20000,
+  "width": 720,
+  "height": 1280,
+  "audioTracks": 0,
+  "videoTracks": 1,
+  "sourceDurationMs": 53787,
+  "sourceStartMs": 12012,
+  "sourceEndMs": 32012,
+  "checks": [
+    "tracks-inspected",
+    "captions-checked",
+    "frames-reviewed",
+    "all-audio-removed",
+    "visible-source-credit",
+    "no-logo-or-identifiable-person",
+    "archive-footage-labeled",
+    "original-educational-commentary",
+    "embedded-text"
+  ],
+  "rights": {
+    "decision": "approved",
+    "sourcePage": "https://oceanexplorer.noaa.gov/dive-11-ex2606/",
+    "sourceMedia": "https://oceanexplorer.noaa.gov/wp-content/uploads/2026/10/ex2606-dive11-isopod_HD.mp4",
+    "credit": "NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration",
+    "checkedAt": "2026-11-06T22:36:24.202Z",
+    "validUntil": null,
+    "licenseUrl": "https://oceanexplorer.noaa.gov/faqs/",
+    "referenceUrl": "https://oceanexplorer.noaa.gov/expedition/ex2701/",
+    "edits": "Trimmed and framed with original educational commentary. September archive footage is labeled throughout. The November trial is a separate reference.",
+    "components": [
+      {
+        "kind": "visuals",
+        "basis": "public-domain",
+        "policyUrl": "https://oceanexplorer.noaa.gov/faqs/",
+        "permissions": [
+          "display",
+          "excerpt",
+          "reencode",
+          "captions",
+          "commercial"
+        ],
+        "territories": [
+          "WORLDWIDE"
+        ]
+      }
+    ]
+  },
+  "frameReview": {
+    "method": "42 source frames and five finished frames reviewed. All 500 output frames checked against the original 30000/1001 frame clock.",
+    "sourceTimeRange": "20 seconds starting at 12.012 seconds on the source timeline.",
+    "visuals": "An isopod above the seafloor. The selected frames contain no identifiable people, agency logos or third-party graphics.",
+    "changes": "The original 16:9 frame stays whole. Source audio was removed and the archive date, commentary and credit occupy separate panels."
+  },
+  "contextSources": [
+    "https://oceanexplorer.noaa.gov/expedition/ex2701/",
+    "https://www.omao.noaa.gov/image-licensing-usage-info"
+  ],
+  "reviewScope": "The exact independent educational edit. NOAA Ocean Exploration allows credited redistribution without territorial limitation in its published terms. This review relies on that permission and U.S. public-domain provenance. It covers informational use in Clips. Promotional reuse, logos and endorsement claims are outside this review."
+}

@@ -1,52 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { NextRequest } from 'next/server';
+import { getResend } from '@/lib/email/resend';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 // Basic but strict-enough email regex: local@domain.tld
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export async function POST(req: NextRequest) {
-  const { email } = await req.json();
-  if (!email || typeof email !== 'string') {
-    return NextResponse.json({ error: 'Email required' }, { status: 400 });
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function safeRequestJson(req: NextRequest): Promise<Record<string, unknown> | null> {
+  try {
+    const body = await req.json();
+    return isRecord(body) ? body : null;
+  } catch {
+    return null;
   }
+}
 
-  const normalized = email.trim().toLowerCase();
-  if (!EMAIL_RE.test(normalized) || normalized.length > 254) {
-    return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
-  }
+function normalizeEmail(value: unknown) {
+  if (typeof value !== 'string') return '';
+  const email = value.trim().toLowerCase();
+  if (email.length > 254) return '';
+  return EMAIL_RE.test(email) ? email : '';
+}
 
-  // Duplicate-signup guard: if we've already recorded this email for the
-  // waitlist in founding_interest, short-circuit before sending anything.
-  const { data: existing } = await supabase
-    .from('founding_interest')
-    .select('id')
-    .eq('email', normalized)
-    .ilike('why', '%Council Waitlist%')
-    .limit(1)
-    .maybeSingle();
+function councilWaitlistEmailNotificationsEnabled() {
+  return process.env.COUNCIL_WAITLIST_EMAIL_NOTIFICATIONS_ENABLED === 'true';
+}
 
-  if (existing) {
-    return NextResponse.json({ success: true, duplicate: true });
-  }
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
-  // Record the signup so subsequent posts dedupe
-  await supabase.from('founding_interest').insert({
-    name: null,
-    email: normalized,
-    why: '[Council Waitlist]',
-    created_at: new Date().toISOString(),
-  });
-
-  if (!process.env.RESEND_API_KEY) {
-    return NextResponse.json({ success: true, note: 'No RESEND_API_KEY' });
-  }
-
-  const confirmHtml = `<!DOCTYPE html>
+function buildConfirmationHtml() {
+  return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:Georgia,'Times New Roman',serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:40px 20px;">
@@ -81,34 +75,80 @@ export async function POST(req: NextRequest) {
     </td></tr>
   </table>
 </body></html>`;
+}
+
+async function sendCouncilWaitlistEmails(email: string) {
+  if (!councilWaitlistEmailNotificationsEnabled()) return;
 
   try {
-    // Send confirmation to subscriber
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Society of Explorers <notifications@societyofexplorers.com>',
-        to: normalized,
-        subject: "You're on the list — welcome to the Renaissance",
-        html: confirmHtml,
-      }),
+    const resend = getResend();
+    await resend.emails.send({
+      from: 'Society of Explorers <notifications@societyofexplorers.com>',
+      to: email,
+      subject: "You're on the list - welcome to the Renaissance",
+      html: buildConfirmationHtml(),
     });
 
-    // Notify Chris
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Society of Explorers <notifications@societyofexplorers.com>',
-        to: 'chris@societyofexplorers.com',
-        subject: `[Council Waitlist] ${normalized}`,
-        html: `<div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;"><p style="color:#c9a84c;">[Council Waitlist]</p><p>${normalized}</p></div>`,
-      }),
+    await resend.emails.send({
+      from: 'Society of Explorers <notifications@societyofexplorers.com>',
+      to: 'chris@societyofexplorers.com',
+      subject: `[Council Waitlist] ${email}`,
+      html: `<div style="background:#000;color:#f5f0e8;padding:40px;font-family:Georgia,serif;"><p style="color:#c9a84c;">[Council Waitlist]</p><p>${escapeHtml(
+        email,
+      )}</p></div>`,
     });
-  } catch (err) {
-    console.error('Council waitlist email error:', err);
+  } catch {
+    console.warn('[council-waitlist/confirm] notification email skipped');
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const body = await safeRequestJson(req);
+
+  if (!body) {
+    return privateJson({ error: 'Invalid body' }, { status: 400 });
   }
 
-  return NextResponse.json({ success: true });
+  if (typeof body.email !== 'string' || !body.email.trim()) {
+    return privateJson({ error: 'Email required' }, { status: 400 });
+  }
+
+  const normalized = normalizeEmail(body.email);
+  if (!normalized) {
+    return privateJson({ error: 'Invalid email' }, { status: 400 });
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data: existing, error: lookupError } = await supabase
+    .from('founding_interest')
+    .select('id')
+    .eq('email', normalized)
+    .ilike('why', '%Council Waitlist%')
+    .limit(1)
+    .maybeSingle();
+
+  if (lookupError) {
+    console.warn('[council-waitlist/confirm] duplicate lookup failed');
+    return privateJson({ error: 'Failed to record waitlist signup' }, { status: 500 });
+  }
+
+  if (existing) {
+    return privateJson({ success: true, duplicate: true });
+  }
+
+  const { error: insertError } = await supabase.from('founding_interest').insert({
+    name: null,
+    email: normalized,
+    why: '[Council Waitlist]',
+    created_at: new Date().toISOString(),
+  });
+
+  if (insertError) {
+    console.warn('[council-waitlist/confirm] waitlist insert failed');
+    return privateJson({ error: 'Failed to record waitlist signup' }, { status: 500 });
+  }
+
+  await sendCouncilWaitlistEmails(normalized);
+
+  return privateJson({ success: true });
 }

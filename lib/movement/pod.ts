@@ -1,13 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const POD_VERSION = 1;
 const AUTH_TAG_BYTES = 16;
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 export interface PodPayload {
   version: number;
@@ -50,10 +45,30 @@ export interface PodStats {
   sync_client_updated_at: string | null;
   sync_status: string | null;
   sync_conflict_count: number;
+  sync_metadata: Record<string, unknown>;
+  key_mode: PodKeyMode;
+  custody_status: string;
+  sovereignty_status: string;
+  custody_verification: PodCustodyVerification;
+  custody_note: string;
 }
+
+export type PodKeyMode = 'not_built' | 'server_derived' | 'client_local' | 'client_wallet_derived' | 'unknown';
+export type PodCustodyVerification =
+  | 'none'
+  | 'server_generated'
+  | 'client_attested'
+  | 'wallet_signature_attested'
+  | 'unknown';
+
+const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
 
 function asArray<T>(value: T[] | null): T[] {
   return Array.isArray(value) ? value : [];
+}
+
+function reportPodFailure(label: string) {
+  console.warn(`[movement/pod] ${label} failed`);
 }
 
 async function safeSelect<T>(
@@ -63,12 +78,12 @@ async function safeSelect<T>(
   try {
     const { data, error } = await query;
     if (error) {
-      console.error(`[movement/pod] ${label} failed`, error.message);
+      reportPodFailure(label);
       return [];
     }
     return asArray(data);
-  } catch (err) {
-    console.error(`[movement/pod] ${label} threw`, err);
+  } catch {
+    reportPodFailure(label);
     return [];
   }
 }
@@ -104,6 +119,136 @@ export function byteaToBuffer(value: unknown): Buffer {
   throw new Error('Unsupported bytea value');
 }
 
+export function normalizePodMetadata(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+export function resolvePodKeyMode(row: {
+  version?: number | null;
+  sync_device_id?: string | null;
+  sync_metadata?: unknown;
+} | null | undefined): PodKeyMode {
+  if (!row) return 'not_built';
+
+  const metadata = normalizePodMetadata(row.sync_metadata);
+  const keyMode = stringValue(metadata.key_mode || metadata.encryption_key_mode);
+  if (keyMode === 'client_wallet_derived' || keyMode === 'wallet_signature_derived') {
+    return 'client_wallet_derived';
+  }
+  if (keyMode === 'client_local' || keyMode === 'client_generated_local') {
+    return 'client_local';
+  }
+  if (keyMode === 'server_derived' || keyMode === 'server_secret_derived') {
+    return 'server_derived';
+  }
+
+  const source = stringValue(metadata.source);
+  const surface = stringValue(metadata.surface);
+  if (row.sync_device_id === 'server-refresh' || source === 'server-refresh' || row.version === 1) {
+    return 'server_derived';
+  }
+  if (surface === 'homepage-collaboration-sandbox') return 'client_local';
+
+  return 'unknown';
+}
+
+function hasSha256Hex(value: unknown): boolean {
+  return typeof value === 'string' && SHA256_HEX_PATTERN.test(value.trim().toLowerCase());
+}
+
+export function resolvePodCustodyVerification(
+  keyMode: PodKeyMode,
+  metadataInput: unknown = {},
+): PodCustodyVerification {
+  const metadata = normalizePodMetadata(metadataInput);
+
+  switch (keyMode) {
+    case 'not_built':
+      return 'none';
+    case 'server_derived':
+      return 'server_generated';
+    case 'client_local':
+      return 'client_attested';
+    case 'client_wallet_derived': {
+      const keyDerivation = stringValue(metadata.key_derivation);
+      const hasWalletAttestation =
+        keyDerivation === 'wallet_signature_hkdf_sha256_v1' &&
+        hasSha256Hex(metadata.wallet_address_hash) &&
+        hasSha256Hex(metadata.wallet_key_message_hash) &&
+        hasSha256Hex(metadata.wallet_signature_hash) &&
+        metadata.wallet_signature_stored === false &&
+        metadata.server_can_decrypt_pod === false;
+
+      return hasWalletAttestation ? 'wallet_signature_attested' : 'client_attested';
+    }
+    default:
+      return 'unknown';
+  }
+}
+
+export function describePodCustody(
+  keyMode: PodKeyMode,
+  metadataInput: unknown = {},
+): Pick<PodStats, 'custody_status' | 'sovereignty_status' | 'custody_verification' | 'custody_note'> {
+  const custodyVerification = resolvePodCustodyVerification(keyMode, metadataInput);
+
+  switch (keyMode) {
+    case 'not_built':
+      return {
+        custody_status: 'No pod built yet',
+        sovereignty_status: 'Ready to initialize',
+        custody_verification: custodyVerification,
+        custody_note: 'No encrypted pod has been created yet.',
+      };
+    case 'client_wallet_derived':
+      if (custodyVerification === 'wallet_signature_attested') {
+        return {
+          custody_status: 'Wallet-derived client key',
+          sovereignty_status: 'Client-attested wallet custody',
+          custody_verification: custodyVerification,
+          custody_note:
+            'The latest pod sync included hashes of the wallet address, signing message, and wallet signature. The raw signature and encryption key were not stored; Society stores the pod as ciphertext plus a commitment.',
+        };
+      }
+
+      return {
+        custody_status: 'Wallet-derived client key',
+        sovereignty_status: 'Client-attested custody',
+        custody_verification: custodyVerification,
+        custody_note:
+          'The latest pod says it was wallet-derived, but it is missing the full hash-only custody attestation. Reseal with wallet to upgrade the proof metadata.',
+      };
+    case 'client_local':
+      return {
+        custody_status: 'Client-held local key',
+        sovereignty_status: 'Client-held prototype',
+        custody_verification: custodyVerification,
+        custody_note:
+          'This pod came from browser-held key custody. It is useful for prototyping, but wallet sealing is the stronger portable custody path.',
+      };
+    case 'server_derived':
+      return {
+        custody_status: 'Server-derived key',
+        sovereignty_status: 'Migration mode',
+        custody_verification: custodyVerification,
+        custody_note:
+          'This pod was encrypted by the server for migration and export. Use wallet sealing when you want Society to store only member-keyed ciphertext and commitments.',
+      };
+    default:
+      return {
+        custody_status: 'Unknown key custody',
+        sovereignty_status: 'Needs review',
+        custody_verification: custodyVerification,
+        custody_note: 'The latest pod metadata does not identify a recognized custody mode.',
+      };
+  }
+}
+
 export function derivePodKey(memberId: string, material?: string | Buffer): Buffer {
   // TODO: migrate to client-side key derivation from a wallet signature so the server never sees pod keys.
   const base =
@@ -115,6 +260,7 @@ export function derivePodKey(memberId: string, material?: string | Buffer): Buff
 }
 
 export async function buildPodPayload(memberId: string): Promise<PodPayload> {
+  const supabaseAdmin = getSupabaseAdmin();
   const [
     memberResult,
     practiceResponses,
@@ -171,7 +317,7 @@ export async function buildPodPayload(memberId: string): Promise<PodPayload> {
   ]);
 
   if (memberResult.error) {
-    throw new Error(`Member lookup failed: ${memberResult.error.message}`);
+    throw new Error('Member lookup failed');
   }
 
   const lifeFacts: Record<string, string> = {};
@@ -233,10 +379,11 @@ export function decryptPod(ciphertext: Buffer | string, iv: Buffer | string, key
 }
 
 export async function getPodStats(memberId: string): Promise<PodStats> {
+  const supabaseAdmin = getSupabaseAdmin();
   const [podResult, responseCountResult] = await Promise.all([
     supabaseAdmin
       .from('data_pods')
-      .select('ciphertext, version, last_commitment_hash, last_committed_at, updated_at, sync_version, sync_device_id, sync_client_updated_at, sync_status, sync_conflict_count')
+      .select('ciphertext, version, last_commitment_hash, last_committed_at, updated_at, sync_version, sync_device_id, sync_client_updated_at, sync_status, sync_conflict_count, sync_metadata')
       .eq('member_id', memberId)
       .maybeSingle(),
     supabaseAdmin
@@ -246,10 +393,17 @@ export async function getPodStats(memberId: string): Promise<PodStats> {
   ]);
 
   if (podResult.error) {
-    console.error('[movement/pod] stats lookup failed', podResult.error.message);
+    reportPodFailure('stats lookup');
+  }
+
+  if (responseCountResult.error) {
+    reportPodFailure('response count lookup');
   }
 
   const row = podResult.data;
+  const syncMetadata = normalizePodMetadata(row?.sync_metadata);
+  const keyMode = resolvePodKeyMode(row);
+  const custody = describePodCustody(keyMode, syncMetadata);
   const size = row?.ciphertext ? byteaToBuffer(row.ciphertext).byteLength : 0;
   return {
     exists: Boolean(row),
@@ -264,5 +418,8 @@ export async function getPodStats(memberId: string): Promise<PodStats> {
     sync_client_updated_at: row?.sync_client_updated_at || null,
     sync_status: row?.sync_status || null,
     sync_conflict_count: row?.sync_conflict_count ?? 0,
+    sync_metadata: syncMetadata,
+    key_mode: keyMode,
+    ...custody,
   };
 }

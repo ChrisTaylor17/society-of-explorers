@@ -1,0 +1,112 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T19:16:15.855449+00:00",
+  "parentCommit": "0c5911258000fec6a7153cd1b1b50ff3abd1cecb",
+  "productionCleared": false,
+  "build": {
+    "sourceFiles": 1091,
+    "sourceDigest": "d43c3cc4cf524811e3c3ae0776ebcc6c2b636a39aa351a0930beab7949276751",
+    "lint": "passed"
+  },
+  "browserStories": [
+    "The signed browser loads a conversation and marks only the exact incoming messages from that peer read.",
+    "A prepared Thinker question stays in the draft until Send and reaches the other participant as an ordinary message.",
+    "A held reply from the old thread cannot appear in the new conversation or mark the old messages read.",
+    "Explicit blocking clears the private thread, retires a held pre-block reply and refuses a new send from the other account.",
+    "At 320px the owner can review and remove a block from the private list. A fresh conversation opens the preserved history.",
+    "An explicit session refusal clears the conversation even when no local account event arrived.",
+    "A committed block reply cannot reopen the conversation or publish a stale status after account retirement."
+  ],
+  "httpAndAccountChecks": 50,
+  "postgres": {
+    "migrationFiles": 60,
+    "roleDenials": 18,
+    "checks": [
+      "The RPC cutover keeps existing direct-message rows, including the legacy unattributed row.",
+      "A second PostgreSQL session waits on an uncommitted block and then refuses the held send. Both reads and unread counts reflect the block.",
+      "When a send locks first, the later block preserves that accepted row and hides it from both participants. Writes refuse a stale transaction snapshot.",
+      "Unblocking only changes the caller\u2019s block. Exact replay is safe, and the opposite active block still protects the conversation.",
+      "The isolated restore preserves private blocks, old history, exact retry and the raw-table access denial."
+    ]
+  },
+  "restore": {
+    "previousFormatOmission": {
+      "scope": "soe-privacy-restore-v14",
+      "status": "MATCH",
+      "tablesCompared": 65,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "partialRestore": {
+      "scope": "soe-privacy-restore-v15",
+      "status": "MISMATCH",
+      "tablesCompared": 66,
+      "rowsDiffer": [
+        "soe_member_safety_private.member_blocks"
+      ],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "completeRestore": {
+      "scope": "soe-privacy-restore-v15",
+      "status": "MATCH",
+      "tablesCompared": 66,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    }
+  },
+  "scope": "Verified web direct messages with signed fixture accounts, actual Next handlers and isolated SQL. Phone-width browser layout and account retirement passed. Circle-wide controls, physical devices and hosted release remain open.",
+  "browserBundle": "Existing cached esbuild generated the browser fixture while Bun was offloaded. The actual web production build used webpack.",
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "aa24b3cad157beadcfdc40bd3ffc307fa5f857f27a20c77584f10e3275b2708b",
+    "app/api/message/route.ts": "36c3609d8f8a9993b37898ae0b1f1ac810658954b21d3308b318ee90094937ac",
+    "app/members/DirectMessageBlocks.tsx": "162e91700c6d46c8a76be376ac375855e9fe85530177fa73432fcde42081e051",
+    "app/members/direct-message.module.css": "7c713c9733b30c0ae962e274e13982db6c34661aff2d36d26234790a3a99c4a2",
+    "app/members/page.tsx": "e2ded0807687c856c5c0acf60ec27c70f49128a6fb9fdee627188e2a6808733b",
+    "docs/integration/direct-message-blocking.md": "caba061a39f28c451a6e251160d066edd57cbaa57e94489e8db2d8d36243421c",
+    "docs/integration/privacy-restore-check.md": "63f490010c560d664ed3d6e62e0028ee3be6942074e4632b1c6bb59456e453ab",
+    "docs/integration/production-migration-plan.md": "6a8f71037ae29ff25546aaa54ea937cdc01b0a00dda1e736b1e3a8f8eccdc10e",
+    "docs/sql/direct-message-blocks-apply.sql": "acee1997d731191a285de9355e4f92ada8b8e959ec283d20c082290c2fd4a0a5",
+    "docs/sql/privacy-restore-reference.sql": "22d180de08baa2dc3462b98a165ca50c70b1a74ed9af1d352b1d22bf70c46c84",
+    "lib/members/direct-message.ts": "08b483afb59e3c92a893eaa70bd70e643899b6ef835526b0612b8bda01e6512c",
+    "verification/web/scripts/bundle-direct-message.mjs": "ba774ca6cdc2903a3be00c4a468b4ec39bce36c832b127f9d1f4ce1b3538a3a3",
+    "verification/web/scripts/rehearse-direct-message-blocks.py": "1fef86605ea4a3883c467794bdcd9001c3d7d302884d3829dcadc347f2553fde",
+    "verification/web/scripts/test-privacy-restore-check.py": "9f7e3e5d1ddd26f3f53f56550a490dc263e7f1c1746761915965c8589b81f8a4",
+    "verification/web/scripts/verify-privacy-restore.py": "bdbc3654c3f1c83d14385b4d5185064eae97276fa8e158a7f85d43964607d408",
+    "verification/web/tests/browser-direct-message.mjs": "a3f31cf750cd19ff83051701d59020322dd54a3dbf05ed699c99dd2d6a46c9e6",
+    "verification/web/tests/direct-message-http.test.mjs": "9ed934e7dd72049673baa519eee10e1d7d8e0ea72907f6aa7a014564ace74eca",
+    "verification/web/tests/support/direct-message-app.mjs": "f2f6545dd37b9096424b1cff35f5450211340668c00b774c2697b4e890af7704",
+    "verification/web/tests/support/direct-message-entry.tsx": "ab13d9beb76c9d9eefada1cf86ea2feefe35b23fe977b46f40ac5d56daf916c0"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-direct-message-blocks",
+  "evidenceSha256": {
+    "built-shell-direct-block-release-next-build.json": "62f8bdebe2a1448ad46ab6706221288ffb264869142ea34b818ad57396569dd5",
+    "built-shell-direct-block-release-next-build.log": "5d8fdb9e051b269fd5fc1b68a79cf6b070b8f28fc5fd36ba97dbffa1271ea9b2",
+    "built-shell-direct-block-release-build-source-sha256.json": "ed644ec1a28c00114062c6b9dbde7750ac3693d2fb43967bdf90298efe14cc49",
+    "direct-block-pg-complete.json": "f0b253fc7fbf5529c0695cf65b4bdbcfce19405bf22261104719939685a2e53e",
+    "direct-block-http-final.tap": "efb1bf5afa890383428e1ddc77aa5a19c3c19db554b674c380126ac995bc2573",
+    "direct-block-lint-release.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "direct-message-browser-blocks-pass.json": "496f17ab519914758afc66e35a8d10d5acc11bd19addfaeb88751320d615e26f",
+    "direct-message-block-blocks-pass-320.png": "4aaae499b870bd45e02019719e91fff95cddd03f56884ff1bf0e7067ded35244",
+    "direct-block-esbuild.mjs": "6518f6419d8837a30c092086add812b34c863a415ce589c300b4f453c647815a",
+    "builder.json": "e94c75ed2e28a4025e94cc266c6cc85939463b79ae6094a8fb6b69b6faf57847",
+    "source-hashes.json": "ca735f8cb7c12f6f0831e897093390cdc3116169f3e7dc6dde8e3400471cb8e2"
+  }
+}

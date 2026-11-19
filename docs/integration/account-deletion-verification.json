@@ -1,0 +1,102 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T13:29:50.953975+00:00",
+  "parentCommit": "ad0cd693227059f77cd728ce8945b6256305a6a2",
+  "productionCleared": false,
+  "intakeDefault": "disabled",
+  "results": {
+    "guardedProductionWebBuild": {
+      "sourceFiles": 1082,
+      "sourceDigest": "cda0beb72f43fc42d327cc0f192fd37249c0db1410cf7b2e924b0506bd7a5edc"
+    },
+    "scopedLint": "passed",
+    "newHttpAndDatabaseCases": 8,
+    "existingAccountRegressionCases": 81,
+    "browser": {
+      "scenarios": [
+        "compiled page is public, private-cache, reachable from settings, and starts with intake off",
+        "password sign-in opens deletion after a fresh selected-provider read with no member lookup or setup",
+        "the 320px browser requires typed confirmation, handles a lost response, and confirms only one persisted request",
+        "a fresh anonymous browser retrieves pending status using the full code, without exposing the account identity",
+        "the Google completion page checks the selected provider without provisioning a member for deletion",
+        "an account change retires an in-flight read and the replacement account starts with its own review"
+      ],
+      "interceptedDeletionEndpointRequests": 8
+    },
+    "phonePaths": {
+      "android": {
+        "totalScenarios": 23,
+        "deletionScenarios": [
+          "the connected sign-in screen opens only the public account deletion page before member setup, with no native account request",
+          "the verified member screen hands off only the public website address, and a retired callback cannot reopen it from the background"
+        ],
+        "fixtureCleanup": {
+          "browser": "closed",
+          "database": "closed"
+        }
+      },
+      "ios": {
+        "totalScenarios": 6,
+        "deletionScenarios": [
+          "the connected sign-in screen opens only the public account deletion page before member setup, with no native account request",
+          "the verified member screen hands off only the public website address, and a retired callback cannot reopen it from the background"
+        ],
+        "fixtureCleanup": {
+          "browser": "closed",
+          "database": "closed"
+        }
+      }
+    },
+    "postgresql": {
+      "checks": [
+        "Two concurrent exact retries for a provider-only account return the same receipt.",
+        "Two different codes for the same provider-only account record one request.",
+        "Linked wallet and Supabase submissions serialize and leave one shared request.",
+        "The archive preserves receipts and their access boundaries without creating members."
+      ],
+      "scope": "Local PostgreSQL 17, Unix socket only, synthetic data."
+    }
+  },
+  "remaining": [
+    "Retention rules and operator erasure procedure",
+    "Verified account revocation and completion notice",
+    "Addition to the release restore verifier",
+    "Hosted verification and physical-device acceptance"
+  ],
+  "scope": "Compiled Next pages and proxy. Synthetic provider and PostgREST transports for enabled browser flows, with actual deletion handlers and disposable SQL. The default-off page and auth/origin refusal use the actual compiled server routes. No deployment, live provider, production database, or account erasure.",
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "ca89e1f24ce673b7a556f12d1dbd142b2828b64ff89b033dc8d495c5ebe04eb3",
+    "app/account/delete/AccountDeletionForm.tsx": "2c66dfe7ce334d8adaf37d52fb1271a4d459eede09c01b1887e1788351e83e25",
+    "app/account/delete/page.tsx": "18503159bb66e00206614075581ef388ba7ef05b152c2866c429205717b30b75",
+    "app/account/profile/page.tsx": "8ac1d0bac3717d49a7eab2d1843c454a1e24303bfe2cb1d6ca0ae7c2b842575f",
+    "app/api/account/deletion/route.ts": "1de51a6101b5fdd9e622b1c1404d55b851815d6a204cdff8adf989d139647567",
+    "app/auth/complete/Completion.tsx": "6103a7aaa2de960819a7d4d3c097f8a817d99d1f01efce1dd2a31dd9d0502ab2",
+    "docs/integration/account-deletion.md": "2453fc7267e385da4298d4af84aa4240cd37c1bf2df53b601a72217f2ad5ac99",
+    "docs/sql/account-deletion-requests-apply.sql": "c18bb15a8226fe5ec536735c74929bf85018f84b9b21c204dddf009ac9b7726e",
+    "lib/account/deletion-config.ts": "228cdd9e4868541dc67ca765ceb25b1c6f5da47300a9a0b9ca9ee9797e7f0e4c",
+    "lib/account/deletion-contract.ts": "35919fd532355b0d6df6229e79796d2ba398da7ebfca32f2bbd600959d1e05ae",
+    "lib/auth/webAccount.ts": "aa2e5c5b66a2ca4c9a7c6df3990db20ab86da1f688acdcff4d285618cbe04e52",
+    "platforms/native/MemberCircleScreen.tsx": "0ccb5887a21ca943eaf3d165833de8b1d3aa9da9991f8119661cc8535f814597",
+    "platforms/native/OwnedAccountScreen.tsx": "3a8d7cf815c3f943c8fee23b281a85477fc7ac1aed335cb3954408f427951224",
+    "platforms/native/src/auth/account-deletion.ts": "767177d37d55f9d30c1b5d1a6d15ff20c4ed3ceb9491d7addfa65e1b1d432af0",
+    "platforms/tests/browser-native-hosting.mjs": "ef26215c9d40264d5e729b482cb529aca94919edd1a61046d4a5100d51f0eb6c",
+    "proxy.ts": "1ad7182b5404c327aa0d9a5d083be3c009e405d9f523db3c4cfe1080e9a8f737",
+    "verification/web/scripts/rehearse-account-deletion.py": "10c31191a0c1c8ca630ed7975b3763550cb384176f3d62e7a29fe0d18a985517",
+    "verification/web/tests/account-deletion-http.test.mjs": "8d30ef2800c88090eb6a36f5d38eb4e99e613dab6873976f86c8d2ce158ced27",
+    "verification/web/tests/browser-account-deletion.mjs": "25beea13cbbd50e61811544e5301bd8f6ff66a34ec49f22cc99d3a881b777fa5",
+    "verification/web/tests/support/account-deletion-app.mjs": "3e63cc8c54ddce9ddf280e7a919d26561d0e2edab6794ec256824039da7e9d50"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-account-deletion",
+  "evidenceSha256": {
+    "built-shell-account-deletion-final-next-build.json": "f832720af0e0aecb6938e78eeb8991b7590defbb4bcb7e259b5737913df34fe8",
+    "built-shell-account-deletion-final-next-build.log": "e7f72b5684c9c6814641ad9545f227897f1604b6645f36193646fdbb387725a0",
+    "built-shell-account-deletion-final-build-source-sha256.json": "5f830bf7e6a36a782973bff972afedec2382a646d89c06ff3032109393f1a191",
+    "account-deletion-browser.json": "e600f99cd8214305188a9091385f373317676b7ed952ed30bdb8c1c912f92476",
+    "account-deletion-http.tap": "8acf38cf409e24ece26976c4104ef9f26c747689ade247a4d6790c1f5c0f0ce9",
+    "account-deletion-regression.tap": "e3352561bcf3f966c1b12eb5b235d9a08d2c34e55afc5589db1be9877bbac6d5",
+    "account-deletion-postgres.json": "d163fb7870fad1671bda2309aa738e87d265718676f8f154e231035a3879988d",
+    "account-deletion-320.png": "3c5ac23e0e872529b6286b9a57a62a19baee1cf0a5fd5f58c98370531348cefd",
+    "account-deletion-native-android.json": "e82b2a82f2d6bdcd7b821fef5640cac58cfd126f20325b4a049f9d8146669e06",
+    "account-deletion-native-ios.json": "1e6083063aaa7fccd2374e5fcf082482c26668fa056bf0cd67034cdf37ffc666"
+  }
+}

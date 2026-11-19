@@ -1,9 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { getMemberSession } from '@/lib/auth/getSession';
-import { createClient } from '@/lib/supabase/client';
+import CheckoutWelcome from '@/components/CheckoutWelcome';
+import { useGuideProgram } from '@/lib/salons/useGuideProgram';
+import { isUuid } from '@/lib/ids/uuid';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -14,94 +17,90 @@ const TRACK_COLORS: Record<string, string> = { singularity: '#4169E1', blockchai
 const TRACK_LABELS: Record<string, string> = { singularity: 'Singularity & AI', blockchain: 'Blockchain & Data Sovereignty', consciousness: 'The Secret & Consciousness' };
 const GUIDE_LEVELS = ['', 'Guide', 'Senior Guide', 'Master Guide'];
 
+type RecruitingSalon = {
+  id: string;
+  title: string;
+  description?: string | null;
+  status?: string | null;
+  max_members: number;
+  topic_rotation?: string[];
+  member_count: number;
+  guide_name?: string | null;
+};
+
+function isProgramListing(value: unknown): value is RecruitingSalon {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const row = value as Record<string, unknown>;
+  const optionalText = (text: unknown, limit: number) => text === null ||
+    (typeof text === 'string' && text.length <= limit);
+  return isUuid(row.id) && typeof row.title === 'string' && row.title.trim().length > 0 && row.title.length <= 160 &&
+    optionalText(row.description, 500) && (row.status === 'recruiting' || row.status === 'active') &&
+    typeof row.max_members === 'number' && Number.isInteger(row.max_members) && row.max_members >= 1 && row.max_members <= 20 &&
+    typeof row.member_count === 'number' && Number.isInteger(row.member_count) && row.member_count >= 0 && row.member_count <= 20 &&
+    Array.isArray(row.topic_rotation) && row.topic_rotation.length <= 12 &&
+    row.topic_rotation.every(topic => typeof topic === 'string' && topic.length <= 40) &&
+    optionalText(row.guide_name, 160);
+}
+
+function SalonChoices() {
+  return <nav aria-label="Other ways to gather" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 20px', margin: '1.25rem auto 0' }}>
+    <Link href="/salons/pilot" prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Read the four-week fellowship plan</Link>
+    <Link href={ONLINE_CIRCLES_HREF} prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Find an online reading Circle</Link>
+  </nav>;
+}
+
 export default function SalonPage() {
-  const [memberId, setMemberId] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-  const [mySalon, setMySalon] = useState<any>(null);
-  const [recruiting, setRecruiting] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [guide, setGuide] = useState<any>(null);
-  const [myMembership, setMyMembership] = useState<any>(null);
+  const account = useGuideProgram();
+  const { program, joining } = account;
+  const mySalon = program?.salon;
+  const sessions = program?.sessions ?? [];
+  const members = program?.members ?? [];
+  const stats = program?.stats;
+  const guide = program?.guide;
+  const myMembership = program?.myMembership;
+  const [recruiting, setRecruiting] = useState<RecruitingSalon[]>([]);
   const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState<string | null>(null);
+  const [listingError, setListingError] = useState(false);
+  const [listingAttempt, setListingAttempt] = useState(0);
+  const checking = account.phase === 'loading' || account.phase === 'joining';
+  const accountNotice = <section aria-label="Your program access" style={{ maxWidth: 600, margin: '1.5rem auto', textAlign: 'center' }}>
+    <p role="status">{account.notice}</p>
+    <button type="button" disabled={!account.active || checking} onClick={() => void account.load()}
+      style={{ minHeight: 44, padding: '8px 16px', color: gold, border: `1px solid ${gold}`, background: 'transparent' }}>
+      Check current access
+    </button>
+    {(account.phase === 'signed-out' || account.phase === 'unavailable') && <p><Link href="/login?next=%2Fsalon" prefetch={false} style={{ color: gold }}>Sign in to your program</Link></p>}
+  </section>;
 
   useEffect(() => {
-    async function load() {
+    const controller = new AbortController();
+    let current = true;
+    const timeout = window.setTimeout(() => controller.abort(), 10_000);
+    setLoading(true); setListingError(false); setRecruiting([]);
+    async function loadListings() {
       try {
-        const session = await getMemberSession();
-        if (session?.member) setMemberId(session.member.id);
-        const supabase = createClient();
-        const { data: { session: auth } } = await supabase.auth.getSession();
-        if (auth?.access_token) setAuthToken(auth.access_token);
-      } catch {}
-
-      const res = await fetch('/api/salons?status=recruiting,active');
-      const data = await res.json();
-      setRecruiting(data.salons || []);
-      setLoading(false);
-    }
-    load();
-  }, []);
-
-  // Check if member is in a salon
-  useEffect(() => {
-    if (!authToken) return;
-    fetch('/api/salons/my-salon', { headers: { 'Authorization': `Bearer ${authToken}` } })
-      .then(r => r.json())
-      .then(d => {
-        if (d.salon) {
-          setMySalon(d.salon);
-          setMembers(d.members || []);
-          setSessions(d.sessions || []);
-          setStats(d.stats);
-          setGuide(d.guide);
-          setMyMembership(d.myMembership);
-        }
-      }).catch(() => {});
-  }, [authToken]);
-
-  async function joinSalon(salonId: string) {
-    if (!memberId) { window.location.href = '/login'; return; }
-    setJoining(salonId);
-    try {
-      const res = await fetch(`/api/salons/${salonId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
-        body: JSON.stringify({ action: 'join' }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        const detail = await fetch(`/api/salons/${salonId}`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
-        }).then(r => r.json());
-        setMySalon(detail.salon);
-        setMembers(detail.members || []);
-        setSessions(detail.sessions || []);
-        setStats(detail.stats);
-        setGuide(detail.guide);
-        setMyMembership(detail.myMembership);
+        const res = await fetch('/api/salons?status=recruiting,active', { cache: 'no-store', signal: controller.signal });
+        const data: unknown = await res.json();
+        const rows = data && typeof data === 'object' && !Array.isArray(data) ? (data as Record<string, unknown>).salons : null;
+        if (!res.ok || !Array.isArray(rows) || rows.length > 20 || !rows.every(isProgramListing)) throw new Error('Program listings unavailable');
+        if (!current) return;
+        if (controller.signal.aborted) throw new Error('Program listing lookup expired');
+        setRecruiting(rows);
+      } catch {
+        if (current) setListingError(true);
+      } finally {
+        window.clearTimeout(timeout);
+        if (current) setLoading(false);
       }
-    } catch {}
-    setJoining(null);
-  }
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) (e.target as HTMLElement).style.opacity = '1'; });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('[data-fade]').forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, [mySalon, recruiting]);
-
-  if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><PublicNav /><span style={{ color: muted, fontFamily: 'Cinzel, serif', fontSize: '11px' }}>LOADING...</span></div>;
+    }
+    void loadListings();
+    return () => { current = false; window.clearTimeout(timeout); controller.abort(); };
+  }, [listingAttempt]);
 
   // IN A SALON VIEW
   if (mySalon) {
     const upcomingSessions = sessions.filter(s => s.status === 'scheduled' || s.status === 'live').slice(0, 7);
     const completedSessions = sessions.filter(s => s.status === 'completed');
-    const totalSessions = 35;
     const sessionsLed = myMembership?.sessions_led || 0;
     const sessionsAttended = myMembership?.sessions_attended || 0;
     const isGuideCandidate = myMembership?.is_guide_candidate || false;
@@ -110,11 +109,12 @@ export default function SalonPage() {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>
         <PublicNav />
+        <CheckoutWelcome />
 
         {/* Header */}
         <section style={{ padding: '8rem 2rem 2rem', textAlign: 'center' }}>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>YOUR SALON</div>
+            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>YOUR SEVEN-WEEK SALON</div>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>{mySalon.title}</h1>
             {guide && (
               <p style={{ fontSize: '14px', color: muted }}>
@@ -122,6 +122,8 @@ export default function SalonPage() {
                 {guide.guide_level > 0 && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', color: gold, marginLeft: '8px' }}>{GUIDE_LEVELS[guide.guide_level]}</span>}
               </p>
             )}
+            <SalonChoices />
+            {accountNotice}
 
             {/* Week progress */}
             {stats && (
@@ -139,7 +141,7 @@ export default function SalonPage() {
         </section>
 
         {/* Graduation Progress */}
-        <section data-fade style={{ padding: '0 2rem 2rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <section style={{ padding: '0 2rem 2rem' }}>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ background: '#0d0d0d', border: `1px solid ${gold}15`, padding: '1.5rem' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>GRADUATION PROGRESS</div>
@@ -167,7 +169,7 @@ export default function SalonPage() {
         </section>
 
         {/* Sessions */}
-        <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <section style={{ padding: '0 2rem 3rem' }}>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>
               {upcomingSessions.length > 0 ? 'UPCOMING SESSIONS' : 'SESSION CALENDAR'}
@@ -183,7 +185,7 @@ export default function SalonPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '15px', color: parchment }}>{s.topic || `Session ${s.session_number}`}</div>
-                      {s.led_by_name && <div style={{ fontSize: '12px', color: muted }}>Led by {s.led_by_name}</div>}
+
                     </div>
                     {s.track && <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: TRACK_COLORS[s.track] || gold, border: `1px solid ${TRACK_COLORS[s.track] || gold}44`, padding: '2px 8px', borderRadius: '10px' }}>{s.track.toUpperCase()}</span>}
                     <span style={{ fontSize: '12px', color: s.status === 'completed' ? '#4CAF50' : s.status === 'live' ? '#FF6B35' : muted }}>
@@ -202,11 +204,11 @@ export default function SalonPage() {
         </section>
 
         {/* Members */}
-        <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <section style={{ padding: '0 2rem 3rem' }}>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>MEMBERS ({members.length})</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {members.map((m: any) => (
+              {members.map((m) => (
                 <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: '#0d0d0d', border: `1px solid ${gold}08`, transition: 'border-color 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = `${gold}33`}
                   onMouseLeave={e => e.currentTarget.style.borderColor = `${gold}08`}>
@@ -239,29 +241,32 @@ export default function SalonPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif', animation: 'fadeIn 0.8s ease' }}>
       <PublicNav />
+      <CheckoutWelcome />
 
       {/* Hero */}
       <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>FIND YOUR SALON</div>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, marginBottom: '1.5rem' }}>SEVEN-WEEK GUIDE PROGRAM</div>
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>
-            Seven people. Seven weeks. One question worth exploring.
+            Learn to lead a conversation.
           </h1>
           <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '520px', margin: '0 auto' }}>
-            Join a salon. Lead sessions. Graduate as a Guide. Start your own.
+            This program is designed around seven weeks of discussion and shared leadership. The four-week fellowship pilot has its own reading plan, with a host and dates still to be confirmed.
           </p>
+          <SalonChoices />
+          {accountNotice}
         </div>
       </section>
 
       {/* How it works */}
-      <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
-        <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', gap: '1px', background: `${gold}10` }}>
+      <section style={{ padding: '0 2rem 3rem' }}>
+        <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '1px', background: `${gold}10` }}>
           {[
-            { num: '01', title: 'JOIN', desc: 'Find a salon with open seats. Max 7 per cohort.' },
-            { num: '02', title: 'LEAD', desc: 'Every member leads sessions. You learn by doing.' },
-            { num: '03', title: 'GRADUATE', desc: 'Complete 7 weeks. Become a Guide. Start your own salon.' },
+            { num: '01', title: 'FIND A GROUP', desc: 'Check a listed group’s capacity, host and meeting dates before joining.' },
+            { num: '02', title: 'PRACTICE LEADING', desc: 'The program shares session leadership. Agree on your role with the group.' },
+            { num: '03', title: 'REVIEW PROGRESS', desc: 'Guide eligibility depends on recorded attendance and sessions led; seven weeks alone does not grant the role.' },
           ].map(step => (
-            <div key={step.num} style={{ flex: 1, background: '#0d0d0d', padding: '1.5rem 1.25rem', textAlign: 'center' }}>
+            <div key={step.num} style={{ flex: '1 1 180px', background: '#0d0d0d', padding: '1.5rem 1.25rem', textAlign: 'center' }}>
               <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', color: gold, marginBottom: '0.5rem' }}>{step.num}</div>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: parchment, marginBottom: '0.5rem' }}>{step.title}</div>
               <p style={{ fontSize: '13px', color: muted, lineHeight: 1.5 }}>{step.desc}</p>
@@ -271,9 +276,9 @@ export default function SalonPage() {
       </section>
 
       {/* Tracks */}
-      <section data-fade style={{ padding: '0 2rem 3rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+      <section style={{ padding: '0 2rem 3rem' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem', textAlign: 'center' }}>THREE TRACKS, ROTATED WEEKLY</div>
+          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem', textAlign: 'center' }}>THIS PROGRAM’S DISCUSSION TRACKS</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
             {Object.entries(TRACK_LABELS).map(([key, label]) => (
               <div key={key} style={{ padding: '10px 16px', border: `1px solid ${TRACK_COLORS[key]}33`, background: `${TRACK_COLORS[key]}08` }}>
@@ -285,16 +290,21 @@ export default function SalonPage() {
       </section>
 
       {/* Salon Grid */}
-      <section data-fade style={{ padding: '0 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+      <section aria-label="Guide program listings" style={{ padding: '0 2rem 4rem' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>
-            {recruiting.length > 0 ? `${recruiting.length} SALON${recruiting.length !== 1 ? 'S' : ''} RECRUITING` : 'OPEN SALONS'}
+            GUIDE PROGRAM GROUPS
           </div>
-
-          {recruiting.length === 0 ? (
+          <noscript><p>Enable JavaScript to check program listings. You can read the four-week plan and library without it.</p></noscript>
+          {loading ? <p role="status">Checking program listings…</p> : listingError ? (
+            <div role="alert" style={{ padding: '1.25rem', border: `1px solid ${gold}44` }}>
+              <p>We could not load the program listings. Availability is unconfirmed.</p>
+              <button type="button" onClick={() => setListingAttempt(attempt => attempt + 1)} style={{ color: gold, background: 'transparent', border: `1px solid ${gold}`, padding: '8px 16px', minHeight: 44, cursor: 'pointer' }}>Retry program listings</button>
+            </div>
+          ) : recruiting.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem', border: `1px solid ${gold}15`, background: '#0d0d0d' }}>
-              <p style={{ fontSize: '18px', color: parchment, fontStyle: 'italic', marginBottom: '0.75rem' }}>No salons recruiting right now.</p>
-              <p style={{ fontSize: '14px', color: muted, marginBottom: '1.5rem' }}>Start your daily practice while you wait. The first salon launches when we reach 8 members.</p>
+              <p style={{ fontSize: '18px', color: parchment, fontStyle: 'italic', marginBottom: '0.75rem' }}>No groups are listed for this program right now.</p>
+              <p style={{ fontSize: '14px', color: muted, marginBottom: '1.5rem' }}>A host and meeting dates must be confirmed for each group. Explore the separate four-week fellowship plan or find a reading Circle above.</p>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, padding: '0 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '40px' }}>DAILY PRACTICE</a>
                 <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '0 20px', display: 'inline-flex', alignItems: 'center', height: '40px' }}>JOIN THE SOCIETY</a>
@@ -325,8 +335,8 @@ export default function SalonPage() {
                         <div style={{ height: '100%', width: `${(s.member_count / s.max_members) * 100}%`, background: s.member_count >= s.max_members ? '#4CAF50' : gold, borderRadius: '2px', transition: 'width 0.3s ease' }} />
                       </div>
                     </div>
-                    <button onClick={() => joinSalon(s.id)} disabled={joining === s.id || s.member_count >= s.max_members}
-                      style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', padding: '0 20px', cursor: 'pointer', borderRadius: 0, opacity: (joining === s.id || s.member_count >= s.max_members) ? 0.4 : 1, transition: 'opacity 0.2s' }}>
+                    <button onClick={() => void account.join(s.id)} disabled={!account.canJoin || joining !== null || s.member_count >= s.max_members}
+                      style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: '#0a0a0a', background: gold, border: 'none', height: '40px', padding: '0 20px', cursor: 'pointer', borderRadius: 0, opacity: (!account.canJoin || joining !== null || s.member_count >= s.max_members) ? 0.4 : 1, transition: 'opacity 0.2s' }}>
                       {joining === s.id ? 'JOINING...' : s.member_count >= s.max_members ? 'FULL' : 'JOIN'}
                     </button>
                   </div>

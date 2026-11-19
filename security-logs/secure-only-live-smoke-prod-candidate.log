@@ -1,0 +1,13 @@
+PASS S9 salon-message POST anon (401)
+PASS S9 salon-message POST raw cookie (401)
+PASS S1 thinker memory POST raw cookie (401)
+PASS S8 salon-message/load private anon (400)
+PASS S8 salon-message/load general anon (401)
+PASS S6 council/verdict anon (401)
+PASS S1b exp/award body memberId (401)
+PASS S1b tasks body memberId (401)
+PASS S3 siwe without nonce cookie (400)
+PASS S3 siwe with forged unsigned nonce (400)
+PASS S3 nonce route works (secret set) (200)
+PASS home page (200)
+live-smoke: 12 pass, 0 fail against https://society-of-explorers-90vppazdz-chris-projects-03dec906.vercel.app

@@ -1,0 +1,20 @@
+.intro { max-width: 52rem; margin: 0 0 1.5rem; }
+.kicker { color: #dfc36e; font: 400 .82rem/1.5 Cinzel, Georgia, serif; letter-spacing: .08em; margin: 0 0 .5rem; }
+.columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.scripture, .notes { padding: clamp(.9rem, 3vw, 1.6rem); border: 1px solid #695b36; min-width: 0; }
+.scripture { background: #111; }
+.notes { background: #18150f; }
+.scripture h2, .notes h2 { margin-top: 0; }
+.paragraph { font: 400 clamp(1.18rem, 3vw, 1.35rem)/1.72 'EB Garamond', Georgia, serif; margin: 1rem 0; }
+.verse { scroll-margin-block-start: 1.5rem; }
+.verse:target, .footnotes li:target { background: #312714; }
+.verse:focus-visible, .footnotes li:focus-visible { outline: 2px solid #ffe09a; outline-offset: .2rem; }
+.verseNumber, .noteMark { color: #dfc36e; font: 600 .7em/0 Georgia, serif; vertical-align: super; }
+.noteMark { margin-left: .18rem; }
+.footnotes, .perspective { border-top: 1px solid #695b36; margin-top: 1rem; padding-top: .85rem; line-height: 1.55; }
+.footnotes h3, .perspective h3 { font: 500 .93rem/1.5 Cinzel, Georgia, serif; margin: 0; color: #f2d68d; }
+.footnotes ol, .questions { padding-inline-start: 1.3rem; }
+.footnotes li, .questions li { margin-block: .55rem; }
+.questions { font-size: 1.12rem; line-height: 1.65; }
+.perspective :is(p, a) { font-size: 1.08rem; line-height: 1.6; }
+@media (max-width: 820px) { .columns { grid-template-columns: minmax(0, 1fr); } }

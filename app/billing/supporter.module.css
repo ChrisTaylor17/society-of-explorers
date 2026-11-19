@@ -1,0 +1,14 @@
+.scope { min-width: 0; overflow-wrap: anywhere; }
+.scope *, .scope *::before, .scope *::after { box-sizing: border-box; }
+.scope a { color: #c9a84c; display: inline-flex; align-items: center; min-height: 44px; max-width: 100%; }
+.scope button, .scope input { max-width: 100%; min-height: 44px; }
+.scope button { white-space: normal; line-height: 1.5; }
+.scope button:disabled { opacity: .6; cursor: default; }
+.scope :focus-visible { outline: 2px solid #f5f0e8; outline-offset: 4px; }
+.stack { display: grid; gap: 14px; min-width: 0; }
+.row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; min-width: 0; }
+.check { display: flex; align-items: flex-start; gap: 12px; font-size: 18px; line-height: 1.5; min-height: 44px; cursor: pointer; }
+.check input { width: 22px; min-width: 22px; min-height: 22px; height: 22px; margin-top: 5px; }
+.list { padding-left: 1.25rem; font-size: 18px; line-height: 1.6; }
+.list li { margin-bottom: 10px; }
+@media (max-width: 380px) { .row > button, .row > a { width: 100%; justify-content: center; } }

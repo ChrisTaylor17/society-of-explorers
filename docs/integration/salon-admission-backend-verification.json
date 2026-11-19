@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-07T22:26:16.907553+00:00",
+  "baseCommit": "edac3f7238406ea02fe560a81cfc1a881c9368ba",
+  "status": "PASS_LOCAL_BACKEND_CANDIDATE_RELEASE_HOLD",
+  "productionCleared": false,
+  "deployed": false,
+  "hostedDatabaseWrites": false,
+  "hostedAccessChanges": false,
+  "newSoftwareInstalled": false,
+  "filesDeletedForCleanup": false,
+  "credentialChanges": false,
+  "spendUsd": 0,
+  "sourceHashes": {
+    "app/api/book-salons/join/route.ts": "12783887f86f13beac3a604fad743caa9f154d177ec8fd5319a30b740f804bbb",
+    "lib/circles/schedule.ts": "92f2f21f702aa6928755b1680e3ddbe8ad8a958babb54c35bea8373ad76f6407",
+    "lib/circles/hosting.ts": "bac1e56249bf16cbf7dda0324a72f8c8881db7fea013c9155274c44eda797755",
+    "lib/circles/admission.ts": "3c6efa33f9627e3786a0707d6bc9d39f410b0048551d7b49875a52edfdada413",
+    "lib/circles/admission-server.ts": "14ee280b1206808048497dbb0bb2f5f55bcfec8d68ab85a16c16d142533b9eb1",
+    "lib/circles/admission-token-server.ts": "199c1d6e4147ef6ea14e735a825e1fcef54dd946a3499709df87652700b1ae36",
+    "app/api/circles/[circleId]/invitation-review/route.ts": "5a597f20004d0ce8c7621f30247f6fa75f596773fd5b17c4b8e129abf521be48",
+    "app/api/circles/[circleId]/invitations/route.ts": "abce0cc99540652c6e5a214d4638de27c1604edcb5be625ddbc96838980d196d",
+    "app/api/circles/[circleId]/invitations/revoke/route.ts": "f049036396245a17a2745eb6b3274e68ab40efea8ec8b5e7456a1762cbcc4c4b",
+    "app/api/circles/[circleId]/join-invited/route.ts": "ca6bca40f87f56e3e43998db2033b3b4580ecf4660f85cb05c1e18f76572ff08",
+    "docs/sql/circle-admission-apply.sql": "4d866dfa7f06dedef6e856d9f41ce7f4ae12c1d2929ab6a8cd2cc327cb0a9222",
+    "docs/sql/circle-admission-rollback.sql": "827c3751cc7720307aa9f62161f59b9d5d784a8f68a058fc26a671446235ae44",
+    "docs/sql/circle-legacy-salon-membership.sql": "13bfd9acc9ea5185c2269e16bad328bbb9c40a89027763eac93561075770e960",
+    "verification/web/tests/circle-admission-db.test.mjs": "760a36ba767d1c1fcac94243cab85706411fbb05515211556ac16f0716cda5e1",
+    "verification/web/tests/circle-admission-http.test.mjs": "ca48bcc8ea83eca2f3d8fc435fb818801a133e8fe5ea6b4a7e72fc6cf89eba82",
+    "verification/web/tests/support/circle-admission-app.mjs": "dd295be29a9905ef0f9ba8c60dd5fa0de5a9661a044b2840e15a94b3f36ab34c",
+    "verification/web/tests/support/participation-app.mjs": "a70f978329936afb0db9c9cc2846d203ab8a18baa3ca1074366a32485bc38904",
+    "verification/web/tests/participation-http.test.mjs": "44f063dcefd3d3fdcf26ca603c14920bc80d15d5ca0c4a29003575052b712ea4",
+    "verification/web/scripts/build-offline.py": "6cbae8e656294c18375e2b1a9a8b74c031e70f61839d8871ec9c9ed2911e938f",
+    "verification/web/scripts/check-admission-compiled-http.py": "4c0c826fac08f8a0a47c915ffea5db5f2ef1d2fca3f0e1177a3fd0a71d44830f",
+    "docs/integration/salon-admission-backend.md": "a9cb3bf9ae0b91b00ed330a8d06d9f62b541cb421346a56b9c5f09f9508902da"
+  },
+  "tests": {
+    "status": "PASS",
+    "nodeReportedTests": 81,
+    "countsIncludeGroupedCases": true,
+    "seconds": 56.78,
+    "sourceUnchanged": true,
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/circle-admission-saved-source.json",
+    "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/circle-admission-saved-source.log",
+    "scope": "Actual route/SQL plus explicit synthetic identity/transport in one in-memory PGlite backend; no independent-session contention or hosted acceptance."
+  },
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 54.33,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1198,
+    "sourceSha256": "ef2cf3653438ce92be49044de139d963a50c726771eaba3473c6017024c33866",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/built-shell-admission-saved-next-build.log",
+    "fullWebTypecheck": "PASS",
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/built-shell-admission-saved-next-build.json"
+  },
+  "lint": {
+    "status": "PASS",
+    "files": [
+      "app/api/book-salons/join/route.ts",
+      "lib/circles/schedule.ts",
+      "lib/circles/hosting.ts",
+      "lib/circles/admission.ts",
+      "lib/circles/admission-server.ts",
+      "lib/circles/admission-token-server.ts",
+      "app/api/circles/[circleId]/invitation-review/route.ts",
+      "app/api/circles/[circleId]/invitations/route.ts",
+      "app/api/circles/[circleId]/invitations/revoke/route.ts",
+      "app/api/circles/[circleId]/join-invited/route.ts"
+    ],
+    "logs": [
+      "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/circle-admission-saved-lint.log"
+    ]
+  },
+  "compiledHttp": {
+    "status": "PASS",
+    "checks": 11,
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/built-shell-admission-saved-http.json",
+    "scope": "Actual local compiled HTTP; synthetic bodies and no cookies, bearer tokens or issued credentials. Successful hosted sign-in/admission and browser/device acceptance are outside this check."
+  },
+  "server": {
+    "status": "STOPPED",
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/built-shell-admission-saved-api-server.json",
+    "sourceMismatches": [],
+    "builtMismatches": [],
+    "inputMismatches": [],
+    "runtimeMismatches": [],
+    "guardDeniedOperations": 0
+  },
+  "guardCalibration": {
+    "status": "PASS",
+    "origin": "http://127.0.0.1:43891",
+    "deniedChecks": [
+      "fetch",
+      "http",
+      "other-loopback",
+      "unix-socket",
+      "dns",
+      "subprocess",
+      "public-listener"
+    ],
+    "exactLoopbackFetch": "PASS",
+    "actualExternalRequests": 0
+  },
+  "checks": [
+    "Host-approved Circle creation cannot silently become open on the older database.",
+    "Current and legacy join aliases, raw membership insert/upsert and member/cohort reassignment cannot bypass host approval.",
+    "Host review/issue requires current owner, target label, Circle/invitation revisions and at most 24-hour expiry; held host sign-out yields no token.",
+    "Forwarded, tampered and wrong-salon tokens refuse before the membership RPC.",
+    "Recipient confirmation reaches actual SQL, private meeting access and actual discussion read.",
+    "Committed lost/signed-out/malformed replies stay unknown; exact retries recover current state without rejoining a departed member.",
+    "Expired exact retries can settle a prior receipt; expired/new-key or consumed-nonce requests cannot create another membership.",
+    "Host revocation changes the invitation revision, preserves members and settles exact retry without another revocation.",
+    "Account-removal guard refuses the captured host including the controlled legacy ordinary-salon path.",
+    "Disable-only rollback preserves members/receipts and open Circle behavior.",
+    "Controlled ordinary-salon writer preserves that join path after raw grants close and cannot join any Circle."
+  ],
+  "diagnostics": [
+    {
+      "finding": "Initial SQL referenced payload ambiguously; qualified the receipt column. Removing every membership UPDATE privilege also blocked existing row locks; retained only surrogate-id UPDATE and verified actual private reads.",
+      "evidence": "Initial Node test tool output; subsequent captured SQL/HTTP logs preserve scoped passing results."
+    },
+    {
+      "finding": "Older discovery integration failed identically on unchanged edac3f7: its fixture loaded9 editions. Applying the already-reviewed Good Samaritan catalog addition made the actual route return200 with10 editions. Updated that fixture; no product discovery rule was weakened.",
+      "evidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/baseline-discovery-catalog-diagnostic.log",
+      "baselineLog": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/baseline-participation-integration.log"
+    },
+    {
+      "finding": "The existing build wrapper did not quote a network-preload path containing spaces. Node stopped before compilation. Quoted the Node option and preserved the failed and successful build receipts.",
+      "evidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/built-shell-admission-next-build.log"
+    },
+    {
+      "finding": "A port preflight failed after local guard calibration with no listening process; no Next server started. The same owned test port later passed preflight. No other process was stopped.",
+      "evidence": "Terminal preflight output; final guarded server receipt."
+    },
+    {
+      "finding": "Review of global raw-insert revocation identified ordinary-salon compatibility. Added a controlled legacy writer, tested successful ordinary joins after revocation and refusal for Circle IDs.",
+      "evidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/circle-admission-confirmed-final.log"
+    },
+    {
+      "finding": "Git whitespace review found one trailing blank line at EOF. Removed it and repeated the81-case source-bound suite, full build/type check, scoped lint and11 compiled HTTP checks on the exact saved bytes. Prior evidence was preserved.",
+      "evidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/circle-admission-saved-source.json"
+    }
+  ],
+  "requiredBeforePilot": [
+    "Extend the post-cutover restore checker to include all private admission functions/schema/grants; prove complete restore and missing-helper calibration. Current public-only Circle routine hashing does not cover those private implementations.",
+    "Verify against the complete account-erasure chain and independent-session PostgreSQL target. Current SQL proof is one PGlite backend.",
+    "Implement host/member UI, explicit review and unknown-result recovery; decide member-code sharing disclosure and loss/rotation recovery.",
+    "Implement fragment/private token entry and verify cold/warm phone/browser handoff; do not discard recipient binding.",
+    "Finish approved hosted backup/privacy/authentication/admission acceptance and signed phone/physical Quest checks."
+  ],
+  "ownerGates": {
+    "expectedAtMac": "2026-11-08 evening America/New_York",
+    "password": "Prepared hidden entry only; not run and no password received.",
+    "cleanup": "Exact27-cache proposal remains pending. No deletion, installation, spending or credential change approved by this milestone."
+  },
+  "limitations": [
+    "Backend/API milestone only; no real invitation or pilot member was admitted.",
+    "No hosting/deployment, real provider authentication, native compilation or physical device acceptance.",
+    "The listing remains public. Invitation-only membership does not establish an invisible salon or meeting-room admission.",
+    "SQL trusts the verified server attestation; browser roles cannot invoke it. A compromised service credential is outside the model.",
+    "Signing secret continuity is needed for the current token-based recovery route; no real secret was read or changed.",
+    "These are unapplied review scripts; generated migration/advisor and coordinated rollout review remain required."
+  ]
+}

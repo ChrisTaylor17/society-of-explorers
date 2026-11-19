@@ -1,0 +1,1528 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "divine-comedy",
+  "editionId": "pg-8800-e77de137b64fe83297c694a797430e09510f31591e099272edd1d49bdc9b94bb",
+  "editionSha256": "e77de137b64fe83297c694a797430e09510f31591e099272edd1d49bdc9b94bb",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 8800,
+    "landingUrl": "https://www.gutenberg.org/ebooks/8800",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/8800/pg8800-h.zip",
+    "archiveSha256": "8bccb50b1e89b8feebfd0add221f6e3495d087557ccd3b02e4628e4136c5bf69",
+    "archiveBytes": 29948232,
+    "retrievedAt": "2026-11-03T18:53:59.181Z",
+    "mainHtmlPath": "pg8800-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "The divine comedy",
+    "author": "Dante Alighieri",
+    "translators": [
+      {
+        "name": "Henry Francis Cary",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [
+      "Gustave Doré"
+    ],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "Cary translation with Doré illustrations; not the Longfellow translation."
+    ]
+  },
+  "reader": {
+    "sha256": "54726c71c3134294ade661003557c192136ace1a02666b74790cd7dc415a82e8",
+    "bytes": 779730,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 440,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The divine comedy",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE DIVINE COMEDY",
+        "level": 1,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "BY DANTE ALIGHIERI",
+        "level": 2,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "LIST OF CANTOS",
+        "level": 2,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "HELL OR THE INFERNO",
+        "level": 2,
+        "readingIndex": 115
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "CANTO I",
+        "level": 2,
+        "readingIndex": 116
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "CANTO II",
+        "level": 2,
+        "readingIndex": 121
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "CANTO III",
+        "level": 2,
+        "readingIndex": 124
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "CANTO IV",
+        "level": 2,
+        "readingIndex": 129
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "CANTO V",
+        "level": 2,
+        "readingIndex": 133
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "CANTO VI",
+        "level": 2,
+        "readingIndex": 139
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "CANTO VII",
+        "level": 2,
+        "readingIndex": 143
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "CANTO VIII",
+        "level": 2,
+        "readingIndex": 148
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "CANTO IX",
+        "level": 2,
+        "readingIndex": 153
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "CANTO X",
+        "level": 2,
+        "readingIndex": 158
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "CANTO XI",
+        "level": 2,
+        "readingIndex": 161
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "CANTO XII",
+        "level": 2,
+        "readingIndex": 164
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "CANTO XIII",
+        "level": 2,
+        "readingIndex": 169
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "CANTO XIV",
+        "level": 2,
+        "readingIndex": 174
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "CANTO XV",
+        "level": 2,
+        "readingIndex": 177
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "CANTO XVI",
+        "level": 2,
+        "readingIndex": 180
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "CANTO XVII",
+        "level": 2,
+        "readingIndex": 182
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "CANTO XVIII",
+        "level": 2,
+        "readingIndex": 186
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "CANTO XIX",
+        "level": 2,
+        "readingIndex": 191
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "CANTO XX",
+        "level": 2,
+        "readingIndex": 194
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "CANTO XXI",
+        "level": 2,
+        "readingIndex": 196
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "CANTO XXII",
+        "level": 2,
+        "readingIndex": 200
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "CANTO XXIII",
+        "level": 2,
+        "readingIndex": 204
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "CANTO XXIV",
+        "level": 2,
+        "readingIndex": 209
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "CANTO XXV",
+        "level": 2,
+        "readingIndex": 212
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "CANTO XXVI",
+        "level": 2,
+        "readingIndex": 215
+      },
+      {
+        "id": "reading-heading-32",
+        "label": "CANTO XXVII",
+        "level": 2,
+        "readingIndex": 218
+      },
+      {
+        "id": "reading-heading-33",
+        "label": "CANTO XXVIII",
+        "level": 2,
+        "readingIndex": 220
+      },
+      {
+        "id": "reading-heading-34",
+        "label": "CANTO XXIX",
+        "level": 2,
+        "readingIndex": 225
+      },
+      {
+        "id": "reading-heading-35",
+        "label": "CANTO XXX",
+        "level": 2,
+        "readingIndex": 230
+      },
+      {
+        "id": "reading-heading-36",
+        "label": "CANTO XXXI",
+        "level": 2,
+        "readingIndex": 234
+      },
+      {
+        "id": "reading-heading-37",
+        "label": "CANTO XXXII",
+        "level": 2,
+        "readingIndex": 238
+      },
+      {
+        "id": "reading-heading-38",
+        "label": "CANTO XXXIII",
+        "level": 2,
+        "readingIndex": 243
+      },
+      {
+        "id": "reading-heading-39",
+        "label": "CANTO XXXIV",
+        "level": 2,
+        "readingIndex": 248
+      },
+      {
+        "id": "reading-heading-40",
+        "label": "PURGATORY",
+        "level": 2,
+        "readingIndex": 251
+      },
+      {
+        "id": "reading-heading-41",
+        "label": "CANTO I",
+        "level": 2,
+        "readingIndex": 252
+      },
+      {
+        "id": "reading-heading-42",
+        "label": "CANTO II",
+        "level": 2,
+        "readingIndex": 256
+      },
+      {
+        "id": "reading-heading-43",
+        "label": "CANTO III",
+        "level": 2,
+        "readingIndex": 260
+      },
+      {
+        "id": "reading-heading-44",
+        "label": "CANTO IV",
+        "level": 2,
+        "readingIndex": 263
+      },
+      {
+        "id": "reading-heading-45",
+        "label": "CANTO V",
+        "level": 2,
+        "readingIndex": 267
+      },
+      {
+        "id": "reading-heading-46",
+        "label": "CANTO VI",
+        "level": 2,
+        "readingIndex": 271
+      },
+      {
+        "id": "reading-heading-47",
+        "label": "CANTO VII",
+        "level": 2,
+        "readingIndex": 273
+      },
+      {
+        "id": "reading-heading-48",
+        "label": "CANTO VIII",
+        "level": 2,
+        "readingIndex": 277
+      },
+      {
+        "id": "reading-heading-49",
+        "label": "CANTO IX",
+        "level": 2,
+        "readingIndex": 280
+      },
+      {
+        "id": "reading-heading-50",
+        "label": "CANTO X",
+        "level": 2,
+        "readingIndex": 284
+      },
+      {
+        "id": "reading-heading-51",
+        "label": "CANTO XI",
+        "level": 2,
+        "readingIndex": 287
+      },
+      {
+        "id": "reading-heading-52",
+        "label": "CANTO XII",
+        "level": 2,
+        "readingIndex": 289
+      },
+      {
+        "id": "reading-heading-53",
+        "label": "CANTO XIII",
+        "level": 2,
+        "readingIndex": 292
+      },
+      {
+        "id": "reading-heading-54",
+        "label": "CANTO XIV",
+        "level": 2,
+        "readingIndex": 296
+      },
+      {
+        "id": "reading-heading-55",
+        "label": "CANTO XV",
+        "level": 2,
+        "readingIndex": 298
+      },
+      {
+        "id": "reading-heading-56",
+        "label": "CANTO XVI",
+        "level": 2,
+        "readingIndex": 301
+      },
+      {
+        "id": "reading-heading-57",
+        "label": "CANTO XVII",
+        "level": 2,
+        "readingIndex": 305
+      },
+      {
+        "id": "reading-heading-58",
+        "label": "CANTO XVIII",
+        "level": 2,
+        "readingIndex": 307
+      },
+      {
+        "id": "reading-heading-59",
+        "label": "CANTO XIX",
+        "level": 2,
+        "readingIndex": 310
+      },
+      {
+        "id": "reading-heading-60",
+        "label": "CANTO XX",
+        "level": 2,
+        "readingIndex": 314
+      },
+      {
+        "id": "reading-heading-61",
+        "label": "CANTO XXI",
+        "level": 2,
+        "readingIndex": 317
+      },
+      {
+        "id": "reading-heading-62",
+        "label": "CANTO XXII",
+        "level": 2,
+        "readingIndex": 319
+      },
+      {
+        "id": "reading-heading-63",
+        "label": "CANTO XXIII",
+        "level": 2,
+        "readingIndex": 321
+      },
+      {
+        "id": "reading-heading-64",
+        "label": "CANTO XXIV",
+        "level": 2,
+        "readingIndex": 324
+      },
+      {
+        "id": "reading-heading-65",
+        "label": "CANTO XXV",
+        "level": 2,
+        "readingIndex": 328
+      },
+      {
+        "id": "reading-heading-66",
+        "label": "CANTO XXVI",
+        "level": 2,
+        "readingIndex": 332
+      },
+      {
+        "id": "reading-heading-67",
+        "label": "CANTO XXVII",
+        "level": 2,
+        "readingIndex": 334
+      },
+      {
+        "id": "reading-heading-68",
+        "label": "CANTO XXVIII",
+        "level": 2,
+        "readingIndex": 337
+      },
+      {
+        "id": "reading-heading-69",
+        "label": "CANTO XXIX",
+        "level": 2,
+        "readingIndex": 340
+      },
+      {
+        "id": "reading-heading-70",
+        "label": "CANTO XXX",
+        "level": 2,
+        "readingIndex": 344
+      },
+      {
+        "id": "reading-heading-71",
+        "label": "CANTO XXXI",
+        "level": 2,
+        "readingIndex": 347
+      },
+      {
+        "id": "reading-heading-72",
+        "label": "CANTO XXXII",
+        "level": 2,
+        "readingIndex": 350
+      },
+      {
+        "id": "reading-heading-73",
+        "label": "CANTO XXXIII",
+        "level": 2,
+        "readingIndex": 352
+      },
+      {
+        "id": "reading-heading-74",
+        "label": "PARADISE",
+        "level": 2,
+        "readingIndex": 354
+      },
+      {
+        "id": "reading-heading-75",
+        "label": "CANTO I",
+        "level": 2,
+        "readingIndex": 355
+      },
+      {
+        "id": "reading-heading-76",
+        "label": "CANTO II",
+        "level": 2,
+        "readingIndex": 357
+      },
+      {
+        "id": "reading-heading-77",
+        "label": "CANTO III",
+        "level": 2,
+        "readingIndex": 359
+      },
+      {
+        "id": "reading-heading-78",
+        "label": "CANTO IV",
+        "level": 2,
+        "readingIndex": 362
+      },
+      {
+        "id": "reading-heading-79",
+        "label": "CANTO V",
+        "level": 2,
+        "readingIndex": 364
+      },
+      {
+        "id": "reading-heading-80",
+        "label": "CANTO VI",
+        "level": 2,
+        "readingIndex": 367
+      },
+      {
+        "id": "reading-heading-81",
+        "label": "CANTO VII",
+        "level": 2,
+        "readingIndex": 369
+      },
+      {
+        "id": "reading-heading-82",
+        "label": "CANTO VIII",
+        "level": 2,
+        "readingIndex": 371
+      },
+      {
+        "id": "reading-heading-83",
+        "label": "CANTO IX",
+        "level": 2,
+        "readingIndex": 374
+      },
+      {
+        "id": "reading-heading-84",
+        "label": "CANTO X",
+        "level": 2,
+        "readingIndex": 376
+      },
+      {
+        "id": "reading-heading-85",
+        "label": "CANTO XI",
+        "level": 2,
+        "readingIndex": 378
+      },
+      {
+        "id": "reading-heading-86",
+        "label": "CANTO XII",
+        "level": 2,
+        "readingIndex": 380
+      },
+      {
+        "id": "reading-heading-87",
+        "label": "CANTO XIII",
+        "level": 2,
+        "readingIndex": 383
+      },
+      {
+        "id": "reading-heading-88",
+        "label": "CANTO XIV",
+        "level": 2,
+        "readingIndex": 385
+      },
+      {
+        "id": "reading-heading-89",
+        "label": "CANTO XV",
+        "level": 2,
+        "readingIndex": 389
+      },
+      {
+        "id": "reading-heading-90",
+        "label": "CANTO XVI",
+        "level": 2,
+        "readingIndex": 391
+      },
+      {
+        "id": "reading-heading-91",
+        "label": "CANTO XVII",
+        "level": 2,
+        "readingIndex": 393
+      },
+      {
+        "id": "reading-heading-92",
+        "label": "CANTO XVIII",
+        "level": 2,
+        "readingIndex": 395
+      },
+      {
+        "id": "reading-heading-93",
+        "label": "CANTO XIX",
+        "level": 2,
+        "readingIndex": 399
+      },
+      {
+        "id": "reading-heading-94",
+        "label": "CANTO XX",
+        "level": 2,
+        "readingIndex": 401
+      },
+      {
+        "id": "reading-heading-95",
+        "label": "CANTO XXI",
+        "level": 2,
+        "readingIndex": 404
+      },
+      {
+        "id": "reading-heading-96",
+        "label": "CANTO XXII",
+        "level": 2,
+        "readingIndex": 407
+      },
+      {
+        "id": "reading-heading-97",
+        "label": "CANTO XXIII",
+        "level": 2,
+        "readingIndex": 409
+      },
+      {
+        "id": "reading-heading-98",
+        "label": "CANTO XXIV",
+        "level": 2,
+        "readingIndex": 411
+      },
+      {
+        "id": "reading-heading-99",
+        "label": "CANTO XXV",
+        "level": 2,
+        "readingIndex": 413
+      },
+      {
+        "id": "reading-heading-100",
+        "label": "CANTO XXVI",
+        "level": 2,
+        "readingIndex": 415
+      },
+      {
+        "id": "reading-heading-101",
+        "label": "CANTO XXVII",
+        "level": 2,
+        "readingIndex": 418
+      },
+      {
+        "id": "reading-heading-102",
+        "label": "CANTO XXVIII",
+        "level": 2,
+        "readingIndex": 420
+      },
+      {
+        "id": "reading-heading-103",
+        "label": "CANTO XXIX",
+        "level": 2,
+        "readingIndex": 423
+      },
+      {
+        "id": "reading-heading-104",
+        "label": "CANTO XXX",
+        "level": 2,
+        "readingIndex": 425
+      },
+      {
+        "id": "reading-heading-105",
+        "label": "CANTO XXXI",
+        "level": 2,
+        "readingIndex": 427
+      },
+      {
+        "id": "reading-heading-106",
+        "label": "CANTO XXXII",
+        "level": 2,
+        "readingIndex": 430
+      },
+      {
+        "id": "reading-heading-107",
+        "label": "CANTO XXXIII",
+        "level": 2,
+        "readingIndex": 432
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "images/01-002.jpg",
+      "sha256": "7d1afbee6f5a33963fd136beaff43d1dcdcc2c97939dc2126a3ecb57a1772378",
+      "bytes": 277581,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/01-005.jpg",
+      "sha256": "2d342af660e9f22ecd14677fcb4c9a22e98d3db0c211c8c87de962e073268e5d",
+      "bytes": 256536,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/01-007.jpg",
+      "sha256": "c367c2281d10adb063b11e08737b052c9858b59c6e115259c6f9cb4f0467ef28",
+      "bytes": 203213,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/01-011.jpg",
+      "sha256": "ecc1269a6e787082d86f708f8c2601832d17da5281521a1482511edf90914787",
+      "bytes": 255219,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/01-015.jpg",
+      "sha256": "f16836086573a1e2667e52a6e337529748d54ce74f176da86783675aa8d07510",
+      "bytes": 257735,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/01-19.jpg",
+      "sha256": "1739f024d0f0c5e3a4813894ea54bd8638c86389f88d5f2d6266d1d315507c5c",
+      "bytes": 200394,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/01-49.jpg",
+      "sha256": "248ed8c7c4d9f552f89f1855bcb1e7289a497832e354f8c04df736093c9b4321",
+      "bytes": 173073,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/02-017.jpg",
+      "sha256": "aaeabb752036250404e8807fcf324f44d32b2960e77295158b7fb8d558f0849a",
+      "bytes": 185538,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/02-021.jpg",
+      "sha256": "621c9f6250aa92b4793da782f67bcf6e1cb8b2c64a86f1134819707da8ebc4f9",
+      "bytes": 225727,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/02-27.jpg",
+      "sha256": "3775e2f9123be97c26accec1aa9898d0f1f9b803203a5815e81112597f50b826",
+      "bytes": 165298,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/02-42.jpg",
+      "sha256": "8bf59b994c8c5c2cad176e3ada678fe115a05294b3b13ed32f0e5a64dd1de39d",
+      "bytes": 167731,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/03-027.jpg",
+      "sha256": "27993a3fe852e29318fc68a945945d2753e754af90f128df2964c1fe71d47a4d",
+      "bytes": 229352,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/03-031.jpg",
+      "sha256": "8e826d70fa5def893981887dada493e45d0c1934cfd75891a947ed026759a983",
+      "bytes": 229532,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/03-035.jpg",
+      "sha256": "f198ab617eedc842419e17c087f607834f7439b908af85fb663d1484aa7e2808",
+      "bytes": 242191,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/03-14.jpg",
+      "sha256": "47160e8463ef90b3949a5cb31bc597b7c2344bce52d3f4db4ef75b0ba528ece4",
+      "bytes": 166916,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/03-50.jpg",
+      "sha256": "f2a98741ef2d3a55df4da5b6c9bb8752f07c9ae258a36a26003fea509860828a",
+      "bytes": 169296,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/04-039.jpg",
+      "sha256": "9ae5bbe0604ceff2867144bc9ef2eaa3810e83ee472e97b5c0cfbd26eaf3d57f",
+      "bytes": 260808,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/04-043.jpg",
+      "sha256": "25ee5b849fdb498d05feb1f0041c755eff9367d26fb665c956ab0c9cda3e28f3",
+      "bytes": 253488,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/04-100.jpg",
+      "sha256": "ec77c1e13971e69fc2077089fac9a888f1d44607e60da0b2309be90412c06a26",
+      "bytes": 289421,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/04-31.jpg",
+      "sha256": "eb87b19295e243651ed918ddf80c33a0b9b9cb9f8f6dd082552770784852eb76",
+      "bytes": 210304,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-047.jpg",
+      "sha256": "38cd99836d50f0a3976672e7e0f685ca0117c74281dbc961ec7e8830451ea097",
+      "bytes": 244986,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-051.jpg",
+      "sha256": "84da81e9ffe7f8f13d1b08cdfe7c82cf118d797394b732c79e37eab34e0cdea3",
+      "bytes": 246343,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-053.jpg",
+      "sha256": "87d92b9d346685cd5d5c3a11ca3417bd28808e6985e13f73183e62acc943206a",
+      "bytes": 228451,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-057.jpg",
+      "sha256": "ee88252ef150a359d83779259dbb1df26b431a6cee8ce1da3aa26c9aaa6817d2",
+      "bytes": 253611,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-061.jpg",
+      "sha256": "62f23e5be2e95fd26e87db4f8cdc2508eead96ac8f94abb9cfcd762670668ea4",
+      "bytes": 253543,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-063.jpg",
+      "sha256": "8c7ff82288849a02fc534af4efe7f928ec63a3bc7e42921d5243d839fd9f3397",
+      "bytes": 243800,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-123.jpg",
+      "sha256": "efb40a70d4b9f3ba403b01151ef6d494fcf261c8c2ed8eeee798d5584364fe6f",
+      "bytes": 217835,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-130.jpg",
+      "sha256": "be7afbdc2d7d662392f306e3b9404a62b5f6697893a7ee7c88d2adc0a75910a6",
+      "bytes": 206616,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-42.jpg",
+      "sha256": "78d3c5d41aaf0042aff524e079a5d8427b446c06250462ef8df8d6f3c5e701d6",
+      "bytes": 193577,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/05-99.jpg",
+      "sha256": "96c18702896510554f20678bf887f9943ad94acb7dfaf54aa7c4622d99f9e85a",
+      "bytes": 180239,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/06-067.jpg",
+      "sha256": "aa2573b8f613eacacafe5a5206ace383c4b434392238915fa66c7ef869ce9402",
+      "bytes": 227212,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/06-069.jpg",
+      "sha256": "cee9c820c3f5dfb03760c45333349ad8ee14b12c86db9f285db4b6e539d2d021",
+      "bytes": 250725,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/07-075.jpg",
+      "sha256": "bd901f377ff6845e56682f1680ca7f3444443e1373a054ab9bbf0c6566398786",
+      "bytes": 258261,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/07-079.jpg",
+      "sha256": "c125ced463a6bd9626680e365412c9378340bb9cd5a1a3455c6239bf3763e830",
+      "bytes": 242568,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/07-083.jpg",
+      "sha256": "322ff3291cb27e98dd222000444c64f78c7c7d9cd65ff9f872191139e809e3fc",
+      "bytes": 250217,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/07-21.jpg",
+      "sha256": "a8b8d378f9131b849ce1ae09f225e0734e73328ad5e576b7fed034330a2b81de",
+      "bytes": 206476,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/07-82.jpg",
+      "sha256": "b21e610e3d568bf48c3e0027e6c54df0d89a6c7fdd1e902fcdd09dfa136ee053",
+      "bytes": 200785,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/08-00.jpg",
+      "sha256": "e9568053da1b29a8b5f69e0a3d5afd496afadbf2c1d6e53744810c6a84338270",
+      "bytes": 190636,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/08-087.jpg",
+      "sha256": "7a064b4081e2314b646d9d3bffc96f8b53ca50d45b9fb93eb4deaba20a5fd5cc",
+      "bytes": 222172,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/08-089.jpg",
+      "sha256": "59e422a811843777300414312c365277ca49190981112fa03c5a6c65dd271758",
+      "bytes": 237469,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/08-093.jpg",
+      "sha256": "1ae8c22ec23b1995546e3a1964b06b6e76c44d289f490d797f9eedda1ab5f947",
+      "bytes": 229329,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/08-60.jpg",
+      "sha256": "0956daebd42f1637b2d3297bf75c185a3750deaa7936fff035a344d2abbf1f0e",
+      "bytes": 168073,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/09-097.jpg",
+      "sha256": "f43fe11436c6a6c55bb880f7ae34cf86bd9b46265eed1a002b561628813c6d6d",
+      "bytes": 211991,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/09-1.jpg",
+      "sha256": "891f78481424e6986453b52b0b31ddfef4c7ac7e48be6aef3bf50bf022a42cc9",
+      "bytes": 162568,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/09-101.jpg",
+      "sha256": "1c01feebdd18fd5db6255719449b553aa0db76da615c1fc89ce262b1186ee7cf",
+      "bytes": 237790,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/09-105.jpg",
+      "sha256": "92670fd8f7c58ac6e4eb886b5b32d720095f5f57fc9cf3678dd4155349e99113",
+      "bytes": 227161,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/09-29.jpg",
+      "sha256": "34320b221be5a60abc8f0a83c94669291d05d4272ceb943f29d6ce28dbe7024d",
+      "bytes": 205207,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/09-74.jpg",
+      "sha256": "cd79627572ab9dc8f15f0e47682b817291089e64ad36ee774e7af1ada12b26fe",
+      "bytes": 214416,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/10-109.jpg",
+      "sha256": "b39dbfe592c3e8ed4641a85d29e22fef02bfa6b3ab6467cfc6b8176068613013",
+      "bytes": 227793,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/10-74.jpg",
+      "sha256": "ea0a5aa78ecd52c8cd80d0701b54c667bacb09d54c64d99e79a3f75d9472cfaf",
+      "bytes": 194081,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/11-115.jpg",
+      "sha256": "5ee49dd9186f9e8fd69aa192a76e378820e3f86e8a1484d3e0e4e594a750449d",
+      "bytes": 261290,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/12-1.jpg",
+      "sha256": "58147d1ff88a49d9f9a866f415d4435c26ec369b0708e3c53f1130c53810ab84",
+      "bytes": 279741,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/12-123.jpg",
+      "sha256": "b3945235cf46f13b0dea72e3e0b7af377b2268f250be07f5438fe4994cf8ebd8",
+      "bytes": 264103,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/12-127.jpg",
+      "sha256": "809bc448d94d4b4993c5a868a36331a2b0a6430d9a64b2fd828a91c25b1b388d",
+      "bytes": 235685,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/12-129.jpg",
+      "sha256": "f81d7ca5a0d260a019b9df4394a0cb381a5fc08457c791a177f8f86720c921c2",
+      "bytes": 223124,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/12-16.jpg",
+      "sha256": "d472cf05c6cea40566f6fd3a44878cd7e57d480c27ee89464cd126de9b822c8b",
+      "bytes": 176975,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/12-39.jpg",
+      "sha256": "07638f168be88b2f709b3c4e9403db227c09d0793a6de166481d20dacb61f133",
+      "bytes": 195247,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/13-129.jpg",
+      "sha256": "49c7975ae863c237d215d75ed53dbb0c8a9721d7da78a19f9899d241a3c4a57e",
+      "bytes": 228092,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/13-135.jpg",
+      "sha256": "da770ff40027bc8a4b29c8808acb1ba1e1589359c3153c4a1085b1f191f0b0d0",
+      "bytes": 243854,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/13-137.jpg",
+      "sha256": "b10b33ca2056a1acb0fa4640edc5a0d6a1b9301f1accbfc8c209bc159d0f3037",
+      "bytes": 249965,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/13-143.jpg",
+      "sha256": "891b9a13c5f574b0be7cbfb9b64408ce3e350f32bbd73f536297af259e65d115",
+      "bytes": 278989,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/13-55.jpg",
+      "sha256": "7cb9e73805230260ac5a40b5ab76b2d277aab4cd4152c5626521f9465c8c39a9",
+      "bytes": 235188,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/14-147.jpg",
+      "sha256": "ebe5063339725df607a78f45bec44cc3ea7500571a596190047d83a54cfff347",
+      "bytes": 245319,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/14-77.jpg",
+      "sha256": "7ece72160bc352ef131f44fc633dea9531ac37b5898468b94dd782f11031c3bb",
+      "bytes": 185041,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/14-96.jpg",
+      "sha256": "8884b24a51089391e6561469c85a1b696b40fe11d3f19d8731050c3051a375ca",
+      "bytes": 191946,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/15-103.jpg",
+      "sha256": "87f8a55c13936cb6a6f19b7ebbee151494d0e57312f6a68e357f79ad484cff94",
+      "bytes": 197074,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/15-155.jpg",
+      "sha256": "0e9fe4c990d69b56c0938daea28f07ad9055c5ef244c8ae315c4cf6d0470f5da",
+      "bytes": 235160,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/16-143.jpg",
+      "sha256": "1d0c2b0a1b2c72a9f9bac4c155c09a86554c1bafaaa98f15bd886d32222fc452",
+      "bytes": 163502,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/16-23.jpg",
+      "sha256": "a3142c51f837c395fa063012b1f2a1628c0cffd8b8c6c4633a94fa2b6a96e056",
+      "bytes": 219599,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/16-32.jpg",
+      "sha256": "9edaf992688f5066e76dedc17c9d29d2419b62fb0e538e060bf54116a4098f0b",
+      "bytes": 186139,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/17-167.jpg",
+      "sha256": "beab6d807eeffaa39cde2dc76fbf014aeca30cd9864d25ae4dcc409fe7891ed0",
+      "bytes": 233879,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/17-171.jpg",
+      "sha256": "43f25ab39d0031566cd59a0b434d2d084cc11d2bc9150dd35975a869c18e32a3",
+      "bytes": 217347,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/18-120.jpg",
+      "sha256": "16ecfd962464c67a48b3f165d5d438105234e7fee7f0153500a52a40dcdfa81b",
+      "bytes": 153239,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/18-177.jpg",
+      "sha256": "befa7bcaf4effa2d619d3e9d810c3543e3f0856f1a9f7e6c2ec3e320abc75fa1",
+      "bytes": 219573,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/18-181.jpg",
+      "sha256": "0e77f94860f5b08f73c8f31ff8b022896f9b08f4cf2456f99cf7f252cfd476b4",
+      "bytes": 225229,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/18-183.jpg",
+      "sha256": "38506297b01d213a7cfe4eb6c67d16b2ac641dfb077601efee0395dd7b5d8dbf",
+      "bytes": 251798,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/18-70.jpg",
+      "sha256": "b1a923657aef306f43780be72e01d0290b904796f8f1286b0fb972fd16c7769c",
+      "bytes": 180163,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/18-87.jpg",
+      "sha256": "235957c4700808b3d90a339d9f9acec50d3aa284a3b2ffafbca64c208fce39fa",
+      "bytes": 192723,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/19-1.jpg",
+      "sha256": "12c09bd443567af4b137d3b1e094d9b3ece2fecb79eec4e363922b5afe1ed43e",
+      "bytes": 146931,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/19-131.jpg",
+      "sha256": "52c5b8ea3ee6e2754e3f09122999fd174c9705bb75997035937dded40d2c19fb",
+      "bytes": 216491,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/19-187.jpg",
+      "sha256": "7697e8f92f9fc3a91f505cfb3ba6aed68a04494d92cc38fd1ec48fefe20c2b73",
+      "bytes": 212425,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/19-51.jpg",
+      "sha256": "07d72aad2a8a695af0e111c02bdf8b75a2a3b6b3e7d8f49da1c47b3d838fffb9",
+      "bytes": 184483,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/20-10.jpg",
+      "sha256": "e71723484e7f241c033f9c76070d1f4f3e9e20917f8d10e161f12e7549377b19",
+      "bytes": 165682,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/20-17.jpg",
+      "sha256": "cc5dbec2cb5936dbb96e16fb021014f6b4c7e5dc486f96445b1a4fece85e80f6",
+      "bytes": 179840,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/21-1.jpg",
+      "sha256": "c439f8c751db4ea40f3b09a9ae0214d09ed545e491f5d04e4fcadf5d33a66c15",
+      "bytes": 163377,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/21-201.jpg",
+      "sha256": "c017db6c53d0ba51f146c7d167056f1d9fcdb754ce60ae480731ef5047e027fe",
+      "bytes": 263099,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/21-205.jpg",
+      "sha256": "844ddbd69f9109d27c8aba606a613b5d92c87852d3792df19c299df25d3130ef",
+      "bytes": 232610,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/21-28.jpg",
+      "sha256": "de4fe09dfbb04a9d9a903978973bbbefa513931f9840798f863b21af30217beb",
+      "bytes": 170929,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/22-213.jpg",
+      "sha256": "a0bf652c6f89b5da612dc3dd0ce5099dd39dac861ed2dc8a67aee37fdffc9855",
+      "bytes": 210795,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/22-215.jpg",
+      "sha256": "8a7c856dc9da0db693e9119eca676ce3e8d0216dc36bd1a9eee1d652617abe1f",
+      "bytes": 226724,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/23-219.jpg",
+      "sha256": "a8a4e60e9bd6eca562f77bbe7a6011c21e9cd96d0d613bc2503f8162e52d9be8",
+      "bytes": 228654,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/23-223.jpg",
+      "sha256": "62641978851c3f05161a5070292fa41ae71b8780a05420af1edf7548eb7e4562",
+      "bytes": 228625,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/23-225.jpg",
+      "sha256": "66ef706457736d3cc16ab0791dc562a056593d819fe35e57dc9a21a84abc3dca",
+      "bytes": 218176,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/23-47.jpg",
+      "sha256": "e6255e74ea276b06680f5bbdc973bd43995b995c13f52539ff14d1de508272b4",
+      "bytes": 215045,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/24-112.jpg",
+      "sha256": "9a23f0590a5063540407a8e8c765ff9ad5f164499000b69eb11bfb5e6d841ff6",
+      "bytes": 205090,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/24-233.jpg",
+      "sha256": "3d20682159cc5fb26877da6493d490ab8e05431c08c36b44a0d982bd3bf20f6e",
+      "bytes": 260623,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/24-4.jpg",
+      "sha256": "e2d9fd327647e980054847f4e42f336026a173ec03ad34165f752d559e1fd024",
+      "bytes": 180703,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/25-107.jpg",
+      "sha256": "f33b16a8e4416bdcd36b92dcf7ef7cb6f528d211d5785124d261ad72dab680bd",
+      "bytes": 180502,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/25-117.jpg",
+      "sha256": "13cbb169d269e6b7d341a300ceecb70314aca73c4712ebb37e538e5a0583ce36",
+      "bytes": 185100,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/25-119.jpg",
+      "sha256": "a0a79383d85ce851ba1a367e519b77a51da23fd73ad913c8f602db811179c50d",
+      "bytes": 160464,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/25-239.jpg",
+      "sha256": "0e3e8948c665a50e8d05483cc9f42d1b3d3e860f9bfb05909cd879440c650430",
+      "bytes": 270976,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/26-245.jpg",
+      "sha256": "723606c0f9720b5bb46c3ef02058fd849b5111d855a11e73fb0862534c80eef9",
+      "bytes": 211507,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/26-7.jpg",
+      "sha256": "c9cd60af17d1eee9b3285eeab22b299d07456eb883769eeb521b0928a9b64839",
+      "bytes": 153972,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/27-1.jpg",
+      "sha256": "e9c8c996170e3ab7108986bbbadeb6109d5c148b3e67eb3fd193b730b8253fa1",
+      "bytes": 178124,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/27-97.jpg",
+      "sha256": "fac0618ae7a70adbb667cde95c472700f03a5f2f4e01d6050c0b7f9b269236f4",
+      "bytes": 178737,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/28-22.jpg",
+      "sha256": "f3ea54a6d4bb2de0646e30912ea76dac659a77ab1d004b2ab3da41bec2e74ac8",
+      "bytes": 159046,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/28-259.jpg",
+      "sha256": "84e88fd60a5dc2a18d59747d866136fd357e254861ea126139e4fc52121a0c58",
+      "bytes": 254322,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/28-261.jpg",
+      "sha256": "ff6ef4098f245b30a44e26e73a1b89e8101ac70842f90c8251d099f8bb73cdfa",
+      "bytes": 262616,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/28-265.jpg",
+      "sha256": "ebe2bd23d14b32d7e1cb7730a580edbf68801bd449ebccdf879e501e4ddd65b0",
+      "bytes": 237867,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/28-80.jpg",
+      "sha256": "50ad6279df18dbe68f8d53f3bcee8747cce34dd2b00177ea53e2861fc3a5524e",
+      "bytes": 173085,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/29-118.jpg",
+      "sha256": "190385b0be2a01e8f847ba11dbd1a0421a57a10dce96a3606e27bce3b9080896",
+      "bytes": 183316,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/29-269.jpg",
+      "sha256": "e7ced70a8872617289bfc87f702accff449e847fc6367701509fb845071451fd",
+      "bytes": 236454,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/29-273.jpg",
+      "sha256": "dc902aa7a2224cc86062d7b12365c4d674dcba24bb36071522cf2a42a481c74e",
+      "bytes": 240442,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/29-275.jpg",
+      "sha256": "c0ea5ef49d9cbdca329491c4c931ff16df1d21175038d60683d4114a3a28cba3",
+      "bytes": 273017,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/29-80.jpg",
+      "sha256": "42288c847c43f2b0387c907e42b46110765bc5ac5e8dda3d06ced6d9a9b85d1a",
+      "bytes": 172812,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/30-281.jpg",
+      "sha256": "0df931a437a6a9e3a31317a59c2920cdeb1f23b27f612d5cafb3f2457a685c47",
+      "bytes": 293161,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/30-283.jpg",
+      "sha256": "b8f64378a87178431fcea88e519316b714926a36435d688ee3cb71d7dae23cfa",
+      "bytes": 245282,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/30-32.jpg",
+      "sha256": "fca87207f18d60c1542fce5b6b4061c5ae20a7283035c08c0fc7ac86d457cac8",
+      "bytes": 168717,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/31-1.jpg",
+      "sha256": "ede185f5a5f1895a897feb1a0f38b942f1183c3e6da930e33bcb3bf783c07dbc",
+      "bytes": 210372,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/31-100.jpg",
+      "sha256": "13eb5e0894019d528dd686a50b408955db8b7e404386a7a7506ead540ac5d7ec",
+      "bytes": 185936,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/31-291.jpg",
+      "sha256": "751eb8480f3d46945ab7d4ea800a3bbdbce9c2256471164069e18fd63c8a013f",
+      "bytes": 242742,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/31-293.jpg",
+      "sha256": "b707a96f8a1c19cc6c40608abca138093eee63bfd3c10438ca8ff47a7c51a10e",
+      "bytes": 258770,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/31-297.jpg",
+      "sha256": "062e2e7a456d75e1b992813441ea2f636397570ac08c537b2289bb4ecbc78525",
+      "bytes": 241662,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/31-64.jpg",
+      "sha256": "678582afb7528fe97a753c8ed81c9061059d76ff5b276b18261183c23889a377",
+      "bytes": 203087,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/32-148.jpg",
+      "sha256": "5cd1664e1bd9aeabde018dc3bfdf26d929cb4c773fbb3597aa695ce78e2fac41",
+      "bytes": 222418,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/32-301.jpg",
+      "sha256": "39f9d777fc52447619aa178d63f4189052a464fcf8a02150a1733b2c0174429e",
+      "bytes": 188719,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/32-305.jpg",
+      "sha256": "b8630968a7a1e709b58f8414cc2dce7a0bca78542bcdb1acb8111b71b7dd504f",
+      "bytes": 200873,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/32-309.jpg",
+      "sha256": "ff72e7d591760bbcb91002936edf165e8f02b02e5ce59839587377be19b06984",
+      "bytes": 253474,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/33-134.jpg",
+      "sha256": "bdf88ea675eebba57b618c2b5b8c6aa0e5ad0a83f375944afa9a4f93f45a3573",
+      "bytes": 183673,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/33-313.jpg",
+      "sha256": "ebea53d5d0b468af7655febc97a9fb89a4d74f82c58232bbac7457d53a6f0c07",
+      "bytes": 245134,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/33-315.jpg",
+      "sha256": "f3f76e50c36370cb414d48a74613d304ea070e1bceacdc39461a013881f606d6",
+      "bytes": 230425,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/33-317.jpg",
+      "sha256": "c36b5a47e647c5fa26abac3f6c1266ab39a62c77cd0ccfba8a3dfe1bfe7589ad",
+      "bytes": 244013,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/34-323.jpg",
+      "sha256": "db98b85149f5ade337aaaa1d131d153fb7bb25189838f647dca01a8f27e5d70f",
+      "bytes": 207325,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/34-329.jpg",
+      "sha256": "3223353277487797d7e16247c1131caa3af9e885a6be363b3f3be8c9ad63c94e",
+      "bytes": 212349,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/34-331.jpg",
+      "sha256": "7c859fe6728e0ce74aff7729c19065fd55effa7ebbfb24b2f20bf8cdff716857",
+      "bytes": 204596,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/cover.jpg",
+      "sha256": "45871fac413c9e4c0e6d7a6f2ec108127c0d076483b75eb12a7862b775d83556",
+      "bytes": 261784,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/titlepage.jpg",
+      "sha256": "fa60b254e23e9e54bf4c72965255be19e77eb65e2f09849c10368ca90f487de4",
+      "bytes": 21949,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/titlepageb.jpg",
+      "sha256": "e9b3ba539932e47f6246e5188e9e17e5d058f6800baa9decd247cb8dc8be5f44",
+      "bytes": 76731,
+      "mime": "image/jpeg"
+    }
+  ],
+  "fidelity": {
+    "canonicalTextSha256": "f4ddf62265cdb8865593a999099eeae11c5ede9783e4a9d6260ab62a96094bf7",
+    "sourceImageCount": 138
+  }
+}

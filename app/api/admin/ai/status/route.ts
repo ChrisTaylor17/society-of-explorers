@@ -1,0 +1,16 @@
+import { NextRequest } from 'next/server';
+import { buildAIProviderStatus } from '@/lib/ai/status';
+import { requireCapitalAdmin } from '@/lib/capital/adminAuth';
+import { privateJson } from '@/lib/http/routeError';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  const admin = await requireCapitalAdmin(req);
+  if (!admin) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+
+  return privateJson({
+    ai: buildAIProviderStatus(),
+  });
+}

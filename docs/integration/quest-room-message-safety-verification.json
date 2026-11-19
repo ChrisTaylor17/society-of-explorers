@@ -1,0 +1,48 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "198357f65d5144163599282badaabf4e272da005",
+  "recordedAt": "2026-11-06T21:28:18.415818+00:00",
+  "buildSourceFiles": 1099,
+  "buildSourceSha256": "b3125456dc68ebb502fcaa2a2fa7edd0ee14bc544019a2fee4f601cfc173befa",
+  "compiledHeadsetSafetyStories": [
+    "The headset pages through the exact checked text and confirms a reason separately. A lost report reply stays unconfirmed after a read, then exact retry recovers one private human report.",
+    "Only the author receives withdrawal for their post, with a separate confirmation and a saved tombstone.",
+    "Headset focus loss during a held message check clears the controls and ignores the late private response.",
+    "The checked member block uses an exact retry after a lost reply. The reloaded room and regular archive hide that author and retain the independent reply.",
+    "Focus loss after a saved report clears its private review, shows an interrupted-action notice and makes no automatic retry. Neither report creates an AI review attempt."
+  ],
+  "compiledBrowserTotalStories": 11,
+  "compiledBrowserRequests": 91,
+  "sharedSalonRegressionStories": 20,
+  "regressionTests": {
+    "platform": 34,
+    "web": 19
+  },
+  "legacyDomFixture": "Unavailable at startup because an existing cached jsdom dependency is offloaded. Current browser checks used compiled components and disposable Circle SQL.",
+  "scope": "Compiled website and actual Chromium Canvas and WebGL with simulated headset controller input. Circle handlers ran against disposable SQL with synthetic accounts. Shared-salon composition independently exercised check-in, discussion, reading, and live-meeting handoff. Hosted rollout, provider and physical headset acceptance remain pending.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "3747f31326b2ed289dd7105647fefa58feb4d1fb03bbafa32bd3259992fd35a7",
+    "docs/integration/quest-immersive-discussion.md": "34879dab460a6a4d18bac3d9aa18c36843dc0f93b9032c2fb5ec925e7c033a43",
+    "docs/integration/quest-shared-salon.md": "81f87f3eee258b5a82592524b55168bdb3639404cc2802a2036196b7bcc3652e",
+    "platforms/quest/immersive-circle.mjs": "793a5831b3932ab6ecb22377359e7794a0908ebdc1e78a8390b084044e05b3cd",
+    "platforms/quest/room-message-safety.mjs": "b708b914b73ae189d4de815e7484bf547bb00696f2bba776d9362b5ceca0cf5f",
+    "verification/web/tests/browser-circle-member-blocks.mjs": "124795fbbeff289bb457784a8a90fc7cb2932540752e4cc86cee96e45d74c00d"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-quest-room-message-safety",
+  "evidenceSha256": {
+    "next-build.json": "fc15ed703e3a294a284961f7a8e4cb0bc5ca4a1e64990ca205b5064ac0b88b21",
+    "next-build.log": "c6844d6ec4d40762b06d0fa8f595d31c6be334ffc214bd3b4c82aa5e6d2fbeb9",
+    "build-source-sha256.json": "5492415d64556b13341d5e479cb82d1acfcf3c4dca3d2e93c0112451afc9ac65",
+    "server-ready.json": "2e4c9296a86f8a3a924e8080839feeceee215936b399f594b6012466f8cf434e",
+    "server-stopped.json": "aaaf55d0f9fa4e8da1f5dbdc7d8cb7e281538d2baf2b2695779249355e837ce2",
+    "browser-stories.json": "2473baf745a0d95990dfac4ff09bcea273015135e4bcc0c6a7a739dbf649111a",
+    "headset-report-review.png": "dce110269feed30833ba5cb5a2b05e31e4a39804c46f96d11e2f1efc8050db88",
+    "shared-salon-browser.json": "ed659c710baddcafca49d10c7a016e07370602c82b742f0f9c83b19f29b8f922",
+    "shared-salon-source-manifest.json": "a58e97464f32a446c871f7715dbe485be5441b16da1c7cd4387357a6c73cfd96",
+    "shared-salon-esbuild.mjs": "630bd512ea8e4745255db3588aa56c7ec5c1a7af5f62681c5c19335d023ccd58",
+    "platform-regressions.tap": "026dadbcdeae154013218741560e320eeb046415f1e37261f8be5a9f7c4ac8e6",
+    "web-regressions.tap": "3d258ad47df4c9b157d1382d7b15b2ff8d31257e1624bbd418a63aaa832a1cd7",
+    "eslint.log": "98235fd907a0d67249419e3d15a695b2618c623a288b458004befce2ac3a1b37"
+  }
+}

@@ -1,0 +1,294 @@
+{
+  "version": 1,
+  "recordedAtUTC": "2026-11-04T18:32:45.939434+00:00",
+  "status": "HISTORICAL_LOCAL_FULL_REPORT_COVERAGE_PASS_PRODUCTION_HOLD",
+  "priorCheckpoint": "a21b399e5234fc9abe3230a56a75c197c3bbb588",
+  "behavior": {
+    "surfaces": [
+      "Circle listing",
+      "Circle message"
+    ],
+    "pageSize": 50,
+    "legacyDetailAndHistoryLimit": 100,
+    "maximumAuditReportCount": 2147483647,
+    "explicitSequentialAcknowledgement": true,
+    "acknowledgementProvesHumanComprehension": false,
+    "inactivityMinutes": 30,
+    "expiryCappedByReviewerGrant": true,
+    "knownMutationUnknownOutcome": "manual progress GET or exact decision replay only",
+    "storedIncompleteLegacyReportArrays": 0,
+    "maximumActiveReportPage": 50,
+    "maximumChosenEvidenceNotes": 1,
+    "aiLargeCasesEnabled": false
+  },
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Documents/Codex/soe-release",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 44.67,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 982,
+    "sourceSha256": "07c6ea7c8ada88a24af1cf13f48511c773bb927c7b61cde55ebdba64d73a3fc2",
+    "sourceUnchangedDuringBuild": true,
+    "log": "verification/web/evidence/checkpoint-0435dcc/next-build.log",
+    "buildId": "Yd-b6IFTcAfz9Mk05D93C",
+    "allCurrentInputHashesVerified": true
+  },
+  "tests": {
+    "coverageAndLegacyHttp": {
+      "passed": 40,
+      "failed": 0,
+      "skipped": 0,
+      "log": "verification/web/evidence/checkpoint-0435dcc/review-coverage-api.log"
+    },
+    "database": {
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0,
+      "log": "verification/web/evidence/checkpoint-0435dcc/review-coverage-db.log"
+    },
+    "actualRouteSql": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "verification/web/evidence/checkpoint-0435dcc/review-coverage-integration.log"
+    }
+  },
+  "testBreakdown": {
+    "newCoverageApi": 12,
+    "existingModerationHttp": 28,
+    "actualDatabase": 22,
+    "actualRouteSql": 5
+  },
+  "componentBrowser": {
+    "status": "PASS",
+    "stories": [
+      "listing250: explicit50-report pages, keyboard acknowledgements, prior-page reread, one earlier chosen note, covered decision+freshread,320px/44px",
+      "message101: all three pages required; lost committed decision reply retains exact session/body/endpoint for manual retry and freshread",
+      "lostACK: no automatic retry/advance/assumedcoverage; explicit current-session GET recovers committed progress",
+      "malformed or wrong-case coverage clears page/proof/drafts and cannot enable a decision",
+      "blur/logout/account change retire held report pages, chosen evidence, coverage proof and private drafts; late replies cannot restore",
+      "accelerated session expiry clears report page, chosen evidence and decision proof; only explicit restart can resume",
+      "retired credential wait cannot transmit a late coverage mutation",
+      "legacy listing/message cases<=100 retain original decision endpoints with no sessionId and matching receipt+freshread"
+    ],
+    "apiRequests": 51,
+    "verifiedSourceBindings": 25,
+    "cleanup": {
+      "browser": "closed"
+    },
+    "scope": "Actual CircleReviews/MessageReviews/ReviewCoverage and parsers/useReviewAccess, cached React/Chromium and Bun CSS. HTTP reports, sessions, identity credentials/events and NextLink are explicit local doubles. No actual SQL/API/server/provider/SDK/account/native/deployment acceptance; separate composed runner owns SQL/API proof. Global Next/PostCSS/fonts excluded.",
+    "committedStateProbe": [
+      {
+        "component": "CircleReviews",
+        "reports": 0
+      },
+      {
+        "component": "ReviewCoverage",
+        "reports": 50
+      }
+    ],
+    "narrowViewport": 320
+  },
+  "composedBrowser": {
+    "status": "PASS",
+    "stories": [
+      "listing250: five actual acknowledged SQL pages, earlier-page exact evidence, covered decision and fresh readback,320px/44px",
+      "message101: complete three-page SQL coverage; lost committed decision reply recovers only by exact manual replay and fresh readback",
+      "lostACK: actual SQL commit is not assumed or automatically retried; explicit GET recovers current50-of101 progress",
+      "real new listing report invalidates live coverage; actual409 clears private UI and leaves all102 reports open",
+      "blur/logout/account change fence actual held SQL pages and chosen evidence; retired credential waits issue no late mutation",
+      "retired committed decision reply cannot restore private data, claim confirmation or trigger readback; the already committed SQL decision remains"
+    ],
+    "apiRequests": 49,
+    "verifiedSourceBindings": 57,
+    "cleanup": {
+      "browser": "closed",
+      "databases": "closed"
+    },
+    "scope": "Actual CircleReviews/MessageReviews/ReviewCoverage and Bun CSS modules, actual coverage/detail/queue route handlers and strict current SQL in disposable PGlite. Synthetic server identity and narrow PostgREST/NextResponse transport, browser credential/SDK event/NextLink adapters. Synthetic report rows; no real account, provider, network, hosted, multi-backend lock scheduling or human-comprehension acceptance. Global Next/PostCSS/fonts excluded.",
+    "finalCounts": {
+      "listing250": {
+        "total": 250,
+        "open": 0,
+        "decisions": 1
+      },
+      "message250": {
+        "total": 250,
+        "open": 0,
+        "decisions": 1
+      },
+      "listing101Invalidated": {
+        "total": 102,
+        "open": 102,
+        "decisions": 0
+      },
+      "message101": {
+        "total": 101,
+        "open": 0,
+        "decisions": 1
+      }
+    },
+    "limits": {
+      "database": "Tracked sanitized three-table catalog plus explicitly synthetic members/administrative roles/external child/default exceptions; not a hosted restore.",
+      "grants": "Broad synthetic extra defaults for ai_unrelated/PUBLIC stress only the new objects; no live role changes.",
+      "concurrency": "Single PGlite backend proves sequential CAS/recheck and transactional rollback, not multi-backend lock scheduling.",
+      "identity": "Actors and member records are synthetic. No JWT, selected-provider, issued credential, SDK or provider acceptance.",
+      "allowance": "Explicit synthetic owner activation, request counts only; no provider/account price or dollar-spend acceptance. PGlite has one backend; concurrent lock scheduling needs independent PostgreSQL sessions.",
+      "coverage": "Synthetic report rows with tied timestamps; bounded actual SQL pages/CAS/rollback, not evidence of human comprehension or independent backend lock scheduling."
+    },
+    "initialHarnessFailures": "Preserved recursively in priorReceipt; final driver checks actual fieldset.disabled and inherited select disabled state instead of the cached fieldset convenience helper."
+  },
+  "aiRegression": {
+    "status": "PASS",
+    "stories": [
+      "author initial/no automatic settings read, explicit default-off check, keyboard policy confirmation, bound POST+freshGET and actual CSS at320px",
+      "assigned reviewer actual queue/case/advice shows counterevidence; provider receives exact message only; human decision fields remain blank and decision count0",
+      "author revoke actualPOST/readback blocks next reviewer advice with403 and zero additional provider calls",
+      "revoke+reenable during an actual in-flight request advances consent revision and suppresses stale advice409",
+      "blur retires actual held advice, aborts its server lifetime and prevents late private results or automatic restoration",
+      "logout retires actual held advice, aborts its server lifetime and prevents late private results or automatic restoration",
+      "committed consent mutation with lost reply stays unknown with no retry; explicit current-state read reveals the actual saved revocation",
+      "shared allowance retains all four prior debits including retired advice; exhaustion429 makes no new provider call or automatic retry and human review remains available"
+    ],
+    "apiRequests": 38,
+    "verifiedSourceBindings": 54,
+    "cleanup": {
+      "browser": "closed",
+      "database": "closed"
+    },
+    "scope": "Actual Contributions/consent/MessageReviews React components and Bun CSS modules, actual consent/safety/advice route modules and exact strict SQL chain in disposable PGlite. Existing offline NextResponse JSON/header + PostgREST/auth transports are explicit doubles; browser credential supplier, SDK event subscription and NextLink adapters are explicit. Provider is synthetic; no remote account/provider/SDK/device/hosted/deployment acceptance. Fixture body has16px padding; global Next/PostCSS/fonts excluded.",
+    "provider": {
+      "synthetic": true,
+      "calls": 4,
+      "inputExactlyMessageText": true
+    },
+    "decisions": {
+      "expected": 0,
+      "observed": 0
+    },
+    "limits": {
+      "database": "Tracked sanitized three-table catalog plus explicitly synthetic members/administrative roles/external child/default exceptions; not a hosted restore.",
+      "grants": "Broad synthetic extra defaults for ai_unrelated/PUBLIC stress only the new objects; no live role changes.",
+      "concurrency": "Single PGlite backend proves sequential CAS/recheck and transactional rollback, not multi-backend lock scheduling.",
+      "identity": "Actors and member records are synthetic. No JWT, selected-provider, issued credential, SDK or provider acceptance.",
+      "allowance": "Explicit synthetic owner activation, request counts only; no provider/account price or dollar-spend acceptance. PGlite has one backend; concurrent lock scheduling needs independent PostgreSQL sessions."
+    }
+  },
+  "builtBrowser": {
+    "status": "PASS",
+    "stories": 13,
+    "buildId": "Yd-b6IFTcAfz9Mk05D93C",
+    "sourceBindingsVerified": 20,
+    "ownedServerStopped": true,
+    "cleanupStage": "complete",
+    "scope": "Built Next UI with actual TypeScript public GET handler and disposable SQL; discovery PostgREST transport is synthetic and intercepted discovery calls do not execute inside the built Next server. The signed-out profile story separately uses the actual built Next cookie/token-free auth/member and owner-profile GET handlers. No authenticated account, real Circle, provider transport or production system is used."
+  },
+  "reviews": {
+    "sql": "Root independent source review; OLD and NEW reassignment invalidation and ABA regression completed. No remaining concrete finding within documented scope.",
+    "http": "Independent scoped review; deadline now encloses route-parameter resolution as well as body/auth/RPC work.",
+    "ui": "Root independent review; incomplete legacy report arrays removed and message-specific labels retained. Final component state probe verifies bounded retained report state.",
+    "lint": "Eight API/parser files and three UI files passed targeted ESLint; final staged diff check passed."
+  },
+  "originalCheckout": {
+    "unchangedFromBaseline": true,
+    "statusBytes": 26781,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "pathCount": 681
+  },
+  "production": {
+    "ready": false,
+    "schemaApplied": false,
+    "reviewersProvisioned": false,
+    "allowanceActivated": false,
+    "providerActivationPerformed": false,
+    "realProviderCalls": 0,
+    "deployments": 0,
+    "nativeBuilds": 0,
+    "sdkDownloads": 0,
+    "spending": 0
+  },
+  "limits": [
+    "PGlite is one backend; independent PostgreSQL-session contention remains unverified.",
+    "Authentication and narrow PostgREST/NextResponse transport are synthetic; hosted acceptance is outstanding.",
+    "Eight reviewer JSDOM tests could not execute with the cached runtime; not counted as passing. Historical fourteen DOM exclusions remain, and Chromium covers only its stated stories.",
+    "The historical 749-case broad suite and native tests were not rerun for this milestone.",
+    "Live privacy repair, tested restore evidence, deployed caller impact and provider/device acceptance remain open.",
+    "Used coverage has no automatic downgrade; preserving audit rows and deciding progress retention require reviewed rollout/maintenance.",
+    "Application startup network denial does not establish OS-level network isolation."
+  ],
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "e6f6c4e5089ab40978be5d21a98fef3f8c9f23bbe8f6c2b31dc849656474918e",
+    "app/api/admin/circles/[circleId]/messages/[messageId]/coverage/decision/route.ts": "8b826b42fef59cbe4673dbaa62edc5b9622289d016de02ebd87107254353a436",
+    "app/api/admin/circles/[circleId]/messages/[messageId]/coverage/route.ts": "374a7a25156cbc1ec1ef456a17351266ced97d27f2f972c39d457189384fceb1",
+    "app/api/admin/circles/reports/[circleId]/coverage/decision/route.ts": "e4fccffe6487ef7af2573e761d0fe4daf07cdcccd398518e7cdaaed96b4e15e6",
+    "app/api/admin/circles/reports/[circleId]/coverage/route.ts": "0751d95dac341928e9e80065624451b6ae68f22dae8874c6a85df335a1d052e8",
+    "app/moderation/ReviewCoverage.tsx": "a9e3315f782ddd91fc216c694d5737991d8b47feb34dcad6200e1971e6693a27",
+    "app/moderation/circles/CircleReviews.tsx": "cca47db1cf0d8a591cb06fe19f46e8f7c2584d1eee21c4d3dd8274a4f48fe782",
+    "app/moderation/messages/MessageReviews.tsx": "afcf81a215b737e05c215956709a4c8b28ca0ab90a0b55ec62bf9aa17d53636a",
+    "docs/integration/circle-review-coverage-sql.md": "ca21fdefd39d734dee64559868bb1f39b42559ee53912556c71aee1196fc29a6",
+    "docs/integration/circle-review-coverage.md": "60990655f557fb35031b1fe2c063e0005e35c691a160c3a55348ebdd0ef0f4cc",
+    "docs/integration/message-ai-allowance-verification.json": "093483fc45f6f309bdd9975f498282987a4687e0ecc1a6eec2b73982ca2d3ce9",
+    "docs/integration/production-migration-plan.md": "add519a511aa4cb34969aaaffe6c4f3c554d99bb1ca9a366fa4ba0a4d4db1e79",
+    "docs/sql/circle-review-coverage.sql": "f084889a4917d17e08562c330de9372c098f6f1e0d79fc415d6400dc833d8cc4",
+    "lib/circles/message-moderation.ts": "48db5b63a8464470bd15b2556e9c34d8569cc0775da98b1b6e7925ddda178f9f",
+    "lib/circles/moderation.ts": "e0b204fba8ebe910b010e72a5208b4587de5bbfd6abbce52a11acf434e2a6fc6",
+    "lib/circles/review-coverage-server.ts": "bdb5912257e0def0e31b21e99b7ac0935adabb5aaba40899b3ed686051db8b71",
+    "lib/circles/review-coverage.ts": "f032b26bdfcf6189f7a6a5a8cf4c7fe14d4e67ab70fe2faf4393c35528257af0",
+    "verification/web/README.md": "4743b1dc6796d6b64fc41babb3422ac1010543ffafd3e82e840b4dfe76075f22",
+    "verification/web/scripts/bundle-review-coverage-test.mjs": "0cddc09a20001518a4310c0fe3f1fe9109d22c6cdd60002ea1cb4c229df57237",
+    "verification/web/tests/browser-review-coverage-composed.mjs": "42a4e323f82fc4c0b80e07a053beaf0a556972ae657aaf5edb34031949805e54",
+    "verification/web/tests/browser-review-coverage.mjs": "1321a49955e2ee2127867436149337c8f22fbada74712f6f6ad3b25d280e3ed8",
+    "verification/web/tests/moderation-http.test.mjs": "64114d3ecd55de91bd91cce89217f4d3974fea7cc2d3cfaba558b3a056dd1920",
+    "verification/web/tests/review-coverage-api.test.mjs": "41edf2ea9e4f1b70cde85d73f99916409a7a43108ddf192d58a636d3ea370325",
+    "verification/web/tests/review-coverage-db.test.mjs": "b814b3c477fa2a666c8faaa9dba756a27dccf6c09e9cb68db8afac75ee9da364",
+    "verification/web/tests/review-coverage-entry.tsx": "f8889f30fee071952c9b5db9b8ddf609cae0e069580425ac3ab602580d2eb453",
+    "verification/web/tests/review-coverage-integration.test.mjs": "ce82207005162749cc3b0b440a3815a5453df53d5d02479f4a67527141f87997",
+    "verification/web/tests/support/review-coverage-app.mjs": "c972ef30ece357458bb0fe42e2ccad51dfd2ae08150ea421fb9e53d0e8ff4dac",
+    "verification/web/tests/support/review-coverage-db.mjs": "f97d6adffb75b2dcf3d381d7d9de44bf148b1226a54d573da851cb28df0b4ce7"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/checkpoint-0435dcc/next-build.json": "aee2f4ae6c8ea5f2b0561bcae3a5ff27d30f0d2abd57594b5f58e6586f9ec38a",
+    "verification/web/evidence/checkpoint-0435dcc/next-build.log": "edc2ec6b5c5c581ce0d2c2e0ccf6a5b5b7c0a6734cc3b3391fe17e889620d706",
+    "verification/web/evidence/checkpoint-0435dcc/build-source-sha256.json": "8dfea7ac34053cd20131b798826a2d027fbfe0510596f6cbc2276d51c23081d9",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-api.log": "f4eae722943b67459e940267f57995b24e36cc778bed2085c1dcc8ae6d5933ab",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-db.log": "0f79bc7d4da60b23a588f233f201aaf721eb207776e00be096b8938de938039a",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-integration.log": "5fb45620bf114c5c1ef4fa62146cb55dfc8115fcb401e56ef743e0b279775eb5",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-root-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-browser.json": "9a8aeb9702819962c528e24e299b3ee107265da91990ba65c3bd4c84f026bc97",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-browser.log": "caa7f4b577c7e4565390ea71d3594483c91443348df9466f6aa4b772acb6a239",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-composed.json": "d10515e189c7dec75ae3c00223f37feaf4310ce536b293f006528230cc6c347d",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-composed.log": "6733f67688bc08267840435a610ff05dca7d7af446971c6433bec372f0a308e1",
+    "verification/web/evidence/checkpoint-0435dcc/message-ai-browser.json": "e9adccc0394849fc75c9f6abad3338ce12b9c122748cdae882e13b196e1feb92",
+    "verification/web/evidence/checkpoint-0435dcc/message-ai-browser.log": "7be664a6afe3ae49b829c4464861e96146de444ede427ffe2952c0c97c0ca468",
+    "verification/web/evidence/checkpoint-0435dcc/browser-discovery-qa.json": "cb334e14d4c6f8f926c484a09098229284d0dc5510bf0cd7ad8c8053a2930f23",
+    "verification/web/evidence/checkpoint-0435dcc/browser-discovery-review-coverage-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
+    "verification/web/evidence/checkpoint-0435dcc/original-status-coverage-check.json": "fee758176cdb38c71c34cf129833bc5e32ea95b765f37c2399832300b2eec352",
+    "verification/web/evidence/checkpoint-0435dcc/review-coverage-existing-ui.log": "2b5ab107db231ba2aae05ca42925db6d4c81a32bc864affb886aaad22957c6e4"
+  },
+  "historicalEvidence": {
+    "checkpoint": "a21b399",
+    "preservedPinnedFiles": 12,
+    "directory": "verification/web/evidence/checkpoint-a21b399",
+    "originalReceipt": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-verification.original.json",
+    "receipt": "docs/integration/message-ai-allowance-verification.json"
+  },
+  "checkpoint": "0435dcc8dc140aad08f14463e9307573a95d7b81",
+  "evidenceArchive": {
+    "directory": "verification/web/evidence/checkpoint-0435dcc",
+    "originalReceipt": "verification/web/evidence/checkpoint-0435dcc/circle-review-coverage-verification.original.json",
+    "pinnedFiles": 17,
+    "scope": "Preserved checkpoint before native connectivity and composed Quest proof; historical source/build/test snapshot."
+  }
+}

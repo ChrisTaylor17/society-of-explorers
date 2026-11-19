@@ -1,249 +1,176 @@
-'use client';
-import { useEffect } from 'react';
-import PublicNav from '@/components/PublicNav';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import PublicFooter from '@/components/PublicFooter';
 
-const gold = '#c9a84c';
-const parchment = '#E8DCC8';
-const muted = '#9a8f7a';
+export const metadata: Metadata = {
+  title: 'Shared experiences — reading, fellowship & future ideas',
+  description: 'Explore readings and a proposed salon format, alongside ideas for music, travel, virtual spaces and thoughtful use of technology. Events and integrations remain subject to review.',
+};
 
 const THINKERS = [
-  { key: 'socrates', name: 'Socrates', icon: 'Σ', color: '#C9A94E', desc: 'Asks the question behind the question. Will not let you off easy.' },
-  { key: 'plato', name: 'Plato', icon: '△', color: '#7B68EE', desc: 'Sees the form behind every instance. Builds toward the ideal.' },
-  { key: 'nietzsche', name: 'Nietzsche', icon: '⚡', color: '#DC143C', desc: 'Destroys comfortable illusions. Creates from the rubble.' },
-  { key: 'aurelius', name: 'Marcus Aurelius', icon: '🛡️', color: '#8B7355', desc: 'The emperor on the frontier. Stoic clarity under pressure.' },
-  { key: 'einstein', name: 'Einstein', icon: '∞', color: '#4169E1', desc: 'Thought experiments over equations. Sees unity in complexity.' },
-  { key: 'jobs', name: 'Steve Jobs', icon: '◉', color: '#A0A0A0', desc: 'Taste as strategy. Ships the thing that changes everything.' },
+  { name: 'Socrates', question: 'What do we mean by the words we use?' },
+  { name: 'Plato', question: 'What ideal are we trying to live up to?' },
+  { name: 'Nietzsche', question: 'Which assumptions deserve a harder look?' },
+  { name: 'Marcus Aurelius', question: 'What is within our responsibility?' },
+  { name: 'Einstein', question: 'What might a thought experiment reveal?' },
+  { name: 'Steve Jobs', question: 'What would make this simpler and more useful?' },
 ];
 
-function ImagePlaceholder({ label, icon, height }: { label: string; icon: string; height?: string }) {
-  return (
-    <div style={{ background: '#111', minHeight: height || '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '2.5rem', opacity: 0.15, marginBottom: '0.5rem' }}>{icon}</div>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: muted, opacity: 0.3 }}>{label}</div>
-      </div>
-    </div>
-  );
-}
-
-function SectionLabel({ tag, heading, sub }: { tag: string; heading: string; sub?: string }) {
-  return (
-    <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, opacity: 0.5, marginBottom: '0.75rem' }}>{tag}</div>
-      <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: sub ? '0.75rem' : 0 }}>{heading}</h2>
-      {sub && <p style={{ fontSize: '1rem', color: muted, lineHeight: 1.8, maxWidth: '520px', margin: '0 auto' }}>{sub}</p>}
-    </div>
-  );
+function ConceptPlaceholder({ symbol, label }: { symbol: string; label: string }) {
+  return <figure className="concept"><span className="concept-symbol" aria-hidden="true">{symbol}</span><figcaption>Concept placeholder · {label}<br />An idea for exploration, not an event photograph or working integration.</figcaption></figure>;
 }
 
 export default function ExperiencePage() {
-  useEffect(() => {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) (e.target as HTMLElement).style.opacity = '1'; });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('[data-fade]').forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <PublicNav />
+    <div className="soe-experience">
+      <style>{`
+  .soe-experience { background: #0a0a0a; color: #e8dcc8; min-height: 100vh; font-family: 'Cormorant Garamond', serif; }
+  .soe-experience * { box-sizing: border-box; }
+  .soe-experience a { color: #d6b860; text-underline-offset: .25em; }
+  .soe-experience a:focus-visible, .soe-experience summary:focus-visible { outline: 3px solid #f1d788; outline-offset: 5px; }
+  .soe-experience .skip { position: absolute; left: 1rem; top: -8rem; z-index: 300; padding: .8rem; background: #0a0a0a; }
+  .soe-experience .skip:focus { top: 1rem; }
+  .soe-experience .nav { padding: 1rem clamp(1rem, 4vw, 3rem); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 2rem; border-bottom: 1px solid #c9a84c38; }
+  .soe-experience .nav a { display: inline-flex; align-items: center; min-height: 44px; font-family: 'Cinzel', serif; font-size: .8rem; letter-spacing: .06em; text-decoration: none; }
+  .soe-experience .nav a:hover { text-decoration: underline; }
+  .soe-experience .nav-links { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+  .soe-experience .hero { padding: clamp(3rem, 8vw, 7rem) 1.25rem; text-align: center; background: radial-gradient(ellipse at center, #211a09 0%, #0a0a0a 72%); }
+  .soe-experience .hero-inner { max-width: 780px; margin: 0 auto; }
+  .soe-experience .eyebrow { font-family: 'Cinzel', serif; color: #d6b860; font-size: .8rem; letter-spacing: .15em; line-height: 1.8; margin: 0 0 1rem; }
+  .soe-experience h1, .soe-experience h2, .soe-experience h3 { font-family: 'Cinzel', serif; font-weight: 400; color: #f5f0e8; text-wrap: balance; }
+  .soe-experience h1 { font-size: clamp(2.3rem, 7vw, 4.7rem); line-height: 1.15; letter-spacing: .03em; margin: 0 0 1.5rem; }
+  .soe-experience h2 { font-size: clamp(1.65rem, 4vw, 2.5rem); line-height: 1.35; margin: 0 0 1.5rem; }
+  .soe-experience h3 { font-size: 1.15rem; line-height: 1.5; margin: 0 0 .75rem; }
+  .soe-experience p, .soe-experience li { font-size: 1.2rem; line-height: 1.8; }
+  .soe-experience p { margin: 0 0 1.25rem; }
+  .soe-experience p:last-child { margin-bottom: 0; }
+  .soe-experience .lede { font-size: 1.5rem; color: #e8dcc8; }
+  .soe-experience .status { margin: 2rem auto 0; max-width: 680px; padding: 1.5rem; border: 1px solid #c9a84c70; background: #121109; text-align: left; }
+  .soe-experience .status strong { color: #f1d788; }
+  .soe-experience .section { max-width: 1060px; margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 1.25rem; }
+  .soe-experience .narrow { max-width: 800px; }
+  .soe-experience .band { background: #101010; border-block: 1px solid #c9a84c20; }
+  .soe-experience .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1rem; margin-top: 2rem; }
+  .soe-experience .card { padding: 1.5rem; background: #141310; border: 1px solid #c9a84c38; min-width: 0; }
+  .soe-experience .card p { color: #c9c0ac; }
+  .soe-experience .steps { list-style: none; padding: 0; margin: 2rem 0 0; counter-reset: steps; }
+  .soe-experience .steps li { counter-increment: steps; padding: 1.5rem 0; border-top: 1px solid #c9a84c38; }
+  .soe-experience .steps h3::before { content: counter(steps, decimal-leading-zero) ' / '; color: #d6b860; }
+  .soe-experience details { border-block-start: 1px solid #c9a84c55; padding: .25rem 0; }
+  .soe-experience details:last-child { border-block-end: 1px solid #c9a84c55; }
+  .soe-experience summary { cursor: pointer; padding: 1rem .25rem; min-height: 44px; font-family: 'Cinzel', serif; font-size: 1rem; color: #f5f0e8; line-height: 1.65; }
+  .soe-experience details p { padding: 0 .25rem 1.25rem; }
+  .soe-experience .actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+  .soe-experience .actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .85rem 1.25rem; border: 1px solid #c9a84c; font-family: 'Cinzel', serif; font-size: .85rem; line-height: 1.6; text-align: center; text-decoration: none; }
+  .soe-experience .actions a:first-child { background: #c9a84c; color: #0a0a0a; }
+  .soe-experience .actions a:hover { text-decoration: underline; }
+  .soe-experience .closing { border-top: 1px solid #c9a84c38; }
+  .soe-experience .accent { color: #d6b860; }
+  @media (max-width: 420px) { .soe-experience .actions a { width: 100%; } .soe-experience .nav-links { gap: .35rem 1rem; } }
 
-      {/* ═══ HERO ═══ */}
-      <section style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8rem 2rem 6rem', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, pointerEvents: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='1' fill='%23C9A84C'/%3E%3C/svg%3E")`, backgroundSize: '40px 40px' }} />
-        <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.6, marginBottom: '1.5rem' }}>EXPLORER COMMONS</div>
-          <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2.4rem, 6vw, 4.5rem)', fontWeight: 400, letterSpacing: '0.02em', lineHeight: 1.15, color: '#f5f0e8', marginBottom: '1.5rem' }}>
-            What Happens Here
-          </h1>
-          <p style={{ fontSize: '1.2rem', color: muted, lineHeight: 1.8, maxWidth: '580px', margin: '0 auto' }}>
-            Philosophy. Music. Biofeedback. Salt therapy. Sovereign infrastructure. A blank-slate commons where any subject plugs in.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══ 1. AI THINKERS ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <SectionLabel tag="AI THINKERS" heading="Six Minds. Always Available." sub="They remember you. They push back. They help you build." />
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: `${gold}10`, marginBottom: '2rem' }}>
-            {THINKERS.map(t => (
-              <div key={t.key} style={{ background: '#0a0a0a', padding: '1.75rem 1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '1.25rem', color: t.color, opacity: 0.6 }}>{t.icon}</span>
-                  <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.1em', color: '#f5f0e8' }}>{t.name.toUpperCase()}</span>
-                </div>
-                <p style={{ fontSize: '14px', color: muted, lineHeight: 1.7 }}>{t.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-            {[
-              { label: 'Voice Mode', desc: 'Speak out loud. Hear them respond. Conversations feel real.' },
-              { label: 'Persistent Memory', desc: 'They remember your projects, your questions, your growth.' },
-              { label: 'Agentic Actions', desc: 'They can create artifacts, suggest books, award $EXP, trigger rituals.' },
-            ].map(f => (
-              <div key={f.label} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, marginBottom: '0.35rem' }}>{f.label.toUpperCase()}</div>
-                <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6 }}>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 2. THE SALON ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            <ImagePlaceholder label="92B SOUTH ST · BOSTON" icon="🏛️" height="320px" />
-            <div style={{ background: '#0d0d0d', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>THE SALON</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>
-                Where ideas become real.
-              </h2>
-              <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
-                In-person at 92B South St, downtown Boston. Great Books 8-week reading cycles. Philosophy circles. Music jams. Monthly evening events for Scholar and Philosopher members.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {['Great Books', '8-Week Cycles', 'Philosophy Circles', 'Music Jams', 'Monthly Evenings'].map(tag => (
-                  <span key={tag} style={{ padding: '3px 10px', fontSize: '10px', fontFamily: 'Cinzel, serif', letterSpacing: '0.06em', color: gold, border: `1px solid ${gold}33`, background: `${gold}06` }}>{tag}</span>
-                ))}
-              </div>
+  .soe-experience .section-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.5rem; margin-top: 2rem; }
+  .soe-experience .section-nav a { display: inline-flex; align-items: center; min-height: 44px; font-size: 1.05rem; }
+  .soe-experience .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 2rem; align-items: center; }
+  .soe-experience .concept { margin: 0; padding: 2rem 1.5rem; min-height: 220px; display: flex; flex-direction: column; justify-content: center; text-align: center; border: 1px solid #c9a84c55; background: radial-gradient(ellipse at center, #211a09, #101010); }
+  .soe-experience .concept-symbol { display: block; font-family: 'Cinzel', serif; font-size: 3rem; color: #d6b860; margin-bottom: 1rem; }
+  .soe-experience figcaption { color: #c9c0ac; font-size: 1rem; line-height: 1.7; }
+  .soe-experience section { scroll-margin-top: 1rem; }
+`}</style>
+      <a className="skip" href="#experience-content">Skip to content</a>
+      <nav className="nav" aria-label="Experience navigation">
+        <Link href="/" prefetch={false}>Society of Explorers</Link>
+        <div className="nav-links"><Link href="/great-books" prefetch={false}>Reading</Link><Link href="/fellowship" prefetch={false}>Christian fellowship</Link></div>
+      </nav>
+      <main id="experience-content" tabIndex={-1}>
+        <header className="hero">
+          <div className="hero-inner">
+            <p className="eyebrow">Explorer Commons · Shared experience</p>
+            <h1>Ideas are better<br /><span className="accent">with people.</span></h1>
+            <p className="lede">Read, question, make music and imagine new places to meet. Friendship is the reason to begin.</p>
+            <div className="status">
+              <p><strong>Start with the reading. Explore what could come next.</strong></p>
+              <p>Reading materials and a proposed salon format are here to explore. Events, trips and equipment-based experiences below remain proposals. No gathering, treatment, reward or partner service is booked or provided through this page.</p>
             </div>
+            <nav className="section-nav" aria-label="Experience sections"><a href="#begin">Begin here</a><a href="#guides">AI guides</a><a href="#world">Shared spaces</a><a href="#reflection">Reflection</a><a href="#music">Music</a><a href="#travel">Travel</a></nav>
           </div>
-        </div>
-      </section>
+        </header>
 
-      {/* ═══ 3. TWIDDLETWATTLE ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            <div style={{ background: '#0a0a0a', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>TWIDDLETWATTLE</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>
-                Ideas that grow.
-              </h2>
-              <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
-                Post an idea. Tag a thinker. Watch it branch into threads, remixes, and weaves. The Constellation maps your intellectual journey — every question, every connection, every insight charted over time.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {['Post & Branch', 'Tag Thinkers', 'Constellation Map', 'Collaborative Threads'].map(tag => (
-                  <span key={tag} style={{ padding: '3px 10px', fontSize: '10px', fontFamily: 'Cinzel, serif', letterSpacing: '0.06em', color: gold, border: `1px solid ${gold}33`, background: `${gold}06` }}>{tag}</span>
-                ))}
-              </div>
+        <section id="begin" className="section" aria-labelledby="begin-heading">
+          <p className="eyebrow">Materials to explore</p>
+          <h2 id="begin-heading">A reading. A question. A conversation.</h2>
+          <div className="grid">
+            <article className="card"><h3>Scripture &amp; Great Books</h3><p>Find a text, consider its context and bring a question. Shared inquiry can begin with a single passage.</p><Link href="/great-books" prefetch={false}>Explore the reading library</Link></article>
+            <article className="card"><h3>Christian fellowship</h3><p>Explore faith, history and honest disagreement. The invitation is rooted in Christianity; respectful disagreement is welcome and participation in prayer is optional.</p><Link href="/fellowship" prefetch={false}>Explore fellowship and inquiry</Link></article>
+            <article className="card"><h3>A four-week salon plan</h3><p>Read the proposed format for a small online group. A host and dates still need to be confirmed; the plan is not a session reservation.</p><Link href="/salons/pilot" prefetch={false}>Read the salon plan</Link></article>
+          </div>
+        </section>
+
+        <div className="band">
+          <section id="guides" className="section" aria-labelledby="guides-heading">
+            <p className="eyebrow">AI guide concepts</p>
+            <h2 id="guides-heading">Different ways to ask a better question.</h2>
+            <p>The thinker-persona work explores perspectives inspired by historical figures. These are AI interpretations, not the people themselves. The prompts below are original invitations to inquiry, not quotations.</p>
+            <div className="grid">{THINKERS.map(thinker => <article key={thinker.name} className="card"><h3>{thinker.name}</h3><p>{thinker.question}</p></article>)}</div>
+            <p style={{ marginTop: '2rem' }}>A useful guide should show sources, acknowledge uncertainty and make room for correction. Voice, saved memory and automated actions need their own availability checks, consent and approval. This page promises no always-on service, automatic memory or reward.</p>
+          </section>
+        </div>
+
+        <section className="section" aria-labelledby="gathering-heading">
+          <div className="split">
+            <ConceptPlaceholder symbol="◯" label="A place to gather" />
+            <div><p className="eyebrow">Proposed gatherings</p><h2 id="gathering-heading">Make room for real friendship.</h2><p>Reading circles, conversations, music evenings and shared meals remain part of the vision, online and eventually in physical places.</p><p>Each gathering would need a named human host, confirmed time and place, clear costs, accessibility and safety arrangements. No venue, membership-tier event schedule or attendance reward is confirmed here.</p><p>People should be free to listen, disagree, pass on an activity and leave. Recording or sharing a conversation would need a separate, informed choice.</p></div>
+          </div>
+        </section>
+
+        <div className="band">
+          <section className="section narrow" aria-labelledby="ideas-heading">
+            <p className="eyebrow">TwiddleTwattle · Research concept</p>
+            <h2 id="ideas-heading">Ideas that grow between meetings.</h2>
+            <p>The earlier prototype explores questions branching into replies, remixes and weaves. Its Constellation idea maps connections over time. Those concepts remain worth exploring; the legacy routes are paused for the first release.</p>
+            <p>Any future shared map needs clear authorship, moderation and choices about what stays private. The current reading and salon materials offer a simpler place to begin.</p>
+          </section>
+        </div>
+
+        <section id="world" className="section" aria-labelledby="world-heading">
+          <div className="split">
+            <div><p className="eyebrow">SoE World · Spatial research</p><h2 id="world-heading">Imagine another place to meet.</h2><p>Virtual salons, maps of shared places and optional AR annotations remain distinct research ideas. Room scans, LiDAR tools and the White Knight Pen concept are not verified device integrations or an operating scan-to-earn service.</p><p>A future spatial pilot would need permission from people and property owners, careful treatment of location and images, accessible participation and tested equipment. No scan, upload, VR booking or token award is enabled here.</p><Link href="/tribekey" prefetch={false}>Read the physical-artifact concept</Link></div>
+            <ConceptPlaceholder symbol="◇" label="A shared virtual room" />
+          </div>
+        </section>
+
+        <div className="band">
+          <section id="reflection" className="section narrow" aria-labelledby="reflection-heading">
+            <p className="eyebrow">Optional reflection · Separate sensor research</p>
+            <h2 id="reflection-heading">Time to listen, without a score.</h2>
+            <p>A host could offer quiet reflection, listening or optional prayer as part of a proposed gathering. No equipment or physiological measurement is needed for that invitation.</p>
+            <p>The earlier biofeedback-circle idea considered EEG and heart-rate variability devices. Device compatibility, interpretation and AI-adapted sessions have not been validated for a SoE service. No sensor measurement is presented here as proof of spiritual unity, group understanding or a therapeutic benefit.</p>
+            <details><summary>What would sensor research need before involving people?</summary><p>A defined research purpose and qualified review of measurement validity and safety; explicit, voluntary consent; a clear choice to decline or withdraw; and reviewed rules for access, retention, sharing and deletion of sensitive data. These are unresolved prerequisites, not a claim that a safe or approved program exists. No health-data collection or sensor session is available through this page.</p></details>
+          </section>
+        </div>
+
+        <section id="music" className="section" aria-labelledby="music-heading">
+          <div className="split">
+            <ConceptPlaceholder symbol="♫" label="Making music together" />
+            <div><p className="eyebrow">Proposed music-making</p><h2 id="music-heading">Bring a rhythm. Or simply listen.</h2><p>A shared music session could welcome beginners, experienced musicians and people who prefer to listen. Its purpose would be creative participation and company. This is an activity idea, not an established treatment or a promise of a health outcome.</p><p>AI-assisted composition remains an optional tool concept, with no provider integration or partnership confirmed here. Recording, AI processing or publication would need participant permission, verified reuse rights and agreed credit and contributor terms.</p><p>No NFT minting, automatic royalties, earnings or EXP award is offered. A human facilitator would remain responsible for the gathering.</p></div>
+          </div>
+        </section>
+
+        <div className="band">
+          <section id="travel" className="section" aria-labelledby="travel-heading">
+            <div className="split">
+              <div><p className="eyebrow">Future travel &amp; hospitality</p><h2 id="travel-heading">Explore beyond the screen.</h2><p>Walks, museum visits, trips and hospitality could help friendships grow around shared interests. A future matching approach would need transparent choices people make themselves, without claims of physiological or “frequency” compatibility.</p><p>Travel-provider arrangements, stays, passport-style mementos and any payment integrations remain unverified concepts. No partner booking, reward or trip is offered through this page.</p><p>A concrete offer would need an accountable host, itinerary, clear costs and cancellation terms, privacy choices, accessibility and appropriate safety review.</p></div>
+              <ConceptPlaceholder symbol="✧" label="Exploring a place together" />
             </div>
-            <ImagePlaceholder label="CONSTELLATION · IDEA GRAPH" icon="🌿" height="280px" />
-          </div>
+          </section>
         </div>
-      </section>
 
-      {/* ═══ 4. SoE WORLD ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            <ImagePlaceholder label="LIDAR SCAN · WORLD LAYER" icon="📸" height="280px" />
-            <div style={{ background: '#0d0d0d', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>SoE WORLD</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>
-                Scan the real world. Build the next one.
-              </h2>
-              <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
-                Point your iPhone LiDAR at a space. Upload the scan. Earn $EXP based on quality. Leave AR annotations with the White Knight Pen. Every scan contributes to a member-driven spatial layer — a metaverse built from real places, not game engines.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {['iPhone LiDAR', 'Scan-to-Earn', 'White Knight Pen', 'AR Annotations'].map(tag => (
-                  <span key={tag} style={{ padding: '3px 10px', fontSize: '10px', fontFamily: 'Cinzel, serif', letterSpacing: '0.06em', color: gold, border: `1px solid ${gold}33`, background: `${gold}06` }}>{tag}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 5. BIOFEEDBACK CIRCLES ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            <div style={{ background: '#0a0a0a', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>BIOFEEDBACK CIRCLES</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>
-                The room breathes together.
-              </h2>
-              <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
-                Muse S Athena EEG headbands measure focus. Polar H10 chest straps track HRV. The AI reads group coherence in real time and adapts the session — guiding breath, music, and conversation toward collective resonance. 10 $EXP per circle.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {['Muse S Athena EEG', 'Polar H10 HRV', 'Group Coherence', 'AI-Adapted Sessions'].map(tag => (
-                  <span key={tag} style={{ padding: '3px 10px', fontSize: '10px', fontFamily: 'Cinzel, serif', letterSpacing: '0.06em', color: gold, border: `1px solid ${gold}33`, background: `${gold}06` }}>{tag}</span>
-                ))}
-              </div>
-            </div>
-            <ImagePlaceholder label="COHERENCE CIRCLE · BIOFEEDBACK" icon="💓" height="280px" />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 6. MUSIC THERAPY ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            <ImagePlaceholder label="MUSIC SESSION · LOGIC PRO + SUNO" icon="🎵" height="280px" />
-            <div style={{ background: '#0d0d0d', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>MUSIC THERAPY</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>
-                Strangers jam. Something real happens.
-              </h2>
-              <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
-                Logic Pro 12 AI and Suno V5 lower the floor. Absolute beginners sit next to trained musicians. The AI bridges the gap. Best moments are minted as NFTs on Solana via Nina Protocol — shared royalties, permanent record. 12 $EXP per session.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {['Logic Pro 12 AI', 'Suno V5', 'NFT Minting', 'Nina Protocol'].map(tag => (
-                  <span key={tag} style={{ padding: '3px 10px', fontSize: '10px', fontFamily: 'Cinzel, serif', letterSpacing: '0.06em', color: gold, border: `1px solid ${gold}33`, background: `${gold}06` }}>{tag}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ 7. SOVEREIGN TRAVEL ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            <div style={{ background: '#0a0a0a', padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem' }}>SOVEREIGN TRAVEL</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.3 }}>
-                Travel as transformation.
-              </h2>
-              <p style={{ fontSize: '15px', color: muted, lineHeight: 1.8, marginBottom: '1.5rem' }}>
-                Book crypto stays via Travala and Dtravel. Scan the rooms you stay in. Earn $EXP. Find resonant explorers through frequency matching. Collect soulbound passport stamps — proof of experience, not tourism.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {['Travala', 'Dtravel', 'Frequency Matching', 'Passport Stamps'].map(tag => (
-                  <span key={tag} style={{ padding: '3px 10px', fontSize: '10px', fontFamily: 'Cinzel, serif', letterSpacing: '0.06em', color: gold, border: `1px solid ${gold}33`, background: `${gold}06` }}>{tag}</span>
-                ))}
-              </div>
-            </div>
-            <ImagePlaceholder label="EXPLORER PASSPORT · SOULBOUND" icon="🧭" height="280px" />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ CTA ═══ */}
-      <section data-fade style={{ padding: '6rem 2rem', textAlign: 'center', opacity: 0, transition: 'opacity 0.8s ease' }}>
-        <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, letterSpacing: '0.02em', color: '#f5f0e8', marginBottom: '1.5rem' }}>
-            Ready?
-          </h2>
-          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '14px 36px', textDecoration: 'none', display: 'inline-block' }}>Choose Your Path →</a>
-        </div>
-      </section>
-
+        <section className="section narrow closing" aria-labelledby="next-heading">
+          <p className="eyebrow">A useful beginning</p>
+          <h2 id="next-heading">Find something worth sharing.</h2>
+          <p>Start with a reading or explore the proposed salon format. The wider ideas can develop through careful experiments, clear consent and the experience of real people.</p>
+          <div className="actions"><Link href="/great-books" prefetch={false}>Explore the readings</Link><Link href="/salons/pilot" prefetch={false}>Read the salon plan</Link></div>
+        </section>
+      </main>
       <PublicFooter />
     </div>
   );

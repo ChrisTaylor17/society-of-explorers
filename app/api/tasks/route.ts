@@ -1,16 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+type TaskCreateBody = {
+  title?: unknown;
+  description?: unknown;
+  priority?: unknown;
+  source_thinker?: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function textField(value: unknown, maxLength: number): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
+async function safeRequestJson(req: NextRequest): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: tasks, error } = await supabaseAdmin
     .from('agent_tasks')
     .select('*')
@@ -18,45 +41,44 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Tasks fetch error:', error);
-    return NextResponse.json({ tasks: [] });
+    return privateJson({ error: 'Failed to fetch tasks', tasks: [] }, { status: 500 });
   }
 
-  return NextResponse.json({ tasks: tasks || [] });
+  return privateJson({ tasks: tasks || [] });
 }
 
 export async function POST(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
-  // Also accept memberId from body for council mode
-  let memberId = auth?.memberId || null;
-  const body = await req.json();
+  const parsed = await safeRequestJson(req);
+  if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
-  if (!memberId && body.memberId) {
-    memberId = body.memberId;
-  }
+  const body: TaskCreateBody = parsed;
+  const title = textField(body.title, 180);
+  const description = textField(body.description, 2000);
+  const priority = textField(body.priority, 40) || 'medium';
+  const sourceThinker = textField(body.source_thinker, 80);
 
-  const { title, description, priority, source_thinker } = body;
+  if (!title) return privateJson({ error: 'Title required' }, { status: 400 });
 
-  if (!title) return NextResponse.json({ error: 'Title required' }, { status: 400 });
-
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: task, error } = await supabaseAdmin
     .from('agent_tasks')
     .insert({
-      member_id: memberId,
-      title: title.trim(),
-      description: description?.trim() || null,
-      priority: priority || 'medium',
-      source_thinker: source_thinker || null,
+      member_id: auth.memberId,
+      title,
+      description,
+      priority,
+      source_thinker: sourceThinker,
       status: 'created',
     })
     .select()
     .single();
 
   if (error) {
-    console.error('Task create error:', error);
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+    return privateJson({ error: 'Failed to create task' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, task });
+  return privateJson({ success: true, task });
 }

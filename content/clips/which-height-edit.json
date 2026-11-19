@@ -1,0 +1,107 @@
+{
+  "title": "Which height are we measuring?",
+  "series": "The Archivist",
+  "fieldNote": "03",
+  "fps": 25,
+  "width": 720,
+  "height": 1280,
+  "bitrate": 1150000,
+  "source": {
+    "file": "pexels-33378632-source.mp4",
+    "sha256": "a0aee5ab007afc52b6d859c6c9880d9dbf0c49340f7acafb87d9e62f4a6f57f6",
+    "page": "https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/",
+    "download": "https://videos.pexels.com/video-files/33378632/14210577_2160_3840_30fps.mp4",
+    "credit": "James Lee via Pexels",
+    "license": "https://www.pexels.com/terms-of-service/",
+    "policy": "https://www.pexels.com/terms-of-service/",
+    "fps": 30,
+    "inFrame": 0,
+    "outFrame": 500,
+    "audioTracks": 0,
+    "firstPresentationFrame": 2
+  },
+  "layout": {
+    "background": "#221b20",
+    "ink": "#fff1e4",
+    "accent": "#ffc28d",
+    "videoRect": [
+      54,
+      374,
+      270,
+      480
+    ],
+    "creditY": 911,
+    "bodyAt": [
+      348,
+      437
+    ],
+    "fontTitle": "bold 67px Georgia",
+    "fontBody": "600 30px system-ui",
+    "label": "KĪLAUEA  ·  ARCHIVE FOOTAGE",
+    "modifications": "Trimmed and annotated by Society of Explorers",
+    "audio": "silent"
+  },
+  "scenes": [
+    {
+      "start": 0,
+      "end": 120,
+      "titleLines": [
+        "25,000 feet?",
+        "What went up?"
+      ],
+      "bodyLines": [
+        "USGS reported",
+        "two heights for",
+        "the eruption on",
+        "October 17, 2026."
+      ],
+      "transcript": "Archive footage of Kīlauea. 25,000 feet? What went up? USGS reported two heights for the eruption on October 17, 2026."
+    },
+    {
+      "start": 120,
+      "end": 245,
+      "titleLines": [
+        "The plume",
+        "About 25,000 ft"
+      ],
+      "bodyLines": [
+        "The plume rose",
+        "to about 25,000",
+        "feet above",
+        "sea level."
+      ],
+      "transcript": "The plume rose to about 25,000 feet above sea level."
+    },
+    {
+      "start": 245,
+      "end": 375,
+      "titleLines": [
+        "The lava fountain",
+        "Just over 700 ft"
+      ],
+      "bodyLines": [
+        "At the north vent,",
+        "the fountain",
+        "peaked by 5 a.m.",
+        "local time."
+      ],
+      "transcript": "The lava fountain at the north vent peaked at just over 700 feet by 5 a.m. local time."
+    },
+    {
+      "start": 375,
+      "end": 500,
+      "titleLines": [
+        "Ask what they",
+        "measured."
+      ],
+      "bodyLines": [
+        "Which feature?",
+        "Where did they",
+        "measure from?",
+        "Bring a question",
+        "to a Circle."
+      ],
+      "transcript": "Ask what they measured. Which feature? Where did they measure from? Bring a question to a Circle."
+    }
+  ]
+}

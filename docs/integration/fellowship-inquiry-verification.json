@@ -1,0 +1,212 @@
+{
+  "status": "LOCAL_WEB_FELLOWSHIP_VERIFIED",
+  "recordedAtUtc": "2026-11-08T03:48:55.830981+00:00",
+  "baseCommit": "2682f7c0ab335d35620a20b9fac33611c3635a3a",
+  "productionCleared": false,
+  "routes": [
+    "/fellowship",
+    "/fellowship/manifesto",
+    "/fellowship/scripture",
+    "/fellowship/research/ancient-jesus-passage"
+  ],
+  "verifiedSourceSha256": {
+    "scripts/import-fellowship-scripture.py": "15013ef78de47d3dc6be62578dd81317ad9aeef407b0cab9cce9f54e6e0eadba",
+    "content/fellowship/scripture.web-classic.json": "0b1b47094a2470707bd723db2e3e3d556eb956dc4d980ec4ace988bdd2c81273",
+    "lib/fellowship/covenant.ts": "0229de44e7ad8bf3bcb2c17b7f05b7665b5f9019392d4beee055291fb7b67c36",
+    "lib/fellowship/study.ts": "f6c8225f8feec6ce5b5d97bb577cfb6612314c0bf76862167a47ff1359d2d790",
+    "lib/fellowship/ancient-text.ts": "b759eb40e4f92f9c8c6c5e4c8bae089bb30a527642020f51df83722bbd0b0c79",
+    "app/fellowship/fellowship.module.css": "c312ca58c70a54fc36074c00d5140005fceebf576169f81d376c962ecc45e275",
+    "app/fellowship/layout.tsx": "fb7a8968857be2812b5a7a6cbccd45eaeafbe182e51d16093dc2f171c20c4a1a",
+    "app/fellowship/page.tsx": "e5d59b17d480198fecef94ec1062a46dd8c57f44f13a59b6016f8d86576d6ef1",
+    "app/fellowship/manifesto/page.tsx": "877202b8ce461a28f329d5780faa39f8858ccd926159135ec896ac600bffefbe",
+    "app/fellowship/scripture/page.tsx": "d2965c7cb5074b7bed7324848be894b88e6d7b3ba1e3c9762d93939e02627393",
+    "app/fellowship/research/ancient-jesus-passage/page.tsx": "e31786e08b8804b74e533b4e49bf6cdd49588895688283b51b57425a881b3691",
+    "components/FellowshipInvitation.tsx": "94bcc197efe1d81f927ff203af5f5af7ae0a30fd67b0f5c5826941b6c2924528",
+    "components/fellowship/AnalysisReview.tsx": "66722d25de594304ee9698e4950f5fae3fad2840627e15e73c6bba9ae2efe925",
+    "components/fellowship/StudyExplorer.tsx": "01cf92496f2f553a7b38cdb26cccc3c9c9352124841be4dcda5036c8a3ae5c90",
+    "app/HomePageClient.tsx": "58bd72786fc529427b9888ec511b6141db7ff64437857cc7888919c5a65f2482",
+    "components/PublicNav.tsx": "f004c3ea5e43d12ef88a835dbd6c4075b21c2ad675a0a866b8d66558e1ae4997",
+    "app/great-books/ReadingNav.tsx": "b6cacc59477f71ca6d87049cffd1be301cdb5f0dced6119498c33f677a352835",
+    "verification/web/tests/fellowship-inquiry.test.mjs": "812a88f9115bc09563b80c540b1f490bc8c9308d5e868536623d43d0099df3ba",
+    "verification/web/scripts/browser-fellowship-inquiry.mjs": "4eb6c087a603d5932335760b2c3ecde34e9bb3cbd25cafd8a6fd315894cd40da",
+    "verification/web/tests/webkit-fellowship.swift": "fecc6d334a9263425044a811b88769d883136a41b9c895f513a9b1069a098795"
+  },
+  "principles": "Existing main SoE manifesto preserved exactly;Root Kernel comparative layers and named Biblical Unitarian perspective preserved. No separate public/local Root Kernel app was verified or claimed imported. Private project chats are excluded from product content.",
+  "founderManifestoSha256": "e0448eb83f329448e4154af631a25bf1e71ba10095c48050f1894045d7f40add",
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 54.84,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1222,
+    "sourceSha256": "750ec8c438b5e4bf7c90466bb2c7a86979a3ae64aa7f0198fac98d752470b4d6",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/built-shell-fellowship-02-next-build.log"
+  },
+  "compiledBrowser": {
+    "stories": [
+      "The existing homepage and primary navigation reach a distinct fellowship section without replacing the Society or its founder manifesto.",
+      "The nine-part Christian covenant is substantive and welcoming; the original broader founder manifesto remains reachable and distinct.",
+      "All330 rendered verses and38 publisher notes match the pinned edition data,including the empty main-text Acts8:37 and its complete publisher variant.",
+      "Independent browser DOM ranges match every included verse and footnote to all14 original publisher HTML pages,not just the importer output.",
+      "Relationship filters distinguish explicit quotation,allusion,comparison and textual issue; verse links open the full surrounding Scripture.",
+      "A reasoned local correction previews and exports with exact provenance; editing retires the preview,filtering preserves it,reset clears it,and markup is displayed as text. Scripture and preexisting browser storage are unchanged; no submission occurs.",
+      "The compiled dossier identifies the preprint and received text,labels news matching provisional,separates copy/composition dates,presents competing arguments and exposes local correction controls without manuscript images or copied modern translations.",
+      "The existing Root Kernel reading surface links back to the fellowship section.",
+      "At320px,mobile navigation,all four pages,keyboard skip link and the horizontally contained witness table remain usable without page overflow.",
+      "With JavaScript disabled,the full study,all claims,Scripture disclosures and received Josephus passage remain readable; interactive-tool limits are explicit."
+    ],
+    "evidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/fellowship-05/browser.json",
+    "sha256": "56ec508336af35dade842576b8bb9fa9e1e61e96d907ccca25820fe716a05395",
+    "externalRequests": [],
+    "featureApiRequests": [],
+    "errors": [],
+    "homepageOnlySyntheticApiFixtures": [
+      {
+        "path": "/api/auth/member",
+        "method": "GET"
+      },
+      {
+        "path": "/api/feed/pulse",
+        "method": "GET"
+      },
+      {
+        "path": "/api/auth/member",
+        "method": "GET"
+      },
+      {
+        "path": "/api/auth/member",
+        "method": "GET"
+      },
+      {
+        "path": "/api/feed/pulse",
+        "method": "GET"
+      }
+    ]
+  },
+  "webKit": {
+    "buildId": "SQwyZGPI8Fe8gptmr4p2l",
+    "layouts": [
+      {
+        "pageZoomPercent": 100,
+        "width": 1280
+      },
+      {
+        "pageZoomPercent": 200,
+        "width": 640
+      },
+      {
+        "pageZoomPercent": 400,
+        "width": 320
+      }
+    ],
+    "scope": "Actual compiled public frontend in resident macOS WKWebView with isolated nonpersistent data and loopback-only navigation/content/fetch restrictions. DOM actions are automated. No Safari application UI,native mobile app,physical device,provider or live AI acceptance. No download is attempted in this WebKit smoke.",
+    "status": "PASS",
+    "stories": [
+      "The actual compiled fellowship landing renders in an isolated resident macOS WebKit store without private or external requests.",
+      "The landing fits at actual WebKit page zoom100%,200% and400% with logical widths1280,640 and320.",
+      "The compiled study hydrates filters,keeps all330 verses and the Psalm superscription,and opens full context from a comparison card.",
+      "A reasoned correction previews literal text and resets without changing Scripture,storage or cookies. Download behavior is covered separately in Chromium.",
+      "The responsive dossier retains Whiston’s disputed wording and separates qualified work dates from the411/462copy witnesses.",
+      "The separate nine-part fellowship covenant remains readable at400% and welcomes respectful disagreement."
+    ]
+  },
+  "unitChecks": {
+    "passed": 10,
+    "failed": 0,
+    "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-fellowship-inquiry/content-tests-final.log",
+    "sha256": "7481d4faa9e1029a144df3afc1c340289f25bed7d4e13949397453c0a6aa1175"
+  },
+  "editorialCorrections": [
+    "Theophany Greek composition dating qualified as disputed;411copy date kept separate.",
+    "Michael Chronicle compositionc1195 distinguished from his1199death and1598copy.",
+    "Psalm22publisher superscription retained separately,without renumbering verses."
+  ],
+  "scripture": {
+    "edition": "World English Bible Classic",
+    "passages": 14,
+    "numberedVerses": 330,
+    "publisherNotes": 38,
+    "independentOriginalHtmlDomComparison": "PASS",
+    "sourceIntake": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-fellowship-inquiry/scripture-source-intake.json",
+    "sourceIntakeSha256": "938ef93a94a6129bcb6c653f3b830c812138db3a48dac65671e7af3e3d2cceaf",
+    "rights": "Publisher public-domain dedication; exact main-text words,publisher notes and superscription kept separate from SoE analysis."
+  },
+  "josephus": {
+    "ownerConfirmedSubject": "Josephus writing",
+    "text": "Antiquities18.63–64(18.3.3)",
+    "paper": "Jesús Fernández-Pedrera Correa,The Testimonium Flavianum in Four Transmission Lines,Zenodo v1,15Aug2026,10.5281/zenodo.21945637",
+    "paperStatus": "Verified relevant preprint; exact original headline/paper linkage not confirmed.",
+    "translation": "Received text,William Whiston1737;source catalogue public-domain USA. No Pines modern translation or manuscript photograph copied.",
+    "claim": "New argument about known sources,not a newly discovered first-century manuscript."
+  },
+  "corrections": {
+    "localPreviewAndJsonExport": "PASS",
+    "sourceUrlsIncluded": true,
+    "requiresChangedAnalysisAndReason": true,
+    "scriptureMutable": false,
+    "sharedSubmissionQueue": false,
+    "liveAiApi": false,
+    "browserStorageOrCookiesAddedByFeature": false
+  },
+  "ownedServer": {
+    "status": "STOPPED",
+    "sourceFilesUnchanged": 1222,
+    "compiledRuntimeFilesUnchanged": 2528,
+    "guardDenials": [],
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/built-shell-fellowship-02-server.json",
+    "sha256": "3064ac6df630aad62f4e9196ac2eb101a4279e09a89921e3319e280e7d8f0873"
+  },
+  "residentSwift": {
+    "sourceSha256": "fecc6d334a9263425044a811b88769d883136a41b9c895f513a9b1069a098795",
+    "binarySha256": "9b8d440935bc02e462716624ad5673ad353374926df363d15a1b3565ac717e2f",
+    "compileExitCode": 0,
+    "sdk": "MacOSX27.2,arm64Mac;notiOS",
+    "compileLog": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-fellowship-inquiry/webkit-compile.log"
+  },
+  "screenshots": [
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/fellowship-05/fellowship-desktop.png",
+      "sha256": "28908a02d0a63e0016ac504ad2d0caa148e39d2aac21c12b35d4ad8e60313566"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/fellowship-05/research-desktop.png",
+      "sha256": "34919d8c2f2b06101a6b558eb838d5604a9f808835633b79bbedc1de9d702a41"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/fellowship-05/fellowship-mobile.png",
+      "sha256": "f17df842a0525af24f8b311aed5d6f8e0a7b930cd97e4f7064584eed00d63143"
+    },
+    {
+      "path": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-admission/candidate/verification/web/evidence/fellowship-05/research-mobile.png",
+      "sha256": "f0bf44e95eefbf08e2f1958a4f008d0ec2f53e417b2e499278f924a69bb8445a"
+    }
+  ],
+  "limits": [
+    "Local compiled public-web evidence only; no deploy,publishing,real member/provider/live AI or physical-device acceptance.",
+    "Chromium homepage/founder-nav API GETs were intercepted synthetic failures. New feature pages made no API calls.",
+    "WKWebView is not Safari application UI or an installed phone app. DOM actions are automated; no real download was attempted there.",
+    "Commentary/covenant remain AI-assisted drafts pending human editorial review. Source citations do not constitute uniform scholarly consensus.",
+    "Original Josephus news headline remains unmatched; the paper is a documented relevant candidate.",
+    "This web checkpoint does not complete the newly requested native/Quest fellowship/event engagement. That follow-through is next; actual Android tool setup is separately approved and ongoing.",
+    "Hosted backup/privacy/authentication,retention/deletion completion,device/VR acceptance and pilot operations remain gated."
+  ],
+  "scopedLint": {
+    "status": "PASS",
+    "warnings": 0,
+    "log": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-fellowship-inquiry/lint-sealed.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

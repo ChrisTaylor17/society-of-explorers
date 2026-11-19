@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
@@ -10,11 +11,66 @@ const muted = '#9a8f7a';
 
 const TIER_COLORS: Record<string, string> = { free: muted, explorer: muted, seeker: gold, scholar: '#7B68EE', philosopher: '#DC143C' };
 
+type DirectoryState = 'loading' | 'ready' | 'locked' | 'error';
+
+type MemberDirectoryEntry = {
+  id: string;
+  display_name: string | null;
+  bio: string | null;
+  skills: string[] | null;
+  exp_tokens: number | null;
+  tier: string | null;
+};
+
+function tierColor(tier: string | null) {
+  return tier ? TIER_COLORS[tier] || gold : gold;
+}
+
 export default function DiscoverPage() {
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<MemberDirectoryEntry[]>([]);
+  const [directoryState, setDirectoryState] = useState<DirectoryState>('loading');
 
   useEffect(() => {
-    fetch('/api/members/discover').then(r => r.json()).then(d => setMembers(d.members || [])).catch(() => {});
+    let cancelled = false;
+
+    async function loadMembers() {
+      try {
+        const accessToken = await getSupabaseAccessToken();
+        const res = await fetch('/api/members/discover', {
+          cache: 'no-store',
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        });
+
+        if (cancelled) return;
+
+        if (res.status === 401) {
+          setMembers([]);
+          setDirectoryState('locked');
+          return;
+        }
+
+        if (!res.ok) {
+          setMembers([]);
+          setDirectoryState('error');
+          return;
+        }
+
+        const data = await res.json();
+        setMembers(data.members || []);
+        setDirectoryState('ready');
+      } catch {
+        if (!cancelled) {
+          setMembers([]);
+          setDirectoryState('error');
+        }
+      }
+    }
+
+    loadMembers();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -32,31 +88,46 @@ export default function DiscoverPage() {
         <p style={{ fontSize: '18px', color: ivory85, maxWidth: '500px', margin: '0 auto' }}>Explorers building meaningful things.</p>
       </section>
 
-      <section data-fade style={{ padding: '0 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: `${gold}10` }}>
+      <section data-fade aria-label="Explorer directory" aria-busy={directoryState === 'loading'} style={{ padding: '0 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1px', background: `${gold}10` }}>
           {members.map(m => (
-            <div key={m.id} style={{ background: '#0d0d0d', padding: '1.5rem', border: `1px solid rgba(201,168,76,0.1)` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${TIER_COLORS[m.tier] || gold}22`, border: `1px solid ${TIER_COLORS[m.tier] || gold}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '12px', color: TIER_COLORS[m.tier] || gold }}>
+            <div key={m.id} style={{ background: '#0d0d0d', padding: '1.5rem', minWidth: 0, overflowWrap: 'anywhere', border: `1px solid rgba(201,168,76,0.1)` }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
+                <div style={{ width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%', background: `${tierColor(m.tier)}22`, border: `1px solid ${tierColor(m.tier)}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif', fontSize: '12px', color: tierColor(m.tier) }}>
                   {(m.display_name || '?')[0].toUpperCase()}
                 </div>
-                <div>
+                <div style={{ flex: '1 1 130px', minWidth: 0 }}>
                   <div style={{ fontSize: '16px', color: parchment }}>{m.display_name}</div>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: TIER_COLORS[m.tier] || muted }}>{(m.tier || 'explorer').toUpperCase()}</div>
+                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: tierColor(m.tier) || muted }}>{(m.tier || 'explorer').toUpperCase()}</div>
                 </div>
-                <div style={{ marginLeft: 'auto', fontFamily: 'Cinzel, serif', fontSize: '12px', color: gold }}>{m.exp_tokens || 0} <span style={{ fontSize: '8px', color: muted }}>EXP</span></div>
+                <div style={{ marginLeft: 'auto', maxWidth: '100%', fontFamily: 'Cinzel, serif', fontSize: '12px', color: gold }}>{m.exp_tokens || 0} <span style={{ fontSize: '8px', color: muted }}>EXP</span></div>
               </div>
               {m.bio && <p style={{ fontSize: '14px', color: muted, lineHeight: 1.6, marginBottom: '0.5rem' }}>{m.bio.slice(0, 100)}{m.bio.length > 100 ? '...' : ''}</p>}
-              {m.skills?.length > 0 && (
+              {Array.isArray(m.skills) && m.skills.length > 0 && (
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                  {m.skills.slice(0, 4).map((s: string) => (
-                    <span key={s} style={{ fontSize: '10px', color: muted, border: `1px solid ${gold}22`, padding: '2px 8px', borderRadius: '10px' }}>{s}</span>
+                  {m.skills.slice(0, 4).map((s) => (
+                    <span key={s} style={{ maxWidth: '100%', fontSize: '10px', color: muted, border: `1px solid ${gold}22`, padding: '2px 8px', borderRadius: '10px' }}>{s}</span>
                   ))}
                 </div>
               )}
             </div>
           ))}
-          {members.length === 0 && <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1/-1' }}><p style={{ color: muted, fontStyle: 'italic' }}>No members yet.</p></div>}
+          {directoryState === 'loading' && (
+            <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1/-1' }}>
+              <p role="status" style={{ color: muted, fontStyle: 'italic', overflowWrap: 'anywhere' }}>Loading directory...</p>
+            </div>
+          )}
+          {directoryState === 'locked' && (
+            <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1/-1' }}>
+              <p role="status" style={{ color: muted, fontStyle: 'italic', overflowWrap: 'anywhere' }}>Sign in to view the private explorer directory.</p>
+            </div>
+          )}
+          {directoryState === 'error' && (
+            <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1/-1' }}>
+              <p role="alert" style={{ color: muted, fontStyle: 'italic', overflowWrap: 'anywhere' }}>Directory unavailable.</p>
+            </div>
+          )}
+          {directoryState === 'ready' && members.length === 0 && <div style={{ padding: '3rem', textAlign: 'center', gridColumn: '1/-1' }}><p role="status" style={{ color: muted, fontStyle: 'italic', overflowWrap: 'anywhere' }}>No members yet.</p></div>}
         </div>
       </section>
       <PublicFooter />

@@ -1,9 +1,17 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { getMemberSession } from '@/lib/auth/getSession'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession'
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { DIRECT_MESSAGE_ACK_LIMIT, DIRECT_MESSAGE_OWNER_HEADER, parseDirectMessageThread, type DirectContact,
+  type DirectMessage, type DirectMessageBlockChange } from '@/lib/members/direct-message'
+import DirectMessageBlocks, { sendBlockChange } from './DirectMessageBlocks'
+import styles from './direct-message.module.css'
+import PublishedProfileLink from '@/components/PublishedProfileLink'
+import MemberFinder from './MemberFinder'
+import { DIRECTORY_EXPECTED_OWNER_HEADER, DIRECTORY_OWNER_HEADER, parsePublishedDirectory } from '@/lib/members/finder'
 
 interface Member {
   id: string
@@ -13,24 +21,43 @@ interface Member {
   project_description?: string
   seeking?: string
   bio?: string
-  exp_tokens: number
-  wallet_address?: string
-  tier?: string
   philosophy?: string
-  email?: string
+}
+
+type MemberSkillValue = string[] | string | null | undefined
+
+type MemberRecord = Omit<Member, 'skills'> & {
+  skills?: MemberSkillValue
+}
+
+function normalizeSkills(skills: MemberSkillValue): string[] {
+  if (Array.isArray(skills)) return skills
+  if (typeof skills === 'string') {
+    return skills
+      .split(',')
+      .map(skill => skill.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+function normalizeMember(member: MemberRecord): Member {
+  return {
+    id: member.id,
+    display_name: member.display_name,
+    bio: member.bio,
+    discipline: member.discipline,
+    project_description: member.project_description,
+    seeking: member.seeking,
+    philosophy: member.philosophy,
+    skills: normalizeSkills(member.skills),
+  }
 }
 
 function displayName(m: Member): string {
   if (m.display_name && !m.display_name.startsWith('0x')) return m.display_name
-  if (m.email) return m.email.split('@')[0]
-  if (m.wallet_address) return `${m.wallet_address.slice(0, 6)}...${m.wallet_address.slice(-4)}`
   if (m.display_name?.startsWith('0x')) return `${m.display_name.slice(0, 6)}...${m.display_name.slice(-4)}`
   return 'Explorer'
-}
-
-function tierLabel(tier?: string): string {
-  const labels: Record<string, string> = { free: 'Explorer', member: 'Member', patron: 'Patron', founding: 'Founding Member' }
-  return labels[tier || 'free'] || 'Explorer'
 }
 
 function avatarLetter(m: Member): string {
@@ -38,25 +65,28 @@ function avatarLetter(m: Member): string {
   return name.charAt(0).toUpperCase()
 }
 
-interface DM {
-  id: string
-  created_at: string
-  sender_id: string
-  recipient_id: string
-  content: string
-  read: boolean
-  sender?: Member
-  is_thinker?: boolean
-  thinker_id?: string
+type ChatScope = {
+  peerId: string
+  readRevision: number
+  sending: boolean
+  changingBlock: boolean
+}
+
+async function getAuthHeaders(includeContentType = false): Promise<HeadersInit> {
+  const accessToken = await getSupabaseAccessToken()
+  return {
+    ...(includeContentType ? { 'Content-Type': 'application/json' } : {}),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  }
 }
 
 const THINKERS = [
-  { id: 'socrates',  name: 'Socrates',        symbol: 'Σ' },
-  { id: 'nietzsche', name: 'Nietzsche',        symbol: 'N' },
-  { id: 'aurelius',  name: 'Marcus Aurelius',  symbol: 'M' },
-  { id: 'einstein',  name: 'Einstein',         symbol: 'E' },
-  { id: 'jobs',      name: 'Steve Jobs',       symbol: 'J' },
-  { id: 'plato',     name: 'Plato',            symbol: 'Π' },
+  { id: 'socrates', name: 'Socrates', symbol: 'Σ', question: 'What would count as good evidence for each of our views?' },
+  { id: 'nietzsche', name: 'Nietzsche', symbol: 'N', question: 'Which of our assumptions comes from habit?' },
+  { id: 'aurelius', name: 'Marcus Aurelius', symbol: 'M', question: 'Which part of this situation can we act on?' },
+  { id: 'einstein', name: 'Einstein', symbol: 'E', question: 'What simple example could we use to test the idea?' },
+  { id: 'jobs', name: 'Steve Jobs', symbol: 'J', question: 'What could we remove and still solve the problem that matters?' },
+  { id: 'plato', name: 'Plato', symbol: 'Π', question: 'What would a fair rule look like from both sides?' },
 ]
 
 const gold = '#c9a84c'
@@ -72,235 +102,319 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [currentMember, setCurrentMember] = useState<Member | null>(null)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
-  const [messages, setMessages] = useState<DM[]>([])
+  const [messages, setMessages] = useState<DirectMessage[]>([])
+  const [contact, setContact] = useState<DirectContact | null>(null)
+  const [blockReview, setBlockReview] = useState<DirectContact | null>(null)
+  const [blockBusy, setBlockBusy] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile'>('directory')
-  const [profileDraft, setProfileDraft] = useState({ bio: '', discipline: '', skills: '', project_description: '', seeking: '', philosophy: '' })
-  const [profileSaving, setProfileSaving] = useState(false)
-  const [profileSaved, setProfileSaved] = useState(false)
-  const [matchQuery, setMatchQuery] = useState('')
-  const [matchResult, setMatchResult] = useState('')
-  const [matchLoading, setMatchLoading] = useState(false)
+  const [view, setView] = useState<'directory' | 'chat' | 'match' | 'profile' | 'blocked'>('directory')
+  const [directoryStatus, setDirectoryStatus] = useState<'loading' | 'ready' | 'forbidden' | 'unavailable'>('loading')
+  const [directoryAttempt, setDirectoryAttempt] = useState(0)
+  const [retired, setRetired] = useState(false)
   const [showThinkerPicker, setShowThinkerPicker] = useState(false)
-  const [thinkerLoading, setThinkerLoading] = useState(false)
+  const [sendStatus, setSendStatus] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
-  const [recording, setRecording] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const authorityEpoch = useRef(0)
+  const directoryRequest = useRef<AbortController | null>(null)
+  const directoryResult = useRef<HTMLDivElement | null>(null)
+  const focusDirectoryResult = useRef(false)
+  const chatScope = useRef<ChatScope | null>(null)
   const router = useRouter()
-  const supabase = createClient()
+  const currentMemberId = currentMember?.id ?? null
+  const selectedMemberId = selectedMember?.id ?? null
+  const canCompose = Boolean(contact?.canMessage && !blockBusy && !blockReview)
+
+  const dmHeaders = useCallback(async (json = false) => {
+    const scoped = new Headers(await getAuthHeaders(json))
+    if (currentMemberId) scoped.set(DIRECT_MESSAGE_OWNER_HEADER, currentMemberId)
+    return scoped
+  }, [currentMemberId])
 
   useEffect(() => {
-    getMemberSession().then(session => {
-      if (!session) { router.push('/'); return }
-      setCurrentMember(session.member)
-      const m = session.member as any
-      setProfileDraft({
-        bio: m.bio || '',
-        discipline: m.discipline || '',
-        skills: Array.isArray(m.skills) ? m.skills.join(', ') : (m.skills || ''),
-        project_description: m.project_description || '',
-        seeking: m.seeking || '',
-        philosophy: m.philosophy || '',
-      })
+    const invalidate = () => {
+      authorityEpoch.current++
+      chatScope.current = null
+    }
+    const stop = subscribeAuthProviderChanges(() => {
+      invalidate()
+      setRetired(true); setCurrentMember(null); setSelectedMember(null); setMembers([]); setMessages([])
+      setInput(''); setContact(null); setBlockReview(null); setBlockBusy(false)
+      setSendStatus(''); setUnreadCount(0)
     })
-    supabase.from('members').select('*').order('exp_tokens', { ascending: false })
-      .then(({ data }) => { if (data) setMembers(data) })
+    return () => { invalidate(); stop() }
   }, [])
+
+  useEffect(() => {
+    if (retired) return
+    const controller = new AbortController()
+    directoryRequest.current = controller
+    const generation = authorityEpoch.current
+    const current = () => directoryRequest.current === controller && !controller.signal.aborted && generation === authorityEpoch.current
+    setMembers([]); setDirectoryStatus('loading')
+    // Bound account lookup, transport and parsing together. Retire this attempt
+    // before aborting so a delayed response cannot replace an error or a retry.
+    const timer = window.setTimeout(() => {
+      if (!current()) return
+      directoryRequest.current = null; controller.abort()
+      setDirectoryStatus('unavailable')
+    }, 10_000)
+
+    void (async () => {
+      try {
+        const session = await getMemberSession()
+        if (!current()) return
+        if (!session) { setDirectoryStatus('unavailable'); router.push('/'); return }
+        const sessionMember = normalizeMember(session.member as MemberRecord)
+        setCurrentMember(sessionMember)
+        const headers = new Headers(await getAuthHeaders())
+        if (!current()) return
+        headers.set(DIRECTORY_EXPECTED_OWNER_HEADER, sessionMember.id)
+        const response = await fetch('/api/members/discover', {
+          headers, cache: 'no-store', credentials: 'same-origin', redirect: 'error', signal: controller.signal,
+        })
+        if (!current()) return
+        if (!response.ok) { setDirectoryStatus(response.status === 403 ? 'forbidden' : 'unavailable'); return }
+        if (response.headers.get(DIRECTORY_OWNER_HEADER) !== sessionMember.id.toLowerCase()) throw Error('Directory account was not confirmed')
+        const profiles = parsePublishedDirectory(await response.json())
+        if (!current()) return
+        if (!profiles) throw Error('Published directory was not confirmed')
+        setMembers(profiles.map(profile => ({ ...profile, bio: profile.bio ?? undefined, discipline: profile.discipline ?? undefined,
+          project_description: profile.project_description ?? undefined, seeking: profile.seeking ?? undefined, philosophy: profile.philosophy ?? undefined })))
+        setDirectoryStatus('ready')
+      } catch {
+        if (current()) setDirectoryStatus('unavailable')
+      } finally {
+        window.clearTimeout(timer)
+        if (directoryRequest.current === controller) directoryRequest.current = null
+      }
+    })()
+
+    return () => {
+      window.clearTimeout(timer)
+      if (directoryRequest.current === controller) directoryRequest.current = null
+      controller.abort()
+    }
+  }, [router, retired, directoryAttempt])
+
+  function retryDirectory() {
+    if (retired || directoryRequest.current || directoryStatus === 'loading') return
+    focusDirectoryResult.current = true
+    setMembers([]); setDirectoryStatus('loading'); setDirectoryAttempt(attempt => attempt + 1)
+  }
+
+  useEffect(() => {
+    if (directoryStatus !== 'ready' || !focusDirectoryResult.current) return
+    focusDirectoryResult.current = false
+    directoryResult.current?.focus({ preventScroll: true })
+  }, [directoryStatus])
 
   // Load unread count
   useEffect(() => {
-    if (!currentMember) return
-    supabase.from('direct_messages')
-      .select('id', { count: 'exact' })
-      .eq('recipient_id', currentMember.id)
-      .eq('read', false)
-      .then(({ count }) => setUnreadCount(count ?? 0))
-  }, [currentMember, messages])
+    if (!currentMemberId) return
+    let cancelled = false
+
+    dmHeaders().then(headers => {
+      if (cancelled) throw new Error('retired')
+      return fetch('/api/message', { headers, cache: 'no-store' })
+    })
+      .then(async res => {
+        if (!res.ok) throw new Error(await res.text())
+        return res.json() as Promise<{ unreadCount?: number }>
+      })
+      .then(data => {
+        if (!cancelled) setUnreadCount(data.unreadCount ?? 0)
+      })
+      .catch(error => {
+        if (!cancelled) console.error('unread count failed:', error)
+      })
+
+    return () => { cancelled = true }
+  }, [currentMemberId, dmHeaders, messages])
+
+  const loadMessages = useCallback(async () => {
+    const scope = chatScope.current
+    if (!scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.changingBlock) return
+    const generation = authorityEpoch.current
+    const revision = ++scope.readRevision
+    const current = () => generation === authorityEpoch.current && chatScope.current === scope &&
+      revision === scope.readRevision && document.visibilityState === 'visible'
+    if (!current()) return
+
+    try {
+      const headers = await dmHeaders()
+      if (!current()) return
+      const signal = AbortSignal.timeout(8_000)
+      const res = await fetch(`/api/message?peerId=${encodeURIComponent(scope.peerId)}`, {
+        headers, cache: 'no-store', signal,
+      })
+      if (!current()) return
+      const data = res.ok ? parseDirectMessageThread(await res.json(), currentMemberId, scope.peerId) : null
+      if (!current()) return
+      if (!data || !data.contact.canMessage) {
+        setContact(data?.contact ?? null)
+        setMessages([])
+        if (data || [401, 403, 404].includes(res.status)) setInput('')
+        setShowThinkerPicker(false)
+        return
+      }
+
+      const ids = data.messages.filter(message => message.read === false &&
+        message.sender_id === scope.peerId && message.recipient_id === currentMemberId).map(message => message.id)
+      headers.set('Content-Type', 'application/json')
+      for (let index = 0; index < ids.length; index += DIRECT_MESSAGE_ACK_LIMIT) {
+        if (!current()) return
+        const reply = await fetch('/api/message', {
+          method: 'PATCH', headers, signal,
+          body: JSON.stringify({ peerId: scope.peerId, messageIds: ids.slice(index, index + DIRECT_MESSAGE_ACK_LIMIT) }),
+        }).catch(() => null)
+        if (reply?.status === 401 || reply?.status === 403) {
+          if (current()) { setContact(null); setMessages([]); setInput('') }
+          return
+        }
+        if (!reply?.ok) break
+      }
+      if (current()) { setContact(data.contact); setMessages(data.messages) }
+    } catch {
+      if (current()) { setContact(null); setMessages([]) }
+    }
+  }, [currentMemberId, dmHeaders, selectedMemberId])
 
   useEffect(() => {
-    if (!selectedMember || !currentMember) return
-    loadMessages()
-    const ch = supabase.channel(`dm-${currentMember.id}-${selectedMember.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, () => loadMessages())
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [selectedMember, currentMember])
+    if (view !== 'chat' || !selectedMemberId || !currentMemberId) return
+    const refresh = () => void loadMessages()
+    const first = window.setTimeout(refresh, 0)
+    const interval = window.setInterval(refresh, 10_000)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      window.clearTimeout(first)
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [currentMemberId, selectedMemberId, loadMessages, view])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function loadMessages() {
-    if (!selectedMember || !currentMember) return
-    const { data, error } = await supabase.from('direct_messages')
-      .select('*, sender:sender_id(id,display_name,wallet_address)')
-      .or(`and(sender_id.eq.${currentMember.id},recipient_id.eq.${selectedMember.id}),and(sender_id.eq.${selectedMember.id},recipient_id.eq.${currentMember.id})`)
-      .order('created_at', { ascending: true })
-    if (error) console.error('loadMessages error:', error)
-    if (data) setMessages(data as any)
-    await supabase.from('direct_messages').update({ read: true })
-      .eq('recipient_id', currentMember.id)
-      .eq('sender_id', selectedMember.id)
-      .eq('read', false)
-  }
-
-  async function sendMessage(text?: string) {
-    const msg = (text ?? input).trim()
-    if (!msg || !selectedMember || !currentMember || sending) return
-    setInput(''); setSending(true)
-    const res = await fetch('/api/message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ senderId: currentMember.id, recipientId: selectedMember.id, content: msg })
-    })
-    if (!res.ok) console.error('sendMessage failed:', await res.text())
-    // Fire-and-forget email notification
-    fetch('/api/notify/dm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipientId: selectedMember.id,
-        senderName: currentMember.display_name || 'An Explorer',
-        preview: msg,
-      }),
-    }).catch(() => {})
-    setSending(false)
-    await loadMessages()
-    inputRef.current?.focus()
-  }
-
-  async function inviteThinker(thinkerId: string) {
-    setShowThinkerPicker(false)
-    setThinkerLoading(true)
-    const thinker = THINKERS.find(t => t.id === thinkerId)
-    if (!thinker || !selectedMember || !currentMember) return
-
-    const recentMessages = messages.slice(-6).map(m => {
-      const name = m.sender_id === currentMember.id ? currentMember.display_name : selectedMember.display_name
-      return `${name}: ${m.content}`
-    }).join('\n')
-
-    const res = await fetch('/api/thinker', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        thinkerId,
-        message: `You have been invited into a private conversation between ${currentMember.display_name} and ${selectedMember.display_name}. Here are the recent messages:\n\n${recentMessages}\n\nRespond as ${thinker.name} — in character, direct, under 100 words. Address both people.`,
-        history: [],
-        walletMemberId: currentMember.id,
-      }),
-    })
-
-    let fullResponse = ''
-    const reader = res.body!.getReader()
-    const dec = new TextDecoder()
-    let buf = ''
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buf += dec.decode(value, { stream: true })
-      const lines = buf.split('\n')
-      buf = lines.pop() ?? ''
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const payload = line.slice(6).trim()
-        if (payload === '[DONE]') continue
-        try {
-          const evt = JSON.parse(payload)
-          if (evt.delta) fullResponse += evt.delta
-          if (evt.text) fullResponse += evt.text
-        } catch {}
+  async function sendMessage() {
+    const msg = input.trim()
+    const scope = chatScope.current
+    if (!msg || !canCompose || !scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.sending || scope.changingBlock) return
+    const generation = authorityEpoch.current
+    const current = () => generation === authorityEpoch.current && chatScope.current === scope
+    scope.sending = true
+    setSending(true)
+    setSendStatus('')
+    try {
+      const headers = await dmHeaders(true)
+      if (!current()) return
+      const res = await fetch('/api/message', {
+        method: 'POST', headers, signal: AbortSignal.timeout(8_000),
+        body: JSON.stringify({ recipientId: scope.peerId, content: msg }),
+      })
+      if (!current()) return
+      if (res.status === 403) {
+        setMessages([]); setContact(null); setInput('')
+        setSendStatus('This conversation is unavailable.')
+        await loadMessages()
+        return
+      }
+      if (!res.ok) throw new Error('Message not confirmed')
+      setInput(draft => draft.trim() === msg ? '' : draft)
+      await loadMessages()
+    } catch {
+      if (current()) setSendStatus('Delivery could not be confirmed. Check the conversation before sending again.')
+    } finally {
+      scope.sending = false
+      if (current()) {
+        setSending(false)
+        inputRef.current?.focus()
       }
     }
-
-    if (fullResponse) {
-      await fetch('/api/message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: currentMember.id,
-          recipientId: selectedMember.id,
-          content: `${thinker.symbol} ${thinker.name.toUpperCase()} SPEAKS: ${fullResponse.replace(/^\[?\w[\w-]*\]?:\s*/i, '')}`
-        })
-      })
-      await loadMessages()
-    }
-    setThinkerLoading(false)
   }
 
-  async function findMatch() {
-    if (!matchQuery.trim()) return
-    setMatchLoading(true); setMatchResult('')
-    const memberProfiles = members.filter(m => m.id !== currentMember?.id)
-      .map(m => `${m.display_name} | ${m.discipline || 'Explorer'} | Skills: ${(m.skills || []).join(', ')} | Project: ${m.project_description || 'n/a'} | Seeking: ${m.seeking || 'n/a'}`)
-      .join('\n')
-    const res = await fetch('/api/match', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: matchQuery, memberProfiles, seekerName: currentMember?.display_name, walletMemberId: currentMember?.id, seekerProfile: currentMember })
-    })
-    const data = await res.json()
-    setMatchResult(data.result || 'No matches found.')
-    setMatchLoading(false)
+  async function confirmBlock() {
+    const scope = chatScope.current
+    const checked = blockReview
+    if (!checked || !scope || scope.peerId !== selectedMemberId || !currentMemberId || scope.changingBlock || scope.sending) return
+    const generation = authorityEpoch.current
+    const current = () => generation === authorityEpoch.current && chatScope.current === scope
+    scope.changingBlock = true
+    scope.readRevision++
+    setBlockBusy(true); setBlockReview(null); setContact(null); setMessages([]); setInput('')
+    setShowThinkerPicker(false); setSendStatus('Checking the reviewed block change…')
+    try {
+      const base = { requestId: crypto.randomUUID(), expectedRevision: checked.revision }
+      if (checked.blockedByMe && !checked.blockId) throw Error('Block reference missing')
+      const input: DirectMessageBlockChange = checked.blockedByMe && checked.blockId
+        ? { ...base, blocked: false, blockId: checked.blockId }
+        : { ...base, blocked: true, peerId: scope.peerId }
+      const headers = await dmHeaders(true)
+      if (!current()) return
+      const receipt = await sendBlockChange(input, headers)
+      if (!current()) return
+      setSendStatus(receipt ? receipt.blockedByMe ? 'Direct messages blocked.' : 'Your block was removed.'
+        : 'The change was not confirmed. Check the current conversation before trying again.')
+    } catch {
+      if (current()) setSendStatus('The change could not be confirmed. Check the current conversation before trying again.')
+    } finally {
+      scope.changingBlock = false
+      if (current()) { setBlockBusy(false); await loadMessages() }
+    }
   }
 
-  async function saveProfile() {
-    if (!currentMember) return
-    setProfileSaving(true)
-    const res = await fetch('/api/members/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        memberId: currentMember.id,
-        display_name: profileDraft.discipline ? undefined : undefined, // preserve existing
-        bio: profileDraft.bio || null,
-        discipline: profileDraft.discipline || null,
-        skills: profileDraft.skills,
-        project_description: profileDraft.project_description || null,
-        seeking: profileDraft.seeking || null,
-        philosophy: profileDraft.philosophy || null,
-      }),
-    })
-    if (res.ok) {
-      setProfileSaved(true)
-      setTimeout(() => setProfileSaved(false), 2000)
-      // Refresh member data
-      const { data } = await supabase.from('members').select('*').eq('id', currentMember.id).single()
-      if (data) setCurrentMember(data as any)
-    }
-    setProfileSaving(false)
+  function focusChat(peerId: string | null) {
+    if ((chatScope.current?.peerId ?? null) === peerId) return
+    chatScope.current = peerId ? { peerId, readRevision: 0, sending: false, changingBlock: false } : null
+    setContact(null)
+    setBlockReview(null)
+    setBlockBusy(false)
+    setMessages([])
+    setInput('')
+    setSending(false)
+    setSendStatus('')
+    setShowThinkerPicker(false)
+  }
+
+  function changeView(next: typeof view) {
+    focusChat(next === 'chat' ? selectedMemberId : null)
+    setView(next)
   }
 
   function openChat(member: Member) {
+    focusChat(member.id)
     setSelectedMember(member)
     setView('chat')
-    setMessages([])
   }
 
-  function formatTime(ts: string) {
+  function formatTime(ts: string | null) {
+    if (ts === null) return ''
     const d = new Date(ts)
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
+
+  if (retired) return <main style={{ padding: '32px', color: ivory, background: bg }}><h1>Sign-in changed</h1><p>The previous member view is closed.</p><Link href="/members" style={{ display: 'inline-flex', minHeight: '44px', alignItems: 'center', color: gold }}>Reload the selected account</Link></main>
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: bg, fontFamily: 'Cormorant Garamond, serif', color: ivory, overflow: 'hidden' }}>
 
       {/* TOPBAR */}
-      <div style={{ height: '52px', background: bgCard, borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
+      <div className={styles.topBar} style={{ background: bgCard, borderBottom: `1px solid ${goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '13px', letterSpacing: '0.25em', color: gold }}>SOCIETY OF EXPLORERS</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <nav className={styles.topNav} aria-label="Member views">
           {(['directory', 'chat', 'match', 'profile'] as const).map(v => (
-            <button key={v} onClick={() => setView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
+            <button key={v} aria-pressed={view === v} onClick={() => changeView(v)} style={{ background: view === v ? `rgba(201,168,76,0.1)` : 'none', border: `1px solid ${view === v ? gold : goldBorder}`, color: view === v ? gold : muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px', position: 'relative' }}>
               {v === 'chat' && unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#c05050', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', fontSize: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cinzel, serif' }}>{unreadCount}</span>
               )}
-              {v.toUpperCase()}
+              {v === 'match' ? 'FIND PEOPLE' : v.toUpperCase()}
             </button>
           ))}
           <button onClick={() => router.push('/salon')} style={{ background: 'none', border: `1px solid ${goldBorder}`, color: muted, fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', padding: '4px 14px', cursor: 'pointer', borderRadius: '2px' }}>← SALON</button>
-        </div>
+        </nav>
       </div>
 
       {/* BODY */}
@@ -310,10 +424,13 @@ export default function MembersPage() {
         {view === 'directory' && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '2rem' }}>
-                {members.length} MEMBERS
+              <div ref={directoryResult} tabIndex={-1} role="status" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '2rem' }}>
+                {directoryStatus === 'ready' ? `${members.length} PUBLISHED PROFILES` : 'MEMBER DIRECTORY'}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1px', background: goldBorder }}>
+              {directoryStatus !== 'ready' && <p role={directoryStatus === 'loading' ? 'status' : 'alert'}>{directoryStatus === 'loading' ? 'Loading published profiles…' : directoryStatus === 'forbidden' ? 'Join this community to view its member directory.' : 'The member directory could not be checked. Please try again.'}</p>}
+              {(directoryStatus === 'unavailable' || directoryStatus === 'forbidden') && <button type="button" className={styles.safetyButton} onClick={retryDirectory}>Try directory again</button>}
+              {directoryStatus === 'ready' && members.length === 0 && <p role="status">No published profiles are available in this directory yet.</p>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1px', background: goldBorder }}>
                 {members.map(m => (
                   <div key={m.id} style={{ background: bgCard, padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
@@ -323,10 +440,9 @@ export default function MembersPage() {
                         </div>
                         <div>
                           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.1em', color: gold, marginBottom: '2px' }}>{displayName(m)}</div>
-                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted }}>{tierLabel(m.tier)} {m.discipline ? `· ${m.discipline}` : ''}</div>
+                          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted }}>{m.discipline || 'Published profile'}</div>
                         </div>
                       </div>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: goldDim }}>{m.exp_tokens} ⬡</div>
                     </div>
                     {m.bio && <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6, marginBottom: '0.75rem', fontStyle: 'italic' }}>{m.bio}</p>}
                     {m.project_description && <p style={{ fontSize: '13px', color: ivory, lineHeight: 1.5, marginBottom: '0.75rem' }}>{m.project_description}</p>}
@@ -337,6 +453,7 @@ export default function MembersPage() {
                         ))}
                       </div>
                     )}
+                    <PublishedProfileLink profileId={m.id} />
                     {m.id !== currentMember?.id && (
                       <button onClick={() => openChat(m)} style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, background: 'none', border: `1px solid ${goldBorder}`, padding: '6px 14px', cursor: 'pointer', width: '100%' }}>
                         SEND MESSAGE
@@ -349,30 +466,36 @@ export default function MembersPage() {
           </div>
         )}
 
+        {view === 'blocked' && currentMemberId && (
+          <DirectMessageBlocks headersFor={dmHeaders} onBack={() => changeView('chat')} />
+        )}
+
         {/* CHAT VIEW */}
         {view === 'chat' && (
-          <>
+          <div className={styles.chatLayout} data-open={Boolean(selectedMember)}>
             {/* Sidebar — member list */}
-            <div style={{ width: '260px', background: bgCard, borderRight: `1px solid ${goldBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+            <div className={styles.chatRail} style={{ background: bgCard, borderRight: `1px solid ${goldBorder}`, flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
               <div style={{ padding: '12px 16px', borderBottom: `1px solid ${goldBorder}` }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: goldDim }}>CONVERSATIONS</div>
+                {currentMemberId && <button type="button" className={styles.safetyButton}
+                  onClick={() => changeView('blocked')}>Blocked members</button>}
               </div>
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {members.filter(m => m.id !== currentMember?.id).map(m => (
-                  <div
+                  <button type="button" className={styles.peerChoice} aria-pressed={selectedMember?.id === m.id}
                     key={m.id}
                     onClick={() => openChat(m)}
                     style={{ padding: '14px 16px', cursor: 'pointer', borderLeft: `2px solid ${selectedMember?.id === m.id ? gold : 'transparent'}`, background: selectedMember?.id === m.id ? 'rgba(201,168,76,0.06)' : 'transparent', borderBottom: `1px solid ${goldBorder}` }}
                   >
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: selectedMember?.id === m.id ? gold : ivory }}>{displayName(m)}</div>
-                    <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{tierLabel(m.tier)}</div>
-                  </div>
+                    <span style={{ display: 'block', fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.1em', color: selectedMember?.id === m.id ? gold : ivory }}>{displayName(m)}</span>
+                    <span style={{ display: 'block', fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>Published profile</span>
+                  </button>
                 ))}
               </div>
             </div>
 
             {/* Chat area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: bg }}>
+            <div className={styles.chatPanel} style={{ flex: 1, flexDirection: 'column', overflow: 'hidden', background: bg }}>
               {!selectedMember ? (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: goldDim }}>⬡</div>
@@ -381,26 +504,37 @@ export default function MembersPage() {
               ) : (
                 <>
                   {/* Chat header */}
-                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: bgCard, flexShrink: 0 }}>
+                  <button type="button" className={`${styles.safetyButton} ${styles.backToContacts}`}
+                    onClick={() => { focusChat(null); setSelectedMember(null) }}>Back to conversations</button>
+                  <div style={{ padding: '14px 20px', borderBottom: `1px solid ${goldBorder}`, display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'space-between', alignItems: 'center', background: bgCard, flexShrink: 0 }}>
                     <div>
                       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold }}>{displayName(selectedMember)}</div>
-                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{tierLabel(selectedMember.tier)}{selectedMember.discipline ? ` · ${selectedMember.discipline}` : ''}</div>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{selectedMember.discipline || 'Published profile'}</div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                      {contact && <button type="button" className={styles.safetyButton} disabled={sending || blockBusy}
+                        onClick={() => { setShowThinkerPicker(false); setBlockReview(contact) }}>{contact.blockedByMe ? 'Unblock member' : 'Block member'}</button>}
                       <div style={{ position: 'relative' }}>
                         <button
                           onClick={() => setShowThinkerPicker(v => !v)}
-                          disabled={thinkerLoading}
+                          disabled={sending || !canCompose}
+                          aria-expanded={showThinkerPicker}
                           style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: gold, background: 'rgba(201,168,76,0.08)', border: `1px solid ${goldBorder}`, padding: '6px 14px', cursor: 'pointer' }}
                         >
-                          {thinkerLoading ? 'THINKING...' : '⬡ INVITE A THINKER'}
+                          ⬡ CHOOSE A THINKER QUESTION
                         </button>
                         {showThinkerPicker && (
                           <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: bgElevated, border: `1px solid ${goldBorder}`, zIndex: 100, minWidth: '180px' }}>
+                            <p style={{ padding: '0 10px', fontSize: '13px', color: muted }}>Add a prepared question to your draft.</p>
                             {THINKERS.map(t => (
                               <button
                                 key={t.id}
-                                onClick={() => inviteThinker(t.id)}
+                                aria-label={`Add ${t.name}-inspired question to draft`}
+                                onClick={() => {
+                                  setInput(draft => draft.trim() ? `${draft.trim()} ${t.question}` : t.question)
+                                  setShowThinkerPicker(false)
+                                  inputRef.current?.focus()
+                                }}
                                 style={{ display: 'block', width: '100%', padding: '10px 16px', textAlign: 'left', fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.1em', color: ivory, background: 'none', border: 'none', borderBottom: `1px solid ${goldBorder}`, cursor: 'pointer' }}
                               >
                                 {t.symbol} {t.name.toUpperCase()}
@@ -412,13 +546,25 @@ export default function MembersPage() {
                     </div>
                   </div>
 
+                  {blockReview && <section className={styles.review} aria-label="Review direct-message block">
+                    <p>{blockReview.blockedByMe ? `Remove your block for ${displayName(selectedMember)}?`
+                      : `Block ${displayName(selectedMember)}? This hides the direct conversation and their Circle posts and stops direct replies between you.`}</p>
+                    <button type="button" className={styles.safetyButton} onClick={() => void confirmBlock()}>
+                      {blockReview.blockedByMe ? 'Confirm unblock' : 'Confirm block'}
+                    </button>
+                    <button type="button" className={styles.safetyButton} onClick={() => setBlockReview(null)}>Cancel</button>
+                  </section>}
+
                   {/* Messages */}
                   <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {messages.length === 0 && (
                       <div style={{ textAlign: 'center', paddingTop: '3rem' }}>
                         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: goldDim, marginBottom: '1rem' }}>⬡</div>
                         <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '14px', color: muted, fontStyle: 'italic' }}>
-                          Begin the conversation. Invite a thinker to join if you wish.
+                          {contact?.blockedByMe ? 'You blocked direct messages with this member.'
+                            : contact?.canMessage === false ? 'This conversation is unavailable.'
+                              : contact?.canMessage ? 'Begin the conversation. You can add a Thinker-inspired question to your draft.'
+                                : 'Current conversation access is being checked.'}
                         </div>
                       </div>
                     )}
@@ -452,22 +598,16 @@ export default function MembersPage() {
                   </div>
 
                   {/* Input */}
-                  <div style={{ padding: '14px 20px', borderTop: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+                  {sendStatus && <p role="status" style={{ margin: '8px 20px', color: ivory }}>{sendStatus}</p>}
+                  {canCompose && <div style={{ padding: '14px 20px', borderTop: `1px solid ${goldBorder}`, background: bgCard, display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
                     <input
                       ref={inputRef}
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                       placeholder={`Message ${displayName(selectedMember)}...`}
-                      style={{ flex: 1, background: bgElevated, border: `1px solid ${goldBorder}`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', borderRadius: '4px' }}
+                      style={{ flex: 1, minWidth: 0, background: bgElevated, border: `1px solid ${goldBorder}`, padding: '10px 14px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', borderRadius: '4px' }}
                     />
-                    <button
-                      onClick={() => setRecording(r => !r)}
-                      title="Voice mode — coming soon"
-                      style={{ background: recording ? 'rgba(201,168,76,0.15)' : 'none', border: `1px solid ${recording ? gold : goldBorder}`, color: recording ? gold : muted, padding: '10px 12px', cursor: 'pointer', borderRadius: '4px', fontSize: '14px' }}
-                    >
-                      🎙
-                    </button>
                     <button
                       onClick={() => sendMessage()}
                       disabled={sending || !input.trim()}
@@ -475,45 +615,18 @@ export default function MembersPage() {
                     >
                       SEND
                     </button>
-                  </div>
+                  </div>}
                 </>
               )}
             </div>
-          </>
+          </div>
         )}
 
-        {/* MATCH VIEW */}
+        {/* PUBLISHED PROFILE DISCOVERY */}
         {view === 'match' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '3rem 2rem' }}>
-            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '1rem' }}>AI MATCHMAKER</div>
-              <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', color: gold, marginBottom: '2rem' }}>FIND YOUR COLLABORATOR</h2>
-              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: muted, lineHeight: 1.8, marginBottom: '2rem', fontStyle: 'italic' }}>
-                Describe what you&apos;re building or what you&apos;re looking for. The AI will scan all member profiles and find your most aligned collaborator.
-              </p>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '2rem' }}>
-                <input
-                  value={matchQuery}
-                  onChange={e => setMatchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && findMatch()}
-                  placeholder="e.g. Looking for a blockchain developer who cares about philosophy..."
-                  style={{ flex: 1, background: bgCard, border: `1px solid ${goldBorder}`, padding: '12px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none' }}
-                />
-                <button
-                  onClick={findMatch}
-                  disabled={matchLoading}
-                  style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: '#000', background: gold, border: 'none', padding: '12px 20px', cursor: 'pointer', opacity: matchLoading ? 0.6 : 1 }}
-                >
-                  {matchLoading ? 'SCANNING...' : 'FIND MATCH'}
-                </button>
-              </div>
-              {matchResult && (
-                <div style={{ background: bgCard, border: `1px solid ${goldBorder}`, padding: '2rem', borderLeft: `2px solid ${gold}` }}>
-                  <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, marginBottom: '1rem', opacity: 0.7 }}>YOUR MATCH</div>
-                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: ivory, lineHeight: 1.9 }}>{matchResult}</div>
-                </div>
-              )}
-            </div>
+          <div style={{ flex: 1, overflowY: 'auto', minWidth: 0 }}>
+            {currentMemberId && <MemberFinder key={currentMemberId} ownerId={currentMemberId} onOpenConversation={member =>
+              openChat({ id: member.id, display_name: member.display_name, discipline: member.discipline ?? undefined, skills: member.skills })} />}
           </div>
         )}
       {/* PROFILE VIEW */}
@@ -522,37 +635,8 @@ export default function MembersPage() {
             <div style={{ maxWidth: '700px', margin: '0 auto' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: goldDim, marginBottom: '1rem' }}>YOUR IDENTITY</div>
               <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', color: gold, marginBottom: '0.5rem' }}>EDIT YOUR PROFILE</h2>
-              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem', color: muted, fontStyle: 'italic', lineHeight: 1.7, marginBottom: '2.5rem' }}>
-                Your profile is only visible to the Oracle and to other members. The more you reveal, the more profound the connections the Oracle can find.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {[
-                  { key: 'discipline', label: 'YOUR FIELD', placeholder: 'e.g. Blockchain architect, philosopher, builder, artist...' },
-                  { key: 'bio', label: 'WHO YOU ARE', placeholder: 'A few sentences about yourself — what drives you, what you believe, where you came from...' },
-                  { key: 'project_description', label: 'WHAT YOU ARE BUILDING', placeholder: 'Describe your current project or mission...' },
-                  { key: 'seeking', label: 'WHAT YOU SEEK', placeholder: 'What kind of collaborator, conversation, or connection are you looking for?' },
-                  { key: 'philosophy', label: 'YOUR PHILOSOPHY', placeholder: 'What do you believe about existence, technology, beauty, truth? What books changed you? What questions haunt you?' },
-                  { key: 'skills', label: 'YOUR SKILLS', placeholder: 'Comma-separated: e.g. Solidity, product design, Heidegger, go-to-market, writing...' },
-                ].map(field => (
-                  <div key={field.key}>
-                    <label style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, opacity: 0.7, display: 'block', marginBottom: '0.5rem' }}>{field.label}</label>
-                    <textarea
-                      value={(profileDraft as any)[field.key]}
-                      onChange={e => setProfileDraft(d => ({ ...d, [field.key]: e.target.value }))}
-                      rows={field.key === 'philosophy' ? 4 : 2}
-                      placeholder={field.placeholder}
-                      style={{ width: '100%', background: bgCard, border: '1px solid ' + goldBorder, padding: '0.9rem 1rem', fontFamily: 'Cormorant Garamond, serif', fontSize: '15px', color: ivory, outline: 'none', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box' }}
-                    />
-                  </div>
-                ))}
-                <button
-                  onClick={saveProfile}
-                  disabled={profileSaving}
-                  style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.25em', color: '#000', background: profileSaved ? '#4a7a4a' : (profileSaving ? gold + '88' : gold), border: 'none', padding: '1rem 2rem', cursor: profileSaving ? 'not-allowed' : 'pointer', alignSelf: 'flex-start' }}
-                >
-                  {profileSaved ? '✓ SAVED' : profileSaving ? 'SAVING...' : 'SAVE PROFILE'}
-                </button>
-              </div>
+              <p style={{ color: ivory, lineHeight: 1.7 }}>Choose which profile fields you publish. Your profile starts private.</p>
+              <Link href="/account/profile" style={{ display: 'inline-flex', minHeight: '44px', alignItems: 'center', color: gold, padding: '8px 14px', border: `1px solid ${goldBorder}` }}>Open profile settings</Link>
             </div>
           </div>
         )}

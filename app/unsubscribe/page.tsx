@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 export default async function UnsubscribePage({
   searchParams,
@@ -16,6 +11,7 @@ export default async function UnsubscribePage({
   let status: 'ok' | 'invalid' | 'already' = 'invalid';
 
   if (token && /^[0-9a-f-]{36}$/i.test(token)) {
+    const supabase = getSupabaseAdmin();
     const { data } = await supabase
       .from('daily_email_subscriptions')
       .select('id, unsubscribed_at')

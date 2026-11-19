@@ -1,0 +1,38 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T14:13:06.299048+00:00",
+  "parentCommit": "5f5dcfd7873f4353213c0bb0bfd16623fc5386b3",
+  "productionCleared": false,
+  "results": {
+    "orderedSqlFiles": 52,
+    "preCutoverTablesVerified": 20,
+    "checks": [
+      "The pre-cutover archive and role export restore into a separate cluster and match all 20 tables.",
+      "The restored pre-cutover fixture reproduces browser access to private answers, messages and transcripts.",
+      "The complete ordered cutover runs on the restored copy and preserves every pre-cutover row in its original columns.",
+      "The ordinary app can post as another member. Only an owner processing the exact request can erase, and linked evidence needs separate approval.",
+      "Changed evidence, a new dependency or an inactive immutability guard invalidates the reviewed scope.",
+      "A forced late receipt failure rolls back post, moderation, AI consent and temporary authorization changes.",
+      "A new report waits on the independent erasure transaction, then cannot recreate a copy after commit.",
+      "The archive preserves other replies and the legacy salon. It keeps a neutral withdrawn anchor, clears linked text and rejects stale review while preserving the spent AI attempt.",
+      "A separate restore keeps the scrubbed thread and both receipts, including an exact retry of the owner operation."
+    ],
+    "priorWebBuildInputsUnchanged": 1083
+  },
+  "scope": "Local restored PostgreSQL 17 with synthetic Circle posts, review copies, and a separate restored archive. Archive, thread, moderation and replay checks use the current application SQL. Hosted and device acceptance remain pending.",
+  "remaining": [
+    "Older salon posts, Circle hosting, direct messages and published profile",
+    "Provider sessions, storage, other data and retention exceptions",
+    "Owner retention review, completion notice and production restore verifier"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "65e6f47cc9757e51f904c055ce728db44513ed3be2b19a7f771e02189e400bfb",
+    "docs/integration/account-deletion.md": "b9a815fc746058462788ceb09cdcc2503d2cf8a0f1893055064bf0b1fbfa1c75",
+    "docs/sql/account-erasure-circle-posts-apply.sql": "422ad3d04dcec0acc2a100c2cd245e0df116c0d963963ebaaacc1160cad331ea",
+    "verification/web/scripts/rehearse-circle-post-erasure.py": "0983648de5dc70f9a9d28de8ae238606f632e7af9a0bfc2df4e071b12be3379b"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-account-erasure-circle-posts",
+  "evidenceSha256": {
+    "account-erasure-circle-posts.json": "8d1d0dc28c440a4676eb48b39872f8a6b20fc677354915eeed6b9e68676e5bd4"
+  }
+}

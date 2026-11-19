@@ -1,0 +1,35 @@
+{
+  "id": "evt_test_fixture_project_pledge",
+  "object": "event",
+  "api_version": "2026-03-25.dahlia",
+  "created": 1792810800,
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": { "id": null, "idempotency_key": null },
+  "type": "checkout.session.completed",
+  "data": {
+    "object": {
+      "id": "cs_test_fixture_pledge",
+      "object": "checkout.session",
+      "amount_total": 5000,
+      "currency": "usd",
+      "customer": null,
+      "customer_details": { "email": "grace@example.test" },
+      "customer_email": "grace@example.test",
+      "livemode": false,
+      "metadata": {
+        "type": "project_pledge",
+        "pledge_type": "project",
+        "projectId": "22222222-2222-4222-8222-222222222222",
+        "project_id": "22222222-2222-4222-8222-222222222222",
+        "tier": "Supporter",
+        "tier_label": "Supporter",
+        "amount": "50",
+        "amount_cents": "5000"
+      },
+      "mode": "payment",
+      "payment_status": "paid",
+      "status": "complete"
+    }
+  }
+}

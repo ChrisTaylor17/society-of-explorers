@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.native-author-consent.json",
+  "include": [
+    "../native/App.tsx",
+    "../native/src/circles/installed-member.ts",
+    "../native/src/circles/android-member.ts",
+    "../native/src/auth/installed-owned-account.ts",
+    "../native/src/auth/android-owned-account.ts",
+    "native-author-consent-types.d.ts",
+    "native-installed-account-types.d.ts"
+  ],
+  "exclude": []
+}

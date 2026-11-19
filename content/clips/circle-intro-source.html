@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>SoE original Circle introduction source</title><style>body{margin:0;background:#101d1a}canvas{display:block}</style><canvas id="intro" width="720" height="404" aria-label="Original SoE Circle introduction"></canvas><script>
+const slides=[["How a Circle works","Read. Reflect. Share.","A good conversation starts with a good question."],["Choose a Circle","Find a time and place that work for you.","Read the source before your meeting."],["Bring your perspective","Christian and conservative roots.","Every faith and view is welcome."],["Make room for disagreement","Challenge an idea.","Treat the person with respect."],["Share with care","Keep other members’ words private.","Ask before recording."],["Start with the reading","Find a Circle. Read.","Join the conversation."]];
+const canvas=document.getElementById('intro'),ctx=canvas.getContext('2d');
+function draw(index){
+ ctx.fillStyle='#101d1a';ctx.fillRect(0,0,720,404);
+ ctx.fillStyle='#c9a84c';ctx.fillRect(44,40,632,3);
+ ctx.font='18px Arial';ctx.fillText('SOCIETY OF EXPLORERS',44,78);
+ ctx.fillStyle='#f5f0e8';
+ const title=slides[index][0];let size=42;while(size>28){ctx.font=size+'px Georgia';if(ctx.measureText(title).width<=632)break;size--;}
+ ctx.fillText(title,44,151);
+ ctx.font='27px Arial';ctx.fillText(slides[index][1],44,219);ctx.fillText(slides[index][2],44,265);
+ ctx.fillStyle='#b9c9bd';ctx.font='18px Arial';ctx.fillText('READ. REFLECT. SHARE.',44,352);
+ ctx.fillStyle='#c9a84c';for(let i=0;i<6;i++){ctx.globalAlpha=i===index?1:.25;ctx.fillRect(532+i*24,340,16,4);}ctx.globalAlpha=1;
+}
+draw(0);
+window.recordIntro=async()=>{
+ const choices=['video/mp4;codecs=avc1.42001E','video/webm;codecs=vp8','video/webm;codecs=vp9'];
+ const mime=choices.find(type=>MediaRecorder.isTypeSupported(type));if(!mime)throw Error('No supported local video encoder');
+ const stream=canvas.captureStream(0);if(stream.getAudioTracks().length)throw Error('Unexpected audio input');
+ const recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:500000}),chunks=[],frames=[];
+ const stopped=new Promise((resolve,reject)=>{recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};recorder.onstop=resolve;recorder.onerror=e=>reject(Error('Local recording failed'));});
+ let start=performance.now(),last=-1;
+ recorder.start();
+ const render=()=>{const index=Math.min(5,Math.floor((performance.now()-start)/4000));draw(index);stream.getVideoTracks()[0].requestFrame();if(index!==last){frames.push(canvas.toDataURL('image/png'));last=index;}};
+ render();const timer=setInterval(render,80);await new Promise(resolve=>setTimeout(resolve,24000));clearInterval(timer);recorder.stop();await stopped;stream.getTracks().forEach(track=>track.stop());
+ const blob=new Blob(chunks,{type:recorder.mimeType}),url=URL.createObjectURL(blob),video=document.createElement('video');video.muted=true;video.src=url;document.body.append(video);
+ await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=()=>reject(Error('Recorded clip cannot decode'));});
+ if(!Number.isFinite(video.duration)){video.currentTime=1e8;await new Promise(resolve=>video.onseeked=resolve);video.currentTime=0;}
+ await video.play();await new Promise(resolve=>setTimeout(resolve,250));
+ const decoded=video.captureStream(),metadata={durationMs:Math.round(video.duration*1000),width:video.videoWidth,height:video.videoHeight,audioTracks:decoded.getAudioTracks().length,videoTracks:decoded.getVideoTracks().length};
+ video.pause();decoded.getTracks().forEach(track=>track.stop());video.remove();URL.revokeObjectURL(url);
+ const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+ return {base64:btoa(binary),mime:recorder.mimeType,metadata,frames};
+};
+</script></html>

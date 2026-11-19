@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T08:48:30.415516+00:00",
+  "baseCommit": "1d05278b3358df197db6877a481948a02f436c6e",
+  "status": "LOCAL_EDGE_MEMBER_AUTHORITY_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "baseline": {
+    "description": "A rejected bearer plus a retained signed wallet reached the old handlers with synthetic identity and database fixtures.",
+    "statuses": {
+      "matching": 200,
+      "projectScaffolding": 400,
+      "podSync": 400,
+      "projectInvitation": 401
+    },
+    "meaning": "Matching succeeded. Project scaffolding and Pod sync reached payload validation. Invitation has a separate historical UUID validation issue."
+  },
+  "scope": "Four actual route handlers use a shared verifier with a four-column member lookup and an origin guard before authentication. The test confirms a valid selected wallet match and a valid bearer project scaffold, and checks the unauthorized Pod event stream.",
+  "checks": {
+    "focusedPassed": 169,
+    "groups": {
+      "edge-account-http-final.log": 97,
+      "edge-account-intent-final.log": 35,
+      "edge-account-s1-member-identity-final.log": 7,
+      "edge-account-s1c-edge-wallet-cookie-final.log": 14,
+      "edge-account-s3-siwe-nonce-final.log": 6,
+      "edge-account-s10-siwe-wallet-session-final.log": 10
+    },
+    "focusedLint": "passed",
+    "productionModeWebBuild": "passed",
+    "movementBoundaryStatic": "passed",
+    "compiledSiblingOrigin403": 4,
+    "compiledSameOrigin401": 8,
+    "compiledBookSalonOriginRegressions": 3
+  },
+  "existingStaticFailures": [
+    "DM route is signed-in, sender/read-scoped, lazy, and private",
+    "core thinker and Movement creator helpers use lazy Supabase admin clients"
+  ],
+  "existingStaticFailureEvidence": "The same two checks failed against the exact starting commit and final source. The affected matching and project scaffolding checks passed.",
+  "limits": "Identity and data verification used synthetic fixtures. Chromium sent real browser requests to the guarded compiled local routes. Real provider sign-in, successful project invitation, durable wallet-session revocation and hosted acceptance remain open.",
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "77d59ddf0ff272d819cbff2c36ec8e35dad625a7082573a3166a0da0f0e5fbbe",
+    "docs/integration/account-security-reconciliation.md": "6317f72f489daf0cba56377a27511adce3ef33c5811fe89c1b8eca798d36f334",
+    "app/api/match/route.ts": "384bbd0814a442875df91121cb95429d60ff4f574e114dde57e0a3f6a67d8366",
+    "app/api/projects/create/route.ts": "0b8aad29787990328ecca3ea7d5720dbc0da6ecb0c4ee246c0c9a090f7aa14df",
+    "app/api/projects/invite/route.ts": "29b7c4644315dfe65c2bb697a6b80d5b5e2b354239fa0be41ec8ffc2458ebb70",
+    "app/api/movement/pod/sync/route.ts": "327d531d3ba9e03d167bb3ffe29e45816f327ed3a37a0bc912ee3b27c3b7799f",
+    "lib/getAuthenticatedMember.ts": "528bf99cfd5a5683bf283ef8c8061111291592be33ccf5455b19a41579f28b3e",
+    "lib/auth/request.ts": "da0ca7be65c213401dc6ce95988548ec00be569b26983627c9f6f98090f21b7f",
+    "scripts/external-effect-lazy-clients-smoke.mjs": "0e592531e0467aa4b3196535b542fdf38604bdd77c1c5145844ec56b3b3bb4e7",
+    "scripts/movement-api-boundary-smoke.mjs": "64ea36f5201cee72196dbd91ae432c3b170f2e52feb74393953abea21de60586",
+    "tests/security/s1c-edge-wallet-cookie.test.ts": "944a25f367cda07dafa907733cbc7126e305d4df45cd45617d56a9b0d8333213",
+    "verification/web/tests/edge-member-authority.test.mjs": "23dd0021b2068440ec58414c11fb75312ad2d9bd3e9f6240546fc9df91b7da88",
+    "verification/web/scripts/browser-salon-origin.mjs": "d4aa6e7776454de5c10c54335d9080c8206a691d2cbc336e59dea8687c8b9943"
+  },
+  "proofs": [
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-before.log",
+      "sha256": "03a3e3a84e3e3ef0c26ead59d7d32536b05dd55e4efae61928b165f4ee7d6358"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-http-final.log",
+      "sha256": "b4dbe7a806844d176796392248b3932cf6700595900bad3e615ed020b21bc368"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-intent-final.log",
+      "sha256": "8317ddb842296ffb5629047c6fa03923ba4708e467f4c1b22fe8f29789a491ea"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-s1-member-identity-final.log",
+      "sha256": "4ac4ef0fb834f3ac163a41b1dfb8f4d783930f029bec75799cc3cfd44373bb87"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-s1c-edge-wallet-cookie-final.log",
+      "sha256": "1efefd1a1d3ba04beb0370520f5b2ae0a2a44ace605e19e09cb65966942da249"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-s3-siwe-nonce-final.log",
+      "sha256": "9b413259f33b8da7735a25ce780823bb069567a6a54f2d35f2e762ad912053e5"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-s10-siwe-wallet-session-final.log",
+      "sha256": "4ea1b6b9b91d91f400294706ca198690b804c64abb5d4107fdfebbe1069550b9"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-movement-api-boundary-smoke-final.log",
+      "sha256": "72ee7a28e2c83b3298c42a2b6a901d126ae91a48ded7f7506b108353096c04bb"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-external-effect-baseline.log",
+      "sha256": "b84d199d20c8a3a6a9c5c0cde5da0844cae83341c607838bd66aca2bfa219366"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-external-effect-lazy-clients-smoke-final.log",
+      "sha256": "b84d199d20c8a3a6a9c5c0cde5da0844cae83341c607838bd66aca2bfa219366"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/built-shell-edge-account-02-next-build.json",
+      "sha256": "8645ba7c31d336b8b0206b63814d855971a8b18a15f05ffff425fab952c50476"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/built-shell-edge-account-02-build-source-sha256.json",
+      "sha256": "3f727d4cd8371a073919e772c32514bc3409881ade99fbe02316fcb681a517be"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/built-shell-edge-account-02-server.json",
+      "sha256": "70426558925cbf1a48ea3856f61d8a63c62ea24f731f99c98f4a8b523060fc24"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/edge-account-browser-02.json",
+      "sha256": "5ef1dab98e4103b2c11174636b8f3f26638cbc35bd84aa29804cd1c7bd6076df"
+    },
+    {
+      "path": "verification/web/evidence/edge-member-authority-2026-11-06/salon-origin-browser-02.json",
+      "sha256": "419b691cc85eb1cabb6d70b6df0fd8896e83d34dd6ee5f71c5923cfcc5b41fd5"
+    }
+  ],
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  }
+}

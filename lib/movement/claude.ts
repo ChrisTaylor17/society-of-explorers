@@ -1,3 +1,6 @@
+import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
+import type { ContentBlock, TextBlock } from '@anthropic-ai/sdk/resources/messages';
+
 type ClaudeRole = 'user' | 'assistant';
 
 export interface ClaudeTextMessage {
@@ -12,47 +15,37 @@ interface ClaudeTextRequest {
   model?: string;
 }
 
-interface ClaudeTextBlock {
-  type: string;
-  text?: string;
-}
-
-interface ClaudeResponseBody {
-  content?: ClaudeTextBlock[];
-  error?: { message?: string };
+function isTextContentBlock(block: ContentBlock): block is TextBlock {
+  return block.type === 'text';
 }
 
 export async function completeClaudeText({
   system,
   messages,
   maxTokens = 1000,
-  model = process.env.MOVEMENT_CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+  model,
 }: ClaudeTextRequest): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
+  const client = createAnthropicClient();
+  const resolvedModel = resolveClaudeModel('movement', model);
+  const startedAt = Date.now();
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      ...(system ? { system } : {}),
-      messages,
-    }),
+  const response = await client.messages.create({
+    model: resolvedModel,
+    max_tokens: maxTokens,
+    ...(system ? { system } : {}),
+    messages,
   });
 
-  const body = (await response.json().catch(() => ({}))) as ClaudeResponseBody;
-  if (!response.ok) {
-    throw new Error(body.error?.message || `Claude request failed with ${response.status}`);
-  }
+  logClaudeUsage({
+    purpose: 'movement',
+    model: resolvedModel,
+    operation: 'messages.create',
+    latencyMs: Date.now() - startedAt,
+    usage: response.usage,
+  });
 
-  const text = body.content
-    ?.filter((block) => block.type === 'text' && typeof block.text === 'string')
+  const textBlocks = response.content.filter(isTextContentBlock);
+  const text = textBlocks
     .map((block) => block.text)
     .join('\n')
     .trim();

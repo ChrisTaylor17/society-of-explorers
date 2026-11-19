@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-07T20:32:59.685176+00:00",
+  "baseCommit": "6f057c006ee8e107a65e2c9a8be6aa9c502cae0e",
+  "status": "PASS_LOCAL_PUBLIC_PILOT_PLAN_RELEASE_HOLD",
+  "productionCleared": false,
+  "newSoftwareInstalled": false,
+  "filesDeletedForCleanup": false,
+  "spendUsd": 0,
+  "deployed": false,
+  "sourceHashes": {
+    "app/salons/pilot/page.tsx": "078e43b5e327bdeb96ded4043978350c568e52d0fe4d19df7e492d9d42a91bae",
+    "app/salons/pilot/pilot.module.css": "2935f797fd769049a3287ea13284f51e1a566331c7501c170cae1c02f0e960e2",
+    "app/great-books/ReadingNav.tsx": "db9d1494b551d64087a4ae784d5717bea6d79087445396c0655fc262917e2a2d",
+    "verification/web/scripts/browser-salon-pilot.mjs": "5e5c25cee7aa8d727c02dde973ad03c6bee9b9aac4ca3bc093d1bed4cac86b1b",
+    "docs/integration/native-toolchain-unblock.md": "8c68ea7c68a28221cd1b01b72f62e34c999f1d477c4130422c985f4f286c9a90"
+  },
+  "webBuild": {
+    "status": "PASS",
+    "fullWebTypecheck": "PASS",
+    "compiler": "webpack",
+    "nextVersion": "16.2.9",
+    "sourceFiles": 1191,
+    "sourceSha256": "43116b3f08db627362f39170ad5f3ffc3399579579cde02e7d31fe1c75ba65f9",
+    "seconds": 52.56,
+    "issuedCredentialsSupplied": false,
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate/verification/web/evidence/salon-pilot-next-build.json"
+  },
+  "browser": {
+    "status": "PASS",
+    "stories": 7,
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate/verification/web/evidence/salon-pilot-built-final-20261107/browser.json",
+    "sourceReads": [
+      {
+        "path": "/api/great-books/text/apology",
+        "query": "",
+        "method": "GET",
+        "cookie": false,
+        "authorization": false
+      },
+      {
+        "path": "/api/great-books/edition/apology",
+        "query": "?edition=pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+        "method": "GET",
+        "cookie": false,
+        "authorization": false
+      }
+    ],
+    "externalRequests": 0,
+    "memberRequests": 0,
+    "browserClosed": true,
+    "serverStopped": true,
+    "serverReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate/verification/web/evidence/built-shell-salon-pilot-run-server.json",
+    "firstScreen": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate/verification/web/evidence/salon-pilot-built-final-20261107/salon-pilot-320-first-screen.png",
+    "fullPhonePreview": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-07-salon-pilot/candidate/verification/web/evidence/salon-pilot-built-final-20261107/salon-pilot-320.png"
+  },
+  "checks": [
+    "Scoped ESLint on both changed TSX files and the browser script passed.",
+    "Phone-width plan, Christian identity, optional prayer, unconfirmed host/dates, no forms or API requests on landing.",
+    "Keyboard focus moves to reading plan and host guide.",
+    "Luke 10:25\u201337 opens all 13 verses; Philemon opens all 25 and both publisher footnotes.",
+    "Plato link preserves exact Jowett edition and zero-based 44\u201351 bounds; actual reader displays45\u201352 and focuses44.",
+    "Desktop and print rendering retain the plan and 60-minute agenda.",
+    "Source, built application and loaded runtime hashes remained unchanged; Node guard calibration refused seven prohibited operations."
+  ],
+  "diagnostics": [
+    "Initial browser assertion used Apology instead of the catalog title The Apology of Socrates; preserved initial FAIL and corrected test.",
+    "Server startup preflight refused a prefix/configuration mismatch before launch; matching byte-identical receipt aliases and invalid public configuration were used. No check was bypassed."
+  ],
+  "limitations": [
+    "Local web preview only; host, dates, invitations and actual attendance are unverified.",
+    "The plan provides manual weekly reading links; it does not create a mixed-book Circle program, meeting room, roster or private admission.",
+    "No payment offer, checkout, member data, provider session or model call was used.",
+    "Hosted restore/access/authentication/admission and signed phone/physical Quest acceptance remain gates.",
+    "The secure Mac password-entry wrapper passed local checks and syntax compilation; its dialog and real login remain untested until owner entry.",
+    "Storage cleanup is only proposed and pending explicit owner approval. No installation is authorized."
+  ],
+  "review": {
+    "reactChecklist": "Static server rendering, immutable plan data, no client fetching/state or actions, disabled reading prefetch, semantic headings/landmarks, explicit focus targets, responsive and print CSS.",
+    "newDependency": false
+  }
+}

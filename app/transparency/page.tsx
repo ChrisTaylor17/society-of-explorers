@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Transparency | Society of Explorers',
+  title: 'Transparency',
   description: 'How value flows through the Society of Explorers — radical transparency as a philosophical act.',
 };
 

@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T09:09:05.075552+00:00",
+  "baseCommit": "8a14255b6dc5aa7a691800f2ab130aece21a18c0",
+  "status": "LOCAL_WALLET_REVOCATION_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "baseline": {
+    "capturedWalletHttpAfterSuccessfulSignOut": 200,
+    "expected": 401
+  },
+  "current": {
+    "capturedWalletHttpAfterConfirmedSignOut": 401,
+    "independentWalletHttp": 200,
+    "revocationUnavailableSignOutHttp": 503
+  },
+  "checks": {
+    "focusedPassed": 176,
+    "focusedGroups": {
+      "wallet-session-routes.log": 104,
+      "wallet-session-intent.log": 35,
+      "wallet-session-s1-member-identity.log": 7,
+      "wallet-session-s1c-edge-wallet-cookie.log": 14,
+      "wallet-session-s3-siwe-nonce.log": 6,
+      "wallet-session-s10-siwe-wallet-session.log": 10
+    },
+    "focusedLint": "passed",
+    "productionModeWebBuild": "passed",
+    "builtChromiumScenarios": 5,
+    "builtChromiumInterceptedAuthRequests": 14,
+    "composedChromiumRegressionScenarios": 6,
+    "postgres17SocketOnlyConcurrentRevocationAndRestore": "passed"
+  },
+  "storage": "Database stores a keyed fingerprint and expiry. Separate v3 credentials remain independent. v1 and v2 copies share the revocation for that exact credential.",
+  "limits": "Browser auth handlers used a lower-level synthetic database double. The exact SQL draft ran separately on disposable PostgreSQL. Hosted Data API, live wallet/provider and device acceptance remain open. A request admitted before revocation may finish.",
+  "cutover": "Apply the reviewed revocation draft after the challenge draft. Preserve unexpired revocations during restoration and retire old reachable code before opening wallet access.",
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "2234f07db9e619ec2d30f13d2d5b446fcaf87fa46cc159efaf8ad4e5ef1271c0",
+    "app/api/auth/logout/route.ts": "286abf9147f1702fad6ca277f29a8e1581a0aa0e02b3a4dc9bbaf464f2bd637c",
+    "app/api/auth/member/route.ts": "3d44de6e65c3ad7bc7ac4e84c03309ebbcd8582ce563dd4a6b525b5d54b2083a",
+    "app/api/auth/siwe/route.ts": "c78a45eb9e655d2790aeb3e5cb444d90661ed3567344d22514a414a68133dd02",
+    "app/login/page.tsx": "dd90635412df9ae4fcf14bf1db3451e6238dc5e7bcba44630af3eabf758877e6",
+    "components/AccountSignOut.tsx": "75bb70c646ebe3c73a3ebfa7e710f7c23e7fd3fc39012e04b157c8060977eda1",
+    "components/PublicNav.tsx": "bb1ebf17d294b71df55df80341e263c5b4b219578762f168bdf29b1426dfe905",
+    "docs/integration/account-security-reconciliation.md": "17a7a37e8fd488ea99881c16ad3032af1b5b659856f70434e5926282b4fb13df",
+    "docs/integration/production-migration-plan.md": "279d4fe8ac4dde1db022bf3825169a7c2f1b78398e5ca1fb40eb6d7412118e54",
+    "docs/integration/web-account-entry.md": "2e6c1cb275862b13d7f7ae8dcd2898086d4de8ae52ff0864ac8679e7838592ed",
+    "docs/sql/wallet-session-revocation-apply.sql": "26285e26051cd4fb8323201949a23f523a8d264138fbe7c0f9020157342ddd6e",
+    "lib/auth/browserSignOut.ts": "2117ae41b12f9162f5b45232ec04838d9420ac082f2893149f0906515326a311",
+    "lib/auth/getSession.ts": "e541ff99089d8a27a67e823721172684a6e0a1523d490d2d22ca9e787eca610c",
+    "lib/auth/walletSession.ts": "7e9744098716480f23a906d19869e42d2ec77b6c83755b0ebc4f1c4262cb26e8",
+    "lib/auth/walletSessionStore.ts": "e032ae28a480b88e1a0777b264db9daf52b3f404de04caeaf2098fe3ee2cfd7e",
+    "lib/getAuthenticatedMember.ts": "9ea8624a6b19ffbd678d28bbc00da514bab02795dfe71763ffe298af14f6ebcc",
+    "proxy.ts": "c808f49dd02ebdcc3a2fb89dd84211e0fb1e811d33d565d356f3f8746b24a3ce",
+    "tests/security/fakes.ts": "2f45110474a49d837d9913b3ba8d417ef67b7f7268afcb6cf9ddd7dc1fa99f00",
+    "tests/security/s1-member-identity.test.ts": "88bb6c2b44127627dd3a2c7f997ec1e971fe63138fea6d8df83e1649e53dd35e",
+    "verification/web/scripts/browser-built-wallet.mjs": "25d3ae98b9a4cf077818b3f85f6148c123e26357f51a274d8671f70270200ccc",
+    "verification/web/scripts/rehearse-wallet-session-revocation.py": "7dc4fbb905c2f5053ce2b9f91efa4dc898bed0e5b35c5d37e0f43d8390818543",
+    "verification/web/tests/account-signout.test.mjs": "925b52aeea1c83eac5eec1030ebe1b6e29daa672235a36dea8f97aed0e544800",
+    "verification/web/tests/browser-intent.test.mjs": "f8f5f91479c48a9986845463e574bb307a8bf5a9868e518605bcab42ea92f3dc",
+    "verification/web/tests/wallet-session-revocation.test.mjs": "36abaa045e3564dcadc8a63fc31ddf915228ba2e520e152fdf35adf9887c9504"
+  },
+  "proofs": [
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-routes.log",
+      "sha256": "2bd2510e20a463dcea050a56f69ace0827dec41be723566ad1d2cc95caefb818"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-intent.log",
+      "sha256": "c7f4c8916cddb2acae6b24c3d58e209b31c47a483060866ba8b7110038eb0029"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-s1-member-identity.log",
+      "sha256": "2e15680398285cda27fa0ccfc8e9809b1d8deeafe7a8a36ba432e07ff2bec973"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-s1c-edge-wallet-cookie.log",
+      "sha256": "ecd5b59159edb34704e8b0fd74534c27c450172076c312aa51ffefcc9e4a9b1f"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-s3-siwe-nonce.log",
+      "sha256": "799bd9e52a3f2bb1a11966ae8ed5f40a864677975528ad9877771879401988fa"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-s10-siwe-wallet-session.log",
+      "sha256": "db8f2a244b77c43378f4f8ffd5ffd048fe07f60f34979020e6007ead4a7783a0"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-before.log",
+      "sha256": "4632685232702e60899b85429ce33a4fa7578dbc3ed646681376d4e6785644ad"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/wallet-session-postgres.json",
+      "sha256": "ca562611792fc9399c0cb45c00112f172a72ca1f1136adb1eda08c31407eeec3"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/account-signout-browser.json",
+      "sha256": "5d013b9f96000f20832886b3dd5a63491f82263593fab746094acfacacc6add8"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-guard-check.json",
+      "sha256": "084ba21731a37a748e6765daa8b04f163da09203b5b7799c4f039c95b87d2663"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-build-source-sha256.json",
+      "sha256": "56fe9a588492dd27efe434b28ae86b6cdacc4fdebbe040bc2984ca7064401cf1"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-next-build.json",
+      "sha256": "a49476666967d1112d15563229a271d2194d533699e017e3e99b39ea35e04194"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-next-build.log",
+      "sha256": "725ca649b7b60475d98699e0ae3eb6f21c6f5eabc123b36df5df75a163de97d7"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-server.json",
+      "sha256": "7482207a898e8bb84e1c3b7278acee49a21d14e497d5a996f062a70eed390e09"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-server-ready.json",
+      "sha256": "8ad5753dc73942652de3e5219f6218cfcaa37625ca2dbc70c72751316025765c"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-server-runtime.json",
+      "sha256": "84863cb0e4eb959cf695008328ddc6264d11a746cff639990b9c12c252b952f4"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-server.log",
+      "sha256": "563cee48f1eab78a496f42b3380b46e3ecc81c2777bb5969b71ee5b745732188"
+    },
+    {
+      "path": "verification/web/evidence/wallet-session-revocation-2026-11-06/built-shell-wallet-revoke-03-wallet-browser.json",
+      "sha256": "0d4d8e361138d181c7d4f4122f21f50a61208f32becf97caeaf4104958410775"
+    }
+  ]
+}

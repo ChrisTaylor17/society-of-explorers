@@ -1,17 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { fetchOtherExplorers } from '@/lib/practice/others';
-import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
 
-export async function GET(req: NextRequest) {
-  const questionId = req.nextUrl.searchParams.get('questionId');
-  if (!questionId) return NextResponse.json({ others: [] });
-
-  const auth = await getAuthenticatedMember(req);
-  const others = await fetchOtherExplorers({
-    questionId,
-    excludeMemberId: auth?.memberId || null,
-    limit: 3,
-  });
-
-  return NextResponse.json({ others });
+export function GET() {
+  return privateJson({ error: 'Practice answers are available to their authors.' }, { status: 410 });
 }

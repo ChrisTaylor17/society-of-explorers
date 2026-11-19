@@ -1,0 +1,47 @@
+{
+  "checks": [
+    "Both browser roles can read and update the legacy fixture before containment.",
+    "A non-owner, dependent view or browser-callable definer routine prevents apply.",
+    "Role inheritance or a missing service permission refuses the full transaction.",
+    "Table and column browser grants are removed while rows, constraints and policies match.",
+    "Service-role create, read, update and delete work. Reapplying keeps the boundary.",
+    "An isolated logical restore keeps the contained access rules and every remaining row."
+  ],
+  "productionApplied": false,
+  "legacyHttpRoutesChanged": false,
+  "browserDenials": 24,
+  "status": "PASS",
+  "clusterStopped": true,
+  "temporaryDirectoryRemoved": true,
+  "draftSha256": "3f92f23639fefed0890e416c669f0794c4ae15d68a58c4e050a9613df324f516",
+  "fixtureSha256": "1e6a0fa3e42aaf4f31eb03f13f2c0f575ff02ea64e7a8318c34cebb21225cc02",
+  "date": "2026-11-06",
+  "hostedCatalogOnly": true,
+  "hostedPostgres": "170006",
+  "hostedRolePreflight": {
+    "browserRoles": [
+      {
+        "role": "anon",
+        "unprivileged": true,
+        "parentCount": 0
+      },
+      {
+        "role": "authenticated",
+        "unprivileged": true,
+        "parentCount": 0
+      }
+    ],
+    "serviceRoleCanBypassRls": true,
+    "serviceCrud": {
+      "twiddle_collaborators": true,
+      "twiddle_reactions": true,
+      "twiddles": true
+    }
+  },
+  "hostedScope": [
+    "twiddle_collaborators",
+    "twiddle_reactions",
+    "twiddles"
+  ],
+  "rawProof": "verification/web/evidence/checkpoint-twiddle-containment"
+}

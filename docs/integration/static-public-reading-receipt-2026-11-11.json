@@ -1,0 +1,45 @@
+{
+  "completedAt": "2026-11-11T15:27:36.804235+00:00",
+  "status": "prepared and verified locally; release pending hosting cost decision",
+  "candidateSource": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-static-public/source",
+  "artifactCandidate": "/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-reading-package-2026-11-11/candidate",
+  "candidateFiles": 193,
+  "candidateBytes": 51078598,
+  "changedOldFiles": [
+    "index.html",
+    "vercel.json"
+  ],
+  "addedFiles": [
+    "public-trial.css",
+    "reading-apology.html",
+    "reading-scripture-comparison.html",
+    "reading-sources/apology-manifest.json",
+    "reading-sources/apology-original.zip",
+    "reading-sources/apology-source.html",
+    "reading-sources/scripture-study.json",
+    "reading-sources/scripture.web-classic.json",
+    "try.html"
+  ],
+  "localTestGroups": 9,
+  "actualBrowserObservations": 13,
+  "viewportWidths": [
+    320,
+    390,
+    1280
+  ],
+  "preservedRedirects": 87,
+  "preservedRewrites": 74,
+  "addedRewrites": 6,
+  "deployed": false,
+  "spending": 0,
+  "databaseChanges": false,
+  "credentialsChanged": false,
+  "immediateRollbackDeployment": "dpl_BYwZRHQDwkNXKepzz5TpFestcGKR",
+  "receiptHashes": {
+    "BASELINE.json": "b6f036bca27e7640681d4108afe8b448ea3cb7aedd735388bcbfaba679b340e0",
+    "CANDIDATE_MANIFEST.json": "dc8b4fb8231f02cc50f09872cb5ffe623047a9d3c8923c9d7af51905de2630ef",
+    "LOCAL_TESTS.txt": "1b906a2860ce375ddfa286e4104a67ef45ff0dc79a86d58550ba93bbffc0fadb",
+    "LOCAL_HTTP.json": "a35b1f545ce0c5354b676d663eb07ef5cacab44cd21a00393510afd73d4a1071",
+    "BROWSER_CHECKS.json": "b4e364e5a91d62b4e2c582d5ab9a0978135379e72f43e5f7c1e005be7a355643"
+  }
+}

@@ -1,16 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
-
-const FAL_API_KEY = process.env.FAL_API_KEY;
+import { NextRequest } from 'next/server';
+import { privateJson } from '@/lib/http/routeError';
+import { getMovementAccess } from '@/lib/movement/access';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
-  const { visual_brief, suggestionId } = await req.json();
+  const access = await getMovementAccess(req);
+  if (!access) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+  if (!access.canManage) return privateJson({ error: 'Oracle or founder access required' }, { status: 403 });
 
-  if (!FAL_API_KEY) {
-    return NextResponse.json({ error: 'FAL_API_KEY not configured' }, { status: 500 });
+  const { visual_brief: visualBrief, suggestionId } = (await req.json().catch(() => ({}))) as {
+    visual_brief?: unknown;
+    suggestionId?: unknown;
+  };
+  if (typeof visualBrief !== 'string' || !visualBrief.trim()) {
+    return privateJson({ error: 'visual_brief required' }, { status: 400 });
   }
 
-  const prompt = `${visual_brief}\n\nphotorealistic product mockup, dark charcoal base, gold accents, matte finish`;
+  const falApiKey = process.env.FAL_API_KEY;
+  if (!falApiKey) {
+    return privateJson({ error: 'FAL_API_KEY not configured' }, { status: 503 });
+  }
+
+  const prompt = `${visualBrief.trim().slice(0, 1_500)}\n\nphotorealistic product mockup, dark charcoal base, gold accents, matte finish`;
 
   let imageUrl: string | null = null;
 
@@ -18,7 +29,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch('https://fal.run/fal-ai/flux-pro', {
       method: 'POST',
       headers: {
-        'Authorization': `Key ${FAL_API_KEY}`,
+        'Authorization': `Key ${falApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -41,18 +52,18 @@ export async function POST(req: NextRequest) {
     if (!imageUrl) throw new Error(`No image in fal.ai response: ${JSON.stringify(data).slice(0, 200)}`);
 
     // Persist to suggestion row if provided
-    if (suggestionId) {
-      const supabase = createServiceClient();
-      await supabase
+    if (typeof suggestionId === 'string' && suggestionId) {
+      const supabaseAdmin = getSupabaseAdmin();
+      await supabaseAdmin
         .from('merch_suggestions')
         .update({ image_url: imageUrl })
         .eq('id', suggestionId);
     }
 
-    return NextResponse.json({ success: true, image_url: imageUrl });
+    return privateJson({ success: true, image_url: imageUrl });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'fal.ai error';
     console.error('fal.ai error:', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return privateJson({ error: 'Mockup generation failed' }, { status: 500 });
   }
 }

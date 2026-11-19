@@ -1,0 +1,300 @@
+{
+  "version": 1,
+  "kind": "read-only catalog observation; not row inspection or application acceptance",
+  "projectId": "woqvlkeluxkxplpgzdgv",
+  "startedAt": "2026-11-04 15:45:32 UTC",
+  "completedAt": "2026-11-04 15:46:06 UTC",
+  "query": "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET LOCAL statement_timeout='2s';\nSELECT jsonb_build_object(\n 'table',(SELECT jsonb_build_object('name',c.relname,'owner',pg_get_userbyid(c.relowner),'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity,'kind',c.relkind) FROM pg_class c WHERE c.oid=to_regclass('public.artifacts')),\n 'columns',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'not_null',a.attnotnull,'default_md5',md5(pg_get_expr(d.adbin,d.adrelid))) ORDER BY a.attnum),'[]'::jsonb) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=to_regclass('public.artifacts') AND a.attnum>0 AND NOT a.attisdropped),\n 'constraints',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',conname,'type',contype,'definition',pg_get_constraintdef(oid)) ORDER BY conname),'[]'::jsonb) FROM pg_constraint WHERE conrelid=to_regclass('public.artifacts')),\n 'policies',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',policyname,'permissive',permissive,'roles',roles,'command',cmd,'using',qual,'check',with_check) ORDER BY policyname),'[]'::jsonb) FROM pg_policies WHERE schemaname='public' AND tablename='artifacts'),\n 'table_acl',(SELECT coalesce(jsonb_agg(jsonb_build_object('grantee',CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,'privilege',a.privilege_type,'grantable',a.is_grantable) ORDER BY a.grantee,a.privilege_type),'[]'::jsonb) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid=to_regclass('public.artifacts')),\n 'column_acl',(SELECT coalesce(jsonb_agg(jsonb_build_object('column',x.attname,'grantee',CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,'privilege',a.privilege_type,'grantable',a.is_grantable) ORDER BY x.attnum,a.grantee,a.privilege_type),'[]'::jsonb) FROM pg_attribute x CROSS JOIN LATERAL aclexplode(x.attacl) a WHERE x.attrelid=to_regclass('public.artifacts') AND x.attnum>0 AND NOT x.attisdropped)\n) AS metadata;\nCOMMIT;",
+  "data": {
+    "table": {
+      "rls": true,
+      "kind": "r",
+      "name": "artifacts",
+      "owner": "postgres",
+      "force_rls": false
+    },
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "not_null": true,
+        "default_md5": "f3b72bb359a50b640590970a2ab8e514"
+      },
+      {
+        "name": "member_id",
+        "type": "uuid",
+        "not_null": false,
+        "default_md5": null
+      },
+      {
+        "name": "thinker_id",
+        "type": "text",
+        "not_null": true,
+        "default_md5": null
+      },
+      {
+        "name": "title",
+        "type": "text",
+        "not_null": true,
+        "default_md5": null
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "not_null": false,
+        "default_md5": null
+      },
+      {
+        "name": "philosophical_note",
+        "type": "text",
+        "not_null": false,
+        "default_md5": null
+      },
+      {
+        "name": "prompt_used",
+        "type": "text",
+        "not_null": false,
+        "default_md5": null
+      },
+      {
+        "name": "image_url",
+        "type": "text",
+        "not_null": false,
+        "default_md5": null
+      },
+      {
+        "name": "thumbnail_url",
+        "type": "text",
+        "not_null": false,
+        "default_md5": null
+      },
+      {
+        "name": "theme",
+        "type": "jsonb",
+        "not_null": false,
+        "default_md5": "f3db357cf4f4a03883484fa3281a056c"
+      },
+      {
+        "name": "conversation_context",
+        "type": "text",
+        "not_null": false,
+        "default_md5": null
+      },
+      {
+        "name": "is_public",
+        "type": "boolean",
+        "not_null": false,
+        "default_md5": "b326b5062b2f0e69046810717534cb09"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default_md5": "75230039beb12ce952f24927f2bfa2f2"
+      }
+    ],
+    "policies": [
+      {
+        "name": "Members insert own artifacts",
+        "check": "true",
+        "roles": [
+          "public"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "name": "Public artifacts visible to all",
+        "check": null,
+        "roles": [
+          "public"
+        ],
+        "using": "(is_public = true)",
+        "command": "SELECT",
+        "permissive": "PERMISSIVE"
+      }
+    ],
+    "table_acl": [
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "UPDATE"
+      }
+    ],
+    "column_acl": [],
+    "constraints": [
+      {
+        "name": "artifacts_member_id_fkey",
+        "type": "f",
+        "definition": "FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "artifacts_pkey",
+        "type": "p",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  "boundaries": {
+    "userRows": false,
+    "functionBodies": false,
+    "issuedKeys": false,
+    "productionMutation": false
+  }
+}

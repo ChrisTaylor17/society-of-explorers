@@ -1,0 +1,96 @@
+{
+  "completedAt": "2026-11-11T15:46:52.420359+00:00",
+  "status": "CURRENT_ANDROID_LINKED_TEST_PACKAGE_VERIFIED_LOCALLY",
+  "sourceCommit": "bb4c02becbc6caf0bd0114aee336aa1bf317af44",
+  "nativeInputsMatchLatestHead": true,
+  "reconciliation": {
+    "comparedFiles": 172,
+    "matchingPreviousActualAndroidManifest": 165,
+    "changedFiles": [
+      "platforms/native/SourceReader.tsx",
+      "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/reader/SourceReaderManager.kt",
+      "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/reader/SourceReaderView.kt",
+      "platforms/native/ios-source/SoeSourceReaderView.mm",
+      "platforms/native/specs/SoeSourceReaderNativeComponent.ts"
+    ],
+    "newFiles": [
+      "platforms/native/src/reading/source-reader-size.ts",
+      "platforms/shared/crystal-presentation.ts"
+    ],
+    "fellowshipTextFixWasAlreadyPackaged": true,
+    "readerSizeControlsPreviouslyOnlyClassCompiled": true,
+    "readerSizeControlsNowLinked": true
+  },
+  "apk": {
+    "apk": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-11-native-current-build/source/platforms/native/android/app/build/outputs/apk/synthetic/app-synthetic.apk",
+    "bytes": 64511013,
+    "sha256": "3df4fbca3f1dddfebc968303608d3552125da170fdaf3449f250728b72d21017",
+    "package": "com.anonymous.soesyntheticdemo.embedded",
+    "minimumSdk": 24,
+    "targetSdk": 36,
+    "architecture": "arm64-v8a",
+    "signature": "v2 verified; Android Debug certificate",
+    "debuggable": true,
+    "backupAllowed": false,
+    "cleartextAllowed": false,
+    "generatedLiveConfigurationBlank": true
+  },
+  "checks": {
+    "nativeTypecheck": "PASS",
+    "existingPolicyTestsPassed": 30,
+    "newLinkedBuildSeconds": 81.99,
+    "definedClassCount": 17641,
+    "nativeLibrariesWith16KBLoadAlignment": 16,
+    "zip16KBAlignmentPassed": true,
+    "sourceCatalogBytesMatch": true,
+    "fiveClipsMatchPriorApk": true,
+    "compiledTextZoomBoundsAndManagerCallPresent": true,
+    "sourceInputsUnchanged": 3012,
+    "priorApkUnchanged": true,
+    "priorClassArchiveUnchanged": true,
+    "heldBookHeaderSourceUnchanged": true
+  },
+  "storage": {
+    "minimumSampledDuringBuildBytes": 14221598720,
+    "afterInspectionBytes": 14062276608,
+    "requiredFloorBytes": 8589934592,
+    "cleanupPerformed": false
+  },
+  "deviceTooling": {
+    "checkedNamedPaths": {
+      "/Applications/Xcode.app": false,
+      "/Applications/Xcode-beta.app": false,
+      "/Library/Developer/CommandLineTools": true,
+      "/Library/Developer/CoreSimulator/Profiles/Runtimes": false,
+      "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/sdk/platform-tools/adb": false,
+      "/opt/homebrew/bin/adb": false,
+      "/usr/local/bin/adb": false
+    },
+    "adbOnPath": null,
+    "selectedDeveloperDirectory": "/Library/Developer/CommandLineTools",
+    "freeBytes": 14787878912,
+    "deviceIdsCollected": false,
+    "emulatorStarted": false,
+    "deviceInstalled": false,
+    "scope": "Named local paths and storage only; no whole-disk search or device authorization inferred from USB metadata.",
+    "authorizedAndroidDeviceCount": null,
+    "deviceEnumerationStatus": "Unavailable: no existing adb client at the approved SDK or usual executable paths. No device ID was read and no daemon/emulator was started."
+  },
+  "remaining": [
+    "Android physical-device or approved emulator installation and runtime acceptance; no existing adb client was found, so authorized device count is unknown.",
+    "Full Xcode/iOS SDK, build and signing/device acceptance; named Xcode locations are absent and only CommandLineTools are selected.",
+    "Real accounts, recovery/security, live source networking, release identities, store acceptance and held book-header decision remain outside this synthetic build."
+  ],
+  "dependenciesInstalled": false,
+  "toolsDownloaded": false,
+  "deviceInstalled": false,
+  "emulatorStarted": false,
+  "providerUsed": false,
+  "credentialsChanged": false,
+  "releaseBuilt": false,
+  "deployed": false,
+  "newSpendingUsd": 0,
+  "customerValidation": false,
+  "evidenceDirectory": "/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/native-current",
+  "scope": "One successful offline arm64 synthetic/debug APK build and direct binary inspection. No operating-system runtime, device, iOS, hosted or store acceptance is inferred."
+}

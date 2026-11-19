@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "meditations",
+  "editionId": "pg-2680-299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+  "editionSha256": "299ccec053a7da0dc33b3f1e32812fc1f33852ab962390f7680d925f015624d1",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 2680,
+    "landingUrl": "https://www.gutenberg.org/ebooks/2680",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/2680/pg2680-h.zip",
+    "archiveSha256": "5f7fdc16012923c78dbf39291f0147cb7d370b9ea78c7c2b67f3e78d5c247fcb",
+    "archiveBytes": 440084,
+    "retrievedAt": "2026-11-03T18:53:50.775Z",
+    "mainHtmlPath": "pg2680-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "Meditations",
+    "author": "Marcus Aurelius",
+    "translators": [
+      {
+        "name": "Meric Casaubon",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "Translator is not listed in the Gutenberg catalog/RDF. The edition notes identify Casaubon and comparison of the 1634 and 1635 editions. This is not the George Long translation."
+    ]
+  },
+  "reader": {
+    "sha256": "d729af988c62e47826523d30e35356e98f83175af7887e9d30f602403ead9c90",
+    "bytes": 588565,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 1186,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Meditations",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "MEDITATIONS",
+        "level": 1,
+        "readingIndex": 7
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "By Marcus Aurelius",
+        "level": 2,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "MARCUS AURELIUS ANTONINUS THE ROMAN EMPEROR",
+        "level": 3,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "BOOKS",
+        "level": 2,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "INTRODUCTION",
+        "level": 2,
+        "readingIndex": 27
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "HIS FIRST BOOK",
+        "level": 2,
+        "readingIndex": 54
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "concerning HIMSELF:",
+        "level": 3,
+        "readingIndex": 55
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "THE FIRST BOOK",
+        "level": 2,
+        "readingIndex": 60
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "THE SECOND BOOK",
+        "level": 2,
+        "readingIndex": 78
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "THE THIRD BOOK",
+        "level": 2,
+        "readingIndex": 95
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "THE FOURTH BOOK",
+        "level": 2,
+        "readingIndex": 113
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "THE FIFTH BOOK",
+        "level": 2,
+        "readingIndex": 157
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "THE SIXTH BOOK",
+        "level": 2,
+        "readingIndex": 189
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "THE SEVENTH BOOK",
+        "level": 2,
+        "readingIndex": 242
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "THE EIGHTH BOOK",
+        "level": 2,
+        "readingIndex": 288
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "THE NINTH BOOK",
+        "level": 2,
+        "readingIndex": 346
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "THE TENTH BOOK",
+        "level": 2,
+        "readingIndex": 390
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "THE ELEVENTH BOOK",
+        "level": 2,
+        "readingIndex": 429
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "THE TWELFTH BOOK",
+        "level": 2,
+        "readingIndex": 461
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "APPENDIX",
+        "level": 2,
+        "readingIndex": 489
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "NOTES",
+        "level": 2,
+        "readingIndex": 589
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "GLOSSARY",
+        "level": 2,
+        "readingIndex": 635
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "Paragraphs with First Lines",
+        "level": 3,
+        "readingIndex": 750
+      }
+    ]
+  },
+  "assets": [],
+  "fidelity": {
+    "canonicalTextSha256": "5e92a735b334feeb9382cf4e2ce14197e1be1bd97e5951de00c6d6940778c48f",
+    "sourceImageCount": 0
+  }
+}

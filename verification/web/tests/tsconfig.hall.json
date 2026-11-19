@@ -1,0 +1,6 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": { "incremental": false, "plugins": [] },
+  "include": ["hall-entry.tsx", "../../../node_modules/next/types/global.d.ts"],
+  "exclude": []
+}

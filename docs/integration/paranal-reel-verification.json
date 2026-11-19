@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T20:14:57.369169+00:00",
+  "baseCheckpoint": "27775280198629b6c29189be267b0a200c7a5d79",
+  "status": "LOCAL_ARCHIVIST_REEL_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "physicalDevicePlaybackVerified": false,
+  "rights": {
+    "source": "https://www.eso.org/public/videos/eso2607d/",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "credit": "B. Häußler/ESO",
+    "scope": "Exact silent credited editorial derivative",
+    "inspection": {
+      "path": "content/clips/night-sky-traffic-inspection.json",
+      "sha256": "ddc4d70333a9ba4a2ad9c2922e2ef3265a44b926c390b2884da6fd2839a9b938",
+      "bytes": 2347
+    },
+    "original": {
+      "path": "content/clips/eso2607d-source.mp4",
+      "sha256": "dabaa298df3553da879d17df97cec653b746544386d87347d1a7f9f709a685fc",
+      "bytes": 7378972
+    },
+    "acquisition": {
+      "path": "verification/web/evidence/reel-paranal-01/acquisition.json",
+      "sha256": "d228b15d1c4c9d28fbd740e441a74241990c522c804165812f81b4be925c5a43",
+      "bytes": 386
+    }
+  },
+  "edit": {
+    "asset": {
+      "path": "content/clips/night-sky-traffic.mp4",
+      "sha256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f",
+      "bytes": 3346521
+    },
+    "captions": {
+      "path": "content/clips/night-sky-traffic.vtt",
+      "sha256": "1cb633b7dd2b658db6933b92e1b7da836ed8d1cc7dbc3972ce93018a2d9b56cf",
+      "bytes": 535
+    },
+    "specification": {
+      "path": "content/clips/night-sky-traffic-edit.json",
+      "sha256": "1bce44d94b2e3b498e6edfcc65d15393563c9cd74d72059fe9d6c4665fe07a2b",
+      "bytes": 2192
+    },
+    "render": {
+      "path": "verification/web/evidence/reel-paranal-03/render.json",
+      "sha256": "3214074a16e6cb4c71ba1986c84adeb6cd93cdeb02ffab59c6f7e127a97b54b1",
+      "bytes": 1463
+    },
+    "renderLog": {
+      "path": "verification/web/evidence/reel-paranal-03/render.log",
+      "sha256": "e9ffbac5d6192c5d16a851cf905ad0966ce57a0c4c5085a30342b0b6abb3d439",
+      "bytes": 68
+    },
+    "timing": {
+      "path": "verification/web/evidence/reel-paranal-03/render-timing.json",
+      "sha256": "5e222b13ebcbc2c559bd4bf6de43f23316739985600e9b65eaaabb52b3ee0144",
+      "bytes": 8529
+    },
+    "encodedReadback": {
+      "path": "verification/web/evidence/reel-paranal-03/encoded-readback.json",
+      "sha256": "e32502fc90d3f2aeca9589ee73566dba9d72712453c1beeb02980edfeadae51b",
+      "bytes": 4666230
+    },
+    "sourceFrameReview": {
+      "path": "verification/web/evidence/reel-paranal-03/decoded-source-contact.png",
+      "sha256": "a875fa1c95b2f6330bff1f69478d506edd411a201583542486f7650c56306426",
+      "bytes": 2333650
+    },
+    "media": {
+      "width": 720,
+      "height": 1280,
+      "fps": 25,
+      "durationMs": 24000,
+      "audioTracks": 0,
+      "codec": "avc1.42001f",
+      "frames": 600,
+      "cueCount": 4
+    },
+    "sourceExcerptMs": [
+      1600,
+      25600
+    ]
+  },
+  "clipTests": {
+    "path": "verification/web/evidence/reel-paranal-03/clip-tests-final-02.tap",
+    "sha256": "f37f7d8a5a758b747f14cefa7db9847f046b425bedfc43af41759d6b90d4309e",
+    "bytes": 5989,
+    "passed": 23
+  },
+  "lint": {
+    "path": "verification/web/evidence/reel-paranal-03/lint-final.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "exitCode": 0
+  },
+  "build": {
+    "path": "verification/web/evidence/built-shell-reel-paranal-02-next-build.json",
+    "sha256": "d2f255260a557dfb79608310db8da1a5553b63224afd1b73bf31a8de28bd57bc",
+    "bytes": 670,
+    "log": {
+      "path": "verification/web/evidence/built-shell-reel-paranal-02-next-build.log",
+      "sha256": "7d2425897deaab65c3ce8b7da277cfd7a050977ce8860572a24b0b58c96ae734",
+      "bytes": 16055
+    },
+    "sourceManifest": {
+      "path": "verification/web/evidence/built-shell-reel-paranal-02-build-source-sha256.json",
+      "sha256": "71673bea8423d95578f226d4daca1d1210b74dc0293df469d6b8acef42e9f452",
+      "bytes": 128229
+    },
+    "inputs": 1051,
+    "typeCheckCompleted": true,
+    "clipTraces": [
+      {
+        "path": ".next/server/app/clips/page.js.nft.json",
+        "sha256": "80a5839c1f26d23a479d518a7117e5db26c570b6921889cba457e928d5400958",
+        "bytes": 35982
+      },
+      {
+        "path": ".next/server/app/clips/catalog/route.js.nft.json",
+        "sha256": "1610e392e04e0070e512563ceb1678d8c0edd868a20e34297a9c60ef3946756a",
+        "bytes": 37034
+      },
+      {
+        "path": ".next/server/app/clips/captions/[clipId]/route.js.nft.json",
+        "sha256": "65665f886b331ee98bb29cfe9d03932f807ae3cb7fc98090d09d5fe31fa9d504",
+        "bytes": 811
+      },
+      {
+        "path": ".next/server/app/clips/media/[clipId]/route.js.nft.json",
+        "sha256": "65665f886b331ee98bb29cfe9d03932f807ae3cb7fc98090d09d5fe31fa9d504",
+        "bytes": 811
+      }
+    ]
+  },
+  "server": {
+    "path": "verification/web/evidence/built-shell-reel-paranal-02-server.json",
+    "sha256": "febebf7f1dfa502232e3d8fba57da6feb4cfaca2858f32ca60400e408137319f",
+    "bytes": 724751,
+    "ready": {
+      "path": "verification/web/evidence/built-shell-reel-paranal-02-server-ready.json",
+      "sha256": "27456f3326022ef58062bf361233a5cbea0e0e25efe2d2747f1384caafcb8308",
+      "bytes": 581718
+    },
+    "buildId": "__g3FwhV1hcKZeM-oTMkv",
+    "portsCheckedClosed": [
+      38470,
+      38471
+    ],
+    "builtFiles": 2344
+  },
+  "builtBrowser": {
+    "path": "verification/web/evidence/reel-paranal-built-02/browser.json",
+    "sha256": "c9bb3f050e8a2233c66b82ff5bb4bf79e502e70b7d94fea977c63da288996cc7",
+    "bytes": 3077,
+    "runner": {
+      "path": "verification/web/scripts/browser-paranal-reel.mjs",
+      "sha256": "31f66124809d7dcfba233fbc9abd777c5e0343fc131828175fca4cffc3540d99",
+      "bytes": 9240
+    },
+    "stories": 4,
+    "externalRequests": 0,
+    "mediaAndCaptionRequests": 2,
+    "playback": {
+      "duration": 24,
+      "end": 24,
+      "width": 720,
+      "height": 1280,
+      "rate": 1,
+      "ended": true,
+      "elapsed": 24001.79999998212,
+      "audioTracks": 0,
+      "videoTracks": 1,
+      "presentedFrames": 599,
+      "droppedFrames": 0,
+      "totalFrames": 600,
+      "frames": [
+        {
+          "at": 0.04,
+          "file": "decoded-final-1.png"
+        },
+        {
+          "at": 4.8,
+          "file": "decoded-final-2.png"
+        },
+        {
+          "at": 10,
+          "file": "decoded-final-3.png"
+        },
+        {
+          "at": 16,
+          "file": "decoded-final-4.png"
+        },
+        {
+          "at": 23.8,
+          "file": "decoded-final-5.png"
+        }
+      ],
+      "captions": 4
+    },
+    "snapshots": [
+      {
+        "path": "verification/web/evidence/reel-paranal-built-02/decoded-final-1.png",
+        "sha256": "d25dccc892d81e4a368a42715f7a1b0b40311754f577e049f1ce89bfaa89cbcc",
+        "bytes": 464748
+      },
+      {
+        "path": "verification/web/evidence/reel-paranal-built-02/decoded-final-2.png",
+        "sha256": "90f4a93e7e4159f9ccda51db981a96bc9ffc8f7d4ce118581089cbefe44874be",
+        "bytes": 469959
+      },
+      {
+        "path": "verification/web/evidence/reel-paranal-built-02/decoded-final-3.png",
+        "sha256": "b38e1a9ca531051fa27b9ebe49b93659c897fcdb59527ba67870eea1d00a80e3",
+        "bytes": 488349
+      },
+      {
+        "path": "verification/web/evidence/reel-paranal-built-02/decoded-final-4.png",
+        "sha256": "dcee579b3b82361937c1f5dd43f5a30409f7b86e386b3aa6273c06e746d10008",
+        "bytes": 515319
+      },
+      {
+        "path": "verification/web/evidence/reel-paranal-built-02/decoded-final-5.png",
+        "sha256": "db191afb56c72dac85d0963608f6beaffe56ef117917d8ede14b8a2c9df6a705",
+        "bytes": 718181
+      },
+      {
+        "path": "verification/web/evidence/reel-paranal-built-02/reel-320.png",
+        "sha256": "094350f83a3961521bb4711ae4710f32bde531d729a349725370ca4d0d4b2aac",
+        "bytes": 325935
+      }
+    ]
+  },
+  "drive": {
+    "path": "verification/web/evidence/reel-paranal-03/drive-archive.json",
+    "sha256": "f954a7944036d414ffef52563cfd97a1d76e70a7f278d694d93917786648246b",
+    "bytes": 1462,
+    "verifiedPrivateFiles": 3,
+    "verification": "Names, size, MIME, parent and unshared status"
+  },
+  "diagnostics": [
+    {
+      "path": "verification/web/evidence/reel-paranal-01/chromium-source.json",
+      "sha256": "4d9966fd41146f8d362698840ad0820bca7f7aa974e6a73a931e43c99517e6cc",
+      "bytes": 126,
+      "finding": "Initial media seeks sampled a repeated opening frame. The final renderer decoded the timestamped compressed samples."
+    },
+    {
+      "path": "verification/web/evidence/reel-paranal-02/render.json",
+      "sha256": "34e4bdcbb18459631ca59ef3c667629606609ed3614ccb1c62992a1100ce7a96",
+      "bytes": 1463,
+      "finding": "First output exceeded the app delivery budget. The final output uses the lower bitrate and retains the full 24 seconds."
+    },
+    {
+      "path": "verification/web/evidence/reel-paranal-03/lint.log",
+      "sha256": "80eaa761e9d250ad2e3e0aa9bd4d8fe73ce01f1d41985322414eda8be5b6f46b",
+      "bytes": 321,
+      "finding": "The earlier Circle link triggered the internal link lint rule. The final build uses Link with prefetch disabled."
+    },
+    {
+      "path": "verification/web/evidence/reel-paranal-03/clip-tests-final.tap",
+      "sha256": "74727174d32ea36bcacc0636a7f5f950bbcbb5a7d436ad86359914725e8de73d",
+      "bytes": 5824,
+      "finding": "An interim invocation from the repository root could not resolve the candidate. The passing suite ran from verification/web."
+    }
+  ]
+}

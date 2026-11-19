@@ -1,27 +1,56 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getBook } from '@/lib/books/catalog';
 import { buildAnnotationPrompt } from '@/lib/books/prompts';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson, privateEventStreamHeaders } from '@/lib/http/routeError';
+import { limitModelCall } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
-    const { bookId, passage, thinkerId, question, memberId } = await req.json();
-    const book = getBook(bookId);
-    if (!book) return new Response(JSON.stringify({ error: 'Book not found' }), { status: 404 });
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
-    const prompt = buildAnnotationPrompt(thinkerId, book.title, book.author, passage, question);
+    let body: unknown;
+    try { body = await req.json(); }
+    catch { return privateJson({ error: 'Invalid JSON body' }, { status: 400 }); }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return privateJson({ error: 'Invalid annotation request' }, { status: 400 });
+    }
+    const { bookId, passage, thinkerId, question, memberId } = body as Record<string, unknown>;
+    if (typeof bookId !== 'string' || !bookId || bookId.length > 100 ||
+        typeof passage !== 'string' || !passage.trim() || passage.length > 12000 ||
+        typeof thinkerId !== 'string' || !thinkerId || thinkerId.length > 80 ||
+        (question != null && (typeof question !== 'string' || question.length > 2000))) {
+      return privateJson({ error: 'Invalid annotation request' }, { status: 400 });
+    }
+    // Preserve the legacy opt-in: the current book page omits memberId and does not save.
+    // The supplied value can request saving, but can never select the storage owner.
+    const saveHighlight = memberId != null && memberId !== '';
+    if (saveHighlight && memberId !== auth.memberId) {
+      return privateJson({ error: 'Forbidden' }, { status: 403 });
+    }
+    const book = getBook(bookId);
+    if (!book) return privateJson({ error: 'Book not found' }, { status: 404 });
+    const limited = limitModelCall(req, auth.memberId, 'book-annotation');
+    if (limited) return privateJson({ error: 'Too many requests, please slow down' }, {
+      status: 429, headers: { 'Retry-After': limited.headers.get('Retry-After') || '1' },
+    });
+
+    const prompt = buildAnnotationPrompt(thinkerId, book.title, book.author, passage, question ?? undefined);
 
     const encoder = new TextEncoder();
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
     const stream = new ReadableStream({
       async start(controller) {
+        let saveAttempted = false;
+        let saved = false;
         try {
           let fullText = '';
           const anthropicStream = anthropic.messages.stream({
-            model: 'claude-sonnet-4-20250514',
+            model,
             max_tokens: 150,
             messages: [{ role: 'user', content: prompt }],
           });
@@ -33,32 +62,45 @@ export async function POST(req: NextRequest) {
 
           await anthropicStream.finalMessage();
 
-          // Save highlight + annotation
-          if (memberId) {
+          if (saveHighlight) {
+            // A delayed generation must not persist under a now-missing/different identity.
+            const current = await getAuthenticatedMember(req);
+            if (current?.memberId !== auth.memberId) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Session changed; annotation was not saved', saved: false, done: true })}\n\n`));
+              controller.close();
+              return;
+            }
+            const supabaseAdmin = getSupabaseAdmin();
+            saveAttempted = true;
             const { error: hlError } = await supabaseAdmin.from('book_highlights').insert({
-              member_id: memberId,
+              member_id: auth.memberId,
               book_id: bookId,
               passage,
               thinker_id: thinkerId,
               annotation: fullText,
               question: question || null,
             });
-            if (hlError) console.warn('Highlight save failed:', hlError);
+            if (hlError) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Annotation save could not be confirmed', saved: null, done: true })}\n\n`));
+              controller.close();
+              return;
+            }
+            saved = true;
           }
 
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, response: fullText })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, response: fullText, saved })}\n\n`));
           controller.close();
-        } catch (err) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed', done: true })}\n\n`));
+        } catch {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Annotation unavailable', saved: saved ? true : saveAttempted ? null : false, done: true })}\n\n`));
           controller.close();
         }
       },
     });
 
     return new Response(stream, {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' },
+      headers: privateEventStreamHeaders(),
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+  } catch {
+    return privateJson({ error: 'Annotation unavailable' }, { status: 503 });
   }
 }

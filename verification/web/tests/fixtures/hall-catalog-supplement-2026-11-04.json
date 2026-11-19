@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "kind": "bounded read-only artifact catalog supplement; no rows, keys or function bodies",
+  "projectId": "woqvlkeluxkxplpgzdgv",
+  "startedAt": "2026-11-04 15:53:52 UTC",
+  "completedAt": "2026-11-04 15:53:53 UTC",
+  "query": "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET LOCAL statement_timeout='2s';\nSELECT jsonb_build_object(\n 'table',(SELECT jsonb_build_object('rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity,'owner',pg_get_userbyid(c.relowner),'partition',c.relispartition,'kind',c.relkind) FROM pg_class c WHERE c.oid=to_regclass('public.artifacts')),\n 'defaults',(SELECT coalesce(jsonb_agg(jsonb_build_object('column',a.attname,'expression',CASE WHEN pg_get_expr(d.adbin,d.adrelid) IN('gen_random_uuid()','now()','true','false') THEN pg_get_expr(d.adbin,d.adrelid) ELSE '[LITERAL_REDACTED]' END,'md5',md5(pg_get_expr(d.adbin,d.adrelid))) ORDER BY a.attnum),'[]'::jsonb) FROM pg_attribute a JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=to_regclass('public.artifacts') AND a.attnum>0 AND NOT a.attisdropped),\n 'indexes',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',ic.relname,'definition',pg_get_indexdef(i.indexrelid),'unique',i.indisunique,'primary',i.indisprimary,'valid',i.indisvalid,'ready',i.indisready) ORDER BY ic.relname),'[]'::jsonb) FROM pg_index i JOIN pg_class ic ON ic.oid=i.indexrelid WHERE i.indrelid=to_regclass('public.artifacts')),\n 'triggers',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',t.tgname,'internal',t.tgisinternal,'enabled',t.tgenabled,'type',t.tgtype,'function_schema',pn.nspname,'function_name',p.proname,'args_md5',md5(t.tgargs::text),'definition_when_md5',md5(t.tgqual::text),'referenced_table',rc.relname) ORDER BY t.tgname),'[]'::jsonb) FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace pn ON pn.oid=p.pronamespace LEFT JOIN pg_class rc ON rc.oid=t.tgconstrrelid WHERE t.tgrelid=to_regclass('public.artifacts')),\n 'inheritance',(SELECT coalesce(jsonb_agg(jsonb_build_object('child',c.relname,'parent',p.relname)),'[]'::jsonb) FROM pg_inherits i JOIN pg_class c ON c.oid=i.inhrelid JOIN pg_class p ON p.oid=i.inhparent WHERE i.inhrelid=to_regclass('public.artifacts') OR i.inhparent=to_regclass('public.artifacts')),\n 'acl',(SELECT coalesce(jsonb_agg(jsonb_build_object('grantor',pg_get_userbyid(a.grantor),'grantee',CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END,'privilege',a.privilege_type,'grantable',a.is_grantable) ORDER BY a.grantee,a.privilege_type),'[]'::jsonb) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid=to_regclass('public.artifacts')),\n 'roles',(SELECT jsonb_agg(jsonb_build_object('name',rolname,'superuser',rolsuper,'bypass_rls',rolbypassrls,'inherit',rolinherit,'login',rolcanlogin) ORDER BY rolname) FROM pg_roles WHERE rolname IN('anon','authenticated','service_role')),\n 'memberships',(SELECT coalesce(jsonb_agg(jsonb_build_object('member',r.rolname,'granted_role',g.rolname,'admin',m.admin_option,'inherit',m.inherit_option,'set',m.set_option) ORDER BY r.rolname,g.rolname),'[]'::jsonb) FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member JOIN pg_roles g ON g.oid=m.roleid WHERE r.rolname IN('anon','authenticated','service_role')),\n 'schema',(SELECT jsonb_build_object('name',n.nspname,'owner',pg_get_userbyid(n.nspowner),'browser_create',has_schema_privilege('anon',n.oid,'CREATE') OR has_schema_privilege('authenticated',n.oid,'CREATE'),'service_usage',has_schema_privilege('service_role',n.oid,'USAGE')) FROM pg_namespace n WHERE n.nspname='public')\n) AS metadata;\nCOMMIT;",
+  "data": {
+    "acl": [
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      }
+    ],
+    "roles": [
+      {
+        "name": "anon",
+        "login": false,
+        "inherit": true,
+        "superuser": false,
+        "bypass_rls": false
+      },
+      {
+        "name": "authenticated",
+        "login": false,
+        "inherit": true,
+        "superuser": false,
+        "bypass_rls": false
+      },
+      {
+        "name": "service_role",
+        "login": false,
+        "inherit": true,
+        "superuser": false,
+        "bypass_rls": true
+      }
+    ],
+    "table": {
+      "rls": true,
+      "kind": "r",
+      "owner": "postgres",
+      "force_rls": false,
+      "partition": false
+    },
+    "schema": {
+      "name": "public",
+      "owner": "pg_database_owner",
+      "service_usage": true,
+      "browser_create": false
+    },
+    "indexes": [
+      {
+        "name": "artifacts_pkey",
+        "ready": true,
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "definition": "CREATE UNIQUE INDEX artifacts_pkey ON public.artifacts USING btree (id)"
+      }
+    ],
+    "defaults": [
+      {
+        "md5": "f3b72bb359a50b640590970a2ab8e514",
+        "column": "id",
+        "expression": "gen_random_uuid()"
+      },
+      {
+        "md5": "f3db357cf4f4a03883484fa3281a056c",
+        "column": "theme",
+        "expression": "[LITERAL_REDACTED]"
+      },
+      {
+        "md5": "b326b5062b2f0e69046810717534cb09",
+        "column": "is_public",
+        "expression": "true"
+      },
+      {
+        "md5": "75230039beb12ce952f24927f2bfa2f2",
+        "column": "created_at",
+        "expression": "now()"
+      }
+    ],
+    "triggers": [
+      {
+        "name": "RI_ConstraintTrigger_a_26939",
+        "type": 9,
+        "enabled": "O",
+        "args_md5": "8ff36f0a5f717f7187ae41c6fe8874c3",
+        "internal": true,
+        "function_name": "RI_FKey_cascade_del",
+        "function_schema": "pg_catalog",
+        "referenced_table": "nft_mints",
+        "definition_when_md5": null
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_26940",
+        "type": 17,
+        "enabled": "O",
+        "args_md5": "8ff36f0a5f717f7187ae41c6fe8874c3",
+        "internal": true,
+        "function_name": "RI_FKey_noaction_upd",
+        "function_schema": "pg_catalog",
+        "referenced_table": "nft_mints",
+        "definition_when_md5": null
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_26959",
+        "type": 9,
+        "enabled": "O",
+        "args_md5": "8ff36f0a5f717f7187ae41c6fe8874c3",
+        "internal": true,
+        "function_name": "RI_FKey_noaction_del",
+        "function_schema": "pg_catalog",
+        "referenced_table": "artifact_merch",
+        "definition_when_md5": null
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_26960",
+        "type": 17,
+        "enabled": "O",
+        "args_md5": "8ff36f0a5f717f7187ae41c6fe8874c3",
+        "internal": true,
+        "function_name": "RI_FKey_noaction_upd",
+        "function_schema": "pg_catalog",
+        "referenced_table": "artifact_merch",
+        "definition_when_md5": null
+      },
+      {
+        "name": "RI_ConstraintTrigger_c_26925",
+        "type": 5,
+        "enabled": "O",
+        "args_md5": "8ff36f0a5f717f7187ae41c6fe8874c3",
+        "internal": true,
+        "function_name": "RI_FKey_check_ins",
+        "function_schema": "pg_catalog",
+        "referenced_table": "members",
+        "definition_when_md5": null
+      },
+      {
+        "name": "RI_ConstraintTrigger_c_26926",
+        "type": 17,
+        "enabled": "O",
+        "args_md5": "8ff36f0a5f717f7187ae41c6fe8874c3",
+        "internal": true,
+        "function_name": "RI_FKey_check_upd",
+        "function_schema": "pg_catalog",
+        "referenced_table": "members",
+        "definition_when_md5": null
+      }
+    ],
+    "inheritance": [],
+    "memberships": []
+  }
+}

@@ -1,0 +1,39 @@
+# 92B funding claims and release boundaries — November 8, 2026
+
+**Subsequent local implementation:** [the physical-space pilot hold](physical-space-hold.md) now blocks seven campaign and city-interest operations and replaces three public collection pages with proposals. The findings below record the pre-hold source review; its ledger, progress and future-offer concerns remain requirements before reopening. No hosted or provider state was changed.
+
+Status: read-only source review. The campaign and payment code are unchanged. No checkout, webhook, account, environment value, customer record, bank record or live provider configuration was accessed. No charge or outreach occurred. Current public availability and funds collected are unverified.
+
+## Evidence and limits
+
+Eight selected committed files were captured at `eef3efb2c5de202d411c4bc1d93ff87b88abe185`. The private checkpoint records their hashes. They include the 92B landing/funding pages, checkout/progress handlers, campaign definitions, local checkout guard, launch runbook and Stripe approval packet. This is not a complete billing, webhook, refund or financial-control audit.
+
+The June 19 approval packet records one authorized, unpaid live Supporter checkout validation and a configured webhook at that time. That is historical recorded evidence, not a newly verified checkout or payment. It also expressly holds additional sessions, promotion and public payment traffic pending specific approval. The current budget for development does not reopen that campaign.
+
+## Findings requiring resolution before fundraising
+
+| Finding | Exact source and consequence | Required next step |
+| --- | --- | --- |
+| The planning approval is not enforced by the checkout handler | `app/api/92b/checkout/route.ts` validates tier/email and invokes `blockLocalLiveStripeCheckout`, then creates a session. `lib/capital/checkoutSafety.ts` blocks a live key only when the request or return origin is local. There is no explicit campaign approval/launch gate in these inspected functions. | Design a server-side campaign hold and acceptance criteria. Review the deployed call path separately before any approved cutover. Do not infer that a current hosted checkout is reachable from this source review. |
+| Checkout survives a failed pending-ledger write | The checkout is created first; `recordPendingPledge` failure is caught and the checkout URL is still returned. | Review the reconciliation contract and idempotency across session creation, ledger, webhook and retries. This does not prove a paid pledge was lost; no payment or webhook was exercised. |
+| Unknown progress can appear as zero | `app/api/92b/progress/route.ts` returns zero and `source: none` on absence or failure. The page starts at zero and does not show a distinct lookup failure. | Separate loading, unavailable and verified totals; show the basis and as-of time. Never report an error fallback as verified zero revenue. |
+| The fallback is a partial session window | The progress handler lists at most 100 sessions and filters paid sessions by `type: 92b_pledge`. The inspected fallback does not paginate, reconcile refunds or filter the campaign slug/currency. | Define which funds count, then test a complete campaign-specific aggregate and refunds. Do not infer actual undercount or overcount without records. |
+| The city-interest form can claim success after an HTTP failure | `app/92b/page.tsx` sets `submitted` after a resolved fetch without checking the response status; the view then says the proposal was recorded. Network rejection is silently caught. | Require a confirmed response and show a recoverable error before claiming receipt. No city proposal was submitted or contact made in this review. |
+| Benefits exceed a simple contribution | `lib/capital/campaign.ts` offers $25/$100/$500/$1,111 tiers, membership credits, Council access, conditional physical invitations and EXP. These are source promises, not verified fulfillment. | Identify the authorized operator, delivered benefits, valuation, timing, capacity, refund/cancellation terms and the treatment of unused funds if a location fails. Keep a salon offer distinct from a property campaign. |
+| Conditional premises do not settle authority | The page describes the intended Boston site as unsecured and contingent. That qualification is useful, but no present lease, landlord permission, permits, insurance or budget commitments were verified. | Confirm authority and a realistic premises plan before promises, public placement or spending. The $120,000 allocation in code is a proposal, not quotes or committed costs. |
+| Legal labels cannot settle classification | Public copy says the offer is not a security; tokens and benefits are also promised. Historical entity papers do not establish the current recipient, governing authority, charitable status or ownership. | Qualified legal/tax review of the actual offer, recipient, marketing, benefit obligations and asset/custody model. No legal conclusion or tax deduction is approved here. |
+
+## Primary guidance checked
+
+- State nonprofit formation is separate from federal exemption; an EIN alone is not proof of exemption. Most organizations must apply, with limited exceptions. This supports obtaining current status evidence rather than deciding status from an old document or one negative search. [IRS exemption FAQ](https://www.irs.gov/charities-non-profits/frequently-asked-questions-about-applying-for-tax-exemption).
+- If a charitable organization receives a quid pro quo contribution above $75, the IRS describes a written disclosure stating the deductible excess over benefits and a good-faith benefit value. Whether an SoE payment qualifies, and the value of any benefits, remain questions for its adviser. [IRS disclosure guidance](https://www.irs.gov/charities-non-profits/public-disclosure-and-availability-of-exempt-organizations-returns-and-applications-charitable-contribution-disclosures).
+- Massachusetts Chapter 68 Section 19 requires registration before covered charitable solicitation and recognizes Section 20 exemptions. Whether the particular recipient and campaign are covered or exempt must be established. The statute was readable; the AGO overview returned 403 and the separate Section 20 fetch timed out in this pass, so no exemption is inferred. [Massachusetts Section 19](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXI/Chapter68/Section19).
+- SEC guidance distinguishes an asset from the circumstances of its offer and an investment contract. A disclaimer or token label does not itself resolve the analysis. This is a reason for review, not a conclusion that the proposed EXP benefits are securities. [SEC, Transactions Involving Crypto Assets, April 22, 2026; reviewed April 29](https://www.sec.gov/resources-small-businesses/capital-raising-building-blocks/transactions-involving-crypto-assets).
+
+## Concrete recommendation
+
+Keep fundraising outside the first salon pilot. First establish the current operator and the approved service being offered; document rights, delivery, cancellation/refunds and records. Prepare a local fail-closed campaign design and source-based tests without real keys or customers. Any hosted change, payment traffic, live checkout or campaign launch remains a separate authorized action.
+
+For physical spaces, compare three distinct proposals: occasional rented meeting rooms; a qualified charitable program using appropriately governed space; and a commercial venue operated by a defined business. Price and validate each before a property commitment. Do not route donations through a for-profit or affiliate based on these proposals alone.
+
+The [roadmap and structure correction](roadmap-structure.md) removes unverified live-tier and ownership/venue claims from those two informational pages. It does not repair or disable this campaign, settle legal status, or certify the rest of the site.

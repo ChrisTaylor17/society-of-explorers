@@ -1,0 +1,2 @@
+# Preserve the pinned catalog receipt byte-for-byte, including its final blank.
+verification/web/tests/fixtures/circle-live-catalog-2026-11-04.json whitespace=-blank-at-eof

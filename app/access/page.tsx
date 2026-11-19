@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
 
 const gold = '#C5A55A';
 const parchment = '#E8DCC8';
@@ -13,37 +14,21 @@ interface SafeData {
 
 const TIERS = [
   {
-    name: 'FREE', subtitle: 'Open Access', icon: '○', locked: false,
+    name: 'FREE', subtitle: 'Open to everyone', icon: '○', locked: false,
     features: [
-      'Homepage Socrates taste',
-      'Great Books library (read-only)',
-      'Public Waddle feed',
-      'Labyrinth walk',
-      'Temple Quest game',
+      'Complete local source editions',
+      'Volunteer reading Circles',
+      'Human Circle discussion',
+      'Private reading progress and notes',
     ],
   },
   {
-    name: 'SEEKER', subtitle: '$9.99/mo', icon: '⬡', locked: true,
+    name: 'SUPPORTER', subtitle: 'Proposed optional $10 USD/month', icon: '⬡', locked: false,
     features: [
-      'Full thinker conversations',
-      'Voice mode with distinct voices',
-      'Great Books annotations + progress',
-      'Private Waddle creation',
-      'Book Salon participation',
-      'Hub task management',
-      '$EXP earning',
-    ],
-  },
-  {
-    name: 'SCHOLAR', subtitle: '$99/mo', icon: '◆', locked: true,
-    features: [
-      'Everything in LOCKED',
-      'Private ritual rooms',
-      'Founding dinner invitations',
-      'Governance voting',
-      'Priority artifact generation',
-      'Direct oracle consultations',
-      'Physical space at 92B South St',
+      'Contributes toward community infrastructure',
+      'The same free books and Circle access',
+      'No AI quota, token or governance benefit',
+      'Purchase availability checked at /join',
     ],
   },
 ];
@@ -58,13 +43,18 @@ export default function AccessPage() {
 
   useEffect(() => {
     import('@/lib/auth/getSession').then(({ getMemberSession }) => {
-      getMemberSession().then(s => {
+      getMemberSession().then(async s => {
         if (s?.member) {
-          setMemberId(s.member.id);
-          setMemberName(s.member.display_name || 'Explorer');
-          setMemberTier((s.member as any).tier || 'free');
+          const member = s.member as { id: string; display_name?: string | null; tier?: string | null };
+          setMemberId(member.id);
+          setMemberName(member.display_name || 'Explorer');
+          setMemberTier(member.tier || 'free');
           setLoadingSafe(true);
-          fetch(`/api/safe?memberId=${s.member.id}`)
+          const accessToken = await getSupabaseAccessToken();
+          fetch('/api/safe', {
+            cache: 'no-store',
+            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+          })
             .then(r => r.json())
             .then(d => { setSafeData(d); setLoadingSafe(false); })
             .catch(() => setLoadingSafe(false));
@@ -89,12 +79,12 @@ export default function AccessPage() {
 
       {/* Header */}
       <div style={{ textAlign: 'center', padding: '80px 2rem 40px' }}>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>ACCESS + SOVEREIGNTY</div>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.5em', color: gold, opacity: 0.5, marginBottom: '1.5rem' }}>ACCESS + ACTIVITY</div>
         <h1 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 300, letterSpacing: '0.15em', marginBottom: '1rem' }}>
           LOCK & SAFE
         </h1>
         <p style={{ fontSize: '1.1rem', color: muted, fontStyle: 'italic', maxWidth: '500px', margin: '0 auto', lineHeight: 1.8 }}>
-          Your key to the inner temple. Your vault for everything you create.
+          Read and participate for free. Review optional support separately from your existing account records.
         </p>
       </div>
 
@@ -107,13 +97,11 @@ export default function AccessPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1px', background: `${gold}12` }}>
           {TIERS.map(tier => {
-            const tierMap: Record<string, string> = { FREE: 'free', SEEKER: 'seeker', SCHOLAR: 'scholar' };
-            const isCurrentTier = memberTier === tierMap[tier.name] || (tier.name === 'OPEN' && memberTier === 'free');
-            const isUnlocked = memberId && !tier.locked;
+            const isCurrentTier = tier.name === 'FREE' && memberTier === 'free';
             return (
             <div key={tier.name} style={{ background: isCurrentTier ? '#111' : '#0d0d0d', padding: '2.5rem 2rem', display: 'flex', flexDirection: 'column', borderTop: isCurrentTier ? `2px solid ${gold}` : '2px solid transparent' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                {isCurrentTier && <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>YOUR TIER</div>}
+                {isCurrentTier && <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>FREE COMMUNITY</div>}
                 <div style={{ fontSize: '2.5rem', color: gold, opacity: tier.locked && !isCurrentTier ? 0.3 : 0.7, marginBottom: '0.75rem' }}>{tier.icon}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.2em', color: gold }}>{tier.name}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginTop: '0.25rem' }}>{tier.subtitle}</div>
@@ -131,9 +119,10 @@ export default function AccessPage() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, padding: '12px 30px', textDecoration: 'none', display: 'inline-block' }}>
-            UPGRADE YOUR ACCESS →
+          <a href="/join" style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.08em', color: '#000', background: gold, padding: '12px 20px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px', boxSizing: 'border-box', maxWidth: '100%' }}>
+            FREE COMMUNITY AND OPTIONAL SUPPORT →
           </a>
+          <p style={{ fontSize: '1rem', color: parchment, lineHeight: 1.7 }}>Older membership records are not supporter status. <a href="/billing" style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>Check your existing billing</a> before considering another subscription.</p>
         </div>
       </section>
 
@@ -145,19 +134,19 @@ export default function AccessPage() {
             YOUR SAFE
           </h2>
           <p style={{ fontSize: '1rem', color: muted, fontStyle: 'italic', textAlign: 'center', marginBottom: '2rem' }}>
-            Everything you create is yours.
+            Your account and activity summary.
           </p>
 
           {!memberId ? (
             <div style={{ textAlign: 'center', padding: '3rem', border: `1px solid ${gold}22`, background: '#0d0d0d' }}>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '1.5rem', color: gold, opacity: 0.2, marginBottom: '1rem' }}>⬡</div>
-              <p style={{ fontSize: '1rem', color: muted, marginBottom: '1.5rem' }}>Sign in to view your Safe</p>
+              <p style={{ fontSize: '1rem', color: muted, marginBottom: '1.5rem' }}>Sign in to view your activity summary</p>
               <button onClick={signInWithGoogle} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: '#000', background: gold, border: 'none', padding: '10px 24px', cursor: 'pointer' }}>
                 SIGN IN WITH GOOGLE
               </button>
             </div>
           ) : loadingSafe ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: muted, fontStyle: 'italic' }}>Opening your Safe...</div>
+            <div style={{ textAlign: 'center', padding: '3rem', color: muted, fontStyle: 'italic' }}>Loading activity summary...</div>
           ) : safeData ? (
             <div style={{ border: `1px solid ${gold}22`, background: '#0d0d0d' }}>
               <div style={{ padding: '1.5rem 2rem', borderBottom: `1px solid ${gold}11` }}>
@@ -168,7 +157,7 @@ export default function AccessPage() {
                 { icon: '◈', label: 'Great Books Highlights', value: safeData.highlights },
                 { icon: '◎', label: 'Waddles Recorded', value: safeData.waddles },
                 { icon: '⬡', label: 'Artifacts Created', value: safeData.artifacts },
-                { icon: '◆', label: '$EXP Earned', value: safeData.exp },
+                { icon: '◆', label: 'EXP points recorded', value: safeData.exp },
                 { icon: '◇', label: 'Books Started', value: safeData.booksStarted },
                 { icon: '✓', label: 'Books Completed', value: safeData.booksCompleted },
               ].map((item, i) => (
@@ -203,7 +192,7 @@ export default function AccessPage() {
               ))}
             </div>
             <p style={{ fontSize: '0.95rem', color: muted, lineHeight: 1.7, fontStyle: 'italic', textAlign: 'center' }}>
-              Your learning is recorded. When ETH ID launches, this history becomes part of your sovereign identity on-chain.
+              The totals above summarize recorded activity. EXP points are not a promised payment or reward. ETH ID and an on-chain learning history remain proposals, with availability and safeguards still to be verified.
             </p>
           </div>
         </section>
@@ -213,14 +202,14 @@ export default function AccessPage() {
       <section style={{ padding: '4rem 2rem', maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, opacity: 0.5, marginBottom: '1rem', textAlign: 'center' }}>III.</div>
         <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', fontWeight: 300, letterSpacing: '0.1em', marginBottom: '2rem', textAlign: 'center', borderBottom: `1px solid ${gold}22`, paddingBottom: '1rem' }}>
-          DATA SOVEREIGNTY
+          DATA SOVEREIGNTY · PROPOSED
         </h2>
         <p style={{ fontSize: '1.15rem', lineHeight: 1.9, textAlign: 'center', marginBottom: '2rem' }}>
-          Your data lives in your Safe. It is encrypted, portable, and yours. No platform can access it without your permission. This is the Living Archive — the beginning of sovereign data.
+          This page presents account and activity summaries. The Living Archive proposes greater control over personal data, including encryption, portability and permission controls. Those capabilities, their availability and their safeguards still need verification.
         </p>
         <div style={{ textAlign: 'center' }}>
           <a href="/data-layer" style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.2em', color: gold, textDecoration: 'none', border: `1px solid ${gold}44`, padding: '10px 24px', display: 'inline-block' }}>
-            READ THE FULL DATA LAYER VISION →
+            EXPLORE THE PROPOSED DATA LAYER →
           </a>
         </div>
       </section>

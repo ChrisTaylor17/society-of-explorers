@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "videos": [
+    {
+      "id": "how-a-circle-works",
+      "resource": "soe_circle_intro",
+      "title": "How a Circle works",
+      "description": "A short introduction to reading, respectful disagreement and sharing with care. Original silent SoE video with captions.",
+      "credit": "Original Society of Explorers text and canvas graphics. No third-party media, audio, music or voice.",
+      "sourcePage": null,
+      "attribution": null,
+      "transcript": "How a Circle works\nRead. Reflect. Share.\nA good conversation starts with a good question.\n\nChoose a Circle\nFind a time and place that work for you.\nRead the source before your meeting.\n\nBring your perspective\nChristian and conservative roots.\nEvery faith and view is welcome.\n\nMake room for disagreement\nChallenge an idea.\nTreat the person with respect.\n\nShare with care\nKeep other members’ words private.\nAsk before recording.\n\nStart with the reading\nFind a Circle. Read.\nJoin the conversation.",
+      "durationMs": 23955,
+      "width": 720,
+      "height": 404,
+      "mediaFile": "circle-intro.mp4",
+      "mediaSHA256": "1b1e4331aeb76c5401d9f5f43a709108c5c3330959f2c33b36cca6a63e132155",
+      "mediaBytes": 157621,
+      "captionsFile": "circle-intro.vtt",
+      "captionsSHA256": "d5279f41285491f031c889a51b142b3cce48c1c82a76cf908a1a0ce3594a0e1c",
+      "captionsBytes": 698
+    },
+    {
+      "id": "night-sky-traffic",
+      "resource": "soe_night_sky",
+      "title": "Who gets the night sky?",
+      "description": "The Archivist looks at actual 2026 footage from Paranal, Chile, and asks how we should weigh satellite internet against a shared night sky. A silent 24-second Reel.",
+      "credit": "B. Häußler/ESO",
+      "sourcePage": "https://www.eso.org/public/videos/eso2607d/",
+      "attribution": {
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "edits": "Trimmed, framed vertically and annotated with AI-assisted commentary. Source audio omitted.",
+        "captionPresentation": "embedded-text"
+      },
+      "transcript": "The night sky has traffic. A time-lapse\nexcerpt from Paranal, Chile, filmed May 19,\n2026.\n\nA lifeline far from a tower. Satellite\ninternet can connect places beyond ground\nnetworks.\n\nA cost for the telescope. Bright trails can\nobscure part of a telescope image.\n\nWho gets the night sky? What brightness\nlimit would you set? Bring your reason to a\nCircle.",
+      "durationMs": 24000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "night-sky-traffic.mp4",
+      "mediaSHA256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f",
+      "mediaBytes": 3346521,
+      "captionsFile": "night-sky-traffic.vtt",
+      "captionsSHA256": "1cb633b7dd2b658db6933b92e1b7da836ed8d1cc7dbc3972ce93018a2d9b56cf",
+      "captionsBytes": 535
+    },
+    {
+      "id": "telescope-first-tilt",
+      "resource": "soe_elt_tilt",
+      "title": "What did the tilt prove?",
+      "description": "The Archivist uses actual footage of the October 2026 telescope tilt test in Chile to ask what one successful test proves. A silent 20-second Reel.",
+      "credit": "ESO/Cimolai/Apical/G. Vecchia",
+      "sourcePage": "https://www.eso.org/public/videos/potw2643a/",
+      "attribution": {
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "edits": "Trimmed, framed vertically and annotated with AI-assisted commentary. Source audio omitted.",
+        "captionPresentation": "embedded-text"
+      },
+      "transcript": "Almost 2,000 tonnes tilt. The frame of ESO’s\nnew telescope tilted in October.\n\nThe trick? A film of oil. About 120 microns\nthick in this test, says ESO.\n\nWhat did it prove? The frame can tilt on one\naxis. Sharp images take another test.\n\nWhat would convince you? Which test would\nyou ask for? Bring your reason to a Circle.",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "telescope-first-tilt.mp4",
+      "mediaSHA256": "d059aeff2f36723ec3a3e843a16f6d4413564620a480374b79e88e2e84361168",
+      "mediaBytes": 2849740,
+      "captionsFile": "telescope-first-tilt.vtt",
+      "captionsSHA256": "5d697474a0b6dbc543b9b29397498d6d840e812afaafe22eeba376e0a6e27d36",
+      "captionsBytes": 506
+    },
+    {
+      "id": "which-height",
+      "resource": "soe_which_height",
+      "title": "Which height are we measuring?",
+      "description": "The Archivist uses archive footage of Kīlauea to explain two measurements from the October 17, 2026 eruption. A silent 20-second Reel.",
+      "credit": "James Lee via Pexels",
+      "sourcePage": "https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/",
+      "attribution": {
+        "licenseUrl": "https://www.pexels.com/terms-of-service/",
+        "edits": "Trimmed and framed with original, AI-assisted educational commentary. Archive footage is labeled throughout.",
+        "captionPresentation": "embedded-text",
+        "referenceUrl": "https://www.usgs.gov/media/videos/october-17-2026-video-kilauea-summit-lava-fountaining-episode-55"
+      },
+      "transcript": "Archive footage of Kīlauea. 25,000 feet?\nWhat went up? USGS reported two heights for\nthe eruption on October 17, 2026.\n\nThe plume rose to about 25,000 feet above\nsea level.\n\nThe lava fountain at the north vent peaked\nat just over 700 feet by 5 a.m. local time.\n\nAsk what they measured. Which feature? Where\ndid they measure from? Bring a question to a\nCircle.",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "which-height.mp4",
+      "mediaSHA256": "1815e08a3e5fea79db76e76c77a3d22c3559b0c6ac91123091daebb6093fd2a7",
+      "mediaBytes": 1804485,
+      "captionsFile": "which-height.vtt",
+      "captionsSHA256": "070c629ae14d38e6c167455f8ac78f9351bbd389c17a341989bd42a17d742138",
+      "captionsBytes": 541
+    },
+    {
+      "id": "new-species",
+      "resource": "soe_new_species",
+      "title": "Is it a new species?",
+      "description": "The Archivist examines an isopod filmed off American Samoa and connects the question of evidence to NOAA’s separate November trial off Hawaiʻi. A silent 20-second Reel.",
+      "credit": "NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration",
+      "sourcePage": "https://oceanexplorer.noaa.gov/dive-11-ex2606/",
+      "attribution": {
+        "licenseUrl": "https://oceanexplorer.noaa.gov/faqs/",
+        "edits": "Trimmed and framed with original educational commentary. September archive footage is labeled throughout. The November trial is a separate reference.",
+        "captionPresentation": "embedded-text",
+        "referenceUrl": "https://oceanexplorer.noaa.gov/expedition/ex2701/"
+      },
+      "transcript": "September 10, 2026, American Samoa. A dive\nteam filmed an isopod moving over the\nseafloor. NOAA says it may be a new species.\n\nWatch how it moves. What can you tell from a\nvideo?\n\nIn a separate November 2026 trial off\nHawaiʻi, NOAA is testing untethered robots\nfor mapping and collecting samples.\n\nWhat would you compare before calling it a\nnew species? Bring the question to a Circle.",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280,
+      "mediaFile": "new-species.mp4",
+      "mediaSHA256": "71b6c3ce2460f63eb68273fe430d7ba5297bd2bb47d80ae15723d6a74c46a75a",
+      "mediaBytes": 2820835,
+      "captionsFile": "new-species.vtt",
+      "captionsSHA256": "488a3bbeaed512da01f36c31428c68fd19498b021bc8755390a58107d57ad4fe",
+      "captionsBytes": 567
+    }
+  ]
+}

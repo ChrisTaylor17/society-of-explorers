@@ -1,11 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { matchingReleaseBlock } from '@/lib/matching/releaseBlock';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedEdgeMember } from '@/lib/getAuthenticatedMember';
+import { memberWriteOriginAllowed } from '@/lib/auth/request';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 export const preferredRegion = 'global';
 
-const MEMBER_SELECT = 'id,tier,supabase_auth_id,wallet_address';
 const MAX_CANDIDATES = 100;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -50,19 +53,6 @@ interface MatchReport {
   };
 }
 
-interface EdgeMember {
-  id: string;
-  tier: string | null;
-  supabase_auth_id: string | null;
-  wallet_address: string | null;
-}
-
-interface SupabaseEnv {
-  url: string;
-  anonKey: string;
-  serviceRoleKey: string;
-}
-
 interface MatchAuditContext {
   auditId: string;
   startedAtMs: number;
@@ -71,14 +61,19 @@ interface MatchAuditContext {
 }
 
 export async function POST(req: NextRequest) {
+  const unavailable = matchingReleaseBlock();
+  if (unavailable) return unavailable;
+
   const audit: MatchAuditContext = {
     auditId: crypto.randomUUID(),
     startedAtMs: performance.now(),
   };
 
   try {
-    const env = getSupabaseEnv();
-    const auth = await authenticateMember(req, env);
+    if (!memberWriteOriginAllowed(req)) {
+      return jsonWithAudit({ audit_id: audit.auditId, error: 'Request refused.' }, audit.auditId, 403);
+    }
+    const auth = await getAuthenticatedEdgeMember(req);
     if (!auth) {
       auditLog(audit, 'auth_rejected', 'warn', { http_status: 401 });
       return jsonWithAudit({ audit_id: audit.auditId, error: 'Unauthorized' }, audit.auditId, 401);
@@ -101,8 +96,8 @@ export async function POST(req: NextRequest) {
     if (sourceProjection.value.member_id !== auth.id) {
       auditLog(audit, 'member_mismatch', 'warn', {
         http_status: 403,
-        authenticated_member_id: auth.id,
-        submitted_member_id: sourceProjection.value.member_id,
+        authenticated_member_present: true,
+        submitted_member_valid: true,
       });
       return jsonWithAudit(
         { audit_id: audit.auditId, error: 'Projection member_id does not match authenticated member.' },
@@ -112,12 +107,7 @@ export async function POST(req: NextRequest) {
     }
 
     audit.sourceMemberId = auth.id;
-    const supabase = createClient(env.url, env.serviceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('consented_match_projections')
@@ -126,7 +116,12 @@ export async function POST(req: NextRequest) {
       .limit(MAX_CANDIDATES);
 
     if (error) {
-      throw new Error(`Match projection query failed: ${error.message}`);
+      auditLog(audit, 'candidate_query_failed', 'error', { http_status: 500 });
+      return jsonWithAudit(
+        { audit_id: audit.auditId, error: 'Unable to calculate matches.' },
+        audit.auditId,
+        500,
+      );
     }
 
     const candidates = normalizeCandidates(data);
@@ -155,7 +150,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     auditLog(audit, 'execution_failed', 'error', {
       http_status: 500,
-      error: errorMessage(error),
+      error_type: classifyError(error),
     });
     return jsonWithAudit(
       { audit_id: audit.auditId, error: 'Internal edge matching failure.' },
@@ -437,64 +432,6 @@ function parseEpistemicVectors(
   };
 }
 
-async function authenticateMember(req: NextRequest, env: SupabaseEnv): Promise<EdgeMember | null> {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice('Bearer '.length).trim();
-    const user = await getSupabaseUser(env, token);
-    if (user?.id) {
-      const member = await lookupMember(env, 'supabase_auth_id', user.id);
-      if (member) return member;
-    }
-  }
-
-  const walletId = parseCookies(req.headers.get('cookie')).get('soe_wallet_id');
-  if (walletId && UUID_PATTERN.test(walletId)) {
-    return lookupMember(env, 'id', walletId);
-  }
-
-  return null;
-}
-
-async function getSupabaseUser(env: SupabaseEnv, token: string): Promise<{ id: string } | null> {
-  const res = await fetch(`${env.url}/auth/v1/user`, {
-    headers: {
-      apikey: env.anonKey,
-      authorization: `Bearer ${token}`,
-    },
-    cache: 'no-store',
-  });
-
-  if (res.status === 401) return null;
-  if (!res.ok) throw new Error(`Supabase auth lookup failed with HTTP ${res.status}.`);
-
-  const body: unknown = await res.json();
-  return isRecord(body) && typeof body.id === 'string' ? { id: body.id } : null;
-}
-
-async function lookupMember(
-  env: SupabaseEnv,
-  field: 'id' | 'supabase_auth_id',
-  value: string,
-): Promise<EdgeMember | null> {
-  const supabase = createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-
-  const { data, error } = await supabase
-    .from('members')
-    .select(MEMBER_SELECT)
-    .eq(field, value)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error(`Member lookup failed: ${error.message}`);
-  return data ? (data as EdgeMember) : null;
-}
-
 async function safeRequestJson(req: NextRequest): Promise<unknown> {
   try {
     return await req.json();
@@ -503,23 +440,10 @@ async function safeRequestJson(req: NextRequest): Promise<unknown> {
   }
 }
 
-function getSupabaseEnv(): SupabaseEnv {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !anonKey || !serviceRoleKey) {
-    throw new Error('Supabase environment is not configured.');
-  }
-
-  return { url, anonKey, serviceRoleKey };
-}
-
 function jsonWithAudit(body: Record<string, unknown>, auditId: string, status: number) {
-  return NextResponse.json(body, {
+  return privateJson(body, {
     status,
     headers: {
-      'cache-control': 'no-store',
       'x-match-audit-id': auditId,
     },
   });
@@ -538,7 +462,7 @@ function auditLog(
     audit_id: audit.auditId,
     at: new Date().toISOString(),
     elapsed_ms: Math.round((performance.now() - audit.startedAtMs) * 100) / 100,
-    source_member_id: audit.sourceMemberId,
+    source_member_authenticated: Boolean(audit.sourceMemberId),
     candidates_processed: audit.candidatesProcessed,
     ...details,
   });
@@ -578,33 +502,15 @@ function normalizeSkill(skill: string): string {
   return skill.trim().toLowerCase();
 }
 
-function parseCookies(header: string | null): Map<string, string> {
-  const cookies = new Map<string, string>();
-  if (!header) return cookies;
-
-  for (const segment of header.split(';')) {
-    const [rawKey, ...rawValue] = segment.trim().split('=');
-    if (!rawKey || rawValue.length === 0) continue;
-
-    try {
-      cookies.set(rawKey, decodeURIComponent(rawValue.join('=')));
-    } catch {
-      cookies.set(rawKey, rawValue.join('='));
-    }
-  }
-
-  return cookies;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
+function classifyError(error: unknown): string {
+  if (error instanceof Error) return error.name || 'Error';
   if (typeof error === 'string') return error;
   try {
-    return JSON.stringify(error);
+    return JSON.stringify(error)?.slice(0, 80) || 'Unknown';
   } catch {
     return 'Unknown error';
   }

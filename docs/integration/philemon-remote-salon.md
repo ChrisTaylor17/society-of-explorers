@@ -1,0 +1,11 @@
+# Philemon remote salon
+
+The signed-out Root Kernel study opens a five-part host guide for a 45-minute online conversation with four to six readers. The group opens with a short prayer, reads all 25 verses aloud, compares interpretations of the greeting and discusses the appeal for Onesimus. Participants may listen or pass. Hosts share a private meeting link and keep recording and automated notes off.
+
+The guide now opens the hosting form with Online and the complete letter selected. The web sign-in return carries both choices. After checking hosting access, the host verifies the edition, reviews the plan and confirms the listing. Clearing a draft keeps the public choices and clears the private link. A standard hosting entry starts in person with the starter plan. A repeated format parameter uses the standard format.
+
+The edition identifier binds the existing World English Bible Classic text and both publisher footnotes. The complete letter is one assignable selection. Circle discovery can find it by title or exact edition. The Circle reading plan opens the study on the web and in both phone paths. In the Quest room, Read selection rechecks current member access and pages through the complete letter, footnotes and source information. [Publisher text](https://ebible.org/eng-web/PHM01.htm) · [Publisher reuse terms](https://ebible.org/eng-web/webfaq.htm)
+
+From an assigned reading, the web study carries the public Circle identifier and shows **Return to Circle details** above the letter. The destination checks current access before showing member controls. A standalone study or ambiguous Circle parameter renders the same public text. [Reading and member journey verification](philemon-circle-return-verification.json)
+
+Local tests covered the compiled web study, the reviewed creation flow, member access to the meeting link, both phone paths and the simulated Quest room. Each browser and the disposable database closed. The hosted account flow, physical phones and headset, and an actual salon meeting still need acceptance. [Current verification](philemon-circle-verification.json) · [Earlier guide verification](philemon-remote-salon-verification.json)

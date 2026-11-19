@@ -1,0 +1,94 @@
+{
+  "status": "PASS",
+  "recordedAt": "2026-11-08T10:25:05.588349+00:00",
+  "baseCommit": "d49736e8aedc4173398044f269d7bff90872f6d0",
+  "canonical": "/Users/christaylor/Documents/Codex/soe-release",
+  "scope": "Bounded local public invitation and claim corrections; no deployment or hosted data access.",
+  "sourceBinding": {
+    "files": 1233,
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-pilot-claims/SOURCE_BINDING.json",
+    "mismatches": [],
+    "changedSourceHashes": {
+      "app/soe/page.tsx": "df6ce1f6c489ea3d879b0a7f35982a7b987783358926aaa5547c27ff8b9c3d3e",
+      "app/soe/soe-overview.module.css": "2512302673f48a8c0495fb04918799f793df8583d09ce0a2a9e0f3cb3219f735",
+      "components/PublicFooter.tsx": "cb9d24c7a53a5e6eea0cf85a25cccf52b25f08bf5982df727a11b5c02f0d9cac",
+      "app/HomePageClient.tsx": "eb81806667ba97cd72f4cefc92226f93e137a034f7140331fe677c0272f762a2",
+      "verification/web/scripts/browser-matching-boundary.mjs": "b4d47b56ec46662e7de6164e8ff0c1943481749bfbda6cdebcb46d79879952e0",
+      "verification/web/scripts/browser-public-overview.mjs": "ebd76347b31b5edc78fdb424cf02209dbaf0cbbe0aa74dfa6412595b570ce6b8"
+    }
+  },
+  "claimInventory": {
+    "selectedFiles": 11,
+    "matchingLines": 83,
+    "completeSiteAudit": false
+  },
+  "build": {
+    "status": "PASS",
+    "sourceFiles": 1233,
+    "buildId": "GEZMtZmM5zeXdM9WBfykz",
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-pilot-claims/evidence/built-shell-public-claims-01-next-build.json"
+  },
+  "scopedLint": {
+    "status": "PASS",
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-pilot-claims/evidence/public-claims-lint-03.json"
+  },
+  "browser": {
+    "overviewStories": 5,
+    "matchingRegressionStories": 5,
+    "actualCompiledHttpRefusals": 9,
+    "overviewReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-pilot-claims/evidence/public-overview-browser-03/result.json",
+    "matchingReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-pilot-claims/evidence/matching-boundary-browser-02/result.json",
+    "initialOverviewApiCalls": 0,
+    "existingDestinationFixtures": [
+      "signed-out auth response",
+      "empty pulse response"
+    ],
+    "externalRequests": 0,
+    "browserErrors": 0,
+    "allClosed": true
+  },
+  "cleanup": {
+    "serverStatus": "STOPPED",
+    "ownedProcessesGone": true,
+    "portClosed": true,
+    "sourceMismatches": [],
+    "builtMismatches": [],
+    "inputMismatches": [],
+    "runtimeMismatches": [],
+    "deniedOperations": [],
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-public-pilot-claims/evidence/built-shell-public-claims-server-01-server.json"
+  },
+  "storage": {
+    "minimumSampledFreeBytes": 15879700480,
+    "maximumSampledCountedAllocatedBytes": 19003990016,
+    "minimumRequiredFreeBytes": 8000000000,
+    "maximumAllowedAdditionalBytes": 30000000000
+  },
+  "changedFiles": [
+    "app/soe/page.tsx",
+    "app/soe/soe-overview.module.css",
+    "components/PublicFooter.tsx",
+    "app/HomePageClient.tsx",
+    "verification/web/scripts/browser-matching-boundary.mjs",
+    "verification/web/scripts/browser-public-overview.mjs",
+    "docs/integration/public-pilot-claims.md",
+    "docs/integration/current-service-readiness.md",
+    "docs/integration/public-pilot-claims-verification.json"
+  ],
+  "limits": [
+    "Local built app, not deployed or real-account acceptance.",
+    "Other live/roadmap/structure/92B funding and prototype privacy claims remain open.",
+    "No real event, attendance, current legal operator, ownership, exemption or venue authority verified.",
+    "No new Android or iOS build, physical device, headset or hosted database recovery check in this checkpoint."
+  ],
+  "ownerAction": "None from phone; hidden database entry remains pending until owner is at the Mac. No password received or login attempted.",
+  "budget": {
+    "authorizedUsd": 200,
+    "spentUsd": 0,
+    "remainingUsd": 200,
+    "chargeScheduled": false
+  },
+  "hostedWrites": false,
+  "credentialChanges": false,
+  "productionClearance": false
+}

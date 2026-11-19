@@ -1,0 +1,42 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T13:59:04.003769+00:00",
+  "parentCommit": "d78b2d86a765e780d5e0234cf609d903fdcfe728",
+  "productionCleared": false,
+  "results": {
+    "orderedSqlFiles": 51,
+    "preCutoverTablesVerified": 20,
+    "privateDataTables": 8,
+    "checks": [
+      "The pre-cutover archive and role export restore into a separate cluster and match all 20 tables.",
+      "The restored pre-cutover fixture reproduces browser access to private answers, messages and transcripts.",
+      "The complete ordered cutover runs on the restored copy and preserves every pre-cutover row in its original columns.",
+      "An independent saved-highlight write waits on the start transaction and refuses the frozen account after commit.",
+      "A request must be started for the exact owner, and a cross-member Practice dependency stops the entire erasure phase.",
+      "Only the database owner can erase, and the write barriers refuse late updates and derived copies while another account can save.",
+      "An unknown cascading relationship, an inactive write barrier or changed reviewed counts prevents erasure before deletion.",
+      "A late receipt failure rolls back all data removal and the shared Practice totals.",
+      "Erasure clears all eight reviewed stores and their owned Practice copies, preserves other records, and returns one exact receipt on retry.",
+      "The provider-only request records an empty private data phase without creating a member.",
+      "The full archive restores the removal state and private receipt into a separate database, with the other reader answer intact."
+    ],
+    "priorWebBuildInputsUnchanged": 1083
+  },
+  "scope": "Synthetic PostgreSQL 17 release restored from an archive. A reviewed operator request removed its reading, Thinker memory and Practice records. Hosted execution and full-account erasure remain open.",
+  "remaining": [
+    "Shared Circle and direct-message content and published profile",
+    "Provider sessions, storage and other data",
+    "Owner retention policy and completion notice",
+    "Production restore verifier and physical device acceptance"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "525d66e38dd6dc6360dabdc565c5276aba5ccb40fe11802d030f4662d3b1ddb1",
+    "docs/integration/account-deletion.md": "83a3dc98bbb6f86bbfebc1d4ed9a4ee9e32783d6c7011dc8e12acfa15e50e587",
+    "docs/sql/account-erasure-private-data-apply.sql": "5c0c729a51d7cdcfe7ef2d9df6b5d16d10aea2e213663180062f21947c8daa2a",
+    "verification/web/scripts/rehearse-private-data-erasure.py": "6a7c3607a3f392413e0704bb299124f8f8d8bcbd89e5b20baaa794b1c27ece0a"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-account-erasure-private-data",
+  "evidenceSha256": {
+    "account-erasure-private-data.json": "d1bc2cbc4aca786fe7c7a5871a30e52cda276d7cd02dea90f1e39fee781c0a67"
+  }
+}

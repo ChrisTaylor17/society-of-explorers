@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-11-08T11:01:45.709884+00:00",
+  "baseCommit": "eef3efb2c5de202d411c4bc1d93ff87b88abe185",
+  "buildId": "ftwSU26nWZ6DmVxhp7Jaz",
+  "buildInputs": 1235,
+  "canonicalResidentInputs": 1223,
+  "canonicalUnchangedGitBlobs": 12,
+  "canonicalBuildMismatches": [],
+  "sourceHashes": {
+    "app/roadmap/page.tsx": "d9ea56a2f1bd9a739a8f15b18ff4b421f4e6cd7078ced83cfa44e3cb88c9a78f",
+    "app/structure/page.tsx": "8b529e8f8e1d052c5dfd3242d5ab756c0738329432191af36b3c8d5587b03809",
+    "components/ProjectDirection.module.css": "3fd53ffdc48ceb942bb8d10dcad1d4a5105be024e1bcba892a0ff0cdeab03e1f",
+    "verification/web/scripts/browser-project-direction.mjs": "6c3ca75856b045f4bda474edef36f5bd20cb23e73a68ebe424e73b51c0d20b1c"
+  },
+  "browserStories": [
+    "The compiled roadmap identifies a proposed four-week pilot and distinct test/prototype stages, without pricing, checkout, account or member-data requests.",
+    "roadmap reflows at four phone/tablet/desktop widths with visible, unclipped primary actions of at least 44px.",
+    "structure reflows at four phone/tablet/desktop widths with visible, unclipped primary actions of at least 44px.",
+    "The principles page preserves fellowship, Root Kernel, Consilience and shared spaces while distinguishing aspirations from legal, privacy and hardware claims; research links are present but unopened.",
+    "Phone keyboard skip, in-page navigation and the existing navigation dialog remain usable.",
+    "Actual compiled navigation connects roadmap, structure and the existing society overview.",
+    "The main calls to action reach the actual existing pilot and fellowship pages; only signed-out identity fixtures are allowed on those destinations.",
+    "Both pages and their connecting action remain readable and usable with JavaScript disabled, including all structure-page sections."
+  ],
+  "browserStoryCount": 8,
+  "browserClosed": true,
+  "browserApiRequests": 0,
+  "browserExternalRequests": 0,
+  "browserErrors": 0,
+  "serverStopped": true,
+  "serverSourceRuntimeMismatches": 0,
+  "previewPortClosed": true,
+  "scopedLint": "PASS",
+  "fullWebBuild": "PASS",
+  "minimumSampledFreeBytes": 15854002176,
+  "maximumSampledPrivateAllocatedBytes": 19017695232,
+  "fundingSourcesReadOnly": 8,
+  "fundingLiveStateVerified": false,
+  "secureEntryOpened": false,
+  "spentUsd": 0,
+  "remainingBudgetUsd": 200,
+  "scope": "Local compiled informational pages and eight-file funding-source review. No hosted, device, identity, member, payment or legal-status acceptance.",
+  "evidence": {
+    "build": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-direction-01-next-build.json",
+    "browser": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/project-direction-browser-01/result.json",
+    "server": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-direction-server-01-server.json"
+  }
+}

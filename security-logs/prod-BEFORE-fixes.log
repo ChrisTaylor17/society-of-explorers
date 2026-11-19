@@ -1,0 +1,481 @@
+bun test v1.4.2 (744846f84)
+
+tests/security/s1-member-identity.test.ts:
+(pass) S1a thinker: body memberId cannot impersonate another member (salon mode -> 401, no model call) [24.30ms]
+(pass) S1b thinker: body walletMemberId in council mode does not attach victim identity or award victim EXP [22.33ms]
+(pass) S1c getAuthenticatedMember: a raw member UUID in the soe_wallet_id cookie is not accepted as identity [0.28ms]
+(pass) S1d SIWE login issues a signed httpOnly soe_wallet_id session that authenticates the signer only [3.94ms]
+(pass) S1e fails closed when no server secret is configured, or the secret changes [0.43ms]
+82 | });
+83 | 
+84 | test('S1f new sessions carry a server-checked expiry (v2); expired or far-future ones are refused', async () => {
+85 |   const ws = await import('../../lib/auth/walletSession.ts');
+86 |   const v = (await ws.createWalletSessionValue(ADA))!;
+87 |   expect(v.startsWith('v2.')).toBe(true);
+                                   ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s1-member-identity.test.ts:87:31)
+(fail) S1f new sessions carry a server-checked expiry (v2); expired or far-future ones are refused [0.74ms]
+ 97 |   expect(await ws.verifyWalletSessionValue(v + '.x')).toBeNull();
+ 98 | });
+ 99 | 
+100 | test('S1g legacy v1 cookies (issued before this release) keep working only until the cutoff', async () => {
+101 |   const ws = await import('../../lib/auth/walletSession.ts');
+102 |   const legacy = (await ws.createLegacyV1WalletSessionValueForTests(ADA))!;
+                                 ^
+TypeError: ws.createLegacyV1WalletSessionValueForTests is not a function. (In 'ws.createLegacyV1WalletSessionValueForTests(ADA)', 'ws.createLegacyV1WalletSessionValueForTests' is undefined)
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s1-member-identity.test.ts:102:28)
+(fail) S1g legacy v1 cookies (issued before this release) keep working only until the cutoff [0.23ms]
+
+ 5 pass
+ 2 fail
+ 15 expect() calls
+Ran 7 tests across 1 file. [66.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s1b-body-member-routes.test.ts:
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > artifacts/generate [25.15ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > book-salons/[cohortId] POST [23.49ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > book-salons/join [22.89ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > book-salons POST [22.70ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/join [22.95ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/matches GET [22.07ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/matches POST [21.73ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/products POST [22.45ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/questionnaire POST [23.47ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities POST [23.36ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > exp/award [22.95ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > great-books/progress GET [22.90ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > great-books/progress POST [22.30ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > live/[sessionId] [24.47ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > member/wallet [23.20ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > members/onboarding [23.81ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > members/profile [24.39ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > onboarding/send-all (needs CRON_SECRET) [22.97ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > practice/respond [23.39ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > ritual [23.83ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > rooms/[roomId] [23.52ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > rooms POST [23.60ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > safe GET [22.85ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > social/generate [23.23ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > store/buy [23.26ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > tasks POST [23.04ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > thinker/extract-facts (fails closed without CRON_SECRET) [23.10ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > thinker/memory [23.24ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > transactions/approve [23.13ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > twiddle/[id]/react [22.45ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > twiddle/[id] PATCH [22.53ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > twiddle POST [22.15ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > voice-notes/generate [22.57ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/annotate [22.96ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/match GET [23.24ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/scan/verify [24.30ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/spaces POST [23.72ms]
+(pass) optional-identity routes: no session -> never acts as JULES > great-books/annotate does not attribute to body memberId [23.68ms]
+(pass) optional-identity routes: no session -> never acts as JULES > twiddle/[id]/respond does not load JULES memory or attribute to JULES [23.57ms]
+(pass) optional-identity routes: no session -> never acts as JULES > communities GET ignores x-member-id header [23.07ms]
+(pass) optional-identity routes: no session -> never acts as JULES > store/balance GET ignores ?memberId [22.17ms]
+(pass) optional-identity routes: no session -> never acts as JULES > twiddle GET filter=my ignores ?memberId [22.60ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > exp/award credits the session member, not the body member [22.83ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > tasks POST owns the task as the session member [24.79ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > world/annotate uses the session member auth id as author [22.60ms]
+183 |   });
+184 |   test('rooms/[roomId] end by a non-creator is refused (403)', async () => {
+185 |     const { db } = await import('./fakes');
+186 |     const m = await load('rooms/[roomId]');
+187 |     const res: Response = await m.POST(makeReq({ action: 'end', memberId: JULES }, await ada()), { params: Promise.resolve({ roomId: '55555555-5555-4555-8555-555555555501' }) });
+188 |     expect(res.status).toBe(403);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: 403
+Received: 400
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s1b-body-member-routes.test.ts:188:24)
+(fail) signed session ADA + body memberId=JULES -> acts as ADA only > rooms/[roomId] end by a non-creator is refused (403) [0.98ms]
+190 |   });
+191 |   test('live/[sessionId] end by a non-creator is refused (403)', async () => {
+192 |     const { db } = await import('./fakes');
+193 |     const m = await load('live/[sessionId]');
+194 |     const res: Response = await m.POST(makeReq({ action: 'end', memberId: JULES }, await ada()), { params: Promise.resolve({ sessionId: '55555555-5555-4555-8555-555555555501' }) });
+195 |     expect(res.status).toBe(403);
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: 403
+Received: 400
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s1b-body-member-routes.test.ts:195:24)
+(fail) signed session ADA + body memberId=JULES -> acts as ADA only > live/[sessionId] end by a non-creator is refused (403) [0.39ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > communities/[slug]/matches POST cannot accept someone else's match (403) [0.38ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > world/scan/verify: body reviewerId cannot impersonate the space host (403) [0.41ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > onboarding/send-all accepts the cron bearer [0.11ms]
+
+2 tests failed:
+(fail) signed session ADA + body memberId=JULES -> acts as ADA only > rooms/[roomId] end by a non-creator is refused (403) [0.98ms]
+(fail) signed session ADA + body memberId=JULES -> acts as ADA only > live/[sessionId] end by a non-creator is refused (403) [0.39ms]
+
+ 48 pass
+ 2 fail
+ 175 expect() calls
+Ran 50 tests across 1 file. [1052.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s1c-edge-wallet-cookie.test.ts:
+{"event":"movement.pod.match.audit","phase":"auth_rejected","level":"warn","audit_id":"28173c93-77f7-41f4-98b4-860d8d1a972c","at":"2026-10-23T14:05:10.207Z","elapsed_ms":0.53,"source_member_authenticated":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > match: soe_wallet_id=JULES alone -> 401 [3.29ms]
+{"event":"movement.pod.match.audit","phase":"auth_rejected","level":"warn","audit_id":"ea5bb2c2-de0f-4e99-98ea-a42559027b53","at":"2026-10-23T14:05:10.208Z","elapsed_ms":0.34,"source_member_authenticated":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > match: forged signature -> 401 [1.21ms]
+{"event":"movement.project.create.audit","phase":"auth_rejected","level":"warn","audit_id":"33bc9246-6cae-43e0-b20f-221c4df056ab","at":"2026-10-23T14:05:10.210Z","elapsed_ms":0.2,"caller_authenticated":false,"project_scaffolded":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/create: soe_wallet_id=JULES alone -> 401 [1.32ms]
+{"event":"movement.project.create.audit","phase":"auth_rejected","level":"warn","audit_id":"fe75db04-1ff8-40c3-9ac2-25b7de9ad36f","at":"2026-10-23T14:05:10.210Z","elapsed_ms":0.28,"caller_authenticated":false,"project_scaffolded":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/create: forged signature -> 401 [0.53ms]
+{"event":"movement.project.invite.audit","phase":"request_received","level":"info","audit_id":"aa4a722d-f801-498b-9b96-e89864164340","at":"2026-10-23T14:05:10.212Z","elapsed_ms":0.07,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{}}
+{"event":"movement.project.invite.audit","phase":"validation_rejected","level":"warn","audit_id":"aa4a722d-f801-498b-9b96-e89864164340","at":"2026-10-23T14:05:10.212Z","elapsed_ms":0.42,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{"env_ms":0.03,"auth_ms":0.1},"http_status":401,"error":"Unauthorized"}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/invite: soe_wallet_id=JULES alone -> 401 [1.88ms]
+{"event":"movement.project.invite.audit","phase":"request_received","level":"info","audit_id":"7ce4808b-f78a-43e1-9d91-4b74baae25e1","at":"2026-10-23T14:05:10.212Z","elapsed_ms":0.01,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{}}
+{"event":"movement.project.invite.audit","phase":"validation_rejected","level":"warn","audit_id":"7ce4808b-f78a-43e1-9d91-4b74baae25e1","at":"2026-10-23T14:05:10.212Z","elapsed_ms":0.12,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{"env_ms":0,"auth_ms":0.08},"http_status":401,"error":"Unauthorized"}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/invite: forged signature -> 401 [0.32ms]
+{"event":"movement.pod.sync.audit","phase":"request_received","level":"info","audit_id":"1a67133d-ced8-49ea-a168-529d2d05a505","at":"2026-10-23T14:05:10.213Z","elapsed_ms":0.1,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{}}
+{"event":"movement.pod.sync.audit","phase":"auth_rejected","level":"warn","audit_id":"1a67133d-ced8-49ea-a168-529d2d05a505","at":"2026-10-23T14:05:10.214Z","elapsed_ms":0.7,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{"env_ms":0.03,"auth_ms":0.1},"http_status":401,"error":"Unauthorized","error_kind":"auth","private_context_redacted":false}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > movement/pod/sync: soe_wallet_id=JULES alone -> 401 [1.72ms]
+{"event":"movement.pod.sync.audit","phase":"request_received","level":"info","audit_id":"51cfbf56-2f2c-409e-8e0e-83c20651678c","at":"2026-10-23T14:05:10.214Z","elapsed_ms":0.03,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{}}
+{"event":"movement.pod.sync.audit","phase":"auth_rejected","level":"warn","audit_id":"51cfbf56-2f2c-409e-8e0e-83c20651678c","at":"2026-10-23T14:05:10.215Z","elapsed_ms":0.24,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{"env_ms":0.01,"auth_ms":0.14},"http_status":401,"error":"Unauthorized","error_kind":"auth","private_context_redacted":false}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > movement/pod/sync: forged signature -> 401 [0.61ms]
+(pass) the shared Web Crypto verifier works for edge routes > verifier uses only Web Crypto (no node:crypto import), so it runs on the edge runtime [2.72ms]
+(pass) the shared Web Crypto verifier works for edge routes > accepts a genuine session, rejects forged / raw / wrong-secret [0.64ms]
+{"event":"movement.pod.match.audit","phase":"validation_rejected","level":"warn","audit_id":"f97b8eaf-f3d9-40d3-9524-bed33b5385cc","at":"2026-10-23T14:05:10.219Z","elapsed_ms":0.72,"source_member_authenticated":false,"http_status":400,"error":"Missing projection payload."}
+(pass) the shared Web Crypto verifier works for edge routes > match: a signed session passes authentication (not 401) [1.04ms]
+{"event":"movement.project.invite.audit","phase":"request_received","level":"info","audit_id":"d0dd9d6a-e4f5-4576-ac50-1ee56127a607","at":"2026-10-23T14:05:10.219Z","elapsed_ms":0,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{}}
+{"event":"movement.project.invite.audit","phase":"validation_rejected","level":"warn","audit_id":"d0dd9d6a-e4f5-4576-ac50-1ee56127a607","at":"2026-10-23T14:05:10.219Z","elapsed_ms":0.1,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{"env_ms":0,"auth_ms":0.07},"http_status":401,"error":"Unauthorized"}
+65 |   for (const r of ['match', 'projects/invite']) {
+66 |     test(`${r}: a signed session passes authentication (not 401)`, async () => {
+67 |       const m = await import(`../../app/api/${r}/route.ts`);
+68 |       const res: Response = await m.POST(makeReq({}, { headers: { cookie: `soe_wallet_id=${encodeURIComponent(await walletCookie(ADA))}` } }));
+69 |       await drain(res);
+70 |       expect(res.status).not.toBe(401);
+                                  ^
+error: expect(received).not.toBe(expected)
+
+Expected: not 401
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s1c-edge-wallet-cookie.test.ts:70:30)
+(fail) the shared Web Crypto verifier works for edge routes > projects/invite: a signed session passes authentication (not 401) [0.38ms]
+
+ 11 pass
+ 1 fail
+ 16 expect() calls
+Ran 12 tests across 1 file. [22.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s2-memory-isolation.test.ts:
+[memory] Facts extracted for 11111111-1111-4111-8111-111111111111/socrates: 0 facts, 0 interests, 0 commitments
+39 | 
+40 | test("S2a shared-salon summary never folds another member's words into Ada's memory", async () => {
+41 |   const db = resetDb(seed(7)); // next interaction is #8 -> summary + fact extraction
+42 |   await memory.recordInteraction(ADA, 'socrates', 'Socrates', 'general');
+43 |   await settle();
+44 |   expect(allPrompts()).not.toContain(JULES_SECRET);
+                                ^
+error: expect(received).not.toContain(expected)
+
+Expected to not contain: "JULES-PRIVATE-PLAN-zebra"
+Received: "[{\"model\":\"claude-sonnet-4-20250514\",\"max_tokens\":400,\"system\":\"You are maintaining a living memory record for Socrates about a member of the Society of Explorers.\\n\\nYour job: condense the conversation into a brief, dense summary that captures what matters for future conversations. Focus on:\\n- Key topics discussed and decisions made\\n- The member's current projects, challenges, and goals\\n- Advice given and commitments made\\n- Emotional tone and relationship dynamics\\n- Unresolved questions or threads to pick up later\\n\\nWrite in third person about the member. Be dense — every sentence should carry information. Max 200 words.\\nDo not include any preamble or explanation. Just the summary.\",\"messages\":[{\"role\":\"user\",\"content\":\"RECENT CONVERSATION:\\nMember: JULES-PRIVATE-PLAN-zebra\\n\\nMember: general hello\\n\\nWrite the updated summary. If a previous summary exists, integrate the new information — don't just append. Prioritize the most recent and important details. Keep it under 200 words.\"}]},{\"model\":\"claude-sonnet-4-20250514\",\"max_tokens\":500,\"system\":\"Extract key facts from this conversation between Socrates and a member. Return ONLY valid JSON with these fields:\\n\\n{\\n  \\\"life_facts\\\": { \\\"key\\\": \\\"value\\\" pairs — job, location, relationships, current_projects, goals, struggles, background. Only include facts explicitly stated. },\\n  \\\"intellectual_interests\\\": [\\\"topics they showed interest in or discussed deeply\\\"],\\n  \\\"emotional_patterns\\\": [\\\"observed emotional patterns — e.g. 'tends to overthink decisions', 'excited about new projects but fears commitment'\\\"],\\n  \\\"commitments\\\": [\\\"specific things they said they would do — e.g. 'will write the proposal by Friday', 'committed to daily meditation'\\\"]\\n}\\n\\n\\n\\n\\nOnly extract what's clearly stated. Don't infer or assume. Return ONLY the JSON object, no markdown.\",\"messages\":[{\"role\":\"user\",\"content\":\"CONVERSATION:\\nMember: JULES-PRIVATE-PLAN-zebra\\n\\nMember: general hello\"}]}]"
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s2-memory-isolation.test.ts:44:28)
+(fail) S2a shared-salon summary never folds another member's words into Ada's memory [24.00ms]
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+49 | test("S2b a member cannot pull another member's private salon into their prompt", async () => {
+50 |   resetDb(seed(0));
+51 |   (globalThis as any).__authUser = { id: 'auth-ada' };
+52 |   const res = await thinker.POST(makeReq({ thinkerId: 'socrates', message: 'what did they say?', salonId: `private-${JULES}` }));
+53 |   await drain(res); await settle();
+54 |   expect(res.status).toBe(403);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 403
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s2-memory-isolation.test.ts:54:22)
+(fail) S2b a member cannot pull another member's private salon into their prompt [25.06ms]
+[memory] Facts extracted for 11111111-1111-4111-8111-111111111111/socrates: 0 facts, 0 interests, 0 commitments
+(pass) S2c Ada's own private salon still feeds Ada's memory (feature preserved) [22.57ms]
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+(pass) S2d Ada can still use her own private salon through the thinker route [22.16ms]
+
+ 2 pass
+ 2 fail
+ 6 expect() calls
+Ran 4 tests across 1 file. [102.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s3-siwe-nonce.test.ts:
+(pass) nonce route binds the nonce in a signed httpOnly short-lived cookie [0.78ms]
+(pass) siwe without the nonce cookie is refused [0.42ms]
+(pass) siwe passes the expected nonce to verify and rejects a mismatched message [0.22ms]
+(pass) siwe with a matching nonce succeeds and clears the nonce cookie [1.60ms]
+67 | });
+68 | test('a forged (unsigned, attacker-chosen) nonce cookie is refused before verify', async () => {
+69 |   // Replay: an attacker holding a captured (message, signature) pair sets the
+70 |   // nonce cookie to the nonce inside that message. Must be refused.
+71 |   const res = await siwe.POST(makeReq(B, { cookies: { soe_siwe_nonce: 'nonceAAAA1111' } }));
+72 |   refused(res.status);
+       ^
+error: expect(received).toContain(expected)
+
+Expected to contain: 200
+Received: [ 400, 401 ]
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s3-siwe-nonce.test.ts:72:3)
+(fail) a forged (unsigned, attacker-chosen) nonce cookie is refused before verify [1.06ms]
+error: Cannot find module '../../lib/auth/siweNonce.ts' from '/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s3-siwe-nonce.test.ts'
+(fail) an expired signed nonce cookie is refused [0.17ms]
+
+ 4 pass
+ 2 fail
+ 11 expect() calls
+Ran 6 tests across 1 file. [12.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s4-rate-limit.test.ts:
+24 |   if (existsSync(new URL(RL, import.meta.url))) (await import(RL)).resetRateLimits();
+25 | });
+26 | 
+27 | const council = (ip: string, extra: any = {}) => makeReq({ thinkerId: 'socrates', message: 'hello', isCouncilMode: true, ...extra }, { headers: { 'x-forwarded-for': `${ip}, 10.0.0.1` } });
+28 | 
+29 | test('rate limiter module exists', () => { expect(existsSync(new URL(RL, import.meta.url))).toBe(true); });
+                                                                                                 ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s4-rate-limit.test.ts:29:93)
+(fail) rate limiter module exists [0.42ms]
+(pass) anonymous council is refused before any model call (production requires sign-in) [24.71ms]
+error: Cannot find module '../../lib/rateLimit.ts' from '/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s4-rate-limit.test.ts'
+(fail) anonymous demo is limited per IP; the over-limit call makes no model call [0.38ms]
+error: Cannot find module '../../lib/rateLimit.ts' from '/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s4-rate-limit.test.ts'
+(fail) demo mode is limited too [0.20ms]
+error: Cannot find module '../../lib/rateLimit.ts' from '/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s4-rate-limit.test.ts'
+(fail) signed-in members get their own (larger) budget, not the IP one, and are limited too [0.29ms]
+error: Cannot find module '../../lib/rateLimit.ts' from '/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s4-rate-limit.test.ts'
+(fail) limiter unit: fixed window, independent keys [0.11ms]
+
+ 1 pass
+ 5 fail
+ 3 expect() calls
+Ran 6 tests across 1 file. [33.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s5-markdown-escape.test.ts:
+(pass) raw HTML is escaped [0.30ms]
+(pass) attribute breakouts are escaped [0.08ms]
+(pass) markdown still renders [0.06ms]
+
+ 3 pass
+ 0 fail
+ 9 expect() calls
+Ran 3 tests across 1 file. [6.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s6-verdict-endpoint.test.ts:
+(pass) S6a unauthenticated verdict request is refused before any paid model call or write [1.34ms]
+(pass) S6b owner comes from the session, not body memberId [1.27ms]
+41 | 
+42 | test('S6c verdict is private by default; public only on explicit opt-in', async () => {
+43 |   const db = resetDb(seed());
+44 |   (globalThis as any).__authUser = { id: 'auth-ada' };
+45 |   const priv = await (await verdict.POST(makeReq(body()))).json();
+46 |   expect(db.rows('council_sessions').find(r => r.session_id === 'council-ada-1')!.is_public).toBe(false);
+                                                                                                  ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s6-verdict-endpoint.test.ts:46:94)
+(fail) S6c verdict is private by default; public only on explicit opt-in [0.48ms]
+52 | 
+53 | test("S6d a member cannot overwrite another member's council session by reusing its sessionId", async () => {
+54 |   const db = resetDb(seed());
+55 |   (globalThis as any).__authUser = { id: 'auth-ada' };
+56 |   const res = await verdict.POST(makeReq(body({ sessionId: 'council-jules-1', makePublic: true })));
+57 |   expect(res.status).toBe(403);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 403
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s6-verdict-endpoint.test.ts:57:22)
+(fail) S6d a member cannot overwrite another member's council session by reusing its sessionId [0.31ms]
+
+ 2 pass
+ 2 fail
+ 7 expect() calls
+Ran 4 tests across 1 file. [10.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s7-no-hardcoded-ref.test.ts:
+(pass) no hard-coded sb-<ref>-auth-token cookie names in source [11.00ms]
+(pass) proxy matches Supabase auth cookies generically [0.09ms]
+
+ 2 pass
+ 0 fail
+ 2 expect() calls
+Ran 2 tests across 1 file. [17.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s8-salon-message-load.test.ts:
+25 | const get = async (salonId: string, member?: string) =>
+26 |   route.GET(makeReq(undefined, { url: `http://localhost/api/salon-message/load?salonId=${encodeURIComponent(salonId)}`, cookies: member ? { soe_wallet_id: await walletCookie(member) } : {} }));
+27 | 
+28 | test('anonymous -> 401', async () => {
+29 |   const res = await get('general');
+30 |   expect(res.status).toBe(401);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 401
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s8-salon-message-load.test.ts:30:22)
+(fail) anonymous -> 401 [1.30ms]
+(pass) another member's private salon -> refused, no content [1.55ms]
+34 |   expect([400, 403]).toContain(res.status);
+35 |   expect(await res.text()).not.toContain('jules private note');
+36 | });
+37 | test('salon the caller is not a member of -> 403, no content', async () => {
+38 |   const res = await get(SALON_X, ADA);
+39 |   expect(res.status).toBe(403);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 403
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s8-salon-message-load.test.ts:39:22)
+(fail) salon the caller is not a member of -> 403, no content [0.65ms]
+39 |   expect(res.status).toBe(403);
+40 |   expect(await res.text()).not.toContain('members only');
+41 | });
+42 | test('raw member UUID cookie is not identity -> 401', async () => {
+43 |   const res = await route.GET(makeReq(undefined, { url: `http://localhost/api/salon-message/load?salonId=general`, cookies: { soe_wallet_id: ADA } }));
+44 |   expect(res.status).toBe(401);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 401
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s8-salon-message-load.test.ts:44:22)
+(fail) raw member UUID cookie is not identity -> 401 [0.20ms]
+(pass) private-<id> salons are never served by this endpoint (production rule kept); general works [0.55ms]
+(pass) member of the members-only salon can read it [0.43ms]
+
+ 3 pass
+ 3 fail
+ 11 expect() calls
+Ran 6 tests across 1 file. [11.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s9-salon-message-post.test.ts:
+29 |   route.POST(makeReq(body, { url: 'http://localhost/api/salon-message', cookies: member ? { soe_wallet_id: await walletCookie(member) } : {} }));
+30 | const inserts = () => db.log.filter(l => l.table === 'salon_messages' && l.op === 'insert');
+31 | 
+32 | test('anonymous -> 401 and nothing is written', async () => {
+33 |   const res = await post({ salon_id: 'general', content: 'hi', sender_name: 'Jules Example' });
+34 |   expect(res.status).toBe(401);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 401
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s9-salon-message-post.test.ts:34:22)
+(fail) anonymous -> 401 and nothing is written [1.20ms]
+35 |   expect(inserts().length).toBe(0);
+36 | });
+37 | 
+38 | test('raw soe_wallet_id cookie is not identity -> 401', async () => {
+39 |   const res = await route.POST(makeReq({ salon_id: 'general', content: 'hi' }, { cookies: { soe_wallet_id: JULES } }));
+40 |   expect(res.status).toBe(401);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 401
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s9-salon-message-post.test.ts:40:22)
+(fail) raw soe_wallet_id cookie is not identity -> 401 [0.21ms]
+44 | test('author comes from the session; body sender_name/sender_type/thinker_id/member ids ignored', async () => {
+45 |   const res = await post({ salon_id: 'general', content: 'hello all', sender_name: 'Jules Example', sender_type: 'thinker', thinker_id: 'aristotle', memberId: JULES, member_id: JULES }, ADA);
+46 |   expect(res.status).toBe(200);
+47 |   const rows = db.rows('salon_messages');
+48 |   expect(rows.length).toBe(1);
+49 |   expect(rows[0].sender_name).toBe('Ada Example');
+                                   ^
+error: expect(received).toBe(expected)
+
+Expected: "Ada Example"
+Received: "Jules Example"
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s9-salon-message-post.test.ts:49:31)
+(fail) author comes from the session; body sender_name/sender_type/thinker_id/member ids ignored [1.52ms]
+(pass) posting into another member's private salon -> refused [0.42ms]
+(pass) private-<id> salons are written only server-side (thinker/onboarding), not via this endpoint [0.27ms]
+65 |   expect(inserts().length).toBe(0);
+66 | });
+67 | 
+68 | test('salon the caller neither owns nor belongs to -> 403', async () => {
+69 |   const res = await post({ salon_id: CLOSED, content: 'let me in' }, ADA);
+70 |   expect(res.status).toBe(403);
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: 403
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s9-salon-message-post.test.ts:70:22)
+(fail) salon the caller neither owns nor belongs to -> 403 [0.26ms]
+(pass) salon owner (guide) may post even without a salon_members row [0.27ms]
+77 | });
+78 | 
+79 | test('listed salon member may post', async () => {
+80 |   const res = await post({ salon_id: CLOSED, content: 'member post' }, JULES);
+81 |   expect(res.status).toBe(200);
+82 |   expect(db.rows('salon_messages')[0].sender_name).toBe('Jules Example');
+                                                        ^
+error: expect(received).toBe(expected)
+
+Expected: "Jules Example"
+Received: "Explorer"
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s9-salon-message-post.test.ts:82:52)
+(fail) listed salon member may post [0.27ms]
+82 |   expect(db.rows('salon_messages')[0].sender_name).toBe('Jules Example');
+83 | });
+84 | 
+85 | test('unknown or malformed salon id -> refused (fail closed)', async () => {
+86 |   expect([400, 403]).toContain((await post({ salon_id: 'not-a-real-salon', content: 'x' }, ADA)).status);
+87 |   expect((await post({ salon_id: '77777777-7777-4777-8777-777777777777', content: 'x' }, ADA)).status).toBe(403);
+                                                                                                            ^
+error: expect(received).toBe(expected)
+
+Expected: 403
+Received: 200
+
+      at <anonymous> (/workspace/soe-prod-snapshot-2026-10-23/wt-rel/tests/security/s9-salon-message-post.test.ts:87:104)
+(fail) unknown or malformed salon id -> refused (fail closed) [0.39ms]
+(pass) empty or non-string content -> 400; oversized content is capped at 4000 chars (production rule) [0.54ms]
+
+ 4 pass
+ 6 fail
+ 20 expect() calls
+Ran 10 tests across 1 file. [12.00ms]

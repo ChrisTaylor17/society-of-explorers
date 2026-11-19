@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "recordedAtUTC": "2026-11-04T15:07:30.084097+00:00",
+  "status": "LOCAL_PROFILE_MILESTONE_PASS_PRODUCTION_HOLD",
+  "branch": "codex/soe-first-release",
+  "checkout": "/Users/christaylor/Documents/Codex/soe-release",
+  "priorCheckpoints": [
+    "e4961d5",
+    "68e641c"
+  ],
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Documents/Codex/soe-release",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 60.8,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 976,
+    "sourceSha256": "d19cfa867ed0bb1d98482222bfe54618c2a919d0d54e27daad0d3000286d3fc2",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/checkpoint-d50de94/next-build.log",
+    "buildId": "dhI-c9JrdcZhfKSeWd04n",
+    "sourceStillMatches": true,
+    "fullNextTypeCheck": "PASS18.8seconds"
+  },
+  "fullSelectedNonDom": {
+    "passed": 600,
+    "failed": 0,
+    "skipped": 0,
+    "files": 47,
+    "selection": {
+      "selected": [
+        "tests/account-identity-db.test.mjs",
+        "tests/account-security.test.mjs",
+        "tests/account-signout.test.mjs",
+        "tests/circle-browser-provider.test.mjs",
+        "tests/clip-client.test.mjs",
+        "tests/clip-gate.test.mjs",
+        "tests/clip-http.test.mjs",
+        "tests/clip-retained.test.mjs",
+        "tests/core-containment-db.test.mjs",
+        "tests/discovery-contract.test.mjs",
+        "tests/discovery-db.test.mjs",
+        "tests/discovery-http.test.mjs",
+        "tests/discussion-cohort-http.test.mjs",
+        "tests/legacy-billing-db.test.mjs",
+        "tests/legacy-billing-http.test.mjs",
+        "tests/legacy-billing-provider.test.mjs",
+        "tests/member-profile-db.test.mjs",
+        "tests/member-profile-http.test.mjs",
+        "tests/message-api.test.mjs",
+        "tests/message-db.test.mjs",
+        "tests/message-integration.test.mjs",
+        "tests/moderation-db.test.mjs",
+        "tests/moderation-http.test.mjs",
+        "tests/moderation-integration.test.mjs",
+        "tests/participation-db.test.mjs",
+        "tests/participation-http.test.mjs",
+        "tests/participation-integration.test.mjs",
+        "tests/participation-public.test.mjs",
+        "tests/participation-recovery-http.test.mjs",
+        "tests/passage-post-db.test.mjs",
+        "tests/passage-post-http.test.mjs",
+        "tests/public-member-profile-db.test.mjs",
+        "tests/public-member-profile.test.mjs",
+        "tests/reading-backend.test.mjs",
+        "tests/reading-context.test.mjs",
+        "tests/reading-private-db.test.mjs",
+        "tests/reading-program-db.test.mjs",
+        "tests/reading-program-http.test.mjs",
+        "tests/reading-program-integration.test.mjs",
+        "tests/reading-progress-integration.test.mjs",
+        "tests/supporter-db.test.mjs",
+        "tests/supporter-http.test.mjs",
+        "tests/supporter-provider.test.mjs",
+        "tests/thread-contract.test.mjs",
+        "tests/thread-db.test.mjs",
+        "tests/thread-http.test.mjs",
+        "tests/webhook-body.test.mjs"
+      ],
+      "excludedForDatalessDomRuntime": [
+        "tests/edition-fidelity.test.mjs",
+        "tests/edition-import.test.mjs",
+        "tests/host-review-ui.test.mjs",
+        "tests/legacy-checkout-return-ui.test.mjs",
+        "tests/message-safety-ui.test.mjs",
+        "tests/participation-ui.test.mjs",
+        "tests/passage-source.test.mjs",
+        "tests/passage-ui.test.mjs",
+        "tests/reader-ui.test.mjs",
+        "tests/reading-community-ui.test.mjs",
+        "tests/reading-page-context.test.mjs",
+        "tests/reading-program-ui.test.mjs",
+        "tests/reviewer-ui.test.mjs",
+        "tests/supporter-ui.test.mjs"
+      ]
+    },
+    "sourceBoundary": "Before final SQL function-attribute recognition regression. Application unchanged; affected29cases and composed4rerun on finalSQL hashes."
+  },
+  "finalProfileBackend": {
+    "passed": 29,
+    "sqlCases": 16,
+    "httpAndContractCases": 13,
+    "scope": "Actual owner handlers and unapplied PostgreSQL in disposable PGlite; synthetic identity/admin transport"
+  },
+  "bun": {
+    "security": {
+      "passed": 122,
+      "assertions": 396,
+      "files": 12
+    },
+    "growth": {
+      "passed": 225,
+      "assertions": 1203,
+      "files": 20
+    }
+  },
+  "builtBrowser": {
+    "groupedStories": 9,
+    "stories": [
+      "Complete eligible search traverses34 current/upcoming Circles beyond205 ended inventory rows, with25-row pages, explicit next/first controls and no total-count claim",
+      "Actual SQL preserves accent-folded AND terms, literal punctuation and regex characters, hybrid filters and UUID tie order across title pages; a far-future match is discoverable and lifecycle wording distinguishes upcoming/current",
+      "Opaque public cursors survive actual reload and Back/Forward, restore the exact result page, and match the shareable link",
+      "Exact edition/range hints remain public hints and survive the top Start action; Clear/search/Back update that primary action, and duplicate reading context never issues an unfiltered request",
+      "Applying new filters while a real old page response is held clears old rows immediately, resets its cursor and fences the released late page",
+      "A synthetic RPC failure produces actual generic503 and retry without false emptiness; a structurally valid stale calendar key reaches actual SQL409, offers explicit restart retaining filters, and returns keyboard focus to results",
+      "Canonical Quest Browser routes expose the actual member view, accessible 320px controls and same-Circle fallback links; HTTP fails closed, no private API/provider call occurs, and no synthetic member or immersive claim is introduced. Configured HTTPS/provider acceptance remains a separate gate",
+      "Actual built Next clip catalog and media/caption gateways expose three source-linked passages plus the original SoE MP4; explicit Load sends no account cookie/referrer, hashes verify, H264 decodes at720x404 with six caption cues and no autoplay, and Unload removes the player at320px",
+      "Actual built Next profile page uses canonical 320px CSS and 44px keyboard controls, with no auth/private/provider transport on initial render; explicit Load alone reaches actual cookie/token-free auth/member and owner-profile GET401 routes, shows generic sign-in state, and exposes no editable fields or false saved state"
+    ],
+    "buildId": "dhI-c9JrdcZhfKSeWd04n",
+    "ownedServerStopped": true,
+    "cleanupErrors": [],
+    "profileActual401Requests": [
+      {
+        "path": "/api/auth/member",
+        "method": "GET",
+        "credentialFree": true,
+        "boundary": "actual built Next signed-out GET; startup-denied provider transport"
+      },
+      {
+        "path": "/api/members/profile",
+        "method": "GET",
+        "credentialFree": true,
+        "boundary": "actual built Next signed-out GET; startup-denied provider transport"
+      }
+    ],
+    "scope": "Built Next pages/clip filesystem gateways/two cookie-token-free auth-profile GET401 handlers; discovery actual route/SQL behind intercepted transport. No authenticated real provider/hosted acceptance."
+  },
+  "componentBrowser": {
+    "editorStories": 11,
+    "composedActualEditorApiSqlStories": 4,
+    "communityStories": 4,
+    "scope": "Actual React/CSS/helpers; disclosed NextLink/SDK adapters and local HTTPS interception. Composed owner/public handlers and finalSQL sharePGlite; identity verification synthetic."
+  },
+  "publicProfileTests": {
+    "cases": 17,
+    "actualSdkAndSqlCases": 4,
+    "explicitPublicationRequired": true,
+    "directoryMembershipRequired": true,
+    "eligibilityBeforeLimit": true,
+    "communityManagementControls": "Hidden pending separately verified capability"
+  },
+  "profileSqlSha256": {
+    "docs/sql/member-profile-apply.sql": "6a51741e5267646a25de04981dca04358b26b284585e2662056214ce63d44dbf",
+    "docs/sql/member-profile-preflight.sql": "95f9b8549784e57b8ef542da0055dafb60aca0579f55ede4cfdf066de8c2c41a",
+    "docs/sql/member-profile-rollback.sql": "9bd710af0dfb3e9142117b38f84c8e037f423539632f14736573c20c67a14a95"
+  },
+  "containmentSqlSha256": {
+    "docs/sql/first-release-core-containment-apply.sql": "b88ffa86bb265f467dbf9fe9d7ba17ce246df8a8d2618db86ade8a6401fb1b1b",
+    "docs/sql/first-release-core-containment-preflight.sql": "17db6ff8b73d65de0b3d87fb60fc43a84d84437341a062cb2e195f078a2f34d1",
+    "docs/sql/first-release-core-containment-rollback.sql": "4433d028d58d960c9f9c7c5eca8bc9fa572cde6ee64fee56a0fc3d902a05e0b1"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/checkpoint-d50de94/next-build.json": "d453ed941e129bac19ebea53713852f969b08328234a0a1ce515941d5417eb01",
+    "verification/web/evidence/checkpoint-d50de94/next-build.log": "9e65c64900cda605558578eb12ffaa99c3240f4620058e84fc4d675529b9e0a9",
+    "verification/web/evidence/checkpoint-d50de94/build-source-sha256.json": "09d0384832af16bd3efc8c7b37c3947dd867608275f3ece83d715bb9a1795731",
+    "verification/web/evidence/profile-complete-tests.log": "7551e26925ce9c5ac7a9d96a4d92c607923fbbb8ee95a967b8f6a68a3dcb1f4e",
+    "verification/web/evidence/profile-complete-tests-selection.json": "c77ca72add7cc288e0ee5428484e34576d6216336381a279caea73486d3e240a",
+    "verification/web/evidence/profile-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
+    "verification/web/evidence/member-profile-backend-tests.log": "7ecdc0e7f3ef7b4a8729d9ef02d0a5fc945c75b2b94bf343c20377f8098366c1",
+    "verification/web/evidence/profile-editor-browser.json": "477ba4c09bb6f468280f44c8c25ee37e676a7f2e22fb97f293dac271d3101cb0",
+    "verification/web/evidence/profile-editor-test-freeze.json": "a57b6ce64ee4af5326609f9a75e7013b5daec3353f043bde18bde012ec55d6be",
+    "verification/web/evidence/profile-composed-browser.json": "b386df78527fc1c3a8335b56ab0f0d8478fb796cb35e14a93865099507ba8c6b",
+    "verification/web/evidence/public-member-profile-final-tests.log": "93f210fd202d62b13965bbd3ae7e8163aa12eacd01038961219ae79d896663c6",
+    "verification/web/evidence/public-community-browser.json": "39a4f30d73a08ef31bdf258639998a3ddb8488bd81952c5e565378e1e804e75c",
+    "verification/web/evidence/checkpoint-d50de94/browser-discovery-qa.json": "7c5bb7d7cf7754ea48296018759a159ba69c74bf62492ffcc8cae4cbb65a7466",
+    "verification/web/evidence/checkpoint-d50de94/browser-discovery-progress.json": "7bb5a875d92788bf2116c49daa4d0f14dc9cd5399cecf952bcf8a4f73a4f9584",
+    "verification/web/evidence/core-containment-db-tests.log": "af9575d537d0370987bbd3ae85fa56b551995f41fb0dbf32f145cc72b2a2ab0f",
+    "verification/web/evidence/profile-initial-320.png": "32c8d809e14bcc0116291587e2ae5a0dab2382e8844b83673450e140b4b302a4",
+    "verification/web/evidence/profile-signed-out-320.png": "7a8e339f59aa2bd055ce27bc16b299cc4eca3b63cc48ef9e5816026c36a114af",
+    "verification/web/evidence/profile-editor-mobile.png": "8bee62555e9748a7860f9f12a9ca6e82c21a13daedc1eab5834c17b8512d1a65",
+    "verification/web/evidence/public-community-profile-320.png": "9b6b25dbe7b7eee4a53fc4f7b536c340a8c06a04a96db55bb073c7b9aed797e4",
+    "verification/web/evidence/checkpoint-d50de94/browser-discovery-final.log": "c823870af0f41b9c9f18a05263bcf2df1a4fa976b5ee2bdb6288231fa2630bf5"
+  },
+  "preservedIntermediateEvidence": [
+    "verification/web/evidence/checkpoint-e4961d5/",
+    "verification/web/evidence/initial-profile-build/",
+    "verification/web/evidence/profile-browser-initial-attempt/",
+    "verification/web/evidence/profile-preflight-types.json"
+  ],
+  "originalCheckout": {
+    "statusMatchesOrigin": true,
+    "dirtyPathsAtOrigin": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683"
+  },
+  "boundaries": {
+    "appTestExternalNetworkDeniedFromStartup": true,
+    "cleanEnvironments": true,
+    "packageOrSdkInstall": false,
+    "issuedCredentials": false,
+    "productionMutation": false,
+    "providerSignIn": false,
+    "deployment": false,
+    "push": false,
+    "nativeBinaryOrPhysicalDeviceAcceptance": false,
+    "fullDomAcceptance": false,
+    "productionClearance": false
+  },
+  "nextGate": "Faithful sanitized live-schema fixture and strict service-only Circle baseline/schema adapter. Live seminar sender_* schema lacks legacy member_name. Production access repair needs impact/restore review and explicit approval.",
+  "countsOverlapAndMustNotBeSummed": true,
+  "evidenceRelocation": "Build and built-browser evidence moved unchanged to checkpoint-d50de94; source manifest reconstructed exactly from that Git commit and verified against the original recorded SHA256. See relocation.json.",
+  "supersededBy": "circle-salon-verification.json (next milestone; original profile results retained here)"
+}

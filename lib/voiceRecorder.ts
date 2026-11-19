@@ -1,3 +1,5 @@
+import { getSupabaseAccessToken } from '@/lib/auth/getSession';
+
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: Blob[] = [];
 let stream: MediaStream | null = null;
@@ -37,7 +39,15 @@ export async function stopRecording(): Promise<string> {
       try {
         const formData = new FormData();
         formData.append('audio', blob, 'recording.webm');
-        const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+        formData.append('consentToTranscription', 'true');
+        const accessToken = await getSupabaseAccessToken();
+        const res = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData,
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+          cache: 'no-store',
+        });
+        if (!res.ok) { resolve(''); return; }
         const data = await res.json();
         resolve(data.text || '');
       } catch (err) { reject(err); }

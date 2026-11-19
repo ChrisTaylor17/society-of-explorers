@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-
-const anthropic = new Anthropic();
+import { NextRequest } from 'next/server';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { privateJson } from '@/lib/http/routeError';
+import { getMovementAccess } from '@/lib/movement/access';
 
 const THINKER_VOICES: Record<string, string> = {
   socrates:          'You are Socrates. You question assumptions and find wisdom in simplicity.',
@@ -15,12 +15,20 @@ const THINKER_VOICES: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const { thinkerId, theme } = await req.json();
+  const access = await getMovementAccess(req);
+  if (!access) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+  if (!access.canManage) return privateJson({ error: 'Oracle or founder access required' }, { status: 403 });
+
+  const body = (await req.json().catch(() => ({}))) as { thinkerId?: unknown; theme?: unknown };
+  const thinkerId = typeof body.thinkerId === 'string' ? body.thinkerId : 'socrates';
+  const theme = typeof body.theme === 'string' ? body.theme.trim().slice(0, 200) : '';
 
   const voice = THINKER_VOICES[thinkerId] ?? 'You are a philosophical thinker.';
 
+  const anthropic = createAnthropicClient();
+  const model = resolveClaudeModel('content', 'claude-sonnet-4-20250514');
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model,
     max_tokens: 400,
     system: `${voice}
 
@@ -46,9 +54,8 @@ Example:
   try {
     const clean = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
     const product = JSON.parse(clean);
-    return NextResponse.json({ product });
+    return privateJson({ product });
   } catch {
-    console.error('JSON parse failed:', raw);
-    return NextResponse.json({ error: 'Failed to parse product', raw }, { status: 500 });
+    return privateJson({ error: 'Failed to parse product' }, { status: 500 });
   }
 }

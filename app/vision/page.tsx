@@ -7,7 +7,7 @@ const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
 export const metadata = {
-  title: 'Our Vision — Society of Explorers',
+  title: 'Our Vision',
   description:
     'A new data economy where AI guides humans toward meaningful work, and that work is rewarded in crypto.',
 };

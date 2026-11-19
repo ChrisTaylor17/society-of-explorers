@@ -1,0 +1,3110 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "relativity",
+  "editionId": "pg-5001-14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+  "editionSha256": "14298e92fba1f6f40331a878b6fda08a79cd348e928388f7f27f61b37243981c",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 5001,
+    "landingUrl": "https://www.gutenberg.org/ebooks/5001",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/5001/pg5001-h.zip",
+    "archiveSha256": "6ec14853d758a3e940f17051a47c2d95edc60047dbdca60286437b0b2b01f4b3",
+    "archiveBytes": 528678,
+    "retrievedAt": "2026-11-03T18:54:01.718Z",
+    "mainHtmlPath": "pg5001-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "Relativity : the Special and General Theory",
+    "author": "Albert Einstein",
+    "translators": [
+      {
+        "name": "Robert William Lawson",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [
+      "Hermann Struck (portrait, credited in the ebook metadata)"
+    ],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "Gutenberg identifies the English source publication as Methuen & Co Ltd, 1920; 1916 is the original-work year.",
+      "HTML-only source package: equations and illustrations must remain local images. Gutenberg warns that some generated formats lose equations or images."
+    ]
+  },
+  "reader": {
+    "sha256": "7f3a565f524e4df164ee2e5df8cd24a480ad566934f06974495b2bf1dd04141b",
+    "bytes": 420878,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 550,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Relativity : the Special and General Theory",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "Relativity The Special and General TheoryA Popular Exposition",
+        "level": 1,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "Table of Contents",
+        "level": 2,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Preface",
+        "level": 2,
+        "readingIndex": 97
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "PART I The Special Theory of Relativity",
+        "level": 2,
+        "readingIndex": 101
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "I Physical Meaning of Geometrical Propositions",
+        "level": 3,
+        "readingIndex": 102
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "II The System of Co-ordinates",
+        "level": 3,
+        "readingIndex": 109
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "III Space and Time in Classical Mechanics",
+        "level": 3,
+        "readingIndex": 124
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "IV The Galileian System of Co-ordinates",
+        "level": 3,
+        "readingIndex": 129
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "V The Principle of Relativity in the Restricted Sense",
+        "level": 3,
+        "readingIndex": 131
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "VI The Theorem of the Addition of Velocities Employed in Classical Mechanics",
+        "level": 3,
+        "readingIndex": 139
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "VII The Apparent Incompatibility of the Law of Propagation of Light with the Principle of Relativity",
+        "level": 3,
+        "readingIndex": 141
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "VIII On the Idea of Time in Physics",
+        "level": 3,
+        "readingIndex": 149
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "IX The Relativity of Simultaneity",
+        "level": 3,
+        "readingIndex": 160
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "X On the Relativity of the Conception of Distance",
+        "level": 3,
+        "readingIndex": 170
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "XI The Lorentz Transformation",
+        "level": 3,
+        "readingIndex": 175
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "XII The Behaviour of Measuring-Rods and Clocks in Motion",
+        "level": 3,
+        "readingIndex": 186
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "XIII Theorem of the Addition of Velocities. The Experiment of Fizeau",
+        "level": 3,
+        "readingIndex": 194
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "XIV The Heuristic Value of the Theory of Relativity",
+        "level": 3,
+        "readingIndex": 205
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "XV General Results of the Theory",
+        "level": 3,
+        "readingIndex": 210
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "XVI Experience and the Special Theory of Relativity",
+        "level": 3,
+        "readingIndex": 224
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "XVII Minkowski’s Four-Dimensional Space",
+        "level": 3,
+        "readingIndex": 233
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "PART II The General Theory of Relativity",
+        "level": 2,
+        "readingIndex": 241
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "XVIII Special and General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 242
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "XIX The Gravitational Field",
+        "level": 3,
+        "readingIndex": 256
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "XX The Equality of Inertial and Gravitational Mass as an Argument for the General Postulate of Relativity",
+        "level": 3,
+        "readingIndex": 267
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "XXI In What Respects Are the Foundations of Classical Mechanics and of the Special Theory of Relativity Unsatisfactory?",
+        "level": 3,
+        "readingIndex": 277
+      },
+      {
+        "id": "reading-heading-28",
+        "label": "XXII A Few Inferences from the General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 283
+      },
+      {
+        "id": "reading-heading-29",
+        "label": "XXIII Behaviour of Clocks and Measuring-Rods on a Rotating Body of Reference",
+        "level": 3,
+        "readingIndex": 294
+      },
+      {
+        "id": "reading-heading-30",
+        "label": "XXIV Euclidean and Non-Euclidean Continuum",
+        "level": 3,
+        "readingIndex": 303
+      },
+      {
+        "id": "reading-heading-31",
+        "label": "XXV Gaussian Co-Ordinates",
+        "level": 3,
+        "readingIndex": 312
+      },
+      {
+        "id": "reading-heading-32",
+        "label": "XXVI The Space-Time Continuum of the Special Theory of Relativity Considered as a Euclidean Continuum",
+        "level": 3,
+        "readingIndex": 320
+      },
+      {
+        "id": "reading-heading-33",
+        "label": "XXVII The Space-Time Continuum of the General Theory of Relativity is Not a Euclidean Continuum",
+        "level": 3,
+        "readingIndex": 326
+      },
+      {
+        "id": "reading-heading-34",
+        "label": "XXVIII Exact Formulation of the General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 333
+      },
+      {
+        "id": "reading-heading-35",
+        "label": "XXIX The Solution of the Problem of Gravitation on the Basis of the General Principle of Relativity",
+        "level": 3,
+        "readingIndex": 341
+      },
+      {
+        "id": "reading-heading-36",
+        "label": "PART III Considerations on the Universe as a Whole",
+        "level": 2,
+        "readingIndex": 358
+      },
+      {
+        "id": "reading-heading-37",
+        "label": "XXX Cosmological Difficulties of Newton’s Theory",
+        "level": 3,
+        "readingIndex": 359
+      },
+      {
+        "id": "reading-heading-38",
+        "label": "XXXI The Possibility of a “Finite” and yet “Unbounded” Universe",
+        "level": 3,
+        "readingIndex": 365
+      },
+      {
+        "id": "reading-heading-39",
+        "label": "XXXII The Structure of Space According to the General Theory of Relativity",
+        "level": 3,
+        "readingIndex": 376
+      },
+      {
+        "id": "reading-heading-40",
+        "label": "APPENDIX I Simple Derivation of the Lorentz Transformation [Supplementary to Section XI]",
+        "level": 2,
+        "readingIndex": 382
+      },
+      {
+        "id": "reading-heading-41",
+        "label": "APPENDIX II Minkowski’s Four-Dimensional Space (“World”) [Supplementary to Section XVII]",
+        "level": 2,
+        "readingIndex": 405
+      },
+      {
+        "id": "reading-heading-42",
+        "label": "APPENDIX III The Experimental Confirmation of the General Theory of Relativity",
+        "level": 2,
+        "readingIndex": 411
+      },
+      {
+        "id": "reading-heading-43",
+        "label": "(a) Motion of the Perihelion of Mercury",
+        "level": 3,
+        "readingIndex": 416
+      },
+      {
+        "id": "reading-heading-44",
+        "label": "(b) Deflection of Light by a Gravitational Field",
+        "level": 3,
+        "readingIndex": 421
+      },
+      {
+        "id": "reading-heading-45",
+        "label": "(c) Displacement of Spectral Lines Towards the Red",
+        "level": 3,
+        "readingIndex": 471
+      },
+      {
+        "id": "reading-heading-46",
+        "label": "APPENDIX IV The Structure of Space According to the General Theory of Relativity [Supplementary to Section XXXII]",
+        "level": 2,
+        "readingIndex": 485
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "images/book.png",
+      "sha256": "eb628c4004e4bee0429bcdb258e3a014684dad20502a5e8d6fdf51ad2bb3f658",
+      "bytes": 227,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/card.png",
+      "sha256": "e576c56b3d4bf933cbe3a7be618dda1cb5b4e2180a76b24def20216a682cdea6",
+      "bytes": 249,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/cover.jpg",
+      "sha256": "eb663bbe4414318688df639622433a7fc07c2599754d65a95e9b914007844484",
+      "bytes": 57668,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/external.png",
+      "sha256": "645903d7c30edefd7b36eda9936d2799d70570676a9ca6c94749154bc5a0c299",
+      "bytes": 151,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/fig01.png",
+      "sha256": "58ad36008420c9e592f8010a6cf177c1743bb65a349b69f55302950b2f6efa79",
+      "bytes": 2343,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/fig02.png",
+      "sha256": "b0b46e81ffcef9753c69c0f467ad7a1cd7efc3294f583a8e97c8bf0966e2e0fe",
+      "bytes": 2236,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/fig03.png",
+      "sha256": "f356fbba837b828d643f22ddff43a85206366cd43043f4d9ca7ababea13ffad5",
+      "bytes": 860,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/fig04.png",
+      "sha256": "3d0e3b098532db13e114184f0845b86139b41bf4940844707b8681b2a22dd4f0",
+      "bytes": 2269,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/fig05.png",
+      "sha256": "fa078f0c392fa29a62caaa80b744bf4d23911e9ef7222a32adb368d3c06ec12b",
+      "bytes": 1566,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/frontispiece.jpg",
+      "sha256": "50e3d21e80505147924ea156e282a3a89c57a75b0e970705b616657785d3d871",
+      "bytes": 70568,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/qrcode.png",
+      "sha256": "e1aa2e13580ef1e47093c975f96ddedc7132c47abbc3ef63a92586d3dfe987d6",
+      "bytes": 310,
+      "mime": "image/png"
+    },
+    {
+      "path": "images/titlepage.png",
+      "sha256": "1222d3f5423c2c3e81a08bc463a881f41b175a739a10d652b812043f92a95e54",
+      "bytes": 11271,
+      "mime": "image/png"
+    },
+    {
+      "path": "rasterized/00a64665adcce2d2a0acc15b41d8f3a0ffba2184fd2b99a9de2f109eeb44831f.png",
+      "sha256": "15400a1dabf2c720b03499fd73fc50b0e914703fe0a8e41b5671229204e1d35a",
+      "bytes": 18987,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f546.svg",
+        "sourceSha256": "00a64665adcce2d2a0acc15b41d8f3a0ffba2184fd2b99a9de2f109eeb44831f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1050,
+        "height": 481
+      }
+    },
+    {
+      "path": "rasterized/01c7e504ea0aed0b7dfc02c2539b7faf64e55cc0324b1d7f051328a26a4a3760.png",
+      "sha256": "58e4a00940e9dd61101f8540001116490eb02a7dff49553978461f7bd9968750",
+      "bytes": 17330,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a10.svg",
+        "sourceSha256": "01c7e504ea0aed0b7dfc02c2539b7faf64e55cc0324b1d7f051328a26a4a3760",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1503,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/02f4ea01f704a977c54c855b943f20fc4fca858727c0e021ccc57ee026e4710d.png",
+      "sha256": "e13b56b7fdfeb89ad2e927218ceca42a4afd6d2d5f5cbf11a4e1953e914f4020",
+      "bytes": 3296,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f191.svg",
+        "sourceSha256": "02f4ea01f704a977c54c855b943f20fc4fca858727c0e021ccc57ee026e4710d",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 177,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/0330a7d6d0733209ba04927914ec617d8f11384c9f2f8308b5f3a2d1472d8f16.png",
+      "sha256": "d35e537c9a312f7006245ce72b197cf613b28e3f8fe378c104f6e60131adbe60",
+      "bytes": 7612,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f223.svg",
+        "sourceSha256": "0330a7d6d0733209ba04927914ec617d8f11384c9f2f8308b5f3a2d1472d8f16",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 562,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/076f92c678e6a0355305a36a789c47d79b0e9d229d1d6d3b3f2e373cdd6b5bce.png",
+      "sha256": "403278bc977c6080194808bd1edafd2046d8f39c62877cac3497a47c829ccdc4",
+      "bytes": 11173,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f550.svg",
+        "sourceSha256": "076f92c678e6a0355305a36a789c47d79b0e9d229d1d6d3b3f2e373cdd6b5bce",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 676,
+        "height": 363
+      }
+    },
+    {
+      "path": "rasterized/08ee8814914bfb64c2fae5ac32daa9064126f6a244be4fc4ad83bbdae9130294.png",
+      "sha256": "e7ed5c781f685639ef16ff14d1b88b9dedb4e7372cf124c7a0fae618df4c99af",
+      "bytes": 5358,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f49.svg",
+        "sourceSha256": "08ee8814914bfb64c2fae5ac32daa9064126f6a244be4fc4ad83bbdae9130294",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 551,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/0c4b67acc88a27cebef79d5841075b0a6832114166cbaecd217c91cf198b28ef.png",
+      "sha256": "fc89898f228b2457655d9756a4aae828b9ca93a505d03082491b3b7da63bb183",
+      "bytes": 8888,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f351.svg",
+        "sourceSha256": "0c4b67acc88a27cebef79d5841075b0a6832114166cbaecd217c91cf198b28ef",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 590,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/0e22a7b4f2c70755bea66a5df2688c98761cac2639c55ec70103bd88688ddb98.png",
+      "sha256": "1af2c23d17f6b575c8fbe30f2f2a2af5128b58d118a7625cd50187a609705507",
+      "bytes": 2311,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f308.svg",
+        "sourceSha256": "0e22a7b4f2c70755bea66a5df2688c98761cac2639c55ec70103bd88688ddb98",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 163,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/0ec17338f7bb90582db0827c1ddea0564103a4514cce7c6759ed559a3f062e29.png",
+      "sha256": "9c75aa8c6cb6459e7068f96715031c76bbe5c2d2b17121624e30f740f2f5834e",
+      "bytes": 3710,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f17.svg",
+        "sourceSha256": "0ec17338f7bb90582db0827c1ddea0564103a4514cce7c6759ed559a3f062e29",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 194,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/0eea19cd1d58332b962107123a45df507de6f7fb9c4a51306a0b0cd0bd0f4290.png",
+      "sha256": "59ccad1d1ce7a785f6ad199156f7271e5788078f803f7d33530511252178b857",
+      "bytes": 4366,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f336.svg",
+        "sourceSha256": "0eea19cd1d58332b962107123a45df507de6f7fb9c4a51306a0b0cd0bd0f4290",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 215,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/0f71e166598267651bd55e5dbbda0372bccc11e4515629ebd24c3eb6bf1c9c9c.png",
+      "sha256": "360637b6745f55352c75d77053e8ec6cd8ed288c8a9619571cf72ceb81cb823f",
+      "bytes": 21986,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f518.svg",
+        "sourceSha256": "0f71e166598267651bd55e5dbbda0372bccc11e4515629ebd24c3eb6bf1c9c9c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1034,
+        "height": 417
+      }
+    },
+    {
+      "path": "rasterized/10696b5528acb0a713e6aa68edd716b4c2840584beaeea9a0945122ac1e6e9d5.png",
+      "sha256": "24a23fd7138b24df10af2da19a12ce9e1ce989e2c6bd38ae90b6e075294c1b36",
+      "bytes": 6042,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f517.svg",
+        "sourceSha256": "10696b5528acb0a713e6aa68edd716b4c2840584beaeea9a0945122ac1e6e9d5",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 291,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/108f48f9c2d1fa4564f5fdd16e8b1823e82af61afc763fcd9e5a7dd55c7c63f7.png",
+      "sha256": "cce2269d7ac760edf0ee379168b9398b5b7a1b9be0419416cbd66a2b0c2e982b",
+      "bytes": 9256,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f553.svg",
+        "sourceSha256": "108f48f9c2d1fa4564f5fdd16e8b1823e82af61afc763fcd9e5a7dd55c7c63f7",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 699,
+        "height": 214
+      }
+    },
+    {
+      "path": "rasterized/131eed7ebdb1f9a0a65aefe3ed4c06e66f5d8cbec25a6fcbe7209397f2543675.png",
+      "sha256": "8dcf35a2c52acf9156efec9670a3a4c9942a656ffdc5fc835e393b8410432539",
+      "bytes": 2880,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f319.svg",
+        "sourceSha256": "131eed7ebdb1f9a0a65aefe3ed4c06e66f5d8cbec25a6fcbe7209397f2543675",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 191,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/13ac633f06fe7f84c09807c747e2e5807fad6f17802ed2a5d5757e143194e2ff.png",
+      "sha256": "37096aa421d321ccd2a7c26ac1a26ddc627c831f5cacd04ddc1d7a66e2dd7902",
+      "bytes": 1755,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f538.svg",
+        "sourceSha256": "13ac633f06fe7f84c09807c747e2e5807fad6f17802ed2a5d5757e143194e2ff",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 93,
+        "height": 107
+      }
+    },
+    {
+      "path": "rasterized/13f4e3b51fcb595c5f60f1963d3428094e0902cb2aebe183878e9e070615db95.png",
+      "sha256": "b35a624f0110414021ec74f488874b20c33678a3634ba60eb86c89db743f5376",
+      "bytes": 26067,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f194.svg",
+        "sourceSha256": "13f4e3b51fcb595c5f60f1963d3428094e0902cb2aebe183878e9e070615db95",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 926,
+        "height": 662
+      }
+    },
+    {
+      "path": "rasterized/1625ff0339c9e07808847a025ef0faf397772a276aae4c0b8eb129c8c3a568e4.png",
+      "sha256": "d1793ba4fa0a9b17d69d1993f90fcaac81193fbd806d524dae114a73661a363b",
+      "bytes": 3886,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f185.svg",
+        "sourceSha256": "1625ff0339c9e07808847a025ef0faf397772a276aae4c0b8eb129c8c3a568e4",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 158,
+        "height": 278
+      }
+    },
+    {
+      "path": "rasterized/177329a6eb049e38ec720290fe8630e568c3ec0405d1c0e623aeea3e968078e1.png",
+      "sha256": "850d5f0eb722bb4a57e270e2cca0ee3dfd27857ec1c5d381dba38b8d5f42775e",
+      "bytes": 40166,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a8.svg",
+        "sourceSha256": "177329a6eb049e38ec720290fe8630e568c3ec0405d1c0e623aeea3e968078e1",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1162,
+        "height": 1185
+      }
+    },
+    {
+      "path": "rasterized/1a1f818eba600a14f1383c8e9977b6c5fb403f904824ac12d578a246e3c52dd1.png",
+      "sha256": "d3e7f6898a187eaf820f2249459eb30533f71d67f9fa9d576a06e16bda447daa",
+      "bytes": 29587,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f347.svg",
+        "sourceSha256": "1a1f818eba600a14f1383c8e9977b6c5fb403f904824ac12d578a246e3c52dd1",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1880,
+        "height": 214
+      }
+    },
+    {
+      "path": "rasterized/1c295a2bb4913d647f64ead21e9bfb90d2a5dcf3605e208f74a76ebb61f66e9d.png",
+      "sha256": "cc3331c2e5bf50dfb1f89bb06d250098e1494018a2a955e3d5b8d2fcab1f036d",
+      "bytes": 21203,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f465.svg",
+        "sourceSha256": "1c295a2bb4913d647f64ead21e9bfb90d2a5dcf3605e208f74a76ebb61f66e9d",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1250,
+        "height": 406
+      }
+    },
+    {
+      "path": "rasterized/1cae689199f205bc09fe8bb0a39502ac6513523f6b214ab8206872bb6d6c0175.png",
+      "sha256": "a28c4b72a517de198d840e945e01eacf3569344400e7b2ed13f105429fad54d6",
+      "bytes": 10103,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f498.svg",
+        "sourceSha256": "1cae689199f205bc09fe8bb0a39502ac6513523f6b214ab8206872bb6d6c0175",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 672,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/1e5f4e7bf8591545d1a2e3c9651287d47b0b9da78c26d53552f7843e0de914e6.png",
+      "sha256": "0b69e8218e4e71ccc268e241683f1ae39178bd1eeb6ad5bba050ffb4fec2bb6b",
+      "bytes": 7924,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f499.svg",
+        "sourceSha256": "1e5f4e7bf8591545d1a2e3c9651287d47b0b9da78c26d53552f7843e0de914e6",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 496,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/1e901a87119a3484f84ef7709084315b8994ef3382ea310939fc541239a4bd20.png",
+      "sha256": "a72796bbb3b7b8207f0cbcb14fcb5a60d35d955329d2e5f17f0135703d919175",
+      "bytes": 10548,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f513.svg",
+        "sourceSha256": "1e901a87119a3484f84ef7709084315b8994ef3382ea310939fc541239a4bd20",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 590,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/21957884e59474a1de4e880da4d02a29f93e4a3d4703f6d5018710509c0df2cd.png",
+      "sha256": "23378e8778082591dece677ecb67e4ca5efeeb3bfafad6ad8a277dad283b3f27",
+      "bytes": 19630,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a10a.svg",
+        "sourceSha256": "21957884e59474a1de4e880da4d02a29f93e4a3d4703f6d5018710509c0df2cd",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1660,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/21b9bee73fdbc4af239df5deedbae76b8346660a0220eb572d63080e6a560d61.png",
+      "sha256": "d28a69d92ebfce1c37731f045bac79fa8aff7bd86b756a04b5129dfba02044b5",
+      "bytes": 8827,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f434.svg",
+        "sourceSha256": "21b9bee73fdbc4af239df5deedbae76b8346660a0220eb572d63080e6a560d61",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 519,
+        "height": 342
+      }
+    },
+    {
+      "path": "rasterized/23893637df44fee8578e887194bf39abfa450a23e7dafe614c89d3ee8b6c0502.png",
+      "sha256": "0a12971f7efd586bcea37924c2390f2148257230e698e9367ded989e4f2c30c0",
+      "bytes": 7038,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f390.svg",
+        "sourceSha256": "23893637df44fee8578e887194bf39abfa450a23e7dafe614c89d3ee8b6c0502",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 604,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/241da4f93f1c832a81d608049c72ea6a7210444e16ad8d5198c59618072b93ee.png",
+      "sha256": "9a6600528e63009ba0b1e4c63e335ca1e842342360613e83812275b8bb993537",
+      "bytes": 4701,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f186.svg",
+        "sourceSha256": "241da4f93f1c832a81d608049c72ea6a7210444e16ad8d5198c59618072b93ee",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 262,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/26398100a9bc059e95e3d26e2058cfdad4c4cfc5c3f8f0704e36f0cab8c2e1fe.png",
+      "sha256": "8495ec6977e987766e3a5cc10200c34ca529d1a60de0b9bf112c3da0f631d625",
+      "bytes": 9286,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f207.svg",
+        "sourceSha256": "26398100a9bc059e95e3d26e2058cfdad4c4cfc5c3f8f0704e36f0cab8c2e1fe",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 604,
+        "height": 299
+      }
+    },
+    {
+      "path": "rasterized/2838606efcef17bdf07f5305b1651c54a18371bd8360d2a21ae5fce6b1588b6a.png",
+      "sha256": "594f0e29a955b14f65821b8afe1933ca607598c45a4699989a7c08c0b3567d41",
+      "bytes": 4437,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f412.svg",
+        "sourceSha256": "2838606efcef17bdf07f5305b1651c54a18371bd8360d2a21ae5fce6b1588b6a",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 402,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/2896611c034e58631c76cc888cf5cf3ca843efac728105a447bd1d67db717660.png",
+      "sha256": "5c4b5ab591e0bfe6e1922ea52a84adc7815dad86f718c9bbb3dda9a9f0bc639a",
+      "bytes": 6304,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f458.svg",
+        "sourceSha256": "2896611c034e58631c76cc888cf5cf3ca843efac728105a447bd1d67db717660",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 532,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/2a020f0e14196cfca2c2e008bf8978e3e9d49d688a035bb5cc34a6d068630329.png",
+      "sha256": "f223c978dacb167bf8e61a4310e7e43432edde58fda68dff0c60ad23bed3f9c4",
+      "bytes": 4656,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f677.svg",
+        "sourceSha256": "2a020f0e14196cfca2c2e008bf8978e3e9d49d688a035bb5cc34a6d068630329",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 291,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/2a930739049233d8a4f0b1ce2a943f0e197d2844883557205ad77dd61f42abaf.png",
+      "sha256": "36a1a50b893d848d682280ade54b6517427051826bb305e3664ea25fd7199e9e",
+      "bytes": 6667,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a1.svg",
+        "sourceSha256": "2a930739049233d8a4f0b1ce2a943f0e197d2844883557205ad77dd61f42abaf",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 658,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/2bb8af163e211ebd1afe882a551ce198cbb8c55fefb88095d9455195b0022c8c.png",
+      "sha256": "d4bde58947bd192d6b5ba94f22c623f597032b2d105dc46b2764658b4ecb2741",
+      "bytes": 20943,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f90.svg",
+        "sourceSha256": "2bb8af163e211ebd1afe882a551ce198cbb8c55fefb88095d9455195b0022c8c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 768,
+        "height": 758
+      }
+    },
+    {
+      "path": "rasterized/2e4c1b6d27d1ed4129d089ae78a833398b35a6913e56cac84abc369ed829f5ce.png",
+      "sha256": "18785df341aa62149b358dde352042ec757e3ebfac41c638f8360d417621f049",
+      "bytes": 9555,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f463.svg",
+        "sourceSha256": "2e4c1b6d27d1ed4129d089ae78a833398b35a6913e56cac84abc369ed829f5ce",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 664,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/2ed76e84846293a6daedaacd2ee85489152c1916f0de4c7fc7c3b65ebec971a6.png",
+      "sha256": "0e2e72a7f8f3d69ebe16f153c67304ab0c741474184842fe156df339697acd53",
+      "bytes": 11212,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f339.svg",
+        "sourceSha256": "2ed76e84846293a6daedaacd2ee85489152c1916f0de4c7fc7c3b65ebec971a6",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 594,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/2fe7832938793712ddad91d21f4d34299dd73eee96a4a1be703259dfc0ac4458.png",
+      "sha256": "00891a638cc92904df8c7cbdf7a427c62eed25ca7622d10c094847acabd8ac73",
+      "bytes": 2511,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f491.svg",
+        "sourceSha256": "2fe7832938793712ddad91d21f4d34299dd73eee96a4a1be703259dfc0ac4458",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 358,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/32d80840c532661e9ce578ab6648f626f2e625642245bea2af8977c1d2c65c57.png",
+      "sha256": "9d7ba26aec8526fe4455439dad46eca43f6c6b516617d58a23ddf0fa3c9b865a",
+      "bytes": 72934,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f117.svg",
+        "sourceSha256": "32d80840c532661e9ce578ab6648f626f2e625642245bea2af8977c1d2c65c57",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 2280,
+        "height": 993
+      }
+    },
+    {
+      "path": "rasterized/37b5198023eb02de15fcab2aee3daddca0c8f52c0d64e9ae62b60078347f5d4f.png",
+      "sha256": "ed02fcda12f2b676881bc44498cfa21d7d380da3bb3b1514663e0a0b764194dd",
+      "bytes": 1786,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f524.svg",
+        "sourceSha256": "37b5198023eb02de15fcab2aee3daddca0c8f52c0d64e9ae62b60078347f5d4f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 124,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/38c71fdaf70a924058b0c45574b77cfc2219e73a1052e3c2850afc3068019b72.png",
+      "sha256": "1a765fe2dc19fde0472edaa12b103f45fef6ee3faa767d653fc725992f55f4a6",
+      "bytes": 28335,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f516.svg",
+        "sourceSha256": "38c71fdaf70a924058b0c45574b77cfc2219e73a1052e3c2850afc3068019b72",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 2043,
+        "height": 214
+      }
+    },
+    {
+      "path": "rasterized/3aac32b3390f5fd0d0d5a6adc9d569d702c448393b7685f2fadcd5fe20a98750.png",
+      "sha256": "9d3c093a8ca8d3b0a2c839044b10725bedd5b8e236ed83a2aeb7cf7f5d2bca02",
+      "bytes": 8805,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f1.svg",
+        "sourceSha256": "3aac32b3390f5fd0d0d5a6adc9d569d702c448393b7685f2fadcd5fe20a98750",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 477,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/3ab293bedf5aa23c98baa5fc17895e1953172ad3d276fa433d0d408f7ffa13f2.png",
+      "sha256": "85891789ae478e0443b04bdeac41443b5f530341dbc503a6a174bcc00a9de23c",
+      "bytes": 5645,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f334.svg",
+        "sourceSha256": "3ab293bedf5aa23c98baa5fc17895e1953172ad3d276fa433d0d408f7ffa13f2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 529,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/3e13f952dfb4ab4c521a84440c6a0af9b051654dabc383b9a6ff73a1b1f861ef.png",
+      "sha256": "930ef7aefe0568a4fa2b1a7a1e2ce393aef63ad72ff90d5328cbf96eeb203823",
+      "bytes": 1682,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f398.svg",
+        "sourceSha256": "3e13f952dfb4ab4c521a84440c6a0af9b051654dabc383b9a6ff73a1b1f861ef",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 77,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/3e37497f84b8b5e977957de037657dbca1b61147ca5e3249f7403bf5551184a7.png",
+      "sha256": "889db95d946486d8810952ed5dcf9d077ab47d5436a357789084b341a334055c",
+      "bytes": 10511,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f148.svg",
+        "sourceSha256": "3e37497f84b8b5e977957de037657dbca1b61147ca5e3249f7403bf5551184a7",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 855,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/3e5305ce246177c705c6e0bcb78ffc7484eead820e8466cea3ede10f477d84bc.png",
+      "sha256": "4288b4c8e5f6ff5f1e5bdd2319fda785732d56ecf5bea3a415b6baccd24354a8",
+      "bytes": 1184,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f250.svg",
+        "sourceSha256": "3e5305ce246177c705c6e0bcb78ffc7484eead820e8466cea3ede10f477d84bc",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 116,
+        "height": 97
+      }
+    },
+    {
+      "path": "rasterized/3e9fa25da9286ab47b9ee5785b41acade906e0648b7acd69d054e1e098d69a6c.png",
+      "sha256": "d8ed740a3c669f598cb50a4e0ebca1f98e0da91892f1318e43d482727c4e4ba7",
+      "bytes": 47259,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f89.svg",
+        "sourceSha256": "3e9fa25da9286ab47b9ee5785b41acade906e0648b7acd69d054e1e098d69a6c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1009,
+        "height": 1483
+      }
+    },
+    {
+      "path": "rasterized/3f2cb479eec98cb9dee673ef684bb3745b646044825ee7bd0d10f256dcad1988.png",
+      "sha256": "27b1375eb321950328697d4687924d7791c8f7c2ae78e1ab671980dd2b9eaa7b",
+      "bytes": 26175,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a5.svg",
+        "sourceSha256": "3f2cb479eec98cb9dee673ef684bb3745b646044825ee7bd0d10f256dcad1988",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1328,
+        "height": 395
+      }
+    },
+    {
+      "path": "rasterized/3f808d42351838b5572fd0c9c0e0a0c0d9b57472f4dcfaee81202e87aff28af4.png",
+      "sha256": "4392d0ed18b6edb51545128e5f2e8adb6bbd7190925b37b640536354c0b20af5",
+      "bytes": 16983,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a8a.svg",
+        "sourceSha256": "3f808d42351838b5572fd0c9c0e0a0c0d9b57472f4dcfaee81202e87aff28af4",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1431,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/41906d7bd119138510dd77bb90de33dbf5b7bc9fae47bb3afd23dc21c0514adf.png",
+      "sha256": "30787625406340d42e171c2a06c24d3dc84bffc2d457595c1730f5380572cc20",
+      "bytes": 4943,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f165.svg",
+        "sourceSha256": "41906d7bd119138510dd77bb90de33dbf5b7bc9fae47bb3afd23dc21c0514adf",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 416,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/42785323fd2aa6d274b63df4af048f6114c26b43498b1b9a876cd69137b9387b.png",
+      "sha256": "9ea1dbe1dfdb2cc6c9c243c3a88a54104bdd17ebe95d0919e5ece8dbf679e10d",
+      "bytes": 18449,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a4.svg",
+        "sourceSha256": "42785323fd2aa6d274b63df4af048f6114c26b43498b1b9a876cd69137b9387b",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1419,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/44ea38bef978f739177ee23a93bed496e421af39f29d5df852380e1e6689cc9c.png",
+      "sha256": "111949cdc45e9947aecbaf59817bf88ad92bead62ffa9d16e00d011278c9ad93",
+      "bytes": 3879,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f321.svg",
+        "sourceSha256": "44ea38bef978f739177ee23a93bed496e421af39f29d5df852380e1e6689cc9c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 191,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/4530588f90e58a6c00b47dcf523364c95b3584e8e35130a1c175d0778c08dcb3.png",
+      "sha256": "8f881e4ba1f3d6c9696b4100f2f6b679712953ea14584ce8e8d4539ee46b24b0",
+      "bytes": 3913,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f134.svg",
+        "sourceSha256": "4530588f90e58a6c00b47dcf523364c95b3584e8e35130a1c175d0778c08dcb3",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 370,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/455c577add97ca628a803f58bafbd3b7434e2ed8108c133c320b29947b751599.png",
+      "sha256": "9cfccba655c25461734c72afb300590bbb27218f59c4ffe578a3d507fa5173f8",
+      "bytes": 9930,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f227.svg",
+        "sourceSha256": "455c577add97ca628a803f58bafbd3b7434e2ed8108c133c320b29947b751599",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 749,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/46379b8e6e2a5e3914d870a50e692ad29dbfb8a25b2186fcd202f64eaf0b3a20.png",
+      "sha256": "ffd02fac73c021802bb6463eec39f2547afe9b0280328039767a806d90bd9bab",
+      "bytes": 10194,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f118.svg",
+        "sourceSha256": "46379b8e6e2a5e3914d870a50e692ad29dbfb8a25b2186fcd202f64eaf0b3a20",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 751,
+        "height": 214
+      }
+    },
+    {
+      "path": "rasterized/4d4e342b3f28ff8961a40e175774fbc51deeb149d4be4f9246030acab2cf57fd.png",
+      "sha256": "11f543f6421bd95399c26c437d13ebf59e6f3d4227da48030a220563d8aa91c5",
+      "bytes": 2721,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f541.svg",
+        "sourceSha256": "4d4e342b3f28ff8961a40e175774fbc51deeb149d4be4f9246030acab2cf57fd",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 140,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/4e9d6c7919e91594672eaf69308f896b9e7b59d0db129717f27bc884a6f2392f.png",
+      "sha256": "fafd8fc6669b175cd9ec688e43548d92facfd59f98a133712648e2622aa42c02",
+      "bytes": 11795,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f329.svg",
+        "sourceSha256": "4e9d6c7919e91594672eaf69308f896b9e7b59d0db129717f27bc884a6f2392f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 809,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/4f69f6ec2eb56c3a2a966495875ce027c4182f6df33f616ad2265c0ecc36c01d.png",
+      "sha256": "64d93333be0b0c1cdb408f649aec01cfce5cad22fa424c09c6df21feda2f7412",
+      "bytes": 5769,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f38.svg",
+        "sourceSha256": "4f69f6ec2eb56c3a2a966495875ce027c4182f6df33f616ad2265c0ecc36c01d",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 665,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/566ac2e5c66cef4b8d8ead0fc08bab751d5e7e48919152ca42eef013bc9f7451.png",
+      "sha256": "0bd3dbee4bff86d8649b2b9892e69fd5d2f7df8b8f4aa1ca8d0f1d835d827085",
+      "bytes": 26355,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f505.svg",
+        "sourceSha256": "566ac2e5c66cef4b8d8ead0fc08bab751d5e7e48919152ca42eef013bc9f7451",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 980,
+        "height": 779
+      }
+    },
+    {
+      "path": "rasterized/56777dc3dad04cc104cfe67d39a49e3f187320a41383716a9f8a69d9e4df2692.png",
+      "sha256": "23fec6150a023d65f23c15acc0142823da6a1406506a436c33d606e68fcabf14",
+      "bytes": 9907,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f396.svg",
+        "sourceSha256": "56777dc3dad04cc104cfe67d39a49e3f187320a41383716a9f8a69d9e4df2692",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 595,
+        "height": 363
+      }
+    },
+    {
+      "path": "rasterized/5762c0a15a86bf0204489f3edc0e4daacce8e6f396560593b89f366201b30069.png",
+      "sha256": "a57f522f53dfac6b1efed94e59fe45c4e7b612efea3b322482a2f64e08d764dd",
+      "bytes": 6416,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f285.svg",
+        "sourceSha256": "5762c0a15a86bf0204489f3edc0e4daacce8e6f396560593b89f366201b30069",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 672,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/57fa5953211e6bd7abc72ef032814b4b898b0673cb9a42590b8253e172e911fa.png",
+      "sha256": "d7fc33df0c32d2f1dc40264c8bf29e4cb2dfd0a18dc491d2a4ad6c7c5e852bf4",
+      "bytes": 5091,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f95.svg",
+        "sourceSha256": "57fa5953211e6bd7abc72ef032814b4b898b0673cb9a42590b8253e172e911fa",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 443,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/59c026b63e940a94cce2d488df5a98666a7056f9bf40d862bb77a93d346cd212.png",
+      "sha256": "cce216d4a2470d183e637f421d9a72327f3840976c56d28c0ae903868635e41b",
+      "bytes": 13475,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a9.svg",
+        "sourceSha256": "59c026b63e940a94cce2d488df5a98666a7056f9bf40d862bb77a93d346cd212",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 831,
+        "height": 395
+      }
+    },
+    {
+      "path": "rasterized/5d157a5d00d9d0a5eada66145600f64239927b5e0d7308a32739e22823e081e2.png",
+      "sha256": "43300e5a289ec7b777c20a8b8f83f1e8e93c1c88f69d83b51fb0d9409c58e718",
+      "bytes": 4580,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f537.svg",
+        "sourceSha256": "5d157a5d00d9d0a5eada66145600f64239927b5e0d7308a32739e22823e081e2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 430,
+        "height": 107
+      }
+    },
+    {
+      "path": "rasterized/5d534eeb2acdd1357e7cefc06dba30843a18e8c8a544db6e7858ca5a393b1317.png",
+      "sha256": "acf6066f94a5d2bd646325b61dd19b42f761c037eec826f9cd6731e9777cb0a3",
+      "bytes": 14907,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqnb.svg",
+        "sourceSha256": "5d534eeb2acdd1357e7cefc06dba30843a18e8c8a544db6e7858ca5a393b1317",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 844,
+        "height": 417
+      }
+    },
+    {
+      "path": "rasterized/5deca10598f4fe77584c30bae0dee1e29788063297549a6185c53e58b2d2d6c1.png",
+      "sha256": "79ef521f4b333a8b7b59daf9f5818da0e8a47044b0449a9c7266f04534189588",
+      "bytes": 36368,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a11.svg",
+        "sourceSha256": "5deca10598f4fe77584c30bae0dee1e29788063297549a6185c53e58b2d2d6c1",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 2975,
+        "height": 203
+      }
+    },
+    {
+      "path": "rasterized/5f412c8309d5a449b72f6fad8e4eb8ba122b2d3bc0c918ce0961581eb78e7b4f.png",
+      "sha256": "1866a13ecf9ed28e0a0e48711de032ee99b1dbac6bca9eccb7c98b43ccca7b20",
+      "bytes": 15057,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f180.svg",
+        "sourceSha256": "5f412c8309d5a449b72f6fad8e4eb8ba122b2d3bc0c918ce0961581eb78e7b4f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 658,
+        "height": 545
+      }
+    },
+    {
+      "path": "rasterized/5f643f4b85f919609f3f910327da9629714c3c3a2b9049e8c7018f2724b40632.png",
+      "sha256": "ff7139fe0aa1690228df043a937324dc9132bd205977f816f6ba097cf0a5cfa5",
+      "bytes": 4024,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f471.svg",
+        "sourceSha256": "5f643f4b85f919609f3f910327da9629714c3c3a2b9049e8c7018f2724b40632",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 253,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/612659bf501f22fafac2fee4838a4b75d980cf06880789224f42fc1b2a7db8a3.png",
+      "sha256": "7c94387f93521320bd6164b145a6618b5bcdf10e807c89287c6193183e2e5a4c",
+      "bytes": 13287,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f137.svg",
+        "sourceSha256": "612659bf501f22fafac2fee4838a4b75d980cf06880789224f42fc1b2a7db8a3",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 953,
+        "height": 513
+      }
+    },
+    {
+      "path": "rasterized/618a5153a7292556e6c0f031b0ac7479cd85ec6ce887014d6dd8c491c4fc1ff2.png",
+      "sha256": "19b39c9ca952ef10fe3fe0b32fd785e879edcedf4e449f7f01fed481eb9e6a41",
+      "bytes": 7337,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f202.svg",
+        "sourceSha256": "618a5153a7292556e6c0f031b0ac7479cd85ec6ce887014d6dd8c491c4fc1ff2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 574,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/62117deb4777ee0195667d591cd0824c2e7b73830f5a07a426353cdb5d18eeb2.png",
+      "sha256": "a4e103cb46a1f483fdff306663b0755b1094890af04fed2d5f19bbec2f218f50",
+      "bytes": 3107,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f121.svg",
+        "sourceSha256": "62117deb4777ee0195667d591cd0824c2e7b73830f5a07a426353cdb5d18eeb2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 335,
+        "height": 107
+      }
+    },
+    {
+      "path": "rasterized/63b7695d2a472afdfaf5b4075820539fd5bd0525c4013bd02fde2160f7f7fe5d.png",
+      "sha256": "4c027021f0e8706cc7d8d8620825a5ca67203afa853a43ad717ad2429dd1a4e6",
+      "bytes": 2576,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f352.svg",
+        "sourceSha256": "63b7695d2a472afdfaf5b4075820539fd5bd0525c4013bd02fde2160f7f7fe5d",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 153,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/64bf786ff00a69d57cf34a5fd30eb2362a68f7fd534852067027f4cc9ba5272a.png",
+      "sha256": "42697e47d72a95824b00497554b60eb6bbbc04101a40d0b7e973b7022ad9b961",
+      "bytes": 3400,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f116.svg",
+        "sourceSha256": "64bf786ff00a69d57cf34a5fd30eb2362a68f7fd534852067027f4cc9ba5272a",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 326,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/65b3a15ad3c48874345a563d8d9fe7fe24787fa06115b27ca345116fc454da17.png",
+      "sha256": "a446c028dfe4ca9346e7482ec0638264a8bf8610dcc0e8bc095565051e6de823",
+      "bytes": 10830,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f316.svg",
+        "sourceSha256": "65b3a15ad3c48874345a563d8d9fe7fe24787fa06115b27ca345116fc454da17",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 706,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/65c49db62025d9c86d602e978272a73c26295ec956efa382f65937c48e958e1e.png",
+      "sha256": "9d8b6aaf85819d4a92fd2c89f9c8457ecf8533841cee21a6253b793f94cef6c9",
+      "bytes": 16889,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f341.svg",
+        "sourceSha256": "65c49db62025d9c86d602e978272a73c26295ec956efa382f65937c48e958e1e",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 968,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/65ee9c8e16be43faf2dca9cea658e6d7eec9d5550da4dde169a3570460651c50.png",
+      "sha256": "819aaec44919f67ac14aa18c08493a65959ac8f6dd1457f467ebb0bad3e208cd",
+      "bytes": 8203,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f421.svg",
+        "sourceSha256": "65ee9c8e16be43faf2dca9cea658e6d7eec9d5550da4dde169a3570460651c50",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 588,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/671fa43a50426f0ef3436a6d1e2a920925b079711f22ef393bdf3bf21bb4a22c.png",
+      "sha256": "9c15699cd5fd4e851c911dc7be59b538b3d2e68cc03064af44a9539b7cdc1f10",
+      "bytes": 6724,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f43.svg",
+        "sourceSha256": "671fa43a50426f0ef3436a6d1e2a920925b079711f22ef393bdf3bf21bb4a22c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 595,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/6c88999468ef31c9b40abde86c6dbebf63b460e07d004d03387d3b0aed92e2eb.png",
+      "sha256": "afc41ff86f727a1efe86faeed918adfffbbd810dcd2eab0ce0615b63496c8100",
+      "bytes": 3424,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f320.svg",
+        "sourceSha256": "6c88999468ef31c9b40abde86c6dbebf63b460e07d004d03387d3b0aed92e2eb",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 191,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/6d78ae9d61171a261e65893c08181e7cedee2c6b979e89072d781e0e11c80287.png",
+      "sha256": "a662dc2a8bacc9c8a5a0986c6a237ae4910cb7f4d5c6103c58963cd20db24e23",
+      "bytes": 3760,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f300.svg",
+        "sourceSha256": "6d78ae9d61171a261e65893c08181e7cedee2c6b979e89072d781e0e11c80287",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 358,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/6fb053f36e599f638b9ade7b8fdd06ead7986bc5183bcd11f384e986401756d6.png",
+      "sha256": "ddc5f9e5ab9c1514839685447057366342d9c848eaf803e208b7a5edbfc92f1e",
+      "bytes": 3469,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f470.svg",
+        "sourceSha256": "6fb053f36e599f638b9ade7b8fdd06ead7986bc5183bcd11f384e986401756d6",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 209,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/71d3fbb2ae5dc9045bf3b8f4774278fc0f4410b4abe4545e279bdc952f33644e.png",
+      "sha256": "8605a5d6ec50238f7157975d9fff4bdbd9456edcd2c6b4fcdaab25a4928c937c",
+      "bytes": 90807,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f252.svg",
+        "sourceSha256": "71d3fbb2ae5dc9045bf3b8f4774278fc0f4410b4abe4545e279bdc952f33644e",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 4696,
+        "height": 353
+      }
+    },
+    {
+      "path": "rasterized/71d77fd4ae83d44180b0089c005d25d9a66f8b70bb22dfddb6df801b0bda1edb.png",
+      "sha256": "db834ec99c006134c9b9bddc4da436cdd4151fb1915761b48cfd6e6e9c3d5f96",
+      "bytes": 3185,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f531.svg",
+        "sourceSha256": "71d77fd4ae83d44180b0089c005d25d9a66f8b70bb22dfddb6df801b0bda1edb",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 191,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/73889c4df13f2bbf60ad9d631c015052933aed342de0080c685e9ecacecfcf0d.png",
+      "sha256": "fe409c23c2107ce23a00ea9ab70d8a94d7a33d89479d5fa1a53cfe730f55273c",
+      "bytes": 5363,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f377.svg",
+        "sourceSha256": "73889c4df13f2bbf60ad9d631c015052933aed342de0080c685e9ecacecfcf0d",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 277,
+        "height": 203
+      }
+    },
+    {
+      "path": "rasterized/74e1204b61c0d53575de2fb74d19b97913d6dc232040abd3cb325e3040fd33c2.png",
+      "sha256": "d4841b37d9a8df1b55a97b8c473d655ccb9b47cfe1d483146fe6ebcbb712ed34",
+      "bytes": 7367,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f179.svg",
+        "sourceSha256": "74e1204b61c0d53575de2fb74d19b97913d6dc232040abd3cb325e3040fd33c2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 324,
+        "height": 363
+      }
+    },
+    {
+      "path": "rasterized/775d85778e2912dfc0b57907dcb5334007300a5f8b62259a5d9a99c8aa71b378.png",
+      "sha256": "785dd02f047ce8fcf8210fde8f1546527aa7b55464b79cfa21f84d56155fa165",
+      "bytes": 21976,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f309.svg",
+        "sourceSha256": "775d85778e2912dfc0b57907dcb5334007300a5f8b62259a5d9a99c8aa71b378",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1191,
+        "height": 374
+      }
+    },
+    {
+      "path": "rasterized/77ebe748140749465977ed802dfa58360807fdf3477704fe038cb3263961b759.png",
+      "sha256": "54955367a9e63e8dc66444ab36bf3173a4bc822e127f0f5e65e45def70bf2487",
+      "bytes": 23041,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f525.svg",
+        "sourceSha256": "77ebe748140749465977ed802dfa58360807fdf3477704fe038cb3263961b759",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1511,
+        "height": 353
+      }
+    },
+    {
+      "path": "rasterized/790e2b1a2bb9b6e638cc72c61481aa06ba8148f19fd0f45ace407d8bfefb1a76.png",
+      "sha256": "f8c155974e56842ebd6ec2c0c50cb6c292e12fa2c0b5f9cbee3a524732fe8c9a",
+      "bytes": 29923,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f335.svg",
+        "sourceSha256": "790e2b1a2bb9b6e638cc72c61481aa06ba8148f19fd0f45ace407d8bfefb1a76",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1929,
+        "height": 203
+      }
+    },
+    {
+      "path": "rasterized/7a60b807ce04bdbfe612ca30db5cc95003a0fe6aa650306d378b8761babc243e.png",
+      "sha256": "149875068fa65230545834052747b4b217f58033bee4bbaf0f7eb605b5e9f6a7",
+      "bytes": 4466,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f198.svg",
+        "sourceSha256": "7a60b807ce04bdbfe612ca30db5cc95003a0fe6aa650306d378b8761babc243e",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 184,
+        "height": 278
+      }
+    },
+    {
+      "path": "rasterized/7c40c4fb06c7a9fa13b3a07e3cba401927968388063280333acd6f56212cd4c0.png",
+      "sha256": "38350baeedca9b5cb4a46daa4d0686966663d5e82c8b8e5c5f635894cd41c5c9",
+      "bytes": 2687,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f530.svg",
+        "sourceSha256": "7c40c4fb06c7a9fa13b3a07e3cba401927968388063280333acd6f56212cd4c0",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 191,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/7ec641d425262ed6116fada4215d4e68f4e23d799f691e19fc5ca6cf2d098251.png",
+      "sha256": "445c73fa0dfdb0bda155e84672c81431be646fc20bfa8906990f6014fedc5e71",
+      "bytes": 8813,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f428.svg",
+        "sourceSha256": "7ec641d425262ed6116fada4215d4e68f4e23d799f691e19fc5ca6cf2d098251",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 730,
+        "height": 342
+      }
+    },
+    {
+      "path": "rasterized/81f112a5db9456651ad3140f1bfe6ed3cae7c0e3bdbe34ec44199a18d42d2494.png",
+      "sha256": "adcc500935c6b7a206ad54357f454f84fd32f45e0caab8ae8f56393dfa45ff03",
+      "bytes": 1667,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f399.svg",
+        "sourceSha256": "81f112a5db9456651ad3140f1bfe6ed3cae7c0e3bdbe34ec44199a18d42d2494",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 86,
+        "height": 107
+      }
+    },
+    {
+      "path": "rasterized/82354a14d43bf8c5dc081c9c1677b252414b86d1497b1469fb502b6cf922c711.png",
+      "sha256": "fc17a3e315a6930f3db9df0a82dd4c6037d5390c64ec8fe9a3da13baa5a3a511",
+      "bytes": 19111,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f230.svg",
+        "sourceSha256": "82354a14d43bf8c5dc081c9c1677b252414b86d1497b1469fb502b6cf922c711",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 953,
+        "height": 587
+      }
+    },
+    {
+      "path": "rasterized/8293bafa6f890a9197afebdf3ea758e2d7f40ba862f2e00d685ffa1ca7185a0f.png",
+      "sha256": "91073e81cafb663d52e1ec6e1f48bdfedd5090d4d96cc0ec735fc03d8770bbe7",
+      "bytes": 5931,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f78.svg",
+        "sourceSha256": "8293bafa6f890a9197afebdf3ea758e2d7f40ba862f2e00d685ffa1ca7185a0f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 361,
+        "height": 129
+      }
+    },
+    {
+      "path": "rasterized/833a8fa5eb5c01ee598a65d5f4985d9850a2b62397937cca8191a3757375ec2f.png",
+      "sha256": "ac2f24229650d5109bfccf5bd03dc3c35869781d747b0d7833b535a39049a13e",
+      "bytes": 27698,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f343.svg",
+        "sourceSha256": "833a8fa5eb5c01ee598a65d5f4985d9850a2b62397937cca8191a3757375ec2f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1996,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/860ff76daed3206c3261495d39ac14cbcd0fa796d61cedc83ac71c2234d263cb.png",
+      "sha256": "39ae766d7d6a8caac163b5a7433791eecff9558811059036fccb78f619739394",
+      "bytes": 33801,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f315.svg",
+        "sourceSha256": "860ff76daed3206c3261495d39ac14cbcd0fa796d61cedc83ac71c2234d263cb",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 2202,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/87faa26878c0c7d4c49df2419093dcea2af8c452463c0e95cf9273e3d3b75c47.png",
+      "sha256": "28f43776c5675736da7fd115a819f67fdd1d180320cfe45e7d6d7651078643c4",
+      "bytes": 12924,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f195.svg",
+        "sourceSha256": "87faa26878c0c7d4c49df2419093dcea2af8c452463c0e95cf9273e3d3b75c47",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 674,
+        "height": 310
+      }
+    },
+    {
+      "path": "rasterized/88730113a27ed128b5ffad68f8792368ad38139627408863e5b8aa124c268f8f.png",
+      "sha256": "dca4ad3f8299f464f826b67ea7ed5b29cbdc87d92b144a72f244260576aba57c",
+      "bytes": 9879,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f81.svg",
+        "sourceSha256": "88730113a27ed128b5ffad68f8792368ad38139627408863e5b8aa124c268f8f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 657,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/8c6098e1bf2e4d6e85ab1fc91f544188bc2ef3507efc5719ad5fd8e17686580f.png",
+      "sha256": "1543de852bbb342976365a119c69ef5292e5ae8bf9600b457af3ff82f4c18f21",
+      "bytes": 12501,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f122.svg",
+        "sourceSha256": "8c6098e1bf2e4d6e85ab1fc91f544188bc2ef3507efc5719ad5fd8e17686580f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1024,
+        "height": 214
+      }
+    },
+    {
+      "path": "rasterized/924c171de5ba2297a79a57e8a2182a5f28eb2962872fef74f4fe44a5fdbca6c2.png",
+      "sha256": "92d6a2702463f51f72ef751ab7e03ad7e3acf65156ffb3f7c6dd7075e267f901",
+      "bytes": 4352,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f166.svg",
+        "sourceSha256": "924c171de5ba2297a79a57e8a2182a5f28eb2962872fef74f4fe44a5fdbca6c2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 180,
+        "height": 225
+      }
+    },
+    {
+      "path": "rasterized/929341f72ef9f412b45c63a3bac34af38995bbe0a77e49634ca079edf26f01db.png",
+      "sha256": "a6d066d24215c5ad6c146519bb5c1a53fe765c46ccb352299a52db8e76a318f3",
+      "bytes": 5660,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f460.svg",
+        "sourceSha256": "929341f72ef9f412b45c63a3bac34af38995bbe0a77e49634ca079edf26f01db",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 526,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/93332b3152cd20d03fa717aab31f3d84a4ffbcc2f31486c9673289b0605af308.png",
+      "sha256": "70d96b88509603a39209db240049a0424aaff5c2e93c8360b65dccbb7afc1dae",
+      "bytes": 18174,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f164.svg",
+        "sourceSha256": "93332b3152cd20d03fa717aab31f3d84a4ffbcc2f31486c9673289b0605af308",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1343,
+        "height": 310
+      }
+    },
+    {
+      "path": "rasterized/9393ec73be4f1a58f9cdfffa75fc90dce9eec3ba1221ffcf2d719861ebd7e9ee.png",
+      "sha256": "ad512cb08f170178bd167f41be3533cc17954da914a15b6e4f44be13db10639f",
+      "bytes": 4784,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f374.svg",
+        "sourceSha256": "9393ec73be4f1a58f9cdfffa75fc90dce9eec3ba1221ffcf2d719861ebd7e9ee",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 259,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/945e295fe4ccbeb4fb5b63727c770fe6b973d65a7c4c078c16b9d1d8ae966ed5.png",
+      "sha256": "ed6e67b808b24fdf2f2b7f74a97b9d00ea790e1050ffcacbec37c5f3f4aaa87a",
+      "bytes": 2902,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f299.svg",
+        "sourceSha256": "945e295fe4ccbeb4fb5b63727c770fe6b973d65a7c4c078c16b9d1d8ae966ed5",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 358,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/954fc361a5669a819ea9f638907291fc4fc34bf2e69f50089a60a937ec87cc40.png",
+      "sha256": "f40a47a248560bd1678cead6cf9473df8b9a264ead3395a7e9d29f1680feaf05",
+      "bytes": 7842,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a2.svg",
+        "sourceSha256": "954fc361a5669a819ea9f638907291fc4fc34bf2e69f50089a60a937ec87cc40",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 745,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/95d571cdf01f58fe8d0e2116e1ff8111b18ac679f3c9d64f60d91aeed60d1aec.png",
+      "sha256": "69ce42aa2a5af03f9749859127a734717a775716beea8e629be3a86a980265f2",
+      "bytes": 7606,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f131.svg",
+        "sourceSha256": "95d571cdf01f58fe8d0e2116e1ff8111b18ac679f3c9d64f60d91aeed60d1aec",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 481,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/9614040dfb2dfd27361ac3c4b187be212181f0d647676b6ec149b5a0e7ff5816.png",
+      "sha256": "90c33a94dbd33e8864f0cb68b0f99a75b9ae581e18fa62a3d9f5688bc4497eb5",
+      "bytes": 6538,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f42.svg",
+        "sourceSha256": "9614040dfb2dfd27361ac3c4b187be212181f0d647676b6ec149b5a0e7ff5816",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 594,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/97ecd3d952e4562f5885b3d365915742bcfe6aef28309400b1ad203ba043456e.png",
+      "sha256": "e94841d16deb8ebdcd30805118c38a66598cd1c825056199546450d707d92bc4",
+      "bytes": 3527,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f111.svg",
+        "sourceSha256": "97ecd3d952e4562f5885b3d365915742bcfe6aef28309400b1ad203ba043456e",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 402,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/9a7ee063a773bed7e0465ade98a5fd88b18f722368af4cf8159cc337a5e98dfb.png",
+      "sha256": "6c0c9bbd62ac67161d9f7c830637be56ec3a57e74d5ac518dcb5c1f78a80bd06",
+      "bytes": 3337,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f231.svg",
+        "sourceSha256": "9a7ee063a773bed7e0465ade98a5fd88b18f722368af4cf8159cc337a5e98dfb",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 221,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/9f2cee6becb82af4db458bf36da92776267ba87272d6f7d1294aa8072312691f.png",
+      "sha256": "3aaa6ca011194716ccdd5746ae990688cb5ef07fec4d70976b1b9c5e5235f559",
+      "bytes": 6510,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f157.svg",
+        "sourceSha256": "9f2cee6becb82af4db458bf36da92776267ba87272d6f7d1294aa8072312691f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 531,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/9f432f80d5f3ad869a3d3f456a0694618dec2d89a2890d97a371ce41bc67a1d8.png",
+      "sha256": "d75c9efb2101157a111c75322d8ae7ad93d3f2d5fa989af500e0d4b396e94d7e",
+      "bytes": 2909,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f519.svg",
+        "sourceSha256": "9f432f80d5f3ad869a3d3f456a0694618dec2d89a2890d97a371ce41bc67a1d8",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 160,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/a26d1b5c62b6c88f285510353c1befa0c42d3620ed078b134ce278c5aaa0a468.png",
+      "sha256": "0825bc21cd3e7efca91958a9d41be2348da0373b61d6d01415d7677947787057",
+      "bytes": 5104,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f378.svg",
+        "sourceSha256": "a26d1b5c62b6c88f285510353c1befa0c42d3620ed078b134ce278c5aaa0a468",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 257,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/a2d3102a1990c67daf11ad9e9c6fc7203c516fbc74daa4f26a4f9fa347a7be76.png",
+      "sha256": "583e91e7a125aa5293dd87e9cdd9b9908d8339ba720a11787cffff3fde70548f",
+      "bytes": 47601,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f342.svg",
+        "sourceSha256": "a2d3102a1990c67daf11ad9e9c6fc7203c516fbc74daa4f26a4f9fa347a7be76",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 3438,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/a6f9ae036001602482c2a33778470a92af507bf0fa35fc7bca7ed376e4076cc0.png",
+      "sha256": "04caf6139dc36e4e7cae2aafc989fdbffbfa33d48a57c883ca7a3e0d6ea09923",
+      "bytes": 4563,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f433.svg",
+        "sourceSha256": "a6f9ae036001602482c2a33778470a92af507bf0fa35fc7bca7ed376e4076cc0",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 402,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/a8ef0400c8bcfc891768240e8ff9f5e9a4353635770b26e691cece92d42fc073.png",
+      "sha256": "5b34a3660a09f38c69629b0358bc1e9e1750e3db6ddfb692318dc46f3697078a",
+      "bytes": 8584,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f427.svg",
+        "sourceSha256": "a8ef0400c8bcfc891768240e8ff9f5e9a4353635770b26e691cece92d42fc073",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 689,
+        "height": 342
+      }
+    },
+    {
+      "path": "rasterized/ac2c9ea2bc2640270bde16ddadec4d85c6078bb4ec460840b7d61a03554307c2.png",
+      "sha256": "6696f41d2aeca198b3a94b15520db678c6559b858ce731547fc1fcc2989404cf",
+      "bytes": 5891,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f503.svg",
+        "sourceSha256": "ac2c9ea2bc2640270bde16ddadec4d85c6078bb4ec460840b7d61a03554307c2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 540,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/afb1fb69b864ab9b960cb37de234aa5922e0995e7dada4171a52814654ad70d4.png",
+      "sha256": "ca4e6ca9fd8f2f29aa2479a5ab27cdbcdee8687b013761c00388ef917baa4958",
+      "bytes": 14924,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f397.svg",
+        "sourceSha256": "afb1fb69b864ab9b960cb37de234aa5922e0995e7dada4171a52814654ad70d4",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1074,
+        "height": 203
+      }
+    },
+    {
+      "path": "rasterized/b000d7d936d533c3840dc653e52ac1384c37e7aec3865b458f13eb11ef35c83c.png",
+      "sha256": "f3d9dce3026b26685068612e132bb71ea45adcf8da8b65dd89c4232889138637",
+      "bytes": 8362,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f140.svg",
+        "sourceSha256": "b000d7d936d533c3840dc653e52ac1384c37e7aec3865b458f13eb11ef35c83c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 439,
+        "height": 417
+      }
+    },
+    {
+      "path": "rasterized/b09e607a63db2a4ee0a6b82528b7e23346320a95e7f69a9f6622986cb076d661.png",
+      "sha256": "ef98a1984a1af5927f3fb3342bb52f991b48c36d3ade45570568d7e2c7a29cf0",
+      "bytes": 4000,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f301.svg",
+        "sourceSha256": "b09e607a63db2a4ee0a6b82528b7e23346320a95e7f69a9f6622986cb076d661",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 358,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/b0a239d259b188cea679471552f8ac62d4334b87e69bae1196c553a9d45a4751.png",
+      "sha256": "bac3f3f95c78bdaa7d1b077c85d2d0f172eee7e4284128000e612647e74ee2d3",
+      "bytes": 1837,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f426.svg",
+        "sourceSha256": "b0a239d259b188cea679471552f8ac62d4334b87e69bae1196c553a9d45a4751",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 90,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/b0b3ea081c92f584641f909f3e71fea6e05e6a923cb8b8d009e28751cc45df15.png",
+      "sha256": "e9baf5155acf9b8d7ea231b4e5476751f549bf4f6b82191a700a4e8ba381e69d",
+      "bytes": 2344,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f549.svg",
+        "sourceSha256": "b0b3ea081c92f584641f909f3e71fea6e05e6a923cb8b8d009e28751cc45df15",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 89,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/b0d58f2e89c89d99ccd68404b0b6b4fe7087d696648bc2db5c4805dc8a5fc1c0.png",
+      "sha256": "4b5022c4926ff3e7fe805c80e616159b1c4710dae09c7878f7703092a8726a72",
+      "bytes": 22640,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f168.svg",
+        "sourceSha256": "b0d58f2e89c89d99ccd68404b0b6b4fe7087d696648bc2db5c4805dc8a5fc1c0",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1469,
+        "height": 310
+      }
+    },
+    {
+      "path": "rasterized/b448c2e9f71c04b59797f995581e5a3d84c6e2b933fcd44bde64efccd2bc75f2.png",
+      "sha256": "1609db5e98cfd4db34e0c56a0220558cd00bc8769766fa87389d6ab4c1d17e7e",
+      "bytes": 13159,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f193.svg",
+        "sourceSha256": "b448c2e9f71c04b59797f995581e5a3d84c6e2b933fcd44bde64efccd2bc75f2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 616,
+        "height": 523
+      }
+    },
+    {
+      "path": "rasterized/b507c1739cdcfde6129d89ee2292c702850075eebf68ac93595ac73940240d63.png",
+      "sha256": "e5e4201366357628f4d0b26d04280cf3a8f92e7891fa9289b33238223ae7e257",
+      "bytes": 10206,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a7b.svg",
+        "sourceSha256": "b507c1739cdcfde6129d89ee2292c702850075eebf68ac93595ac73940240d63",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 812,
+        "height": 470
+      }
+    },
+    {
+      "path": "rasterized/b5879dec4e426e1ff81885b5f8572baaf60d8a0738b3932a754c4af1ef16e525.png",
+      "sha256": "6179b203ac706467cf80d650e33505acc1f2967ba1d520279fd9880920deb068",
+      "bytes": 37975,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a12.svg",
+        "sourceSha256": "b5879dec4e426e1ff81885b5f8572baaf60d8a0738b3932a754c4af1ef16e525",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 2821,
+        "height": 214
+      }
+    },
+    {
+      "path": "rasterized/b63391d3e37605aadb6cb9bb45daec558aed36a9caf4d610209092df956d4e8c.png",
+      "sha256": "365a208781237919b2813aee5e300a9e582d4beb4722298205ce9d495523e9c8",
+      "bytes": 32283,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a11a.svg",
+        "sourceSha256": "b63391d3e37605aadb6cb9bb45daec558aed36a9caf4d610209092df956d4e8c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 2774,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/b9efc7c5399dd3edd40ae1b5e6b5aa8c0f91c50325fa63f00a264b9b690c237e.png",
+      "sha256": "0db723f319e82ae1b74786ab8048a5a90a83d0c83ece2fc8851d6c41c2f68e16",
+      "bytes": 7460,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f388.svg",
+        "sourceSha256": "b9efc7c5399dd3edd40ae1b5e6b5aa8c0f91c50325fa63f00a264b9b690c237e",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 408,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/bb381f47ad8279f3021df02f02ad3ff4690d678e154f0e9b0735c095d6b910bc.png",
+      "sha256": "36cf79d9a600bcb27caf708e51d61f0f99735ba2dfd150e0fd798966222f38cc",
+      "bytes": 5648,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f104.svg",
+        "sourceSha256": "bb381f47ad8279f3021df02f02ad3ff4690d678e154f0e9b0735c095d6b910bc",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 489,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/be08e9ce4bbd49e86e7871546ed9685fe60fe54eb2b1bffba9f1026a26e9e1b1.png",
+      "sha256": "254e9c23ab23af1bd17c0c406eb2593ac53b934f9bf49492ae6b707d092a8e49",
+      "bytes": 4977,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f357.svg",
+        "sourceSha256": "be08e9ce4bbd49e86e7871546ed9685fe60fe54eb2b1bffba9f1026a26e9e1b1",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 418,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/c0f692e27d3e18357b42c07ba2c25ca7f65f7f30ae8c9450f8f7a00de70b463f.png",
+      "sha256": "e70624617830c5cd460a474b0e09c3f47c386ed5a76f44ee2c5b080903eed65c",
+      "bytes": 1395,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f290.svg",
+        "sourceSha256": "c0f692e27d3e18357b42c07ba2c25ca7f65f7f30ae8c9450f8f7a00de70b463f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 85,
+        "height": 107
+      }
+    },
+    {
+      "path": "rasterized/c379352a97417cdcca14cfc4645382d2cc9bfbb6df3cdc00ef9bb6ef2f23792e.png",
+      "sha256": "762c3d9b2936c729bf0ba03f86f7171df12ae0c7d9f18d5315d575e4553280ee",
+      "bytes": 28447,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f184.svg",
+        "sourceSha256": "c379352a97417cdcca14cfc4645382d2cc9bfbb6df3cdc00ef9bb6ef2f23792e",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1758,
+        "height": 385
+      }
+    },
+    {
+      "path": "rasterized/c61ef8a49e0297907d74472fd9f716ff3768eda86c5070c08e76061637760d24.png",
+      "sha256": "e5ca8d50e473045225b16d55eb4356b20dfaa7a5a0fb727d4f151be5fda4a5a2",
+      "bytes": 2691,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f306.svg",
+        "sourceSha256": "c61ef8a49e0297907d74472fd9f716ff3768eda86c5070c08e76061637760d24",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 345,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/c8f0242ed8a3909fc16e0acd29f0da9f9fec0abf0e262e03a72c1534f2223937.png",
+      "sha256": "938466c603b771485a8bcdd9944576bd5b6065298ccdcc93dd48e6a50701e110",
+      "bytes": 5489,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f345.svg",
+        "sourceSha256": "c8f0242ed8a3909fc16e0acd29f0da9f9fec0abf0e262e03a72c1534f2223937",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 432,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/c975af433fb54a3edb44d0c10c0516fa2878c7f2ca0b26e2d6108d8eb6cdb3a5.png",
+      "sha256": "2dfc8978de68c48f1bf85c0fd13fcaeb5d64e4595a406ee921e4aee505a75c38",
+      "bytes": 3965,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f559.svg",
+        "sourceSha256": "c975af433fb54a3edb44d0c10c0516fa2878c7f2ca0b26e2d6108d8eb6cdb3a5",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 216,
+        "height": 171
+      }
+    },
+    {
+      "path": "rasterized/cded039d5eff83803a067877be1c73ea1e27cd004118e93179d73b178cd557a8.png",
+      "sha256": "79110bc313c697285c56e4c7f773a5b1a3976230bda2dbd2e0184ca62b180feb",
+      "bytes": 17289,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a3.svg",
+        "sourceSha256": "cded039d5eff83803a067877be1c73ea1e27cd004118e93179d73b178cd557a8",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1374,
+        "height": 193
+      }
+    },
+    {
+      "path": "rasterized/d413ff2b37ada1e916e240e79f9368b6c0162eb13d58a348532a4d705ae0aa7f.png",
+      "sha256": "485166fb351b6592d7676031c9af390f8164ce74f8f372bcb88f37d543533207",
+      "bytes": 2839,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f135.svg",
+        "sourceSha256": "d413ff2b37ada1e916e240e79f9368b6c0162eb13d58a348532a4d705ae0aa7f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 370,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/d41d0d9cd014a6d3ce6e3e9cc154c00cb92e37ffd9d9e00eba57fc7dcda1f064.png",
+      "sha256": "227766311dd95d21439cc9249772c13ddd18195f19dc131e62f626f9b7503f46",
+      "bytes": 22328,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f547.svg",
+        "sourceSha256": "d41d0d9cd014a6d3ce6e3e9cc154c00cb92e37ffd9d9e00eba57fc7dcda1f064",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1297,
+        "height": 406
+      }
+    },
+    {
+      "path": "rasterized/d620f1126bbebb68a6c235ad2fa5dd0ae3e8126f6f73db3820ded19660c3043c.png",
+      "sha256": "d6f1c8f4bf319cbaef925013d9e5e4d9b527e2025ba68a3e4dc37223253ef922",
+      "bytes": 25721,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f548.svg",
+        "sourceSha256": "d620f1126bbebb68a6c235ad2fa5dd0ae3e8126f6f73db3820ded19660c3043c",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1510,
+        "height": 406
+      }
+    },
+    {
+      "path": "rasterized/d9cf8a21c5db9fd7de493c0e2e422b6301b1fd6bef709e7bb73289d780964574.png",
+      "sha256": "b6a86e113006e8cb4c59e28a5295b6ac557bf9d8fa7f54fae14edcf0a3287613",
+      "bytes": 4989,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f487.svg",
+        "sourceSha256": "d9cf8a21c5db9fd7de493c0e2e422b6301b1fd6bef709e7bb73289d780964574",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 471,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/daaab75742a96707b8d2c787d16b4d9787639c17ea4904348e4c8cf8d0d53975.png",
+      "sha256": "530f8d99ab2a3748f6068f9e2849811abb63bc7154c0ffd003d04cf3678d0901",
+      "bytes": 7189,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a6.svg",
+        "sourceSha256": "daaab75742a96707b8d2c787d16b4d9787639c17ea4904348e4c8cf8d0d53975",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 452,
+        "height": 342
+      }
+    },
+    {
+      "path": "rasterized/db3839695ffe696259a9e3a3048bcd28678a5d63f8b77564062558eee14ecaf6.png",
+      "sha256": "09fea19cf6c95a8b81dfa3d942a6641a82dc56aa378f651eeab53ce9139f67eb",
+      "bytes": 38669,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f333.svg",
+        "sourceSha256": "db3839695ffe696259a9e3a3048bcd28678a5d63f8b77564062558eee14ecaf6",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 2430,
+        "height": 214
+      }
+    },
+    {
+      "path": "rasterized/e0c40e2e155c2fdce5d57cd74a22fcf4f5639d9dc7b4d4d9f37571850553dd0f.png",
+      "sha256": "9d59d5b5bea9820026b7e7c5661ef827fadcfd07d53f7afd1321699c859c236f",
+      "bytes": 4740,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f392.svg",
+        "sourceSha256": "e0c40e2e155c2fdce5d57cd74a22fcf4f5639d9dc7b4d4d9f37571850553dd0f",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 294,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/e1a267acdbd3c981eab3545e42ac1bfe52e8bb1b7b33f33f1d31e7319ccda8c2.png",
+      "sha256": "b2ad0ed52751743aadc879cec2616f62a04ebf34b083f49c7ad47a1e50e9e317",
+      "bytes": 39640,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f103.svg",
+        "sourceSha256": "e1a267acdbd3c981eab3545e42ac1bfe52e8bb1b7b33f33f1d31e7319ccda8c2",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 991,
+        "height": 1099
+      }
+    },
+    {
+      "path": "rasterized/e65260e5938cf488969d6a5ab392ac587a1ac5bbe6b7ee3f03495a8beea7d225.png",
+      "sha256": "2312d33780a2ff98d8615fa6fa0bd32bdbfb48986ae69c7a04399da18b875e1d",
+      "bytes": 7196,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f420.svg",
+        "sourceSha256": "e65260e5938cf488969d6a5ab392ac587a1ac5bbe6b7ee3f03495a8beea7d225",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 501,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/e7d1361211ea854e2ed05e455b547639de01e9c1c0264a8ad0c234431e95706b.png",
+      "sha256": "518177a9dad229c83d8ba43279b256759fa4c37d86a1006b2762eb0dc65b5ceb",
+      "bytes": 7612,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f82.svg",
+        "sourceSha256": "e7d1361211ea854e2ed05e455b547639de01e9c1c0264a8ad0c234431e95706b",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 481,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/e910b846aaba5de6fcbfa96ad05e3503de24d4e45caaf1da0b761860c8d5a61b.png",
+      "sha256": "0609036f3f422e5af30b8edaa98b4d1426e97545ab2cb637358582fecbcfeb81",
+      "bytes": 19793,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f551.svg",
+        "sourceSha256": "e910b846aaba5de6fcbfa96ad05e3503de24d4e45caaf1da0b761860c8d5a61b",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1162,
+        "height": 395
+      }
+    },
+    {
+      "path": "rasterized/e9df85e0eaefd9d710e370edc05be15f61f374a7d9d7c5b38dbb5873626a366b.png",
+      "sha256": "e47fc5defa758cf7e47dfde7efb55e2d8eea752f6a6c27a5bf63cb2019e8fc4b",
+      "bytes": 7816,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqna.svg",
+        "sourceSha256": "e9df85e0eaefd9d710e370edc05be15f61f374a7d9d7c5b38dbb5873626a366b",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 715,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/ebdd2c1757665a0363a505c6b323200b65854a5cb438c545368e131120067b98.png",
+      "sha256": "c220b750c46b125a75999e6df499e53f6f74c1bb0cedf874872caf40a7887a91",
+      "bytes": 19054,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f484.svg",
+        "sourceSha256": "ebdd2c1757665a0363a505c6b323200b65854a5cb438c545368e131120067b98",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1526,
+        "height": 310
+      }
+    },
+    {
+      "path": "rasterized/ecd5df090e85dd48d7179a9d9e3f42d2cd4ea1d27654bed4d0dd04c3fcd78f57.png",
+      "sha256": "abc7a33fa0a9c66fd1d5ad998da45c74aef8c1b58e1ff9c93876fe6169d14556",
+      "bytes": 13913,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f169.svg",
+        "sourceSha256": "ecd5df090e85dd48d7179a9d9e3f42d2cd4ea1d27654bed4d0dd04c3fcd78f57",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 989,
+        "height": 310
+      }
+    },
+    {
+      "path": "rasterized/f00074c11033ea446a1f7e1e84959d2daa815a3869385309096ba1cfb5149157.png",
+      "sha256": "0e2d006e6bffdf841f0c450db2bfd5728913b2be0371c47110923bc18754c59c",
+      "bytes": 16966,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f381.svg",
+        "sourceSha256": "f00074c11033ea446a1f7e1e84959d2daa815a3869385309096ba1cfb5149157",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 612,
+        "height": 481
+      }
+    },
+    {
+      "path": "rasterized/f3bce5b43b836ffb48177c16c5d57d81b9d28deb31d6fc293e448ac814591196.png",
+      "sha256": "d4028338cb979e0007af8866a319983f6cf2df7c5f08c8cf75fbfe3aa2a9784c",
+      "bytes": 7436,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a7.svg",
+        "sourceSha256": "f3bce5b43b836ffb48177c16c5d57d81b9d28deb31d6fc293e448ac814591196",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 581,
+        "height": 331
+      }
+    },
+    {
+      "path": "rasterized/f4092db139ecc5f6a3e1c455558bfdfd5e39d67dcb9bdeefb43dffe831cf30a6.png",
+      "sha256": "081b853005ac9752b8f7ae873fb07f673f1e20fb300d07479704e4b436f5fccd",
+      "bytes": 4443,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f41.svg",
+        "sourceSha256": "f4092db139ecc5f6a3e1c455558bfdfd5e39d67dcb9bdeefb43dffe831cf30a6",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 216,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/f432aad6a1fca8a5111276ead13d85c389058d8097ed6ce4899c3a132d50f0cd.png",
+      "sha256": "284badfdf9d54be1c7175cb0f42b5e1a608bb1f1f7e8a5fa92b2937dc47bd678",
+      "bytes": 19082,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f556.svg",
+        "sourceSha256": "f432aad6a1fca8a5111276ead13d85c389058d8097ed6ce4899c3a132d50f0cd",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1082,
+        "height": 353
+      }
+    },
+    {
+      "path": "rasterized/f6e32e64f00e186067a02054872ba15618b09a9d166813dfb285107e9486652b.png",
+      "sha256": "557213a94a855cc6ed7c2c39a25ee39d80206d4b67ee68ab12ff37f69fd192e0",
+      "bytes": 12131,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f32.svg",
+        "sourceSha256": "f6e32e64f00e186067a02054872ba15618b09a9d166813dfb285107e9486652b",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 775,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/f79cfb6d9acba4f59049ceecbbdac9f0921010082b6173773abc678b01797e34.png",
+      "sha256": "abb987c5a4f1d1e3678a0d77ec21d3c8e64522085e9aa04b81dd2b132e8d3384",
+      "bytes": 19271,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f199.svg",
+        "sourceSha256": "f79cfb6d9acba4f59049ceecbbdac9f0921010082b6173773abc678b01797e34",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 716,
+        "height": 545
+      }
+    },
+    {
+      "path": "rasterized/f9d37556f9ef3a63dc82176bca1c109dfdc6049dc33a92c18a52e09650476196.png",
+      "sha256": "703cff6cd29e92b01399b75081b08a317378f108ee0cdb05816132a0c4430b98",
+      "bytes": 1543,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f419.svg",
+        "sourceSha256": "f9d37556f9ef3a63dc82176bca1c109dfdc6049dc33a92c18a52e09650476196",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 87,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/f9d97bd0dcfe249bf63d1b77539e1d6427eff245e15afc8242365d0359d81f73.png",
+      "sha256": "ca424a5bf1e9b04e6d976a297b31e58994c090a70e2c6b6b4f521710ad8d48c5",
+      "bytes": 3204,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f229.svg",
+        "sourceSha256": "f9d97bd0dcfe249bf63d1b77539e1d6427eff245e15afc8242365d0359d81f73",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 350,
+        "height": 150
+      }
+    },
+    {
+      "path": "rasterized/f9da95e156ae01673a2967c94e05d2aa697c7ce58b761ba6bd998f8fd85f562e.png",
+      "sha256": "fa8470fad2bc3130211ab21b1492ec572ffcc62e8568e2661d16fbb086a953f4",
+      "bytes": 2370,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f206.svg",
+        "sourceSha256": "f9da95e156ae01673a2967c94e05d2aa697c7ce58b761ba6bd998f8fd85f562e",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 85,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/fad3896137ae6fcae44d10d14edb94690b898e31b97431be3c220466ec136004.png",
+      "sha256": "619ce36b639c899a797dd6b0677075816752147a2f804e944db8d68dc54bb0e6",
+      "bytes": 2876,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/inline-f372.svg",
+        "sourceSha256": "fad3896137ae6fcae44d10d14edb94690b898e31b97431be3c220466ec136004",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 144,
+        "height": 139
+      }
+    },
+    {
+      "path": "rasterized/fb8b3b28d4498e26af853e42d9743907390e4d3dd0e32be28fb150efae8fc52a.png",
+      "sha256": "e7608d102a3966243e703b8985847565136d6dc541f22f74f10c43c08fc5ea2b",
+      "bytes": 6729,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f143.svg",
+        "sourceSha256": "fb8b3b28d4498e26af853e42d9743907390e4d3dd0e32be28fb150efae8fc52a",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 573,
+        "height": 161
+      }
+    },
+    {
+      "path": "rasterized/fbd01ae228359d25f4881e14161dff2c70bc2afcb23d19c7aa2395c0adab3986.png",
+      "sha256": "4bca4a39c439aba1a617340d0d8457fb3b894f78912a39eaaba3a236a73667cf",
+      "bytes": 14533,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-f326.svg",
+        "sourceSha256": "fbd01ae228359d25f4881e14161dff2c70bc2afcb23d19c7aa2395c0adab3986",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1043,
+        "height": 182
+      }
+    },
+    {
+      "path": "rasterized/fd58e2bfbcf851a53501f891b8f77fa78ce46f8aebb0c3a18fa5c52becf00746.png",
+      "sha256": "eb5f62266ef9209bd8f2bb62ace1988728711ef2672e5836164c6699263302f0",
+      "bytes": 21487,
+      "mime": "image/png",
+      "conversion": {
+        "algorithm": "strict-mathjax-svg-paths-to-png-v1",
+        "sourcePath": "images/display-eqn.a7a.svg",
+        "sourceSha256": "fd58e2bfbcf851a53501f891b8f77fa78ce46f8aebb0c3a18fa5c52becf00746",
+        "density": 768,
+        "sharpVersion": "0.34.5",
+        "libvipsVersion": "8.17.3",
+        "librsvgVersion": "2.61.2",
+        "width": 1289,
+        "height": 406
+      }
+    }
+  ],
+  "fidelity": {
+    "canonicalTextSha256": "a12387bef41f6197c81c4301e00ec1f85a2fd8134199bf2c50da9b2265071c47",
+    "sourceImageCount": 234
+  }
+}

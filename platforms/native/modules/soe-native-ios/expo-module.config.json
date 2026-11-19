@@ -1,0 +1,10 @@
+{
+  "platforms": ["ios"],
+  "apple": {
+    "modules": [],
+    "podspecPath": [
+      "../../ios-member/SoeMember.podspec",
+      "../../ios-source/SoeSourceReader.podspec"
+    ]
+  }
+}

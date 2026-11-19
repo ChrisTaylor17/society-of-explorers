@@ -1,0 +1,80 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "recordedAt": "2026-11-06T19:59:03.120195+00:00",
+  "parentCommit": "0c8aa033f6dbd1a960e5563818a6ac7b91d0d899",
+  "draftSha256": "aab0abbb6e977103bba1816aab2e114350d02255d3c7f622832580ef9bed64a4",
+  "migrations": 61,
+  "checks": [
+    "A drifted browser grant stops the entire draft. The reviewed predecessor accepts it.",
+    "A separately connected reply in another Circle waited on the real pair lock and failed after the block committed.",
+    "The two members cannot retrieve one another’s safety text. The author and assigned reviewer keep their separate access.",
+    "The shared block hides both directions, preserves independent replies and appears in the owner’s block list.",
+    "Browser roles cannot execute the block routine and the app service role has no raw block-table access.",
+    "A full restore preserves the block and reply tree. The new reference refuses a restore missing the private revision function.",
+    "An owner unblock restores current visibility and the old block request cannot reapply it."
+  ],
+  "restore": {
+    "complete": {
+      "scope": "soe-privacy-restore-v16",
+      "status": "MATCH",
+      "tablesCompared": 66,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "previousScopeMissingRoutine": {
+      "scope": "soe-privacy-restore-v15",
+      "status": "MATCH",
+      "tablesCompared": 66,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "missingRoutine": {
+      "scope": "soe-privacy-restore-v16",
+      "status": "UNAVAILABLE",
+      "check": "local_snapshot_unavailable",
+      "productionCleared": false
+    }
+  },
+  "focusedAndRegressionTests": 47,
+  "browserStories": [
+    "The compiled phone-width web archive clears the draft and every old card on confirmation. Reload preserves the third member’s reply.",
+    "The compiled browser clears old content after a lost reply and leaves the result unconfirmed even though SQL saved the block.",
+    "The compiled Quest Browser connects the signed fixture wallet, checks the selected author, and reloads the same blocked thread.",
+    "The compiled Quest room renders the independent reply in simulated WebXR after the same member block."
+  ],
+  "browserRequests": 28,
+  "scope": "Compiled web and Quest Browser used signed test accounts and disposable SQL. The immersive room used a simulated WebXR session. Phone controllers used the canonical HTTP handlers and isolated SQL. Physical device, hosted rollout and retention review remain open.",
+  "buildSourceFiles": 1091,
+  "buildSourceSha256": "b043e3d3b281f53635a2964ec9d913ec907d85df106af204b43d5c066110a8ef",
+  "nativeCircleScreenSha256": "40cf51d6ff9726a0d10242b4c11f17f8199e87da24e9028e973ed5c83cd8c534",
+  "evidenceArchive": "verification/web/evidence/checkpoint-circle-member-blocks",
+  "evidenceSha256": {
+    "built-shell-circle-blocks-final-next-build.json": "b4f2e65a1123c6d0c2ca9f8b4c60c366c3d4198697e5d4845afc17d132e5d889",
+    "built-shell-circle-blocks-final-next-build.log": "a030bac77592a03770916683a17727fd83175c8dd69933bfc0430bdcdd2c75f5",
+    "built-shell-circle-blocks-final-build-source-sha256.json": "5663dd00c8c3e8f6a1be20e5f91ab0e55f146eb466649c063cdda422913d7502",
+    "built-shell-circle-blocks-final-browser-server-ready.json": "7bbf52d0af0c01ec8723418cfe67c4eead07789fee0a06520f6d9f6fdb827d9e",
+    "built-shell-circle-blocks-final-browser-server.json": "9e397d08a8e9e9881b5ef7a1908b69ff5a0617d4294148b1cb7fa0a687ba666c",
+    "built-shell-circle-blocks-final-browser-stories.json": "0d3a4d347c0c41406ea112e41b5bfb57d2d28684b2cb92f8c817441ac3913a33",
+    "built-shell-circle-blocks-final-browser-web-320.png": "e51e51a64b5cb28d822447f903c5d40dbff37618491e08abf76e1c69effb2dfc",
+    "built-shell-circle-blocks-final-browser-quest-320.png": "798f6c648dffb52a52df57fcfff1ea314a4787a69c84d0689f06fa5d96cd774c",
+    "circle-member-blocks-postgres.json": "a03ddc83a0ed8348574cec14274046f01d2a8bc9c94a92205a96e0f9b7b3d28d",
+    "circle-member-blocks-current.tap": "a4d28acaa5ced876d9f9baa564a664c57db72129019d3791f73d4c0697d86b9a",
+    "circle-member-blocks-eslint.log": "0d76e5f076746913baef52e5b3c5605a04534ebda4d1d71c7f85f06c281b4a5a",
+    "circle-member-blocks-typecheck.log": "d8197e2642157bd08725c16928d5739e2d769c5847300a0c5fd63d8f23ebbe35",
+    "quest-circle-host-source-manifest.json": "57e54cc587c961f191196175f092639ab3fdae08c37884c204efa79fb0657af1",
+    "quest-circle-host-esbuild.mjs": "1125b5f1a2d925e62ac03184c598ae3835cc720e22041ccee0221660a8b04344"
+  }
+}

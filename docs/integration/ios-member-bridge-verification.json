@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T18:03:00.124840+00:00",
+  "baseCheckpoint": "e623fc4de7f376df29195312a647ed88204d4180",
+  "status": "LOCAL_IOS_BRIDGE_AND_HOST_SOURCE_PASS_NATIVE_AND_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "iosBuildExecuted": false,
+  "expoPrebuildExecuted": false,
+  "nativeCodegenExecuted": false,
+  "objcAdapterCompiled": false,
+  "androidBuildExecuted": false,
+  "physicalDeviceTested": false,
+  "issuedCredentialsUsed": false,
+  "liveProviderCalled": false,
+  "scope": "Current protected iOS bridge, Expo host and reader packaging source, Mac Swift and guarded JavaScript. No generated host, native device, provider or release acceptance.",
+  "checks": {
+    "composedSwiftMac": {
+      "receipt": "verification/web/evidence/native-ios-member-bridge-composed-03/receipt.json",
+      "sha256": "d8bb3dc9cdadeb44cf41159802259cb79283eef9fca5a822e6a483a81d8a5f9f",
+      "scenarios": 98,
+      "requestPolicyAssertions": 556,
+      "bridgeAndHostScenarios": 15,
+      "networkDeniedAtOS": true,
+      "objcHeader": {
+        "path": "verification/web/evidence/native-ios-member-bridge-composed-03/SoeMember-Swift.h",
+        "sha256": "7d9596c0ad03b294cd5a5e59219f9816609d19465d1c42daa9a11191dddfdc1c"
+      }
+    },
+    "adapterAbiSource": {
+      "receipt": "verification/web/evidence/native-ios-member-adapter-source-final-01/receipt.json",
+      "sha256": "43e62967f6126ec006c5490aa758bd1fde69f4a6a9b0aa72bd1fcc61b5c8b118",
+      "checks": 202
+    },
+    "installedAdapterJavaScript": {
+      "receipt": "verification/web/evidence/native-ios-installed-js-02/checks.json",
+      "sha256": "996e780aba48abce1bfc828fbdb9e0ca7497396f79fda391cf1689a00b9bbd2e",
+      "cases": 122,
+      "files": 11,
+      "scopedChecks": [
+        "tests",
+        "portable-types",
+        "registered-app-types",
+        "scoped-lint"
+      ],
+      "runtimeLeaves": 3062
+    },
+    "hostAndReader": {
+      "receipt": "verification/web/evidence/native-ios-host-config-final-01/receipt.json",
+      "sha256": "97971486e97f85f64a7cc46d71115a85fe466377ac17f66fcbd4c204cbeb3aaf",
+      "cases": 24,
+      "configurationFixtureCases": 10,
+      "readerCases": 14,
+      "iosDelegateParseOnly": true,
+      "podspecSyntaxPass": true
+    }
+  },
+  "diagnostics": [
+    {
+      "path": "verification/web/evidence/native-ios-member-bridge-composed-01/receipt.json",
+      "sha256": "c29438457747618dec9428b313733875bdc67fbc45ae2ef5ee86c3fee2177efe",
+      "issue": "Swift 6 rejected the actor-isolated test helper closure."
+    },
+    {
+      "path": "verification/web/evidence/native-ios-member-bridge-composed-02/receipt.json",
+      "sha256": "684de0896ba646602a8dfec8aa08ed21f354f188fb5ca69070185e3e5ec5bf44",
+      "issue": "Invalid installed settings leaked a lower-level policy error to the host test. The installed boundary now maps refusal to unavailable."
+    }
+  ],
+  "hostMetadataOnly": {
+    "namedPaths": [
+      {
+        "path": "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+        "state": "absent"
+      },
+      {
+        "path": "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform",
+        "state": "absent"
+      },
+      {
+        "path": "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform",
+        "state": "absent"
+      },
+      {
+        "path": "/Users/christaylor/Library/Android/sdk/platforms/android-37/android.jar",
+        "state": "absent"
+      },
+      {
+        "path": "/Users/christaylor/Library/Android/sdk/build-tools/37.0.0/aapt2",
+        "state": "absent"
+      },
+      {
+        "path": "/Users/christaylor/Library/Android/sdk/ndk/27.1.12297006/source.properties",
+        "state": "absent"
+      },
+      {
+        "path": "/Users/christaylor/Library/Android/sdk/platform-tools/adb",
+        "state": "absent"
+      },
+      {
+        "path": "platforms/native/ios",
+        "state": "absent"
+      },
+      {
+        "path": "platforms/native/node_modules/expo/bin/cli",
+        "state": "nonresident",
+        "size": 43,
+        "blocks": 0
+      },
+      {
+        "path": "platforms/native/node_modules/expo/config-plugins.js",
+        "state": "nonresident",
+        "size": 50,
+        "blocks": 0
+      },
+      {
+        "path": "platforms/native/node_modules/@react-native/codegen/package.json",
+        "state": "nonresident",
+        "size": 1562,
+        "blocks": 0
+      },
+      {
+        "path": "platforms/native/node_modules/react-native/scripts/generate-codegen-artifacts.js",
+        "state": "nonresident",
+        "size": 1458,
+        "blocks": 0
+      }
+    ],
+    "volumeAvailableBytes": 32476442624
+  },
+  "originalCheckout": {
+    "statusBytes": 26781,
+    "entries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "baselineMatches": true
+  },
+  "earlierCoreEvidence": {
+    "originalReceipt": "verification/web/evidence/checkpoint-e623fc4/ios-member-core-verification.original.json",
+    "filesReverified": 113
+  },
+  "changedFileSha256": {
+    "RELEASE_STATUS.md": "e05b4bc05456cb2ad7cc589bbe9f0d1608b062dbc888ed2dc78f7bd1902f487b",
+    "docs/integration/ios-member-core-verification.json": "0dd7f35cb9d227ab2c132bff31784fd4a53d1bb48013faa4a04f3bfcc1a4cb47",
+    "docs/integration/native-source-reader-platforms.md": "5f9b0b0f299f6741d235c7c46f4f0bfdb33bdbb1f5f0e1a0fe102cb1199bce06",
+    "platforms/native/.gitignore": "83d54f6747219111c53bd1b57061f8f12def3e2a27f11ef46de4afc904ef1e50",
+    "platforms/native/OwnedAccountScreen.tsx": "f8f863f8e05b453b28fdefc0d34e05d0a97683845df1b4fbca7602a546d914af",
+    "platforms/native/app.json": "cc129cce10e92a599e299b516a315ed5bfd69673708de610b38a86e62dab2547",
+    "platforms/native/ios-member/SoeMemberAccessFence.swift": "d292bbda97d8169cc88c50965aa9f2699795428454c460f17d7d7ba892aa639d",
+    "platforms/native/ios-member/SoeMemberAuthority.swift": "49022b1b7912b36e2c286b6a2cc66ca12c8ebd507f5e65aff0babba0366ae097",
+    "platforms/native/ios-source/SoeSourceReader.podspec": "2c0e0d6de55a7526575489a472dabf0a6390ac7904b211a14641c4940083e19b",
+    "platforms/native/package.json": "b57204b1692baa56f8c075d5eefa87a61efd38738ae8e37009adfbc586436a5c",
+    "platforms/native/src/auth/android-owned-account.ts": "4966a54cf6dc2025292ccd4237ea6a26899bdcf8a3f6ed5114850b9a500fb54d",
+    "platforms/native/src/auth/native-auth-ports.ts": "6d41d9172361de2923491149ee0182ef5573c41187e40208576fd9c7dc67fb35",
+    "platforms/native/src/circles/android-member.ts": "a34234ff88d1e23d843fb2f5c85cc2a589301de6866e8a380e2ccab614ffaa10",
+    "platforms/tests/android-member-policy.test.mjs": "a10828299ce21e0459e22aa04c13e961c6003c6e4cdb1d2fc404eb47aaaecd1e",
+    "platforms/tests/native-source-reader-policy.test.mjs": "73fc230561da5ce8813c76eeadee49f447d23a2d6644b11ecb8240483d4e2244",
+    "platforms/tsconfig.portable.json": "81aa6fd74e387302d5e571a0a48e954f415cdbf8435863e640afb2025f83aba6",
+    "verification/native-ios/SoeMemberAuthorityTests.swift": "f76a9280b76ed8be0f1264ffc4331d5db01e10cf4363e3490167c721df4fdc03",
+    "verification/native-ios/run-swift-tests.py": "544de0f0172a8220d26cf5d6536c0b15bdeb4818ed0c9b3c89bc4aa8ff0cd8a3",
+    "docs/integration/ios-member-bridge.md": "be1dae9449d654751c02548d1da64ef9ca9734474dee5c1a07bf1300c485cf91",
+    "platforms/native/ios-member/NativeSoeMemberIOS.h": "cefe4c2978e70ab754dd3e78b0144a935cc8eebbbfcd7fa925309efc49f0c78f",
+    "platforms/native/ios-member/NativeSoeMemberIOS.mm": "5e300ea38582761905ce4849dd9c757f5c63b7840b178de7e5287ec1313bc86f",
+    "platforms/native/ios-member/SoeMember.podspec": "e24a3980b4c805638c7c568dc7085b426a2b1c223b05d80201bd9112093e801e",
+    "platforms/native/ios-member/SoeMemberAppDelegates.swift": "e0cc58c60e276782ddc248b7fdcf356b1800191713631b15ceed3ce4753a6684",
+    "platforms/native/ios-member/SoeMemberBridge.swift": "aae30dd688e783a37c3bf24f930173cba31d64d4689b2e59d1ae856e6b1fd3c2",
+    "platforms/native/ios-member/SoeMemberIOSHost.swift": "f09b1fde74d34ccd361a61014ea5bd87f8bb22fb674a4073efb03b350d7c70be",
+    "platforms/native/modules/soe-native-ios/expo-module.config.json": "07a1e75823363a671a2220a2606358783bd019a55eb949842600ddcd6bb95323",
+    "platforms/native/modules/soe-native-ios/package.json": "1810deda0b143fff3328f74f0cc9d70c54359e8a6cbd18d715ac3d71863352c9",
+    "platforms/native/plugins/with-soe-ios-host.cjs": "973ebd2fdfdc255aa772bdf4ea67f20aaaf5f975da69f21f99c734d1a5090227",
+    "platforms/native/src/auth/installed-owned-account.ts": "7544ce11a4289e2fea00bb9b8061df80071c9b94526159d4f7f63261ee53fd1d",
+    "platforms/native/src/circles/installed-member.ts": "01caaa794e1edbbab32af9e4555d17a0c0bd4684d86e5a4b0ff9439f9d695114",
+    "platforms/tests/installed-member-adapter.test.mjs": "0b7860d27d4f85533467f29e6fb0981922aacfa9670f6be6e6b1124cb7a13c68",
+    "platforms/tests/native-installed-account-types.d.ts": "c0eee82472bcd1ff9068b0d56ffa1514bb2ed2034cfe4ee64b869959cd8ac092",
+    "platforms/tests/tsconfig.native-installed-account.json": "30cd8d25da411019f7c0a72485001c2bafc1b4ea697d1e7a0980ea3aedeb523b",
+    "verification/native-ios/SoeMemberBridgeTests.swift": "e06bcb65df248af5c66292bb11dd32ca49d546fe385162e22674e69a5619bbf8",
+    "verification/native-ios/host-config.test.mjs": "c5354f9940d0608ea0d0ea42f7f6ca9fe488f1b49b03d4828332ce5e4be8dd11",
+    "verification/native-ios/member-adapter-source-test.py": "9c4bddd0867e74aad57c357a1d2487ac93f8294233fff0f133612a2019b47d5a"
+  }
+}

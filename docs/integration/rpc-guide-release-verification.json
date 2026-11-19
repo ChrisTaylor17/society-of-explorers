@@ -1,0 +1,636 @@
+{
+  "version": 1,
+  "recordedAtUTC": "2026-11-04T16:56:02.207487+00:00",
+  "status": "LOCAL_REWARD_PROMPT_COMPATIBILITY_AND_GUIDE_PRIVACY_PASS_PRODUCTION_HOLD",
+  "priorCheckpoint": "6d5bccfce8d7ef183261540eeb42cea179a79540",
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Documents/Codex/soe-release",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 41.91,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 967,
+    "sourceSha256": "1f5f1678692f5411aa42b18c4a4209e7d318c50272a32618f9cadf16c73f1e91",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/checkpoint-e1fbb2d/next-build.log",
+    "buildId": "1RTd0hc6WPNC0uuBC-PfA",
+    "fullTypeScriptSeconds": 18.9
+  },
+  "sourceStability": {
+    "sourceFiles": 967,
+    "unchangedSinceBuild": true,
+    "changedSince6d5bccf": [
+      "app/api/leaderboard/route.ts",
+      "app/leaderboard/page.tsx"
+    ],
+    "manifestSha256": "5efdf029ee164749473512d00088c6e43c37373dcd0375bb8e1dd22125a7e123"
+  },
+  "selectedNonDom": {
+    "tests": 697,
+    "pass": 697,
+    "fail": 0,
+    "skipped": 0,
+    "files": 58,
+    "excludedDatalessDomFiles": 14,
+    "note": "Executed before final brand anchor-to-span lint-only markup fix; route/SQL/selected units unchanged. Final component5stories, focused lint, full build and built12stories subsequently passed final page source."
+  },
+  "bun": {
+    "security": {
+      "files": [
+        {
+          "file": "tests/security/s1-member-identity.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s1-member-identity.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 7,
+          "assertions": 23
+        },
+        {
+          "file": "tests/security/s10-siwe-wallet-session.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s10-siwe-wallet-session.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 10,
+          "assertions": 34
+        },
+        {
+          "file": "tests/security/s1b-body-member-routes.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s1b-body-member-routes.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 53,
+          "assertions": 191
+        },
+        {
+          "file": "tests/security/s1c-edge-wallet-cookie.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s1c-edge-wallet-cookie.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 11,
+          "assertions": 15
+        },
+        {
+          "file": "tests/security/s2-memory-isolation.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s2-memory-isolation.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 4,
+          "assertions": 8
+        },
+        {
+          "file": "tests/security/s3-siwe-nonce.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s3-siwe-nonce.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 6,
+          "assertions": 13
+        },
+        {
+          "file": "tests/security/s4-rate-limit.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s4-rate-limit.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 6,
+          "assertions": 48
+        },
+        {
+          "file": "tests/security/s5-markdown-escape.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s5-markdown-escape.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 3,
+          "assertions": 9
+        },
+        {
+          "file": "tests/security/s6-verdict-endpoint.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s6-verdict-endpoint.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 4,
+          "assertions": 13
+        },
+        {
+          "file": "tests/security/s7-no-hardcoded-ref.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s7-no-hardcoded-ref.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 2,
+          "assertions": 2
+        },
+        {
+          "file": "tests/security/s8-salon-message-load.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s8-salon-message-load.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 6,
+          "assertions": 12
+        },
+        {
+          "file": "tests/security/s9-salon-message-post.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/security/s9-salon-message-post.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 10,
+          "assertions": 28
+        }
+      ],
+      "passed_tests": 122,
+      "assertions": 396
+    },
+    "growth": {
+      "files": [
+        {
+          "file": "tests/growth/g1-stripe-mode.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g1-stripe-mode.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 7,
+          "assertions": 18
+        },
+        {
+          "file": "tests/growth/g10-login-form.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g10-login-form.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 9,
+          "assertions": 50
+        },
+        {
+          "file": "tests/growth/g11-practice-draft.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g11-practice-draft.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 9,
+          "assertions": 38
+        },
+        {
+          "file": "tests/growth/g12-recovery-and-share.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g12-recovery-and-share.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 8,
+          "assertions": 92
+        },
+        {
+          "file": "tests/growth/g13-practice-feed-roadmap.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g13-practice-feed-roadmap.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 11,
+          "assertions": 115
+        },
+        {
+          "file": "tests/growth/g14-plato-og.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g14-plato-og.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 3,
+          "assertions": 14
+        },
+        {
+          "file": "tests/growth/g15-home-og-roadmap-avatars.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g15-home-og-roadmap-avatars.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 3,
+          "assertions": 19
+        },
+        {
+          "file": "tests/growth/g16-explorer-index-titles.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g16-explorer-index-titles.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 18,
+          "assertions": 40
+        },
+        {
+          "file": "tests/growth/g17-circles.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g17-circles.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 61,
+          "assertions": 193
+        },
+        {
+          "file": "tests/growth/g18-circle-participation.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g18-circle-participation.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 3,
+          "assertions": 14
+        },
+        {
+          "file": "tests/growth/g19-circle-host-session.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g19-circle-host-session.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 4,
+          "assertions": 12
+        },
+        {
+          "file": "tests/growth/g2-checkout-route.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g2-checkout-route.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 11,
+          "assertions": 35
+        },
+        {
+          "file": "tests/growth/g20-circle-discovery.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g20-circle-discovery.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 17,
+          "assertions": 280
+        },
+        {
+          "file": "tests/growth/g3-events-route.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g3-events-route.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 6,
+          "assertions": 21
+        },
+        {
+          "file": "tests/growth/g4-copy-and-seo.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g4-copy-and-seo.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 7,
+          "assertions": 27
+        },
+        {
+          "file": "tests/growth/g5-stripe-webhook.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g5-stripe-webhook.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 18,
+          "assertions": 114
+        },
+        {
+          "file": "tests/growth/g6-payment-units.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g6-payment-units.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 12,
+          "assertions": 56
+        },
+        {
+          "file": "tests/growth/g7-uuid.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g7-uuid.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 6,
+          "assertions": 22
+        },
+        {
+          "file": "tests/growth/g8-funnel-summary.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g8-funnel-summary.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 7,
+          "assertions": 27
+        },
+        {
+          "file": "tests/growth/g9-project-pledge-route.test.ts",
+          "command": [
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/tooling/node_modules/@oven/bun-darwin-aarch64/bin/bun",
+            "test",
+            "--no-env-file",
+            "--no-install",
+            "--preload",
+            "/Users/christaylor/Documents/Codex/soe-release/verification/web/scripts/deny-build-network.cjs",
+            "tests/growth/g9-project-pledge-route.test.ts"
+          ],
+          "exit_code": 0,
+          "passed_tests": 5,
+          "assertions": 16
+        }
+      ],
+      "passed_tests": 225,
+      "assertions": 1203
+    }
+  },
+  "builtBrowser": {
+    "stories": [
+      "Complete eligible search traverses34 current/upcoming Circles beyond205 ended inventory rows, with25-row pages, explicit next/first controls and no total-count claim",
+      "Actual SQL preserves accent-folded AND terms, literal punctuation and regex characters, hybrid filters and UUID tie order across title pages; a far-future match is discoverable and lifecycle wording distinguishes upcoming/current",
+      "Opaque public cursors survive actual reload and Back/Forward, restore the exact result page, and match the shareable link",
+      "Exact edition/range hints remain public hints and survive the top Start action; Clear/search/Back update that primary action, and duplicate reading context never issues an unfiltered request",
+      "Applying new filters while a real old page response is held clears old rows immediately, resets its cursor and fences the released late page",
+      "A synthetic RPC failure produces actual generic503 and retry without false emptiness; a structurally valid stale calendar key reaches actual SQL409, offers explicit restart retaining filters, and returns keyboard focus to results",
+      "Canonical Quest Browser routes expose the actual member view, accessible 320px controls and same-Circle fallback links; HTTP fails closed, no private API/provider call occurs, and no synthetic member or immersive claim is introduced. Configured HTTPS/provider acceptance remains a separate gate",
+      "Actual built Next clip catalog and media/caption gateways expose three source-linked passages plus the original SoE MP4; explicit Load sends no account cookie/referrer, hashes verify, H264 decodes at720x404 with six caption cues and no autoplay, and Unload removes the player at320px",
+      "Actual built Next profile page uses canonical 320px CSS and 44px keyboard controls, with no auth/private/provider transport on initial render; explicit Load alone reaches actual cookie/token-free auth/member and owner-profile GET401 routes, shows generic sign-in state, and exposes no editable fields or false saved state",
+      "Actual built Hall uses the canonical text-only UI and public GET503 when service configuration is absent; explicit keyboard retry preserves unavailable rather than fabricated empty/success, with320px/44px controls and no credential/referrer/auth/private/media requests",
+      "Actual built guide recognition page and GET remain explicitly unavailable with keyboard retry, private/no-store503, no names/activity/earnings DTO, no SDK/auth/member-table call and no fabricated empty ranking at320px",
+      "All12 retained hero images are404 at both former public and archive URLs on the actual built server; the existing first-party text/gradient share card returns a valid bounded PNG without provider transport"
+    ],
+    "leaderboardGets": 2,
+    "ownedServerStopped": true,
+    "cleanupErrors": []
+  },
+  "guideComponent": {
+    "passedStories": 5,
+    "actualHandlerCalls": 17,
+    "scope": "Actual canonical leaderboard React page and PublicFooter, no UI/auth/Next shims. Inline product styles; global Next/PostCSS/font output excluded. Controlled HTTPS HTTP transport and explicit nonabortable header/JSON-body doubles only. Page-only bundle has no UI/auth/Next adapters. The composed actual API route/privateJson uses the existing offline-app NextResponse JSON/header transport shim. HTTP error/legacy DTO and nonabortable transport doubles are explicit. No SDK, database, hosted provider or production acceptance.",
+    "independentReview": "CLEAR on final source and cleanup runner"
+  },
+  "rewardContainment": {
+    "passedCases": 13,
+    "independentReview": "CLEAR within trusted-owner/catalog scope",
+    "scope": "Only PUBLIC/anon/authenticated EXECUTE on exactly three reward functions; unknown bodies dynamically preserved, explicit service grants retained; unapplied. PUBLIC-derived other-role authority removed.",
+    "limits": "Representative fixture bodies intentionally differ from live digests; no unknown reward semantics, hosted callers or concurrent owner-DDL proof. Rollback reopens browser execution and requires separate approval."
+  },
+  "promptAtlas": {
+    "passedCases": 11,
+    "independentReview": "CLEAR",
+    "scope": "Complete unchanged migration, actual identity before core containment; eight policies/eleven expression slots and invoker view match live metadata hashes.",
+    "limits": "Synthetic prerequisite tables, grants, auth.uid and owner difference; not JWT/wallet/hosted ACL validation. Separate application default-public/cache/favorite/seed concerns remain held."
+  },
+  "nativePreservation": {
+    "appleSourceOnly": true,
+    "sourceSha256": "a86db864be7bb7068239a60818caa162dab42271a3fc8f3ccfbac31889d71c08",
+    "registeredOrCompiled": false,
+    "limits": "No registered native secure bridge or iOS/Android binary/device/headset acceptance. Toolchain download requires user direction."
+  },
+  "sourceReadIncident": "One older Swift source materialized during hash comparison; earlier scans lack allocation baselines, so additional incidental materialization cannot be excluded. No OS-level offline claim. Exact-file stat guards now refuse nonempty zero-block placeholders; no dehydration attempted.",
+  "production": {
+    "changed": false,
+    "backupRestoreReceipt": "Not located or supplied; user clarification pending. Empty branch list does not establish backup absence.",
+    "rewardBodiesRetrievedOrInvoked": false,
+    "schemaApplied": false,
+    "deploymentOrProviderAcceptance": false,
+    "releaseReady": false
+  },
+  "sourceSha256": {
+    "app/api/leaderboard/route.ts": "d65b5fa12f37e062bb979a6099e31bf52bddcd65068d17c5dd18717891227f08",
+    "app/leaderboard/page.tsx": "75b09e7ea2f94aa127510d4562fb7a6cb83f263113f806cb9cdbcabd05ff6cf4",
+    "scripts/external-effect-lazy-clients-smoke.mjs": "b7fd15672acfee0ddd07c04ff3c2550c0609ad0eb6dbfe765b962fce3a0adb04",
+    "docs/sql/reward-rpc-containment-preflight.sql": "bdd54a8eb1125d2b34641052e7be1adc8f8309befe6c1e7bd7531ea5140a8158",
+    "docs/sql/reward-rpc-containment-apply.sql": "21d0e55aedf700c19dbb6f099fe0e34c092d00a65efff74a7484c43e7d709fc9",
+    "docs/sql/reward-rpc-containment-rollback.sql": "807c10e6c3d6aa63deaddb6e8bb007f4ee306bb8f1d27bf7c94803d834900a9e",
+    "verification/web/tests/reward-rpc-containment-db.test.mjs": "38930750eeebb527ccd2ee5c304cdc83757102b7e8c3ebe7d34b2c9f6d49c0f0",
+    "verification/web/tests/support/reward-rpc-fixture.mjs": "f1da999f13cbc3c6ffa2856d0c37e3b97125b577e14e66b1709d5fc66bcc03cb",
+    "verification/web/tests/fixtures/legacy-rpc-catalog-2026-11-04.json": "2ed02330357306c83abf5a862df59424679829399fd1a1c485e1db027ab546a6",
+    "verification/web/tests/prompt-atlas-core-compatibility-db.test.mjs": "1e377d469c9f5ba9f4b17d7c03bc69da776a937f79a0a297609063a6dd90b653",
+    "verification/web/tests/support/prompt-atlas-core-db.mjs": "fe3c491c0affc73c35e98cd1318a73094aef52140363d087e2928f2ecdcd64b3",
+    "verification/web/tests/fixtures/prompt-member-dependency-digests-2026-11-04.json": "36aa91f63dc2686ff90c2ca190dbc201b245f2c5c6b8f74614b0b8f8cbb26ed9",
+    "verification/web/scripts/test-prompt-atlas-core.mjs": "7f100946936f36a9e65ef12abe6d8f902b368847772fb18839b4ee9fcb734af2",
+    "verification/web/tests/leaderboard-closure.test.mjs": "cc715d7056ef1fca3c10850d2243a97680db9d647d6035b58499aba814e7c9fb",
+    "verification/web/tests/browser-leaderboard.mjs": "3ce42734d001ede7e7bf7c3b7fe696ff35d1d1cad440418a479c724b8a0a9370",
+    "verification/web/tests/leaderboard-entry.tsx": "35ac75d324dd0f9a6fe00df1ad133ab9166c2f82161c8c241ebfb0f9b4b48f67",
+    "verification/web/scripts/bundle-leaderboard-test.mjs": "80107d0b9dd1e17430a43da69a4c63e5a36f90615c5bbb725d4f639b46badb47",
+    "verification/web/scripts/browser-discovery-qa.mjs": "4a99fa44d33ad85d648016159396bf90fe490d574b60db4ef3b73b97965a67e2",
+    "verification/web/scripts/build-offline.py": "5291b0f7ba41a4e81b20af45f2a2d18ed598f8f929465af954494b118af815ba",
+    "verification/web/scripts/run-root-tests.py": "ee1f19dca4f175a6d5e37127377837fe412e3d8f37183bf9e38c3cd7d34ee4d1",
+    "platforms/source/apple-member-policy/MemberPolicy.swift": "a86db864be7bb7068239a60818caa162dab42271a3fc8f3ccfbac31889d71c08",
+    "platforms/source/apple-member-policy/provenance.json": "e911d99d5eafddb20d05b4e474eb07bee398502887c3f9cd74a081e97bb0fb85"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/checkpoint-e1fbb2d/next-build.json": "0062298a07c3c23de767b5e44864c3fe97f9d16450de532510022b15efafbdc2",
+    "verification/web/evidence/checkpoint-e1fbb2d/next-build.log": "23d59b9624d96f837010d649fd993fb43ec4d5fe7c58a0f4ad23d7389b53599a",
+    "verification/web/evidence/checkpoint-e1fbb2d/build-source-sha256.json": "5efdf029ee164749473512d00088c6e43c37373dcd0375bb8e1dd22125a7e123",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-complete-tests.log": "753870bf509da0d3adea51fad62030b09455c3ef40755c6779e41651527d8d4a",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-complete-tests-selection.json": "074c27e1ecd628a8f13dc7099fae4508c6e30ac711e0b2337cf9d2fd438e7fc4",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
+    "verification/web/evidence/checkpoint-e1fbb2d/browser-discovery-qa.json": "65a6370ebb38e34453892dc09f21a09b2ccd4835d7176d3c1186e3907a8ddb31",
+    "verification/web/evidence/checkpoint-e1fbb2d/browser-discovery-guide-final.log": "a919c432a2effec15a887ea5a150f3be9b8b6aec7f91900b6379978ddc81c0c8",
+    "verification/web/evidence/checkpoint-e1fbb2d/browser-discovery-progress.json": "6cf9bec27cfa3448a565e0a65431ad70d0054570fdaa9589cc007a6b0db266e5",
+    "verification/web/evidence/checkpoint-e1fbb2d/leaderboard-unavailable-320.png": "6995943699b047754729e49e630d145a707838441e18afadbe622b81819e9362",
+    "verification/web/evidence/checkpoint-e1fbb2d/leaderboard-browser.json": "7044a8e0ba2288da9345f5b688148d019b576c2e1c3f9ef7a34758d02cfe8274",
+    "verification/web/evidence/checkpoint-e1fbb2d/prompt-atlas-core-compatibility.json": "57bf810f7ab806876b469ae8f00565a01e1f72d8382da7376c2ecbaae511e30a",
+    "verification/web/evidence/checkpoint-e1fbb2d/reward-rpc-containment-final-tests.log": "5e9c2088991eac60aa049b6d82135b1a40c990e7d113568d5072866b52ace07a",
+    "verification/web/evidence/checkpoint-e1fbb2d/rpc-guide-source-stability.json": "a611be5f0031fe9ff12f12b6fd1896bd86c7bb05fe72621bb5069b36adf5a69a",
+    "verification/web/evidence/checkpoint-e1fbb2d/release-staging-discovery-2026-11-04.json": "15197408af5e0ce2ab4f6c90e9c04e0d17a87bdebaf0c507f29c42369c8f8ad6"
+  },
+  "historicalEvidence": "This e1fbb2d receipt is historical. All fifteen pinned generated outputs were copied byte-for-byte to checkpoint-e1fbb2d before later build/browser work. Hall24digests remain preserved at their existing checkpoint6d5bccf pointers. Source bindings describe this historical checkpoint, not later edits."
+}

@@ -1,0 +1,276 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import { createQuestMemberAuth } from '@/lib/circles/quest-member-auth';
+import { AUTH_INTENT_HEADER, EXPECTED_MEMBER_HEADER, currentBrowserAuthIntent } from '@/lib/auth/browserIntent';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
+import { reelHref } from '@/lib/clips/contracts';
+import { REEL_QUESTIONS, reelDiscussionDraft, withReelDiscussion, type ReelDiscussionId } from '@/lib/clips/salon';
+import { getFellowshipTopic, fellowshipDiscussionDraft, withFellowshipTopic, type FellowshipTopicId } from '@/lib/fellowship/topics';
+import { isUuid } from '@/lib/ids/uuid';
+import CircleAdmission from '@/app/circles/[circleId]/CircleAdmission';
+import { createCircleAdmissionActivity } from '@/lib/circles/admission-activity';
+import styles from './quest.module.css';
+
+type Connection = { dispose(): void; invalidate(): void };
+function providerConfigured() {
+  const address = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!address || !key || /placeholder|offline/i.test(key) || /[\s\u0000-\u001f\u007f]/.test(key)) return false;
+  try {
+    const url = new URL(address);
+    return url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash
+      && !url.hostname.endsWith('.invalid') && url.hostname !== 'placeholder.supabase.co';
+  } catch { return false; }
+}
+
+/** The platform view owns this DOM island. React only owns its surrounding
+ * connect controls; no credential or private message enters React props/state. */
+export default function QuestCircle({ circleId, sharedSalon = false, reel, fellowship }: {
+  circleId?: string; sharedSalon?: boolean; reel?: ReelDiscussionId; fellowship?: FellowshipTopicId;
+}) {
+  const topic = getFellowshipTopic(fellowship);
+  const contextHref = (href: string) => withFellowshipTopic(withReelDiscussion(href, reel), fellowship);
+  const connection = useRef<Connection | null>(null);
+  const [admissionActivity] = useState(createCircleAdmissionActivity);
+  const lifetime = useRef({ mounted: false, generation: 0 });
+  const [phase, setPhase] = useState<'closed' | 'connecting' | 'connected'>('closed');
+  const [notice, setNotice] = useState(circleId ? 'Connect your signed-in account to check current Circle access.' : 'Connect your signed-in account to check your posted messages across Circles.');
+  useEffect(() => {
+    const current = lifetime.current;
+    current.mounted = true;
+    const reconnect = (message: string) => {
+      current.generation++; connection.current?.dispose(); connection.current = null;
+      setPhase('closed'); setNotice(message);
+    };
+    const changed = () => reconnect('Your selected account changed. Connect and check the current account before continuing.');
+    const restored = (event: PageTransitionEvent) => {
+      if (event.persisted) reconnect('Connect and check your current account after returning to Quest Browser.');
+    };
+    const offProvider = subscribeAuthProviderChanges(changed);
+    const pause = () => { admissionActivity.setActive(false); connection.current?.invalidate(); };
+    const visibility = () => { if (document.visibilityState !== 'visible') pause(); };
+    window.addEventListener('blur', pause); window.addEventListener('offline', pause); window.addEventListener('pagehide', pause);
+    window.addEventListener('pageshow', restored);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      current.mounted = false; current.generation++; connection.current?.dispose(); connection.current = null; offProvider();
+      window.removeEventListener('blur', pause); window.removeEventListener('offline', pause); window.removeEventListener('pagehide', pause);
+      window.removeEventListener('pageshow', restored);
+      document.removeEventListener('visibilitychange', visibility);
+    };
+  }, [admissionActivity]);
+  async function connect() {
+    if (phase !== 'closed') return;
+    if (!window.isSecureContext || window.location.protocol !== 'https:') {
+      setNotice(circleId ? 'This view needs a secure connection. Open the app over HTTPS or use the regular Circle view.' : 'This view needs a secure connection. Open the app over HTTPS or use your regular posted messages page.'); return;
+    }
+    if (!providerConfigured()) {
+      setNotice(circleId ? 'Member sign-in is unavailable for this view. Use the regular Circle view.' : 'Member sign-in is unavailable for this view. Use your regular posted messages page.'); return;
+    }
+    const intent = currentBrowserAuthIntent();
+    if (!intent) { setNotice('Sign in to your account, then connect this Quest view.'); return; }
+    const generation = ++lifetime.current.generation;
+    const current = () => lifetime.current.mounted && lifetime.current.generation === generation &&
+      navigator.onLine !== false && currentBrowserAuthIntent() === intent;
+    setPhase('connecting'); setNotice('Connecting your existing account…');
+    try {
+      const [{ mountExistingMemberCircle, mountExistingMemberContributions, assertContributionsMarkup }, { createClient }] = await Promise.all([
+        import('@/platforms/quest/member-circle-page.mjs'), import('@/lib/supabase/client'),
+      ]);
+      if (!lifetime.current.mounted || lifetime.current.generation !== generation) return;
+      if (!current()) throw Error('Browser account changed');
+      assertContributionsMarkup(document, true);
+      const origin = window.location.origin;
+      const reelStarter = reel ? {
+        question: REEL_QUESTIONS[reel], draft: reelDiscussionDraft(reel, origin),
+        roomDraft: reelDiscussionDraft(reel) + '\n\n',
+      } : undefined;
+      const fellowshipStarter = topic ? { title: topic.title, question: topic.question, brief: topic.brief,
+        draft: fellowshipDiscussionDraft(topic.id, origin), roomDraft: fellowshipDiscussionDraft(topic.id) } : undefined;
+      const transport = (url: string, init: RequestInit) => {
+        const target = new URL(url);
+        if (!current() || init.signal?.aborted || target.origin !== origin || target.username || target.password || target.hash) {
+          throw Error('Circle request retired');
+        }
+        const headers = new Headers(init.headers);
+        const authenticated = headers.has(AUTH_INTENT_HEADER);
+        if (authenticated ? headers.get(AUTH_INTENT_HEADER) !== intent || !isUuid(headers.get(EXPECTED_MEMBER_HEADER))
+          : headers.has('authorization') || headers.has(EXPECTED_MEMBER_HEADER)) throw Error('Circle authority unavailable');
+        return window.fetch(url, { ...init, headers, cache: 'no-store', mode: 'same-origin',
+          credentials: authenticated ? 'same-origin' : 'omit', redirect: 'error', referrerPolicy: 'no-referrer' });
+      };
+      const sdk = createClient().auth;
+      const verifiedAuth = (active: () => boolean) => createQuestMemberAuth(sdk, { origin, intent,
+        request: (url, init) => window.fetch(url, init),
+        isCurrent: () => current() && active(),
+      });
+      const memberAuth = verifiedAuth(() => document.visibilityState === 'visible' && document.hasFocus());
+      try {
+        const view = circleId
+          ? mountExistingMemberCircle({ window, document, onRegularActivity: admissionActivity.setActive, config: { circleId, origin, transport, browserBinding: memberAuth.binding, aiConsent: true, sharedSalon, meeting: true,
+            immersive: { createAuth: verifiedAuth, pauseRegular() { admissionActivity.setActive(false); memberAuth.invalidate(); } }, reelStarter, fellowshipStarter } })
+          : mountExistingMemberContributions({ window, document, config: { origin, transport, browserBinding: memberAuth.binding, aiConsent: true } });
+        connection.current = { invalidate() { admissionActivity.setActive(false); memberAuth.invalidate(); }, dispose() { admissionActivity.setActive(false); memberAuth.retire(); view.dispose(); } };
+      } catch { memberAuth.retire(); throw Error('Circle connection unavailable'); }
+      setPhase('connected'); setNotice(circleId ? 'Account connection opened. Check the member-session and Circle-access messages below.' : 'Account connection opened. Check the member session, then load your own posted messages when ready.');
+    } catch {
+      admissionActivity.setActive(false);
+      if (lifetime.current.mounted && lifetime.current.generation === generation) {
+        connection.current?.dispose(); connection.current = null;
+        setPhase('closed'); setNotice(circleId ? 'The Circle view could not connect. Try again or use the regular Circle view.' : 'Your contributions could not connect. Try again or use your regular posted messages page.');
+      }
+    }
+  }
+  function disconnect() {
+    lifetime.current.generation++; connection.current?.dispose(); connection.current = null;
+    setPhase('closed'); setNotice(circleId ? 'Circle view closed and private data cleared. Your account remains signed in.' : 'Contributions view closed and private data cleared. Your account remains signed in.');
+  }
+  return <main id="main" className={styles.scope}>
+    <section><p>READ. REFLECT. SHARE.</p><h1>{circleId ? 'Quest Browser Circle' : 'My Quest Browser contributions'}</h1>
+      <p>This view uses your existing web account. It opens in the regular browser window.</p>
+      <p>Connect the email, Google, or wallet account you selected in this browser.</p>
+      <p>{circleId ? <><Link href={contextHref(`/circles/${circleId}`)}>Regular Circle view and safety controls</Link>{' · '}<Link href={contextHref(`/circles/${circleId}/discussion`)}>Full discussion archive</Link>{' · '}<Link href="/quest/contributions">My posted messages across Circles</Link></> : <><Link href="/circles/contributions">Regular posted messages</Link>{' · '}<Link href="/quest">Quest Browser home</Link></>}</p>
+      <p><Link href={`/login?next=${encodeURIComponent(circleId ? contextHref(`/quest/${circleId}`) : '/quest/contributions')}`}>Sign in to your account</Link></p>
+      <p role="status">{notice}</p>
+      <button type="button" disabled={phase !== 'closed'} onClick={() => void connect()}>{phase === 'connecting' ? 'Connecting…' : 'Connect signed-in account'}</button>
+      <button type="button" disabled={phase === 'closed'} onClick={disconnect}>{circleId ? 'Disconnect Circle view' : 'Disconnect contributions view'}</button>
+    </section>
+    {circleId && reel && <section aria-label="Question from the Reel">
+      <h2>Question from the Reel</h2>
+      <p>{REEL_QUESTIONS[reel]}</p>
+      <Link href={reelHref(reel)} prefetch={false}>Watch the Reel</Link>
+    </section>}
+    {circleId && topic && <section aria-label="Fellowship study for this Circle">
+      <h2>{topic.title}</h2><p>{topic.question}</p><p>{topic.brief}</p>
+      <p><Link href={topic.href} prefetch={false}>Read the source texts and named interpretations</Link></p>
+      <p>In the immersive discussion, choose Fellowship study to read this brief and prepare an editable question. Review before posting. Use the shared salon count when enabled, and the host’s meeting in the browser to speak together.</p>
+    </section>}
+    {circleId && phase === 'connected' ? <section aria-label="Private salon invitation controls">
+      <p>Connect this Quest view to use invitations in the regular browser. Entering an immersive room clears codes and review; return and check the account again afterward.</p>
+      <CircleAdmission circleId={circleId} activity={admissionActivity} embedded/>
+    </section> : null}
+    <div data-quest-member-view>
+      {circleId ? <h2 id="circle-title">A conversation worth having.</h2> : null}
+      <section aria-label="Member session"><p id="member-session-status" role="status">Member session is not connected.</p><button id="member-session-check" type="button" disabled>Check member session</button></section>
+      <section id="member-blocks" aria-labelledby="member-blocks-heading">
+        <h2 id="member-blocks-heading">Blocked members</h2>
+        <p>Your blocks apply to Circle discussions and direct messages. Only you can remove a block you set.</p>
+        <p id="member-blocks-status" role="status">Check your member account, then load your blocked members.</p>
+        <button id="member-blocks-load" type="button" disabled>Load blocked members</button>
+        <div id="member-blocks-items" />
+        <button id="member-blocks-next" type="button" disabled hidden>Next blocked members</button>
+        <section id="member-blocks-review" aria-labelledby="member-blocks-review-heading" hidden>
+          <h3 id="member-blocks-review-heading" tabIndex={-1}>Review unblock</h3>
+          <p id="member-blocks-person" />
+          <p>Removing your block restores contact if this member has no active block on you.</p>
+          <button id="member-blocks-unblock" type="button" disabled>Unblock this member</button>
+          <button id="member-blocks-cancel" type="button">Cancel unblock review</button>
+        </section>
+        <button id="member-blocks-retry" type="button" disabled hidden>Retry exact unblock</button>
+        <button id="member-blocks-clear" type="button" disabled>Clear blocked members view</button>
+      </section>
+      <button id="member-contributions-open" type="button" disabled>My posted messages</button>
+      <section id="member-contributions" aria-labelledby="member-contributions-heading" hidden>
+        <h2 id="member-contributions-heading" tabIndex={-1}>My posted messages</h2>
+        <p>Find your own contributions across Circles, including after leaving or when a Circle is hidden. Check a message’s current state before withdrawing it.</p>
+        <p id="member-contributions-status" role="status" />
+        <section id="member-contributions-list" aria-label="Your posted messages">
+          <button id="member-contributions-refresh" type="button" disabled>Load my posted messages</button>
+          <div id="member-contributions-items" />
+          <button id="member-contributions-next" type="button" hidden disabled>Next posted messages</button>
+        </section>
+        <section id="member-contributions-selected" aria-labelledby="member-contributions-selected-heading" hidden>
+          <h3 id="member-contributions-selected-heading" tabIndex={-1}>Current contribution</h3>
+          <p id="member-contributions-action-status" role="status" /><div id="member-contributions-message" /><div id="member-contributions-explanations" />
+          <p id="member-contributions-privacy" />
+          <label id="member-contributions-confirm-label" hidden style={{ minHeight: 44, padding: '8px 0' }}><input id="member-contributions-confirm" type="checkbox" disabled /> I understand withdrawal removes this message from member views and cannot be undone here.</label>
+          <button id="member-contributions-withdraw" type="button" disabled hidden aria-describedby="member-contributions-privacy">Withdraw my contribution</button>
+          <button id="member-contributions-check" type="button" disabled>Check current contribution</button>
+          <button id="member-contributions-retry" type="button" hidden disabled>Retry exact withdrawal</button>
+          <p>A current-state check does not confirm an earlier withdrawal request. A sent request may still complete. Nothing retries automatically. These controls do not change AI consent.</p>
+          <section id="member-contributions-ai" aria-label="Optional AI review of this message" hidden>
+            <h4>Optional AI review of this message</h4>
+            <p id="member-contributions-ai-intro" /><p id="member-contributions-ai-provider" /><p id="member-contributions-ai-revocation" />
+            <p><Link id="member-contributions-ai-policy" href="/circles/message-ai-policy" prefetch={false}>Read the message AI policy</Link></p>
+            <p id="member-contributions-ai-status" role="status" /><p id="member-contributions-ai-current" />
+            <button id="member-contributions-ai-check" type="button" disabled>Check AI review settings</button>
+            <button id="member-contributions-ai-off" type="button" disabled>Keep future AI review off</button>
+            <label id="member-contributions-ai-confirm-label" style={{ minHeight: 44, padding: '8px 0' }}><input id="member-contributions-ai-confirm" type="checkbox" disabled /> <span id="member-contributions-ai-confirm-text" /></label>
+            <button id="member-contributions-ai-allow" type="button" disabled>Allow Anthropic review of this message</button>
+            <p id="member-contributions-ai-retirement" />
+          </section>
+          <button id="member-contributions-back" type="button" disabled>Back to my posted messages</button>
+        </section>
+        <button id="member-contributions-return" type="button" disabled>Return to Circle</button>
+      </section>
+      {circleId && sharedSalon ? <section aria-labelledby="quest-salon-heading">
+        <h2 id="quest-salon-heading">Shared salon</h2>
+        <p>Check in to see how many Circle members are here. In the headset, you can read the current selection or join the discussion while you’re checked in. Choose Meeting in browser to leave the count and return to the live meeting controls.</p>
+        <p>Open the latest discussion while you’re checked in to see new posts about every ten seconds. Updates pause while you write or read older posts.</p>
+        <p id="quest-salon-status" role="status">Connect a member account to join the shared salon.</p>
+        <button id="quest-salon-join" type="button" disabled>Join shared salon in this browser</button>
+        <button id="quest-salon-leave" type="button" disabled>Leave shared salon</button>
+      </section> : null}
+      {circleId ? <section aria-labelledby="quest-meeting-heading">
+        <h2 id="quest-meeting-heading">Live meeting</h2>
+        <p>Open the host’s meeting for a current online or hybrid Circle. It opens in this tab. Use Back to return.</p>
+        <p id="quest-meeting-status" role="status" tabIndex={-1}>Check your member session to open the live meeting.</p>
+        <button id="quest-meeting-open" type="button" disabled>Open live meeting</button>
+      </section> : null}
+      <div id="member-circle-workspace">
+      {circleId ? <>
+      <section aria-labelledby="quest-immersive-heading">
+        <h2 id="quest-immersive-heading">Immersive Circle discussion</h2>
+        <p>Read recent contributions and write short posts or replies in your headset. Use the trigger to check access. Point your controller at the buttons to write, review and post. Choose Read selection to page through the current assignment from a supported edition. The regular browser has full editions, the archive, live meeting links and message actions.</p>
+        <p>Opening the room clears the regular Circle view. Check your session when you return.</p>
+        <p id="quest-immersive-status" role="status">Connect a member account to open the immersive room.</p>
+        <button id="quest-immersive-enter" type="button" disabled>Enter immersive room</button>
+        {sharedSalon ? <button id="quest-salon-headset" type="button" disabled>Enter shared salon in headset</button> : null}
+        <button id="quest-immersive-exit" type="button" disabled>Exit immersive room</button>
+      </section>
+      <section aria-label="Circle access"><p id="circle-host-status" role="status">Circle access is not connected.</p><p id="circle-read-status" role="status" /><button id="circle-refresh" type="button" disabled>Refresh circle access</button><button id="circle-archive-open" type="button" disabled>Open discussion archive</button><button id="circle-close" type="button" disabled>Close and clear Circle</button></section>
+      <section id="circle-conversation" aria-labelledby="circle-conversation-heading" hidden><h2 id="circle-conversation-heading">Circle conversation</h2><p>Latest 100 messages. Open the full discussion archive for older conversations.</p><div id="circle-messages" /></section>
+      <section id="circle-archive" aria-labelledby="circle-archive-heading" hidden><h2 id="circle-archive-heading">Discussion archive</h2><p id="circle-archive-status" role="status" /><div id="circle-archive-messages" /><button id="circle-archive-next" type="button" hidden>Older discussions</button>
+        <section id="circle-thread-write" aria-labelledby="circle-thread-write-heading" hidden>
+          <h3 id="circle-thread-write-heading">Write in this discussion</h3>
+          <button id="circle-thread-new" type="button" disabled>Start a new discussion</button>
+          {reel && <button id="circle-thread-reel" type="button" disabled>Use Reel question in a draft</button>}
+          {topic && <button id="circle-thread-fellowship" type="button" disabled>Use Fellowship question in a draft</button>}
+          <p id="circle-thread-target" /><label htmlFor="circle-thread-draft">Your contribution</label>
+          <textarea id="circle-thread-draft" maxLength={2000} autoComplete="off" spellCheck={false} aria-describedby="circle-thread-remaining circle-thread-status" disabled />
+          <p id="circle-thread-remaining">2000 characters remaining</p><p id="circle-thread-status" role="status" />
+          <button id="circle-thread-review" type="button" disabled>Review contribution</button>
+          <section id="circle-thread-preview" aria-label="Contribution preview" hidden>
+            <h4>Review the selected parent and full contribution</h4><p id="circle-thread-preview-parent" style={{ whiteSpace: 'pre-wrap' }} /><p id="circle-thread-preview-content" style={{ whiteSpace: 'pre-wrap' }} />
+            <label style={{ minHeight: 44, padding: '8px 0' }}><input id="circle-thread-confirm" type="checkbox" disabled /> I reviewed this exact contribution and its reply context.</label>
+            <button id="circle-thread-post" type="button" disabled>Post reviewed contribution</button><button id="circle-thread-edit" type="button" disabled>Edit contribution</button>
+          </section>
+          <button id="circle-thread-check" type="button" hidden>Check saved contribution</button><button id="circle-thread-retry" type="button" hidden>Retry exact contribution</button>
+          <button id="circle-thread-cancel" type="button" disabled>Clear contribution</button><button id="circle-thread-saved" type="button" hidden>Open saved thread</button>
+          <p>Replies link to the selected contribution. Check message actions to report, block an author, or withdraw your own post. A missing receipt does not prove that an earlier request failed; only check or retry the same contribution.</p>
+        </section>
+      </section>
+      <section id="circle-safety" aria-labelledby="circle-safety-heading" hidden>
+        <h2 id="circle-safety-heading" tabIndex={-1}>Current message actions</h2>
+        <p id="circle-safety-status" role="status" /><div id="circle-safety-message" /><div id="circle-safety-explanations" />
+        <fieldset id="circle-safety-report-fields" hidden style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+          <legend>Private report</legend><p>Reports are private to eligible assigned reviewers. Describe conduct, rather than political or religious disagreement. Do not include unnecessary personal details. A report is an allegation, not a finding.</p>
+          <label htmlFor="circle-safety-reason">Report reason</label><select id="circle-safety-reason" disabled style={{ maxWidth: '100%', minHeight: 44, font: 'inherit' }}><option value="">Choose a reason</option></select>
+          <label htmlFor="circle-safety-note">Private report details (optional)</label><textarea id="circle-safety-note" maxLength={1000} autoComplete="off" spellCheck={false} aria-describedby="circle-safety-remaining" disabled /><p id="circle-safety-remaining">1000 characters remaining</p>
+        </fieldset>
+        <p id="circle-safety-privacy" hidden />
+        <label style={{ minHeight: 44, padding: '8px 0' }} hidden><input id="circle-safety-confirm" type="checkbox" disabled /> <span id="circle-safety-confirm-label" /></label>
+        <button id="circle-safety-report" type="button" disabled hidden>Send private report</button><button id="circle-safety-withdraw" type="button" disabled hidden aria-describedby="circle-safety-privacy">Withdraw my message</button>
+        <button id="circle-safety-block" type="button" disabled hidden aria-describedby="circle-safety-privacy">Block author</button>
+        <button id="circle-safety-refresh" type="button" disabled>Check current message</button><button id="circle-safety-retry" type="button" hidden>Retry exact action</button><button id="circle-safety-close" type="button" disabled>Close message actions</button>
+        <p>Checking the current message does not confirm a previous request. A sent request may still complete. Nothing retries automatically. Message AI consent is separate and is not changed by these actions.</p>
+      </section>
+      <section id="circle-composer"><h2>Your message</h2><label htmlFor="circle-draft">Message to this Circle</label><textarea id="circle-draft" maxLength={2000} autoComplete="off" spellCheck={false} aria-describedby="circle-remaining circle-write-status" disabled /><p id="circle-remaining">2000 characters remaining</p><p id="circle-write-status" role="status" /><button id="circle-post" type="button" disabled>Post to Circle</button><button id="circle-clear" type="button" disabled>Clear draft</button><button id="circle-new" type="button" hidden>I reviewed the conversation; start a new blank message</button></section>
+      </> : null}
+      </div>
+    </div>
+    <p>Drafts stay in this view and clear when the view, account, focus or connectivity ends. A sent request may still complete. Nothing is resent automatically.</p>
+  </main>;
+}

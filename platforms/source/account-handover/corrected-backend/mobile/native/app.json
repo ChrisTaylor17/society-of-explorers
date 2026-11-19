@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "SoE synthetic demo",
+    "slug": "soe-synthetic-demo",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.soesyntheticdemo"
+    }
+  }
+}

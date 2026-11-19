@@ -1,34 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { NextRequest } from 'next/server';
+import { getResend } from '@/lib/email/resend';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const THINKER_NAMES: Record<string, string> = {
   socrates: 'Socrates', plato: 'Plato', aurelius: 'Marcus Aurelius',
   nietzsche: 'Nietzsche', einstein: 'Einstein', jobs: 'Steve Jobs',
 };
 
-function getTodayET(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+function practiceFollowupEmailNotificationsEnabled() {
+  return process.env.DAILY_PRACTICE_FOLLOWUP_EMAIL_NOTIFICATIONS_ENABLED === 'true';
 }
 
-function getTomorrowET(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function getTodayET(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
 async function handler(req: NextRequest) {
   // Verify cron secret (Vercel sends this automatically when CRON_SECRET is set)
   const authHeader = req.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return privateJson({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  if (!practiceFollowupEmailNotificationsEnabled()) {
+    return privateJson({ sent: 0, reason: 'email_disabled' });
+  }
+
+  const supabase = getSupabaseAdmin();
 
   const today = getTodayET();
 
@@ -39,10 +50,12 @@ async function handler(req: NextRequest) {
     .single();
 
   if (!question) {
-    return NextResponse.json({ error: 'No question found for today', sent: 0 });
+    return privateJson({ error: 'No question found for today', sent: 0 });
   }
 
   const thinkerName = THINKER_NAMES[question.thinker_id] || question.thinker_id;
+  const safeThinkerName = escapeHtml(thinkerName);
+  const safeQuestionText = escapeHtml(String(question.question_text ?? ''));
 
   // Get members who answered today (they're engaged — send them tomorrow's teaser)
   const { data: todayResponders } = await supabase
@@ -51,7 +64,7 @@ async function handler(req: NextRequest) {
     .eq('question_id', question.id);
 
   if (!todayResponders || todayResponders.length === 0) {
-    return NextResponse.json({ sent: 0, reason: 'No responders today' });
+    return privateJson({ sent: 0, reason: 'No responders today' });
   }
 
   const responderIds = todayResponders.map(r => r.member_id);
@@ -64,9 +77,10 @@ async function handler(req: NextRequest) {
     .not('email', 'is', null);
 
   if (!members || members.length === 0) {
-    return NextResponse.json({ sent: 0, reason: 'No members with emails' });
+    return privateJson({ sent: 0, reason: 'No members with emails' });
   }
 
+  const resend = getResend();
   let sent = 0;
   let errors = 0;
 
@@ -88,9 +102,9 @@ async function handler(req: NextRequest) {
               <span style="font-family:serif;font-size:10px;letter-spacing:0.3em;color:#c9a84c;">DAILY PRACTICE</span>
             </div>
 
-            <p style="font-size:15px;color:#9a8f7a;margin-bottom:0.5rem;">Today, ${thinkerName} asked:</p>
+            <p style="font-size:15px;color:#9a8f7a;margin-bottom:0.5rem;">Today, ${safeThinkerName} asked:</p>
             <p style="font-size:20px;font-style:italic;color:#f5f0e8;line-height:1.6;margin-bottom:1.5rem;">
-              \u201c${question.question_text}\u201d
+              \u201c${safeQuestionText}\u201d
             </p>
 
             <div style="border-top:1px solid rgba(201,168,76,0.15);padding-top:1rem;margin-bottom:1.5rem;">
@@ -113,8 +127,8 @@ async function handler(req: NextRequest) {
         `,
       });
       sent++;
-    } catch (err) {
-      console.error(`[daily-email] Failed to send to ${member.id}:`, err);
+    } catch {
+      console.warn('[practice/daily-email] send failed');
       errors++;
     }
 
@@ -122,7 +136,7 @@ async function handler(req: NextRequest) {
     if (sent % 10 === 0) await new Promise(r => setTimeout(r, 200));
   }
 
-  return NextResponse.json({ sent, errors, total: members.length });
+  return privateJson({ sent, errors, total: members.length });
 }
 
 export const GET = handler;

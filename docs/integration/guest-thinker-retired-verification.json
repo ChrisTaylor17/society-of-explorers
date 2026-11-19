@@ -1,0 +1,44 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "6fbf24072edf4c0a40b61b24337d9739fdc10221",
+  "recordedAt": "2026-11-06T23:50:30.866961+00:00",
+  "previousGuestRequestReachedInterceptedModel": true,
+  "retiredGuestStatus": 410,
+  "memberAndGuestRegressionTests": 39,
+  "compiledBrowserGuestChecks": [
+    "The phone-width homepage leaves legacy chat unread and unchanged and opens the exact Apology guide, verified edition and online salons.",
+    "The actual built route returns a private 410 for a legacy synthetic chat request."
+  ],
+  "composedSalonStories": 14,
+  "buildSourceFiles": 1108,
+  "buildSourceSha256": "01b26e3cab2bb3469155b99c2e0f7c22e6a11d9d3165e608d82d59900fbc8abb",
+  "scope": "Compiled offline Next.js build, Chromium at phone width, disposable local SQL and intercepted model transport. The retired guest path has no account, community, provider or reward effects. Hosted cutover and live provider and device acceptance remain open.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "a7e46c6832ee94a17e1f0e20dbdafc203740d1a9b91a73f184f83d1710d3648a",
+    "app/HomePageClient.tsx": "d5331144f2f61e660b7e66e06618476cfb9e6eb13b117bec6504177c70303944",
+    "app/api/thinker/route.ts": "93b80e013904fe3ff3db9b957d202b46fcf0f4292d105c44a98776b30966c7d2",
+    "app/roadmap/page.tsx": "dc498daff83cc303526ba37206ef50b1e3462b6a02e1766a862678d67ec5f1f9",
+    "docs/integration/thinker-reward-accounting.md": "85cc8d75c4635e09379c66a4f56c3432fb40d0557e3bacf9448d1da9624290d4",
+    "docs/soe-external-effect-route-inventory.md": "67700795483cc4107fb610429cd2eb6b0a2189687c743ddbe4958b6cf4f9744b",
+    "verification/web/tests/support/reward-live-body-db.mjs": "409e10ce50a641af4ca4c78259fe4eb6407da8a1d0e58909f3f8be4624e51687",
+    "verification/web/tests/thinker-reward-accounting.test.mjs": "d07aaedfc6a4c750595705234440b6bfb84c771ecc4f0f58e0af0f6446086710"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-guest-thinker-retired",
+  "evidenceSha256": {
+    "build-source-sha256.json": "5e3766d1e71c7076b8c968e3743eee19e1a5eb3493537da1125f3631675f80d4",
+    "next-build.json": "2089cae12d76462c34e1d860001eb85429bf388ecd53bb1430c1dd7293d2ae2e",
+    "next-build.log": "4cdb7e516c8e20b87d906058ac6d85abd1c2413e4a71620ae6ff6fa87c3ab5ec",
+    "server-ready.json": "8c8dac7e4440b4a695062ace4c0d177bb273f95b737be2f545a05d36da4fd453",
+    "server-stopped.json": "1f5c2ca1ab83ac9d838e8aa91a2f254df2a5ba3929cda24c5fa2a0a0484733f9",
+    "server-runtime.json": "943e8359b8393d0f601f27287cbee16a967eb254e045d8df5c3e58381d171399",
+    "guest-regression-before.tap": "05271950451781574f2d6fee06b1a69978f85abc2055e08138471b4cfadc1668",
+    "thinker-regressions.tap": "b418a24f6263754e9d4d9b1adec7d2750b07bd320c43694f7e8d22eaa03c94fd",
+    "lint.log": "490f5d5c7426a5de3b8e8fb24e6c9a4f43f4d92f01a1387c2adabce999130715",
+    "browser-probe.mjs": "8c588a6dac63ff1795b58e7c16f83f35694a92255e1bc9e0434c1c5b7b1907a5",
+    "browser-probe.json": "3f85b81aa7c290882843f47419f0a4ea7c2de1d49b66ad1fe237316ee0fbd689",
+    "phone-home.png": "18209fa007fa89cbd8fe38a021b21b089c9b606123ff94faeaee32124d894697",
+    "phone-reel.png": "1c247630c68c6d52576d2261afc79dbb20699f86eb1df4863f20ffcdc3015daa",
+    "online-salon-browser.json": "780d5d4f5d75dc3abba9ca11302b86b456d68183d7d436e2bbea2fd828e00fa8"
+  }
+}

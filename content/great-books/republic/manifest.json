@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "republic",
+  "editionId": "pg-1497-c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f9b496dcfb4",
+  "editionSha256": "c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f9b496dcfb4",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 1497,
+    "landingUrl": "https://www.gutenberg.org/ebooks/1497",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/1497/pg1497-h.zip",
+    "archiveSha256": "036e50fbb9d75e00513472e1fe76217c9b736131114492f0cb65369ad16a706f",
+    "archiveBytes": 571254,
+    "retrievedAt": "2026-11-03T18:53:49.395Z",
+    "mainHtmlPath": "pg1497-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "The Republic",
+    "author": "Plato",
+    "translators": [
+      {
+        "name": "Benjamin Jowett",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "Gutenberg points to an improved edition, 55201. This reviewed copy intentionally retains edition 1497."
+    ]
+  },
+  "reader": {
+    "sha256": "ae02d803079893480ab4110e5d84f79a82ff2ba002137ec2217988cff1f18884",
+    "bytes": 1392287,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 4747,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The Republic",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE REPUBLIC",
+        "level": 1,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "By Plato",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Translated by Benjamin Jowett",
+        "level": 3,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 12
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "INTRODUCTION AND ANALYSIS.",
+        "level": 2,
+        "readingIndex": 26
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "THE REPUBLIC.",
+        "level": 2,
+        "readingIndex": 411
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "PERSONS OF THE DIALOGUE.",
+        "level": 2,
+        "readingIndex": 412
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "BOOK I.",
+        "level": 2,
+        "readingIndex": 422
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "BOOK II.",
+        "level": 2,
+        "readingIndex": 915
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "BOOK III.",
+        "level": 2,
+        "readingIndex": 1265
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "BOOK IV.",
+        "level": 2,
+        "readingIndex": 1763
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "BOOK V.",
+        "level": 2,
+        "readingIndex": 2221
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "BOOK VI.",
+        "level": 2,
+        "readingIndex": 2785
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "BOOK VII.",
+        "level": 2,
+        "readingIndex": 3194
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "BOOK VIII.",
+        "level": 2,
+        "readingIndex": 3567
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "BOOK IX.",
+        "level": 2,
+        "readingIndex": 4015
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "BOOK X.",
+        "level": 2,
+        "readingIndex": 4421
+      }
+    ]
+  },
+  "assets": [],
+  "fidelity": {
+    "canonicalTextSha256": "fa7225ffc657afcc25716ea6cc180ca20c45ebd27e25396631252762c45e05d3",
+    "sourceImageCount": 0
+  }
+}

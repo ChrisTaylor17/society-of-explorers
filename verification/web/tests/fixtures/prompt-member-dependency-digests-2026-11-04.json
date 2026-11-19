@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "kind": "Metadata-only policy/view digest comparison fixture; no expressions, function bodies or user rows.",
+  "sourceReceipt": {
+    "path": "verification/web/evidence/prompt-member-dependency-catalog-2026-11-04.json",
+    "sha256": "62af58b3269a71fdc4fba7f093f863a08e9b7f5806d716e893a700d05d530611",
+    "completedAt": "2026-11-04 16:38:03 UTC"
+  },
+  "policies": [
+    {
+      "rls": true,
+      "name": "Members read their entitlement",
+      "roles": "{0}",
+      "table": "prompt_entitlements",
+      "schema": "public",
+      "command": "r",
+      "check_md5": null,
+      "force_rls": false,
+      "using_md5": "d901924e834a8b4c34b0450c06950692",
+      "permissive": true
+    },
+    {
+      "rls": true,
+      "name": "Members manage their favorites",
+      "roles": "{0}",
+      "table": "prompt_favorites",
+      "schema": "public",
+      "command": "*",
+      "check_md5": "d901924e834a8b4c34b0450c06950692",
+      "force_rls": false,
+      "using_md5": "d901924e834a8b4c34b0450c06950692",
+      "permissive": true
+    },
+    {
+      "rls": true,
+      "name": "Members read aggregate run metadata",
+      "roles": "{0}",
+      "table": "prompt_runs",
+      "schema": "public",
+      "command": "r",
+      "check_md5": null,
+      "force_rls": false,
+      "using_md5": "d901924e834a8b4c34b0450c06950692",
+      "permissive": true
+    },
+    {
+      "rls": true,
+      "name": "Members manage their votes",
+      "roles": "{0}",
+      "table": "prompt_votes",
+      "schema": "public",
+      "command": "*",
+      "check_md5": "d901924e834a8b4c34b0450c06950692",
+      "force_rls": false,
+      "using_md5": "d901924e834a8b4c34b0450c06950692",
+      "permissive": true
+    },
+    {
+      "rls": true,
+      "name": "Members create their own prompts",
+      "roles": "{0}",
+      "table": "prompts",
+      "schema": "public",
+      "command": "a",
+      "check_md5": "a76fe9a6c8464e84d7b58b02d309cb85",
+      "force_rls": false,
+      "using_md5": null,
+      "permissive": true
+    },
+    {
+      "rls": true,
+      "name": "Members delete their own prompts",
+      "roles": "{0}",
+      "table": "prompts",
+      "schema": "public",
+      "command": "d",
+      "check_md5": null,
+      "force_rls": false,
+      "using_md5": "a76fe9a6c8464e84d7b58b02d309cb85",
+      "permissive": true
+    },
+    {
+      "rls": true,
+      "name": "Members update their own prompts",
+      "roles": "{0}",
+      "table": "prompts",
+      "schema": "public",
+      "command": "w",
+      "check_md5": "a76fe9a6c8464e84d7b58b02d309cb85",
+      "force_rls": false,
+      "using_md5": "a76fe9a6c8464e84d7b58b02d309cb85",
+      "permissive": true
+    },
+    {
+      "rls": true,
+      "name": "Published prompts are discoverable",
+      "roles": "{0}",
+      "table": "prompts",
+      "schema": "public",
+      "command": "r",
+      "check_md5": null,
+      "force_rls": false,
+      "using_md5": "2ec42fc4dbb91735e015f43d684ec025",
+      "permissive": true
+    }
+  ],
+  "leaderboard": {
+    "kind": "v",
+    "name": "prompt_community_leaderboard",
+    "owner": "postgres",
+    "schema": "public",
+    "options": [
+      "security_invoker=true"
+    ],
+    "definition_md5": "baf7c5b3ea0875c3f3561b2efaf5d031"
+  }
+}

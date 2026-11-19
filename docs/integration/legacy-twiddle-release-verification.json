@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-06",
+  "base": "230f45059142a7b45c589af9ba4eca5effb5d4f2",
+  "result": "PASS for the scoped Twiddle release boundary",
+  "webBuild": {
+    "compiler": "webpack",
+    "sourceFiles": 1085,
+    "sourceSha256": "49a303e51d986b59ca7c4619b2ec63e9fe9cca9ccbfc7130ef23f34cac874af9",
+    "buildId": "2c7QILgHHJ03hPZmSNGYE",
+    "changedInputs": [
+      "app/api/twiddle/route.ts",
+      "app/api/twiddle/[id]/route.ts",
+      "app/api/twiddle/[id]/react/route.ts",
+      "app/api/twiddle/[id]/respond/route.ts",
+      "app/api/twiddle/cron/route.ts",
+      "app/experience/page.tsx",
+      "app/twiddle/layout.tsx",
+      "lib/twiddle/release.ts"
+    ]
+  },
+  "browser": {
+    "notices": 3,
+    "http410": 20,
+    "width": 320,
+    "onlineDirectory": {
+      "url": "/circles?format=online",
+      "format": "online",
+      "listing": "synthetic unavailable"
+    },
+    "legacyPageApiCalls": 0,
+    "browserErrors": 0
+  },
+  "regression": {
+    "requestsPerBuild": 8,
+    "previousOutboundAttemptsBlocked": 3,
+    "currentOutboundAttempts": 0,
+    "configuredCredentials": "synthetic"
+  },
+  "cleanup": {
+    "runtimeFiles": 2371,
+    "runtimeModules": 772,
+    "browserClosed": true,
+    "allOwnedListenersClosed": true
+  },
+  "broaderSourceAudit": {
+    "status": "Identical to baseline",
+    "preExistingFailures": [
+      "DM route is signed-in, sender/read-scoped, lazy, and private",
+      "Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls",
+      "core thinker and Movement creator helpers use lazy Supabase admin clients"
+    ]
+  },
+  "hostedChanges": false,
+  "rawEvidence": "verification/web/evidence/checkpoint-twiddle-release"
+}

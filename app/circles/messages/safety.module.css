@@ -1,0 +1,15 @@
+.scope { overflow-wrap: anywhere; min-width: 0; }
+.scope *, .scope *::before, .scope *::after { box-sizing: border-box; }
+.scope button, .scope input, .scope select, .scope textarea { max-width: 100%; }
+.scope button { white-space: normal; line-height: 1.5; }
+.scope button:disabled { cursor: default; opacity: .55; }
+.scope a { color: #c9a84c; display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; max-width: 100%; vertical-align: middle; }
+.scope :focus-visible { outline: 2px solid #f5f0e8; outline-offset: 4px; }
+.nav { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem; }
+.nav a { display: inline-flex; align-items: center; min-height: 44px; color: #c9a84c; font-size: 17px; }
+.stack { display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 16px; line-height: 1.5; color: #f5f0e8; }
+.check input { width: 20px; height: 20px; flex-shrink: 0; }
+.list { list-style: none; padding: 0; display: grid; gap: 16px; }
+@media (max-width: 380px) { .row > button { width: 100%; } }

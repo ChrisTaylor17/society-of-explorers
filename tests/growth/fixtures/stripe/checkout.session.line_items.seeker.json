@@ -1,0 +1,29 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "li_test_fixture_seeker",
+      "object": "item",
+      "amount_discount": 0,
+      "amount_subtotal": 1900,
+      "amount_tax": 0,
+      "amount_total": 1900,
+      "currency": "usd",
+      "description": "Seeker",
+      "price": {
+        "id": "price_test_fixture_seeker",
+        "object": "price",
+        "active": true,
+        "currency": "usd",
+        "livemode": false,
+        "product": "prod_test_fixture_seeker",
+        "recurring": { "interval": "month", "interval_count": 1, "usage_type": "licensed" },
+        "type": "recurring",
+        "unit_amount": 1900
+      },
+      "quantity": 1
+    }
+  ],
+  "has_more": false,
+  "url": "/v1/checkout/sessions/cs_test_fixture_seeker/line_items"
+}

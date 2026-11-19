@@ -1,0 +1,52 @@
+{
+  "status": "source_verified_device_pending",
+  "recordedAt": "2026-11-06T01:18:11+00:00",
+  "startingCommit": "e59082fe8fea19009c9e4ba957b8c67035f9a6e1",
+  "localChecks": {
+    "nodePolicyAndAccountChecksPassed": 76,
+    "macSwiftVaultCasesPassed": 44
+  },
+  "scope": [
+    "The Node checks inspect the changed Kotlin source, use real configuration validators, and run the phone account controller with synthetic ports.",
+    "The Mac run compiles the unchanged Swift vault and executes it with a synthetic record backend and network denial. It does not use the Keychain."
+  ],
+  "androidDeviceCases": [
+    {
+      "name": "clearPersistsAnEmptySuccessorAcrossVaultReopen",
+      "status": "pending"
+    },
+    {
+      "name": "blockedReplacementRejectsResetAndPreservesTheMarkerForRecovery",
+      "status": "pending"
+    },
+    {
+      "name": "blockedOrdinaryWriteRetiresTheCachedVault",
+      "status": "pending"
+    }
+  ],
+  "remainingProof": [
+    "Android Codegen and Kotlin compilation",
+    "Run Android instrumentation on the unlocked synthetic build",
+    "Run the installed iOS app and verify device Keychain behavior"
+  ],
+  "initialRunNote": "One static check expected only the existing source reader in iOS Codegen. It was updated to include the clip player already declared by the app, then all checks passed.",
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "platforms/native/android/app/src/main/java/com/anonymous/soesyntheticdemo/member/MemberSecureStore.kt": "a8169188d970eb62685a8a26281df661720efc8d9099b46bba265222fec9484e",
+    "platforms/native/android/app/src/androidTest/java/com/anonymous/soesyntheticdemo/member/MemberSecureStoreRuntimeTest.kt": "abe8c1fe75542aa265111b4ad0862da2a45f6114dd4ef240a0c77cfb7a5bc8a9",
+    "platforms/tests/android-member-policy.test.mjs": "40f33e20f571af350a474749d5e4e1b432fd48df41ad9a3889a1b0de03cd2fb6",
+    "platforms/native/ios-member/SoeMemberVault.swift": "791f7308f008d9109ca8ba41d3cb32cab19b36de4f2672bc1856b346a5e79c51",
+    "verification/native-ios/SoeMemberVaultTests.swift": "56b712cff178e109c53001973341e6a857621a41ad51cbd29b42870b19509a28",
+    "platforms/tests/owned-auth.test.mjs": "f1cb37fcc26548e89dc3c142cf013a0810557408181529193c0491a387e9c21b"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/android-vault-commit/android-vault-confirmed.tap": "69515eccab99c77837123ceeed68179e60a59b0fcddefb1be16eda74dd2048b0",
+    "verification/web/evidence/android-vault-commit/android-vault-local.tap": "99b1bed8b7acb4a789195c4319b69c88a74f90bd0b8f99baf50e9ce47d679aec",
+    "verification/web/evidence/native-ios-android-vault-ios-counterpart/receipt.json": "48e9b31cff72ffd69ce6aac8b884ffe5f9704c5fd93bd81d3e514f010a52f887",
+    "verification/web/evidence/native-ios-android-vault-ios-counterpart/execute.log": "758dfe2fe85a4343e4b6219ad842dc9476432f28421e1f21ce74aff547ba2cf4"
+  }
+}

@@ -1,67 +1,118 @@
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { createClient } from '@/lib/supabase/client';
+import { getMemberSession } from '@/lib/auth/getSession';
+import { PROJECT_PLEDGE_TIERS } from '@/lib/capital/campaign';
+import { PROJECT_ID_PATTERN, type PublicProjectDetail } from '@/lib/projects/publicProject';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-interface Project {
-  id: string;
-  title: string;
-  short_description: string | null;
-  description: string;
-  category: string;
-  funding_goal: number;
-  amount_raised: number;
-  backer_count: number;
-  proposer_name: string | null;
-  milestones: { title: string; description: string; status: string }[];
-  created_at: string;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-const TIERS = [
-  { name: 'SUPPORTER', amount: 25 },
-  { name: 'PATRON', amount: 100 },
-  { name: 'FOUNDER', amount: 500 },
-];
+function readProjectDetail(payload: unknown, id: string): PublicProjectDetail {
+  if (!isRecord(payload) || 'error' in payload || !isRecord(payload.project)) throw new Error('Invalid project response');
+  const project = payload.project;
+  if (
+    typeof project.id !== 'string' || !PROJECT_ID_PATTERN.test(project.id) || project.id.toLowerCase() !== id.toLowerCase() ||
+    typeof project.title !== 'string' || !project.title.trim() ||
+    typeof project.description !== 'string' || typeof project.category !== 'string' || typeof project.status !== 'string' ||
+    !['short_description', 'proposer_name', 'use_of_funds', 'created_at'].every(key => project[key] === null || typeof project[key] === 'string') ||
+    !['funding_goal', 'amount_raised', 'backer_count'].every(key => typeof project[key] === 'number' && Number.isFinite(project[key]) && project[key] >= 0) ||
+    !Number.isInteger(project.backer_count) ||
+    !Array.isArray(project.milestones) || !project.milestones.every(item => isRecord(item) && ['title', 'description', 'status'].every(key => typeof item[key] === 'string')) ||
+    !Array.isArray(project.update_log) || !project.update_log.every(item => isRecord(item) && ['title', 'body', 'date'].every(key => item[key] === undefined || typeof item[key] === 'string'))
+  ) throw new Error('Invalid project response');
+  return project as PublicProjectDetail;
+}
 
-export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+type ProjectRead = {
+  id: string;
+  attempt: number;
+  state: 'ready' | 'not-found' | 'error';
+  project: PublicProjectDetail | null;
+};
+
+const TIERS = PROJECT_PLEDGE_TIERS;
+
+export default function ProjectDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ success?: string | string[] }>;
+}) {
   const { id } = use(params);
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { success } = use(searchParams);
+  const [projectRead, setProjectRead] = useState<ProjectRead | null>(null);
+  const [readAttempt, setReadAttempt] = useState(0);
+  const readPending = useRef(false);
+  const validProjectId = PROJECT_ID_PATTERN.test(id);
+  const currentRead = projectRead?.id === id && projectRead.attempt === readAttempt ? projectRead : null;
+  const readState = validProjectId ? currentRead?.state || 'loading' : 'not-found';
+  const project = readState === 'ready' ? currentRead?.project : null;
   const [pledging, setPledging] = useState<typeof TIERS[0] | null>(null);
   const [pledgeEmail, setPledgeEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('success=true')) {
-      setIsSuccess(true);
-    }
-  }, []);
+  const isSuccess = success === 'true';
 
   useEffect(() => {
     async function loadEmail() {
       try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) setPledgeEmail(user.email);
+        const session = await getMemberSession();
+        if (session?.member?.email) setPledgeEmail(session.member.email);
       } catch {}
     }
     loadEmail();
   }, []);
 
   useEffect(() => {
-    fetch(`/api/projects/${id}`)
-      .then(r => r.json())
-      .then(d => { if (d.project) setProject(d.project); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [id]);
+    if (!PROJECT_ID_PATTERN.test(id)) return;
+    const controller = new AbortController();
+    let active = true;
+    readPending.current = true;
+    const finish = (state: ProjectRead['state'], nextProject: PublicProjectDetail | null = null) => {
+      if (!active) return;
+      active = false;
+      readPending.current = false;
+      setProjectRead({ id, attempt: readAttempt, state, project: nextProject });
+    };
+    const timeout = window.setTimeout(() => {
+      finish('error');
+      controller.abort();
+    }, 10_000);
+    async function loadProject() {
+      try {
+        const response = await fetch(`/api/projects/${id}`, { signal: controller.signal, cache: 'no-store' });
+        if (response.status === 404) { finish('not-found'); return; }
+        if (!response.ok) throw new Error('Project request failed');
+        const nextProject = readProjectDetail(await response.json(), id);
+        finish('ready', nextProject);
+      } catch {
+        finish('error');
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+    void loadProject();
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [id, readAttempt]);
+
+  function retryProject() {
+    if (readState === 'loading' || readPending.current) return;
+    readPending.current = true;
+    setReadAttempt(attempt => attempt + 1);
+  }
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -79,7 +130,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const res = await fetch(`/api/projects/${id}/pledge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: pledging.name, amount: pledging.amount, email: pledgeEmail.trim() }),
+        body: JSON.stringify({
+          tier: pledging.name,
+          tierId: pledging.id,
+          amount: pledging.amount,
+          email: pledgeEmail.trim(),
+          source: 'project_page',
+          utm: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
+        }),
       });
       const data = await res.json();
       if (data.url) { window.location.href = data.url; return; }
@@ -93,27 +151,31 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     outline: 'none', boxSizing: 'border-box',
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <PublicNav />
-        <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: muted }}>LOADING...</span>
-      </div>
-    );
-  }
-
   if (!project) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7rem 2rem 3rem' }}>
         <PublicNav />
-        <span style={{ fontFamily: 'Cinzel, serif', fontSize: '14px', color: parchment }}>Project not found</span>
-        <a href="/projects" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: gold, textDecoration: 'none' }}>&larr; All Projects</a>
+        <main id="project-read-state" aria-busy={readState === 'loading'} style={{ width: '100%', maxWidth: '520px', textAlign: 'center', overflowWrap: 'anywhere' }}>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 6vw, 36px)', fontWeight: 400, lineHeight: 1.3, marginBottom: '1rem' }}>
+            {readState === 'loading' ? 'Loading project…' : readState === 'not-found' ? 'Project not found' : 'We couldn’t load this project'}
+          </h1>
+          <p role={readState === 'error' ? 'alert' : 'status'} style={{ fontSize: '18px', lineHeight: 1.7, color: ivory85, marginBottom: '1.5rem' }}>
+            {readState === 'loading' ? 'You can return to all projects while this loads.' : readState === 'not-found' ? 'This link did not return an available project. You can try again or return to all projects.' : 'The project details are temporarily unavailable. Please try again.'}
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+            {validProjectId && <button type="button" onClick={retryProject} disabled={readState === 'loading'} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, background: 'transparent', border: `1px solid ${gold}66`, padding: '12px 20px', minHeight: '44px', cursor: readState === 'loading' ? 'wait' : 'pointer', opacity: readState === 'loading' ? 0.6 : 1 }}>
+              {readState === 'loading' ? 'Loading project…' : 'Retry project'}
+            </button>}
+            <Link href="/projects" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', color: gold, textDecoration: 'none', minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}>&larr; All Projects</Link>
+          </div>
+        </main>
       </div>
     );
   }
 
   const pct = project.funding_goal > 0 ? Math.min((project.amount_raised / project.funding_goal) * 100, 100) : 0;
   const milestones = Array.isArray(project.milestones) ? project.milestones : [];
+  const updates = Array.isArray(project.update_log) ? project.update_log : [];
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
@@ -123,7 +185,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       {isSuccess && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, zIndex: 190, padding: '16px 2rem', background: `linear-gradient(90deg, rgba(201,168,76,0.15), rgba(201,168,76,0.08))`, borderBottom: `1px solid ${gold}33`, textAlign: 'center' }}>
           <span style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.15em', color: gold }}>
-            Thank you! Your pledge has been received. You're a founding backer.
+            Thank you! Your pledge has been received. You&apos;re a founding backer.
           </span>
         </div>
       )}
@@ -131,7 +193,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       {/* ═══ HEADER ═══ */}
       <section style={{ padding: isSuccess ? '10rem 2rem 3rem' : '8rem 2rem 3rem', background: '#0a0a0a' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <a href="/projects" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', display: 'inline-block', marginBottom: '2rem' }}>&larr; ALL PROJECTS</a>
+          <Link href="/projects" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', display: 'inline-block', marginBottom: '2rem' }}>&larr; ALL PROJECTS</Link>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '3px 10px', borderRadius: '10px', display: 'inline-block', marginBottom: '1rem', marginLeft: '1rem' }}>
             {(project.category || 'general').toUpperCase()}
           </div>
@@ -158,6 +220,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <div style={{ fontSize: '14px', color: muted, marginBottom: '1.5rem' }}>
               {project.backer_count} backer{project.backer_count !== 1 ? 's' : ''}
             </div>
+            <p style={{ fontSize: '14px', color: muted, lineHeight: 1.7, marginBottom: '1.5rem' }}>
+              Pledges are patronage for this project. They do not represent equity, debt, dividends, or a financial return.
+            </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
               {TIERS.map(t => (
                 <button
@@ -184,6 +249,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           <div data-fade style={{ opacity: 0, transition: 'opacity 0.9s ease' }}>
             <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>{project.description}</p>
 
+            <div style={{ marginTop: '3rem', padding: '2rem', border: `1px solid ${gold}22`, background: '#0d0d0d' }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>USE OF FUNDS</div>
+              <p style={{ fontSize: '17px', color: ivory85, lineHeight: 1.8 }}>
+                {project.use_of_funds || 'Funds are intended to help validate, prototype, and publish this project with visible updates before any larger commitment is made.'}
+              </p>
+            </div>
+
             {milestones.length > 0 && (
               <div style={{ marginTop: '3rem' }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>MILESTONES</div>
@@ -201,6 +273,25 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             )}
+
+            <div style={{ marginTop: '3rem' }}>
+              <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>PROJECT LOG</div>
+              {updates.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {updates.map((update, index) => (
+                    <div key={`${update.title || 'update'}-${index}`} style={{ padding: '1.5rem', border: `1px solid ${gold}18`, background: '#0d0d0d' }}>
+                      <div style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.12em', color: parchment, marginBottom: '0.35rem' }}>{update.title || 'Project update'}</div>
+                      {update.date && <div style={{ fontSize: '12px', color: muted, marginBottom: '0.75rem' }}>{update.date}</div>}
+                      <p style={{ fontSize: '15px', color: muted, lineHeight: 1.7 }}>{update.body || 'Update pending.'}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: '16px', color: muted, lineHeight: 1.8 }}>
+                  No public updates yet. The first update should explain what was learned, what was built, and what the next milestone requires.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -216,7 +307,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <input value={pledgeEmail} onChange={e => setPledgeEmail(e.target.value)} placeholder="Your email" type="email" required style={inputStyle} />
               </div>
               <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6, marginBottom: '1.5rem' }}>
-                You'll be redirected to Stripe for secure payment.
+                You&apos;ll be redirected to Stripe for secure payment.
               </p>
               <button type="submit" disabled={submitting} style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, border: 'none', height: '48px', cursor: 'pointer', borderRadius: 0, width: '100%', opacity: submitting ? 0.5 : 1 }}>
                 {submitting ? 'REDIRECTING...' : 'PAY WITH CARD'}

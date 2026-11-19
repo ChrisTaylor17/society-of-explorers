@@ -1,0 +1,59 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "3c2171a0a92010d86ef22f18ee0ce155066887d8",
+  "recordedAt": "2026-11-06T23:32:28.627055+00:00",
+  "verifiedDraftSha256": "6bec37aca355fdfb85d0cceab1c55b9d681189f5d101c3bad599001e8986005f",
+  "previousDraftSha256": "422ad3d04dcec0acc2a100c2cd245e0df116c0d963963ebaaacc1160cad331ea",
+  "previousDraft": {
+    "listingReports": 1,
+    "listingReceipts": 2,
+    "messageReports": 1,
+    "messageReceipts": 2
+  },
+  "fixedDraft": {
+    "listingReports": 1,
+    "listingReceipts": 1,
+    "messageReports": 1,
+    "messageReceipts": 1
+  },
+  "focusedRestore": {
+    "orderedFiles": 52,
+    "checks": [
+      "The pre-cutover archive and role export restore into a separate cluster and match all 20 tables.",
+      "The restored pre-cutover fixture reproduces browser access to private answers, messages and transcripts.",
+      "The complete ordered cutover runs on the restored copy and preserves every pre-cutover row in its original columns.",
+      "Listing and message report receipts wait on the account gate and refuse the frozen account. Raw reporter writes are blocked. Exact replay, anonymous reports and human review still work.",
+      "The ordinary app can post as another member. Only an owner processing the exact request can erase, and linked evidence needs separate approval.",
+      "Changed evidence, a new dependency or an inactive post or report guard invalidates the reviewed scope.",
+      "A forced late receipt failure rolls back post, moderation, AI consent and temporary authorization changes.",
+      "A new report waits on the independent erasure transaction, then cannot recreate a copy after commit.",
+      "The archive preserves other replies and the legacy salon. It keeps a neutral withdrawn anchor, clears linked text and rejects stale review while preserving the spent AI attempt.",
+      "A separate restore keeps the scrubbed thread, exact owner retry and private status receipt. Both report paths still refuse writes by the frozen account."
+    ]
+  },
+  "fullRestore": {
+    "orderedFiles": 64,
+    "matchedTables": 67,
+    "circleRoutinesMatch": true
+  },
+  "httpRegressions": 42,
+  "unchangedWebBuildSources": 1108,
+  "scope": "Disposable PostgreSQL 17 with independent connections, the current Circle RPCs and a separate restore. Processing freezes new member-bound report and receipt writes. Previous report data stays available for review. Hosted rollout and the remaining erasure and retention decisions are open.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "0ac66673e19cd0e180eedfc4495d502a24b207cc6a3cb5580e4e60e7792789cb",
+    "docs/integration/account-deletion.md": "17315c5fd3ed6d384edee67102515362ce81b40460717b267f225f1a4b771921",
+    "docs/sql/account-erasure-circle-posts-apply.sql": "6bec37aca355fdfb85d0cceab1c55b9d681189f5d101c3bad599001e8986005f",
+    "verification/web/scripts/rehearse-circle-post-erasure.py": "ef9c70d5f67f8092c44747ddb84ca20fd48c7e444c54c8655d7b7e5406744ba9"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-account-erasure-report-write",
+  "evidenceSha256": {
+    "previous-race.log": "c5446e8682c5e33b9aa52945d47e5a4e943c34dfea90af6c74db37ddf22a6ebb",
+    "previous-draft-observation.json": "47a9ef7cb3e6514e85476d28ed87691ce28690b3eb2edf74f33f206b119a9aca",
+    "previous-draft-observer.py": "ca5cd77465263fde95bed218a1b313bc1e54735f457b7a3a9e177183e73d3a4a",
+    "report-freeze-restore.json": "f614070dadcabcf2588841c342114bc691479583bd6f16ddd8f38bcee1f39cc1",
+    "full-release-restore.json": "e601f717eb5330b828bde09c42fb89afdf3edac6de605ab16a83e76ac8a92e56",
+    "http-regressions.tap": "8a15352eceae1d9b2b90cc1bda846f156a6ea4565e3eaec3dd7d134aa5151922",
+    "previous-web-build-sources.json": "3f3655bbe23544c1564f1f22e64cc0aef31498090ed110333ebf046672308136"
+  }
+}

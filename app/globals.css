@@ -17,3 +17,25 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .salon-input-area{padding-bottom:max(12px,env(safe-area-inset-bottom,12px));}
 .animate-fade-up{animation:fadeUp 400ms ease-out both;opacity:0;}
 .animate-gold-pulse{animation:goldPulse 2.4s ease-in-out infinite;}
+
+:root {
+  --soe-public-nav-height: 56px;
+}
+html:has(.soe-public-nav) {
+  scroll-padding-top: calc(var(--soe-public-nav-height) + 0.5rem);
+}
+.soe-skip-link {
+  position: fixed;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  z-index: 210;
+  transform: translateY(calc(-100% - 0.5rem));
+  padding: 0.65rem 0.9rem;
+  background: var(--gold-light);
+  color: var(--bg-void);
+}
+.soe-skip-link:focus {
+  transform: none;
+  outline: 2px solid var(--ivory);
+  outline-offset: 2px;
+}

@@ -1,0 +1,104 @@
+{
+  "status": "full_local_web_build_and_selected_acceptance_passed_hosted_pending",
+  "recordedAt": "2026-11-06T03:15:43.040035+00:00",
+  "baseCommit": "616609fc75e2bf9b4cc89fe52cc5bdc00b9a10ad",
+  "verifiedProductChanges": [
+    "lib/auth/request.ts",
+    "lib/circles/moderation-server.ts"
+  ],
+  "sourceSha256": {
+    "lib/auth/request.ts": "8f9788430ff8f3371e5aab8195b931c38dba8d52e2ae62961caf9900927a0a92",
+    "lib/circles/moderation-server.ts": "1b6de08a63d8785cb995dfb2c5630a7c84a3c04a800d0c39b0bebf159e7b659e",
+    "verification/web/scripts/probe-built-release-boundaries.py": "414a0465e8eefc79983025744b606b928c119a783e430350fc6e817389f44ebb",
+    "verification/web/scripts/browser-online-salon.mjs": "edeba4e74223cca6aaf99b1d0f47c83af07da351e8102b376f728280795cd963",
+    "verification/web/tests/account-security.test.mjs": "73269a74f36b553bfb8064fb453d497c0c0546b0996975fb8baca779f6847c4a",
+    "verification/web/tests/circle-hosting-backend.test.mjs": "66551e56173d2470fe6ecef66e8f14d050f49129c24c77b09e15e9fba48d1ca5"
+  },
+  "build": {
+    "node": "v22.22.1",
+    "next": "16.2.9",
+    "buildId": "I7xGvfNWw6a64zd2G4gYC",
+    "exitCode": 0,
+    "seconds": 49.91,
+    "sourceFiles": 1061,
+    "sourceSha256": "7c22ade75ab690edd5f16f80b5da1a5684eb41a08be8472dabbfab464d36cfd4",
+    "builtFiles": 2352,
+    "typeScriptPassed": true,
+    "scopedLintPassed": true,
+    "lockfileSha256": "f9935e7292481084f9595df655ffc02a22984f8cd0fc36bdedface39ac9db38d",
+    "verifiedMacPackageArchives": 483,
+    "registryArchiveCount": 211,
+    "unpackedDependencyBytes": 753666347,
+    "walletModuleWarnings": [
+      "@base-org/account",
+      "@coinbase/wallet-sdk",
+      "@metamask/sdk",
+      "@safe-global/safe-apps-provider",
+      "@safe-global/safe-apps-sdk",
+      "@walletconnect/ethereum-provider",
+      "porto",
+      "porto/internal"
+    ]
+  },
+  "testResults": {
+    "selectedRegressionChecksPassed": 180,
+    "compiledApiChecksPassed": 14,
+    "chromiumScenariosPassed": {
+      "Live Council": 5,
+      "Online Circles and account selection": 7,
+      "Quest Browser": 3,
+      "Philemon study and host guide": 7,
+      "Paranal Reel": 4,
+      "Telescope tilt Reel": 4,
+      "Daily Practice": 7
+    },
+    "legacySmokeFailuresMatchingBaseline": 10
+  },
+  "findings": [
+    "The previous compiled handler refused its numeric loopback origin and accepted the distinct localhost origin in the test request.",
+    "The compiled API accepts the exact local HTTP authority and refuses the distinct hostname and forwarded host cases. The focused unit check also covers IPv6 and mismatched ports.",
+    "The hosting suite now uses the current profile-aware SQL wrapper and valid synthetic browser-selection receipts. The browser checks each Reel by its title."
+  ],
+  "limits": [
+    "The release build uses invalid public provider configuration. Browser journeys compose compiled pages with synthetic accounts, disposable SQL and intercepted meeting destinations.",
+    "Wallet connector module warnings remain. The approved production restore, live authentication and meeting checks and physical-device acceptance are open.",
+    "The package archives were restored into a temporary verification tree with lockfile integrity checks. Package lifecycle scripts and hosted deployment did not run."
+  ],
+  "evidenceSha256": {
+    "verification/web/evidence/web-locked-build/built-shell-guard-check.json": "d4af530db5bde1f2b3823805846621e05ff630ec9400fdd119a2ebdeeb3a7205",
+    "verification/web/evidence/web-locked-build/built-shell-live-room-02-browser.json": "3c947532c5dbd72f6f8339ebb3ebe793718b042ad3702f0966425a81bff5a4b0",
+    "verification/web/evidence/web-locked-build/built-shell-live-room-02-release-boundary-probe.json": "d66ec5e824bf022a568b6633ce562fe03f202ebd46323dc63ed472f72f827d9e",
+    "verification/web/evidence/web-locked-build/built-shell-live-room-02-server-ready.json": "c0ccdf4f36dc75f924c682d0aab86c98cb7e88872524a2d07cf4a094dc4fb85d",
+    "verification/web/evidence/web-locked-build/built-shell-live-room-02-server-runtime.json": "659207ad80ca8fe2bc4f180e2c4ea6a95fb7853d93ee0a625e3bdc82f713be49",
+    "verification/web/evidence/web-locked-build/built-shell-live-room-02-server.json": "fefcb98cf37ce603a59b700ddc1f77c12929019c304e267b2e16918082a7f711",
+    "verification/web/evidence/web-locked-build/built-shell-web-locked-01-build-source-sha256.json": "5372b109a50da173d041f7f4c68e931e426c12ac029dc7092e5403b3e32805e0",
+    "verification/web/evidence/web-locked-build/built-shell-web-locked-01-next-build.json": "da29cd7abc2f8f5e9a6c895bef5435cbe18f9b1b03c5b7e704e60a24cd4dc24d",
+    "verification/web/evidence/web-locked-build/built-shell-web-locked-02-build-source-sha256.json": "8f3fd0e1504b19320a60330826a7c642ad2ce2294c79b4487c30f64274e238ca",
+    "verification/web/evidence/web-locked-build/built-shell-web-locked-02-next-build.json": "d001bb51d04a441aa7a789ca866220eac40a6b6258766678193de1971ff7c35c",
+    "verification/web/evidence/web-locked-build/built-shell-web-locked-02-next-build.log": "46c120641a57324aa64fcc725ed856c694b69f5395e93bad3ab095f80385db85",
+    "verification/web/evidence/web-locked-build/locked-package-runtime.json": "3d14d386bea812d587a44809c8dc894c55b683451909e08c79a5dbd0a2f57228",
+    "verification/web/evidence/web-locked-build/loopback-origin-before.json": "90761a253b7d3ab989684fe7f3f5c9da9a360be6d2f38f03f34bcf0c43deca32",
+    "verification/web/evidence/web-locked-build/online-salon-browser-01/browser.json": "29957d201027df210959df2375268ddde57755f4dbf75d344c65dcc583acbd20",
+    "verification/web/evidence/web-locked-build/online-salon-browser-02/browser.json": "ce29854043b8b5db7efb8b817b5107a33fa6933f029f363a3b958f9bc60ee74d",
+    "verification/web/evidence/web-locked-build/practice-browser-02/browser.json": "65bc63482969d6e4bcb2b218d3b320efb80675d547a2b8cbf06162e15d9aa8c8",
+    "verification/web/evidence/web-locked-build/prepare-pinned-web.py": "84d3d26aa1ff087924806d316abba55c459fc861bb9a63d02d34855252f3e50b",
+    "verification/web/evidence/web-locked-build/quest-immersive-built-02/browser.json": "cb332d3ccc1aacb26faadfdb7b62dbd0c06d9d6ce7c794acfedf9e2be04a76a4",
+    "verification/web/evidence/web-locked-build/reel-elt-built-02/browser.json": "0cce524c7db40a15beeacec704c04410d1a6508d8413205b664f5b7e3bf89565",
+    "verification/web/evidence/web-locked-build/reel-paranal-built-02/browser.json": "2d57d0f640ae243b40563891da8fc64d70d32e7f69264484bfe28da77b366e61",
+    "verification/web/evidence/web-locked-build/root-kernel-philemon-02/browser.json": "08b09a2b54bde933bac12dfca090480fed6892ab091c4038221a15cc59c81c2e",
+    "verification/web/evidence/web-locked-build/source-commit.txt": "e0bffdaea247e4f63b5eb634a3dc0c1a7960cd7973c21189b244d5e769d2ae84",
+    "verification/web/evidence/web-locked-build/source-git-archive.sha256": "c36ac1b1700003c0ad41b585338599eedd9af8b637e812146c9adc55bf88c6a2",
+    "verification/web/evidence/web-locked-build/web-locked-legacy-smoke-02.log": "5c9220e4b67c2e67b3f3580a74539d7abf5e0402a7fa96bfed3c42ca12c0c265",
+    "verification/web/evidence/web-locked-build/web-locked-lint-02.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/web-locked-build/web-locked-regressions-02.tap": "978f3e299d5238058ddaa85cdd9ee8aacd34241c7bab7f71c17b88ac26aec76c",
+    "verification/web/evidence/web-locked-build/web-locked-regressions.tap": "88be1d6f860c695a7a3ead67c4f2bae954db426cfd53317b3fde14ee60635c03"
+  },
+  "scratchPath": "/private/tmp/soe-web-locked.HVd9JZvE",
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "productionMutation": false,
+  "providerCalls": false
+}

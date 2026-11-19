@@ -1,0 +1,61 @@
+{
+  "status": "LOCAL_ACCESS_CORRECTION_VERIFIED_OTHER_WRITER_FINDINGS_OPEN",
+  "verifiedAt": "2026-11-08T14:49:35.417710+00:00",
+  "baseCommit": "98f16272b5de33eeac23468ab47066f5ca8fc93f",
+  "sourceHashes": {
+    "app/api/salons/[salonId]/route.ts": "a4a2b7ef98a5876e572ae6fa0f22daf76ef722bbfa4b3eefe8b809edc893441f",
+    "app/api/salons/[salonId]/sessions/route.ts": "e9cfb98af1fff9c3e9e5370f3be2b8901dc0c6f1f0e020c5722aa1b86abcad8d",
+    "verification/web/tests/guide-program-write-access.test.mjs": "f1b504eb5487360a87a55022aec7e9f711550c235c62414a628f207c65d309e5",
+    "verification/web/tests/support/guide-program-write-fixture.mjs": "1df9f3eca50de7e68345b73e8b16520507dbd6b3a2e11d256274705c70b01ceb"
+  },
+  "baselineAudit": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-authority-review/WRITER_AUDIT.json",
+  "baselineFindingCount": 10,
+  "correctedFinding": "G09, when removal is visible at the fresh authority check",
+  "remainingFindings": [
+    "G01",
+    "G02",
+    "G03",
+    "G04",
+    "G05",
+    "G06",
+    "G07",
+    "G08",
+    "G10"
+  ],
+  "remainingConcurrentRevocationRace": true,
+  "checks": {
+    "newAccessCases": 7,
+    "existingReadAndBrowserControllerCases": 36,
+    "totalCases": 43,
+    "fullBuildAndTypecheck": true,
+    "scopedLint": true,
+    "canonicalBuildInputs": 1243,
+    "sourceMismatches": []
+  },
+  "buildReceipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/built-shell-guide-authority-01-next-build.json",
+  "buildInputEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-guide-authority-review/FINAL_INPUT_RECHECK.json",
+  "stageReceipts": [
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-authority-audit-01.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-authority-access-01.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-authority-build-01.json",
+    "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/guide-authority-lint-01.json"
+  ],
+  "preservedSourceHashes": {
+    "app/api/salons/route.ts": "795890c29972ad8c3dda0e1fab474579f699178c0854196b15389e5e7e1aaf48",
+    "app/api/guide/route.ts": "cb059acabbcdf46b0c98afce2dae7a3594a43fa285fad227d404ffe0e4c830a4",
+    "app/api/guide/create-salon/route.ts": "0c8b8f1c77d3ab30cf6aaae80dbc14225c29b460d28e0525143e88818c217c26",
+    "lib/salons/index.ts": "2e7c4c483d74b883ef8cd6a97b41c42e6c05c0eda1e8cc84948f2718081eea5d",
+    "lib/salons/read-access.ts": "e04f3d0363879b79c13719e9eff426a73642a8a3e02efde8165bbf748df8ac5d",
+    "lib/getAuthenticatedMember.ts": "db06410e33111bff9b58ddf64ee9bd5f22f409ff774476784842d690330a109c",
+    "supabase/migrations/20260413_salon_flywheel.sql": "32c438378aac8be4eec247bc8abf790ea3c42fb45c194f033a245648655bd2dc"
+  },
+  "schemaOrGrantChanges": false,
+  "uiSourceChanged": false,
+  "hostedCalls": false,
+  "realProviderAcceptance": false,
+  "physicalDeviceAcceptance": false,
+  "spentUsd": 0,
+  "minimumSampledFreeBytes": 15542046720,
+  "maximumSampledPrivateAllocatedBytes": 19102072832,
+  "scope": "Actual route/helper source and locked SDK over a bounded adapter into disposable SQL with synthetic identity and failure injection. Full build compiles the corrected source; no new browser interaction acceptance is claimed. Baseline observations reproduce defects, not feature acceptance. No production permission or record change."
+}

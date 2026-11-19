@@ -1,0 +1,5 @@
+# next build secure-only (git archive c3ae7cc, placeholder env, 2026-10-23 10:38 EDT)
+✓ Compiled successfully in 9.3s
+✓ Generating static pages using 7 workers (186/186) in 688ms
+BUILD_EXIT 0
+tsc --noEmit: exit 0

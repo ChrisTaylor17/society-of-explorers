@@ -48,3 +48,10 @@ next-env.d.ts
 broadcast/*/31337/
 
 .env*.local
+
+# Canonical integration verification outputs and local runtime links
+/verification/web/evidence/
+/verification/web/tooling/
+**/__pycache__/
+
+/platforms/evidence/

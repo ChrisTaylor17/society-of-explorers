@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "genealogy-of-morals",
+  "editionId": "pg-52319-50880f01d2e0afb107d49cb939f69086d3c1e6fccd2aad4ee68c329a1091e50c",
+  "editionSha256": "50880f01d2e0afb107d49cb939f69086d3c1e6fccd2aad4ee68c329a1091e50c",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 52319,
+    "landingUrl": "https://www.gutenberg.org/ebooks/52319",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/52319/pg52319-h.zip",
+    "archiveSha256": "beeffb5f35a3526d6bf61766868a7af028bcf4aa0cd046dd487185f3f981f5bd",
+    "archiveBytes": 224303,
+    "retrievedAt": "2026-11-03T18:53:51.275Z",
+    "mainHtmlPath": "pg52319-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "The Genealogy of Morals",
+    "author": "Friedrich Wilhelm Nietzsche",
+    "translators": [
+      {
+        "name": "Horace Barnett Samuel",
+        "appliesTo": "The Genealogy of Morals"
+      },
+      {
+        "name": "J. M. Kennedy",
+        "appliesTo": "Appended Peoples and Countries fragment"
+      }
+    ],
+    "editors": [
+      "Oscar Levy"
+    ],
+    "illustrators": [],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "Includes the Peoples and Countries fragment.",
+      "Catalog/RDF describes Volume Thirteen; the ebook front matter says Volume Eight, 1913. The discrepancy is retained rather than resolved by assumption."
+    ]
+  },
+  "reader": {
+    "sha256": "548408ac3ea88ac0b556442d3bc0a327e02167a4681d1b3a939da5334fb07f90",
+    "bytes": 394258,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 347,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of The Genealogy of Morals",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "THE GENEALOGY OF MORALS",
+        "level": 1,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "A POLEMIC",
+        "level": 3,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "BY",
+        "level": 3,
+        "readingIndex": 12
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "FRIEDRICH NIETZSCHE",
+        "level": 2,
+        "readingIndex": 13
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "TRANSLATED BY",
+        "level": 4,
+        "readingIndex": 14
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "HORACE B. SAMUEL, M.A.",
+        "level": 4,
+        "readingIndex": 15
+      },
+      {
+        "id": "reading-heading-8",
+        "label": "PEOPLES AND COUNTRIES (FRAGMENT)",
+        "level": 4,
+        "readingIndex": 16
+      },
+      {
+        "id": "reading-heading-9",
+        "label": "TRANSLATED BY J. M. KENNEDY",
+        "level": 4,
+        "readingIndex": 17
+      },
+      {
+        "id": "reading-heading-10",
+        "label": "The Complete Works of Friedrich Nietzsche",
+        "level": 4,
+        "readingIndex": 18
+      },
+      {
+        "id": "reading-heading-11",
+        "label": "The First Complete and Authorised English Translation",
+        "level": 5,
+        "readingIndex": 19
+      },
+      {
+        "id": "reading-heading-12",
+        "label": "Edited by Dr Oscar Levy",
+        "level": 4,
+        "readingIndex": 20
+      },
+      {
+        "id": "reading-heading-13",
+        "label": "Volume Eight",
+        "level": 4,
+        "readingIndex": 21
+      },
+      {
+        "id": "reading-heading-14",
+        "label": "T.N. FOULIS",
+        "level": 5,
+        "readingIndex": 22
+      },
+      {
+        "id": "reading-heading-15",
+        "label": "13 & 15 FREDERICK STREET",
+        "level": 5,
+        "readingIndex": 23
+      },
+      {
+        "id": "reading-heading-16",
+        "label": "EDINBURGH: AND LONDON",
+        "level": 5,
+        "readingIndex": 24
+      },
+      {
+        "id": "reading-heading-17",
+        "label": "1913",
+        "level": 5,
+        "readingIndex": 25
+      },
+      {
+        "id": "reading-heading-18",
+        "label": "EDITOR'S NOTE.",
+        "level": 4,
+        "readingIndex": 27
+      },
+      {
+        "id": "reading-heading-19",
+        "label": "PREFACE.",
+        "level": 4,
+        "readingIndex": 30
+      },
+      {
+        "id": "reading-heading-20",
+        "label": "FIRST ESSAY.",
+        "level": 5,
+        "readingIndex": 53
+      },
+      {
+        "id": "reading-heading-21",
+        "label": "\"GOOD AND EVIL,\" \"GOOD AND BAD.\"",
+        "level": 4,
+        "readingIndex": 54
+      },
+      {
+        "id": "reading-heading-22",
+        "label": "SECOND ESSAY.",
+        "level": 5,
+        "readingIndex": 115
+      },
+      {
+        "id": "reading-heading-23",
+        "label": "\"GUILT,\" \"BAD CONSCIENCE,\" AND THE LIKE.",
+        "level": 4,
+        "readingIndex": 116
+      },
+      {
+        "id": "reading-heading-24",
+        "label": "THIRD ESSAY.",
+        "level": 5,
+        "readingIndex": 181
+      },
+      {
+        "id": "reading-heading-25",
+        "label": "WHAT IS THE MEANING OF ASCETIC IDEALS?",
+        "level": 4,
+        "readingIndex": 182
+      },
+      {
+        "id": "reading-heading-26",
+        "label": "PEOPLES AND COUNTRIES.",
+        "level": 4,
+        "readingIndex": 263
+      },
+      {
+        "id": "reading-heading-27",
+        "label": "Translated by J. M. KENNEDY.",
+        "level": 5,
+        "readingIndex": 264
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "images/cover.jpg",
+      "sha256": "1707e9bc567cb88eabae88362ecf63f6804cec6b6e9e6a171c17df5e2a90097f",
+      "bytes": 69240,
+      "mime": "image/jpeg"
+    },
+    {
+      "path": "images/ill_niet.jpg",
+      "sha256": "2dcd8fa425e6e3a2246beccff7afa745514439a7111d462853b577b4c8e086b7",
+      "bytes": 8445,
+      "mime": "image/jpeg"
+    }
+  ],
+  "fidelity": {
+    "canonicalTextSha256": "34c5eae80cca85ee4b9ab72b0841947469d20e49b79ef90930af6f9cada87877",
+    "sourceImageCount": 2
+  }
+}

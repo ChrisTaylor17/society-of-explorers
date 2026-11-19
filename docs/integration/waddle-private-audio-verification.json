@@ -1,0 +1,88 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T17:06:59.893665+00:00",
+  "parentCommit": "89113cc10b8b57f784d88aba14b82f01c1567226",
+  "productionCleared": false,
+  "results": {
+    "guardedWebBuild": {
+      "sourceFiles": 1088,
+      "sourceDigest": "9310a9817a50d7f9de85a6eaea113ff975cca2f062910ce52d1f39b9b0729696"
+    },
+    "scopedLint": "passed",
+    "existingClipHttpChecks": 5,
+    "unchangedSourceSmokeFailures": [
+      "DM route is signed-in, sender/read-scoped, lazy, and private",
+      "Great Books editions are read-only and bookmarks use explicit authenticated lifetime-guarded calls",
+      "core thinker and Movement creator helpers use lazy Supabase admin clients"
+    ],
+    "postgres": {
+      "browserDenials": 12,
+      "refusalsBeforeEffects": 6,
+      "publicRowsBeforeReview": 0,
+      "publicRowsAfterRestore": 7,
+      "checks": [
+        "The hosted-shape fixture reproduces unauthorized reads and public-flag changes after restore.",
+        "Unknown dependencies stop apply. The reviewed draft closes table and column access and preserves all rows.",
+        "Existing flags supply no publication consent. The actual route returns only consented rows and writes only after exact account checks.",
+        "A second restore preserves the contained table and the public feed through the actual route."
+      ],
+      "playbackChecks": [
+        "Unavailable, unconsented, cross-owner and unsupported rows never reach object storage.",
+        "A public or mismatched bucket prevents playback before the object request.",
+        "Legacy and new keys support same-origin HEAD, full GET, and a checked single byte range.",
+        "Oversize metadata, a wrong MIME type, wrong Content-Range, and truncated bytes fail closed.",
+        "Revoking recorded consent blocks the next request before any storage access."
+      ]
+    },
+    "chromium": {
+      "checks": [
+        "The real recorder produces a local playback preview without contacting a provider.",
+        "Explicit transcription handles provider refusal and displays the successful transcript without publishing.",
+        "Explicit publication carries the reviewed account and recovers after a refusal before showing success.",
+        "The public feed player decodes the browser recording over the app origin after publication.",
+        "The built playback handler rejects invalid IDs and unavailable storage without a redirect or body."
+      ],
+      "playbackRequests": 2,
+      "externalBrowserRequests": 0
+    }
+  },
+  "scope": "Local PostgreSQL 17 and app route tests with synthetic Supabase Storage transport. The compiled browser test uses a synthetic account, microphone and provider. The local listener was closed. Hosted credentials, media files and providers were unused.",
+  "remaining": [
+    "Approved database and media exports and separate restore tests",
+    "Storage policy and supported private bucket cutover, including older reachable builds",
+    "Hosted playback and consent-withdrawal acceptance on a synthetic record",
+    "Reviewed disposition for unreferenced uploads and member-owned audio"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "480f51cc3f378678f89049dcaed813f1d616de0e9adceba8661f2c33ae42f5a1",
+    "app/api/waddle/[id]/audio/route.ts": "bf0c98a966fd4d1f12c92583e56738a193bd71405761d2dc2f8d20f5f53cd437",
+    "app/api/waddle/route.ts": "988743a28c4e3eef4257d78b2620d8ac25a0bad35c62baeafd6ed2bfd441d509",
+    "docs/integration/waddle-privacy.md": "419a240d35d6a21f908448104bbad3661b6f734c5899211a6372abb68d7666de",
+    "docs/sql/waddle-data-containment-apply.sql": "4fd0370dcb99cbc0b12576d5577d5ebd7252d1db340373f38ed828fa7419a360",
+    "lib/clips/server.ts": "2784712f7cdf8af5987eee8e7c595c12aa5182f8afec9951a097818e9a37d209",
+    "lib/http/byteRange.ts": "a136c11c5c8829ed50db2cb0e30f83a5d4ce1cbc8eca5c7af97b8a6bd918b4d7",
+    "lib/http/routeError.ts": "614461df8dd74c6eedaf9bb85db200e318c7c1ac4715fb64d3f546b1fb2f6797",
+    "lib/supabase/admin.ts": "767641d87d2aec932f818f9624cec85e388c997e6b5ed74313b33141611db28b",
+    "lib/waddle/media.ts": "223f4d0b1461e2a4fc9f5e04521e7f97f9333a5586b0308fb4ca6ffeccda4468",
+    "verification/web/scripts/browser-built-waddle-privacy.mjs": "915ef33c65615e065d197f5f58e817a673da9db790d4b719c3b38df6e9671780",
+    "verification/web/scripts/rehearse-waddle-privacy.py": "4ba5bb153326f9d7370f37e456f195f54e2b57a44aec1d3779b4e17d2773e6d0",
+    "verification/web/tests/support/waddle-privacy-http.mjs": "2f66d4d647e85a5ec79fbd03b8882f6a9f4038db45c9de3369237f634fa2a488"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-waddle-private-audio",
+  "evidenceSha256": {
+    "built-shell-waddle-audio-next-build.json": "5728a1f6bccf40dc5cec355b9f0f541da60c4b5b3b108bfc089e54b1b1d92d52",
+    "built-shell-waddle-audio-next-build.log": "b489f3d3564b4900960e4daeba46b399ca32725e74d220a59253ed413e27e016",
+    "built-shell-waddle-audio-build-source-sha256.json": "802e78ab3717d2c5bbe4e2d3042f45c83bc0811874ae50b84114147ce5523e92",
+    "built-shell-waddle-audio-server.json": "fcd8505c77ead605444c579a75dc29728c354225bffd5d7be1fbea1cbf1117a1",
+    "built-shell-waddle-audio-server-runtime.json": "08d79f48dde571efdd612f15a87a6791cfe8cb8c89a436bc6a9ad3c2d27cd50d",
+    "built-shell-waddle-audio-server.log": "7a4d7c4c6f36fd6ed4b9532b3005e1b3bcb4eba764eb5aba5da477017e1349cf",
+    "built-shell-waddle-audio-browser.json": "ec1bb163df544ed80997d7f2095f4d886278687e10654d9a410e6ff264baac4e",
+    "built-shell-waddle-audio-recording-preview.png": "91f2adbb9308a27547f4b0caf5f76b310596229da37fb5f71e5f6633e476c2a2",
+    "built-shell-waddle-audio-publication-review.png": "142ae44098796f6a5d346d4208b159804d778865917ca5822420a5d509e16f1c",
+    "built-shell-waddle-audio-published-player.png": "47c2e8b656b07e0c56b8c0d79f480129f9f1e7d7ba6a0b023caffd29381b7564",
+    "waddle-private-audio-sql.json": "b72723d89a87fc8025b2ebb60145f7e32f4667a65e84f229d958d0990f7723b3",
+    "waddle-private-audio-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "waddle-private-audio-clip.tap": "a1d2050fe712a209eb3121f00c33559f3ca5fab1d956a1ab76b82cc0c466381c",
+    "waddle-private-audio-smoke.log": "fa9dcf1ec0ea63e349f96b293d29c7125ddde8216b572ab99ceb07474a7c2410"
+  }
+}

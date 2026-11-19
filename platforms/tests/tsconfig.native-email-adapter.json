@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.portable.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "typeRoots": ["../../node_modules/@types"],
+    "paths": {
+      "@/*": ["./*"],
+      "react-native": ["platforms/tests/native-email-adapter-types.d.ts"]
+    }
+  },
+  "include": [
+    "../native/src/circles/android-member.ts",
+    "../native/specs/NativeSoeMember.ts",
+    "native-email-adapter-types.d.ts"
+  ],
+  "exclude": []
+}

@@ -1,18 +1,13 @@
 // lib/thinkerActions.ts
 // Executes structured actions emitted by thinkers
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const ACTIONS_DELIMITER = '|||ACTIONS|||';
 
 export interface ThinkerAction {
   type: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 /**
@@ -45,6 +40,8 @@ export async function executeThinkerAction(
   memberId: string,
   thinkerId: string
 ): Promise<void> {
+  const supabaseAdmin = getSupabaseAdmin();
+
   switch (action.type) {
     case 'create_task':
       await supabaseAdmin.from('hub_tasks').insert({
@@ -99,7 +96,7 @@ export async function executeThinkerAction(
     }
 
     case 'award_exp': {
-      const amount = parseInt(action.data.amount) || 0;
+      const amount = parseInt(String(action.data.amount || ''), 10) || 0;
       if (amount > 0 && amount <= 500) {
         const { data: member } = await supabaseAdmin
           .from('members').select('exp_tokens').eq('id', memberId).single();

@@ -1,29 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { isUuid } from '@/lib/ids/uuid';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const ROOM_ACTIONS = new Set(['join', 'leave', 'end', 'transcript']);
+
+type RoomActionBody = {
+  action?: unknown;
+  memberId?: unknown;
+};
+
+async function safeRequestJson(req: NextRequest): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = await params;
-  const body = await req.json();
-  const { action, memberId, content, speakerName } = body;
-
-  if (action === 'join') {
-    await supabase.from('room_participants').upsert({ room_id: roomId, member_id: memberId, joined_at: new Date().toISOString() }, { onConflict: 'room_id,member_id' });
-    return NextResponse.json({ success: true });
-  }
-  if (action === 'leave') {
-    await supabase.from('room_participants').update({ left_at: new Date().toISOString() }).eq('room_id', roomId).eq('member_id', memberId);
-    return NextResponse.json({ success: true });
-  }
-  if (action === 'end') {
-    await supabase.from('video_rooms').update({ is_live: false, ended_at: new Date().toISOString() }).eq('id', roomId);
-    return NextResponse.json({ success: true });
-  }
-  if (action === 'transcript') {
-    await supabase.from('room_transcripts').insert({ room_id: roomId, member_id: memberId || null, speaker_name: speakerName || 'Unknown', content });
-    return NextResponse.json({ success: true });
+  if (!isUuid(roomId)) {
+    return privateJson({ error: 'Invalid room' }, { status: 400 });
   }
 
-  return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+  const body = await safeRequestJson(req);
+  if (!isRecord(body)) return privateJson({ error: 'Invalid body' }, { status: 400 });
+
+  const { action, memberId } = body as RoomActionBody;
+  if (typeof action !== 'string' || !ROOM_ACTIONS.has(action)) {
+    return privateJson({ error: 'Unknown action' }, { status: 400 });
+  }
+
+  const auth = await getAuthenticatedMember(req);
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+
+  if (typeof memberId === 'string' && memberId && memberId !== auth.memberId) {
+    return privateJson({ error: 'Cannot update another member room state' }, { status: 403 });
+  }
+
+  // A valid ID and verified identity do not establish authority over a room.
+  // Keep every legacy write closed until room/community/project membership and
+  // room-kind changes can be checked atomically. Live Council has its own route.
+  return privateJson({
+    error: 'Legacy room controls are unavailable. Use the dedicated Live Council controls for supported sessions.',
+    code: 'legacy_rooms_unavailable',
+  }, { status: 409 });
 }

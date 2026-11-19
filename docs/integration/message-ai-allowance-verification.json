@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "recordedAtUTC": "2026-11-04T18:05:27.739543+00:00",
+  "status": "HISTORICAL_LOCAL_SHARED_AI_ALLOWANCE_PASS_PRODUCTION_HOLD",
+  "priorCheckpoint": "37a020407556c6f62aef1021362a857d4ee684d2",
+  "behavior": {
+    "defaultEnabled": false,
+    "defaultGlobalLimit": 0,
+    "defaultReviewerLimit": 0,
+    "scope": "Lifetime cumulative request ceiling with owner-configured finite window; not a dollar cap.",
+    "refunds": false,
+    "automaticReset": false,
+    "reservationReplayAuthorizesSend": false,
+    "caseCompletenessCapUnchanged": 100
+  },
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Documents/Codex/soe-release",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 41.96,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 975,
+    "sourceSha256": "bc90e7d18385459f6a97868e2e3a8a07c787b06079e777682963d8008efb1192",
+    "sourceUnchangedDuringBuild": true,
+    "log": "verification/web/evidence/checkpoint-a21b399/next-build.log",
+    "buildId": "Pqr4Z3vBsZBCJv8EV3fhe"
+  },
+  "tests": {
+    "focused": {
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0,
+      "log": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-focused.log"
+    },
+    "database": {
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-db.log"
+    },
+    "composition": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "log": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-integration.log"
+    }
+  },
+  "focusedBreakdown": {
+    "adviceApi": 16,
+    "installedSdkSyntheticTransport": 14
+  },
+  "componentBrowser": {
+    "status": "PASS",
+    "stories": [
+      "author initial/no automatic settings read, explicit default-off check, keyboard policy confirmation, bound POST+freshGET and actual CSS at320px",
+      "assigned reviewer actual queue/case/advice shows counterevidence; provider receives exact message only; human decision fields remain blank and decision count0",
+      "author revoke actualPOST/readback blocks next reviewer advice with403 and zero additional provider calls",
+      "revoke+reenable during an actual in-flight request advances consent revision and suppresses stale advice409",
+      "blur retires actual held advice, aborts its server lifetime and prevents late private results or automatic restoration",
+      "logout retires actual held advice, aborts its server lifetime and prevents late private results or automatic restoration",
+      "committed consent mutation with lost reply stays unknown with no retry; explicit current-state read reveals the actual saved revocation",
+      "shared allowance retains all four prior debits including retired advice; exhaustion429 makes no new provider call or automatic retry and human review remains available"
+    ],
+    "provider": {
+      "synthetic": true,
+      "calls": 4,
+      "inputExactlyMessageText": true
+    },
+    "decisions": {
+      "expected": 0,
+      "observed": 0
+    },
+    "cleanup": {
+      "browser": "closed",
+      "database": "closed"
+    },
+    "limits": {
+      "database": "Tracked sanitized three-table catalog plus explicitly synthetic members/administrative roles/external child/default exceptions; not a hosted restore.",
+      "grants": "Broad synthetic extra defaults for ai_unrelated/PUBLIC stress only the new objects; no live role changes.",
+      "concurrency": "Single PGlite backend proves sequential CAS/recheck and transactional rollback, not multi-backend lock scheduling.",
+      "identity": "Actors and member records are synthetic. No JWT, selected-provider, issued credential, SDK or provider acceptance.",
+      "allowance": "Explicit synthetic owner activation, request counts only; no provider/account price or dollar-spend acceptance. PGlite has one backend; concurrent lock scheduling needs independent PostgreSQL sessions."
+    },
+    "scope": "Actual Contributions/consent/MessageReviews React components and Bun CSS modules, actual consent/safety/advice route modules and exact strict SQL chain in disposable PGlite. Existing offline NextResponse JSON/header + PostgREST/auth transports are explicit doubles; browser credential supplier, SDK event subscription and NextLink adapters are explicit. Provider is synthetic; no remote account/provider/SDK/device/hosted/deployment acceptance. Fixture body has16px padding; global Next/PostCSS/fonts excluded."
+  },
+  "componentEvidence": {
+    "apiRequests": 38,
+    "sourceBindings": 36,
+    "sqlHelperBindings": 16,
+    "allBindingsVerified": true
+  },
+  "builtBrowser": {
+    "status": "PASS",
+    "stories": 13,
+    "buildId": "Pqr4Z3vBsZBCJv8EV3fhe",
+    "ownedServerStopped": true,
+    "sourceBindingsVerified": 20
+  },
+  "reviews": {
+    "routeProvider": "Independent scoped source review clear.",
+    "sql": "Independent scoped source review clear after inherited service-role authority and elapsed reviewer-assignment fixes.",
+    "execution": "Database author ran16cases; root ran30route/provider and7actualrouteSQL cases; separate agent ran8composed+13built browser stories."
+  },
+  "originalCheckout": {
+    "unchangedFromBaseline": true,
+    "statusBytes": 26781,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "pathCount": 681
+  },
+  "production": {
+    "ready": false,
+    "schemaApplied": false,
+    "allowanceActivated": false,
+    "providerActivationPerformed": false,
+    "realProviderCalls": 0,
+    "liveProviderConfigurationInspected": false,
+    "deployments": 0,
+    "nativeBuilds": 0,
+    "sdkDownloads": 0,
+    "spending": 0
+  },
+  "limits": [
+    "PGlite is one backend; independent PostgreSQL-session contention remains unverified.",
+    "Authentication, PostgREST transport and provider output in composed tests are synthetic.",
+    "Provider/account dollar controls, pricing/terms and model evaluation require approved acceptance.",
+    "Live privacy repair, restore evidence, provider/deployment and native/device acceptance remain open.",
+    "No case above100open reports can be decided until its separate full-evidence workflow is implemented."
+  ],
+  "sourceSha256": {
+    "app/api/admin/circles/[circleId]/messages/[messageId]/advice/route.ts": "a303702312101510d1f3b92c4eb4339430d2c3ca6801915ffd6bc2613b0e27c4",
+    "docs/integration/message-ai-allowance.md": "6cf64cc074541b6ed72d4fc5acaf6dfcc87f6a2fdd1fae41d12bde8cf15d3e4b",
+    "docs/integration/message-ai-moderation.md": "1f085497359ea3b8a2dea410b006f20d5920d8b4bf3fb47122c8f30f3ab68cdd",
+    "docs/integration/message-ai-release-verification.json": "a03173a436a5bf2a0f856f1c867fbed645e0921c4f99c0bde59fd4315e55a62c",
+    "docs/sql/circle-message-ai-allowance.sql": "2e9c6f154e942a07a0b1813bea880a50af2697dd01cd023b51396f55852fdefd",
+    "lib/circles/message-ai-allowance.ts": "2c6a6d51a2938b9fecfb7f097975e543cf19ed795b6cc963de9882dce9609d26",
+    "lib/circles/message-ai-provider.ts": "8a8a3769df8134b2e62ba584a8af8eba129c7f0f8158ebbf52ede8d642996948",
+    "verification/web/README.md": "a0b1a61089b717454bfe48d98c2f2efb73043c099135968afa9db4bf484f4372",
+    "verification/web/tests/browser-message-ai.mjs": "3a34fa6d3cb7ecd31697b6edeba215c08f6d0a64cf69fd717012b52f7ae6e58f",
+    "verification/web/tests/message-ai-advice-api.test.mjs": "898ceb0a841d2389b889161fd37fa186174db7827347a80f733311912936a17c",
+    "verification/web/tests/message-ai-allowance-db.test.mjs": "f85acbd7fac8fee0eef04c8b4271c9667c5cd6504ffb5e26853b82ec8bccca71",
+    "verification/web/tests/message-ai-integration.test.mjs": "f3ce06928efb783158e6840bbdcb6857151355d881e14d12b5947acd7ec17dcb",
+    "verification/web/tests/message-ai-provider.test.mjs": "56c3d54a30b7a6a925b17a22f2284adaaaf8c7207077482c46ec1cdf5434e4de",
+    "verification/web/tests/support/message-ai-allowance-db.mjs": "ba30ef686877770dd36d499c224cda1c01c0298e93715626ade504d937baabfd",
+    "verification/web/tests/support/message-ai-app.mjs": "8e02dd055e1d71fad4413fde26bad79b7dbb1989bc90d7d0637596243064c8d5"
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/checkpoint-a21b399/next-build.json": "e88d9770ea593db73a8b8bb73ce2fa0cc17021338d2c80607ef57300c6a41ab7",
+    "verification/web/evidence/checkpoint-a21b399/next-build.log": "87c432eed0fa55819fb2a681e87c9193d58de72f4c7043a3eb2c0ba73f818cc1",
+    "verification/web/evidence/checkpoint-a21b399/build-source-sha256.json": "a73dfbeeef25f20f88749923093b596f4974f146f3f9c6cda64113626b34191a",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-focused.log": "670a112cd190f73e3ef5d435f87d4d8f49bd09af614388f4a4010063494edb68",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-db.log": "e09c536485fd42a6d1e1b483e65a401d50a7468b9b7b01d1bb998da4c09ff475",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-integration.log": "de8758812f19ca46a4a05fb28007e7b4a035d69db987a1f812a0e43c76fd7551",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-browser.json": "5c9855df36348b6d913357c0fd79a3eac974d923af7e372a947766fce4ebb7dc",
+    "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-browser.log": "7be664a6afe3ae49b829c4464861e96146de444ede427ffe2952c0c97c0ca468",
+    "verification/web/evidence/checkpoint-a21b399/browser-discovery-qa.json": "2422c07abc0fb036d7a9698ff9137bb86715d15ffec4cbec9806e0f90047b6e9",
+    "verification/web/evidence/checkpoint-a21b399/browser-discovery-allowance-final.log": "3023786036fd1794f12f00539bb8ec6a9f76352d09a15111a8df357563d8cfa2",
+    "verification/web/evidence/checkpoint-a21b399/original-status-allowance-check.json": "fee758176cdb38c71c34cf129833bc5e32ea95b765f37c2399832300b2eec352"
+  },
+  "historicalEvidence": {
+    "checkpoint": "37a0204",
+    "preservedPinnedFiles": 18,
+    "directory": "verification/web/evidence/checkpoint-37a0204",
+    "originalReceipt": "verification/web/evidence/checkpoint-37a0204/message-ai-release-verification.original.json",
+    "receipt": "docs/integration/message-ai-release-verification.json",
+    "scope": "Prior broad749/nonDOM and native15 evidence is historical; not rerun for this server-only change."
+  },
+  "checkpoint": "a21b399e5234fc9abe3230a56a75c197c3bbb588",
+  "evidenceArchive": {
+    "directory": "verification/web/evidence/checkpoint-a21b399",
+    "originalReceipt": "verification/web/evidence/checkpoint-a21b399/message-ai-allowance-verification.original.json",
+    "pinnedFiles": 12,
+    "scope": "Historical source/build/test snapshot before full report coverage; preserved bytes, not current source acceptance."
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "status": "PASS",
+  "recordedAt": "2026-11-08T12:25:57.979535+00:00",
+  "baseCommit": "98fd2725f18068cfaac98d1fb5e8cbd3f7c2dcc0",
+  "scope": "Two local program pages and one updated static assertion. No deployment, real identity, hosted/database/provider change or platform release.",
+  "buildInputs": 1236,
+  "canonicalResidentInputs": 1224,
+  "canonicalUnchangedGitBlobs": 12,
+  "canonicalBuildMismatches": [],
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 38.52,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1236,
+    "sourceSha256": "d425fcb23d3803a44d79f7453cae0ad7668ea2dc33b7cfbc7c3ec68f653c94c6",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/built-shell-salon-journey-05-next-build.log"
+  },
+  "scopedLint": "PASS: both pages and final browser harness",
+  "existingSourceChecks": 73,
+  "browserStories": [
+    "HTTP failure, invalid JSON, malformed envelope and invalid rows show a retryable failure, never a false empty list or available group.",
+    "Retry makes a fresh lookup; a verified empty fixture is distinct from failure and does not invent a membership threshold or a launch date.",
+    "The older program remains visible with its recorded full-capacity fixture; usable actions fit four widths and reach the actual separate four-week pilot.",
+    "A stalled request times out after ten seconds while navigation stays usable; a late retired reply does not replace a successful retry.",
+    "The existing checkout-return notice still points to verified billing and never turns a return URL into payment evidence.",
+    "Book salons route signed-out readers through explicit sign-in for the separate guide program, clarify optional AI and link to the actual pilot; navigation does not cover the heading at four widths.",
+    "Without a document presence hint the unchanged proxy returns the visitor to the home page; this verification does not weaken route access.",
+    "Once the document gate is passed, the program explanation and pilot navigation are available before data loads and with JavaScript disabled."
+  ],
+  "browserResult": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-member-finder/source/verification/web/evidence/salon-journey-browser-04/result.json",
+  "browserSourceHashes": {
+    "app/salon/page.tsx": "7c11ff31dcd1641a65bf58ea755ff82fa973d7ba783a2499790d96ae7fc2cce8",
+    "app/book-salons/page.tsx": "3a742aa6b586cfc72c9f83fe7911ff2e4b9aa49f01d4eafd618758b76370e034",
+    "verification/web/scripts/browser-salon-journeys.mjs": "90fabab9854a16c6109f2682460e92d76b5bc05995a37923cd68e82d6b62bfa4"
+  },
+  "browserExternalRequests": 0,
+  "browserErrors": [],
+  "browserClosed": true,
+  "exactCheckoutViewEventIntercepted": [
+    {
+      "event": "checkout_welcome_view",
+      "props": {
+        "path": "/salon"
+      }
+    }
+  ],
+  "serverStopped": "owned-process-stopped",
+  "portClosed": true,
+  "runtimeSourceMismatches": [],
+  "runtimeBuildMismatches": [],
+  "runtimeInputMismatches": [],
+  "sourceHashes": {
+    "app/salon/page.tsx": "7c11ff31dcd1641a65bf58ea755ff82fa973d7ba783a2499790d96ae7fc2cce8",
+    "app/book-salons/page.tsx": "3a742aa6b586cfc72c9f83fe7911ff2e4b9aa49f01d4eafd618758b76370e034",
+    "scripts/external-effect-lazy-clients-smoke.mjs": "09ed539ffe7cd4ab5a8c2021a16ced18263085eab791a1e1b8ee2c4fcfe74232",
+    "verification/web/scripts/browser-salon-journeys.mjs": "90fabab9854a16c6109f2682460e92d76b5bc05995a37923cd68e82d6b62bfa4"
+  },
+  "preserved": {
+    "guideMembershipEffectAndJoin": true,
+    "bookSalonDataAndMembershipHandlers": true,
+    "proxy": true,
+    "checkoutNotice": true,
+    "apiHandlers": true
+  },
+  "browserIdentity": "Nonissued loopback cookie only passes the unchanged document-presence gate; every API identity reply is synthetically signed out. No real authentication is established.",
+  "visualReview": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-salon-journey/VISUAL_REVIEW.json",
+  "retainedCorrections": [
+    {
+      "stage": "salon-journey-web-build-01",
+      "reason": "Old helper failed to quote a path with spaces; replaced by existing correct offline build helper."
+    },
+    {
+      "stage": "salon-journey-smoke-before",
+      "reason": "One exact-source assertion needed the new cancellation signal; assertion updated and all 73 pass."
+    },
+    {
+      "stage": "salon-journey-browser-01",
+      "reason": "Anonymous document redirected by unchanged proxy; added explicit nonissued presence fixture and separate original-redirect test."
+    },
+    {
+      "stage": "salon-journey-browser-02",
+      "reason": "Real 320px layout overflow fixed in book-salon steps. Existing checkout analytics event is now intercepted by exact payload; never forwarded."
+    },
+    {
+      "stage": "salon-journey-browser-03",
+      "reason": "All behavior passed; final screenshots now finish finite page animation before capture."
+    }
+  ],
+  "storage": {
+    "minimumSampledFreeBytes": 15763345408,
+    "maximumSampledPrivateAllocatedBytes": 19037421568,
+    "newInstall": false,
+    "deletedFiles": false
+  },
+  "stages": {
+    "salon-journey-web-build-05": {
+      "status": "PASS",
+      "seconds": 41.92,
+      "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/salon-journey-web-build-05.json"
+    },
+    "salon-journey-lint-03": {
+      "status": "PASS",
+      "seconds": 5.35,
+      "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/salon-journey-lint-03.json"
+    },
+    "salon-journey-lint-04": {
+      "status": "PASS",
+      "seconds": 5.32,
+      "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/salon-journey-lint-04.json"
+    },
+    "salon-journey-smoke-final": {
+      "status": "PASS",
+      "seconds": 3.2,
+      "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/salon-journey-smoke-final.json"
+    },
+    "salon-journey-browser-04": {
+      "status": "PASS",
+      "seconds": 18.91,
+      "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Toolchains/android-2026-11-08/evidence/salon-journey-browser-04.json"
+    }
+  },
+  "privateEvidence": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-salon-journey",
+  "launchBlockers": [
+    "Coherent hosted source capture and independently verified restoration/media consistency.",
+    "Hosted access/privacy and real provider/account acceptance.",
+    "Older guide private-detail authentication, wallet/session retirement, list counts and creation atomicity remain unverified.",
+    "Actual host/schedule and physical-device acceptance."
+  ],
+  "migrationRequired": false,
+  "spentUsd": 0,
+  "newCredentialsUsed": false,
+  "productionCleared": false
+}

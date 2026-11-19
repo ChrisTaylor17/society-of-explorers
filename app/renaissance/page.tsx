@@ -43,7 +43,7 @@ export default function RenaissancePage() {
         style={{
           minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '8rem 2rem 6rem', position: 'relative',
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url("/images/hero-renaissance.jpeg")',
+          backgroundImage: 'radial-gradient(ellipse at 25% 15%, rgba(201,168,76,0.18), transparent 55%), linear-gradient(135deg, #111 0%, #0a0a0a 70%)',
           backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
         }}
       >
@@ -66,13 +66,13 @@ export default function RenaissancePage() {
             In 1400, Florence was a banking town. By 1500, it had produced Leonardo, Michelangelo, Machiavelli, and Botticelli. What changed? A small group of patrons, thinkers, and makers decided that human excellence was worth funding, practicing, and celebrating. They built guilds. They hosted salons. They trained polymaths.
           </p>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2rem' }}>
-            Today, the same ingredients exist — but scattered. AI gives us access to the greatest teachers in history. Blockchain gives us transparent, trustless coordination. Philosophy gives us the framework to ask what's worth building. Music, travel, and community give us the soil.
+            Today, the same ingredients exist — but scattered. AI gives us access to the greatest teachers in history. Blockchain gives us transparent, trustless coordination. Philosophy gives us the framework to ask what&apos;s worth building. Music, travel, and community give us the soil.
           </p>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2rem' }}>
-            What's missing is the guild. The place where these threads come together. The institution that takes becoming a complete human being as seriously as universities take specialization.
+            What&apos;s missing is the guild. The place where these threads come together. The institution that takes becoming a complete human being as seriously as universities take specialization.
           </p>
           <p style={{ fontSize: '20px', color: parchment, lineHeight: 1.9, fontWeight: 500 }}>
-            That's Society of Explorers.
+            That&apos;s Society of Explorers.
           </p>
         </div>
       </section>
@@ -122,7 +122,7 @@ export default function RenaissancePage() {
             This is an invitation.
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2.5rem' }}>
-            The Renaissance didn't happen to everyone. It happened to the people who showed up. The salon is open. The thinkers are waiting. The guild is forming.
+            The Renaissance didn&apos;t happen to everyone. It happened to the people who showed up. The salon is open. The thinkers are waiting. The guild is forming.
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a

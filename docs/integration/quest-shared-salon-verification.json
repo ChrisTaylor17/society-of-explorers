@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T21:34:05.016206+00:00",
+  "baseCheckpoint": "1683becf8463b9f50ab4b9762a9e0a60114b7720",
+  "status": "LOCAL_SHARED_SALON_PRESENCE_PASS_PRODUCTION_HOLD",
+  "pilotDefaultsEnabled": false,
+  "hostedVerified": false,
+  "physicalHeadsetVerified": false,
+  "immersiveVoiceVerified": false,
+  "sharedSalon": {
+    "path": "platforms/evidence/quest-salon-immersive-salon-04.json",
+    "sha256": "83314912687b776ddf483c5465c60f14de79b87996a11d7ff06c4650da591d46",
+    "scenarios": 8,
+    "browserHandlerRequests": 33,
+    "isolatedBrowserContexts": 2,
+    "runtime": "Chromium with one simulated WebXR headset, intercepted HTTPS and synthetic account authority"
+  },
+  "discussionRegression": {
+    "path": "platforms/evidence/quest-member-composed-immersive-salon-04.json",
+    "sha256": "a640e625240f759976915a0ece79ad20cd59646c9fbe77aae3d51ee36a2fd886",
+    "scenarios": 16,
+    "handlerRequests": 46
+  },
+  "nativePostgresLocks": {
+    "path": "verification/web/evidence/salon-presence-locks-01.json",
+    "sha256": "28aca57fc3e59b4810b71b57d156f35f789ec90ffafe0fa104232f0214a6087f",
+    "cases": 3,
+    "server": "17.11 (Homebrew)",
+    "clusterStopped": true
+  },
+  "builtApp": {
+    "id": "i5YBVn9Yvdy039fygsviU",
+    "build": {
+      "path": "verification/web/evidence/built-shell-shared-salon-02-next-build.json",
+      "sha256": "94768c917fd47e3993803e6dfdeb9430d5cc4190b346314e5bfc48bc3e89cac5"
+    },
+    "browser": {
+      "path": "verification/web/evidence/quest-immersive-built-07/browser.json",
+      "sha256": "16d012d2a308fe520f34a6e1e971ea2a2513d4e3c2e4292ad10c5a60a0b9efd9"
+    },
+    "pilotAndOrigin": {
+      "path": "verification/web/evidence/built-shell-shared-salon-switch-02.json",
+      "sha256": "5a4d584ba23198b360e5cef25699abbb2b43f1f43fc6e213e3a59769e486af80"
+    },
+    "defaultServer": {
+      "path": "verification/web/evidence/built-shell-quest-shared-salon-02-server.json",
+      "sha256": "70614feef9284cb37a4ad0f8064bdc1ea978b6c9af6c840ea59e88d7dbc048c7"
+    },
+    "enabledRuntime": {
+      "path": "verification/web/evidence/built-shell-shared-salon-enabled-runtime-02.json",
+      "sha256": "08b07e60163a758307dc0803550b4b326194a15ec3713a31238b67a144cbfc8b"
+    },
+    "portsClosed": [
+      38477,
+      38478
+    ],
+    "typecheckPassed": true,
+    "scopedLintPassed": true
+  },
+  "limits": [
+    "The composed account authority uses synthetic identities and disposable SQL.",
+    "The headset events are simulated and the renderer runs in Chromium.",
+    "The lock rehearsal uses separate PostgreSQL connections and a minimal synthetic schema.",
+    "The built app uses invalid public placeholders and checks the pilot switch and origin handling without hosted accounts."
+  ]
+}

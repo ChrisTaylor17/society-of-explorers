@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T08:27:42.705531+00:00",
+  "baseCommit": "9de49c9bd00de9c6dc24cdaa63e7bcacbc0640d3",
+  "status": "LOCAL_QUEST_READING_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "scope": "Current verified Circle membership and the current assigned range for a pinned edition. The headset uses the existing anonymous passage route, edition and metadata checks, and the existing shared salon seat when available.",
+  "checks": {
+    "sharedSalonScenarios": 18,
+    "sharedSalonHandlerRequests": 112,
+    "discussionScenarios": 20,
+    "discussionHandlerRequests": 75,
+    "paginationTests": 2,
+    "readingAndPassageHttpOrSqlTests": 36,
+    "productionModeWebBuild": "passed",
+    "builtBrowserStories": 3,
+    "scopedLint": "passed",
+    "localWebGLPanelInspected": true
+  },
+  "readingScenarios": [
+    "A starter week without a pinned edition offers the regular Circle and keeps the shared seat",
+    "The headset opens the exact current assignment without credentials on passage requests, shows a table in place, and pages through all text with edition credits",
+    "Shared check-in renews while reading and survives Back. Membership removal clears the headset reading and seat",
+    "Standalone reading refuses mismatched source coordinates, retries the same block, and asks the member to reopen a changed assignment",
+    "A verified source response released after headset focus loss cannot repopulate the cleared panel"
+  ],
+  "composedEnvironment": "Actual Quest component, controller, canvas, Chromium WebGL, canonical HTTP handlers, pinned public source bytes and disposable PGlite. Synthetic account, headset events and HTTPS transport.",
+  "builtEnvironment": "Guarded loopback Next.js production-mode build, signed-out and invalid route checks, browser closure and owned server cleanup.",
+  "fixtureCorrection": "The older Circle creation HTTP fixture lacked its reviewed member ID. It now exercises the current request contract and verifies that identity is removed from the SQL listing payload.",
+  "limits": "The sample reading used the pinned Apology edition. Physical headset focus, comfort, controller use and readability, actual provider sessions, and hosted privacy repair remain open.",
+  "sourceSha256": {
+    "RELEASE_STATUS.md": "4503850f10f061e65766b49cbbc305521d6537914ebb0f703d46f23cc9ab486d",
+    "docs/integration/quest-immersive-discussion.md": "4ac2c8ae4329d5c4b7c8cb4808c12e64a4a3d28ecf8b63eb06c7c0d2001f6340",
+    "docs/integration/quest-shared-salon.md": "51e809ba143cd391f00d0f169a329aebb9312788e4b0c02d4c8daf58e2631cc1",
+    "app/quest/page.tsx": "3e4bc272f1bfbd86ddded8bcb9613ccd1a039dac5a2b7f02b2abd76280a76302",
+    "app/quest/[circleId]/QuestCircle.tsx": "4bcf04d2889db14d3de8fc969c07de89b2cb8fe65748aae69d9934e0bdb35b70",
+    "platforms/shared/quest-entry.ts": "4fde93caaad4bf57e8b6ef83c8a0d90bfb2367cc883c9c1403146aad3e404031",
+    "platforms/scripts/bundle-shared.mjs": "f6677f8c6513c32abb7490ad4f8659d28c86ba860fde1280f11f90ba478c54ea",
+    "platforms/quest/circle-host.mjs": "e6f0129812e9629ec24c9272aa450c38b1569b1a323d78ea1197997dfcf42797",
+    "platforms/quest/immersive-circle.mjs": "9c6bd61173a67355a1fd91f932b0003a324c821a0c4808a3dc2c7d02d9355ba5",
+    "platforms/quest/room-reading.mjs": "82da572a2b437a2d2810f5d7ac9945e63caab6aee524e5164d2575003a1447b4",
+    "platforms/quest/xr-room.mjs": "c68efcf541e6067ba8bc73340aad2f7f1876d50798d9d5607b499831ab4578b2",
+    "platforms/tests/browser-quest-salon-presence.mjs": "a7ff00f9ef02e9e8fa0fd5aaa1fe9d0c0cc10587915e0e8b73032d8906ede62d",
+    "platforms/tests/quest-reading-pages.test.mjs": "e20a11d4638d3d6612ddcbae4ddb91b341441a7ab43e405a1d1d3c077fc37ee4",
+    "verification/web/tests/support/quest-member-app.mjs": "1934a34bee7f4ec595912d7758e652bb63687938f64a279147b3d82e9b0e4bc7",
+    "verification/web/tests/reading-program-http.test.mjs": "541713e27ad8d17067316ea81c08560bc6222601e76ad2aa874a1275f63b4133"
+  },
+  "proofs": [
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/salon-composed.json",
+      "sha256": "621f2d762647f89634b1609ca9e2fd812b9dea5865441c6ae07d082d8cc127e0"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/discussion-composed.json",
+      "sha256": "4b4cd1ad2dc8445c3c1deea978d03e3b01087a585f58be984e6b82f7c176fb34"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/reading-panel.png",
+      "sha256": "8db337ac0cacc58414f905d0fa69ed310a9e247c51035e334098262c7478fca1"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/shared-build.json",
+      "sha256": "7ae76dd9b8668d737769c15d81e9eac36acb6afdc370165e2d8b679563e0eb30"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/pagination.log",
+      "sha256": "c04d6567c2f461b266c6e17018b17ef60e9339e65f1bb16402a6fbc0444c03db"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/reading-http-and-sql.log",
+      "sha256": "4af049d6cd14230909a369aa4130f98917a568773eb10206116b15c85208f20a"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/next-build.json",
+      "sha256": "0712df6bc51d865c8bd3826a3f640f9e221a2c0da400597e3df6b6057596f241"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/next-build-sources.json",
+      "sha256": "adf5e1ece5ee40c2f2ad8a6ed83c18b2eeca396a8140ccb9f4fc38374d9a0524"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/guarded-server.json",
+      "sha256": "5e91f22f766bdb42a517eee80e6b82eb50e6bd731ed497f942b5a40f6b7b6689"
+    },
+    {
+      "path": "verification/web/evidence/quest-immersive-reading-2026-11-06/built-browser.json",
+      "sha256": "acccad78cc8bae1611d36d3e3b4e8235529b9f4f672ac592aed4c0458ac0bc2b"
+    }
+  ],
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  }
+}

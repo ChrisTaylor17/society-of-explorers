@@ -1,0 +1,423 @@
+bun test v1.4.2 (744846f84)
+
+tests/security/s1-member-identity.test.ts:
+(pass) S1a thinker: body memberId cannot impersonate another member (salon mode -> 401, no model call) [26.13ms]
+(pass) S1b thinker: body walletMemberId in council mode does not attach victim identity or award victim EXP [22.58ms]
+(pass) S1c getAuthenticatedMember: a raw member UUID in the soe_wallet_id cookie is not accepted as identity [0.64ms]
+(pass) S1d SIWE login issues a signed httpOnly soe_wallet_id session that authenticates the signer only [3.11ms]
+(pass) S1e fails closed when no server secret is configured, or the secret changes [0.72ms]
+(pass) S1f new sessions carry a server-checked expiry (v2); expired or far-future ones are refused [1.28ms]
+(pass) S1g legacy v1 cookies (issued before this release) keep working only until the cutoff [0.93ms]
+
+ 7 pass
+ 0 fail
+ 23 expect() calls
+Ran 7 tests across 1 file. [68.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s1b-body-member-routes.test.ts:
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > artifacts/generate [26.53ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > book-salons/[cohortId] POST [23.25ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > book-salons/join [22.68ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > book-salons POST [22.91ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/join [22.98ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/matches GET [22.39ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/matches POST [21.96ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/products POST [22.91ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities/[slug]/questionnaire POST [23.17ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > communities POST [22.64ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > exp/award [22.85ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > great-books/progress GET [22.58ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > great-books/progress POST [21.92ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > live/[sessionId] [23.26ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > member/wallet [22.76ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > members/onboarding [22.59ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > members/profile [22.61ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > onboarding/send-all (needs CRON_SECRET) [22.46ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > practice/respond [22.88ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > ritual [23.01ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > rooms/[roomId] [22.52ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > rooms POST [23.44ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > safe GET [22.69ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > social/generate [22.55ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > store/buy [23.76ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > tasks POST [22.43ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > thinker/extract-facts (fails closed without CRON_SECRET) [23.27ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > thinker/memory [22.63ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > transactions/approve [22.96ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > twiddle/[id]/react [22.90ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > twiddle/[id] PATCH [23.01ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > twiddle POST [23.69ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > voice-notes/generate [23.06ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/annotate [23.63ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/match GET [23.30ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/scan/verify [23.71ms]
+(pass) no session + body/query/header memberId=JULES -> refused (400/401/403) and no writes > world/spaces POST [22.78ms]
+(pass) optional-identity routes: no session -> never acts as JULES > great-books/annotate does not attribute to body memberId [26.30ms]
+(pass) optional-identity routes: no session -> never acts as JULES > twiddle/[id]/respond does not load JULES memory or attribute to JULES [24.82ms]
+(pass) optional-identity routes: no session -> never acts as JULES > communities GET ignores x-member-id header [22.83ms]
+(pass) optional-identity routes: no session -> never acts as JULES > store/balance GET ignores ?memberId [23.74ms]
+(pass) optional-identity routes: no session -> never acts as JULES > twiddle GET filter=my ignores ?memberId [22.62ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > exp/award credits the session member, not the body member [24.07ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > tasks POST owns the task as the session member [25.39ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > world/annotate uses the session member auth id as author [24.01ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > rooms/[roomId] end by a non-creator is refused (400/403) [0.52ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > live/[sessionId] end by a non-creator is refused (400/403) [0.46ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > communities/[slug]/matches POST cannot accept someone else's match (403) [0.43ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > world/scan/verify: body reviewerId cannot impersonate the space host (403) [0.49ms]
+(pass) signed session ADA + body memberId=JULES -> acts as ADA only > onboarding/send-all accepts the cron bearer [0.16ms]
+
+ 50 pass
+ 0 fail
+ 177 expect() calls
+Ran 50 tests across 1 file. [1060.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s1c-edge-wallet-cookie.test.ts:
+{"event":"movement.pod.match.audit","phase":"auth_rejected","level":"warn","audit_id":"a4b468e8-80bb-4946-9e8f-63a24890f4f4","at":"2026-10-23T14:26:12.610Z","elapsed_ms":0.53,"source_member_authenticated":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > match: soe_wallet_id=JULES alone -> 401 [3.51ms]
+{"event":"movement.pod.match.audit","phase":"auth_rejected","level":"warn","audit_id":"04fec9f1-18f0-4e2c-bc0e-11c85b9c4f42","at":"2026-10-23T14:26:12.611Z","elapsed_ms":0.37,"source_member_authenticated":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > match: forged signature -> 401 [1.31ms]
+{"event":"movement.project.create.audit","phase":"auth_rejected","level":"warn","audit_id":"bbe959e4-402b-4c47-898e-1ab40808b25c","at":"2026-10-23T14:26:12.613Z","elapsed_ms":0.19,"caller_authenticated":false,"project_scaffolded":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/create: soe_wallet_id=JULES alone -> 401 [1.33ms]
+{"event":"movement.project.create.audit","phase":"auth_rejected","level":"warn","audit_id":"f183ec33-54dc-4917-8f10-b9bdf97b7cc5","at":"2026-10-23T14:26:12.613Z","elapsed_ms":0.13,"caller_authenticated":false,"project_scaffolded":false,"http_status":401}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/create: forged signature -> 401 [0.44ms]
+{"event":"movement.project.invite.audit","phase":"request_received","level":"info","audit_id":"fbda7f28-48e4-4b7e-b60b-558371b70ba2","at":"2026-10-23T14:26:12.615Z","elapsed_ms":0.06,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{}}
+{"event":"movement.project.invite.audit","phase":"validation_rejected","level":"warn","audit_id":"fbda7f28-48e4-4b7e-b60b-558371b70ba2","at":"2026-10-23T14:26:12.616Z","elapsed_ms":0.47,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{"env_ms":0.03,"auth_ms":0.12},"http_status":401,"error":"Unauthorized"}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/invite: soe_wallet_id=JULES alone -> 401 [2.64ms]
+{"event":"movement.project.invite.audit","phase":"request_received","level":"info","audit_id":"f3098681-8fc4-4684-a8ab-7a9b7dd0c937","at":"2026-10-23T14:26:12.616Z","elapsed_ms":0.01,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{}}
+{"event":"movement.project.invite.audit","phase":"validation_rejected","level":"warn","audit_id":"f3098681-8fc4-4684-a8ab-7a9b7dd0c937","at":"2026-10-23T14:26:12.616Z","elapsed_ms":0.29,"route":"/x","method":"POST","region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"timings_ms":{"env_ms":0,"auth_ms":0.25},"http_status":401,"error":"Unauthorized"}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > projects/invite: forged signature -> 401 [0.52ms]
+{"event":"movement.pod.sync.audit","phase":"request_received","level":"info","audit_id":"df00b767-9a8a-4bf0-bf8a-c2ddf0c9f7df","at":"2026-10-23T14:26:12.617Z","elapsed_ms":0.1,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{}}
+{"event":"movement.pod.sync.audit","phase":"auth_rejected","level":"warn","audit_id":"df00b767-9a8a-4bf0-bf8a-c2ddf0c9f7df","at":"2026-10-23T14:26:12.618Z","elapsed_ms":0.68,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{"env_ms":0.03,"auth_ms":0.1},"http_status":401,"error":"Unauthorized","error_kind":"auth","private_context_redacted":false}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > movement/pod/sync: soe_wallet_id=JULES alone -> 401 [1.76ms]
+{"event":"movement.pod.sync.audit","phase":"request_received","level":"info","audit_id":"a093eee2-0703-488d-81d7-52457dc3962c","at":"2026-10-23T14:26:12.619Z","elapsed_ms":0.01,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{}}
+{"event":"movement.pod.sync.audit","phase":"auth_rejected","level":"warn","audit_id":"a093eee2-0703-488d-81d7-52457dc3962c","at":"2026-10-23T14:26:12.619Z","elapsed_ms":0.32,"route":"/x","method":"POST","stream":false,"region":null,"request":{"content_length":null,"user_agent":null,"bearer_present":false,"wallet_cookie_present":true},"member_authenticated":false,"device_id_present":false,"commitment_present":false,"timings_ms":{"env_ms":0,"auth_ms":0.25},"http_status":401,"error":"Unauthorized","error_kind":"auth","private_context_redacted":false}
+(pass) raw soe_wallet_id cookie is not identity on edge routes > movement/pod/sync: forged signature -> 401 [1.24ms]
+(pass) the shared Web Crypto verifier works for edge routes > verifier uses only Web Crypto (no node:crypto import), so it runs on the edge runtime [2.53ms]
+(pass) the shared Web Crypto verifier works for edge routes > accepts a genuine session, rejects forged / raw / wrong-secret [0.60ms]
+{"event":"movement.pod.match.audit","phase":"validation_rejected","level":"warn","audit_id":"b2f4a7ef-dde7-4c49-bdf2-3c0b5206b0aa","at":"2026-10-23T14:26:12.623Z","elapsed_ms":0.59,"source_member_authenticated":false,"http_status":400,"error":"Missing projection payload."}
+(pass) the shared Web Crypto verifier works for edge routes > match: a signed session passes authentication (not 401) [0.87ms]
+
+ 11 pass
+ 0 fail
+ 15 expect() calls
+Ran 11 tests across 1 file. [24.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s2-memory-isolation.test.ts:
+(pass) S2a shared-salon summary never folds another member's words into Ada's memory [23.39ms]
+(pass) S2b a member cannot pull another member's private salon into their prompt [24.17ms]
+[memory] Facts extracted for 11111111-1111-4111-8111-111111111111/socrates: 0 facts, 0 interests, 0 commitments
+(pass) S2c Ada's own private salon still feeds Ada's memory (feature preserved) [22.93ms]
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":1}
+(pass) S2d Ada can still use her own private salon through the thinker route [23.83ms]
+
+ 4 pass
+ 0 fail
+ 8 expect() calls
+Ran 4 tests across 1 file. [110.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s3-siwe-nonce.test.ts:
+(pass) nonce route binds the nonce in a signed httpOnly short-lived cookie [2.08ms]
+(pass) siwe without the nonce cookie is refused [0.74ms]
+(pass) siwe passes the expected nonce to verify and rejects a mismatched message [1.06ms]
+(pass) siwe with a matching nonce succeeds and clears the nonce cookie [1.11ms]
+(pass) a forged (unsigned, attacker-chosen) nonce cookie is refused before verify [0.11ms]
+(pass) an expired signed nonce cookie is refused [0.20ms]
+
+ 6 pass
+ 0 fail
+ 13 expect() calls
+Ran 6 tests across 1 file. [16.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s4-rate-limit.test.ts:
+(pass) rate limiter module exists [1.29ms]
+(pass) anonymous council is refused before any model call (production requires sign-in) [27.20ms]
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":1}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":1}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+(pass) anonymous demo is limited per IP; the over-limit call makes no model call [685.48ms]
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+(pass) demo mode is limited too [658.38ms]
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"default","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":1}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+[claude] {"provider":"anthropic-direct","purpose":"council","model":"claude-sonnet-4-6","operation":"messages.stream","latencyMs":0}
+(pass) signed-in members get their own (larger) budget, not the IP one, and are limited too [698.17ms]
+(pass) limiter unit: fixed window, independent keys [0.26ms]
+
+ 6 pass
+ 0 fail
+ 48 expect() calls
+Ran 6 tests across 1 file. [2.08s]
+bun test v1.4.2 (744846f84)
+
+tests/security/s5-markdown-escape.test.ts:
+(pass) raw HTML is escaped [0.30ms]
+(pass) attribute breakouts are escaped [0.05ms]
+(pass) markdown still renders [0.06ms]
+
+ 3 pass
+ 0 fail
+ 9 expect() calls
+Ran 3 tests across 1 file. [6.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s6-verdict-endpoint.test.ts:
+(pass) S6a unauthenticated verdict request is refused before any paid model call or write [1.49ms]
+(pass) S6b owner comes from the session, not body memberId [1.07ms]
+(pass) S6c verdict is private by default; public only on explicit opt-in [0.64ms]
+(pass) S6d a member cannot overwrite another member's council session by reusing its sessionId [0.22ms]
+
+ 4 pass
+ 0 fail
+ 13 expect() calls
+Ran 4 tests across 1 file. [11.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s7-no-hardcoded-ref.test.ts:
+(pass) no hard-coded sb-<ref>-auth-token cookie names in source [10.53ms]
+(pass) proxy matches Supabase auth cookies generically [0.08ms]
+
+ 2 pass
+ 0 fail
+ 2 expect() calls
+Ran 2 tests across 1 file. [17.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s8-salon-message-load.test.ts:
+(pass) anonymous -> 401 [1.38ms]
+(pass) another member's private salon -> refused, no content [1.27ms]
+(pass) salon the caller is not a member of -> 403, no content [1.37ms]
+(pass) raw member UUID cookie is not identity -> 401 [0.09ms]
+(pass) private-<id> salons are never served by this endpoint (production rule kept); general works [1.53ms]
+(pass) member of the members-only salon can read it [0.38ms]
+
+ 6 pass
+ 0 fail
+ 12 expect() calls
+Ran 6 tests across 1 file. [13.00ms]
+bun test v1.4.2 (744846f84)
+
+tests/security/s9-salon-message-post.test.ts:
+(pass) anonymous -> 401 and nothing is written [1.38ms]
+(pass) raw soe_wallet_id cookie is not identity -> 401 [0.17ms]
+(pass) author comes from the session; body sender_name/sender_type/thinker_id/member ids ignored [2.06ms]
+(pass) posting into another member's private salon -> refused [0.29ms]
+(pass) private-<id> salons are written only server-side (thinker/onboarding), not via this endpoint [0.19ms]
+(pass) salon the caller neither owns nor belongs to -> 403 [0.42ms]
+(pass) salon owner (guide) may post even without a salon_members row [0.61ms]
+(pass) listed salon member may post [0.82ms]
+(pass) unknown or malformed salon id -> refused (fail closed) [0.41ms]
+(pass) empty or non-string content -> 400; oversized content is capped at 4000 chars (production rule) [0.54ms]
+
+ 10 pass
+ 0 fail
+ 28 expect() calls
+Ran 10 tests across 1 file. [13.00ms]

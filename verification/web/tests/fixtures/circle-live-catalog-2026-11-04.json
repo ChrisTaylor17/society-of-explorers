@@ -1,0 +1,2360 @@
+{
+  "observedAtUTC": "2026-11-04 15:03:24 UTC (collection start)",
+  "projectRef": "woqvlkeluxkxplpgzdgv",
+  "scope": "Exactly three legacy Circle tables; read-only repeatable-read transaction; 2s statement timeout; pg_catalog metadata only. No rows, function bodies, credentials, app SDK or public RPCs.",
+  "sanitization": {
+    "unknownSQLStringLiteralsRedacted": true,
+    "uuidLiteralsRedacted": true,
+    "unknownTriggerFunctionSettingsRedacted": true,
+    "redactionCount": 1,
+    "rawExpressionDigests": "PostgreSQL MD5 fingerprints retained; no unknown raw literal retained."
+  },
+  "query": "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET LOCAL statement_timeout='2s';\nSET LOCAL lock_timeout='1s';\nSET LOCAL search_path=pg_catalog;\nWITH targets AS (\n SELECT c.* FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace\n WHERE n.nspname='public' AND c.relname IN ('book_cohorts','book_cohort_members','seminar_messages')\n), browser_roles AS (\n SELECT oid,rolname,rolsuper,rolbypassrls,rolinherit,rolcanlogin FROM pg_catalog.pg_roles WHERE rolname IN ('anon','authenticated','service_role')\n)\nSELECT jsonb_build_object(\n 'tables',COALESCE((SELECT jsonb_agg(jsonb_build_object('name',c.relname,'owner',pg_catalog.pg_get_userbyid(c.relowner),'kind',c.relkind,'is_partition',c.relispartition,'has_subclass',c.relhassubclass,'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity) ORDER BY c.relname) FROM targets c),'[]'::jsonb),\n 'columns',COALESCE((SELECT jsonb_agg(jsonb_build_object('table',c.relname,'number',a.attnum,'name',a.attname,'type',pg_catalog.format_type(a.atttypid,a.atttypmod),'not_null',a.attnotnull,'identity',a.attidentity,'generated',a.attgenerated,'collation',CASE WHEN a.attcollation=0 THEN NULL ELSE a.attcollation::regcollation::text END,'default_expression',pg_catalog.pg_get_expr(d.adbin,d.adrelid),'default_md5',pg_catalog.md5(pg_catalog.pg_get_expr(d.adbin,d.adrelid)),'acl',COALESCE((SELECT jsonb_agg(jsonb_build_object('grantor',pg_catalog.pg_get_userbyid(x.grantor),'grantee',CASE WHEN x.grantee=0 THEN 'PUBLIC' ELSE pg_catalog.pg_get_userbyid(x.grantee) END,'privilege',x.privilege_type,'grantable',x.is_grantable) ORDER BY x.grantor,x.grantee,x.privilege_type) FROM pg_catalog.aclexplode(a.attacl) x),'[]'::jsonb)) ORDER BY c.relname,a.attnum) FROM targets c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid=c.oid AND d.adnum=a.attnum),'[]'::jsonb),\n 'constraints',COALESCE((SELECT jsonb_agg(jsonb_build_object('table',c.relname,'name',k.conname,'type',k.contype,'validated',k.convalidated,'deferrable',k.condeferrable,'initially_deferred',k.condeferred,'no_inherit',k.connoinherit,'definition',pg_catalog.pg_get_constraintdef(k.oid),'definition_md5',pg_catalog.md5(pg_catalog.pg_get_constraintdef(k.oid))) ORDER BY c.relname,k.conname) FROM targets c JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid),'[]'::jsonb),\n 'indexes',COALESCE((SELECT jsonb_agg(jsonb_build_object('table',c.relname,'name',i.relname,'unique',x.indisunique,'primary',x.indisprimary,'valid',x.indisvalid,'ready',x.indisready,'immediate',x.indimmediate,'nulls_not_distinct',x.indnullsnotdistinct,'key_count',x.indnkeyatts,'definition',pg_catalog.pg_get_indexdef(i.oid),'definition_md5',pg_catalog.md5(pg_catalog.pg_get_indexdef(i.oid))) ORDER BY c.relname,i.relname) FROM targets c JOIN pg_catalog.pg_index x ON x.indrelid=c.oid JOIN pg_catalog.pg_class i ON i.oid=x.indexrelid),'[]'::jsonb),\n 'triggers',COALESCE((SELECT jsonb_agg(jsonb_build_object('table',c.relname,'name',t.tgname,'type',t.tgtype,'enabled',t.tgenabled,'internal',t.tgisinternal,'argument_count',t.tgnargs,'update_columns',t.tgattr::text,'deferrable',t.tgdeferrable,'initially_deferred',t.tginitdeferred,'definition',pg_catalog.pg_get_triggerdef(t.oid),'definition_md5',pg_catalog.md5(pg_catalog.pg_get_triggerdef(t.oid)),'function_schema',pn.nspname,'function_name',p.proname,'function_identity_arguments',pg_catalog.pg_get_function_identity_arguments(p.oid),'function_security_definer',p.prosecdef,'function_configuration',p.proconfig) ORDER BY c.relname,t.tgname) FROM targets c JOIN pg_catalog.pg_trigger t ON t.tgrelid=c.oid JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid JOIN pg_catalog.pg_namespace pn ON pn.oid=p.pronamespace),'[]'::jsonb),\n 'policies',COALESCE((SELECT jsonb_agg(jsonb_build_object('table',c.relname,'name',p.polname,'command',p.polcmd,'permissive',p.polpermissive,'roles',ARRAY(SELECT CASE WHEN role_id=0 THEN 'PUBLIC' ELSE pg_catalog.pg_get_userbyid(role_id) END FROM pg_catalog.unnest(p.polroles) role_id),'using_expression',pg_catalog.pg_get_expr(p.polqual,p.polrelid),'using_md5',pg_catalog.md5(pg_catalog.pg_get_expr(p.polqual,p.polrelid)),'check_expression',pg_catalog.pg_get_expr(p.polwithcheck,p.polrelid),'check_md5',pg_catalog.md5(pg_catalog.pg_get_expr(p.polwithcheck,p.polrelid))) ORDER BY c.relname,p.polname) FROM targets c JOIN pg_catalog.pg_policy p ON p.polrelid=c.oid),'[]'::jsonb),\n 'table_acls',COALESCE((SELECT jsonb_agg(jsonb_build_object('table',c.relname,'grantor',pg_catalog.pg_get_userbyid(x.grantor),'grantee',CASE WHEN x.grantee=0 THEN 'PUBLIC' ELSE pg_catalog.pg_get_userbyid(x.grantee) END,'privilege',x.privilege_type,'grantable',x.is_grantable) ORDER BY c.relname,x.grantor,x.grantee,x.privilege_type) FROM targets c CROSS JOIN LATERAL pg_catalog.aclexplode(COALESCE(c.relacl,pg_catalog.acldefault('r',c.relowner))) x),'[]'::jsonb),\n 'effective_table_privileges',COALESCE((SELECT jsonb_agg(jsonb_build_object('table',c.relname,'role',r.rolname,'select',pg_catalog.has_table_privilege(r.oid,c.oid,'SELECT'),'insert',pg_catalog.has_table_privilege(r.oid,c.oid,'INSERT'),'update',pg_catalog.has_table_privilege(r.oid,c.oid,'UPDATE'),'delete',pg_catalog.has_table_privilege(r.oid,c.oid,'DELETE'),'truncate',pg_catalog.has_table_privilege(r.oid,c.oid,'TRUNCATE'),'references',pg_catalog.has_table_privilege(r.oid,c.oid,'REFERENCES'),'trigger',pg_catalog.has_table_privilege(r.oid,c.oid,'TRIGGER'),'maintain',pg_catalog.has_table_privilege(r.oid,c.oid,'MAINTAIN')) ORDER BY c.relname,r.rolname) FROM targets c CROSS JOIN browser_roles r),'[]'::jsonb),\n 'roles',COALESCE((SELECT jsonb_agg(jsonb_build_object('name',rolname,'superuser',rolsuper,'bypass_rls',rolbypassrls,'inherit',rolinherit,'login',rolcanlogin) ORDER BY rolname) FROM browser_roles),'[]'::jsonb),\n 'role_memberships',COALESCE((SELECT jsonb_agg(jsonb_build_object('granted_role',pg_catalog.pg_get_userbyid(m.roleid),'member_role',pg_catalog.pg_get_userbyid(m.member),'grantor',pg_catalog.pg_get_userbyid(m.grantor),'admin',m.admin_option,'inherit',m.inherit_option,'set',m.set_option) ORDER BY m.roleid,m.member) FROM pg_catalog.pg_auth_members m WHERE m.roleid IN(SELECT oid FROM browser_roles) OR m.member IN(SELECT oid FROM browser_roles)),'[]'::jsonb),\n 'default_acls',COALESCE((SELECT jsonb_agg(jsonb_build_object('owner',pg_catalog.pg_get_userbyid(d.defaclrole),'schema',CASE WHEN d.defaclnamespace=0 THEN 'GLOBAL' ELSE d.defaclnamespace::regnamespace::text END,'object_type',d.defaclobjtype,'grantor',pg_catalog.pg_get_userbyid(x.grantor),'grantee',CASE WHEN x.grantee=0 THEN 'PUBLIC' ELSE pg_catalog.pg_get_userbyid(x.grantee) END,'privilege',x.privilege_type,'grantable',x.is_grantable) ORDER BY d.defaclrole,d.defaclnamespace,d.defaclobjtype,x.grantee,x.privilege_type) FROM pg_catalog.pg_default_acl d CROSS JOIN LATERAL pg_catalog.aclexplode(d.defaclacl) x WHERE d.defaclnamespace IN(0,'public'::regnamespace::oid) AND (d.defaclrole IN(SELECT relowner FROM targets) OR x.grantee=0 OR x.grantee IN(SELECT oid FROM browser_roles))),'[]'::jsonb),\n 'inheritance',COALESCE((SELECT jsonb_agg(jsonb_build_object('parent',i.inhparent::regclass::text,'child',i.inhrelid::regclass::text,'sequence',i.inhseqno,'detach_pending',i.inhdetachpending) ORDER BY i.inhparent,i.inhrelid) FROM pg_catalog.pg_inherits i WHERE i.inhparent IN(SELECT oid FROM targets) OR i.inhrelid IN(SELECT oid FROM targets)),'[]'::jsonb)\n) AS metadata;\nCOMMIT;",
+  "data": {
+    "roles": [
+      {
+        "name": "anon",
+        "login": false,
+        "inherit": true,
+        "superuser": false,
+        "bypass_rls": false
+      },
+      {
+        "name": "authenticated",
+        "login": false,
+        "inherit": true,
+        "superuser": false,
+        "bypass_rls": false
+      },
+      {
+        "name": "service_role",
+        "login": false,
+        "inherit": true,
+        "superuser": false,
+        "bypass_rls": true
+      }
+    ],
+    "tables": [
+      {
+        "rls": false,
+        "kind": "r",
+        "name": "book_cohort_members",
+        "owner": "postgres",
+        "force_rls": false,
+        "has_subclass": false,
+        "is_partition": false
+      },
+      {
+        "rls": false,
+        "kind": "r",
+        "name": "book_cohorts",
+        "owner": "postgres",
+        "force_rls": false,
+        "has_subclass": false,
+        "is_partition": false
+      },
+      {
+        "rls": false,
+        "kind": "r",
+        "name": "seminar_messages",
+        "owner": "postgres",
+        "force_rls": false,
+        "has_subclass": false,
+        "is_partition": false
+      }
+    ],
+    "columns": [
+      {
+        "acl": [],
+        "name": "id",
+        "type": "uuid",
+        "table": "book_cohort_members",
+        "number": 1,
+        "identity": "",
+        "not_null": true,
+        "collation": null,
+        "generated": "",
+        "default_md5": "f3b72bb359a50b640590970a2ab8e514",
+        "default_expression": "gen_random_uuid()"
+      },
+      {
+        "acl": [],
+        "name": "cohort_id",
+        "type": "uuid",
+        "table": "book_cohort_members",
+        "number": 2,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "member_id",
+        "type": "uuid",
+        "table": "book_cohort_members",
+        "number": 3,
+        "identity": "",
+        "not_null": true,
+        "collation": null,
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "joined_at",
+        "type": "timestamp with time zone",
+        "table": "book_cohort_members",
+        "number": 4,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "75230039beb12ce952f24927f2bfa2f2",
+        "default_expression": "now()"
+      },
+      {
+        "acl": [],
+        "name": "current_section",
+        "type": "integer",
+        "table": "book_cohort_members",
+        "number": 5,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "c4ca4238a0b923820dcc509a6f75849b",
+        "default_expression": "1"
+      },
+      {
+        "acl": [],
+        "name": "sections_completed",
+        "type": "integer[]",
+        "table": "book_cohort_members",
+        "number": 6,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "faf9c84d19a83ac288e45e36a23b13cd",
+        "default_expression": "'{}'::integer[]"
+      },
+      {
+        "acl": [],
+        "name": "id",
+        "type": "uuid",
+        "table": "book_cohorts",
+        "number": 1,
+        "identity": "",
+        "not_null": true,
+        "collation": null,
+        "generated": "",
+        "default_md5": "f3b72bb359a50b640590970a2ab8e514",
+        "default_expression": "gen_random_uuid()"
+      },
+      {
+        "acl": [],
+        "name": "book_id",
+        "type": "text",
+        "table": "book_cohorts",
+        "number": 2,
+        "identity": "",
+        "not_null": true,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "thinker_id",
+        "type": "text",
+        "table": "book_cohorts",
+        "number": 3,
+        "identity": "",
+        "not_null": true,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "title",
+        "type": "text",
+        "table": "book_cohorts",
+        "number": 4,
+        "identity": "",
+        "not_null": false,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "description",
+        "type": "text",
+        "table": "book_cohorts",
+        "number": 5,
+        "identity": "",
+        "not_null": false,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "max_members",
+        "type": "integer",
+        "table": "book_cohorts",
+        "number": 6,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "c9f0f895fb98ab9159f51fd0297e236d",
+        "default_expression": "8"
+      },
+      {
+        "acl": [],
+        "name": "created_by",
+        "type": "uuid",
+        "table": "book_cohorts",
+        "number": 7,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "status",
+        "type": "text",
+        "table": "book_cohorts",
+        "number": 8,
+        "identity": "",
+        "not_null": false,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": "ca3f2d884166edeae084d9e9dd89e32c",
+        "default_expression": "'forming'::text"
+      },
+      {
+        "acl": [],
+        "name": "start_date",
+        "type": "timestamp with time zone",
+        "table": "book_cohorts",
+        "number": 9,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "current_section",
+        "type": "integer",
+        "table": "book_cohorts",
+        "number": 10,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "c4ca4238a0b923820dcc509a6f75849b",
+        "default_expression": "1"
+      },
+      {
+        "acl": [],
+        "name": "weekly_schedule",
+        "type": "jsonb",
+        "table": "book_cohorts",
+        "number": 11,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "8b4b2df56ad0773943ef9179742da01b",
+        "default_expression": "'<REDACTED_LITERAL>'::jsonb"
+      },
+      {
+        "acl": [],
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "table": "book_cohorts",
+        "number": 12,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "75230039beb12ce952f24927f2bfa2f2",
+        "default_expression": "now()"
+      },
+      {
+        "acl": [],
+        "name": "id",
+        "type": "uuid",
+        "table": "seminar_messages",
+        "number": 1,
+        "identity": "",
+        "not_null": true,
+        "collation": null,
+        "generated": "",
+        "default_md5": "f3b72bb359a50b640590970a2ab8e514",
+        "default_expression": "gen_random_uuid()"
+      },
+      {
+        "acl": [],
+        "name": "cohort_id",
+        "type": "uuid",
+        "table": "seminar_messages",
+        "number": 2,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "member_id",
+        "type": "uuid",
+        "table": "seminar_messages",
+        "number": 3,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "thinker_id",
+        "type": "text",
+        "table": "seminar_messages",
+        "number": 4,
+        "identity": "",
+        "not_null": false,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "sender_type",
+        "type": "text",
+        "table": "seminar_messages",
+        "number": 5,
+        "identity": "",
+        "not_null": true,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": "f7a170ec8afb30676a0600e57073f910",
+        "default_expression": "'member'::text"
+      },
+      {
+        "acl": [],
+        "name": "sender_name",
+        "type": "text",
+        "table": "seminar_messages",
+        "number": 6,
+        "identity": "",
+        "not_null": false,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "content",
+        "type": "text",
+        "table": "seminar_messages",
+        "number": 7,
+        "identity": "",
+        "not_null": true,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "passage_reference",
+        "type": "text",
+        "table": "seminar_messages",
+        "number": 8,
+        "identity": "",
+        "not_null": false,
+        "collation": "\"default\"",
+        "generated": "",
+        "default_md5": null,
+        "default_expression": null
+      },
+      {
+        "acl": [],
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "table": "seminar_messages",
+        "number": 9,
+        "identity": "",
+        "not_null": false,
+        "collation": null,
+        "generated": "",
+        "default_md5": "75230039beb12ce952f24927f2bfa2f2",
+        "default_expression": "now()"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "book_cohort_members_cohort_id_member_id_key",
+        "ready": true,
+        "table": "book_cohort_members",
+        "valid": true,
+        "unique": true,
+        "primary": false,
+        "immediate": true,
+        "key_count": 2,
+        "definition": "CREATE UNIQUE INDEX book_cohort_members_cohort_id_member_id_key ON public.book_cohort_members USING btree (cohort_id, member_id)",
+        "definition_md5": "2ad9b4b487b86bde5dc84f31e4365851",
+        "nulls_not_distinct": false
+      },
+      {
+        "name": "book_cohort_members_pkey",
+        "ready": true,
+        "table": "book_cohort_members",
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "immediate": true,
+        "key_count": 1,
+        "definition": "CREATE UNIQUE INDEX book_cohort_members_pkey ON public.book_cohort_members USING btree (id)",
+        "definition_md5": "38d1b22ada995a65a39fa185e824e306",
+        "nulls_not_distinct": false
+      },
+      {
+        "name": "idx_cohort_members",
+        "ready": true,
+        "table": "book_cohort_members",
+        "valid": true,
+        "unique": false,
+        "primary": false,
+        "immediate": true,
+        "key_count": 1,
+        "definition": "CREATE INDEX idx_cohort_members ON public.book_cohort_members USING btree (cohort_id)",
+        "definition_md5": "6d1ccd8e49ebc2270f664c6d4d5d33d9",
+        "nulls_not_distinct": false
+      },
+      {
+        "name": "book_cohorts_pkey",
+        "ready": true,
+        "table": "book_cohorts",
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "immediate": true,
+        "key_count": 1,
+        "definition": "CREATE UNIQUE INDEX book_cohorts_pkey ON public.book_cohorts USING btree (id)",
+        "definition_md5": "d783b21539f10282af1bedeaf85d6e42",
+        "nulls_not_distinct": false
+      },
+      {
+        "name": "idx_cohort_status",
+        "ready": true,
+        "table": "book_cohorts",
+        "valid": true,
+        "unique": false,
+        "primary": false,
+        "immediate": true,
+        "key_count": 2,
+        "definition": "CREATE INDEX idx_cohort_status ON public.book_cohorts USING btree (status, book_id)",
+        "definition_md5": "b74bccebe95a23d9cca6174328e42189",
+        "nulls_not_distinct": false
+      },
+      {
+        "name": "idx_seminar_msgs",
+        "ready": true,
+        "table": "seminar_messages",
+        "valid": true,
+        "unique": false,
+        "primary": false,
+        "immediate": true,
+        "key_count": 2,
+        "definition": "CREATE INDEX idx_seminar_msgs ON public.seminar_messages USING btree (cohort_id, created_at)",
+        "definition_md5": "0d2c2f18b8130962a0fa0a8d41e22c95",
+        "nulls_not_distinct": false
+      },
+      {
+        "name": "seminar_messages_pkey",
+        "ready": true,
+        "table": "seminar_messages",
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "immediate": true,
+        "key_count": 1,
+        "definition": "CREATE UNIQUE INDEX seminar_messages_pkey ON public.seminar_messages USING btree (id)",
+        "definition_md5": "2a85ff4b49b7e89866bc0f027d6142eb",
+        "nulls_not_distinct": false
+      }
+    ],
+    "policies": [],
+    "triggers": [
+      {
+        "name": "RI_ConstraintTrigger_c_28329",
+        "type": 5,
+        "table": "book_cohort_members",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_28329\" AFTER INSERT ON public.book_cohort_members FROM public.book_cohorts NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_ins\"()",
+        "function_name": "RI_FKey_check_ins",
+        "argument_count": 0,
+        "definition_md5": "e807881022d5e8dea91370b0951b76a1",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_c_28330",
+        "type": 17,
+        "table": "book_cohort_members",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_28330\" AFTER UPDATE ON public.book_cohort_members FROM public.book_cohorts NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_upd\"()",
+        "function_name": "RI_FKey_check_upd",
+        "argument_count": 0,
+        "definition_md5": "8474aa6919b04ec11c7889d414eabad8",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_28327",
+        "type": 9,
+        "table": "book_cohorts",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_28327\" AFTER DELETE ON public.book_cohorts FROM public.book_cohort_members NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_del\"()",
+        "function_name": "RI_FKey_noaction_del",
+        "argument_count": 0,
+        "definition_md5": "915a089107bdeec858753954a07a5389",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_28328",
+        "type": 17,
+        "table": "book_cohorts",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_28328\" AFTER UPDATE ON public.book_cohorts FROM public.book_cohort_members NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_upd\"()",
+        "function_name": "RI_FKey_noaction_upd",
+        "argument_count": 0,
+        "definition_md5": "5d3ecce0f35729afa0fb4cd9835779e7",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_28341",
+        "type": 9,
+        "table": "book_cohorts",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_28341\" AFTER DELETE ON public.book_cohorts FROM public.book_reflections NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_del\"()",
+        "function_name": "RI_FKey_noaction_del",
+        "argument_count": 0,
+        "definition_md5": "d8b8a0e40778da75dd7a257c2ee4cbc6",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_28342",
+        "type": 17,
+        "table": "book_cohorts",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_28342\" AFTER UPDATE ON public.book_cohorts FROM public.book_reflections NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_upd\"()",
+        "function_name": "RI_FKey_noaction_upd",
+        "argument_count": 0,
+        "definition_md5": "17da209bf26cda3c816f985e193d2017",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_28356",
+        "type": 9,
+        "table": "book_cohorts",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_28356\" AFTER DELETE ON public.book_cohorts FROM public.seminar_messages NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_del\"()",
+        "function_name": "RI_FKey_noaction_del",
+        "argument_count": 0,
+        "definition_md5": "1859c6e0ae67b184b5fb80381413ff6e",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_a_28357",
+        "type": 17,
+        "table": "book_cohorts",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_28357\" AFTER UPDATE ON public.book_cohorts FROM public.seminar_messages NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_upd\"()",
+        "function_name": "RI_FKey_noaction_upd",
+        "argument_count": 0,
+        "definition_md5": "c7294ab5f0e8317f6244eb6622f1aaa3",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_c_28358",
+        "type": 5,
+        "table": "seminar_messages",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_28358\" AFTER INSERT ON public.seminar_messages FROM public.book_cohorts NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_ins\"()",
+        "function_name": "RI_FKey_check_ins",
+        "argument_count": 0,
+        "definition_md5": "a23e16dfc062be0e8164f5e584839e2c",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      },
+      {
+        "name": "RI_ConstraintTrigger_c_28359",
+        "type": 17,
+        "table": "seminar_messages",
+        "enabled": "O",
+        "internal": true,
+        "deferrable": false,
+        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_28359\" AFTER UPDATE ON public.seminar_messages FROM public.book_cohorts NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_upd\"()",
+        "function_name": "RI_FKey_check_upd",
+        "argument_count": 0,
+        "definition_md5": "3e602667ecac651cf39129da9cbce970",
+        "update_columns": "",
+        "function_schema": "pg_catalog",
+        "initially_deferred": false,
+        "function_configuration": null,
+        "function_security_definer": false,
+        "function_identity_arguments": ""
+      }
+    ],
+    "table_acls": [
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohort_members",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "book_cohorts",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "table": "seminar_messages",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "book_cohort_members_cohort_id_fkey",
+        "type": "f",
+        "table": "book_cohort_members",
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (cohort_id) REFERENCES public.book_cohorts(id)",
+        "no_inherit": true,
+        "definition_md5": "ef53a40595630374108fe0ab5e266fe1",
+        "initially_deferred": false
+      },
+      {
+        "name": "book_cohort_members_cohort_id_member_id_key",
+        "type": "u",
+        "table": "book_cohort_members",
+        "validated": true,
+        "deferrable": false,
+        "definition": "UNIQUE (cohort_id, member_id)",
+        "no_inherit": true,
+        "definition_md5": "1eed9330f71184f929b182ffb84b238e",
+        "initially_deferred": false
+      },
+      {
+        "name": "book_cohort_members_pkey",
+        "type": "p",
+        "table": "book_cohort_members",
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "no_inherit": true,
+        "definition_md5": "4c6419b3704337bbfe50f018842a9ad3",
+        "initially_deferred": false
+      },
+      {
+        "name": "book_cohorts_pkey",
+        "type": "p",
+        "table": "book_cohorts",
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "no_inherit": true,
+        "definition_md5": "4c6419b3704337bbfe50f018842a9ad3",
+        "initially_deferred": false
+      },
+      {
+        "name": "seminar_messages_cohort_id_fkey",
+        "type": "f",
+        "table": "seminar_messages",
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (cohort_id) REFERENCES public.book_cohorts(id)",
+        "no_inherit": true,
+        "definition_md5": "ef53a40595630374108fe0ab5e266fe1",
+        "initially_deferred": false
+      },
+      {
+        "name": "seminar_messages_pkey",
+        "type": "p",
+        "table": "seminar_messages",
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "no_inherit": true,
+        "definition_md5": "4c6419b3704337bbfe50f018842a9ad3",
+        "initially_deferred": false
+      }
+    ],
+    "inheritance": [],
+    "default_acls": [
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "USAGE",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "USAGE",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "USAGE",
+        "object_type": "S"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "EXECUTE",
+        "object_type": "f"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "EXECUTE",
+        "object_type": "f"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "EXECUTE",
+        "object_type": "f"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "DELETE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "INSERT",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "MAINTAIN",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "REFERENCES",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "TRIGGER",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "TRUNCATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "DELETE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "INSERT",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "MAINTAIN",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "REFERENCES",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "TRIGGER",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "TRUNCATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "DELETE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "INSERT",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "MAINTAIN",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "REFERENCES",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "TRIGGER",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "TRUNCATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "supabase_admin",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "supabase_admin",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "USAGE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "USAGE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "USAGE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "USAGE",
+        "object_type": "S"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "EXECUTE",
+        "object_type": "f"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "EXECUTE",
+        "object_type": "f"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "EXECUTE",
+        "object_type": "f"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "EXECUTE",
+        "object_type": "f"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "anon",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE",
+        "object_type": "r"
+      },
+      {
+        "owner": "postgres",
+        "schema": "public",
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE",
+        "object_type": "r"
+      }
+    ],
+    "role_memberships": [
+      {
+        "set": true,
+        "admin": true,
+        "grantor": "supabase_admin",
+        "inherit": true,
+        "member_role": "postgres",
+        "granted_role": "anon"
+      },
+      {
+        "set": true,
+        "admin": false,
+        "grantor": "supabase_admin",
+        "inherit": false,
+        "member_role": "authenticator",
+        "granted_role": "anon"
+      },
+      {
+        "set": true,
+        "admin": true,
+        "grantor": "supabase_admin",
+        "inherit": true,
+        "member_role": "postgres",
+        "granted_role": "authenticated"
+      },
+      {
+        "set": true,
+        "admin": false,
+        "grantor": "supabase_admin",
+        "inherit": false,
+        "member_role": "authenticator",
+        "granted_role": "authenticated"
+      },
+      {
+        "set": true,
+        "admin": true,
+        "grantor": "supabase_admin",
+        "inherit": true,
+        "member_role": "postgres",
+        "granted_role": "service_role"
+      },
+      {
+        "set": true,
+        "admin": false,
+        "grantor": "supabase_admin",
+        "inherit": false,
+        "member_role": "authenticator",
+        "granted_role": "service_role"
+      }
+    ],
+    "effective_table_privileges": [
+      {
+        "role": "anon",
+        "table": "book_cohort_members",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "authenticated",
+        "table": "book_cohort_members",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "service_role",
+        "table": "book_cohort_members",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "anon",
+        "table": "book_cohorts",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "authenticated",
+        "table": "book_cohorts",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "service_role",
+        "table": "book_cohorts",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "anon",
+        "table": "seminar_messages",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "authenticated",
+        "table": "seminar_messages",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      },
+      {
+        "role": "service_role",
+        "table": "seminar_messages",
+        "delete": true,
+        "insert": true,
+        "select": true,
+        "update": true,
+        "trigger": true,
+        "maintain": true,
+        "truncate": true,
+        "references": true
+      }
+    ]
+  },
+  "collectionCompletedByUTC": "2026-11-04 15:08:17 UTC",
+  "collectionWindowNote": "Start and upper-bound timestamps were recorded by the local clock, not selected from PostgreSQL."
+}
+

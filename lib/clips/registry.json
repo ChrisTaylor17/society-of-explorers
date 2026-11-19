@@ -1,0 +1,270 @@
+[
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "how-a-circle-works",
+    "kind": "video",
+    "title": "How a Circle works",
+    "description": "A short introduction to reading, respectful disagreement and sharing with care. Original silent SoE video with captions.",
+    "credit": "Original Society of Explorers text and canvas graphics. No third-party media, audio, music or voice.",
+    "source": {
+      "kind": "first-party",
+      "path": "circle-intro-source.html",
+      "sha256": "10ee1ac1a8b353704dfad20eaf0043aac5b0d50a3e30d2e8f750cbeeeaf01852",
+      "bytes": 3881
+    },
+    "asset": {
+      "path": "circle-intro.mp4",
+      "sha256": "1b1e4331aeb76c5401d9f5f43a709108c5c3330959f2c33b36cca6a63e132155",
+      "bytes": 157621,
+      "mime": "video/mp4",
+      "durationMs": 23955,
+      "width": 720,
+      "height": 404
+    },
+    "captions": {
+      "path": "circle-intro.vtt",
+      "sha256": "d5279f41285491f031c889a51b142b3cce48c1c82a76cf908a1a0ce3594a0e1c",
+      "bytes": 698,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "circle-intro-inspection.json",
+      "sha256": "f53eba4822b463a6194238c3b4e8c4686122f7e7fa2c27c71418e7a9e9e5e2ba",
+      "bytes": 1780
+    },
+    "review": {
+      "mode": "automated-first-party",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 0,
+      "sourceEndMs": 23955,
+      "checkedAt": "2026-11-04T13:38:04.168Z"
+    }
+  },
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "night-sky-traffic",
+    "kind": "video",
+    "title": "Who gets the night sky?",
+    "description": "The Archivist looks at actual 2026 footage from Paranal, Chile, and asks how we should weigh satellite internet against a shared night sky. A silent 24-second Reel.",
+    "credit": "B. Häußler/ESO",
+    "source": {
+      "kind": "third-party",
+      "path": "eso2607d-source.mp4",
+      "sha256": "dabaa298df3553da879d17df97cec653b746544386d87347d1a7f9f709a685fc",
+      "bytes": 7378972,
+      "pageUrl": "https://www.eso.org/public/videos/eso2607d/",
+      "mediaUrl": "https://cdn.eso.org/videos/medium_podcast/eso2607d.mp4"
+    },
+    "asset": {
+      "path": "night-sky-traffic.mp4",
+      "sha256": "65a37e1a2efafe07ce4b3f4479d7b8d04f02ad1bab06b015bf4368fcd78ec51f",
+      "bytes": 3346521,
+      "mime": "video/mp4",
+      "durationMs": 24000,
+      "width": 720,
+      "height": 1280
+    },
+    "captions": {
+      "path": "night-sky-traffic.vtt",
+      "sha256": "1cb633b7dd2b658db6933b92e1b7da836ed8d1cc7dbc3972ce93018a2d9b56cf",
+      "bytes": 535,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "night-sky-traffic-inspection.json",
+      "sha256": "ddc4d70333a9ba4a2ad9c2922e2ef3265a44b926c390b2884da6fd2839a9b938",
+      "bytes": 2347
+    },
+    "review": {
+      "mode": "documentary-rights",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 1600,
+      "sourceEndMs": 25600,
+      "checkedAt": "2026-11-05T20:02:16.646Z"
+    }
+  },
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "telescope-first-tilt",
+    "kind": "video",
+    "title": "What did the tilt prove?",
+    "description": "The Archivist uses actual footage of the October 2026 telescope tilt test in Chile to ask what one successful test proves. A silent 20-second Reel.",
+    "credit": "ESO/Cimolai/Apical/G. Vecchia",
+    "source": {
+      "kind": "third-party",
+      "path": "potw2643a-source.m4v",
+      "sha256": "ed3f0b8795dfbe8099da9c8360d934555b8614bbbd8a7e1fcaa9ee2720a3e772",
+      "bytes": 16023258,
+      "pageUrl": "https://www.eso.org/public/videos/potw2643a/",
+      "mediaUrl": "https://cdn.eso.org/videos/hd_and_apple/potw2643a.m4v"
+    },
+    "asset": {
+      "path": "telescope-first-tilt.mp4",
+      "sha256": "d059aeff2f36723ec3a3e843a16f6d4413564620a480374b79e88e2e84361168",
+      "bytes": 2849740,
+      "mime": "video/mp4",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280
+    },
+    "captions": {
+      "path": "telescope-first-tilt.vtt",
+      "sha256": "5d697474a0b6dbc543b9b29397498d6d840e812afaafe22eeba376e0a6e27d36",
+      "bytes": 506,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "telescope-first-tilt-inspection.json",
+      "sha256": "dbc0df43da705e51511e7a7ff2669fbd0e35b47177710c43fb5177d3c3a9dcb1",
+      "bytes": 2195
+    },
+    "review": {
+      "mode": "documentary-rights",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 40,
+      "sourceEndMs": 20040,
+      "checkedAt": "2026-11-06T00:38:20.521Z"
+    }
+  },
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "which-height",
+    "kind": "video",
+    "title": "Which height are we measuring?",
+    "description": "The Archivist uses archive footage of Kīlauea to explain two measurements from the October 17, 2026 eruption. A silent 20-second Reel.",
+    "credit": "James Lee via Pexels",
+    "source": {
+      "kind": "third-party",
+      "path": "pexels-33378632-source.mp4",
+      "sha256": "a0aee5ab007afc52b6d859c6c9880d9dbf0c49340f7acafb87d9e62f4a6f57f6",
+      "bytes": 34828800,
+      "pageUrl": "https://www.pexels.com/video/kilauea-volcano-eruption-in-hawaii-33378632/",
+      "mediaUrl": "https://videos.pexels.com/video-files/33378632/14210577_2160_3840_30fps.mp4"
+    },
+    "asset": {
+      "path": "which-height.mp4",
+      "sha256": "1815e08a3e5fea79db76e76c77a3d22c3559b0c6ac91123091daebb6093fd2a7",
+      "bytes": 1804485,
+      "mime": "video/mp4",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280
+    },
+    "captions": {
+      "path": "which-height.vtt",
+      "sha256": "070c629ae14d38e6c167455f8ac78f9351bbd389c17a341989bd42a17d742138",
+      "bytes": 541,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "which-height-inspection.json",
+      "sha256": "2b1fcc2743734cd8a046a68004e5ea5491df5cefed0352eb3b36b06866824b27",
+      "bytes": 2618
+    },
+    "review": {
+      "mode": "documentary-rights",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 67,
+      "sourceEndMs": 20067,
+      "checkedAt": "2026-11-06T05:31:25.142Z"
+    }
+  },
+  {
+    "version": 1,
+    "status": "catalog-approved",
+    "publishable": true,
+    "id": "new-species",
+    "kind": "video",
+    "title": "Is it a new species?",
+    "description": "The Archivist examines an isopod filmed off American Samoa and connects the question of evidence to NOAA’s separate November trial off Hawaiʻi. A silent 20-second Reel.",
+    "credit": "NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration",
+    "source": {
+      "kind": "third-party",
+      "path": "noaa-ex2606-dive11-isopod-source.mp4",
+      "sha256": "2dc4150cbafc97acb7dc9520daa69da9387e744b3d6bc80a55f0bbab3750698c",
+      "bytes": 28243653,
+      "pageUrl": "https://oceanexplorer.noaa.gov/dive-11-ex2606/",
+      "mediaUrl": "https://oceanexplorer.noaa.gov/wp-content/uploads/2026/10/ex2606-dive11-isopod_HD.mp4"
+    },
+    "asset": {
+      "path": "new-species.mp4",
+      "sha256": "71b6c3ce2460f63eb68273fe430d7ba5297bd2bb47d80ae15723d6a74c46a75a",
+      "bytes": 2820835,
+      "mime": "video/mp4",
+      "durationMs": 20000,
+      "width": 720,
+      "height": 1280
+    },
+    "captions": {
+      "path": "new-species.vtt",
+      "sha256": "488a3bbeaed512da01f36c31428c68fd19498b021bc8755390a58107d57ad4fe",
+      "bytes": 567,
+      "language": "en"
+    },
+    "inspection": {
+      "path": "new-species-inspection.json",
+      "sha256": "a864f59ed495ba0140b3c2f9f8927e30a0f69c48f1e9995042af614b09821f7d",
+      "bytes": 2805
+    },
+    "review": {
+      "mode": "documentary-rights",
+      "territories": [
+        "WORLDWIDE"
+      ],
+      "permissions": [
+        "display",
+        "excerpt",
+        "reencode",
+        "captions",
+        "commercial"
+      ],
+      "sourceStartMs": 12012,
+      "sourceEndMs": 32012,
+      "checkedAt": "2026-11-06T22:36:24.202Z"
+    }
+  }
+]

@@ -1,0 +1,63 @@
+{
+  "status": "PASS_LOCAL",
+  "verifiedAt": "2026-11-06T13:46:52.427214+00:00",
+  "parentCommit": "e4452450888c49733f0dbb762dc86773c7f4223e",
+  "productionCleared": false,
+  "results": {
+    "guardedProductionWebBuild": {
+      "sourceFiles": 1083,
+      "sourceDigest": "814d369f76d7f2efabf8a5afc9267a06d8737d5d8456ecfc1e8755262ef915d3"
+    },
+    "scopedLint": "passed",
+    "httpAndAccountRegressionCases": 95,
+    "independentPostgreSQLChecks": [
+      "A new member write waits for erasure to start, then refuses the frozen subject.",
+      "Erasure waits for an ongoing member write and rejects the old review; fresh linked-account review starts one operation.",
+      "A repeatable-read writer with an old snapshot must retry and then sees the active guard.",
+      "A separate database restored from the archive keeps the receipt and denies identity recreation while unrelated setup still works."
+    ],
+    "restoredRelease": {
+      "previouslyVerifiedSqlFiles": 48,
+      "newDrafts": [
+        "docs/sql/account-deletion-requests-apply.sql",
+        "docs/sql/account-erasure-access-apply.sql"
+      ],
+      "checks": [
+        "The pre-cutover archive and role export restore into a separate cluster and match all 20 tables.",
+        "The restored pre-cutover fixture reproduces browser access to private answers, messages and transcripts.",
+        "The complete ordered cutover runs on the restored copy and preserves every pre-cutover row in its original columns.",
+        "The two deletion drafts install after the 48-file release. A reviewed request denies its linked identity, preserves the other member and leaves Auth, member and shared messages untouched."
+      ]
+    }
+  },
+  "scope": "Local PostgreSQL 17 and actual application routes with synthetic provider and Data API fixtures. Web compiles in the offline build. Hosted credentials, device tests and actual account erasure remain open.",
+  "remaining": [
+    "Owner approval for hosted recovery and access rollout",
+    "Account data inventory and retention review",
+    "Verified erasure, provider session removal and a completion notice",
+    "Production restore verifier and physical device acceptance"
+  ],
+  "sourceHashes": {
+    "RELEASE_STATUS.md": "79cbd3432326bef6ba9f582ccb00e382882a1c17bb678bb642ddb34110bd8cd9",
+    "app/api/auth/ensure-member/route.ts": "ab52db9f1f48ff03912e0bd08158702101b846033a4930af5393355a2658ba02",
+    "app/api/auth/provider/route.ts": "281f3503ef30b0c5536d9e16031c79c4fb94cfbdb5df90da4e8afa94ddb1e018",
+    "app/api/auth/siwe/route.ts": "9e792e765d0b83f153a6ff9acc3c4edebe06a9f39b97b709bfffaf2c035074f0",
+    "app/auth/callback/route.ts": "14d0bb2302e6f0fde7fe6a34668e51791108603994bf1f40f395c9ab9879c250",
+    "docs/integration/account-deletion.md": "d9548ec36a4e2d858f0e6e2f1be6109c3546283f3227a66548640a79072c0c04",
+    "docs/sql/account-erasure-access-apply.sql": "040aa5d89b5c36d55f1b5d3cd2c2e77b6046a090b665cd8e1db92123012a34f7",
+    "lib/account/erasure-access.ts": "ece8538f3c7556ee88aa9e58b26df543c33815155e195f30f0ad9f42dd7f3e71",
+    "lib/getAuthenticatedMember.ts": "1a18bc4049c63a618a5a8144e40e87e30369bb13e39a66e679c910ebabf86f02",
+    "verification/web/scripts/rehearse-erasure-access.py": "738fe4989a5d2ddcd7f5630eb1b52ff46ea54ca0ebd883a7b29b8cefb9874070",
+    "verification/web/tests/account-erasure-access.test.mjs": "b62c075eeeba1437e457bc2dff8197565393455c6eccab23ea6dd1ce97942102",
+    "verification/web/tests/support/account-deletion-app.mjs": "06a6be05de766daabb7500394d546eecbd850f6af19c8da72df848a55e08faa7"
+  },
+  "evidenceDirectory": "verification/web/evidence/checkpoint-account-erasure-access",
+  "evidenceSha256": {
+    "built-shell-erasure-access-next-build.json": "10dde1964988b950d608f5e2a8e7b511cde3e1afe0a02ceffa86ba235fef6497",
+    "built-shell-erasure-access-next-build.log": "79bfb5f9100e40afcee39b5bc96be01d8e31f451533c4be3ca89ca01453c77da",
+    "built-shell-erasure-access-build-source-sha256.json": "1b9d80c9a6c34fda4aa52738a023cd912be0af93c3c404294059de0d72c815af",
+    "account-erasure-access-final.tap": "857ffb150947fe36178f2422fd921f24fc3a1758cfdeee2aae4d54d035483036",
+    "account-erasure-postgres.json": "7a062010e4c4107d73a099a80b84f5cf1de3c5fad42e1c8d8b1b4565400b5504",
+    "account-erasure-full-release.json": "347eb791e471a812dda610a240d982023dd9696bd36057f88e081220a57f0413"
+  }
+}

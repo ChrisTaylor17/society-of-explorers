@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T18:13:05.552475+00:00",
+  "baseCheckpoint": "ae2143ad0709344e8c850325c18353b34c922ec6",
+  "status": "LOCAL_ANDROID_SMOKE_SOURCE_AND_BROWSER_PASS_DEVICE_AND_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "gradleInvoked": false,
+  "kotlinCompiled": false,
+  "apkBuilt": false,
+  "androidDeviceTestRun": false,
+  "liveProviderCalled": false,
+  "issuedCredentialsUsed": false,
+  "browser": {
+    "path": "verification/web/evidence/native-owned-auth-browser-android-member-entry-03.json",
+    "sha256": "462abae79d96baa5e7dfe0026643edf33c44fb6dff33561b5d169d22a38c3c53",
+    "stories": 15,
+    "httpFixtureRequests": 42,
+    "sourceBindings": 220,
+    "browserClosed": true,
+    "databaseClosed": true,
+    "evidence": [
+      {
+        "path": "verification/web/evidence/native-owned-auth-fixture-android-member-entry-03/page.js",
+        "sha256": "0a60c3382c2a628dd67268ad21643fa3d74efce00a431db0db5706e65afd4f55"
+      },
+      {
+        "path": "verification/web/evidence/native-owned-auth-fixture-android-member-entry-03/source-manifest.json",
+        "sha256": "fa3174bc0e1365d2a5b0b2693ee294af761bf9529c5664ecd9eb0d72d901c5b4"
+      },
+      {
+        "path": "verification/web/evidence/native-owned-auth-320-android-member-entry-03.png",
+        "sha256": "fe948117356b6f21bfa6d5268a3e9b410ca5f8eb33d53beaef0e13d1df193c1d"
+      }
+    ]
+  },
+  "policy": {
+    "path": "verification/web/evidence/android-member-entry-policy-01/current.log",
+    "sha256": "227a394423d3080e2b56a4e3634fad37d8f118cb82363311af657709c5fd476e",
+    "cases": 21,
+    "scope": "Executed public configuration/release helpers and static source/manifest checks; no AGP or Kotlin execution."
+  },
+  "preservedDiagnostics": [
+    {
+      "path": "verification/web/evidence/native-owned-auth-browser-android-member-entry-01.json",
+      "sha256": "d284712af4ea1a1ccda9da84fc4de4a9296106a9ee3351df085334f2b4a75eaf"
+    },
+    {
+      "path": "verification/web/evidence/native-owned-auth-browser-android-member-entry-02.json",
+      "sha256": "5ba6fefca0c1d9f3fb512a0e12f963826d7425fbb5984ff97dc9f0c12072ca38"
+    },
+    {
+      "path": "verification/web/evidence/android-member-entry-policy-01/stale-manifest.log",
+      "sha256": "0a8b72a09028f13f2b6dc40eacb807efe4ad906049caf6bc42e5d3460843d005"
+    }
+  ],
+  "changedFileSha256": {
+    "RELEASE_STATUS.md": "272ed71ea01d50617a9e83f53f0fec10fb116efabd4e8fe6ddd5ea5a2d03aeec",
+    "platforms/tests/browser-native-owned-auth.mjs": "e5ebe8bb895a0e26d84ea7bc05e39a7b3ab160901bbacefff8c67d26de292bff",
+    "platforms/tests/bundle-native-owned-auth.mjs": "21117189159a44928b68320a964b89c147efa9fa2c3b906dc7d39dd09b3f13a6",
+    "platforms/tests/native-owned-auth-entry.tsx": "c28f7edcc87efae04d00315fb0f6b4c70996a6e3981f29450b93d44abe8624f1",
+    "verification/android-hardening.test.mjs": "5a5407234c032fda7d1ace7f2ceb104118b8d83a329c1b005b05df5387abecd6",
+    "docs/integration/android-member-entry-smoke.md": "254d086a64f0f5007f40264891360522d3e16ad6fe0c36802c0f12b1c15b27ab",
+    "platforms/native/android/app/src/androidTest/java/com/anonymous/soesyntheticdemo/MemberEntryRuntimeTest.kt": "1bdf4ac7f45a3171c7314736f5e00554073cb0ebcef15e2dd33bf58f7e77568a"
+  },
+  "removedFromActiveTest": [
+    "platforms/native/android/app/src/androidTest/java/com/anonymous/soesyntheticdemo/SyntheticRuntimeTest.kt"
+  ],
+  "originalCheckoutStatusMatches": true
+}

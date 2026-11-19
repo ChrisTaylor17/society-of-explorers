@@ -3,10 +3,15 @@
 
 let audioUnlocked = false;
 
+type WebkitAudioWindow = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  };
+
 export function unlockAudioContext() {
   if (audioUnlocked) return;
 
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass = window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
   if (!AudioContextClass) return;
 
   const ctx = new AudioContextClass();

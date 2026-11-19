@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="Evidence and objections for the local-decision question. Rejected claims, dynamic operating-envelope baselines, and six toy checks labeled as illustrations. Agenda: Proposed." />
+  <meta property="og:title" content="Evidence and objections — Society of Explorers" />
+  <meta property="og:description" content="Evidence and objections for the local-decision question. Rejected claims, dynamic operating-envelope baselines, and six toy checks labeled as illustrations. Agenda: Proposed." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Evidence and objections — Society of Explorers" />
+  <meta name="twitter:description" content="Evidence and objections for the local-decision question. Rejected claims, dynamic operating-envelope baselines, and six toy checks labeled as illustrations. Agenda: Proposed." />
+  <title>Evidence and objections — Society of Explorers</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="index.html"><span class="wm-full">Society of Explorers <span>· SoE</span></span><span class="wm-short">SoE</span></a>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" data-nav-toggle><span class="burger" aria-hidden="true"><i></i><i></i><i></i></span> Menu</button>
+      <nav class="primary-nav" id="site-nav">
+        <a href="explore.html">Explore</a>
+        <a href="gather.html">Gather</a>
+        <a href="build.html">Build</a>
+        <a href="about.html">About</a>
+        <a href="participate.html">Participate</a>
+        <details class="nav-more">
+          <summary>More</summary>
+          <div class="nav-overflow">
+          <a href="visual-arc.html">Visual Arc</a>
+          <a href="stack.html">Stack</a>
+          <a href="electronic-governor.html">Electronic Governor</a>
+          <a href="power-as-primitive.html">Power as Primitive</a>
+          <a href="notes/index.html">Notes</a>
+          <a href="ai-guide.html">AI Guide</a>
+          <a href="research.html">Research</a>
+          <a href="research-horizon.html">Research horizon</a>
+          <a href="collective.html">Collective</a>
+          <a href="space.html">Space</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <div class="egb-spine" aria-label="Research record">
+      <span class="egb-step"><a href="research.html">Research</a></span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-q1.html">Q1</a></span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-q2.html">Q2</a></span><span class="arrow">·</span>
+      <span class="egb-step"><a href="research-q3.html">Q3</a></span><span class="arrow">·</span>
+      <span class="egb-step current">Evidence</span>
+    </div>
+
+    <p class="eyebrow">Evidence · audit version 1.0 · cut-off 27 September 2026</p>
+    <h1>Evidence and objections</h1>
+    <p class="lead">No existing technical proposal earns a recommendation to build a new coordination architecture in its present form. The surviving opportunity is a small, gated comparison with existing operating-envelope and local-control methods. Novelty and positive economic value are both unestablished. No field trial has been completed.</p>
+    <p>This page is a public summary of that independent assessment. It is not a claim that a new protocol has been invented, that a literature search can prove something is absent, or that a field trial has been conducted. Reading a report is not the same as reproducing its result.</p>
+
+    <h2>Surviving question</h2>
+    <div class="human-msg">
+      <strong>The question that remains</strong>
+      For a documented physical-resource application, does a particular way of allocating and enforcing bounded local permissions improve useful service during communication delays or outages, compared with the best existing local-controller and operating-envelope arrangements, without increasing unacceptable physical risk or total cost?
+    </div>
+    <p>This is narrower than “decentralized coordination for machine economies.” It also differs from merely showing that local permission is faster than requesting central approval for every action. Existing systems already permit local operation within centrally assigned limits.</p>
+    <p>The public questions that follow from this are <a href="research-q1.html">SOE-Q001</a>, <a href="research-q2.html">SOE-Q002</a>, and <a href="research-q3.html">SOE-Q003</a>. Their shared status is: Open question · Novelty unestablished · No field trial completed.</p>
+
+    <h2>Rejected and closed claims</h2>
+    <p>These dispositions are scoped. “Closed” names a kill boundary and a reopening condition. It does not silently become a broader claim.</p>
+
+    <article class="criticism-box">
+      <h3>Original G2 commutativity claim <span class="claim-tag claim-tag--copper">Rejected</span></h3>
+      <p>An earlier claim that individually feasible actions would remain safe together was rejected. Separate feasible increments can jointly violate a limit. The proposed percentage-of-uncongested-intervals test does not test safe concurrent admission. Illustration T1 below is the arithmetic picture of that rejection, not a field measurement.</p>
+    </article>
+
+    <article class="criticism-box">
+      <h3>Fused GPU commitments <span class="claim-tag claim-tag--dashed">Closed for the tested implementation</span></h3>
+      <p>A separate GPU-commitment experiment failed its stated overhead threshold. The result was recovered from an existing lab record dated 23 August 2026. This audit did not rerun it. Raw profiler files and the GPU implementation are not published here.</p>
+      <p><strong>Scoped negative-result summary.</strong> The recorded experiment used an A100 SXM4 40 GB, CUTLASS 3.9.2, CUDA 12.8, and a 2048³ GEMM. The stock kernel’s recorded median HBM traffic was 19,972,096 bytes. The C-accumulator commitment variant’s median was 52,104,192 bytes: 2.609×, against a 1.2× kill threshold. The record reports large spill traffic and stops the branch before implementing A/B commitments. The displayed sizes in the original table correspond to about 19.05 and 49.69 MiB, despite an “MB” label. Exact byte counts avoid that ambiguity.</p>
+      <p>This is negative evidence for that proposed low-overhead path under its own gate. It is not an impossibility theorem about all cryptographic commitments or all future GPU kernels. Weight hashes, signed provenance statements, and separate-pass commitments sit outside this kill boundary; they are established techniques, not a surviving breakthrough. Reopen only for a materially different construction and a defensible measurement plan, not another name for the same approach.</p>
+    </article>
+
+    <article class="criticism-box">
+      <h3>New token, DAO, blockchain, or settlement layer <span class="claim-tag claim-tag--dashed">Unsupported</span></h3>
+      <p>None is required to run the study or to represent its permissions. No need for a new token or blockchain has been demonstrated. A specific unmet trust property would be needed before additional machinery was even a candidate, and that still would not by itself justify a new chain. See <a href="research-q3.html">SOE-Q003</a>.</p>
+    </article>
+
+    <article class="criticism-box">
+      <h3>G1 as the lead hypothesis <span class="claim-tag claim-tag--dashed">Not the lead</span></h3>
+      <p>A general physical-emitter-bounded influence guarantee is unsupported by the evidence checked in the audit. ENF as a standalone identity or uniqueness anchor is closed in the proposed adversarial setting: a signal or submitted trace does not by itself authenticate a unique device. No hardware purchase is justified. A narrow literature correction could continue only after reformulation, and only as a bounded reading task. It is not the public lead. The lead is the surviving question above.</p>
+    </article>
+
+    <article class="criticism-box">
+      <h3>Meridian as a new sovereign architecture <span class="claim-tag claim-tag--dashed">Unsupported</span></h3>
+      <p>The supplied material does not establish that combining delegation, bonded claims, safety monitoring, and related ideas into one architecture delivers a new protocol. Delegation and runtime assurance already have prior art. Speculative pictures of autonomous self-bonded agents or a post-2035 sovereign system are not evidence for this question.</p>
+    </article>
+
+    <article class="criticism-box">
+      <h3>Revised G2 safe partition as a new core mechanism <span class="claim-tag claim-tag--steel">Already occupied</span></h3>
+      <p>Escrow, generalized demarcation, local control, and dynamic operating envelopes cover the main construction. “Occupied” means the evidence does not support a claim of a new primitive. It does not mean every engineering improvement is impossible. A practical advantage under delay, disconnection, and changing capacity is worth continuing only as a comparison that has not yet been run.</p>
+    </article>
+
+    <h2>Dynamic operating envelopes and the other baselines</h2>
+    <p>The comparison has to beat the strongest applicable method. Beating slow per-action central approval is not that comparison. Three findings substantially reduce the claimed novelty:</p>
+    <ol class="clean">
+      <li>The <a href="https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/bg94a.pdf">Demarcation Protocol</a> already generalizes to linear inequalities involving multiple variables, including signed coefficients. A description of it as limited to scalar or separable constraints is incorrect. Relevant text read, especially §6. Not independently reproduced.</li>
+      <li>Dynamic operating envelopes already allocate ranges of permissible operation. Current work includes coordinated and independent feasible regions. <a href="https://arxiv.org/pdf/2510.08172">SecuLEx</a> explicitly exchanges portions of operating limits through network-aware clearing. That preprint assumes instantaneous clearing and update in its model. Relevant PDF text read. Not independently reproduced.</li>
+      <li>Communication-loss behavior is already part of the baseline. The <a href="https://static1.squarespace.com/static/67ec72f228086e2ba4f8e438/t/684f71d7b1a5ec0335fa7edd/1750036960820/CSIP-AUS-v1.2-explainer-May-2025-release.pdf">May 2025 CSIP-AUS explainer</a> describes executing stored controls and subsequently reverting to a default. An experiment must compare against such behavior, not assume that disconnection leaves every conventional device waiting for a server. The loss-of-communications section was read. It is dated implementation guidance, not a claim about every product.</li>
+    </ol>
+    <p>Baselines named for a future matched study. None of these comparisons has been run here:</p>
+    <ul class="clean">
+      <li>Central dispatch when connected.</li>
+      <li>A conventional site energy-management controller under an assigned limit.</li>
+      <li>Standard scheduled dynamic operating envelopes with the applicable disconnection default.</li>
+      <li>An appropriate robust or partially coordinated dynamic operating-envelope method. Leads include <a href="https://arxiv.org/html/2604.17081v1">partial coordination and admissible flexibility</a> (relevant text read; preprint) and <a href="https://arxiv.org/html/2607.08578v1">robust envelopes in unbalanced three-phase systems</a> (formulation and abstract inspected; preprint).</li>
+      <li>Static limits as a contextual lower benchmark, not as the strongest incumbent.</li>
+      <li>Where a rights trade is claimed, a network-aware exchange such as SecuLEx, with realistic processing delays rather than an assumption of instant clearing.</li>
+    </ul>
+    <p>Further prior art in the same neighborhood, with the audit’s reading limit: <a href="https://www.cs.umb.edu/~poneil/EscrowTM.pdf">O’Neil’s escrow transactional method</a> (author-hosted paper retrieved; database state is not automatically a physical model); <a href="https://arxiv.org/pdf/1503.09052">bounded counters</a> (relevant text read); <a href="https://arxiv.org/html/2605.07989v1">DOE allocation in radial networks</a> (relevant allocation analysis read; preprint); <a href="https://www.aemo.com.au/initiatives/major-programs/nem-distributed-energy-resources-der-program/der-demonstrations/project-edge/project-edge-reports/dynamic-operating-envelopes">AEMO Project EDGE</a> (official report summaries inspected).</p>
+    <p>Fixed partitioning need not lose value in every demand regime. A large feasible set can still be nearly worthless if it allocates headroom to the wrong place at the wrong time. What remains unknown is a real operator’s unmet deadline, its value, the relevant outage distribution, a defensible physical dataset, and an advantage over the strongest baseline.</p>
+
+    <h2>T1–T6 · toy checks</h2>
+    <div class="design-only">
+      <strong>Illustrations · not a field trial</strong>
+      Exact toy arithmetic executed with the audit. Not a feeder simulation. Not a hardware test. Not a market study. Not field validation. No AC power flow, uncertain demand, strategic behavior, or protection is modeled. No execution-time performance was measured. These checks do not show that all partitions or architectures are equivalent, and they support no conclusion about net benefit on a real feeder.
+    </div>
+
+    <article class="criticism-box">
+      <h3>T1 · Separate feasibility does not imply joint feasibility <span class="claim-tag claim-tag--dashed">Illustration</span></h3>
+      <p>Capacity 10. Two domains independently request 6 and 6. Each request is individually feasible. Joint use is 12. Joint feasible: no.</p>
+      <p>Consequence: “Not binding now” cannot authorize concurrent use.</p>
+    </article>
+    <article class="criticism-box">
+      <h3>T2 · A fixed safe partition bounds simultaneous use <span class="claim-tag claim-tag--dashed">Illustration</span></h3>
+      <p>Domain limits 6 and 4. Enumerated integer states: 35. Maximum use: 10. All of those states stayed inside the cap.</p>
+      <p>Consequence: fixed partitioning preserves this simple invariant.</p>
+    </article>
+    <article class="criticism-box">
+      <h3>T3 · A previously safe grant need not survive capacity shrinkage <span class="claim-tag claim-tag--dashed">Illustration</span></h3>
+      <p>Actual capacity falls from 10 to 8. Previously permitted use can exceed the new limit. Maximum excess: 2.</p>
+      <p>Consequence: a valid old allocation is not a guarantee under arbitrary drift.</p>
+    </article>
+    <article class="criticism-box">
+      <h3>T4 · Check the aggregate post-state, not each request alone <span class="claim-tag claim-tag--dashed">Illustration</span></h3>
+      <p>Local budget 6. Two accepted-looking requests of 4 and 4. Each request passes on its own. Aggregate 8 does not pass.</p>
+      <p>Consequence: local serialization and cumulative accounting remain necessary.</p>
+    </article>
+    <article class="criticism-box">
+      <h3>T5 · Geometric loss is not uniquely a service or welfare loss <span class="claim-tag claim-tag--dashed">Illustration</span></h3>
+      <p>A triangle x+y≤10 compared with a 5-by-5 allocation box. Square-versus-triangle area loss: 0.5. Maximum total throughput loss: 0.0. Central expected service across two scenarios: 10.0. Partition expected service across those scenarios: 5.0.</p>
+      <p>Consequence: area can fall 50 percent while maximum total throughput falls 0 percent, and demand-specific service can fall 50 percent. Geometric volume is not a unique measure of economic loss.</p>
+    </article>
+    <article class="criticism-box">
+      <h3>T6 · Renaming an identical local admission rule creates no gain <span class="claim-tag claim-tag--dashed">Illustration</span></h3>
+      <p>The same local rule, called either a conventional controller limit or an escrow right, produced identical accept/reject outcomes on every tested trace:</p>
+      <ul class="clean">
+        <li>Requests 0, 3, 2, 1 — both names accepted all four.</li>
+        <li>Requests 4, 4 — both names accepted, then rejected.</li>
+        <li>Requests 6, 1 — both names accepted, then rejected.</li>
+        <li>Requests 1, 1, 1 — both names accepted all three.</li>
+      </ul>
+      <p>All outcomes identical: yes. Consequence: renaming an existing permission creates no performance advantage on these traces.</p>
+    </article>
+
+    <h2>Agenda</h2>
+    <p>Every investigation below is <strong>Proposed</strong>. None has started. There is no progress percentage and no completion date. A field-control experiment is not authorized by an interesting illustration.</p>
+
+    <article class="lens-card">
+      <strong>1 · Find an unmet operational need and its strongest existing solution <span class="claim-tag claim-tag--dashed">Proposed</span></strong>
+      <span>Who needs a local decision that current site controllers, scheduled envelopes, and fallback controls do not adequately provide? Continue only with a documented requirement and a fair comparator. Stop the selected case if the incumbent already provides the behavior, the requirement is only hypothetical, or no cost of delay can be defended. That would close the case, not every future application. Ties to <a href="research-q1.html">SOE-Q001</a>.</span>
+    </article>
+    <article class="lens-card">
+      <strong>2 · Specify permissions and challenge failure behavior <span class="claim-tag claim-tag--dashed">Proposed</span></strong>
+      <span>Six small arithmetic illustrations are available. They are not completion of a state-machine study. Stop or reformulate if the desired guarantee depends on impossible information, hidden coordination, unrestricted offline double spending, or knowledge of arbitrary unobserved failures. If the state machines match a conventional controller limit, close the protocol-novelty claim. Ties to <a href="research-q2.html">SOE-Q002</a>.</span>
+    </article>
+    <article class="lens-card">
+      <strong>3 · Compare service, safety, and cost on a realistic model <span class="claim-tag claim-tag--dashed">Proposed</span></strong>
+      <span>Conditional on the first two gates. Continue only if a meaningful advantage survives matched baselines and uncertainty, with a materiality threshold set before results are seen. Stop if the advantage disappears against a matched local-controller or dynamic operating-envelope baseline, depends on perfect measurement or instant recall, or is outweighed by added operating cost. If uncertainty spans benefit and harm, report inconclusive. Do not promote “possibly positive” to success.</span>
+    </article>
+
+    <p class="muted">Contributions are not open yet. This page does not collect counterexamples through a form. The questions can still be read: <a href="research.html">How much can we safely decide locally?</a></p>
+
+    <div class="boundaries">
+      <strong>Honest frame.</strong> Surviving question only · rejected claims stay visible · DOE and local-control methods are the baseline · T1–T6 are illustrations · agenda is Proposed · no field trial completed · no new protocol · no new token.
+    </div>
+  </main>
+  <footer><div class="inner">Society of Explorers <span class="footer-sep" aria-hidden="true">·</span> <a class="footer-util" href="participate.html">Participate</a></div></footer>
+</body>
+</html>

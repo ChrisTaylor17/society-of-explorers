@@ -1,50 +1,96 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { emitActivity } from '@/lib/feed/activityFeed';
+import { isUuid } from '@/lib/ids/uuid';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const ROOM_LIST_FIELDS =
+  'id,community_id,created_by,room_name,daily_room_url,title,room_type,project_id,council_session_id,active_thinkers,is_live,max_participants,started_at,ended_at,created_at,scheduled_for';
+
+type RoomCreateBody = {
+  projectId?: unknown;
+  memberId?: unknown;
+};
+
+type CommunityRow = {
+  id: string;
+};
+
+function normalizeText(value: unknown, fallback: string, maxLength: number) {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, maxLength) : fallback;
+}
+
+function normalizeNullableUuid(value: unknown) {
+  return typeof value === 'string' && isUuid(value) ? value : null;
+}
+
+async function safeRequestJson(req: NextRequest): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 export async function GET(req: NextRequest) {
-  const communitySlug = req.nextUrl.searchParams.get('community') || 'society-of-explorers';
-  const { data: community } = await supabase.from('communities').select('id').eq('slug', communitySlug).single();
-  if (!community) return NextResponse.json({ rooms: [] });
+  const auth = await getAuthenticatedMember(req);
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: rooms } = await supabase.from('video_rooms').select('*')
-    .eq('community_id', community.id).eq('is_live', true).order('started_at', { ascending: false });
+  const communitySlug = normalizeText(
+    req.nextUrl.searchParams.get('community'),
+    'society-of-explorers',
+    80,
+  );
+  const supabase = getSupabaseAdmin();
+  const { data: community, error: communityError } = await supabase
+    .from('communities')
+    .select('id')
+    .eq('slug', communitySlug)
+    .single();
 
-  return NextResponse.json({ rooms: rooms || [] });
+  if (communityError || !community) return privateJson({ rooms: [] });
+
+  const communityRow = community as CommunityRow;
+  const { data: rooms, error: roomsError } = await supabase
+    .from('video_rooms')
+    .select(ROOM_LIST_FIELDS)
+    .eq('community_id', communityRow.id)
+    .eq('is_live', true)
+    .or('room_type.is.null,room_type.neq.live_session')
+    .order('started_at', { ascending: false });
+
+  if (roomsError) return privateJson({ error: 'Failed to load rooms' }, { status: 500 });
+  return privateJson({ rooms: rooms || [] });
 }
 
 export async function POST(req: NextRequest) {
-  const { title, roomType, projectId, communitySlug, memberId, thinkers } = await req.json();
-  if (!memberId) return NextResponse.json({ error: 'Login required' }, { status: 401 });
+  const body = await safeRequestJson(req);
+  if (!isRecord(body)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
-  const { data: community } = await supabase.from('communities').select('id').eq('slug', communitySlug || 'society-of-explorers').single();
-  const roomName = `soe-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const { projectId, memberId } = body as RoomCreateBody;
+  const normalizedProjectId = normalizeNullableUuid(projectId);
 
-  let dailyRoomUrl = null;
-  if (process.env.DAILY_API_KEY) {
-    try {
-      const res = await fetch('https://api.daily.co/v1/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.DAILY_API_KEY}` },
-        body: JSON.stringify({ name: roomName, properties: { max_participants: 8, enable_chat: true, exp: Math.floor(Date.now() / 1000) + 7200 } }),
-      });
-      const d = await res.json();
-      dailyRoomUrl = d.url;
-    } catch {}
+  if (projectId !== undefined && projectId !== null && projectId !== '' && !normalizedProjectId) {
+    return privateJson({ error: 'Invalid project id' }, { status: 400 });
   }
 
-  const { data: room, error } = await supabase.from('video_rooms').insert({
-    community_id: community?.id, created_by: memberId, room_name: roomName,
-    daily_room_url: dailyRoomUrl, title: title || 'Council Room', room_type: roomType || 'open',
-    project_id: projectId || null, active_thinkers: thinkers || [], is_live: true, started_at: new Date().toISOString(),
-  }).select().single();
+  const auth = await getAuthenticatedMember(req);
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (typeof memberId === 'string' && memberId && memberId !== auth.memberId) {
+    return privateJson({ error: 'Cannot create a room for another member' }, { status: 403 });
+  }
 
-  await supabase.from('room_participants').insert({ room_id: room.id, member_id: memberId });
-  emitActivity({ communityId: community?.id, memberId, eventType: 'room_started', title: `${title || 'Council Room'} is live`, metadata: { roomId: room.id } }).catch(() => {});
-
-  return NextResponse.json({ room });
+  // No generic provider room or project association may be created until the
+  // legacy community/project authority is reviewed. Do not treat sign-in as it.
+  return privateJson({
+    error: 'Legacy room creation is unavailable. Use the dedicated Live Council controls for supported sessions.',
+    code: 'legacy_rooms_unavailable',
+  }, { status: 409 });
 }

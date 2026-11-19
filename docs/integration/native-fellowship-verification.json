@@ -1,0 +1,150 @@
+{
+  "status": "VERIFIED_LOCAL_NATIVE_FELLOWSHIP",
+  "recordedAt": "2026-11-08T06:58:58.964925+00:00",
+  "baseCommit": "cd86eb92dfafb052623f004d57eb9aabffe9be8b",
+  "productHashes": {
+    "platforms/native/OwnedAccountScreen.tsx": "ac6e9d6927617a4b13790ce1eafbde28e4f4524bc3ae833b17bb0b0def44efa2",
+    "platforms/native/MemberCircleScreen.tsx": "46d4580925d2d443675e0a4a8087c7aa0bd8249782b0dbcb106a9758002e5681",
+    "platforms/native/PublicCirclesScreen.tsx": "b2ab6af5611be1e77417d746a9285dc247221f617d05855f95d60def7bfae583",
+    "platforms/native/CircleDirectoryScreen.tsx": "5140e24583ed04e490be0489ab29640d337e5f940336951aa575c9edff903b7c",
+    "platforms/native/CircleScreen.tsx": "7465fed3b591f0c9b02fbb7b9415cc4e2927b3a57cbf191f43194f5502d2022d",
+    "platforms/native/FellowshipScreen.tsx": "bb165476682a8c8ae1374153d3df94dff3d448372f1a09eb0471aafe7ca1ce2e",
+    "platforms/native/FellowshipQuestion.tsx": "10ff1a6472f48bf2dc76349112e390d0bd64d9afa91d8dd23b372eda8e0a4c31",
+    "lib/fellowship/topics.ts": "7c1071c6b41b56789156bcd13fd4bc6b3b792b5ecaada13eca98d353012de908",
+    "lib/fellowship/salon.ts": "17e419c3ece4d4562e5f4e053b8f6a8b0f120ad47b0370ba0a8c17ac06de0593"
+  },
+  "testHashes": {
+    "platforms/tests/native-fellowship-primitives.tsx": "3512504e4f06e00a2340e9bb5c2670ffaec3a123b9fd647a88c94097030a6cb1",
+    "platforms/tests/native-fellowship-entry.tsx": "73fad17aaa5873f456b31b6b13e74719743c6050f89591b7f8326772a4908241",
+    "platforms/tests/native-fellowship-loader.cjs": "b8aea174efac00fc24af4b4008e566946198342a50ed5da995d9ce6b8bf7e62f",
+    "platforms/tests/bundle-native-fellowship.mjs": "6e0f2fcd95a236da26d8f74ebd23c6f79c8350c40bcb1b82aab64ce4d73e81b0",
+    "platforms/tests/browser-native-fellowship.mjs": "cbeebe8f72cc2a966846a077eb5fe894300308261f20789eb28353d6c89990ed"
+  },
+  "sourceBinding": "All 120 bundled inputs match the candidate; all unchanged product inputs also match canonical before promotion. The nine product files are promoted byte-for-byte.",
+  "browser": {
+    "stories": 12,
+    "modes": [
+      "Android AppState/blur/focus double",
+      "iOS AppState double"
+    ],
+    "unexpectedNetwork": [],
+    "errors": [],
+    "closed": true,
+    "receipt": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build/canonical-integration-01/source/verification/web/evidence/native-fellowship-04/browser-02.json",
+    "scope": "Actual native screens and directory models. React Native primitives/AppState/connectivity/public replies and retained member authority are explicit browser doubles. No actual provider, device, member or server acceptance."
+  },
+  "nativeTypecheck": "PASS with installed locked native dependencies",
+  "tests": {
+    "nativeAccountDiscovery": 62,
+    "webDiscoveryInquiryMedia": 53,
+    "total": 115
+  },
+  "scopedLint": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "webBuild": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build/canonical-integration-01/source",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 38.98,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 1225,
+    "sourceSha256": "7d7729ed78c93d2c5a4c9f49255fdab4d6bb0772b92db76ddcdd4d05b84e2fd0",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/fellowship-native-final-next-build.log"
+  },
+  "android": {
+    "status": "PASS_CURRENT_SOURCE_TEST_APK",
+    "checkedAt": "2026-11-08T06:55:55.099680+00:00",
+    "sourceHead": "cd86eb92dfafb052623f004d57eb9aabffe9be8b",
+    "patchAppliedToCandidate": true,
+    "apk": "/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-08-android-native-build/canonical-integration-01/source/platforms/native/android/app/build/outputs/apk/synthetic/app-synthetic.apk",
+    "bytes": 67604555,
+    "sha256": "b236e79ecd2d8a698ce01bee748c60f8613070a006b77c782be5dff641223e08",
+    "package": "com.anonymous.soesyntheticdemo.embedded",
+    "minimumSdk": 24,
+    "targetSdk": 36,
+    "architecture": "arm64-v8a",
+    "signature": "v2 verified; Android Debug certificate",
+    "debuggable": true,
+    "backupAllowed": false,
+    "cleartextAllowed": false,
+    "generatedLiveConfigurationBlank": true,
+    "nativeDefinedClassesVerified": [
+      "Lcom/anonymous/soesyntheticdemo/member/MemberSecureStore;",
+      "Lcom/anonymous/soesyntheticdemo/member/NativeSoeMemberModule;",
+      "Lcom/anonymous/soesyntheticdemo/member/SoeMemberPackage;",
+      "Lcom/anonymous/soesyntheticdemo/reader/SourceReaderManager;",
+      "Lcom/anonymous/soesyntheticdemo/reader/ClipPlayerManager;"
+    ],
+    "definedClassCount": 17641,
+    "assets": {
+      "assets/app.config": {
+        "bytes": 412,
+        "sha256": "ec4d207485d62273e61edd632548a8aac10d4160e9d92d4490f505a20172eb45"
+      },
+      "assets/app.fingerprint": {
+        "bytes": 8522,
+        "sha256": "e26af3f1353cc208d0f678f7d14b17163f6d8b9d6939557c60387f6a3bae04ed"
+      },
+      "assets/index.android.bundle": {
+        "bytes": 3249756,
+        "sha256": "49783849d3278166dc9f5a294675c13562908b784a25c70a6b23555390550086"
+      },
+      "assets/source-reader-catalog.json": {
+        "bytes": 88177,
+        "sha256": "44882616e9975f0a0199f0b16b978babfac02f86d309c9078f32499b3d3870b3"
+      }
+    },
+    "clipsPackagedAndHashMatched": 5,
+    "permissions": [
+      "android.permission.ACCESS_LOCAL_NETWORK",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.INTERNET",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "com.anonymous.soesyntheticdemo.embedded.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+    ],
+    "permissionsMatchPriorDebugArtifact": true,
+    "priorApkUnchanged": true,
+    "fellowshipNativeScreenImplemented": true,
+    "physicalDeviceTested": false,
+    "releaseSigning": false,
+    "newSpendingUsd": 0,
+    "scope": "Current-source private Android test APK compiled, signed and directly inspected. No installation, real-member authentication, device acceptance, store release is claimed. Native Fellowship source is integrated in this candidate."
+  },
+  "storage": {
+    "minFreeBytes": 23438790656,
+    "maxPrivateAllocatedBytes": 12351541248
+  },
+  "fixesDuringReview": [
+    "Outdated draft sourceUrl corrected to canonical publisherUrl",
+    "Correction action callbacks retire after each explicit action and on lifecycle loss",
+    "Root Kernel return label identifies Fellowship; preparing a salon returns to sign-in"
+  ],
+  "retainedFailedChecks": "Initial type check and browser harness failures are preserved. Browser corrections covered UTF-8 delivery/default primitive styling, required synthetic meeting link and opening Host guide before its action. No product access checks or assertions were weakened.",
+  "limits": [
+    "Android debug arm64 build, not release signing or installed-device acceptance",
+    "iOS lifecycle simulation, not an iPhone build; full Xcode absent",
+    "Quest candidate remains separate and unintegrated",
+    "No real provider, hosted database, OS secure-storage or member-session acceptance",
+    "Public questions stay read-only; no automatic join, posting, invites or AI processing",
+    "No database changes; full production privacy/recovery HOLD remains"
+  ],
+  "spentUsd": 0,
+  "productionCleared": false,
+  "rollback": "Revert only this additive source commit locally after checking later dependencies. No database or account migration; original draft, preimages and prior verified APK are preserved in native-fellowship-01/before."
+}

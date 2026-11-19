@@ -1,14 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import Anthropic from '@anthropic-ai/sdk';
+import { NextRequest } from 'next/server';
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { privateJson } from '@/lib/http/routeError';
+import { filterUsableMemoryRows, type MemoryRetrievalRow } from '@/lib/memory/retrievalPolicy';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+type QueryErrorDetails = {
+  code?: string | null;
+  details?: string | null;
+};
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+type SemanticMemoryFactRow = MemoryRetrievalRow & {
+  id: string;
+  category: string | null;
+  key: string | null;
+  value: string;
+  confidence: number | null;
+  created_at: string | null;
+  source_episode_id: string | null;
+  source_episode?: { thinker_id?: string | null } | null;
+};
+
+type InsightEpisodeRow = {
+  id: string;
+  thinker_id: string | null;
+  role: string | null;
+  content: string;
+  created_at: string;
+  source: string | null;
+  session_id: string | null;
+};
+
+type InsightThread = {
+  session_id: string | null;
+  thinker_id: string | null;
+  source: string | null;
+  created_at: string;
+  user: { content: string; created_at: string } | null;
+  assistant: { content: string; created_at: string } | null;
+};
 
 async function generateOpeningHeadline(
   displayName: string,
@@ -16,12 +46,14 @@ async function generateOpeningHeadline(
 ): Promise<string | null> {
   if (!facts.length) return null;
   try {
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('memory', 'claude-opus-4-7');
     const bulleted = facts
       .slice(0, 12)
       .map(f => `- ${f.value}`)
       .join('\n');
     const res = await anthropic.messages.create({
-      model: 'claude-opus-4-7',
+      model,
       max_tokens: 120,
       system: `You write ONE sentence. The person below will read it the moment they open their wisdom profile. Either they feel "oh — they actually see me," or they close the tab. Make them feel seen.
 
@@ -60,9 +92,10 @@ Return ONLY the sentence itself. No quotes, no preamble, no JSON, no label.`,
 
 export async function GET(req: NextRequest) {
   const auth = await getAuthenticatedMember(req);
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!auth) return privateJson({ error: 'Unauthorized' }, { status: 401 });
 
   const memberId = auth.memberId;
+  const supabaseAdmin = getSupabaseAdmin();
 
   // Semantic facts — active only, ordered for grouping. Join source episode
   // to surface which thinker originally authored the fact (for the avatar).
@@ -75,11 +108,9 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(200);
   if (factsError) {
+    const factsErrorDetails = factsError as QueryErrorDetails;
     console.error('[insights-query-failed] semantic_memory', {
-      message: factsError.message,
-      code: (factsError as any).code,
-      details: (factsError as any).details,
-      memberId,
+      code: factsErrorDetails.code,
     });
   }
 
@@ -91,17 +122,15 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(30);
   if (episodesError) {
+    const episodesErrorDetails = episodesError as QueryErrorDetails;
     console.error('[insights-query-failed] episodes', {
-      message: episodesError.message,
-      code: (episodesError as any).code,
-      details: (episodesError as any).details,
-      memberId,
+      code: episodesErrorDetails.code,
     });
   }
 
   // Group by session_id, preserving newest-first order (first encounter = newest)
-  const threadsMap = new Map<string, any>();
-  for (const ep of episodeRows || []) {
+  const threadsMap = new Map<string, InsightThread>();
+  for (const ep of (episodeRows || []) as InsightEpisodeRow[]) {
     const key = ep.session_id || `solo_${ep.id}`;
     if (!threadsMap.has(key)) {
       threadsMap.set(key, {
@@ -114,6 +143,7 @@ export async function GET(req: NextRequest) {
       });
     }
     const thread = threadsMap.get(key);
+    if (!thread) continue;
     if (ep.role === 'user') thread.user = { content: ep.content, created_at: ep.created_at };
     else if (ep.role === 'assistant') thread.assistant = { content: ep.content, created_at: ep.created_at };
     // Use the earliest/user timestamp as the thread timestamp when available
@@ -125,7 +155,8 @@ export async function GET(req: NextRequest) {
     .slice(0, 8);
 
   // Flatten the embedded thinker_id onto each fact for easy client rendering.
-  const semanticFacts = (factRows || []).map((f: any) => ({
+  const activeFactRows = filterUsableMemoryRows((factRows || []) as SemanticMemoryFactRow[]);
+  const semanticFacts = activeFactRows.map((f) => ({
     id: f.id,
     category: f.category,
     key: f.key,
@@ -139,7 +170,7 @@ export async function GET(req: NextRequest) {
   const displayName = auth.member.display_name || 'Explorer';
   const openingHeadline = await generateOpeningHeadline(displayName, semanticFacts);
 
-  return NextResponse.json({
+  return privateJson({
     member: { id: auth.member.id, display_name: auth.member.display_name },
     semanticFacts,
     threads,

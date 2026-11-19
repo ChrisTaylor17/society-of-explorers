@@ -1,0 +1,83 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "recordedAt": "2026-11-06T20:45:23.834932+00:00",
+  "parentCommit": "7ff2e012ebd17cd14f0b2fac5fad20c852340543",
+  "migrationFilesStagedOnDisposablePostgres": 62,
+  "postgreSqlChecks": [
+    "A drifted browser grant refuses installation atomically. The complete reviewed predecessor accepts the draft.",
+    "Erasure start waited for the admitted block. Review includes that write and inactive rows with a timezone-independent digest and no peer identifiers.",
+    "Fresh blocks, unblocks, exact replay and direct table writes involving a frozen account are refused. Blocks keep older posts and messages hidden while those phases are pending.",
+    "A block on a different pair waited behind erasure start, then saw the frozen peer and failed.",
+    "Browser and service roles cannot inspect or erase private rows. Owners must supply the exact processing account and provider binding.",
+    "Identity removal waits for the block phase. Unapproved or altered scope fails, and a failure writing the final receipt rolls back removal of every reviewed block.",
+    "Overlapping erasures serialize and the second owner must review again. The first retry reuses its time, the unrelated block stays intact, and the frozen member cannot receive new messages.",
+    "Wallet-only identity removal verifies after the block receipts. A provider-only account can prepare identity removal without a block receipt. The public status receipt stays pending.",
+    "The 67-table reference catches a restore missing the receipts. The full restore preserves exact retry, frozen blocks and the unrelated row."
+  ],
+  "restore": {
+    "complete": {
+      "scope": "soe-privacy-restore-v17",
+      "status": "MATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "receiptRowsOmitted": {
+      "scope": "soe-privacy-restore-v17",
+      "status": "MISMATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [
+        "soe_account_deletion_private.member_block_erasure_receipts"
+      ],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "earlierScope": {
+      "scope": "soe-privacy-restore-v16",
+      "status": "MATCH",
+      "tablesCompared": 66,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    }
+  },
+  "appCompatibilityTests": 15,
+  "appCompatibilityScope": "Local browser-account HTTP, member block management and shared host tests with the earlier compatible database fixtures. The new erasure SQL ran against PostgreSQL 17 in the full migration rehearsal.",
+  "scope": "Disposable PostgreSQL 17 with synthetic accounts and no hosted credentials or writes. Production backup and recovery, data retention approval, hosted rollout and installed device acceptance remain pending.",
+  "previousBuildInputsVerified": 1095,
+  "databaseAndTestInputsVerified": 71,
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "e759e6b2c1a5aedd71c0894faba0671b4e943a1df77641e9b60aa7dd06afc80e",
+    "docs/integration/account-deletion.md": "bac38044c500c97f39161605292fae371e79cab720f4823c30374fbdf634199f",
+    "docs/integration/privacy-restore-check.md": "8d3fa5f8b64b9c8c73265ba8b9d8453bbd4d3653473a246f7186991244662550",
+    "docs/integration/production-migration-plan.md": "645c3a68d8830dd290f39c687749f9060e421166cb396d2462c4f9d072262fae",
+    "docs/sql/account-erasure-member-blocks-apply.sql": "7c5296d6810e18c2f3756439ed318341c0517e0170e1c3ec2824ff86cab9550f",
+    "docs/sql/privacy-restore-reference.sql": "bf0063977ab7cf3991fa34bb175d8ef88f2c4a99fcb5967626fb021dc802e65f",
+    "verification/web/scripts/rehearse-member-block-erasure.py": "66709ebadfd94a08cda9d80f486d0c95db00766b995f2039b5c51850dff79bff",
+    "verification/web/scripts/test-privacy-restore-check.py": "d25dde98825288a497b83ed781f03ab8f72ace9fa2ccd0d6122b9a8600f60f5b",
+    "verification/web/scripts/verify-privacy-restore.py": "08e4e176c708f178751636b9f29316fc4cc2764e594e04d4105527bb4ecbe55d"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-member-block-erasure",
+  "evidenceSha256": {
+    "disposable-postgres-rehearsal.json": "2a91309d99dac91e8d9cd6fe5cebf0d4a3e58c81e56f57f6dc059456889a917e",
+    "app-compatibility.tap": "9baa0aba30fc5609fb5867c24c0cb1a4aa8d5f894ba372d7f0a5677c3904468c",
+    "tested-source-sha256.json": "59b08030fd114feec2da2e8f3dee83ce7b99965645689d7d9a288d67256bcfca"
+  }
+}

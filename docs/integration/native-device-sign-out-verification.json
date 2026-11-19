@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T00:14:32.313550+00:00",
+  "baseCheckpoint": "b00934b09f7a7e3780519dba0767985a2fcadb62",
+  "status": "LOCAL_NATIVE_DEVICE_SIGN_OUT_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "physicalDeviceVerified": false,
+  "liveProviderVerified": false,
+  "installedAccountTypeCheckExitCode": 0,
+  "scopedLintExitCode": 0,
+  "sourceBindings": 229,
+  "focusedChecks": {
+    "path": "verification/web/evidence/checkpoint-native-device-sign-out/focused.tap",
+    "sha256": "dc9b86eb1048e9671037c7590195dcdc91998a4932497346b1d2c26a4a1bd4e9",
+    "passed": 73,
+    "sources": {
+      "platforms/tests/owned-auth.test.mjs": "f1cb37fcc26548e89dc3c142cf013a0810557408181529193c0491a387e9c21b",
+      "platforms/tests/native-auth-ports.test.mjs": "0130440c4f69f050f877f524d68af84c093e993aca8148579e5b87648b60304e",
+      "platforms/tests/email-auth.test.mjs": "16c9a9d450d11138c81d7749338431c66b4035558476baf09b40aeb988cedb3e",
+      "platforms/tests/installed-member-adapter.test.mjs": "0b7860d27d4f85533467f29e6fb0981922aacfa9670f6be6e6b1124cb7a13c68",
+      "platforms/tests/tsconfig.native-installed-account.json": "30cd8d25da411019f7c0a72485001c2bafc1b4ea697d1e7a0980ea3aedeb523b"
+    }
+  },
+  "browser": {
+    "android": {
+      "path": "verification/web/evidence/checkpoint-native-device-sign-out/android-browser.json",
+      "sha256": "cfa14c0b35b7330bdf7e437bd2c03913b1a7bffdc2e571179a3a0fb6617bee51",
+      "stories": 18,
+      "requests": 53,
+      "simulatedCurrentSessionLogoutRequests": 3,
+      "cleanup": {
+        "browser": "closed",
+        "database": "closed"
+      },
+      "bundle": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/android-bundle.mjs",
+        "sha256": "8a5dd0ac68f3e701e70af0851e5aa315294c62214ee5adec97760f75ad539866"
+      },
+      "manifest": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/android-sources.json",
+        "sha256": "14db5199d1c95e2aa6ec86176cc5a6d38422225a39d65982df1eaf3fea2c7e09"
+      },
+      "log": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/android-browser.log",
+        "sha256": "dbd212ce7b5e875acb631010fb68ae85f6b22872bdf2c135fa73e0db0ac85f28"
+      },
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/android-320.png",
+        "sha256": "deeace2765768e53efcc789a37ac6b2f9296ed331a42cd75b1e3e962e3027e98"
+      }
+    },
+    "ios": {
+      "path": "verification/web/evidence/checkpoint-native-device-sign-out/ios-browser.json",
+      "sha256": "0a204a3faa4c4ac8136888633c6546f57056cddb743fc7688167057d9037e2c6",
+      "stories": 18,
+      "requests": 53,
+      "simulatedCurrentSessionLogoutRequests": 3,
+      "cleanup": {
+        "browser": "closed",
+        "database": "closed"
+      },
+      "bundle": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/ios-bundle.mjs",
+        "sha256": "8a5dd0ac68f3e701e70af0851e5aa315294c62214ee5adec97760f75ad539866"
+      },
+      "manifest": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/ios-sources.json",
+        "sha256": "f39cc1b14e7348f52e47dfed38f979f438819e3dba518989f5a0164c6545694a"
+      },
+      "log": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/ios-browser.log",
+        "sha256": "dbd212ce7b5e875acb631010fb68ae85f6b22872bdf2c135fa73e0db0ac85f28"
+      },
+      "screenshot": {
+        "path": "verification/web/evidence/checkpoint-native-device-sign-out/ios-320.png",
+        "sha256": "deeace2765768e53efcc789a37ac6b2f9296ed331a42cd75b1e3e962e3027e98"
+      }
+    }
+  },
+  "scope": "Actual registered React Native account screen and app-owned controller in Chromium using simulated React Native events, provider responses and protected-storage bridge. Existing member checks execute actual handlers and disposable SQL. Device build, hardware and live revocation are open."
+}

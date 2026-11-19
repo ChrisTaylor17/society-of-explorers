@@ -9,7 +9,7 @@ const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
 export const metadata: Metadata = {
-  title: 'The Manifesto — Society of Explorers',
+  title: 'The Manifesto',
   description: 'Bitcoin as foundation. Ethereum as proof-of-concept. Society of Explorers as the engine. A manifesto for sovereign minds in a transitional age.',
 };
 
@@ -49,15 +49,16 @@ export default function ManifestoPage() {
 
         {/* Page header */}
         <header style={{ textAlign: 'center', marginBottom: '4rem' }}>
-          <div style={{
+          <h1 style={{
             fontFamily: 'Cinzel, serif',
-            fontSize: '11px',
+            fontSize: '12px',
+            fontWeight: 400,
             letterSpacing: '0.4em',
             color: gold,
-            marginBottom: '1.25rem',
+            margin: '0 0 1.25rem',
           }}>
             THE MANIFESTO
-          </div>
+          </h1>
           <p style={{
             fontFamily: 'Cormorant Garamond, serif',
             fontSize: '18px',

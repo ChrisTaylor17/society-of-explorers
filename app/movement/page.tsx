@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
 
@@ -10,7 +11,7 @@ const card = '#0d0d0d';
 const border = '1px solid rgba(201,168,76,0.15)';
 
 export const metadata: Metadata = {
-  title: 'The Explorer Movement - Society of Explorers',
+  title: 'The Explorer Movement',
   description:
     'A truth-seeking creator stack that turns daily philosophical practice into a sovereign collective signal.',
 };
@@ -33,6 +34,12 @@ const pillars = [
     title: 'A collective signal without exposing the individual.',
     body:
       'Anonymized themes help the community see consensus, divergence, and the next questions worth asking together.',
+  },
+  {
+    label: 'CONSENT',
+    title: 'Memory that can be inspected and revoked.',
+    body:
+      'Members can review active recall, forget facts that no longer belong, and keep the mirror accountable to lived consent.',
   },
 ];
 
@@ -116,6 +123,24 @@ export default function MovementPage() {
                 TODAY&apos;S QUESTION &rarr;
               </a>
               <a
+                href="/movement/sovereignty"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                SOVEREIGNTY PASSPORT
+              </a>
+              <a
                 href="/movement/pod"
                 style={{
                   fontFamily: 'Cinzel, serif',
@@ -150,6 +175,42 @@ export default function MovementPage() {
                 }}
               >
                 YOUR MIRROR
+              </a>
+              <a
+                href="/movement/memory"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                MEMORY CONSENT
+              </a>
+              <a
+                href="/movement/voice-council"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '11px',
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  border,
+                  padding: '0 24px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '52px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                LIVE COUNCIL
               </a>
             </div>
           </div>
@@ -217,6 +278,81 @@ export default function MovementPage() {
                 </p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section style={{ padding: '0 2rem 5rem' }}>
+          <div
+            style={{
+              maxWidth: '700px',
+              margin: '0 auto',
+              borderTop: border,
+              paddingTop: '3rem',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'Cinzel, serif',
+                fontSize: '9px',
+                letterSpacing: '0.28em',
+                color: gold,
+                marginBottom: '1rem',
+              }}
+            >
+              PERSONALITIES
+            </div>
+            <h2
+              style={{
+                fontFamily: 'Playfair Display, serif',
+                fontSize: 'clamp(26px, 4vw, 38px)',
+                fontWeight: 400,
+                fontStyle: 'italic',
+                lineHeight: 1.15,
+                color: parchment,
+                margin: '0 0 1.5rem',
+              }}
+            >
+              Special voices for the Movement.
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <Link
+                href="/movement/p/lennon-mccartney"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '10px',
+                  letterSpacing: '0.18em',
+                  color: gold,
+                  border,
+                  padding: '0 18px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '44px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                LENNON &amp; MCCARTNEY
+              </Link>
+              <Link
+                href="/movement/p/buck-holler"
+                style={{
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '10px',
+                  letterSpacing: '0.18em',
+                  color: gold,
+                  border,
+                  padding: '0 18px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  height: '44px',
+                  background: 'rgba(13,13,13,0.72)',
+                }}
+              >
+                BUCK HOLLER
+              </Link>
+            </div>
           </div>
         </section>
 

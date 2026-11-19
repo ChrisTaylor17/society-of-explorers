@@ -1,23 +1,56 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
+import { checkPermission } from '@/lib/governance/hats';
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const ALLOWED_STATUSES = new Set(['pending', 'approved', 'executed', 'rejected']);
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const communitySlug = searchParams.get('community') || 'society-of-explorers';
-  const status = searchParams.get('status');
-  const memberId = searchParams.get('member');
+  try {
+    const communitySlug = req.nextUrl.searchParams.get('community') || 'society-of-explorers';
+    const status = req.nextUrl.searchParams.get('status');
+    const requestedMemberId = req.nextUrl.searchParams.get('member');
 
-  const { data: community } = await supabase.from('communities').select('id').eq('slug', communitySlug).single();
-  if (!community) return NextResponse.json({ transactions: [] });
+    if (status && status !== 'all' && !ALLOWED_STATUSES.has(status)) {
+      return privateJson({ error: 'Invalid transaction status' }, { status: 400 });
+    }
 
-  let query = supabase.from('agent_transactions').select('*')
-    .eq('community_id', community.id).order('created_at', { ascending: false }).limit(50);
+    const auth = await getAuthenticatedMember(req);
+    if (!auth) {
+      return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  if (status && status !== 'all') query = query.eq('status', status);
-  if (memberId) query = query.eq('to_member_id', memberId);
+    const canManage = await checkPermission(auth.memberId, communitySlug, 'manage_governance');
+    if (requestedMemberId && requestedMemberId !== auth.memberId && !canManage) {
+      return privateJson({ error: 'Cannot view another member transactions' }, { status: 403 });
+    }
 
-  const { data } = await query;
-  return NextResponse.json({ transactions: data || [] });
+    const supabase = getSupabaseAdmin();
+    const { data: community } = await supabase.from('communities').select('id').eq('slug', communitySlug).single();
+    if (!community) return privateJson({ transactions: [] });
+
+    let query = supabase
+      .from('agent_transactions')
+      .select('*')
+      .eq('community_id', community.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (status && status !== 'all') query = query.eq('status', status);
+    if (canManage) {
+      if (requestedMemberId) query = query.eq('to_member_id', requestedMemberId);
+    } else {
+      query = query.eq('to_member_id', auth.memberId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      return privateJson({ error: 'Failed to load transactions' }, { status: 500 });
+    }
+
+    return privateJson({ transactions: data || [] });
+  } catch {
+    return privateJson({ error: 'Failed to load transactions' }, { status: 500 });
+  }
 }

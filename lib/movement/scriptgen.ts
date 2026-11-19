@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { completeClaudeText } from '@/lib/movement/claude';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export type MovementPlatform = 'tiktok' | 'reels' | 'shorts';
 export type MovementScriptStatus = 'draft' | 'approved' | 'published' | 'archived';
@@ -34,11 +34,6 @@ interface ClaudeScriptVariant {
   visualTreatment: string;
   durationSeconds: number;
 }
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 const PLATFORMS: MovementPlatform[] = ['tiktok', 'reels', 'shorts'];
 
@@ -120,13 +115,14 @@ function practiceCta(platform: MovementPlatform, code: string): string {
   const params = new URLSearchParams({
     utm_source: platform,
     utm_medium: 'short_video',
-    utm_campaign: 'movement_daily',
+    utm_campaign: '92b_founding_node',
     utm_content: code,
   });
-  return `/practice?${params.toString()}`;
+  return `/92b/fund?${params.toString()}`;
 }
 
 export async function generateScripts(questionId: string): Promise<MovementScript[]> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: question, error: questionError } = await supabaseAdmin
     .from('daily_questions')
     .select('id, question_text, question_context, thinker_id, date')
@@ -141,7 +137,7 @@ export async function generateScripts(questionId: string): Promise<MovementScrip
   const raw = await completeClaudeText({
     maxTokens: 1800,
     system:
-      'You are the Society of Explorers short-form content engine. You turn one daily philosophical question into concrete, ready-to-shoot video scripts that invite people into a sovereign daily practice. Write plain modern English. No hype, no guru voice, no surveillance-platform framing.',
+      'You are the Society of Explorers short-form content engine. You turn one daily philosophical question into concrete, ready-to-shoot video scripts that invite people into a sovereign daily practice and the 92B founding node patronage campaign. Write plain modern English. No hype, no guru voice, no surveillance-platform framing.',
     messages: [
       {
         role: 'user',
@@ -164,7 +160,7 @@ Each object must use this shape:
   "durationSeconds": 60
 }
 
-Every script must end by inviting the viewer to answer today's question at Society of Explorers.`,
+Every script must end by inviting the viewer to answer today's question and help fund the first physical node at Society of Explorers.`,
       },
     ],
   });
@@ -203,7 +199,7 @@ Every script must end by inviting the viewer to answer today's question at Socie
       script_id: inserted.id,
       utm_source: variant.platform,
       utm_medium: 'short_video',
-      utm_campaign: 'movement_daily',
+      utm_campaign: '92b_founding_node',
       utm_content: code,
       short_code: code,
     });
@@ -216,4 +212,22 @@ Every script must end by inviting the viewer to answer today's question at Socie
   }
 
   return created;
+}
+
+export async function getLatestQuestionId(): Promise<string> {
+  const supabaseAdmin = getSupabaseAdmin();
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabaseAdmin
+    .from('daily_questions')
+    .select('id')
+    .lte('date', today)
+    .order('date', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data?.id) {
+    throw new Error(`Latest question lookup failed: ${error?.message || 'not found'}`);
+  }
+
+  return data.id as string;
 }

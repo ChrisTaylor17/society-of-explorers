@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "transformVersion": "inert-full-html-v1",
+  "bookId": "apology",
+  "editionId": "pg-1656-c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+  "editionSha256": "c23a532ff45b46926abb91c193151af3f4aa8d27dc3bb76a3bb8971a427642c7",
+  "source": {
+    "provider": "Project Gutenberg",
+    "ebookId": 1656,
+    "landingUrl": "https://www.gutenberg.org/ebooks/1656",
+    "archiveUrl": "https://www.gutenberg.org/cache/epub/1656/pg1656-h.zip",
+    "archiveSha256": "c4aff40ced8c1ad934682a222809e16919d1b880d1b8732290c6c5ad7c1a5af5",
+    "archiveBytes": 90307,
+    "retrievedAt": "2026-11-03T18:53:51.648Z",
+    "mainHtmlPath": "pg1656-images.html",
+    "charset": "UTF-8"
+  },
+  "metadata": {
+    "sourceTitle": "Apology",
+    "author": "Plato",
+    "translators": [
+      {
+        "name": "Benjamin Jowett",
+        "appliesTo": "Main work"
+      }
+    ],
+    "editors": [],
+    "illustrators": [],
+    "rights": {
+      "jurisdiction": "US",
+      "status": "public-domain",
+      "authority": "Project Gutenberg",
+      "outsideUS": "not-assessed",
+      "reviewedAt": "2026-11-03"
+    },
+    "licenseUrl": "https://www.gutenberg.org/policy/license.html",
+    "licenseNotice": "This eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.",
+    "editionNotes": [
+      "The Apology of Socrates is the application display alias; Apology is the source title."
+    ]
+  },
+  "reader": {
+    "sha256": "39935b8fd0710a044e2ccfc8af7543ba1070e206daf1bfc133eb1640d962a4fc",
+    "bytes": 115511,
+    "blockIndexVersion": "leaf-text-blocks-v1",
+    "blockCount": 125,
+    "contents": [
+      {
+        "id": "pg-header-heading",
+        "label": "The Project Gutenberg eBook of Apology",
+        "level": 2,
+        "readingIndex": 0
+      },
+      {
+        "id": "reading-heading-2",
+        "label": "Apology",
+        "level": 1,
+        "readingIndex": 8
+      },
+      {
+        "id": "reading-heading-3",
+        "label": "by Plato",
+        "level": 2,
+        "readingIndex": 9
+      },
+      {
+        "id": "reading-heading-4",
+        "label": "Translated by Benjamin Jowett",
+        "level": 3,
+        "readingIndex": 10
+      },
+      {
+        "id": "reading-heading-5",
+        "label": "Contents",
+        "level": 2,
+        "readingIndex": 11
+      },
+      {
+        "id": "reading-heading-6",
+        "label": "INTRODUCTION.",
+        "level": 2,
+        "readingIndex": 14
+      },
+      {
+        "id": "reading-heading-7",
+        "label": "APOLOGY",
+        "level": 2,
+        "readingIndex": 43
+      }
+    ]
+  },
+  "assets": [],
+  "fidelity": {
+    "canonicalTextSha256": "dd1963032a385b1b59179f9385f2bb1c1198b3edfa56f598a5afe28966bda975",
+    "sourceImageCount": 0
+  }
+}

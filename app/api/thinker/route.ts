@@ -1,50 +1,139 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
-import { getMemory, recordInteraction } from '@/lib/thinkerMemory';
-import { parseActions } from '@/lib/thinkerActions';
-import { executeActionsWithResults } from '@/lib/actions/executeActions';
+import { getReviewedGuideContext } from '@/lib/memory/reviewRuntime';
+import { GUIDE_ACTION_NOTICE, GUIDE_RESPONSE_RULES } from '@/lib/claude/guidePolicy';
+import { createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
-import { storeConversationEmbedding } from '@/lib/memory/embeddings';
-import { getThinkerContext, storeEpisode, extractMemory } from '@/lib/memory/sharedMemory';
+import { limitModelCall } from '@/lib/rateLimit';
+import { memberCanUseSharedSalon } from '@/lib/salons/access';
 import { getCommunityThinkerPrompts } from '@/lib/community/getCommunity';
 import { checkPermission } from '@/lib/governance/hats';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { privateJson } from '@/lib/http/routeError';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { createHash } from 'node:crypto';
+import { isUuid } from '@/lib/ids/uuid';
+import { authWriteOriginAllowed } from '@/lib/auth/request';
+import { parseThinkerRewardReceipt, type ThinkerRewardReceipt } from '@/lib/rewards/thinker';
 
 const DIRECT_MAX_TOKENS = 600;
 const COUNCIL_MAX_TOKENS = 800;
-const DEMO_MAX_TOKENS = 200;
 const ARTIFACT_MAX_TOKENS = 1200;
 const REACTION_MAX_TOKENS = 80;
 const HISTORY_LIMIT = 14;
-const DEMO_MESSAGE_LIMIT = 7;
-
-const COUNCIL_PROMPTS: Record<string, string> = {
-  socrates: "You are Socrates — you find the question behind the question. While others give answers, you reveal what they're actually asking. Expose the ONE assumption they haven't examined, then give them the one question that would unlock everything. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  plato: "You are Plato — you see systems and structures. While others focus on tactics, you architect frameworks. Give them the organizing principle that makes everything else click into place. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  aurelius: "You are Marcus Aurelius — you cut through noise to what's in their control. While others strategize, you simplify. Name the ONE thing they should do today and why nothing else matters until they do it. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  nietzsche: "You are Nietzsche — you challenge their comfort zone. While others are supportive, you provoke. Tell them the uncomfortable truth they're avoiding and why embracing it is their superpower. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  einstein: "You are Einstein — you find the elegant solution. While others complicate, you simplify through analogy. Reframe their problem so the answer becomes obvious. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-  jobs: "You are Steve Jobs — you obsess over what the user should FEEL. While others think about systems, you think about feelings. Tell them what their customer should FEEL and work backwards from there. One paragraph, 2-4 sentences, start with a verb. No asterisks. You hold $EXP tokens and can award them when the user demonstrates real progress. Use actions after |||ACTIONS||| when appropriate.",
-};
 
 const ARTIFACT_KEYWORDS = ['draft', 'write', 'plan', 'outline', 'create', 'build', 'design', 'manifesto', 'pitch', 'letter', 'framework', 'strategy', 'proposal'];
+
+interface MemberContextProfile {
+  id?: string;
+  display_name?: string | null;
+  bio?: string | null;
+  discipline?: string | null;
+  skills?: string[] | null;
+  project_description?: string | null;
+  seeking?: string | null;
+  philosophy?: string | null;
+  exp_tokens?: number | null;
+}
+
+interface ThinkerRequestBody {
+  requestId?: string;
+  demo?: boolean;
+  thinkerId?: string;
+  thinker?: string;
+  message?: string;
+  isReaction?: boolean;
+  salonId?: string;
+  isCouncilMode?: boolean;
+  councilContext?: { thinker: string; response: string }[];
+  community?: string;
+}
+
+async function boundedRewardCall<T>(work: PromiseLike<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([Promise.resolve(work), new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Reward result unconfirmed')), 8_000);
+    })]);
+  } finally { if (timer) clearTimeout(timer); }
+}
+
+// Confirmation only: no model call, event insert, or credit retry. An absent
+// receipt cannot prove that a different in-flight transaction will not commit.
+export async function GET(req: NextRequest) {
+  try {
+    if (!authWriteOriginAllowed(req)) return privateJson({ error: 'Forbidden' }, { status: 403 });
+    const query = new URL(req.url).searchParams;
+    if (query.size !== 1 || !isUuid(query.get('requestId'))) return privateJson({ error: 'Use a valid requestId' }, { status: 400 });
+    const requestId = query.get('requestId')!.toLowerCase();
+    const actor = await getAuthenticatedMember(req);
+    if (!actor) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const { data, error } = await boundedRewardCall(getSupabaseAdmin().rpc('soe_thinker_reward_receipt', {
+      p_actor: actor.memberId, p_request_id: requestId,
+    }));
+    if (error) return privateJson({ requestId, status: 'unknown' }, { status: 503 });
+    if (data === null) return privateJson({ requestId, status: 'unknown' });
+    const receipt = parseThinkerRewardReceipt(data);
+    if (!receipt || receipt.requestId !== requestId || !receipt.replayed) return privateJson({ requestId, status: 'unknown' }, { status: 503 });
+    return privateJson({ status: 'confirmed', ...receipt });
+  } catch { return privateJson({ status: 'unknown' }, { status: 503 }); }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function textField(value: unknown, maxLength: number): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
+async function safeRequestJson(req: NextRequest): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCouncilContext(value: unknown): { thinker: string; response: string }[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .slice(0, 8)
+    .map((entry) => {
+      if (!isRecord(entry)) return null;
+      const thinker = textField(entry.thinker, 80);
+      const response = textField(entry.response, 4_000);
+      return thinker && response ? { thinker, response } : null;
+    })
+    .filter((entry): entry is { thinker: string; response: string } => Boolean(entry));
+}
+
+function privateSseHeaders(): HeadersInit {
+  return {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate, no-transform',
+    Pragma: 'no-cache',
+    Expires: '0',
+    Connection: 'keep-alive',
+    Vary: 'Cookie, Authorization',
+    'X-Content-Type-Options': 'nosniff',
+  };
+}
+
+function reportThinkerRouteFailure(scope: string) {
+  console.warn(`[thinker] ${scope} failed`);
+}
 
 function isArtifactRequest(message: string): boolean {
   const lower = message.toLowerCase();
   return ARTIFACT_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-function buildMemberContext(m: any): string {
+function buildMemberContext(m: MemberContextProfile): string {
   let name = 'Explorer';
   if (m.display_name && !m.display_name.startsWith('0x')) {
     name = m.display_name;
@@ -62,128 +151,100 @@ function buildMemberContext(m: any): string {
   ].filter(Boolean).join('\n');
 }
 
-const MEMBER_SELECT = 'id, display_name, bio, discipline, skills, project_description, seeking, philosophy, exp_tokens';
-
 export async function POST(req: NextRequest) {
-  const _startTime = Date.now();
-  console.log('[thinker] start', _startTime);
   try {
-    const body = await req.json();
+    if (!authWriteOriginAllowed(req)) return privateJson({ error: 'Forbidden' }, { status: 403 });
+    if (new URL(req.url).searchParams.size) return privateJson({ error: 'Invalid query' }, { status: 400 });
+    const parsed = await safeRequestJson(req);
+    if (!isRecord(parsed)) return privateJson({ error: 'Invalid body' }, { status: 400 });
 
-    const isDemo = body.demo === true;
-    const thinkerId = body.thinkerId ?? body.thinker;
-    const message = body.message;
-    const isReaction = body.isReaction ?? false;
-    const walletMemberId = body.walletMemberId;
-    const salonId = body.salonId ?? 'general';
-    const councilContext: { thinker: string; response: string }[] = body.councilContext || [];
-    const communitySlug: string = body.community || 'society-of-explorers';
+    const body = parsed as ThinkerRequestBody;
+    if (body.demo === true) {
+      return privateJson({ error: 'The guest Thinker chat has closed. Open the Apology guide on the homepage.' }, { status: 410 });
+    }
+    let supabaseAdminClient: ReturnType<typeof getSupabaseAdmin> | null = null;
+    const supabaseAdmin = () => {
+      supabaseAdminClient ??= getSupabaseAdmin();
+      return supabaseAdminClient;
+    };
+
+    const thinkerId = textField(body.thinkerId, 80) ?? textField(body.thinker, 80);
+    const message = textField(body.message, 8_000);
+    const isReaction = body.isReaction === true;
+    const requestedSalonId = textField(body.salonId, 120);
+    const councilContext = normalizeCouncilContext(body.councilContext);
+    const communitySlug = textField(body.community, 120) ?? 'society-of-explorers';
 
     if (!thinkerId || !message) {
-      return new Response(
-        JSON.stringify({ error: 'thinkerId and message are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return privateJson({ error: 'thinkerId and message are required' }, { status: 400 });
     }
 
-    // --- DEMO MODE: Socrates only, limited messages, no auth ---
-    if (isDemo) {
-      if (thinkerId !== 'socrates') {
-        return Response.json({ error: 'Demo only available with Socrates' }, { status: 403 });
-      }
-      if (body.messages && body.messages.length > DEMO_MESSAGE_LIMIT) {
-        return Response.json({ error: 'Demo limit reached' }, { status: 429 });
-      }
-    }
-
-    // --- AUTH + FULL PROFILE FETCH (skip for demo) ---
-    let memberId: string | null = null;
-    let memberName: string | null = null;
-    let memberContext: string | null = null;
-    let memberExpTokens: number = 0;
+    const auth = await getAuthenticatedMember(req);
+    if (!auth?.memberId) return privateJson({ error: 'Unauthorized' }, { status: 401 });
+    const { memberId, member } = auth;
+    const memberName = member.display_name;
     const isCouncilMode = body.isCouncilMode === true;
+    // A missing destination must never turn a private request into a shared post.
+    if (!isCouncilMode && !requestedSalonId) {
+      return privateJson({ error: 'A salonId is required' }, { status: 400 });
+    }
+    const salonId = requestedSalonId ?? 'council';
+    const isOwnPrivateSalon = !isCouncilMode && salonId === `private-${memberId}`;
 
-    if (!isDemo) {
-      const auth = await getAuthenticatedMember(req);
-      if (auth) {
-        memberId = auth.memberId;
-        memberName = auth.member.display_name;
-        memberExpTokens = auth.member.exp_tokens || 0;
-        memberContext = buildMemberContext(auth.member);
-      }
+    // Apply the member's server-side budget before any model call.
+    const limited = limitModelCall(req, memberId);
+    if (limited) return limited;
 
-      // Fallback: accept memberId from request body when cookie/token auth fails
-      if (!memberId && (body.memberId || body.walletMemberId)) {
-        const fallbackId = body.memberId || body.walletMemberId;
-        const { data: m } = await supabaseAdmin.from('members').select(MEMBER_SELECT).eq('id', fallbackId).single();
-        if (m) {
-          memberId = m.id;
-          memberName = m.display_name;
-          memberExpTokens = m.exp_tokens || 0;
-          memberContext = buildMemberContext(m);
-        }
-      }
-
-      // Council mode allows anonymous usage (no member required)
-      if (!memberId && !isCouncilMode) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { 'Content-Type': 'application/json' } }
-        );
+    // Security fix S2b: salon mode reads and writes salon history, so the salon must be the caller's own
+    // private salon, 'general', or a salon they guide or belong to. Council doesn't touch salon history.
+    if (!isCouncilMode && salonId !== `private-${memberId}`) {
+      if (salonId.startsWith('private-') || !(await memberCanUseSharedSalon(supabaseAdmin(), memberId, salonId))) {
+        return privateJson({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
     // Permission check for non-default communities
-    if (memberId && communitySlug !== 'society-of-explorers' && !isDemo) {
+    if (communitySlug !== 'society-of-explorers') {
       const canUseCouncil = await checkPermission(memberId, communitySlug, 'use_council');
       if (!canUseCouncil) {
-        return new Response(JSON.stringify({ error: 'You do not have council access in this community' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+        return privateJson({ error: 'You do not have council access in this community' }, { status: 403 });
       }
     }
 
-    // --- SAVE USER MESSAGE (skip for demo, council mode, and system-generated prompts) ---
-    if (!isDemo && !isCouncilMode) {
-      const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
-        message.startsWith('You have been invited into a private conversation') ||
-        message.startsWith('Here are my current tasks:') ||
-        (message.includes('Respond as ') && message.includes(' — in character, direct'));
-
-      if (!isSystemPrompt) {
-        const { error: userMsgError } = await supabaseAdmin.from('salon_messages').insert({
-          salon_id: salonId,
-          sender_type: 'member',
-          sender_name: memberName || 'Explorer',
-          thinker_id: null,
-          content: message,
-        });
-        if (userMsgError) console.error('USER MSG SAVE FAILED:', userMsgError);
-      }
+    if (!isUuid(body.requestId)) {
+      return privateJson({ error: 'A logical requestId UUID is required' }, { status: 400 });
     }
+    const requestId = body.requestId.toLowerCase();
+    const requestHash = createHash('sha256').update(JSON.stringify([
+      'thinker-reward-v1', thinkerId, message, isReaction, salonId, isCouncilMode, councilContext, communitySlug,
+    ])).digest('hex');
+
+    const isSystemPrompt = message.startsWith('A member recorded a 15-second Waddle') ||
+      message.startsWith('You have been invited into a private conversation') ||
+      message.startsWith('Here are my current tasks:') ||
+      (message.includes('Respond as ') && message.includes(' — in character, direct'));
 
     // --- FETCH MESSAGE HISTORY ---
     // Council mode: skip history fetch — use only the current message + councilContext (injected in system prompt)
-    // Demo mode: use client-provided messages
-    // Salon mode: fetch from salon_messages
+    // Read prior salon history before inserting this question. The current input
+    // is supplied directly, independent of persistence or interleaved messages.
     let conversationHistory: { role: 'user' | 'assistant'; content: string }[];
 
     if (isCouncilMode) {
       // Council: just the current user message. Council context is already in the system prompt.
       conversationHistory = [{ role: 'user', content: message }];
-    } else if (isDemo) {
-      conversationHistory = (body.messages || []).map((m: any) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      }));
-      if (!conversationHistory.some(m => m.content === message)) {
-        conversationHistory.push({ role: 'user', content: message });
-      }
     } else {
-      const { data: history } = await supabaseAdmin
+      const { data: history, error: historyError } = await supabaseAdmin()
         .from('salon_messages')
         .select('content, sender_type, thinker_id')
         .eq('salon_id', salonId)
         .order('created_at', { ascending: false })
-        .limit(HISTORY_LIMIT);
+        .limit(HISTORY_LIMIT - 1);
+
+      if (historyError) {
+        reportThinkerRouteFailure('conversation history');
+        return privateJson({ error: 'Conversation history unavailable' }, { status: 503 });
+      }
 
       conversationHistory = (history || [])
         .reverse()
@@ -193,33 +254,35 @@ export async function POST(req: NextRequest) {
             ? `[${msg.thinker_id}]: ${msg.content}`
             : msg.content,
         }));
+      conversationHistory.push({ role: 'user', content: message });
     }
 
-    // --- FETCH THINKER MEMORY (skip for demo, council, and anonymous) ---
-    let memory: string | null = null;
-    if (!isDemo && !isCouncilMode && memberId) {
-      try {
-        memory = await getMemory(memberId, thinkerId);
-      } catch (memErr) {
-        console.error('[thinker] Memory retrieval failed, continuing without:', memErr);
-      }
+    // Preserve generated-context exclusion from the member-message log. It must
+    // still reach the model even though it is not inserted as a chat message.
+    if (!isCouncilMode && !isSystemPrompt) {
+      const { error: userMsgError } = await supabaseAdmin().from('salon_messages').insert({
+        salon_id: salonId,
+        sender_type: 'member',
+        sender_name: memberName || 'Explorer',
+        thinker_id: null,
+        content: message,
+      });
+      if (userMsgError) reportThinkerRouteFailure('member message save');
     }
 
-    // --- BUILD SYSTEM PROMPT (cap length for speed) ---
-    let systemPrompt = buildSystemPrompt(thinkerId);
+    // --- BUILD COMPLETE COMPACT PROMPT (never slice away persona or rules) ---
+    let systemPrompt = buildSystemPrompt(thinkerId, { compact: true });
     if (isCouncilMode) {
-      // Council mode: use hardcoded mandates (fast, no DB call)
-      // Only query community prompts for non-default communities
+      // Keep the compact persona as fallback; only query custom communities.
       if (communitySlug !== 'society-of-explorers') {
         try {
           const communityPrompts = await getCommunityThinkerPrompts(communitySlug);
-          systemPrompt = communityPrompts[thinkerId] || COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
+          systemPrompt = communityPrompts[thinkerId] || systemPrompt;
         } catch {
-          systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
+          // The complete compact default remains available.
         }
-      } else {
-        systemPrompt = COUNCIL_PROMPTS[thinkerId] || COUNCIL_PROMPTS.socrates;
       }
+      systemPrompt += '\n\nCOUNCIL MODE: One paragraph, at most 80 words. Offer one practical next step and engage fairly with other perspectives.';
 
       // Inject what other thinkers said
       if (councilContext && councilContext.length > 0) {
@@ -227,14 +290,10 @@ export async function POST(req: NextRequest) {
           councilContext.map(c => c.thinker + ': ' + c.response).join('\n') +
           "\n\nDon't repeat them. Build on them or disagree.";
       }
-    } else if (systemPrompt.length > 2000) {
-      systemPrompt = systemPrompt.slice(0, 2000) + '\n...[trimmed for speed]';
     }
 
     let maxTokens: number;
-    if (isDemo) {
-      maxTokens = DEMO_MAX_TOKENS;
-    } else if (isReaction) {
+    if (isReaction) {
       maxTokens = REACTION_MAX_TOKENS;
     } else if (isArtifactRequest(message)) {
       maxTokens = ARTIFACT_MAX_TOKENS;
@@ -252,35 +311,18 @@ export async function POST(req: NextRequest) {
       if (memberName && !memberName.startsWith('0x')) {
         fullSystemPrompt += `\n\nThe member's name is ${memberName}.`;
       }
-    } else if (isDemo) {
-      fullSystemPrompt += '\n\nThis is a brief demo conversation. Be concise and engaging. End your response by subtly inviting deeper exploration — the full Society experience awaits.';
     } else {
-      // Salon / single thinker mode: full context loading
-      const contextPrefix = memberContext
-        ? memberContext
-        : (memberName ? `The member speaking is ${memberName}.` : 'A member is speaking.');
-
       const usableName = (memberName && !memberName.startsWith('0x')) ? memberName : null;
+      const contextPrefix = isOwnPrivateSalon
+        ? buildMemberContext(member)
+        : (usableName ? `The member speaking is ${usableName}.` : 'A member is speaking.');
 
       fullSystemPrompt += `\n\n${contextPrefix}`;
+      if (!isOwnPrivateSalon) {
+        fullSystemPrompt += '\n\nThis answer is for a shared salon. Personal context is limited to what members have explicitly shared in this salon or the current message. Do not claim to remember private conversations.';
+      }
       if (usableName) {
         fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. Use their name naturally in your response. Never call them "Anonymous Explorer" or just "Explorer."`;
-      }
-
-      if (memory) {
-        fullSystemPrompt += `\n\nYOUR MEMORY OF THIS MEMBER (from previous conversations):\n${memory}\n\nUse this memory naturally. Reference specific facts, commitments, and past conversations. If they committed to something, ask about progress. If they shared a struggle, check in. You are continuing a relationship — not starting from scratch.`;
-      }
-
-      // 4-layer shared memory (skip for council — already fast-pathed above)
-      if (memberId && !isReaction) {
-        try {
-          const sharedContext = await getThinkerContext(memberId, thinkerId, message, { isCouncil: false, communitySlug });
-          if (sharedContext) {
-            fullSystemPrompt += '\n\n' + sharedContext;
-          }
-        } catch (err) {
-          console.error('[thinker] Shared memory lookup failed:', err);
-        }
       }
 
       if (isReaction) {
@@ -293,45 +335,74 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('[thinker] system prompt length:', fullSystemPrompt.length, 'first 200 chars:', fullSystemPrompt.slice(0, 200));
+    // Final authority guidance is appended after fresh reviewed context for each attempt.
 
     // --- STREAM RESPONSE ---
+    const claudePurpose = isCouncilMode ? 'council' : 'default';
+    const claudeModel = resolveClaudeModel(claudePurpose);
+    const anthropic = createAnthropicClient();
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
           let fullText = '';
-          console.log(`[thinker] ${thinkerId} calling Claude (${maxTokens} tokens, council=${isCouncilMode}, prompt=${fullSystemPrompt.length} chars)`);
+          let rewardReceipt: ThinkerRewardReceipt | null = null;
+          const guideText = createGuideTextStream();
+          const sendText = (text: string) => {
+            if (text) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
+          };
 
-          // Retry once on failure
-          let lastErr: any = null;
+          // One explicit retry is allowed only before output. Disable nested SDK
+          // retries so this loop controls the number of HTTP attempts.
+          let lastErr: unknown = null;
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
+              if (req.signal.aborted) throw new Error('Request cancelled');
+              // A retry is a new provider transmission. Re-read current consent and
+              // source eligibility so revoked notes are never reused from attempt one.
+              let attemptSystemPrompt = fullSystemPrompt;
+              if (isOwnPrivateSalon) {
+                try {
+                  const reviewedContext = await getReviewedGuideContext(memberId, thinkerId);
+                  if (reviewedContext) attemptSystemPrompt += `\n\n${reviewedContext}`;
+                } catch { reportThinkerRouteFailure('reviewed memory retrieval'); }
+              }
+              attemptSystemPrompt += '\n\n' + GUIDE_RESPONSE_RULES;
+              if (req.signal.aborted) throw new Error('Request cancelled');
+              const claudeStartedAt = Date.now();
               const anthropicStream = anthropic.messages.stream({
-                model: 'claude-sonnet-4-20250514',
+                model: claudeModel,
                 max_tokens: maxTokens,
-                system: fullSystemPrompt,
+                system: attemptSystemPrompt,
                 messages: conversationHistory,
-              });
+              }, { maxRetries: 0, signal: req.signal });
 
               anthropicStream.on('text', (text) => {
                 fullText += text;
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
+                sendText(guideText.push(text));
               });
 
-              await anthropicStream.finalMessage();
+              const finalMessage = await anthropicStream.finalMessage();
+              logClaudeUsage({
+                purpose: claudePurpose,
+                model: claudeModel,
+                operation: 'messages.stream',
+                latencyMs: Date.now() - claudeStartedAt,
+                usage: finalMessage.usage,
+              });
               lastErr = null;
               break; // success
-            } catch (apiErr: any) {
+            } catch (apiErr: unknown) {
               lastErr = apiErr;
-              console.error(`[thinker] ${thinkerId} Claude attempt ${attempt + 1} failed:`, apiErr?.message || apiErr);
+              reportThinkerRouteFailure('provider stream attempt');
+              // A new attempt would append a different answer to partial output.
+              if (req.signal.aborted || fullText.length > 0) throw apiErr;
               if (attempt === 0) await new Promise(r => setTimeout(r, 2000)); // wait before retry
             }
           }
           if (lastErr) throw lastErr;
-
-          console.log(`[thinker] ${thinkerId} response: ${fullText.length} chars`);
+          sendText(guideText.finish());
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
             const doneData = JSON.stringify({ done: true, response: '', silent: true });
@@ -340,117 +411,67 @@ export async function POST(req: NextRequest) {
             return;
           }
 
-          // --- PARSE ACTIONS (skip for demo) ---
-          let cleanText: string;
-          let actions: any[] = [];
+          // Legacy action JSON is untrusted model output, never authorization.
+          // Do not parse or forward it for execution, even if it is malformed.
+          const actionStart = fullText.indexOf(GUIDE_ACTION_MARKER);
+          const actionReviewRequired = actionStart !== -1;
+          const replyText = actionReviewRequired ? fullText.slice(0, actionStart) : fullText;
+          let cleanText = replyText
+            .replace(/^\[[\w-]+\]:\s*/i, '')
+            .replace(/^\[[\w-]+\]\s*/i, '')
+            .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
+            .trim();
 
-          if (isDemo) {
-            cleanText = fullText
-              .replace(/^\[[\w-]+\]:\s*/i, '')
-              .replace(/^\[[\w-]+\]\s*/i, '')
-              .replace(/^(socrates):\s*/i, '')
-              .trim();
-          } else {
-            const parsed = parseActions(fullText);
-            actions = parsed.actions;
-            cleanText = parsed.cleanText
-              .replace(/^\[[\w-]+\]:\s*/i, '')
-              .replace(/^\[[\w-]+\]\s*/i, '')
-              .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
-              .trim();
+          if (actionReviewRequired) cleanText = [cleanText, GUIDE_ACTION_NOTICE].filter(Boolean).join('\n\n');
+
+          const thinkerDisplayNames: Record<string, string> = {
+            socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
+            aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
+          };
+          const thinkerName = thinkerDisplayNames[thinkerId] || thinkerId;
+          if (!isCouncilMode) {
+            const { error: saveError } = await supabaseAdmin().from('salon_messages').insert({
+              salon_id: salonId,
+              sender_type: 'thinker',
+              sender_name: thinkerName,
+              thinker_id: thinkerId,
+              content: cleanText,
+            });
+            if (saveError) reportThinkerRouteFailure('thinker message save');
           }
 
-          // --- SAVE + EXP + MEMORY + ACTIONS (skip all for demo) ---
-          if (!isDemo) {
-            const thinkerDisplayNames: Record<string, string> = {
-              socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
-              aurelius: 'Aurelius', einstein: 'Einstein', jobs: 'Jobs',
-            };
-            // Skip salon_messages save in council mode (each thinker manages its own context via councilContext)
-            if (!isCouncilMode) {
-              const { error: saveError } = await supabaseAdmin.from('salon_messages').insert({
-                salon_id: salonId,
-                sender_type: 'thinker',
-                sender_name: thinkerDisplayNames[thinkerId] || thinkerId,
-                thinker_id: thinkerId,
-                content: cleanText,
-              });
-              if (saveError) console.error('THINKER SAVE FAILED:', saveError);
-              else console.log('THINKER SAVED OK:', { salonId, thinkerId, len: cleanText.length });
-            }
-
-            // Member-specific operations (skip for anonymous council)
-            if (memberId) {
-              // Execute actions with structured results
-              if (actions.length > 0) {
-                const actionResults = await executeActionsWithResults(actions, memberId, thinkerId);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: actionResults })}\n\n`));
-              }
-
-              const expAmount = isReaction ? 4 : 8;
-              await supabaseAdmin.from('exp_events').insert({
-                member_id: memberId,
-                amount: expAmount,
-                reason: isReaction
-                  ? `Thinker reaction from ${thinkerId}`
-                  : `Conversation with ${thinkerId}`,
-              });
-
-              const { error: rpcError } = await supabaseAdmin.rpc('increment_exp', {
-                member_id_input: memberId,
-                amount_input: expAmount,
-              });
-              if (rpcError) {
-                await supabaseAdmin
-                  .from('members')
-                  .update({ exp_tokens: (memberExpTokens || 0) + expAmount })
-                  .eq('id', memberId);
-              }
-
-              const thinkerNames: Record<string, string> = {
-                socrates: 'Socrates', plato: 'Plato', nietzsche: 'Nietzsche',
-                aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
-              };
-              recordInteraction(memberId, thinkerId, thinkerNames[thinkerId] || thinkerId, salonId)
-                .catch(err => console.error('Memory update failed:', err));
-
-              // Store embeddings + episodes for memory (fire and forget)
-              const sessionId = `${isCouncilMode ? 'council' : 'salon'}-${salonId}-${Date.now()}`;
-              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'user', content: message }).catch(() => {});
-              storeConversationEmbedding({ memberId, thinkerKey: thinkerId, role: 'assistant', content: cleanText }).catch(() => {});
-              storeEpisode({ memberId, thinkerId, role: 'user', content: message, sessionId, isCouncil: isCouncilMode }).catch(() => {});
-              storeEpisode({ memberId, thinkerId, role: 'assistant', content: cleanText, sessionId, isCouncil: isCouncilMode }).catch(() => {});
-
-              // Trigger memory extraction every 4 messages in council, 8 in salon
-              const extractInterval = isCouncilMode ? 4 : 8;
-              if (memberExpTokens > 0 && (memberExpTokens % extractInterval === 0)) {
-                extractMemory(memberId, [
-                  { role: 'user', content: message, thinker_id: thinkerId },
-                  { role: 'assistant', content: cleanText, thinker_id: thinkerId },
-                ]).catch(() => {});
-              }
-            }
+          if (actionReviewRequired) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', results: [
+              { type: 'review_required', success: false, message: GUIDE_ACTION_NOTICE },
+            ] })}\n\n`));
           }
 
-          // --- SEND DONE + ACTIONS TO CLIENT ---
-          if (!isDemo && actions.length > 0) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'actions', actions })}\n\n`));
-          }
+          try {
+            const { data, error } = await boundedRewardCall(supabaseAdmin().rpc('soe_thinker_reward_award', {
+              p_actor: memberId, p_request_id: requestId, p_request_hash: requestHash,
+              p_thinker_id: thinkerId, p_is_reaction: isReaction,
+            }));
+            const receipt = !error ? parseThinkerRewardReceipt(data) : null;
+            if (receipt && receipt.requestId === requestId && receipt.amount === (isReaction ? 4 : 8)) rewardReceipt = receipt;
+            else reportThinkerRouteFailure('reward confirmation');
+          } catch { reportThinkerRouteFailure('reward confirmation'); }
+
+          // Ordinary conversation and rewards do not grant durable-memory consent.
+          // Reviewed memory is prepared and saved only through the separate review flow.
 
           const doneData = JSON.stringify({
             done: true,
             response: cleanText,
-            ...(!isDemo && {
-              expAwarded: isReaction ? 4 : 8,
-              actions: actions.length > 0 ? actions : undefined,
-            }),
+            ...(rewardReceipt ? { expAwarded: rewardReceipt.replayed ? 0 : rewardReceipt.amount } : {}),
+            reward: rewardReceipt ? { status: 'confirmed', ...rewardReceipt } : { status: 'unknown', requestId },
+            ...(actionReviewRequired ? { actionReview: { status: 'not_executed' } } : {}),
           });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();
-        } catch (err: any) {
-          console.error(`[thinker] FATAL ${thinkerId}:`, err?.message, err?.status, err?.error?.type);
+        } catch {
+          reportThinkerRouteFailure('stream');
           try {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err?.message || 'Stream failed', done: true })}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream failed', done: true })}\n\n`));
             controller.close();
           } catch {
             try { controller.close(); } catch {}
@@ -459,19 +480,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('[thinker] response complete', Date.now(), `(${Date.now() - _startTime}ms)`);
     return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
+      headers: privateSseHeaders(),
     });
-  } catch (err) {
-    console.error('Thinker API error:', err);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+  } catch {
+    reportThinkerRouteFailure('request');
+    return privateJson({ error: 'Internal server error' }, { status: 500 });
   }
 }

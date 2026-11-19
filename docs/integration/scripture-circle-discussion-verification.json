@@ -1,0 +1,89 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "parentCommit": "ae4a6a9ae9156032fa3349dff08b7d6214b43e4c",
+  "recordedAt": "2026-11-06T22:25:41.612477+00:00",
+  "buildSourceFiles": 1104,
+  "buildSourceSha256": "d8cf02f3411c56eb6ea8c136de1a75e6492dda875ebc936845d0d64d7abd49af",
+  "compiledBrowserStories": [
+    "A signed-out 320px reader follows the library link, sees all verses and both publisher references with JavaScript off, and opens the exact hosting invitation.",
+    "The compiled host form checks the signed account, verifies the edition anonymously, and reopens the persisted selection.",
+    "The checked web reader links to a source question. Fresh archive access and explicit review are required to save the edited message, and duplicate study links are rejected.",
+    "A signed-in nonmember can see the public study question while the member archive and draft remain closed.",
+    "A simulated headset reads the bundled passage, confirms the same sourced prompt through the existing writer, and refuses a new draft after the Circle becomes hidden."
+  ],
+  "retainedPhilemonStories": 8,
+  "simulatedPhoneStories": {
+    "ios": 6,
+    "android": 23
+  },
+  "regressionTests": {
+    "platform": 30,
+    "web": 61,
+    "threadHttp": 16
+  },
+  "legacySourceSuite": "The legacy source extraction test did not start because a cached tough-cookie package was unavailable. Passage HTTP and SQL tests ran.",
+  "postgres": {
+    "orderedFiles": 64,
+    "restoreTables": 67,
+    "checks": [
+      "The guard detects a browser grant, refuses to apply under drift, and supports exact reapplication.",
+      "All eight indexed books retain link and quote validation. Both Scripture studies, wrong editions and invalid blocks are refused.",
+      "The restored database preserves the passage guard and detects replacement by the earlier validator."
+    ]
+  },
+  "scope": "Compiled web and Quest room in Chromium, phone React and bridge simulations, and local PostgreSQL. Hosted rollout and physical device acceptance remain pending.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "f10eb841f674bcb070f5cd8c7db9e796ce426221303a1f294fca4bb110379151",
+    "app/circles/[circleId]/CircleDetail.tsx": "9754bdbb455f20d43dac47f853a41594dceefef54191ace0a6da98017a18f8b8",
+    "app/circles/[circleId]/discussion/DiscussionBrowser.tsx": "42cd522b91400fb2b62abfdc209933cda84a963c8983139038f5eefa23d30317",
+    "app/circles/[circleId]/discussion/page.tsx": "3e419868b31bb322c673887351850a0bdd911059ac37624a5aeb7b5cb7b0e6a4",
+    "app/great-books/scripture/luke-good-samaritan/page.tsx": "035942e8f9b451cdd552ab040298d03af817ba86f7b275c11bc877ea099dfd88",
+    "app/great-books/scripture/philemon/CircleReturnLink.tsx": "f9afdf770618d42fe0a573e8588ca3bc26087a54a98bc9d4061ffa8a309c274e",
+    "app/great-books/scripture/philemon/page.tsx": "2cefeeccb57976c113e886a0d7bd102f7afe6e96727a3656b82b743df0e46faa",
+    "docs/integration/production-migration-plan.md": "a1d591b54adc4e6b528d43ed891b602dfbc68fe873402b131d298d350a3bd5a7",
+    "docs/integration/scripture-circle-discussion.md": "02f1f8b59f809dfc83b72db80e180679d3083700385b31adca1e0f55edf079b7",
+    "docs/sql/circle-indexed-passage-guard-apply.sql": "8f5c66e24053c5e3b4901901758cd2a14253b237b8e17f9a347b1cd75d4aefe0",
+    "lib/circles/scripture-discussion.ts": "aeb0cd52d476610741fc99b2be3b0c99315c083b7abe8a84d8126958a0d27ac3",
+    "platforms/native/CircleDirectoryScreen.tsx": "1ddd0d917c8d34ebc8f22ea6fffd4ab317559f7675bf15dc6c1f0cea17298cb3",
+    "platforms/native/CircleReadingScreen.tsx": "566a3e2cd7e25b87febac084e0c11e712c1b921a8803131b6de53bdba49b8786",
+    "platforms/native/CircleScreen.tsx": "9c6862597e9ab45f9506f15f45cfc634b604c70d4d3169335667b4d773040a62",
+    "platforms/native/PhilemonStudyScreen.tsx": "58257aa4fc17fedb5affe6aa27de94c8623024a7fb925cbe26a524781de3fe62",
+    "platforms/quest/circle-host.mjs": "aefce7a7b4da0afe57f0f6ff038106acffabd19846789c8e09caaf489adaf195",
+    "platforms/quest/immersive-circle.mjs": "7ee5c853bc11e80668d6d05809f87e1e9ea33d7ea50bab3543a695dd2d1abf7e",
+    "platforms/quest/room-reading.mjs": "33a4d7aad30cbc142e90599f88ac827bde07848b991db2f3b05e233debd7fefa",
+    "platforms/shared/quest-entry.ts": "df24bcd01cf3efb6404ab3a5880945c17e1316858258b48e140aa322e4ca9064",
+    "platforms/tests/browser-native-hosting.mjs": "7f439f664528a6ac2fe00c22dc07f9a77f1923cefcef238995cf699a58f1f0f4",
+    "verification/web/scripts/browser-root-kernel-philemon.mjs": "371d4cc785e12ac40965275f667172fdded69c6a8e493f66e4811269c8f7f686",
+    "verification/web/scripts/rehearse-indexed-passage-guard.py": "fcf09628ef845e9611b0f93ac3537ccf7844c585976ee77095cd8deb38a9202e",
+    "verification/web/tests/browser-good-samaritan.mjs": "c339e66ebb3e9f2759ca19f80c567cb24290c388e8c780387a0b2b2a362118d8",
+    "verification/web/tests/support/thread-app.mjs": "f2c89aa1a7e54a756c2e0823c9325679f72baad05b894989d1ba069644d6e619"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-scripture-circle-discussion",
+  "evidenceSha256": {
+    "next-build.json": "63a266453adb7e8c0cd3db8bfa8a1ddb2bd9938842dc3ba0cbfb33eec9caa0d7",
+    "next-build.log": "68b1408e925531dfdcd9de6d98df7862016995b5ec5aca45a68d20ce86b9d26d",
+    "build-source-sha256.json": "96e31dab260585c88ea1e0158c1f949272c999adf5e869fc129a7f4b1f6b7b6b",
+    "server-ready.json": "085b941ecc98a42e194d3cf6e60dda7f5a9ef7f35ee00a62b6ab0e4e9191e9e8",
+    "server-stopped.json": "adeaa2a5da95b953327eaf65a60ceef67e70625b7df6250341855c7b3a4bc282",
+    "browser-stories.json": "3e5baa698338b37b99c29d1783209bf5d1498e915d8691c36a4ea28b72187d47",
+    "reading-320.png": "e1c2ce49e98d65066e6a4f7fa8d5f5008b8ece0db6d9558ffea080bcc4b08a34",
+    "host-guide-320.png": "8f3935bebc1014ef60a6bcf3f8b9be861a4909ed269d7594c20deae1de34ed34",
+    "headset-reading.png": "8a4baf36d102aa87cd2ee190848f529bb0941e3bd27b19aea866fcc7a4d17fa5",
+    "web-question-320.png": "13b919aab0a4b48a479ae51551e062740609cece87028b8822dbb1dd4fc91a4a",
+    "headset-study-review.png": "30647b7cac220eb5d39eb5318d5324f02e2391eff6564ee90021967393f6308f",
+    "philemon-browser.json": "bfb1bba10678678d5a41d01242232bde04f119f6bf5c9c143754add44f340486",
+    "native-ios.json": "f382c1ddf1bcfa72a97147dd09dd4125f620375749c989c1c120a4267674cdf8",
+    "native-android.json": "e995cc6e1e4db64bbad1f03a0838ae6b8dd39092b95cfeeed2a68f4047b3325e",
+    "native-manifest.json": "e619d5c6099f86d407fa34797b80290ec8c1d39f3dc3de9e2b4a59051f89b12e",
+    "quest-shared-manifest.json": "5f8ccf58cabe70171ab47824d4cf693131f14b865167f51a776b83ba2f98a3b9",
+    "quest-shared-esbuild.mjs": "1125b5f1a2d925e62ac03184c598ae3835cc720e22041ccee0221660a8b04344",
+    "native-esbuild.mjs": "8d2d8fa74410c6c3606c01c8c735ff4cab7c58d6fc63b8c4bd9f31d40b1adcf6",
+    "postgres-restore.json": "e601f717eb5330b828bde09c42fb89afdf3edac6de605ab16a83e76ac8a92e56",
+    "platform-regressions.tap": "142dbb17854a0cbe0d58dd3f4ce8ff3fa43bcb788d1f945fbb81e5262302ee08",
+    "web-regressions.tap": "5c8b47f4a6ea0a15ec8d22ea693d07459cd5fea752e665dd7f76c1d296fe1c5c",
+    "thread-http.tap": "85ffaaafb850199569460a38a066cf8e8514cb1238df4648c7e9d254a2b12323",
+    "native-typecheck.log": "51f4bcff143de3051d6b4191572197f163f069213e30f225c935d0a0fbe2fc40",
+    "eslint.log": "960296b9ff968afaae2e0213762623f406e71d61538169b21a14b073ea212b5a"
+  }
+}

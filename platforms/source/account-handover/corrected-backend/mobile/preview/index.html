@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SoE mobile client — Synthetic demo</title>
+  <style>
+    :root {
+      --paper: #f6f3e9;
+      --card: #fffdf8;
+      --ink: #24352c;
+      --muted: #5d6b60;
+      --moss: #2f6a45;
+      --moss-deep: #1e4a30;
+      --line: #d7d3c4;
+      --rust: #8f3d24;
+      --warn: #f8ecd4;
+      --bad: #f8e4dc;
+      --good: #e5f0e4;
+      --serif: Georgia, "Iowan Old Style", Palatino, serif;
+      --sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 420px at 8% -10%, rgba(47, 106, 69, 0.1), transparent 60%),
+        var(--paper);
+      font-family: var(--sans);
+      line-height: 1.45;
+    }
+    header.page, footer.page { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; }
+    header.page { padding: 1.5rem 0 0.5rem; }
+    header.page h1 { font-family: var(--serif); font-weight: 500; font-size: 2.4rem; letter-spacing: -0.03em; margin: 0.2rem 0; }
+    header.page p, footer.page p { color: var(--muted); max-width: 46rem; }
+    .banner { display: inline-block; border: 1px solid var(--moss); color: var(--moss-deep); border-radius: 999px; padding: 0.15rem 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.72rem; }
+    .grid { width: min(1180px, calc(100% - 2rem)); margin: 0 auto 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    .phone { background: var(--card); border: 1px solid var(--line); border-radius: 28px; padding: 0.9rem 0.9rem 1rem; box-shadow: 0 18px 40px rgba(36, 53, 44, 0.06); display: flex; flex-direction: column; gap: 0.45rem; }
+    .status { display: flex; justify-content: space-between; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .phase { margin: 0; color: var(--moss-deep); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    h2 { font-family: var(--serif); font-weight: 500; font-size: 1.55rem; line-height: 1.15; margin: 0; }
+    .lede, .relay, .limit, li, dd { font-size: 0.92rem; }
+    .lede { margin: 0; }
+    dl { margin: 0; display: grid; gap: 0.35rem; }
+    .fact { border-top: 1px solid var(--line); padding-top: 0.35rem; }
+    dt { font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    dd { margin: 0.1rem 0 0; }
+    .relay, .limit, .blocker { border-radius: 12px; padding: 0.55rem 0.7rem; margin: 0; }
+    .relay { background: var(--paper); }
+    .memory { background: var(--good); }
+    .limit { background: var(--warn); }
+    .blocker { background: var(--bad); }
+    ul { list-style: none; padding: 0; margin: 0.2rem 0 0; display: flex; flex-direction: column; gap: 0.35rem; }
+    li { border: 1px solid var(--line); border-radius: 999px; padding: 0.35rem 0.7rem; }
+    li.on { background: var(--moss); color: white; border-color: var(--moss); }
+    li.off { color: var(--muted); }
+    footer.page { padding-bottom: 2rem; }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <p class="banner">Synthetic demo</p>
+    <h1>SoE mobile client</h1>
+    <p>Adult journey on synthetic fixtures: discover a plan, review who may see what, request to join, mutual acceptance, and revoke future contact. Revoking stops future contact access. It cannot erase information someone already saw. This page is a local gallery. It is not a deployed preview and it does not talk to Meridian.</p>
+  </header>
+  <main class="grid">
+    <article class="phone" data-phase="loading">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Loading</p>
+    <p class="eyebrow">Checking</p>
+    <h2>Loading the synthetic plan</h2>
+    <p class="lede">Waiting on the adapter. Nothing has been confirmed yet.</p>
+    <dl></dl>
+    <p class="relay">No relay is on screen.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="off">Nothing to send from this state.</li></ul>
+  </article>
+<article class="phone" data-phase="offline">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Offline</p>
+    <p class="eyebrow">Offline</p>
+    <h2>This device is offline</h2>
+    <p class="lede">No request was sent. A relay from an earlier read is not shown as current access.</p>
+    <dl></dl>
+    <p class="relay">No relay is on screen.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="off">Nothing to send from this state.</li></ul>
+  </article>
+<article class="phone" data-phase="expired-session">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Session expired</p>
+    <p class="eyebrow">Session</p>
+    <h2>This demo session expired</h2>
+    <p class="lede">Private relay text was cleared. The next read has to come from the server after a real sign-in. This screen does not collect a passcode.</p>
+    <dl></dl>
+    <p class="relay">No relay is on screen.</p>
+    <p class="blocker">Sign-in stays on the Meridian server. This client does not store a session token.</p>
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="off">Nothing to send from this state.</li></ul>
+  </article>
+<article class="phone" data-phase="discover">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Discover</p>
+    <p class="eyebrow">Discover</p>
+    <h2>Saturday riverside walk</h2>
+    <p class="lede">A walk · Saturday morning · Riverside path. Hosted by Ada Linden. Shared windows: Saturday morning. Shared interests: none. Overlap on a fixture is not private set intersection.</p>
+    <dl><div class="fact"><dt>Host</dt><dd>Ada Linden</dd></div><div class="fact"><dt>Place</dt><dd>Riverside path</dd></div></dl>
+    <p class="relay">Relay hidden until both people accept contact.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="on">Review who may see what</li></ul>
+  </article>
+<article class="phone" data-phase="visibility">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Who may see what</p>
+    <p class="eyebrow">Who may see what</p>
+    <h2>Saturday riverside walk</h2>
+    <p class="lede">Each row is what the adapter says is visible now. A relay is not on this screen.</p>
+    <dl><div class="fact"><dt>Plan title, time, and place</dt><dd>Visible on the card. Anyone who opens this synthetic card</dd></div><div class="fact"><dt>Free-window overlap</dt><dd>Saturday morning. Jules Okonkwo and Ada Linden</dd></div><div class="fact"><dt>Interests without overlap</dt><dd>Not shown. Each person keeps their own list</dd></div><div class="fact"><dt>Relay handle</dt><dd>Hidden. Accept the plan before any relay can be shared.</dd></div><div class="fact"><dt>Copies already seen</dt><dd>Not recalled by a revoke. Anyone who already saw a relay</dd></div></dl>
+    <p class="relay">Relay hidden until both people accept contact.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="on">Request to join</li></ul>
+  </article>
+<article class="phone" data-phase="join-pending">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Pending write</p>
+    <p class="eyebrow">Not confirmed</p>
+    <h2>Join request still pending</h2>
+    <p class="lede">The write has no committed result. This screen does not call it a success, and it will not send it again on its own.</p>
+    <dl><div class="fact"><dt>Idempotency key</dt><dd>join-pending-key</dd></div><div class="fact"><dt>Attempt</dt><dd>attempt:join:join-pending-key</dd></div><div class="fact"><dt>Recorded outcome</dt><dd>pending</dd></div></dl>
+    <p class="relay">No relay is on screen.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="on">Check for a stored result</li></ul>
+  </article>
+<article class="phone" data-phase="join-ambiguous">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Ambiguous write</p>
+    <p class="eyebrow">Unknown</p>
+    <h2>Join request not confirmed</h2>
+    <p class="lede">The request left the device. The fixture has no stored result.</p>
+    <dl><div class="fact"><dt>Idempotency key</dt><dd>join-ambiguous-key</dd></div><div class="fact"><dt>Attempt</dt><dd>attempt:join:join-ambiguous-key</dd></div><div class="fact"><dt>Recorded outcome</dt><dd>ambiguous</dd></div></dl>
+    <p class="relay">No relay is on screen.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="on">Check for a stored result</li></ul>
+  </article>
+<article class="phone" data-phase="mutual">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Mutual acceptance</p>
+    <p class="eyebrow">Mutual acceptance</p>
+    <h2>Saturday riverside walk</h2>
+    <p class="lede">Both of you accepted. The relay handle is visible.</p>
+    <dl><div class="fact"><dt>Your join request</dt><dd>Committed</dd></div><div class="fact"><dt>Host acceptance of the plan</dt><dd>Accepted</dd></div><div class="fact"><dt>Your contact grant</dt><dd>Active</dd></div><div class="fact"><dt>Host contact grant</dt><dd>Active</dd></div></dl>
+    <p class="relay memory">relay:ada.linden. Held in memory for this authorized read. Not written to disk.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="on">Revoke future contact</li></ul>
+  </article>
+<article class="phone" data-phase="revoked">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Revoked</p>
+    <p class="eyebrow">Revoked</p>
+    <h2>Future contact access is off</h2>
+    <p class="lede">You revoked contact, so the relay is hidden even though they had accepted. If Ada Linden already saw the relay, this revoke does not reach that copy.</p>
+    <dl><div class="fact"><dt>Your join request</dt><dd>Committed</dd></div><div class="fact"><dt>Host acceptance of the plan</dt><dd>Accepted</dd></div><div class="fact"><dt>Your contact grant</dt><dd>Not active</dd></div><div class="fact"><dt>Host contact grant</dt><dd>Active</dd></div><div class="fact"><dt>Later reads</dt><dd>Relay hidden</dd></div><div class="fact"><dt>Copies already seen</dt><dd>Still with the person who saw them</dd></div></dl>
+    <p class="relay">Hidden on later reads. A copy someone already saw is unchanged.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="on">Accept disclosure</li></ul>
+  </article>
+<article class="phone" data-phase="failed-refresh">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Failed refresh</p>
+    <p class="eyebrow">Stale response</p>
+    <h2>Saturday riverside walk</h2>
+    <p class="lede">A response older than the latest version was ignored. The relay was cleared. The title below is remembered history, not ongoing access.</p>
+    <dl><div class="fact"><dt>Last committed title</dt><dd>Saturday riverside walk</dd></div><div class="fact"><dt>Version held</dt><dd>5</dd></div></dl>
+    <p class="relay">No relay is on screen.</p>
+    
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="off">Nothing to send from this state.</li></ul>
+  </article>
+<article class="phone" data-phase="live-blocked">
+    <div class="status"><span>SoE</span><span>Synthetic demo — not a live participant</span></div>
+    <p class="phase">Live server blocked</p>
+    <p class="eyebrow">Server boundary</p>
+    <h2>Live Meridian writes stay off</h2>
+    <p class="lede">This build can name the existing routes. It does not sign in, and it does not post a participant change.</p>
+    <dl></dl>
+    <p class="relay">No relay is on screen.</p>
+    <p class="blocker">GET /api/plans does not exist. Plan lists are server-rendered in meridian/src/app/home/page.tsx via listPlanSummaries.</p>
+    <p class="limit">Revoking stops future contact access. It cannot erase information someone already saw.</p>
+    <ul><li class="off">Nothing to send from this state.</li></ul>
+  </article>
+  </main>
+  <footer class="page">
+    <p>Revoking stops future contact access. It cannot erase information someone already saw. Live participant writes are refused at the HTTP adapter.</p>
+  </footer>
+</body>
+</html>

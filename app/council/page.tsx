@@ -1,15 +1,42 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import PublicNav from '@/components/PublicNav';
-import { createClient } from '@/lib/supabase/client';
-import { getMemberSession } from '@/lib/auth/getSession';
+import { getMemberSession, getSupabaseAccessToken } from '@/lib/auth/getSession';
+import { ThinkerRewardNotice, useThinkerRewards } from '@/components/ThinkerRewardNotice';
+import { readGuideReply, guideReplyNotice, type GuideReply, type GuideReplyStatus } from '@/lib/claude/guideReply';
+import { useGuideRequest } from '@/lib/claude/useGuideRequest';
+import { subscribeAuthProviderChanges } from '@/lib/auth/providerSelection';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
 const ivory85 = 'rgba(245,240,232,0.85)';
 const muted = '#9a8f7a';
 
-const DEFAULT_THINKERS = [
+type Thinker = {
+  id: string;
+  name: string;
+  avatar: string;
+  color: string;
+};
+
+type CommunityThinkerRecord = {
+  thinker_key?: string | null;
+  name?: string | null;
+  avatar?: string | null;
+  color?: string | null;
+};
+
+type CommunityThinkersPayload = {
+  thinkers?: CommunityThinkerRecord[];
+};
+
+type ActionResult = {
+  success?: boolean;
+  type?: string;
+  message?: string;
+};
+
+const DEFAULT_THINKERS: Thinker[] = [
   { id: 'socrates',  name: 'Socrates',  avatar: 'SO', color: '#C9A94E' },
   { id: 'plato',     name: 'Plato',     avatar: 'PL', color: '#7B68EE' },
   { id: 'aurelius',  name: 'Aurelius',  avatar: 'MA', color: '#8B7355' },
@@ -31,9 +58,13 @@ interface Message {
   thinkerKey?: string;
   thinkerName?: string;
   thinkerColor?: string;
+  status?: GuideReplyStatus | 'streaming';
+  notice?: string;
 }
 
 export default function CouncilPage() {
+  const reward = useThinkerRewards();
+  const { begin: beginReward, observe: observeReward, finish: finishReward } = reward;
   const [thinkers, setThinkers] = useState(DEFAULT_THINKERS);
   const [communitySlug, setCommunitySlug] = useState('society-of-explorers');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,18 +81,27 @@ export default function CouncilPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [lastVerdictUrl, setLastVerdictUrl] = useState<string | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
-  const [actionResults, setActionResults] = useState<Record<string, any[]>>({});
+  const [actionResults, setActionResults] = useState<Record<string, ActionResult[]>>({});
   const [onboarded, setOnboarded] = useState(true); // assume true, check on mount
   const [onboardStep, setOnboardStep] = useState(0);
   const [obBuilding, setObBuilding] = useState('');
   const [obChallenge, setObChallenge] = useState('');
   const [obSuccess, setObSuccess] = useState('');
   const [obBackground, setObBackground] = useState('');
+  const [sessionNotice, setSessionNotice] = useState('');
+  const retireGuide = useCallback(() => {
+    setMessages([]); setActionResults({}); setCurrentThinker(null); setIsStreaming(false);
+    setMemberId(null); setAuthToken(null); setLastVerdictUrl(null);
+    setSessionNotice('Account changed. Sign in again before asking the guides.');
+  }, []);
+  const { begin: beginGuide, owns: ownsGuide, finish: finishGuide, cancel: cancelGuide } = useGuideRequest(retireGuide);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let active = true;
+    const unsubscribe = subscribeAuthProviderChanges(() => { active = false; });
     if (typeof window !== 'undefined' && !localStorage.getItem('soe_onboarded')) {
       setOnboarded(false);
     }
@@ -71,11 +111,20 @@ export default function CouncilPage() {
       const comm = params.get('community');
       if (comm) {
         setCommunitySlug(comm);
-        fetch(`/api/communities/${comm}/thinkers`).then(r => r.json()).then(d => {
-          if (d.thinkers?.length > 0) {
-            const mapped = d.thinkers.map((t: any) => ({ id: t.thinker_key, name: t.name, avatar: t.avatar, color: t.color }));
+        fetch(`/api/communities/${comm}/thinkers`).then(r => r.json() as Promise<CommunityThinkersPayload>).then(d => {
+          if (!active) return;
+          const communityThinkers = d.thinkers || [];
+          if (communityThinkers.length > 0) {
+            const mapped = communityThinkers
+              .map((t): Thinker => ({
+                id: t.thinker_key || '',
+                name: t.name || t.thinker_key || 'Thinker',
+                avatar: t.avatar || 'AI',
+                color: t.color || gold,
+              }))
+              .filter((t) => t.id);
             setThinkers(mapped);
-            setSelectedThinkers(new Set(mapped.map((t: any) => t.id)));
+            setSelectedThinkers(new Set(mapped.map((t) => t.id)));
           }
         }).catch(() => {});
       }
@@ -83,13 +132,13 @@ export default function CouncilPage() {
     async function loadAuth() {
       try {
         const session = await getMemberSession();
-        if (session?.member) setMemberId(session.member.id);
-        const supabase = createClient();
-        const { data: { session: authSession } } = await supabase.auth.getSession();
-        if (authSession?.access_token) setAuthToken(authSession.access_token);
+        if (active && session?.member) setMemberId(session.member.id);
+        const accessToken = await getSupabaseAccessToken();
+        if (active && accessToken) setAuthToken(accessToken);
       } catch {}
     }
     loadAuth();
+    return () => { active = false; unsubscribe(); };
   }, []);
 
   useEffect(() => {
@@ -119,140 +168,97 @@ export default function CouncilPage() {
     thinkerId: string,
     userMessage: string,
     councilCtx: { thinker: string; response: string }[],
-  ): Promise<string> => {
+    controller: AbortController,
+  ): Promise<GuideReply | null> => {
     const streamId = `thinker-${thinkerId}-${Date.now()}`;
     const thinker = thinkers.find(t => t.id === thinkerId)!;
-    console.log(`[council] starting ${thinkerId}`);
-
+    const requestId = beginReward(thinker.name);
+    if (!requestId) return null;
     setMessages(prev => [...prev, {
-      id: streamId, role: 'thinker', content: '',
+      id: streamId, role: 'thinker', content: '', status: 'streaming',
       thinkerKey: thinkerId, thinkerName: thinker.name, thinkerColor: thinker.color,
     }]);
-
-    let fullText = '';
-
+    let partial = '';
+    let reply: GuideReply;
     try {
       const res = await fetch('/api/thinker', {
-        method: 'POST',
+        method: 'POST', signal: controller.signal,
+        credentials: 'same-origin', cache: 'no-store', redirect: 'error',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        body: JSON.stringify({
-          thinkerId,
-          message: userMessage,
-          memberId,
-          walletMemberId: memberId,
-          salonId: `council-${memberId || 'anon'}`,
-          councilContext: councilCtx,
-          isCouncilMode: true,
-          community: communitySlug,
-        }),
+        body: JSON.stringify({ requestId, thinkerId, message: userMessage, salonId: 'council',
+          councilContext: councilCtx, isCouncilMode: true, community: communitySlug }),
       });
-
-      if (!res.ok) {
-        console.error(`[council] ${thinkerId} HTTP ${res.status}`);
-        fullText = `[${thinker.name} unavailable]`;
-      } else {
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const line of chunk.split('\n')) {
-            if (!line.startsWith('data: ')) continue;
-            try {
-              const evt = JSON.parse(line.slice(6));
-              if (evt.delta) {
-                fullText += evt.delta;
-                const display = fullText.split('|||ACTIONS|||')[0].trim();
-                setMessages(prev => prev.map(m => m.id === streamId ? { ...m, content: display } : m));
-              }
-              if (evt.error) {
-                console.error(`[council] ${thinkerId} server error:`, evt.error);
-                if (!fullText) fullText = `[${thinker.name} unavailable]`;
-              }
-              if (evt.type === 'actions' && evt.results) {
-                setActionResults(prev => ({ ...prev, [thinkerId]: evt.results }));
-              }
-              if (evt.done && evt.response) {
-                const clean = evt.response.split('|||ACTIONS|||')[0]
-                  .replace(/^\[[\w-]+\]:\s*/i, '')
-                  .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
-                  .trim();
-                if (clean) fullText = clean;
-              }
-            } catch {}
-          }
-        }
-      }
-    } catch (err) {
-      console.error(`[council] ${thinkerId} error:`, err);
-      if (!fullText) fullText = `[${thinker.name} unavailable]`;
+      reply = await readGuideReply(res, { signal: controller.signal, onText: text => {
+        partial = text;
+        if (ownsGuide(controller)) setMessages(prev => prev.map(m => m.id === streamId ? { ...m, content: text } : m));
+      } });
+    } catch {
+      reply = { status: controller.signal.aborted ? 'cancelled' : 'interrupted', text: partial, actions: [] };
+    } finally { finishReward(requestId); }
+    if (!ownsGuide(controller)) return null;
+    if (reply.status === 'complete') {
+      observeReward(requestId, reply.reward);
+      setActionResults(prev => ({ ...prev, [streamId]: reply.actions }));
     }
-
-    // Ensure message has content
-    if (!fullText.trim()) fullText = `[${thinker.name} unavailable]`;
-    const finalDisplay = fullText.split('|||ACTIONS|||')[0].trim();
-    setMessages(prev => prev.map(m => m.id === streamId ? { ...m, content: finalDisplay } : m));
-
-    console.log(`[council] ${thinkerId} done: ${finalDisplay.length} chars`);
-    return finalDisplay;
-  }, [authToken, memberId, communitySlug]);
+    setMessages(prev => prev.map(m => m.id === streamId
+      ? { ...m, content: reply.text, status: reply.status, notice: guideReplyNotice(reply.status) } : m));
+    return reply;
+  }, [authToken, communitySlug, thinkers, beginReward, observeReward, finishReward, ownsGuide]);
 
   const send = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text || isStreaming) return;
-
-    setInput('');
-    setIsStreaming(true);
-
+    const controller = beginGuide();
+    if (!controller) return;
+    setInput(''); setIsStreaming(true); setSessionNotice('');
     setMessages(prev => [...prev, { id: `user-${Date.now()}`, role: 'user', content: text }]);
-
     const activeThinkers = thinkers.filter(t => selectedThinkers.has(t.id));
     const councilCtx: { thinker: string; response: string }[] = [];
-
-    for (let i = 0; i < activeThinkers.length; i++) {
-      const thinker = activeThinkers[i];
-      setCurrentThinker(thinker.id);
-      const resp = await streamThinkerResponse(thinker.id, text, councilCtx);
-      // Only include actual responses (not "[unavailable]") in council context
-      if (resp && !resp.startsWith('[')) {
-        councilCtx.push({ thinker: thinker.name, response: resp });
-      }
-      // Delay between thinkers to prevent Claude API rate limiting
-      if (i < activeThinkers.length - 1) {
-        await new Promise(r => setTimeout(r, 2000));
-      }
-    }
-
-    setCurrentThinker(null);
-    setIsStreaming(false);
-    setExchangeCount(prev => prev + 1);
-    inputRef.current?.focus();
-
-    // Auto-generate verdict card (fire and forget) — only if 2+ real responses
-    const realResponses = councilCtx.filter(c => c.response && !c.response.startsWith('['));
-    if (realResponses.length >= 2) {
-      fetch('/api/council/verdict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: `council-${Date.now()}`,
-          question: text,
-          responses: realResponses,
-          memberId,
-        }),
-      }).then(r => r.json()).then(d => {
-        if (d.publicUrl) {
-          setLastVerdictUrl(d.publicUrl);
-          setToast('Verdict card generated');
+    try {
+      for (let i = 0; i < activeThinkers.length; i++) {
+        if (!ownsGuide(controller) || controller.signal.aborted) return;
+        const thinker = activeThinkers[i];
+        setCurrentThinker(thinker.id);
+        const reply = await streamThinkerResponse(thinker.id, text, councilCtx, controller);
+        // A partial, refused or cancelled answer ends this sequence. It never
+        // becomes another guide's context or a completed council conclusion.
+        if (!reply || reply.status !== 'complete') return;
+        if (reply.text.trim()) councilCtx.push({ thinker: thinker.name, response: reply.text });
+        if (i < activeThinkers.length - 1) {
+          await new Promise<void>(resolve => {
+            const done = () => { clearTimeout(timer); controller.signal.removeEventListener('abort', done); resolve(); };
+            const timer = setTimeout(done, 2000);
+            controller.signal.addEventListener('abort', done, { once: true });
+            if (controller.signal.aborted) done();
+          });
         }
-      }).catch(() => {});
+      }
+      if (!ownsGuide(controller) || controller.signal.aborted) return;
+      setExchangeCount(prev => prev + 1);
+      // Preserve the existing private verdict flow only for completed answers.
+      if (councilCtx.length >= 2 && authToken) {
+        try {
+          const res = await fetch('/api/council/verdict', {
+            method: 'POST', signal: controller.signal,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({ sessionId: `council-${Date.now()}`, question: text, responses: councilCtx }),
+          });
+          const data = await res.json();
+          if (res.ok && ownsGuide(controller) && !controller.signal.aborted && data.publicUrl) {
+            setLastVerdictUrl(data.publicUrl); setToast('Verdict card generated');
+          }
+        } catch { /* No retry or claim of a saved verdict. */ }
+      }
+    } finally {
+      if (ownsGuide(controller)) {
+        setCurrentThinker(null); setIsStreaming(false); inputRef.current?.focus();
+      }
+      finishGuide(controller);
     }
-  }, [input, isStreaming, selectedThinkers, streamThinkerResponse, memberId]);
+  }, [input, isStreaming, selectedThinkers, streamThinkerResponse, authToken, thinkers, beginGuide, ownsGuide, finishGuide]);
 
   function completeOnboarding(skip?: boolean) {
     localStorage.setItem('soe_onboarded', 'true');
@@ -260,11 +266,11 @@ export default function CouncilPage() {
     if (!skip && (obBuilding || obChallenge || obSuccess || obBackground)) {
       const contextMsg = `Here's my context: I'm building ${obBuilding || 'something new'}. My biggest challenge is ${obChallenge || 'figuring out next steps'}. In 90 days, success means ${obSuccess || 'meaningful progress'}. Background: ${obBackground || 'varied experience'}. Given all this — what should I focus on first?`;
       // Save to member profile if logged in
-      if (memberId) {
+      if (memberId && authToken) {
         fetch('/api/members/onboarding', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId, answers: { building: obBuilding, challenge: obChallenge, success: obSuccess, background: obBackground } }),
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({ answers: { building: obBuilding, challenge: obChallenge, success: obSuccess, background: obBackground } }),
         }).catch(() => {});
       }
       send(contextMsg);
@@ -274,11 +280,11 @@ export default function CouncilPage() {
   async function handleCreateTask(e: React.FormEvent) {
     e.preventDefault();
     if (!taskTitle.trim()) return;
-    if (memberId) {
+    if (memberId && authToken) {
       try {
         await fetch('/api/tasks', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
           body: JSON.stringify({ title: taskTitle.trim(), description: taskDesc.trim(), priority: 'medium' }),
         });
       } catch {}
@@ -290,7 +296,13 @@ export default function CouncilPage() {
   }
 
   async function handleShareVerdict() {
-    const thinkerMessages = messages.filter(m => m.role === 'thinker' && m.content);
+    if (!authToken) {
+      setToast('Sign in to generate a verdict link');
+      return;
+    }
+
+    const lastQuestion = messages.findLastIndex(m => m.role === 'user');
+    const thinkerMessages = messages.slice(lastQuestion + 1).filter(m => m.role === 'thinker' && m.status === 'complete' && m.content);
     if (thinkerMessages.length < 2) return;
 
     // Find the last user question
@@ -306,16 +318,17 @@ export default function CouncilPage() {
     try {
       const res = await fetch('/api/council/verdict', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({
           sessionId: `council-${Date.now()}`,
           question,
           responses,
-          memberId: memberId || null,
+          makePublic: true, // the explicit "share verdict" click is the opt-in (security fix S6c)
         }),
       });
       const data = await res.json();
-      const url = data.publicUrl || `https://www.societyofexplorers.com/council/verdict/${data.slug}`;
+      if (!res.ok || !data.publicUrl) throw new Error('verdict not shared');
+      const url = data.publicUrl;
       setLastVerdictUrl(url);
       await navigator.clipboard.writeText(url);
       setToast('Verdict link copied!');
@@ -327,17 +340,20 @@ export default function CouncilPage() {
   }
 
   const activeThinkerCount = selectedThinkers.size;
-  const thinkerResponseCount = messages.filter(m => m.role === 'thinker' && m.content).length;
+  const lastQuestion = messages.findLastIndex(m => m.role === 'user');
+  const thinkerResponseCount = messages.slice(lastQuestion + 1).filter(m => m.role === 'thinker' && m.status === 'complete' && m.content).length;
   const showSignInBanner = !memberId && exchangeCount >= 3;
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
       <PublicNav />
+      {sessionNotice && <p role="alert" style={{ padding: '8px 16px' }}>{sessionNotice}</p>}
+      <ThinkerRewardNotice reward={reward} />
 
       {/* Sign-in banner for anonymous users after 3 exchanges */}
       {showSignInBanner && (
         <div style={{ paddingTop: '56px', flexShrink: 0, padding: '8px 16px', background: `${gold}0a`, borderBottom: `1px solid ${gold}22`, textAlign: 'center' }}>
-          <span style={{ fontSize: '14px', color: ivory85 }}>Sign in to let the thinkers remember you across sessions. </span>
+          <span style={{ fontSize: '14px', color: ivory85 }}>Continue with your member account. </span>
           <a href="/login" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.12em', color: gold, textDecoration: 'none' }}>SIGN IN</a>
         </div>
       )}
@@ -378,6 +394,7 @@ export default function CouncilPage() {
         </div>
       </div>
 
+      {isStreaming && <button type="button" onClick={cancelGuide} style={{ minHeight: 44, padding: '8px 12px', flexShrink: 0 }}>Stop replies</button>}
       {/* Chat Area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {messages.length === 0 && !onboarded && (
@@ -386,7 +403,7 @@ export default function CouncilPage() {
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.3 }}>
               Before we begin — tell us about yourself.
             </h2>
-            <p style={{ fontSize: '15px', color: muted, lineHeight: 1.7, marginBottom: '2rem' }}>The thinkers will remember everything you share.</p>
+            <p style={{ fontSize: '15px', color: muted, lineHeight: 1.7, marginBottom: '2rem' }}>Your answers can be saved to your profile and included in guide requests. You can skip this step.</p>
 
             {onboardStep === 0 && (
               <div>
@@ -398,7 +415,7 @@ export default function CouncilPage() {
             )}
             {onboardStep === 1 && (
               <div>
-                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What's your biggest challenge right now?</p>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What&apos;s your biggest challenge right now?</p>
                 <input value={obChallenge} onChange={e => setObChallenge(e.target.value)} placeholder="Finding customers, raising capital..."
                   style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
                   onKeyDown={e => { if (e.key === 'Enter') setOnboardStep(2); }} />
@@ -414,7 +431,7 @@ export default function CouncilPage() {
             )}
             {onboardStep === 3 && (
               <div>
-                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What's your background?</p>
+                <p style={{ fontSize: '14px', color: ivory85, marginBottom: '0.75rem' }}>What&apos;s your background?</p>
                 <input value={obBackground} onChange={e => setObBackground(e.target.value)} placeholder="Engineer, designer, MBA dropout..."
                   style={{ width: '100%', background: '#111', border: `1px solid ${gold}22`, padding: '14px 16px', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: parchment, outline: 'none', boxSizing: 'border-box', marginBottom: '1rem' }}
                   onKeyDown={e => { if (e.key === 'Enter') completeOnboarding(); }} />
@@ -484,14 +501,15 @@ export default function CouncilPage() {
                   )}
                 </div>
                 <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.8, margin: 0, wordBreak: 'break-word' }}>
-                  {msg.content || '...'}
+                  {msg.content || (msg.status === 'streaming' ? '...' : 'No complete reply text.')}
                   {currentThinker === msg.thinkerKey && msg.content && (
                     <span style={{ color: msg.thinkerColor }}>&#9613;</span>
                   )}
                 </p>
-                {msg.thinkerKey && actionResults[msg.thinkerKey] && actionResults[msg.thinkerKey].length > 0 && (
+                {msg.notice && <p role="alert" style={{ color: parchment, lineHeight: 1.5 }}>{msg.notice}</p>}
+                {msg.thinkerKey && actionResults[msg.id] && actionResults[msg.id].length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(201,168,76,0.1)' }}>
-                    {actionResults[msg.thinkerKey].map((r: any, i: number) => (
+                    {actionResults[msg.id].map((r, i) => (
                       <span key={i} style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '12px',
                         fontSize: '10px', letterSpacing: '0.1em', fontFamily: 'Cinzel, serif',

@@ -1,0 +1,10 @@
+.DS_Store
+.vercel
+node_modules
+uploads/
+
+# Explicit local synthetic SQLite state is never source or evidence.
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

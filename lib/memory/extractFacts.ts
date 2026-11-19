@@ -1,11 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const VALID_CATEGORIES = [
   'identity','goal','challenge','value','preference',
@@ -19,6 +13,10 @@ interface Fact {
   confidence: number;
 }
 
+function reportFactExtractionFailure(scope: string) {
+  console.warn(`[extractFacts] ${scope} failed`);
+}
+
 export async function extractFactsFromAnswer(params: {
   memberId: string;
   sourceEpisodeId: string | null;
@@ -28,8 +26,10 @@ export async function extractFactsFromAnswer(params: {
   const { memberId, sourceEpisodeId, question, answer } = params;
 
   try {
+    const anthropic = createAnthropicClient();
+    const model = resolveClaudeModel('memory', 'claude-haiku-4-5-20251001');
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model,
       max_tokens: 600,
       system: `You extract durable facts from a daily philosophical practice exchange.
 You are the memory of the thinkers — not a clinician, not a database. You write
@@ -94,7 +94,7 @@ Rules:
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      console.error('extractFacts: JSON parse failed', cleaned.slice(0, 200));
+      reportFactExtractionFailure('parse');
       return 0;
     }
 
@@ -115,18 +115,19 @@ Rules:
 
     if (rows.length === 0) return 0;
 
+    const supabaseAdmin = getSupabaseAdmin();
     const { error } = await supabaseAdmin
       .from('user_semantic_memory')
       .insert(rows);
 
     if (error) {
-      console.error('extractFacts: insert failed', error);
+      reportFactExtractionFailure('insert');
       return 0;
     }
 
     return rows.length;
-  } catch (err) {
-    console.error('extractFacts: exception', err);
+  } catch {
+    reportFactExtractionFailure('extract');
     return 0;
   }
 }

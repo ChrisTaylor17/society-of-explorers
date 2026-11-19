@@ -1,0 +1,174 @@
+{
+  "status": "PASS",
+  "recordedAt": "2026-11-07T22:43:07.553606+00:00",
+  "baseCommit": "e62c6aedb9eba5fed495d50dd3b9f5f0eeccad9f",
+  "evidenceKind": "synthetic local PostgreSQL 17.11 (Homebrew); no hosted credentials or provider acceptance",
+  "format": "soe-privacy-restore-v18",
+  "tablesCompared": 67,
+  "orderedMigrationCount": 65,
+  "sourceInputs": 1128,
+  "sourceUnchanged": true,
+  "elapsedSeconds": 33.41,
+  "clustersStopped": true,
+  "productionCleared": false,
+  "applicationSqlAppliedToHosted": false,
+  "newInstallSpendingOrCredentials": false,
+  "checks": [
+    "The admission scripts install after the complete release, account-erasure, blocks and current reading-catalog chain.",
+    "Host approval is required, raw server inserts remain denied, and exact invited retry returns the original committed receipt.",
+    "A repeatable-read snapshot and its dump restore all 67 tables, private implementations, schema authority and the exact invitation receipt into another socket-only cluster.",
+    "Removing any of the eight required private helpers refuses the comparison; an incomplete source cannot be captured as a matching baseline.",
+    "The comparison rejects altered helper bodies, helper/schema grants, column update authority and approval-mode data, then matches again after each synthetic repair.",
+    "A second real PostgreSQL backend waits behind an uncommitted revocation, then refuses the stale join without admitting or evicting a member.",
+    "A separate backend also waits behind account-removal start, then refuses the frozen recipient without creating a membership.",
+    "The restored owner erasure workflow freezes the recipient, refuses a replay, and removes invitation receipts and membership and completes wallet identity removal through all reviewed phases."
+  ],
+  "restore": {
+    "complete": {
+      "scope": "soe-privacy-restore-v18",
+      "status": "MATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "circleAdmissionRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "referenceBytes": 14228,
+    "archiveSha256": "92821449265ee1246938c980ec066f6ca6d137eb94c05d1bbc97763e4c25f772",
+    "missingRecipientReceipts": {
+      "scope": "soe-privacy-restore-v18",
+      "status": "MISMATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [
+        "circle_participation_receipts"
+      ],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "circleAdmissionRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "missingHelpersRejected": [
+      "create_circle",
+      "enabled",
+      "join_invited",
+      "join_open",
+      "legacy_salon_join",
+      "require_actor",
+      "review_invitation",
+      "revoke_invitations"
+    ],
+    "oldScopeRejected": true,
+    "changedHelper": {
+      "scope": "soe-privacy-restore-v18",
+      "status": "MISMATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "circleAdmissionRoutinesMatch": false,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "helperGrant": {
+      "scope": "soe-privacy-restore-v18",
+      "status": "MISMATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "circleAdmissionRoutinesMatch": false,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "schemaGrant": {
+      "scope": "soe-privacy-restore-v18",
+      "status": "MISMATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": false,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "circleAdmissionRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "columnGrant": {
+      "scope": "soe-privacy-restore-v18",
+      "status": "MISMATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [],
+      "definitionsDiffer": [
+        "book_cohorts"
+      ],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "circleAdmissionRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    },
+    "changedMode": {
+      "scope": "soe-privacy-restore-v18",
+      "status": "MISMATCH",
+      "tablesCompared": 67,
+      "rowsDiffer": [
+        "book_cohorts"
+      ],
+      "definitionsDiffer": [],
+      "roleAndSchemaAccessMatch": true,
+      "walletRoutinesMatch": true,
+      "circleRoutinesMatch": true,
+      "circleAdmissionRoutinesMatch": true,
+      "releaseServiceRoutinesMatch": true,
+      "accountDeletionRoutinesMatch": true,
+      "productionCleared": false
+    }
+  },
+  "concurrency": {
+    "revokeHeldFirst": "join waited and refused",
+    "existingMemberPreserved": true,
+    "accountRemovalHeldFirst": "join waited and refused frozen recipient"
+  },
+  "erasure": {
+    "frozenReplayRefused": true,
+    "recipientReceiptsRemoved": true,
+    "membershipRemoved": true,
+    "walletIdentityRemovalVerified": true
+  },
+  "verificationSourceSha256": {
+    "docs/sql/privacy-restore-reference.sql": "aa6ab68163c99e7aba087d0f67a372aedd91abd8e7ba9ab8203182e4bf393d2d",
+    "docs/sql/circle-admission-apply.sql": "4d866dfa7f06dedef6e856d9f41ce7f4ae12c1d2929ab6a8cd2cc327cb0a9222",
+    "docs/sql/circle-legacy-salon-membership.sql": "13bfd9acc9ea5185c2269e16bad328bbb9c40a89027763eac93561075770e960",
+    "verification/web/scripts/verify-privacy-restore.py": "2c2f239ee18b7c7c5f826aa98a04283e97d1e5c49b11fe821953e480e70b4609",
+    "verification/web/scripts/test-privacy-restore-check.py": "c16bfef5bd7bec1b247fbb8b06d2bb54d4963823afe8d547f0daf897343379c5",
+    "verification/web/scripts/rehearse-direct-message-blocks.py": "0926745ae24160f889e73b6e56e4978cd223b0fabeec9582adb38599ef6eaeba",
+    "verification/web/scripts/rehearse-circle-admission.py": "a621d15cba3860ee43c74969b8bd003a80ea1e15eb152543c4d122e9f51f0e1e"
+  },
+  "privateReportSha256": "a56cfd6afee2e5d28c024e2dd490d209d7318ae7bf5095655bf1946d9f4ae590",
+  "limits": [
+    "Full database and provider metadata are synthetic; the staged native fixture represents vector columns as arrays. This is not the matching-version hosted-source backup rehearsal.",
+    "The 97-table pre-cutover hosted source capture still needs secure Mac password entry. Storage temporal binding and real authentication remain gated.",
+    "The new account-removal scenario uses a wallet-only member; earlier complete-chain provider cases are synthetic, without calling a live auth provider.",
+    "Independent sessions cover revoke-first and account-removal-first. These do not prove every interleaving or physical-device behavior.",
+    "Host/member interfaces, member-code sharing consent, token/key lifecycle recovery and phone delivery remain unfinished.",
+    "No real invitation, pilot admission, payment, device acceptance or production clearance is established."
+  ]
+}

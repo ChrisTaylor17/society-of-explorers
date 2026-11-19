@@ -1,96 +1,95 @@
-'use client';
+import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import PublicFooter from '@/components/PublicFooter';
-import { useEffect } from 'react';
+import { ONLINE_CIRCLES_HREF } from '@/lib/circles/discovery';
+import styles from './soe-overview.module.css';
 
-const gold = '#c9a84c';
-const parchment = '#f5f0e8';
-const ivory85 = 'rgba(245,240,232,0.85)';
-const muted = '#9a8f7a';
+const paths = [
+  { number: '01', name: 'Christian fellowship', detail: 'Scripture, prayer and honest inquiry. Read in context and give a different interpretation a fair hearing.', href: '/fellowship', action: 'Enter fellowship' },
+  { number: '02', name: 'The reading room', detail: 'Explore the Great Books and selected passages. Bring a question worth discussing, rather than a conclusion to defend.', href: '/great-books', action: 'Choose a reading' },
+  { number: '03', name: 'A circle of people', detail: 'Browse online circles and reading salons. Each group needs a real host, a clear invitation and a confirmed meeting time.', href: ONLINE_CIRCLES_HREF, action: 'Browse online circles' },
+  { number: '04', name: 'Something to talk about', detail: 'Explore clips as starting points for inquiry. Carry a worthwhile question from the screen into a conversation.', href: '/clips', action: 'Explore clips' },
+] as const;
+
+const later = [
+  { name: 'Gather in more ways', detail: 'Browser gatherings first, with phone and Quest experiences developing alongside them. Immersive meetings and shared physical spaces remain part of the vision.' },
+  { name: 'Research with care', detail: 'Historical AI guides and Root Kernel connections can deepen study. Root Kernel keeps its distinct principles; sources, interpretations and belief should remain distinguishable.' },
+  { name: 'Build something together', detail: 'Member projects and an eventual incubator could grow from trusted relationships. Consilience’s proposed company-building and governance services are a separate part of that work.' },
+  { name: 'Support a lasting community', detail: 'A charitable arm, commercial products and community spaces are being considered. Their governance, ownership and relationship require separate review.' },
+] as const;
 
 export default function SOEPage() {
-  useEffect(() => {
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) (e.target as HTMLElement).style.opacity = '1'; });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('[data-fade]').forEach(el => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
-      <PublicNav />
-
-      <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '0.5rem' }}>FLAGSHIP INSTANCE ON CONSILIENCE</div>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: ivory85, marginBottom: '1.5rem' }}>SOCIETY OF EXPLORERS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, marginBottom: '1.5rem' }}>
-            Citizen science of the mind.
-          </h1>
-          <p style={{ fontSize: '17px', color: ivory85, lineHeight: 1.7, maxWidth: '560px', margin: '0 auto 2rem' }}>
-            SOE is the first DAO built on Consilience Systems. The habit layer: daily philosophical practice, matched conversations, and 7-week salons. Soulbound $EXP reputation for verified contributions to the collective inquiry.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/practice" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: '#0a0a0a', background: gold, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px' }}>START DAILY PRACTICE</a>
-            <a href="/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, border: `1px solid ${gold}`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px' }}>COUNCIL MODE</a>
+    <div className={styles.page}>
+      <a href="#soe-main" className={styles.skip}>Skip to the overview</a>
+      <PublicNav checkSession={false} />
+      <main id="soe-main" className={styles.main} tabIndex={-1}>
+        <header className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>Society of Explorers</p>
+            <h1>Come for a question.<br /><em>Return for the people.</em></h1>
+            <p className={styles.lead}>A place for shared reading, Christian-rooted fellowship and friendships that grow through honest conversation.</p>
+            <p className={styles.welcome}>Respectful disagreement is welcome. Prayer is optional. You can listen, ask, read aloud or pass.</p>
+            <div className={styles.actions}>
+              <Link className={styles.primary} href="/salons/pilot" prefetch={false}>Read the first salon plan <span aria-hidden="true">↗</span></Link>
+              <Link className={styles.secondary} href="#explore" prefetch={false}>Explore the society <span aria-hidden="true">↓</span></Link>
+            </div>
           </div>
-        </div>
-      </section>
+          <aside className={styles.pilot} aria-labelledby="pilot-title">
+            <p className={styles.eyebrow}>First release in preparation</p>
+            <div className={styles.four} aria-hidden="true">04</div>
+            <h2 id="pilot-title">Four weeks.<br />One small circle.</h2>
+            <p>A proposed online pilot for 6–8 adults, with a human host and a shared reading each week.</p>
+            <dl>
+              <div><dt>Meeting</dt><dd>60–75 minutes</dd></div>
+              <div><dt>Format</dt><dd>Online, with optional prayer</dd></div>
+              <div><dt>Host &amp; dates</dt><dd>To be confirmed</dd></div>
+            </dl>
+            <p className={styles.small}>This overview is an invitation to explore the plan. It does not book a session or enroll you in a paid program.</p>
+          </aside>
+        </header>
 
-      {/* Modules */}
-      <section data-fade style={{ padding: '2rem 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, textAlign: 'center', marginBottom: '2rem' }}>SOE MODULES</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1px', background: `${gold}10` }}>
-            {[
-              { label: 'DAILY PRACTICE', desc: 'One question a day. 280 characters. Build streaks. See what others think.', href: '/practice' },
-              { label: 'MATCHED CONVERSATIONS', desc: 'After 7 responses, paired with a fellow explorer for a structured 1:1.', href: '/match' },
-              { label: 'SALONS', desc: 'Seven people, seven weeks, 35 sessions. Lead, graduate, start your own.', href: '/salon' },
-              { label: 'COUNCIL MODE', desc: 'Multi-thinker debate. Real-time streaming. Verdicts you can share.', href: '/council' },
-              { label: 'LIVE SESSIONS', desc: 'Weekly video sessions on Daily.co. Wednesday 8pm ET.', href: '/live' },
-              { label: 'LEADERBOARD', desc: 'Public ranking of Guides by salons led and members graduated.', href: '/leaderboard' },
-            ].map(m => (
-              <a key={m.label} href={m.href} style={{ background: '#0d0d0d', padding: '1.5rem', textDecoration: 'none', transition: 'background 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#111'}
-                onMouseLeave={e => e.currentTarget.style.background = '#0d0d0d'}>
-                <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, marginBottom: '0.5rem' }}>{m.label}</div>
-                <p style={{ fontSize: '13px', color: muted, lineHeight: 1.6, margin: 0 }}>{m.desc}</p>
-              </a>
+        <section id="explore" className={styles.section} aria-labelledby="explore-title">
+          <div className={styles.sectionHeading}>
+            <p className={styles.eyebrow}>One community, several ways in</p>
+            <h2 id="explore-title">Begin with what draws you.</h2>
+            <p>A text, a question or a shared interest can become the beginning of a real relationship.</p>
+          </div>
+          <div className={styles.paths}>
+            {paths.map(path => (
+              <article className={styles.path} key={path.number}>
+                <span className={styles.number} aria-hidden="true">{path.number}</span>
+                <h3>{path.name}</h3><p>{path.detail}</p>
+                <Link href={path.href} prefetch={false}>{path.action} <span aria-hidden="true">↗</span></Link>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Metadata / stats */}
-      <section data-fade style={{ padding: '2rem 2rem 4rem', opacity: 0, transition: 'opacity 0.9s ease' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ background: '#0d0d0d', border: `1px solid ${gold}22`, padding: '1.5rem' }}>
-            <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>DAO SPEC</div>
-            {[
-              { label: 'Template', value: 'Habit / Research Layer' },
-              { label: 'Reputation token', value: '$EXP (soulbound)' },
-              { label: 'Governance', value: 'DAO / Benevolent hybrid' },
-              { label: 'Membership', value: 'Explorer (free) / Seeker / Philosopher / Oracle' },
-              { label: 'Data methods', value: 'Surveys, cohort participation, AI-facilitated sessions' },
-              { label: 'Chain', value: 'Solana (Token-2022, NonTransferable)' },
-            ].map(r => (
-              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${gold}08` }}>
-                <span style={{ fontSize: '13px', color: muted }}>{r.label}</span>
-                <span style={{ fontSize: '13px', color: parchment, textAlign: 'right' }}>{r.value}</span>
-              </div>
-            ))}
+        <section className={styles.table} aria-labelledby="gather-title">
+          <div><p className={styles.eyebrow}>A conversation worth returning to</p>
+            <h2 id="gather-title">Read. Meet. Reflect.<br /><em>Make room for each other.</em></h2></div>
+          <div>
+            <p>Start with one short reading. Meet the same people, hear more than one view, and leave with a question to carry into the week.</p>
+            <p>The first pilot will help us learn whether people return and whether hosts want to lead another cycle. Views and sign-ups alone cannot answer that.</p>
+            <div className={styles.actions}>
+              <Link className={styles.secondary} href="/book-salons" prefetch={false}>Explore book salons</Link>
+              <Link className={styles.secondary} href="/members" prefetch={false}>Find people</Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA */}
-      <section style={{ padding: '2rem 2rem 6rem', textAlign: 'center' }}>
-        <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 2rem' }} />
-        <p style={{ fontSize: '15px', color: muted, marginBottom: '1.5rem' }}>Want to launch something like this for your community?</p>
-        <a href="/create-community" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, border: `1px solid ${gold}`, padding: '0 28px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '48px' }}>CREATE YOUR OWN DAO</a>
-      </section>
-
+        <section className={styles.section} aria-labelledby="future-title">
+          <div className={styles.sectionHeading}>
+            <p className={styles.eyebrow}>The longer view · plans under review</p>
+            <h2 id="future-title">Let the society grow from real connection.</h2>
+            <p>The wider ambition remains. These are directions to develop and validate, not services or legal arrangements announced by this page.</p>
+          </div>
+          <div className={styles.future}>{later.map(idea => <article key={idea.name}><h3>{idea.name}</h3><p>{idea.detail}</p></article>)}</div>
+          <p className={styles.futureNote}>No token reward, investment offer, tax-deductible donation, physical venue or fixed live schedule is promised here.</p>
+          <Link className={styles.secondary} href="/quest" prefetch={false}>Explore the Quest preview <span aria-hidden="true">↗</span></Link>
+        </section>
+      </main>
       <PublicFooter />
     </div>
   );

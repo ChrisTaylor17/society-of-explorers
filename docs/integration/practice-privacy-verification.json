@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-05T20:48:06.419978+00:00",
+  "baseCheckpoint": "ab5db10acc2f28312fcd3330fbbfb3042520e920",
+  "status": "LOCAL_PRACTICE_CONTAINMENT_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "productionObservation": {
+    "path": "verification/web/evidence/practice-containment-01/production-catalog-and-aliases.json",
+    "sha256": "1ee23800fd7787d13c8679c32f3bfc0fcea37ed2d55138e89163d024e185fde1",
+    "bytes": 14813,
+    "catalogOnly": true,
+    "relations": [
+      "daily_questions",
+      "matched_conversations",
+      "practice_reflections",
+      "question_responses"
+    ],
+    "unrestrictedPolicies": 4,
+    "catalogServerVersionNum": "170006",
+    "memberAliasCount": 4,
+    "memberDeployments": 2,
+    "brandedProject": "soe-exhibition",
+    "brandedFileIndexEntries": 177,
+    "exactRouteEntries": [
+      {
+        "path": "verification/web/evidence/practice-containment-01/feed-entry.js",
+        "sha256": "f53504cf2ca8cfd7b2fe7cd3fb4ffd53a3106f9206a2a35600448eaa2cc68223",
+        "bytes": 479,
+        "providerFileId": "a64db48e71a7cef04b0c18bd7df86deb19ba5993"
+      },
+      {
+        "path": "verification/web/evidence/practice-containment-01/others-entry.js",
+        "sha256": "303820c6ec1950b4435d017de5c2c32e09f62d36e08b5c60fd9ecf397283f134",
+        "bytes": 571,
+        "providerFileId": "e139fe622f7359d2b0e8a3caf42d70329ce3e59b"
+      },
+      {
+        "path": "verification/web/evidence/practice-containment-01/responses-entry.js",
+        "sha256": "f69ddbc896e27cf03c80096b5e718b8aab590d83fb1c22bb473c85f77cc61316",
+        "bytes": 495,
+        "providerFileId": "7f85303d6f5057162545c04337695766a906914a"
+      }
+    ],
+    "runtimeCorrespondenceComplete": false
+  },
+  "sqlDraft": {
+    "path": "docs/sql/practice-data-containment-apply.sql",
+    "sha256": "0e1c494fb39add6b9e6c656faa32dd4e888f4baedc5468905af6011841b88593",
+    "bytes": 4511
+  },
+  "databaseAndApiTests": {
+    "path": "verification/web/evidence/practice-containment-01/practice-tests-03.tap",
+    "sha256": "bada7aefe407221f5f38bd5cbea167519ea0517da598c550d104bc40a94b99e4",
+    "bytes": 3319,
+    "databasePassed": 5,
+    "apiPassed": 8,
+    "runnerInputs": [
+      {
+        "path": "verification/web/tests/practice-data-containment.test.mjs",
+        "sha256": "cea46aa926c95448879f89174826fc7816d052e23effa70d6c218762f66bb1e7",
+        "bytes": 5170
+      },
+      {
+        "path": "verification/web/tests/practice-privacy-api.test.mjs",
+        "sha256": "bdb0464ed7185bd9bacf3118ce9c489e5117ce9767373b12452d024d24313a0f",
+        "bytes": 7440
+      },
+      {
+        "path": "verification/web/tests/support/practice-privacy-fixture.mjs",
+        "sha256": "74b35a3ed9d9883f12040f9c6bb88cc4435787e26621059bd4eddacbaefd9f6c",
+        "bytes": 9371
+      }
+    ]
+  },
+  "nativeRehearsal": {
+    "path": "verification/web/evidence/practice-containment-01/native-rehearsal.json",
+    "sha256": "0489332b8fca8d0c0fadd0fa6fceb183c8f63020fbf778ec72a916682b3e9c61",
+    "bytes": 916,
+    "syntheticRestorePassed": true,
+    "independentLockTimeout": "55P03",
+    "nativeVectorSubstitution": "Native embedding column uses real[] because pgvector is unavailable. PGlite suite uses exact tracked vector schema.",
+    "closed": true
+  },
+  "lint": {
+    "path": "verification/web/evidence/practice-containment-01/lint-final.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "exitCode": 0
+  },
+  "legacyGuard": {
+    "path": "verification/web/evidence/practice-containment-01/lazy-guard-built.log",
+    "sha256": "6d1acddce489077a2411195a402937441308c4726d825ddf88f926b7c3253427",
+    "bytes": 6021,
+    "baseline": {
+      "path": "verification/web/evidence/practice-containment-01/lazy-guard-base.log",
+      "sha256": "6d1acddce489077a2411195a402937441308c4726d825ddf88f926b7c3253427",
+      "bytes": 6021
+    },
+    "affectedChecksPassed": 4,
+    "unchangedBaselineFailures": 10
+  },
+  "build": {
+    "path": "verification/web/evidence/built-shell-practice-privacy-02-next-build.json",
+    "sha256": "a932f100968cc982cfa6b4c30497b4c127004c27b5c216a94339acad04f7cdb1",
+    "bytes": 673,
+    "log": {
+      "path": "verification/web/evidence/built-shell-practice-privacy-02-next-build.log",
+      "sha256": "3fe798acf667f5f67a7005d3c13ea63c44831501e19d14ac157ebeda9c37df96",
+      "bytes": 16053
+    },
+    "inputManifest": {
+      "path": "verification/web/evidence/built-shell-practice-privacy-02-build-source-sha256.json",
+      "sha256": "55e492219fcca7426da083ab08c472df86a4b0a617ef8b4de0828f8655d4a87c",
+      "bytes": 128231
+    },
+    "inputCount": 1051,
+    "typecheckCompleted": true
+  },
+  "server": {
+    "path": "verification/web/evidence/built-shell-practice-privacy-02-server.json",
+    "sha256": "e7193ee1afab01c153ac6a0a6f3cf8a22a046d71e1acc62a8ff35a927b6f58fe",
+    "bytes": 724138,
+    "buildId": "CUwQoj-ItC4a1iWS6v1bi",
+    "portsCheckedClosed": [
+      38472,
+      38473
+    ]
+  },
+  "browser": {
+    "path": "verification/web/evidence/practice-browser-02/browser.json",
+    "sha256": "e6b36d11090961decd72881359dd8080bc36eeb16eff5e99dc68a1f5f29644c5",
+    "bytes": 3496,
+    "runner": {
+      "path": "verification/web/scripts/browser-practice-privacy.mjs",
+      "sha256": "86442983e7e6b6ca9b31ef693d15a4ed6110a7f294c14e534cdd3c272ea14dab",
+      "bytes": 10563
+    },
+    "stories": 6,
+    "apiRequests": 23,
+    "syntheticDatabaseCalls": 35,
+    "providerCalls": 0,
+    "browserClosed": true,
+    "disposableDatabaseClosed": true,
+    "screenshots": [
+      {
+        "path": "verification/web/evidence/practice-browser-02/feed-320.png",
+        "sha256": "e98f79f0a80dc4a6bb6647e52d9aaaab6422669724cfade8f25c8c371f9e2e53",
+        "bytes": 248812
+      },
+      {
+        "path": "verification/web/evidence/practice-browser-02/practice-320.png",
+        "sha256": "ca4ffab168c4e855113a2aee1898d1bcf95cc40a241b595e9dd27b07082450ef",
+        "bytes": 237233
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "path": "verification/web/evidence/practice-containment-01/practice-tests.tap",
+      "sha256": "558f73f24be64c7618c7e93f4bfa7eb7ab65b3fdd4ee3aa391e2959ed7ecdeca",
+      "bytes": 11630,
+      "finding": "First API fixture used a path with a trailing separator rejected by its source loader."
+    },
+    {
+      "path": "verification/web/evidence/practice-containment-01/practice-tests-02.tap",
+      "sha256": "c36a843f71945ef3a95cb531012c7b39eda166f59f5364aaa8311c08abd9bf44",
+      "bytes": 4819,
+      "finding": "The synthetic PostgREST adapter now serializes PostgreSQL date columns as dates."
+    },
+    {
+      "path": "verification/web/evidence/practice-browser-01/feed-320.png",
+      "sha256": "14f221f0a1de8e49e88afbe7a9bd3bebec21175752e6edd92831083447c26386",
+      "bytes": 247242,
+      "finding": "The initial utility styling overlapped fixed navigation. The final screenshot and layout check use scoped CSS."
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface MemberPosition {
   memberId: string;
@@ -10,10 +11,23 @@ interface MemberPosition {
   rotationY: number;
 }
 
+function isMemberPosition(value: unknown): value is MemberPosition {
+  if (!value || typeof value !== 'object') return false;
+  const member = value as Partial<MemberPosition>;
+  return (
+    typeof member.memberId === 'string' &&
+    typeof member.displayName === 'string' &&
+    typeof member.x === 'number' &&
+    typeof member.y === 'number' &&
+    typeof member.z === 'number' &&
+    typeof member.rotationY === 'number'
+  );
+}
+
 export function useTemplePresence(memberId: string, displayName: string) {
-  const supabase = createClient();
+  const [supabase] = useState(createClient);
   const [otherMembers, setOtherMembers] = useState<MemberPosition[]>([]);
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!memberId) return;
@@ -25,10 +39,10 @@ export function useTemplePresence(memberId: string, displayName: string) {
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
-        const members: MemberPosition[] = Object.values(state)
-          .flat()
-          .filter((m: any) => m.memberId !== memberId)
-          .map((m: any) => m as MemberPosition);
+        const candidates: unknown[] = Object.values(state).flat();
+        const members = candidates
+          .filter(isMemberPosition)
+          .filter((member) => member.memberId !== memberId);
         setOtherMembers(members);
       })
       .subscribe(async (status) => {
@@ -38,8 +52,11 @@ export function useTemplePresence(memberId: string, displayName: string) {
       });
 
     channelRef.current = channel;
-    return () => { supabase.removeChannel(channel); };
-  }, [memberId]);
+    return () => {
+      if (channelRef.current === channel) channelRef.current = null;
+      void supabase.removeChannel(channel);
+    };
+  }, [displayName, memberId, supabase]);
 
   const updatePosition = async (x: number, y: number, z: number, rotationY: number) => {
     await channelRef.current?.track({ memberId, displayName, x, y, z, rotationY });

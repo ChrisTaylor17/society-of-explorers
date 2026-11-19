@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "observedAtUTC": "2026-11-04T18:41:27Z",
+  "boundary": "Read-only Supabase pg_catalog and Vercel metadata/source inspection; no application request, function invocation, member-row read, environment/credential retrieval, deployment or production mutation.",
+  "rewardFunctions": [
+    {
+      "signature": "add_exp(uuid,integer,text)",
+      "owner": "postgres",
+      "body_md5": "45c3f91859a6c157ddbc6b155e40d524",
+      "security_definer": true,
+      "execution": {
+        "anon": true,
+        "service_role": true,
+        "authenticated": true
+      },
+      "acl": [
+        {
+          "grantee": "PUBLIC",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "anon",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    },
+    {
+      "signature": "increment_exp_tokens(uuid,integer)",
+      "owner": "postgres",
+      "body_md5": "8185aee4259a8ede92b7e14b5b7132af",
+      "security_definer": false,
+      "execution": {
+        "anon": true,
+        "service_role": true,
+        "authenticated": true
+      },
+      "acl": [
+        {
+          "grantee": "PUBLIC",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "anon",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    },
+    {
+      "signature": "increment_exp(uuid,integer)",
+      "owner": "postgres",
+      "body_md5": "d18f4bd9730603002d5c779f9843fc1d",
+      "security_definer": false,
+      "execution": {
+        "anon": true,
+        "service_role": true,
+        "authenticated": true
+      },
+      "acl": [
+        {
+          "grantee": "PUBLIC",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "postgres",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "anon",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "authenticated",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        },
+        {
+          "grantee": "service_role",
+          "grantable": false,
+          "privilege": "EXECUTE"
+        }
+      ]
+    }
+  ],
+  "deployment": {
+    "id": "dpl_FqmzK79EiKmDcur1of6RFPpbUyFX",
+    "project": {
+      "id": "prj_WI91SqGtnDGWMkrzVNumvqn8Tx4O",
+      "name": "society-of-explorers",
+      "framework": "nextjs"
+    },
+    "name": "society-of-explorers",
+    "url": "society-of-explorers-3e2nw3sne-chris-projects-03dec906.vercel.app",
+    "state": "READY",
+    "target": "production",
+    "source": "cli",
+    "alias": [
+      "society-of-explorers.vercel.app",
+      "society-of-explorers-chris-projects-03dec906.vercel.app"
+    ],
+    "createdAt": 1793217426212,
+    "gitCommitSupplied": false,
+    "buildId": "1dGZPeMaX3PSu8_pnZDGj"
+  },
+  "otherProject": {
+    "id": "prj_PJz09tIcozj57Ue2pihPHpNFil4T",
+    "name": "society",
+    "live": false,
+    "latestDeployment": {
+      "id": "dpl_Cu6u4VgYZqcs7Crs6N21z3i1PLAC",
+      "url": "society-8k0zocngk-chris-projects-03dec906.vercel.app",
+      "createdAt": 1760551267529,
+      "readyState": "READY",
+      "target": "production"
+    },
+    "domains": [
+      "society-tau.vercel.app",
+      "society-chris-projects-03dec906.vercel.app",
+      "society-git-main-chris-projects-03dec906.vercel.app"
+    ]
+  },
+  "callerInventory": {
+    "returnedFileCount": 602,
+    "listingTruncated": true,
+    "routeManifestTruncated": true,
+    "completeThinkerEntry": "var R=require(\"../../../chunks/[turbopack]_runtime.js\")(\"server/app/api/thinker/route.js\")\nR.c(\"server/chunks/_07tanjt._.js\")\nR.c(\"server/chunks/node_modules_next_dist_esm_build_templates_app-route_1vxx_-7.js\")\nR.c(\"server/chunks/_1sb6pfh._.js\")\nR.c(\"server/chunks/node_modules_1e-9mkp._.js\")\nR.c(\"server/chunks/node_modules_@supabase_supabase-js_dist_index_mjs_0u-n9p7._.js\")\nR.c(\"server/chunks/node_modules_@anthropic-ai_sdk_0zc5wzj._.js\")\nR.c(\"server/chunks/[root-of-the-server]__15bjnu5._.js\")\nR.c(\"server/chunks/node_modules_next_05zc8vy._.js\")\nR.c(\"server/chunks/[root-of-the-server]__1c4a4_u._.js\")\nR.c(\"server/chunks/_next-internal_server_app_api_thinker_route_actions_0h3u2zn.js\")\nR.m(653035)\nmodule.exports=R.m(653035).exports\n",
+    "implementationChunksRetrieved": false,
+    "deployedFunctionCallsVerified": false,
+    "productionSupabaseConfigurationInspected": false
+  },
+  "deploymentSourceFiles": [
+    {
+      "path": "src/.next/BUILD_ID",
+      "id": "187523eda8de3a26895ecc496f60cd5a10eee2a1"
+    },
+    {
+      "path": "src/.next/app-path-routes-manifest.json",
+      "id": "ed641b0a70611c583aa6ff53240294e57b1862b3"
+    },
+    {
+      "path": "src/.next/server/app/api/thinker/route.js",
+      "id": "00b26966b17f5ca0788ed4ace2a89383a2f4c45e"
+    }
+  ]
+}

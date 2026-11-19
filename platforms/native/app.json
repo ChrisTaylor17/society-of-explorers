@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Society of Explorers",
+    "slug": "society-of-explorers",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": ["./plugins/with-soe-ios-host.cjs"],
+    "ios": {
+      "bundleIdentifier": "com.anonymous.soesyntheticdemo",
+      "supportsTablet": false
+    },
+    "android": {
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.soesyntheticdemo"
+    }
+  }
+}

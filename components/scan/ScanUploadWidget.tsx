@@ -97,7 +97,7 @@ export function ScanUploadWidget() {
     return null;
   }, []);
 
-  const pollForScore = useCallback(async (scanId: string, attempt: number = 0): Promise<void> => {
+  const pollForScore = useCallback(async function poll(scanId: string, attempt: number = 0): Promise<void> {
     if (attempt >= POLL_MAX_ATTEMPTS) {
       setWidgetState('success'); setSuccessMessage('Scoring in progress — check back soon.'); setRewardText('Pending'); setQualityScore(0); return;
     }
@@ -109,7 +109,7 @@ export function ScanUploadWidget() {
       if (scan?.status === 'scored') {
         setWidgetState('success'); setSuccessMessage('Scan recorded in the Explorer archive.'); setRewardText(`+${scan.reward_exp} $EXP`); setQualityScore(scan.quality_score ?? 0); return;
       }
-      pollTimeoutRef.current = window.setTimeout(() => { void pollForScore(scanId, attempt + 1); }, POLL_INTERVAL_MS);
+      pollTimeoutRef.current = window.setTimeout(() => { void poll(scanId, attempt + 1); }, POLL_INTERVAL_MS);
     } catch { setWidgetState('success'); setSuccessMessage('Scoring in progress — check back soon.'); setRewardText('Pending'); setQualityScore(0); }
   }, []);
 

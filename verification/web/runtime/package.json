@@ -1,0 +1,9 @@
+{
+  "name": "soe-circle-offline-test-tools",
+  "version": "0.0.0",
+  "dependencies": {
+    "@oven/bun-darwin-aarch64": "1.4.4",
+    "jsdom": "30.1.3"
+  },
+  "private": true
+}

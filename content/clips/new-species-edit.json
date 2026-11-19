@@ -1,0 +1,66 @@
+{
+  "title": "Is it a new species?",
+  "series": "The Archivist",
+  "fieldNote": "04",
+  "fps": 25,
+  "width": 720,
+  "height": 1280,
+  "bitrate": 1150000,
+  "source": {
+    "file": "noaa-ex2606-dive11-isopod-source.mp4",
+    "sha256": "2dc4150cbafc97acb7dc9520daa69da9387e744b3d6bc80a55f0bbab3750698c",
+    "page": "https://oceanexplorer.noaa.gov/dive-11-ex2606/",
+    "download": "https://oceanexplorer.noaa.gov/wp-content/uploads/2026/10/ex2606-dive11-isopod_HD.mp4",
+    "credit": "NOAA Ocean Exploration, 2026 American Samoa ROV + Mapping Exploration",
+    "creditLines": ["NOAA Ocean Exploration", "2026 American Samoa ROV + Mapping Exploration"],
+    "license": "https://oceanexplorer.noaa.gov/faqs/",
+    "policy": "https://oceanexplorer.noaa.gov/faqs/",
+    "fps": 30,
+    "ntsc": true,
+    "inFrame": 300,
+    "outFrame": 800,
+    "audioTracks": 1
+  },
+  "layout": {
+    "background": "#102024",
+    "ink": "#fff1de",
+    "accent": "#e4c47f",
+    "videoRect": [40, 372, 640, 360],
+    "creditY": 772,
+    "fontTitle": "bold 68px Georgia",
+    "fontBody": "600 30px system-ui",
+    "label": "AMERICAN SAMOA  ·  SEPT. 10, 2026",
+    "modifications": "Independent SoE edit",
+    "audio": "silent"
+  },
+  "scenes": [
+    {
+      "start": 0,
+      "end": 125,
+      "titleLines": ["A new species?", "Look closely."],
+      "bodyLines": ["A dive team filmed an isopod.", "NOAA says it may be a new species."],
+      "transcript": "September 10, 2026, American Samoa. A dive team filmed an isopod moving over the seafloor. NOAA says it may be a new species."
+    },
+    {
+      "start": 125,
+      "end": 250,
+      "titleLines": ["What does", "the clip show?"],
+      "bodyLines": ["Watch how it moves.", "What can you tell from a video?"],
+      "transcript": "Watch how it moves. What can you tell from a video?"
+    },
+    {
+      "start": 250,
+      "end": 375,
+      "titleLines": ["A November trial", "off Hawaiʻi"],
+      "bodyLines": ["NOAA is testing untethered robots", "for mapping and collecting samples."],
+      "transcript": "In a separate November 2026 trial off Hawaiʻi, NOAA is testing untethered robots for mapping and collecting samples."
+    },
+    {
+      "start": 375,
+      "end": 500,
+      "titleLines": ["What would", "you compare?"],
+      "bodyLines": ["Before calling it a new species,", "what would you compare?", "Bring the question to a Circle."],
+      "transcript": "What would you compare before calling it a new species? Bring the question to a Circle."
+    }
+  ]
+}

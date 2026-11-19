@@ -1,0 +1,61 @@
+{
+  "status": "PASS_LOCAL",
+  "productionCleared": false,
+  "policyApproved": false,
+  "parentCommit": "98573317d9e2f0bf923cc410009a82c5a1669191",
+  "recordedAt": "2026-11-07T00:06:24.383651+00:00",
+  "publicPath": "/privacy",
+  "webChecks": [
+    "The public privacy page works at 320px with keyboard links, no session cookie and no API, non-GET or external request.",
+    "Home, sign-in, Quest Browser and profile settings all link to the same policy for a signed-out visitor.",
+    "Account deletion opens directly and privately. A signed-out visitor can check a status code while new requests stay closed in this build."
+  ],
+  "phoneSimulations": {
+    "ios": {
+      "stories": 19,
+      "policyStory": "the registered app opens the bundled privacy policy offline without connecting an account, accessing session storage or opening the browser",
+      "bundleSha256": "c509cd3ab1724620fed0bbeb378ab68bbc451f0cc14af33c721214ed391adcbd"
+    },
+    "android": {
+      "stories": 19,
+      "policyStory": "the registered app opens the bundled privacy policy offline without connecting an account, accessing session storage or opening the browser",
+      "bundleSha256": "c509cd3ab1724620fed0bbeb378ab68bbc451f0cc14af33c721214ed391adcbd"
+    }
+  },
+  "buildSourceFiles": 1110,
+  "buildSourceSha256": "08574a88c983a5ec18540023c842f064b44bd40802b6afeac4ade4bf8bb1c34d",
+  "scope": "Compiled offline web app and Chromium with actual registered phone code and simulated React Native services, identity and SQL. No device builds, store submission, live site or provider request. Owner review of retention, deletion, provider and store disclosures remains open.",
+  "sourceEditsSha256": {
+    "RELEASE_STATUS.md": "72de4797ce6d3fb12bba2e440fa90402cdf33d9cb20176212bee2a8ed19e2054",
+    "app/account/profile/page.tsx": "ad86fa8da81f5ed1d8897daf70800e7266b14600adb196743d054bc16d6acdd3",
+    "app/privacy/page.tsx": "aa5a5e2372fa1b9a6e6902c1bafee37a3dcacfeaea2e6ccd7a7df56e84007eb7",
+    "app/quest/page.tsx": "1c9c46e360819643ca86e7a6bb703484a9db29a2ca2f7f27a2983e4523cb2512",
+    "components/PublicFooter.tsx": "36e938b8abe8eb81ae818d6e253df74e765a4fb822226411796ad32ffd49f0e2",
+    "docs/integration/account-deletion.md": "dfc297b9bef2911931e568488d0499576d29998c15f1b2aa4f83377a330d9586",
+    "lib/account/privacy-policy.ts": "604f596537ff2586d922f69e3aa10ef614bee6fd2667ae0c156aef7e876244a7",
+    "platforms/native/OwnedAccountScreen.tsx": "6e4998ac34e7291d690323bbef2944b9d882cd4a2ba4c580e60d2edf4da0a931",
+    "platforms/tests/browser-native-owned-auth.mjs": "6766e8fc995cd2cd52e7122314f92d0f4a150f20a6d074facb5f356620c26e21",
+    "platforms/tests/bundle-native-owned-auth.mjs": "73d6f687aadc656800d3a26ca8f506a5c2d074fdaec58df386650f305b5733be"
+  },
+  "evidenceArchive": "verification/web/evidence/checkpoint-privacy-policy",
+  "evidenceSha256": {
+    "build-source-sha256.json": "d33c8304b412c0c937e66b517a497b9fd65b7e73f19b33cfc4df219a97d6d2ab",
+    "next-build.json": "22cbf74b5b65db825858b6930916dc7c1691dcbfc03b8edd2c5abb3e8344811e",
+    "next-build.log": "702cfc97eb928e099836d2f00325487206602a53b43685b558d47379a43b65e5",
+    "server-ready.json": "7f04d2e30b12382a2edbc8d22cb2391a07f26228e6e2c52665ad1c8605897a06",
+    "server-stopped.json": "80dc57444c92902414dfb55988fbd2fe2c38d4a06b1988a805ab6a17a80ef270",
+    "server-runtime.json": "2258bf3d294cf9c771cafeea471d89eb4399377ea04202a6d83eee610cafa088",
+    "lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "native-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "browser-probe.mjs": "71c967a9941e82e813de52bf13c5c79b3d4ac3de20d9ff0997ebe856273eb5ef",
+    "browser-probe.json": "ed8b4652a3454eaa20e250ed28282eb8b93128552ad8b1f5466c48997fa352bd",
+    "privacy-320.png": "5d24ea2bc8e2c89f7494550084baf8fe82c3c79f167a0bfd3b9379c1e113cfcf",
+    "ios-browser.json": "14256ee65464e320b17b98cfcd24fd80b6e4efa1cee917047c4ffbec80d1d34f",
+    "ios-browser.log": "1e62d12339c27d4f5cd52446c89e84b8c60c403f545dcebecc8e928d62347fed",
+    "ios-source-manifest.json": "b46efc3507977f03e1779f7c9357110d8163d0c04b9d5999c24247fd82e0e063",
+    "android-browser.json": "816a47da3ec6a74ca2c6d6ee0aa06417b87ec4cc35cca534fc53fd275309060e",
+    "android-browser.log": "1e62d12339c27d4f5cd52446c89e84b8c60c403f545dcebecc8e928d62347fed",
+    "android-source-manifest.json": "9f34a938317e5c10bf71dbfe04c11e395216bf5e28503c3cd6459c20cf143014",
+    "native-privacy-esbuild.mjs": "c33f2e11fe4a573e207ae5f75fe82a3f89c81a9e14b0821a99e41dcc66cbde0c"
+  }
+}

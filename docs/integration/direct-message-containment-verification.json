@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-11-06T07:47:48.750357+00:00",
+  "startingCommit": "0530ac5b03ec99cfe0986d9601b1a7d6372e79af",
+  "status": "LOCAL_DIRECT_MESSAGE_CONTAINMENT_PASS_PRODUCTION_HOLD",
+  "productionCleared": false,
+  "productionRestoreVerified": false,
+  "hostedReadScope": "Direct-message catalog and effective boundary metadata. Queried no message rows.",
+  "postgres": "postgres (PostgreSQL) 17.11 (Homebrew)",
+  "restoreChecks": 28,
+  "coreRestoreRegressionChecks": 4,
+  "extendedRestoreScopes": [
+    15,
+    17
+  ],
+  "combinedBackup": {
+    "tablesMatchedAfterRestore": 17,
+    "applicationTablesWithDirectBrowserReadsDenied": 15,
+    "repairs": [
+      "Core",
+      "Daily Practice",
+      "Live Council",
+      "Direct messages"
+    ]
+  },
+  "directMessageRehearsal": {
+    "browserOperationsDenied": [
+      "SELECT",
+      "INSERT",
+      "UPDATE",
+      "DELETE",
+      "TRUNCATE"
+    ],
+    "serviceQueryShapesVerified": [
+      "load conversation",
+      "mark exact incoming messages read",
+      "send reply"
+    ],
+    "dataPreserved": true,
+    "unrelatedPublicationMembershipPreserved": true,
+    "reapplyPreservedContainedState": true,
+    "timeoutSqlstate": "55P03"
+  },
+  "firstRunCorrections": "Parenthesized the SQL CASE in the policy guard and fixed the database variable in the combined backup test.",
+  "remaining": "Owner-approved production export and isolated comparison, targeted SQL and app cutover approval, and hosted API, Realtime and member flow acceptance.",
+  "originalCheckout": {
+    "statusEntries": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683",
+    "matchesSavedBaseline": true
+  },
+  "sourceSha256": {
+    "verification/web/scripts/test-privacy-restore-check.py": "6824095596600ffc050a8eb4c10fc430c258332d7fbc2d262d457eaa34843f45",
+    "verification/web/scripts/verify-privacy-restore.py": "035d1d340a0311939f703aeed6cbddbadb9982ee32987e1fe5873119130c112e",
+    "verification/web/scripts/rehearse-native-core-restore.py": "be8b31f41845156d930cd777825e05ab4a1b2025497ded45c4d12f5b2697f6f7",
+    "docs/sql/privacy-restore-reference.sql": "a8a034d634c284ed61e4351b69d8716319d2c09c0ba39865aa1616dc65c0f5d6",
+    "docs/sql/practice-data-containment-apply.sql": "0e1c494fb39add6b9e6c656faa32dd4e888f4baedc5468905af6011841b88593",
+    "docs/sql/practice-response-save-apply.sql": "450f26a4a36036808f9551b1ecb380fc5755521c3bd02cc09119e62faa79b142",
+    "docs/sql/live-room-containment-apply.sql": "cba4457ef50664bd0305fed3f265311f35e090a2db22b7930402290613d53711",
+    "verification/web/tests/fixtures/live-room-synthetic.sql": "52d5a8316e34c66ea1c9cbc8ce0841d926eb3aabad9f352b75baf8670aae119b",
+    "docs/sql/direct-message-containment-apply.sql": "c61a93367faabca94a1f95da7e3a1e4b857d84e6e3b3b6629cdc9b306483f646",
+    "verification/web/tests/fixtures/direct-message-synthetic.sql": "912168bb2b32bae3ad4ff08a0a6ef2b3c3fc2207a6ee5b76143749fbfb857c5d",
+    "supabase/migrations/20260414_daily_practice.sql": "a928960a7db0429aaedcea5f177f7eb6b0f41b475e8c54977ba0b3cbe3be0457",
+    "supabase/migrations/20260418_practice_reflections.sql": "47529879d0d0b39b51722a1e4a69e9f2a3285eb066e21dc404f5153d1fb8deac",
+    "verification/web/tests/fixtures/core-containment-synthetic.sql": "c09a83634f7feb6ea58b02600070dccaaf67d7086949adffc40b44d2b0098433",
+    "docs/sql/first-release-core-containment-preflight.sql": "17db6ff8b73d65de0b3d87fb60fc43a84d84437341a062cb2e195f078a2f34d1",
+    "docs/sql/first-release-core-containment-apply.sql": "b88ffa86bb265f467dbf9fe9d7ba17ce246df8a8d2618db86ade8a6401fb1b1b"
+  },
+  "evidence": {
+    "catalog.json": {
+      "path": "verification/web/evidence/direct-message-containment/catalog.json",
+      "bytes": 7852,
+      "sha256": "4c7a7b91e607b3351178593aea5e5fb0976798a3d080e71fe3e9bab40f3f7e95"
+    },
+    "restore-rehearsal.json": {
+      "path": "verification/web/evidence/direct-message-containment/restore-rehearsal.json",
+      "bytes": 5696,
+      "sha256": "d99e7451b9f6e6b04bf98c5a1caec3d60d982c6ee22bdf93dffae099bc9cb608"
+    },
+    "core-restore-regression.json": {
+      "path": "verification/web/evidence/direct-message-containment/core-restore-regression.json",
+      "bytes": 2893,
+      "sha256": "5fc57f58366fde9e0fa55e1a8ab5336e2f4bd25d84752cbd25735792b1ee0406"
+    },
+    "first-sql-probe.json": {
+      "path": "verification/web/evidence/direct-message-containment/first-sql-probe.json",
+      "bytes": 4004,
+      "sha256": "1de7e065ba36f4bbc6750757068626889af729091beccf8c57bac0379b43419b"
+    },
+    "direct-only-cutover-pass.json": {
+      "path": "verification/web/evidence/direct-message-containment/direct-only-cutover-pass.json",
+      "bytes": 5670,
+      "sha256": "c4724cbbfda1b7b0044587768d71df25090934636d7a7333db2046097ed751aa"
+    },
+    "first-combined-probe.json": {
+      "path": "verification/web/evidence/direct-message-containment/first-combined-probe.json",
+      "bytes": 5035,
+      "sha256": "a6278f95e45fd3251ae1cf0aca20d5c214df360bcee07271c4cc55d6ad0ba43d"
+    }
+  }
+}

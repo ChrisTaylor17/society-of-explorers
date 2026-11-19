@@ -1,15 +1,10 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { privateJson } from '@/lib/http/routeError';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-
+// Publishing a profile does not authorize publishing activity or earnings.
+// Keep this boundary closed until a separate contribution consent model exists.
 export async function GET() {
-  const { data } = await supabase.from('members')
-    .select('id, display_name, guide_level, salons_led, members_graduated, guide_earnings_total, guide_since')
-    .eq('is_guide', true)
-    .order('members_graduated', { ascending: false })
-    .order('salons_led', { ascending: false })
-    .limit(50);
-
-  return NextResponse.json({ guides: data || [] });
+  return privateJson(
+    { error: 'Leaderboard unavailable.', code: 'leaderboard_unavailable' },
+    { status: 503 },
+  );
 }

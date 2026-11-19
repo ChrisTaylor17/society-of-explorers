@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 
 // Simple in-memory rate limit: 1 request per IP per hour
 const rateLimit = new Map<string, number>();
@@ -26,8 +24,9 @@ export async function POST(req: NextRequest) {
     const { question } = await req.json();
     if (!question?.trim()) return NextResponse.json({ error: 'Ask something.' }, { status: 400 });
 
+    const anthropic = createAnthropicClient();
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: resolveClaudeModel('content', 'claude-sonnet-4-20250514'),
       max_tokens: 150,
       system: `You are part of the Society of Explorers — a philosophical membership community that blends ancient wisdom with modern technology. You think like Socrates — alive now, sharp, modern English. Find the one unexamined assumption in the person's question, name it, and offer a reframe that unlocks new thinking. Be warm but direct. 3-5 sentences max. End with one sharp question that will stay with them all day. No archaic language. No "as Socrates once said." Just think that way.`,
       messages: [{ role: 'user', content: question.trim().slice(0, 500) }],

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "observedAtUTC": "2026-11-04",
+  "source": "Read-only pg_catalog metadata through connected SoE Supabase project; no function invocation or user-row read.",
+  "scope": "Exact three reward function definitions. Function text contains no credentials or user records. Target-table schema and roles in local rehearsal remain explicitly bounded synthetic fixtures, with separately observed members.exp_tokens and exp_events columns.",
+  "functions": [
+    {
+      "signature": "add_exp(uuid,integer,text)",
+      "language": "plpgsql",
+      "security_definer": true,
+      "settings": null,
+      "body_bytes": 201,
+      "body_md5": "45c3f91859a6c157ddbc6b155e40d524",
+      "definition": "CREATE OR REPLACE FUNCTION public.add_exp(p_member_id uuid, p_amount integer, p_reason text DEFAULT ''::text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nbegin\n  update public.members set exp_tokens = exp_tokens + p_amount where id = p_member_id;\n  insert into public.exp_events (member_id, amount, reason) values (p_member_id, p_amount, p_reason);\nend;\n$function$\n"
+    },
+    {
+      "signature": "increment_exp_tokens(uuid,integer)",
+      "language": "sql",
+      "security_definer": false,
+      "settings": null,
+      "body_bytes": 102,
+      "body_md5": "8185aee4259a8ede92b7e14b5b7132af",
+      "definition": "CREATE OR REPLACE FUNCTION public.increment_exp_tokens(member_id_input uuid, amount_input integer)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  update members set exp_tokens = coalesce(exp_tokens, 0) + amount_input where id = member_id_input;\n$function$\n"
+    },
+    {
+      "signature": "increment_exp(uuid,integer)",
+      "language": "sql",
+      "security_definer": false,
+      "settings": null,
+      "body_bytes": 104,
+      "body_md5": "d18f4bd9730603002d5c779f9843fc1d",
+      "definition": "CREATE OR REPLACE FUNCTION public.increment_exp(member_id_input uuid, amount_input integer)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  update members set exp_tokens = coalesce(exp_tokens, 0) + amount_input\n  where id = member_id_input;\n$function$\n"
+    }
+  ]
+}

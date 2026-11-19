@@ -1,9 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function reportEpisodeWriteFailure() {
+  console.warn('[memory/episodes] write failed');
+}
 
 export async function writeEpisodes(params: {
   memberId: string;
@@ -15,6 +14,7 @@ export async function writeEpisodes(params: {
 }): Promise<{ userEpisodeId: string | null; assistantEpisodeId: string | null }> {
   const { memberId, thinkerId, sessionId, userContent, assistantContent, source = 'practice' } = params;
 
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('user_episodes')
     .insert([
@@ -26,12 +26,7 @@ export async function writeEpisodes(params: {
     .select('id, role');
 
   if (error || !data) {
-    console.error('[memory-layer-insert-failed]', {
-      message: error?.message,
-      code: (error as any)?.code,
-      details: (error as any)?.details,
-      memberId, thinkerId, sessionId, source,
-    });
+    reportEpisodeWriteFailure();
     return { userEpisodeId: null, assistantEpisodeId: null };
   }
 

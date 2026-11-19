@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "recordedAtUTC": "2026-11-04T16:16:15.112699+00:00",
+  "status": "LOCAL_HALL_AND_CROSS_STAGE_BOUNDARY_MILESTONE_PASS_PRODUCTION_HOLD",
+  "branch": "codex/soe-first-release",
+  "checkout": "/Users/christaylor/Documents/Codex/soe-release",
+  "priorCheckpoints": [
+    "e4961d5",
+    "68e641c",
+    "d50de94",
+    "fa82507"
+  ],
+  "build": {
+    "argv": [
+      "node",
+      "node_modules/next/dist/bin/next",
+      "build",
+      "--webpack"
+    ],
+    "cwd": "/Users/christaylor/Documents/Codex/soe-release",
+    "status": "completed",
+    "exitCode": 0,
+    "seconds": 51.89,
+    "externalNetworkBlocked": true,
+    "providerCredentialsNotPassed": true,
+    "compiler": "webpack",
+    "publicBuildConfig": "invalid offline placeholders",
+    "privateOrIssuedCredentialsSupplied": false,
+    "deploymentOrServerLaunch": false,
+    "sourceFiles": 967,
+    "sourceSha256": "6fbb923815122807fd3799700a23de32ae8275a2dded93014552ecd3305920e0",
+    "sourceUnchangedDuringBuild": true,
+    "log": "evidence/checkpoint-6d5bccf/next-build.log",
+    "buildId": "WGQEsLmWyuQXRDde36Nv5",
+    "fullNextTypeCheck": "PASS22.2seconds",
+    "sourceStillMatches": true
+  },
+  "fullSelectedNonDom": {
+    "passed": 670,
+    "failed": 0,
+    "skipped": 0,
+    "files": 55,
+    "excludedCachedDomFiles": 14,
+    "finalStrengthening": "The cross-stage six-table reading preservation assertion received a final source-bound2case rerun; counts overlap."
+  },
+  "bun": {
+    "security": {
+      "passed": 122,
+      "assertions": 396,
+      "files": 12
+    },
+    "growth": {
+      "passed": 225,
+      "assertions": 1203,
+      "files": 20
+    }
+  },
+  "hallServer": {
+    "passed": 15,
+    "sourceUnchanged": true,
+    "sourceHashes": {
+      "lib/hall/public.ts": "ffdeefae03642d6fbcc031915f0e8d9a168333cd1a463d2f6e22149aa07c863d",
+      "app/api/hall/route.ts": "56917b18d26b42c8fa93ea8e429bdafed29799077a5dd300326d2c76a86ce497",
+      "app/hall/page.tsx": "e2cf1867bb143718e2224624fb20e6e54e738c5f566077bce1492e4f8255ded5",
+      "lib/http/routeError.ts": "830a3ea5c3331c4de6a2688560a0aed2bd019c967e60d5081dfc42978f65a80b",
+      "docs/sql/artifact-containment-preflight.sql": "38fef591fcb880891c0bf730f3fab73b9c682be44eac62a593af5b6c86338b6d",
+      "docs/sql/artifact-containment-apply.sql": "da579600db111fca48c9bfb0347985ff221af7dddd8ea502e79f1776554465b5",
+      "docs/sql/artifact-containment-rollback.sql": "22a2ff82534343c4fa3f725bcf39b496efe159195dc13890e0bcca74f6c47043",
+      "verification/web/tests/fixtures/hall-catalog-2026-11-04.json": "11a86194c0ebbef4cb2454aed760e6e64bd3d3896298469514d7fff02caed8e4",
+      "verification/web/tests/fixtures/hall-catalog-supplement-2026-11-04.json": "0a1e2bf6b9c67666949906a154733e50b5da97249551521913560eac8f09902e",
+      "verification/web/tests/support/artifact-containment-fixture.mjs": "87aa7915b6529605411dd0606130a3f92b0af828f54447555e44682a04552fcc",
+      "verification/web/tests/support/hall-http-fixture.mjs": "79f2bf17c4c8fcfdd975a5763b7b212c10a54b1e12aebf461bcaaecb2bde12ea",
+      "verification/web/tests/support/hall-db-http-fixture.mjs": "0b524e589b75e639f029e948b39d4cf4c1a77db4568b7c296c3bb532f2b4d581",
+      "verification/web/tests/hall-public.test.mjs": "bd554ac617bdc3caaa6066aa62a6bba1aad735cab0625862449cd01acf023453",
+      "verification/web/tests/hall-public-db.test.mjs": "324d384ac8d076effe821b402962e004cc70a7fdfcce39345687dc837117b6ab",
+      "verification/web/scripts/deny-build-network.cjs": "caf95b13363a91c8ba6979da1f03ce0ea40b5c1b5418b5a0aa1301efee59ea3c",
+      "verification/web/scripts/verify-hall-public.mjs": "56b0da8b5f887216fbb29808ddd6281ac8cb9943a62841a97058193174caa9b8"
+    },
+    "scope": "Actual pure public contract and canonical GET handler. Five DB cases use the cached Supabase URL builder and narrow intercepted service-role SQL transport on the sanitized contained PGlite17.5 fixture; ten pure/HTTP cases cover text/publication/paging/filter/privacy/deadline/cancellation contracts. Timer callbacks are controlled at the actual5000ms scheduling boundary without real sleeps. Hall UI hash records release context only; component and composed browser proofs are separate receipts."
+  },
+  "hallBrowser": {
+    "componentStories": 10,
+    "composedStories": 4,
+    "serviceSqlQueries": 7,
+    "authCalls": 0,
+    "providerCalls": 0,
+    "mediaRequests": 0,
+    "sourceUnchanged": true,
+    "sourceHashes": {
+      "app/hall/page.tsx": "e2cf1867bb143718e2224624fb20e6e54e738c5f566077bce1492e4f8255ded5",
+      "lib/hall/public.ts": "ffdeefae03642d6fbcc031915f0e8d9a168333cd1a463d2f6e22149aa07c863d",
+      "app/globals.css": "7ccfac330f4f60146106c7dd4255337b4ade7f3d8574d1a5439838dcbac8b213",
+      "verification/web/tests/hall-entry.tsx": "627b2a1255f834871fd69f81d5754eaaad88056a7ad3e9a92aca6cbf665f7af6",
+      "app/api/hall/route.ts": "56917b18d26b42c8fa93ea8e429bdafed29799077a5dd300326d2c76a86ce497",
+      "lib/http/routeError.ts": "830a3ea5c3331c4de6a2688560a0aed2bd019c967e60d5081dfc42978f65a80b",
+      "docs/sql/artifact-containment-preflight.sql": "38fef591fcb880891c0bf730f3fab73b9c682be44eac62a593af5b6c86338b6d",
+      "docs/sql/artifact-containment-apply.sql": "da579600db111fca48c9bfb0347985ff221af7dddd8ea502e79f1776554465b5",
+      "docs/sql/artifact-containment-rollback.sql": "22a2ff82534343c4fa3f725bcf39b496efe159195dc13890e0bcca74f6c47043",
+      "verification/web/tests/fixtures/hall-catalog-2026-11-04.json": "11a86194c0ebbef4cb2454aed760e6e64bd3d3896298469514d7fff02caed8e4",
+      "verification/web/tests/fixtures/hall-catalog-supplement-2026-11-04.json": "0a1e2bf6b9c67666949906a154733e50b5da97249551521913560eac8f09902e",
+      "verification/web/tests/support/artifact-containment-fixture.mjs": "87aa7915b6529605411dd0606130a3f92b0af828f54447555e44682a04552fcc",
+      "verification/web/tests/support/hall-db-http-fixture.mjs": "0b524e589b75e639f029e948b39d4cf4c1a77db4568b7c296c3bb532f2b4d581",
+      "verification/web/tests/support/hall-http-fixture.mjs": "79f2bf17c4c8fcfdd975a5763b7b212c10a54b1e12aebf461bcaaecb2bde12ea",
+      "verification/web/tests/browser-hall-composed.mjs": "b86c60b5f1678eb6b7959e03bcf991f948885220733f9a77c252497101f8aad6",
+      "verification/web/scripts/deny-build-network.cjs": "caf95b13363a91c8ba6979da1f03ce0ea40b5c1b5418b5a0aa1301efee59ea3c"
+    },
+    "scope": "Actual frozen Hall React component/parser/CSS, canonical GET handler and cached Supabase URL builder, with narrow intercepted service-role SQL transport on the sanitized contained PGlite17.5 fixture. Existing NextLink and nonabortable JSON-body test adapters; controlled synthetic artifact rows and fixture privilege changes. No production/provider/auth/media request, real hosted PostgREST, full external member/merch/mint schemas, rights acceptance, deployment or multibackend concurrency proof.",
+    "fixtureExceptions": {
+      "theme": {
+        "observedDefaultMD5": "f3db357cf4f4a03883484fa3281a056c",
+        "syntheticDefault": "'{\"syntheticFixtureOnly\":true}'::jsonb",
+        "reason": "Unknown live JSON default is represented by a marked synthetic default; raw literal/redaction marker is never executed or inferred."
+      },
+      "members": "Only id and display_name are synthetic prerequisite columns; no full members schema/account data is represented.",
+      "externalChildren": "nft_mints and artifact_merch contain synthetic id/artifact_id only. Observed incoming FK actions are reproduced; their actual child column names, full schemas, rows and grants were not collected.",
+      "defaults": "After target objects exist, synthetic broad new-table default grants stress owner-only receipt creation; these are not a Hall-specific observation of global/default ACLs.",
+      "runtime": "Synthetic local postgres superuser is used because PGlite starts with a different administrative role; hosted Supabase identity/runtime behavior is not represented."
+    },
+    "independentParserApiReview": "CLEAR",
+    "rootVisualReview": "Final component and built unavailable screenshots inspected; readable320px, no overflow,44px keyboard controls."
+  },
+  "artifactContainment": {
+    "passedCases": 16,
+    "sqlSha256": {
+      "docs/sql/artifact-containment-rollback.sql": "22a2ff82534343c4fa3f725bcf39b496efe159195dc13890e0bcca74f6c47043",
+      "docs/sql/artifact-containment-preflight.sql": "38fef591fcb880891c0bf730f3fab73b9c682be44eac62a593af5b6c86338b6d",
+      "docs/sql/artifact-containment-apply.sql": "da579600db111fca48c9bfb0347985ff221af7dddd8ea502e79f1776554465b5"
+    },
+    "independentReview": "CLEAR in documented trusted-owner maintenance/catalog scope",
+    "scope": "Exactly artifacts raw browser/PUBLIC grants and RLS; rows/policies/defaults/FKs preserved; serviceCRUD retained.",
+    "rollback": "Prior ACL/RLS only; preserves rows, can re-expose current public prompt/context, cannot prove unused; requires separate approval."
+  },
+  "crossStageCompatibility": {
+    "passed": 2,
+    "actualSqlFilesInOrder": [
+      "docs/sql/first-release-core-containment-preflight.sql",
+      "docs/sql/first-release-core-containment-apply.sql",
+      "docs/sql/member-identity-preflight.sql",
+      "docs/sql/member-identity-unique.sql",
+      "docs/sql/member-profile-preflight.sql",
+      "docs/sql/member-profile-apply.sql",
+      "docs/sql/circle-legacy-baseline-preflight.sql",
+      "docs/sql/circle-legacy-baseline-apply.sql",
+      "supabase/migrations/20261027_soe_circles.sql",
+      "docs/sql/circle-moderation.sql",
+      "docs/sql/circle-message-moderation.sql",
+      "docs/sql/circle-participation.sql",
+      "docs/sql/circle-reading-programs.sql",
+      "docs/sql/circle-passage-posts.sql",
+      "docs/sql/circle-discussion-threads.sql",
+      "docs/sql/circle-discovery-unicode.sql",
+      "docs/sql/circle-discovery-search.sql",
+      "docs/sql/book-salon-conversation.sql",
+      "docs/sql/artifact-containment-preflight.sql",
+      "docs/sql/artifact-containment-apply.sql"
+    ],
+    "rawTargets": 11,
+    "sourceUnchanged": true,
+    "sourceHashes": {
+      "docs/sql/first-release-core-containment-preflight.sql": "17db6ff8b73d65de0b3d87fb60fc43a84d84437341a062cb2e195f078a2f34d1",
+      "docs/sql/first-release-core-containment-apply.sql": "b88ffa86bb265f467dbf9fe9d7ba17ce246df8a8d2618db86ade8a6401fb1b1b",
+      "docs/sql/member-identity-preflight.sql": "30d7709378c54be2a7259ff0d5cc04b97bf04a79315f72cf9e255ffde7d29a21",
+      "docs/sql/member-identity-unique.sql": "3d970b0c70ee47e6f073b37251b59a406a9211e03dafda6ccdc6b6ac4a97d4e8",
+      "docs/sql/member-profile-preflight.sql": "95f9b8549784e57b8ef542da0055dafb60aca0579f55ede4cfdf066de8c2c41a",
+      "docs/sql/member-profile-apply.sql": "6a51741e5267646a25de04981dca04358b26b284585e2662056214ce63d44dbf",
+      "docs/sql/circle-legacy-baseline-preflight.sql": "b35bfae01d27c59ca12e7fede593419ce83a960519142a6bb6802a6f37dc2be1",
+      "docs/sql/circle-legacy-baseline-apply.sql": "923814c08149be78bbc3c2990dc3220f2f737cb748cbd316ebaefd84fb7b3280",
+      "supabase/migrations/20261027_soe_circles.sql": "979e19b93b3bc3131f96f2e5eedcf9542bb6cc31282f1358400c2778c045e844",
+      "docs/sql/circle-moderation.sql": "98a3eed08f686afd09a461a65c42742abaa2483ae33f3b08d57c579138f27d9f",
+      "docs/sql/circle-message-moderation.sql": "672758fe331a8814454f80cc0ff005ce5676556a68a1846bb5b45fb4ae09fa49",
+      "docs/sql/circle-participation.sql": "7b35c0db4cc84b82c8620a67625519dec53b4a9a9dc6abd332674a3e33200917",
+      "docs/sql/circle-reading-programs.sql": "10910071a5ea9e300211463edb18db665992d7ec2cbcc6810303fefafd18b9b1",
+      "docs/sql/circle-passage-posts.sql": "ba98df2276b22b8c69aa1f7a8471efb87b62ee3828c840299813de1ce3d566e9",
+      "docs/sql/circle-discussion-threads.sql": "8eb030c83a04e60af5873220e663d456d5fb99fd5afb08173669caf0db216643",
+      "docs/sql/circle-discovery-unicode.sql": "a0d3ff3996dc59e92adf879006de1abf8d56713d705a181975f344aa390d6550",
+      "docs/sql/circle-discovery-search.sql": "aa665d3f8afa2212efc468931d43df2fe8e297fb5d94970f0dda3fc79c83233a",
+      "docs/sql/book-salon-conversation.sql": "3ddb6dea100fbc4df9a31594d98824fe6835e259c79a1d303e37c4dfd9e5c5d0",
+      "docs/sql/artifact-containment-preflight.sql": "38fef591fcb880891c0bf730f3fab73b9c682be44eac62a593af5b6c86338b6d",
+      "docs/sql/artifact-containment-apply.sql": "da579600db111fca48c9bfb0347985ff221af7dddd8ea502e79f1776554465b5",
+      "verification/web/tests/release-boundaries-db.test.mjs": "4cef43ec0c53da641208a3755d4e047690c2664c4eab5207981f7e6f3b52e39d",
+      "verification/web/scripts/verify-release-boundaries.mjs": "582d53aaaf4e274d8ff32fe8d260aca3e7d196716ec7b8afb7eb6746f88bff76",
+      "lib/hall/public.ts": "ffdeefae03642d6fbcc031915f0e8d9a168333cd1a463d2f6e22149aa07c863d",
+      "app/api/hall/route.ts": "56917b18d26b42c8fa93ea8e429bdafed29799077a5dd300326d2c76a86ce497",
+      "verification/web/tests/support/circle-live-db.mjs": "af3ca0acc419eb8badb93305f94675f3d0e351a955fc20a2034d6f9355bb2652",
+      "verification/web/tests/support/artifact-containment-fixture.mjs": "87aa7915b6529605411dd0606130a3f92b0af828f54447555e44682a04552fcc",
+      "verification/web/tests/support/hall-db-http-fixture.mjs": "0b524e589b75e639f029e948b39d4cf4c1a77db4568b7c296c3bb532f2b4d581",
+      "verification/web/tests/support/offline-app.mjs": "8303b6e236e892a8ce95e6648bad6cb953657c0073617bd48351328bf2c3ae72",
+      "verification/web/tests/fixtures/circle-live-catalog-2026-11-04.json": "e6819adff5ff99ff14563eb1636cde1370efe0d3713445b2c4ac7a5760941c67",
+      "verification/web/tests/fixtures/hall-catalog-2026-11-04.json": "11a86194c0ebbef4cb2454aed760e6e64bd3d3896298469514d7fff02caed8e4",
+      "verification/web/tests/fixtures/hall-catalog-supplement-2026-11-04.json": "0a1e2bf6b9c67666949906a154733e50b5da97249551521913560eac8f09902e",
+      "docs/sql/first-release-core-containment-rollback.sql": "4433d028d58d960c9f9c7c5eca8bc9fa572cde6ee64fee56a0fc3d902a05e0b1",
+      "docs/sql/circle-legacy-baseline-rollback.sql": "0a8770268eb7b50d562a738addf4c4fe3278e500e5a773177d0980a32ea5765d"
+    },
+    "scope": "One disposable synthetic PGlite database composes core containment, identity uniqueness, private profiles, strict Circle baseline plus9files, ordinary salon and artifact containment. Profile publication/withdrawal, ordinary/Circle posts, actual Hall handler/SDK/local SQL and11rawtable denials share the resulting database.",
+    "limitations": [
+      "Not a95-table production restore or live row compatibility check.",
+      "Members/profile/reading and external child tables are explicit minimal synthetic stubs; the Circle3table schema is catalog-derived.",
+      "Weekly schedule and artifact theme defaults use declared synthetic literals; unknown original values are never executed.",
+      "Single PostgreSQL backend; hosted PostgREST/cache, real provider identity, role maintenance, concurrency and deployed clients remain unverified."
+    ],
+    "independentReview": "CLEAR after explicit six-reading-table row preservation assertion"
+  },
+  "builtBrowser": {
+    "groupedStories": 11,
+    "stories": [
+      "Complete eligible search traverses34 current/upcoming Circles beyond205 ended inventory rows, with25-row pages, explicit next/first controls and no total-count claim",
+      "Actual SQL preserves accent-folded AND terms, literal punctuation and regex characters, hybrid filters and UUID tie order across title pages; a far-future match is discoverable and lifecycle wording distinguishes upcoming/current",
+      "Opaque public cursors survive actual reload and Back/Forward, restore the exact result page, and match the shareable link",
+      "Exact edition/range hints remain public hints and survive the top Start action; Clear/search/Back update that primary action, and duplicate reading context never issues an unfiltered request",
+      "Applying new filters while a real old page response is held clears old rows immediately, resets its cursor and fences the released late page",
+      "A synthetic RPC failure produces actual generic503 and retry without false emptiness; a structurally valid stale calendar key reaches actual SQL409, offers explicit restart retaining filters, and returns keyboard focus to results",
+      "Canonical Quest Browser routes expose the actual member view, accessible 320px controls and same-Circle fallback links; HTTP fails closed, no private API/provider call occurs, and no synthetic member or immersive claim is introduced. Configured HTTPS/provider acceptance remains a separate gate",
+      "Actual built Next clip catalog and media/caption gateways expose three source-linked passages plus the original SoE MP4; explicit Load sends no account cookie/referrer, hashes verify, H264 decodes at720x404 with six caption cues and no autoplay, and Unload removes the player at320px",
+      "Actual built Next profile page uses canonical 320px CSS and 44px keyboard controls, with no auth/private/provider transport on initial render; explicit Load alone reaches actual cookie/token-free auth/member and owner-profile GET401 routes, shows generic sign-in state, and exposes no editable fields or false saved state",
+      "Actual built Hall uses the canonical text-only UI and public GET503 when service configuration is absent; explicit keyboard retry preserves unavailable rather than fabricated empty/success, with320px/44px controls and no credential/referrer/auth/private/media requests",
+      "All12 retained hero images are404 at both former public and archive URLs on the actual built server; the existing first-party text/gradient share card returns a valid bounded PNG without provider transport"
+    ],
+    "runnerSha256": "67a9afb11242ba37063e4feadd5e12bcf255bf1a56d3082b1ad0273653dc5cc3",
+    "hallActualGet503": 2,
+    "buildId": "WGQEsLmWyuQXRDde36Nv5",
+    "ownedServerStopped": true,
+    "cleanupErrors": []
+  },
+  "evidenceSha256": {
+    "verification/web/evidence/checkpoint-6d5bccf/next-build.json": "69ac3536413688820dd239faf71597aebfb8f986ec9942cb446b285d9c24d1ff",
+    "verification/web/evidence/checkpoint-6d5bccf/next-build.log": "0b14ee0cbf934265313630c0a271b25e2eaa743653c423117e6412f7dcc09a4e",
+    "verification/web/evidence/checkpoint-6d5bccf/build-source-sha256.json": "cd93d289f076e0f25e73d8fcf233d28dfae528f973b6f5f7051a8aedd02bda5b",
+    "verification/web/evidence/hall-complete-tests.log": "78b0a65c062130bb332650847380e38cb5a66bbbe6972ab30270df249f36f994",
+    "verification/web/evidence/hall-complete-tests-selection.json": "f410a3ea99a7626ae85fdbcbbdcf88d4b2e2da87b0db4179c9a6f9d86c1e0f1a",
+    "verification/web/evidence/hall-complete-suites/suites.json": "3292b9cbade2a3c32299d630ab7707c6aaab86659357901f21c006ed45e27e88",
+    "verification/web/evidence/hall-public-server.json": "71872da7c800117acfcc481bd6cc65bf416fc4e206694b8db9550c0f5af04762",
+    "verification/web/evidence/hall-composed-browser.json": "7b4b8aaff3caa9b5d476ec9fd7ede61eae0f98567323db4f658701ddbe6533e5",
+    "verification/web/evidence/hall-test-freeze.json": "312e379c2ad2fd21531a74c0db41c53ec45c88478c8470ecb43ded0d19a71ea0",
+    "verification/web/evidence/hall-browser.json": "06becd1d89dac93316ff770d68688afcf63d562be6d2df2db9ac7c0735962692",
+    "verification/web/evidence/hall-mobile-320.png": "9bab5ac69558740afd8319285b797cc7c8b31f6c5fc741d9b74c43f86736104f",
+    "verification/web/evidence/checkpoint-6d5bccf/hall-unconfigured-320.png": "a90bac1db5725d5d0725939c0117668fb45b8b709bbddba4948da80316288736",
+    "verification/web/evidence/artifact-containment-final-tests.log": "34e9c875f75ebb5ad131aa473290e46381b889d7c6fa387f76b55d2c2ff9b499",
+    "verification/web/evidence/release-boundaries.json": "29cdb6154f5adfb1ba66d48e9a8d89bff9cd8459fc83d8e53c70dbfcb59e2a34",
+    "verification/web/evidence/release-boundaries-final-tests.log": "4249360c6b458021336091c447ef981c4bb290f1ee6bf1940f14148165ed7f28",
+    "verification/web/evidence/checkpoint-6d5bccf/browser-discovery-qa.json": "270b1d7db4c059cd3fd1b53c09b9eb0360242249872208ca054ab9391ed8a9d4",
+    "verification/web/evidence/browser-discovery-hall-final.log": "36a3f1cb515362b4a3e1edce0c3f5f9b4460bb9bc3e364681c565325fd0cf9cb",
+    "verification/web/evidence/checkpoint-6d5bccf/browser-discovery-progress.json": "1b5241965209e0b38223d92871e0a287ecb7f50ccdc5713e5a7c984e06597e39",
+    "verification/web/evidence/hall-catalog-2026-11-04.json": "11a86194c0ebbef4cb2454aed760e6e64bd3d3896298469514d7fff02caed8e4",
+    "verification/web/evidence/hall-catalog-supplement-2026-11-04.json": "0a1e2bf6b9c67666949906a154733e50b5da97249551521913560eac8f09902e",
+    "verification/web/evidence/local-device-tooling-2026-11-04.json": "e6a0bbe1772b874c3a45f4b2d0b0458eeaada5dc7d26d89c02abd05ca1da63a6",
+    "verification/web/evidence/hall-prototype-initial-probe.json": "7a0b3e3b5d777569cbdf6b41a642b9eeb93245cdba6d9f41fd02add7f0ef80a6",
+    "verification/web/evidence/release-boundaries-composed-tests.log": "83232a0bcc980547ea89d7f50ff17781a92817d0b3e3fde73e8d853add6979f8",
+    "verification/web/evidence/release-staging-discovery-2026-11-04.json": "15197408af5e0ce2ab4f6c90e9c04e0d17a87bdebaf0c507f29c42369c8f8ad6"
+  },
+  "preservedIntermediateEvidence": [
+    "verification/web/evidence/checkpoint-fa82507/",
+    "verification/web/evidence/initial-hall-build/",
+    "verification/web/evidence/hall-prototype-initial-probe.json",
+    "verification/web/evidence/release-boundaries-composed-tests.log"
+  ],
+  "originalCheckout": {
+    "statusMatchesOrigin": true,
+    "dirtyPathsAtOrigin": 681,
+    "statusSha256": "7ed999f481d8d714e18d5bc8fbf9c4c999e0a07b39c106c4f45e118bb3214683"
+  },
+  "boundaries": {
+    "appTestsExternallyDeniedFromStartup": true,
+    "cleanEnvironments": true,
+    "readOnlyCatalogSeparate": true,
+    "liveRowsOrFunctionBodiesRead": false,
+    "installation": false,
+    "issuedCredentials": false,
+    "productionMutation": false,
+    "providerSignIn": false,
+    "deployment": false,
+    "push": false,
+    "nativeBinaryOrDeviceAcceptance": false,
+    "full95TableRestoreProof": false,
+    "productionClearance": false
+  },
+  "remainingGates": [
+    "Actual production backup/restore and legacy deployed-caller impact evidence",
+    "Privileged legacy reward/member RPC and remaining advisory table review",
+    "Explicit authorization for exact production changes and separately approved deployed/provider acceptance",
+    "Real native secure bridge/reset ownership, approved toolchains and binary/device/Quest acceptance"
+  ],
+  "countsOverlapAndMustNotBeSummed": true,
+  "restoreDiscovery": {
+    "projectHealthyAtUTC": "2026-11-04 16:19:36 UTC",
+    "developmentBranches": 0,
+    "backupReceipt": "Unknown; no tested receipt in named local docs. Empty branches do not establish absence of backups. User clarification pending."
+  },
+  "evidenceArchiveNote": "Build and shared built-browser outputs copied byte-for-byte to checkpoint-6d5bccf before the next milestone; receipt digests unchanged."
+}
