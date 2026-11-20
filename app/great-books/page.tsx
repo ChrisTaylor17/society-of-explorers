@@ -18,7 +18,7 @@ export default async function GreatBooksLibrary() {
       <h1 className={styles.title}>Read deeply. Talk generously.</h1>
       <p className={styles.lead}>A free library of complete Great Books editions, with the actual authors, translators and source credits. Read at your own pace, then explore the questions with other people.</p>
       <p className={styles.help}>Our community grows from Christian-conservative American roots and welcomes readers of every background and belief. Read charitably, stay with the text, and make room for disagreement.</p>
-      <nav className={styles.nav} aria-label="Reading community"><Link href="/circles">Find a reading Circle</Link><Link href="/circles/path">Explore the 12-week reading path</Link><Link href="/circles/norms">Community norms</Link></nav>
+      <nav className={styles.nav} aria-label="Reading community"><Link href="/circles">Find a reading Circle</Link><Link href="/circles/path">Explore the 12-week reading path</Link><Link href="/circles/norms">Community norms</Link><Link href="/salons/republic-book-1">Salon guide: Republic, Book I</Link><Link href="/notebook">Your reading notebook</Link></nav>
       <section className={styles.panel} aria-labelledby="root-kernel-title">
         <h2 id="root-kernel-title" className={styles.sectionTitle}>Root Kernel Scripture studies</h2>
         <p className={styles.help}>Read Scripture in the World English Bible Classic, compare two readings of each passage, and bring a question to your salon.</p>
