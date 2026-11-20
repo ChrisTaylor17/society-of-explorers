@@ -16,8 +16,18 @@ interface ClaudeUsageLog {
   usage?: unknown;
 }
 
-const DIRECT_DEFAULT_MODEL = 'claude-sonnet-4-6';
-const GATEWAY_DEFAULT_MODEL = 'anthropic/claude-sonnet-4.6';
+// One low-cost default for every feature (figure chat, council, reading tools).
+// Override with MOVEMENT_CLAUDE_MODEL (direct) or AI_GATEWAY_*_MODEL (gateway).
+const DIRECT_DEFAULT_MODEL = 'claude-haiku-5-5';
+const GATEWAY_DEFAULT_MODEL = 'anthropic/claude-haiku-5.5';
+// Per-route fallbacks written for older, pricier or retired models. They now
+// resolve to the default so no route calls a model that returns 404 or costs more.
+const LEGACY_FALLBACK_MODELS = new Set([
+  'claude-sonnet-4-20250514',
+  'claude-sonnet-4-6',
+  'claude-opus-4-7',
+  'claude-haiku-4-5-20251001',
+]);
 const GATEWAY_BASE_URL = 'https://ai-gateway.vercel.sh';
 
 function gatewayToken() {
@@ -44,7 +54,8 @@ export function resolveClaudeModel(
     );
   }
 
-  return process.env.MOVEMENT_CLAUDE_MODEL || directFallback;
+  const fallback = LEGACY_FALLBACK_MODELS.has(directFallback) ? DIRECT_DEFAULT_MODEL : directFallback;
+  return process.env.MOVEMENT_CLAUDE_MODEL || fallback;
 }
 
 export function createAnthropicClient(): Anthropic {

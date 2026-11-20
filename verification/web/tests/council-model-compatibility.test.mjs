@@ -10,8 +10,8 @@ const dependencies=createRequire(path.join(ROOT,'package.json'));
 const Anthropic=dependencies('@anthropic-ai/sdk').default;
 const MEMBER='11111111-1111-4111-8111-111111111111';
 const OTHER='22222222-2222-4222-8222-222222222222';
-const CURRENT='claude-sonnet-4-6';
-const GATEWAY='anthropic/claude-sonnet-4.6';
+const CURRENT='claude-haiku-5-5';
+const GATEWAY='anthropic/claude-haiku-5.5';
 
 function success(model) {
   return new Response(JSON.stringify({id:'msg_synthetic',type:'message',role:'assistant',model,
