@@ -1,5 +1,7 @@
 /* Library: read with a thinker in the margin. Night and gold, see STYLE.md. */
 .page { min-height: 100vh; background: var(--soe-bg); color: var(--soe-text); font-family: var(--soe-body); }
+/* Shared reading nav and footer links: gold like the great books pages. */
+.page > header a, .page > footer a { color: var(--soe-gold-light); text-underline-offset: .2em; }
 .main { max-width: 1180px; margin: 0 auto; padding: 2.5rem 1.25rem 7rem; }
 .eyebrow { font-family: var(--soe-label); text-transform: uppercase; letter-spacing: .16em; font-size: .78rem; color: var(--soe-gold); margin: 0 0 .75rem; }
 .title { font-family: var(--soe-display); font-weight: 500; color: var(--soe-ivory); font-size: clamp(2.4rem, 7vw, 4.2rem); line-height: 1.02; margin: 0 0 1rem; }
