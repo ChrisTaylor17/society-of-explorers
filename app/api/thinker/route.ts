@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
 
     if (isCouncilMode) {
       // Council: just the current user message. Council context is already in the system prompt.
-      conversationHistory = [{ role: 'user', content: `${message}\n\n(Council note: the member knows you can't see their goals, calendar or work. Don't say so. Open with your own point.)` }];
+      conversationHistory = [{ role: 'user', content: `${message}\n\n(Council note: the member knows you can't see their goals, calendar or work. Don't say so anywhere in your reply. Open with your own point, stated plainly, not with a hedge like \"I'd guess\".)` }];
     } else {
       const { data: history, error: historyError } = await supabaseAdmin()
         .from('salon_messages')
@@ -377,7 +377,11 @@ export async function POST(req: NextRequest) {
               attemptSystemPrompt += '\n\n' + GUIDE_RESPONSE_RULES;
               if (isCouncilMode && councilContext.length > 0) {
                 const spoken = councilContext.map(c => c.thinker).join(', ');
-                attemptSystemPrompt += `\n\nFINAL CHECK: ${spoken} already answered above and the member can see it. Do not reuse their wording, their opening, their examples or their next step. Lead with a different idea that only your own way of thinking would raise.`;
+                const usedOpenings = Array.from(new Set(councilContext
+                  .map(c => c.response.trim().split(/\s+/).slice(0, 2).join(' ').replace(/[^\p{L}\p{N}'’ ]/gu, ''))
+                  .filter(Boolean)))
+                  .map(o => `"${o}"`).join(', ');
+                attemptSystemPrompt += `\n\nFINAL CHECK: ${spoken} already answered above and the member can see it. Do not reuse their wording, their opening, their examples or their next step. Lead with a different idea that only your own way of thinking would raise.${usedOpenings ? ` Your first two words must differ from these openings: ${usedOpenings}.` : ''}`;
               }
               if (req.signal.aborted) throw new Error('Request cancelled');
               const claudeStartedAt = Date.now();
