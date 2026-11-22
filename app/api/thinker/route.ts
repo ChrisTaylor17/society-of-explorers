@@ -3,7 +3,7 @@ import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getReviewedGuideContext } from '@/lib/memory/reviewRuntime';
 import { GUIDE_ACTION_NOTICE, GUIDE_RESPONSE_RULES } from '@/lib/claude/guidePolicy';
-import { createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
+import { createSentenceCap, createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { limitModelCall } from '@/lib/rateLimit';
 import { memberCanUseSharedSalon } from '@/lib/salons/access';
@@ -293,6 +293,9 @@ export async function POST(req: NextRequest) {
     }
 
     let maxTokens: number;
+    // Hard cap on length, applied while streaming, so replies stay short even
+    // when the model runs long. Artifacts (plans, drafts) are not capped.
+    const maxSentences = isReaction ? 2 : isArtifactRequest(message) ? Infinity : 3;
     if (isReaction) {
       maxTokens = REACTION_MAX_TOKENS;
     } else if (isArtifactRequest(message)) {
@@ -349,6 +352,7 @@ export async function POST(req: NextRequest) {
           let fullText = '';
           let rewardReceipt: ThinkerRewardReceipt | null = null;
           const guideText = createGuideTextStream();
+          const sentenceCap = createSentenceCap(maxSentences);
           const sendText = (text: string) => {
             if (text) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
           };
@@ -379,8 +383,10 @@ export async function POST(req: NextRequest) {
               }, { maxRetries: 0, signal: req.signal });
 
               anthropicStream.on('text', (text) => {
+                if (sentenceCap.done) return;
                 fullText += text;
-                sendText(guideText.push(text));
+                sendText(sentenceCap.push(guideText.push(text)));
+                if (sentenceCap.done) anthropicStream.abort();
               });
 
               const finalMessage = await anthropicStream.finalMessage();
@@ -394,6 +400,8 @@ export async function POST(req: NextRequest) {
               lastErr = null;
               break; // success
             } catch (apiErr: unknown) {
+              // Stopping at the sentence cap ends the stream on purpose.
+              if (sentenceCap.done && !req.signal.aborted) { lastErr = null; break; }
               lastErr = apiErr;
               reportThinkerRouteFailure('provider stream attempt');
               // A new attempt would append a different answer to partial output.
@@ -402,7 +410,8 @@ export async function POST(req: NextRequest) {
             }
           }
           if (lastErr) throw lastErr;
-          sendText(guideText.finish());
+          if (!sentenceCap.done) sendText(sentenceCap.push(guideText.finish()));
+          if (sentenceCap.done) fullText = sentenceCap.text;
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
             const doneData = JSON.stringify({ done: true, response: '', silent: true });

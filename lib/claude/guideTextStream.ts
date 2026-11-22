@@ -35,3 +35,38 @@ export function createGuideTextStream() {
     },
   };
 }
+
+// Stops a streamed reply cleanly after `max` complete sentences, so a reply
+// that runs long is shortened at a sentence end, never mid-word.
+export function createSentenceCap(max: number) {
+  let out = '';
+  let count = 0;
+  let done = false;
+  let afterEnd = false;
+  return {
+    get done() { return done; },
+    get text() { return out; },
+    push(chunk: string): string {
+      if (done || !Number.isFinite(max)) {
+        if (!done) out += chunk;
+        return done ? '' : chunk;
+      }
+      let emit = '';
+      for (const ch of chunk) {
+        if (afterEnd) {
+          if (/\s/.test(ch)) {
+            count++;
+            afterEnd = false;
+            if (count >= max) { done = true; break; }
+          } else if (!/[.!?"'”’)\]]/.test(ch)) {
+            afterEnd = false;
+          }
+        }
+        emit += ch;
+        if (/[.!?]/.test(ch)) afterEnd = true;
+      }
+      out += emit;
+      return emit;
+    },
+  };
+}
