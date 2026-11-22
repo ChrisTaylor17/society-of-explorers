@@ -50,7 +50,8 @@ export default function RepublicBookOneGuide() {
           <p>Book I takes about an hour to read. Three people give three answers, and Socrates takes each one apart. It ends without an answer, which is why the rest of the Republic exists.</p>
           <p className={styles.status}><strong>First salon planned:</strong> Thursday, December 3, online. We are not here to recruit anyone to a conclusion.</p>
           <nav className={styles.actions} aria-label="Guide sections">
-            <a className={styles.primary} href={href(422, 914)}>Read Book I free</a>
+            <Link className={styles.primary} href="/library/republic-book-1">Read it with Plato in the margin</Link>
+            <a href={href(422, 914)}>Read Book I free</a>
             <a href="#three-answers">The three answers</a>
             <a href="#agenda">The hour</a>
             <Link href="/notebook?book=republic">Take notes</Link>

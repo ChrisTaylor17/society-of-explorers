@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingIncludes: {
     "/api/great-books/**": ["./content/great-books/**/*"],
+    "/api/library/**": ["./content/great-books/*/passages.json"],
+    "/library/**": ["./content/great-books/*/passages.json"],
     "/clips": ["./content/clips/**/*"],
     "/clips/**": ["./content/clips/**/*"],
   },
