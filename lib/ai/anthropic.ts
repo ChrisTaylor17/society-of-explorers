@@ -58,6 +58,36 @@ export function resolveClaudeModel(
   return process.env.MOVEMENT_CLAUDE_MODEL || fallback;
 }
 
+
+// Haiku 5.5 thinks by default, and that thinking counts against max_tokens.
+// The short replies here (figure chat, council, reading tools) were budgeted for
+// a model that answered straight away, so thinking ate the budget: replies came
+// back cut off or empty. Turn it off for Haiku 5 models unless a call sets its own.
+// (Haiku 5.5 accepts `disabled` at effort high or below; the default is medium.)
+function withThinkingOffForHaiku(baseFetch: typeof fetch = fetch): typeof fetch {
+  return async (input, init) => {
+    try {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (init?.body && typeof init.body === 'string' && /\/v1\/messages(\?|$)/.test(url)) {
+        const body = JSON.parse(init.body);
+        if (
+          body &&
+          typeof body.model === 'string' &&
+          /haiku-5/.test(body.model) &&
+          body.thinking === undefined &&
+          !['xhigh', 'max'].includes(body.output_config?.effort)
+        ) {
+          body.thinking = { type: 'disabled' };
+          init = { ...init, body: JSON.stringify(body) };
+        }
+      }
+    } catch {
+      // Leave the request as it was if the body is not JSON.
+    }
+    return baseFetch(input, init);
+  };
+}
+
 export function createAnthropicClient(): Anthropic {
   if (isAIGatewayEnabled()) {
     const apiKey = process.env.AI_GATEWAY_API_KEY || null;
@@ -67,12 +97,14 @@ export function createAnthropicClient(): Anthropic {
       baseURL: process.env.AI_GATEWAY_ANTHROPIC_BASE_URL || GATEWAY_BASE_URL,
       apiKey,
       authToken,
+      fetch: withThinkingOffForHaiku(),
     });
   }
 
   return new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
     authToken: null,
+    fetch: withThinkingOffForHaiku(),
   });
 }
 
