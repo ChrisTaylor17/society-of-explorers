@@ -137,7 +137,7 @@ export default function ProjectsPage() {
       >
         <div style={{ maxWidth: '720px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>PROJECTS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(36px, 7vw, 60px)', fontWeight: 400, lineHeight: 1.15, marginBottom: '1.5rem', color: parchment }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(36px, 7vw, 60px)', fontWeight: 400, lineHeight: 1.15, marginBottom: '1.5rem', color: parchment }}>
             Fund what matters.<br />Build what lasts.
           </h1>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.8, maxWidth: '600px', margin: '0 auto 2.5rem' }}>
@@ -167,7 +167,7 @@ export default function ProjectsPage() {
                     <div style={{ display: 'inline-block', maxWidth: '100%', marginBottom: '1rem', fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '3px 10px', borderRadius: '10px' }}>
                       {CATEGORIES[p.category] || p.category.toUpperCase()}
                     </div>
-                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>{p.title}</h3>
+                    <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '24px', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>{p.title}</h3>
                     <p style={{ fontSize: '16px', color: muted, lineHeight: 1.7, marginBottom: '1.5rem' }}>{p.short_description || p.description.slice(0, 120) + '...'}</p>
                     <div style={{ height: '6px', background: '#1a1a1a', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.5rem' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: gold, borderRadius: '3px', transition: 'width 0.5s ease' }} />
@@ -209,7 +209,7 @@ export default function ProjectsPage() {
       <section id="submit" data-fade style={{ padding: '6rem 2rem', background: '#0a0a0a', opacity: 0, transition: 'opacity 0.9s ease' }}>
         <div style={{ maxWidth: '520px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>SUBMIT YOUR PROJECT</div>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '2rem', lineHeight: 1.3 }}>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '2rem', lineHeight: 1.3 }}>
             Have something worth building?
           </h2>
 
@@ -250,7 +250,7 @@ export default function ProjectsPage() {
       {/* ═══ CTA ═══ */}
       <section data-fade style={{ padding: '6rem 2rem', background: '#0d0d0d', opacity: 0, transition: 'opacity 0.9s ease' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, color: parchment, marginBottom: '1.5rem' }}>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, color: parchment, marginBottom: '1.5rem' }}>
             The Renaissance needs builders.
           </h2>
           <p style={{ fontSize: '20px', color: ivory85, lineHeight: 1.9, marginBottom: '2.5rem' }}>

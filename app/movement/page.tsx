@@ -71,7 +71,7 @@ export default function MovementPage() {
             </div>
             <h1
               style={{
-                fontFamily: 'Playfair Display, serif',
+                fontFamily: 'Cormorant Garamond, serif',
                 fontSize: 'clamp(34px, 7vw, 64px)',
                 fontWeight: 400,
                 fontStyle: 'italic',
@@ -254,7 +254,7 @@ export default function MovementPage() {
                   </div>
                   <h2
                     style={{
-                      fontFamily: 'Playfair Display, serif',
+                      fontFamily: 'Cormorant Garamond, serif',
                       fontSize: 'clamp(22px, 3vw, 28px)',
                       fontWeight: 400,
                       lineHeight: 1.2,
@@ -304,7 +304,7 @@ export default function MovementPage() {
             </div>
             <h2
               style={{
-                fontFamily: 'Playfair Display, serif',
+                fontFamily: 'Cormorant Garamond, serif',
                 fontSize: 'clamp(26px, 4vw, 38px)',
                 fontWeight: 400,
                 fontStyle: 'italic',

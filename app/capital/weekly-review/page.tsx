@@ -255,7 +255,7 @@ export default function CapitalWeeklyReviewPage() {
 
         <header style={{ margin: '1.5rem 0 2rem' }}>
           <div style={eyebrowStyle}>PRIVATE WEEKLY REVIEW</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
             Decide the next capital sprint.
           </h1>
           <p style={{ color: ivory85, fontSize: '19px', lineHeight: 1.8, maxWidth: '780px', margin: 0 }}>

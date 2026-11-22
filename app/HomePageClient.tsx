@@ -59,7 +59,7 @@ export default function HomePage() {
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>
             SOCIETY OF EXPLORERS
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(40px, 7vw, 72px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.05, marginBottom: '1.5rem', color: parchment }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(40px, 7vw, 72px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.05, marginBottom: '1.5rem', color: parchment }}>
             Read together. Meet online.
           </h1>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: ivory85, lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 2.5rem' }}>
@@ -108,7 +108,7 @@ export default function HomePage() {
       <section aria-labelledby="building-together" style={{ padding: '3rem 2rem 5rem' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', border: `1px solid ${gold}33`, padding: '2rem' }}>
           <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold }}>THE WIDER SOCIETY</p>
-          <h2 id="building-together" style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 400, color: parchment }}>Ideas worth building together.</h2>
+          <h2 id="building-together" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 400, color: parchment }}>Ideas worth building together.</h2>
           <p style={{ fontSize: '19px', color: ivory85, lineHeight: 1.7 }}>Alongside fellowship, we are exploring how people can develop useful projects with AI tools, mentors and collaborators. The venture-building model is a proposal, with ownership and contributor terms still to be established.</p>
           <Link href="/structure" prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>Explore the proposed venture model</Link>
         </div>
@@ -117,7 +117,7 @@ export default function HomePage() {
       <section aria-labelledby="apology-guide" style={{ padding: '3rem 2rem 5rem' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, marginBottom: '0.75rem' }}>A QUESTION FOR YOUR SALON</p>
-          <h2 id="apology-guide" style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>
+          <h2 id="apology-guide" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>
             What does it mean to examine your life?
           </h2>
           <p style={{ fontSize: '18px', color: ivory85, lineHeight: 1.7, marginBottom: '1.25rem' }}>
@@ -139,7 +139,7 @@ export default function HomePage() {
       <section style={{ padding: '2rem 2rem 6rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '440px', margin: '0 auto' }}>
           <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '0 auto 2rem' }} />
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 28px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>Start your practice.</h2>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 28px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>Start your practice.</h2>
           <p style={{ fontSize: '15px', color: muted, marginBottom: '1.75rem' }}>Free. One question. Every morning.</p>
           <a href="/practice" onClick={() => track('cta_click', { cta: 'footer_todays_question' })} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', height: '52px' }}>TODAY&apos;S QUESTION &rarr;</a>
           <p style={{ fontSize: '15px', color: muted, marginTop: '1.75rem' }}>Explore the separate <a href={PROMPT_ATLAS_URL} style={{ color: gold }} onClick={() => track('cta_click', { cta: 'footer_prompt_atlas' })}>Prompt Atlas workspace</a> or <a href={`${PROMPT_ATLAS_URL}/p/create-a-one-page-business`} style={{ color: gold }} onClick={() => track('cta_click', { cta: 'footer_public_prompt' })}>view a public prompt</a>.</p>

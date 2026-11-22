@@ -297,7 +297,7 @@ export default function MovementStudioPage() {
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>
             MOVEMENT STUDIO
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(30px, 5vw, 46px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, margin: 0 }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(30px, 5vw, 46px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, margin: 0 }}>
             Script queue.
           </h1>
         </header>
@@ -413,7 +413,7 @@ export default function MovementStudioPage() {
               {ops.checklist.map((item) => (
                 <article key={item.id} style={{ border: '1px solid rgba(201,168,76,0.12)', padding: '0.85rem', background: '#0a0a0a' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <h2 style={{ color: parchment, fontFamily: 'Playfair Display, serif', fontSize: '20px', fontWeight: 400, lineHeight: 1.2, margin: 0 }}>
+                    <h2 style={{ color: parchment, fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', fontWeight: 400, lineHeight: 1.2, margin: 0 }}>
                       {item.label}
                     </h2>
                     <span style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.12em', color: opsStatusColor(item.status), border: `1px solid ${opsStatusColor(item.status)}55`, padding: '4px 6px' }}>
@@ -502,7 +502,7 @@ export default function MovementStudioPage() {
                     <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, marginBottom: '0.45rem' }}>
                       {script.platform.toUpperCase()} · {script.duration_seconds || 60}S
                     </div>
-                    <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '23px', fontWeight: 400, lineHeight: 1.2, margin: 0, color: parchment }}>
+                    <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '23px', fontWeight: 400, lineHeight: 1.2, margin: 0, color: parchment }}>
                       {script.hook}
                     </h2>
                   </div>

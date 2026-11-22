@@ -23,7 +23,7 @@ export default function VisionPage() {
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>
             SOCIETY OF EXPLORERS
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(36px, 7vw, 58px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, marginBottom: '1.25rem', color: parchment }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(36px, 7vw, 58px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.15, marginBottom: '1.25rem', color: parchment }}>
             Our Vision
           </h1>
           <div style={{ width: '60px', height: '1px', background: `${gold}4d`, margin: '2rem auto 0' }} />

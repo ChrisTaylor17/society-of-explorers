@@ -45,7 +45,7 @@ export default function PodVerifyPage() {
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: gold, marginBottom: '1.25rem' }}>
             POD VERIFIER
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.12, margin: '0 0 1.25rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.12, margin: '0 0 1.25rem' }}>
             Trust the ciphertext.
           </h1>
           <p style={{ fontSize: '18px', lineHeight: 1.75, color: ivory75, maxWidth: '640px', margin: '0 auto' }}>
@@ -80,7 +80,7 @@ export default function PodVerifyPage() {
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.22em', color: gold, marginBottom: '0.75rem' }}>
               RESULT
             </div>
-            <div style={{ color: resultColor, fontFamily: 'Playfair Display, serif', fontSize: '28px', lineHeight: 1.1, marginBottom: '0.85rem' }}>
+            <div style={{ color: resultColor, fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', lineHeight: 1.1, marginBottom: '0.85rem' }}>
               {result.title}
             </div>
             <p style={{ color: ivory75, fontSize: '15px', lineHeight: 1.65, margin: 0 }}>

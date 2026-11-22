@@ -1,6 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Shared SoE look (night and gold). Same values as soe-style.css on societyofexplorers.com. See STYLE.md. */
+:root{--soe-black:#0a0a0a;--soe-bg:#0c0b09;--soe-panel:#14120e;--soe-raised:#1c1913;--soe-line:#3d3424;--soe-gold:#c9a84c;--soe-gold-light:#e2c97e;--soe-gold-deep:#7a6228;--soe-ivory:#f0e8d5;--soe-text:#e6dcc5;--soe-muted:#b3a88f;--soe-on-gold:#0a0a0a;--soe-label:'Cinzel',Georgia,serif;--soe-display:'Cormorant Garamond',Georgia,serif;--soe-body:'EB Garamond',Georgia,serif;}
 :root{--bg-void:#080808;--bg-deep:#0e0d0b;--bg-panel:#111008;--bg-surface:#181510;--bg-elevated:#1e1a12;--border:rgba(180,148,80,0.15);--border-bright:rgba(180,148,80,0.35);--gold:#c8a84b;--gold-light:#e2c97e;--gold-dim:#7a6228;--ivory:#f0e8d5;--ivory-muted:#6a5c42;--text-primary:#e8dfc8;--text-muted:#5a5040;--glow:rgba(200,168,75,0.08);--glow-strong:rgba(200,168,75,0.18);--sapphire:#1a2a4a;--emerald:#1a4a2e;}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;background:var(--bg-void);color:var(--text-primary);font-family:'EB Garamond',Georgia,serif;}

@@ -400,7 +400,7 @@ export default function CouncilPage() {
         {messages.length === 0 && !onboarded && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem', maxWidth: '480px', margin: 'auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.3 }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.3 }}>
               Before we begin — tell us about yourself.
             </h2>
             <p style={{ fontSize: '15px', color: muted, lineHeight: 1.7, marginBottom: '2rem' }}>Your answers can be saved to your profile and included in guide requests. You can skip this step.</p>
@@ -452,7 +452,7 @@ export default function CouncilPage() {
         {messages.length === 0 && onboarded && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem', maxWidth: '520px', margin: 'auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COUNCIL MODE</div>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem', lineHeight: 1.3 }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem', lineHeight: 1.3 }}>
               Ask a question. {activeThinkerCount} mind{activeThinkerCount !== 1 ? 's' : ''} respond{activeThinkerCount === 1 ? 's' : ''}.
             </h2>
             <p style={{ fontSize: '16px', color: muted, lineHeight: 1.7, marginBottom: '2rem' }}>

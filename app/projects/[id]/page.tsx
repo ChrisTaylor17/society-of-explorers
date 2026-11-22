@@ -156,7 +156,7 @@ export default function ProjectDetailPage({
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7rem 2rem 3rem' }}>
         <PublicNav />
         <main id="project-read-state" aria-busy={readState === 'loading'} style={{ width: '100%', maxWidth: '520px', textAlign: 'center', overflowWrap: 'anywhere' }}>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 6vw, 36px)', fontWeight: 400, lineHeight: 1.3, marginBottom: '1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(28px, 6vw, 36px)', fontWeight: 400, lineHeight: 1.3, marginBottom: '1rem' }}>
             {readState === 'loading' ? 'Loading project…' : readState === 'not-found' ? 'Project not found' : 'We couldn’t load this project'}
           </h1>
           <p role={readState === 'error' ? 'alert' : 'status'} style={{ fontSize: '18px', lineHeight: 1.7, color: ivory85, marginBottom: '1.5rem' }}>
@@ -197,7 +197,7 @@ export default function ProjectDetailPage({
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.12em', color: gold, border: `1px solid ${gold}44`, padding: '3px 10px', borderRadius: '10px', display: 'inline-block', marginBottom: '1rem', marginLeft: '1rem' }}>
             {(project.category || 'general').toUpperCase()}
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, color: parchment, lineHeight: 1.2, marginBottom: '0.5rem' }}>{project.title}</h1>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, color: parchment, lineHeight: 1.2, marginBottom: '0.5rem' }}>{project.title}</h1>
           {project.proposer_name && (
             <p style={{ fontSize: '16px', color: muted }}>Proposed by {project.proposer_name}</p>
           )}

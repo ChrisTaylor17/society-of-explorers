@@ -111,7 +111,7 @@ function LegacyMatchPage() {
 
           {!memberId ? (
             <div>
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '1rem' }}>Philosophical conversations with fellow explorers</h1>
+              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '1rem' }}>Philosophical conversations with fellow explorers</h1>
               <a href="/login" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.15em', color: gold, border: `1px solid ${gold}44`, padding: '12px 24px', textDecoration: 'none' }}>SIGN IN TO START</a>
             </div>
           ) : activeMatch ? (
@@ -160,7 +160,7 @@ function LegacyMatchPage() {
             </div>
           ) : (
             <div>
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '1rem' }}>Ready for a philosophical conversation?</h1>
+              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '1rem' }}>Ready for a philosophical conversation?</h1>
               {!eligible ? (
                 <div>
                   <p style={{ fontSize: '16px', color: muted, marginBottom: '1rem' }}>Answer 7 daily questions to unlock matching.</p>

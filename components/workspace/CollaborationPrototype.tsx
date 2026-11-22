@@ -69,7 +69,7 @@ export default function CollaborationPrototype() {
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '0.75rem' }}>
               COLLABORATION PROTOTYPE
             </div>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>
               Explore ideas for working together.
             </h2>
             <p style={{ fontSize: '15px', color: muted, lineHeight: 1.7, maxWidth: '620px', margin: '0 auto' }}>

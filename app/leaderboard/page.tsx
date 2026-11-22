@@ -92,7 +92,7 @@ export default function LeaderboardPage() {
       </header>
       <main style={{ maxWidth: 700, minHeight: '55vh', margin: '0 auto', padding: '5rem 1.5rem' }}>
         <p style={{ fontFamily: 'Cinzel, serif', fontSize: 10, letterSpacing: '0.3em', color: gold }}>THE GUIDES</p>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 5vw, 36px)', fontWeight: 400 }}>Guide leaderboard</h1>
+        <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(26px, 5vw, 36px)', fontWeight: 400 }}>Guide leaderboard</h1>
         <section aria-label="Leaderboard availability" style={{ padding: '1.5rem', border: `1px solid ${gold}33`, background: '#0d0d0d' }}>
           <p role="status" aria-live="polite" aria-atomic="true" style={{ marginTop: 0, fontSize: 20 }}>{messages[state]}</p>
           <p style={{ color: muted, fontSize: 17, lineHeight: 1.6 }}>Profiles shared in the directory do not authorize publishing member activity or earnings. Rankings are paused while a separate sharing choice is defined.</p>

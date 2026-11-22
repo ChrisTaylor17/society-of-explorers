@@ -26,7 +26,7 @@ function draftStorage(): Storage | null {
 
 const CINZEL = 'Cinzel, serif';
 const CORMORANT = 'Cormorant Garamond, serif';
-const PLAYFAIR = 'Playfair Display, serif';
+const PLAYFAIR = 'Cormorant Garamond, serif';
 
 const THINKER_NAMES: Record<string, string> = {
   socrates: 'Socrates',

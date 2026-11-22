@@ -13,9 +13,6 @@ import '@fontsource/cormorant-garamond/latin-600.css'
 import '@fontsource/eb-garamond/latin-400.css'
 import '@fontsource/eb-garamond/latin-400-italic.css'
 import '@fontsource/eb-garamond/latin-500.css'
-import '@fontsource/playfair-display/latin-400.css'
-import '@fontsource/playfair-display/latin-500.css'
-import '@fontsource/playfair-display/latin-600.css'
 import './globals.css'
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration'
 
@@ -44,7 +41,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#c9a84c',
+  themeColor: '#0a0a0a',
   colorScheme: 'dark',
 }
 

@@ -100,7 +100,7 @@ export default function CapitalWindowKitPage() {
 
         <header style={{ margin: '1.5rem 0 2rem' }}>
           <div style={eyebrowStyle}>92B WINDOW KIT</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
             Make the storefront signal real, carefully.
           </h1>
           <p style={{ fontSize: '19px', color: ivory85, lineHeight: 1.8, maxWidth: '760px', margin: 0 }}>
@@ -172,7 +172,7 @@ export default function CapitalWindowKitPage() {
                     <div style={{ fontFamily: 'Cinzel, serif', color: gold, fontSize: '11px', letterSpacing: '0.22em', marginBottom: '1.5rem' }}>
                       {kit.sign.eyebrow.toUpperCase()}
                     </div>
-                    <h2 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400, fontSize: 'clamp(32px, 6vw, 54px)', lineHeight: 1.02, margin: '0 0 1rem' }}>
+                    <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 400, fontSize: 'clamp(32px, 6vw, 54px)', lineHeight: 1.02, margin: '0 0 1rem' }}>
                       {kit.sign.headline}
                     </h2>
                     <p style={{ color: ivory85, fontSize: '18px', lineHeight: 1.55, margin: '0 auto', maxWidth: '560px' }}>

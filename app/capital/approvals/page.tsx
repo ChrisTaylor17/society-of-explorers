@@ -211,7 +211,7 @@ export default function CapitalApprovalsPage() {
 
         <header style={{ margin: '1.5rem 0 2rem' }}>
           <div style={eyebrowStyle}>PRIVATE APPROVALS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
             External action checklist.
           </h1>
           <p style={{ color: ivory85, fontSize: '19px', lineHeight: 1.8, maxWidth: '780px', margin: 0 }}>
@@ -313,7 +313,7 @@ export default function CapitalApprovalsPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                           <div>
                             <div style={eyebrowStyle}>{labelize(item.group)}</div>
-                            <h2 style={{ fontFamily: 'Playfair Display, serif', color: parchment, fontSize: '30px', fontWeight: 400, lineHeight: 1.15, margin: 0 }}>
+                            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', color: parchment, fontSize: '30px', fontWeight: 400, lineHeight: 1.15, margin: 0 }}>
                               {item.label}
                             </h2>
                           </div>

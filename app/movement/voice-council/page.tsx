@@ -181,7 +181,7 @@ export default function VoiceCouncilPage() {
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>
             LIVE COUNCIL
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 54px)', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.12, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(32px, 6vw, 54px)', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.12, margin: '0 0 1rem' }}>
             Speak with a thinker.
           </h1>
           <p style={{ fontSize: '18px', lineHeight: 1.7, color: ivory85, maxWidth: '700px', margin: 0 }}>
@@ -210,7 +210,7 @@ export default function VoiceCouncilPage() {
                     disabled={connected || connecting}
                     style={thinkerButtonStyle(selectedThinker === thinker.id, connected || connecting)}
                   >
-                    <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', lineHeight: 1.1 }}>
+                    <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', lineHeight: 1.1 }}>
                       {thinker.name}
                     </span>
                     <span style={{ color: muted, fontSize: '14px', lineHeight: 1.4 }}>{thinker.line}</span>
