@@ -3,7 +3,7 @@ import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getReviewedGuideContext } from '@/lib/memory/reviewRuntime';
 import { GUIDE_ACTION_NOTICE, GUIDE_RESPONSE_RULES } from '@/lib/claude/guidePolicy';
-import { createSentenceCap, createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
+import { createSentenceCap, createSelfReferenceRewriter, rewriteSelfReference, createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { limitModelCall } from '@/lib/rateLimit';
 import { memberCanUseSharedSalon } from '@/lib/salons/access';
@@ -353,6 +353,7 @@ export async function POST(req: NextRequest) {
           let rewardReceipt: ThinkerRewardReceipt | null = null;
           const guideText = createGuideTextStream();
           const sentenceCap = createSentenceCap(maxSentences);
+          const selfName = createSelfReferenceRewriter(thinkerId);
           const sendText = (text: string) => {
             if (text) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
           };
@@ -389,7 +390,7 @@ export async function POST(req: NextRequest) {
               anthropicStream.on('text', (text) => {
                 if (sentenceCap.done) return;
                 fullText += text;
-                sendText(sentenceCap.push(guideText.push(text)));
+                sendText(sentenceCap.push(selfName.push(guideText.push(text))));
                 if (sentenceCap.done) anthropicStream.abort();
               });
 
@@ -414,7 +415,7 @@ export async function POST(req: NextRequest) {
             }
           }
           if (lastErr) throw lastErr;
-          if (!sentenceCap.done) sendText(sentenceCap.push(guideText.finish()));
+          if (!sentenceCap.done) sendText(sentenceCap.push(selfName.push(guideText.finish()) + selfName.finish()));
           if (sentenceCap.done) fullText = sentenceCap.text;
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
@@ -434,6 +435,7 @@ export async function POST(req: NextRequest) {
             .replace(/^\[[\w-]+\]\s*/i, '')
             .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
             .trim();
+          cleanText = rewriteSelfReference(cleanText, thinkerId);
 
           if (actionReviewRequired) cleanText = [cleanText, GUIDE_ACTION_NOTICE].filter(Boolean).join('\n\n');
 
