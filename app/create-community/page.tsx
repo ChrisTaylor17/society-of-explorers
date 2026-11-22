@@ -186,7 +186,7 @@ export default function CreateDAOPage() {
         <PublicNav />
         <div style={{ padding: '10rem 2rem', textAlign: 'center' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>CONSILIENCE SYSTEMS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 5vw, 40px)', fontWeight: 400, color: parchment, marginBottom: '1rem', lineHeight: 1.2 }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(26px, 5vw, 40px)', fontWeight: 400, color: parchment, marginBottom: '1rem', lineHeight: 1.2 }}>
             Launch your own citizen-science DAO.
           </h1>
           <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '520px', margin: '0 auto 2rem' }}>
@@ -448,7 +448,7 @@ export default function CreateDAOPage() {
               ) : (
                 <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                   <div style={{ fontSize: '40px', color: '#4CAF50', marginBottom: '1rem' }}>{'\u2713'}</div>
-                  <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.25 }}>
+                  <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem', lineHeight: 1.25 }}>
                     Your DAO is live
                   </h2>
                   <p style={{ fontSize: '15px', color: muted, marginBottom: '0.5rem' }}>&ldquo;{name}&rdquo; is deployed. Start your storefront, mint reputation, recruit contributors.</p>

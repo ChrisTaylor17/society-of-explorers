@@ -49,7 +49,7 @@ export default function VerdictPage({ params }: { params: Promise<{ slug: string
       <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1.5rem' }}>COUNCIL VERDICT</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 40px)', fontWeight: 400, fontStyle: 'italic', color: parchment, lineHeight: 1.3, marginBottom: '1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 5vw, 40px)', fontWeight: 400, fontStyle: 'italic', color: parchment, lineHeight: 1.3, marginBottom: '1rem' }}>
             &ldquo;{session.question}&rdquo;
           </h1>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2rem' }}>

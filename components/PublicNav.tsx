@@ -148,7 +148,7 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
         borderBottom: scrolled ? `1px solid ${gold}11` : 'none', transition: 'all 0.3s',
       }}>
         <Link ref={brandLink} href="/" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, textDecoration: 'none' }}>
-          SOCIETY OF EXPLORERS
+          <span aria-hidden="true" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '18px', letterSpacing: 0, marginRight: '8px', verticalAlign: '-2px' }}>✦</span>SOCIETY OF EXPLORERS
         </Link>
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }} className="hide-mobile">

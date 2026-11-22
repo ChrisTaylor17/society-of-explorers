@@ -197,7 +197,7 @@ export default function SovereigntyPassportPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem', alignItems: 'end' }}>
             <div>
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '52px', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.05, margin: '0 0 1rem' }}>
+              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '52px', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.05, margin: '0 0 1rem' }}>
                 Your custody trail at a glance.
               </h1>
               <p style={{ color: ivory85, fontSize: '18px', lineHeight: 1.75, maxWidth: '720px', margin: 0 }}>
@@ -206,7 +206,7 @@ export default function SovereigntyPassportPage() {
             </div>
             <section style={{ background: card, border, padding: '1.5rem' }}>
               <div style={eyebrowStyle}>PASSPORT SCORE</div>
-              <div style={{ color: parchment, fontFamily: 'Playfair Display, serif', fontSize: '44px', lineHeight: 1, marginBottom: '0.5rem' }}>
+              <div style={{ color: parchment, fontFamily: 'Cormorant Garamond, serif', fontSize: '44px', lineHeight: 1, marginBottom: '0.5rem' }}>
                 {loading ? '...' : passport ? `${passport.score.value}` : '--'}
               </div>
               <div style={{ color: gold, fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', marginBottom: '0.75rem' }}>
@@ -348,7 +348,7 @@ export default function SovereigntyPassportPage() {
                         <div style={{ ...statePillStyle(action.status), width: 'fit-content', marginBottom: '0.85rem' }}>
                           {labelize(action.status)}
                         </div>
-                        <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '23px', fontWeight: 400, lineHeight: 1.15, color: parchment, margin: '0 0 0.75rem' }}>
+                        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '23px', fontWeight: 400, lineHeight: 1.15, color: parchment, margin: '0 0 0.75rem' }}>
                           {action.label}
                         </h2>
                         <p style={{ color: muted, fontSize: '15px', lineHeight: 1.55, margin: 0 }}>{action.detail}</p>
@@ -381,7 +381,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: gold, marginBottom: '0.8rem' }}>
         {label}
       </div>
-      <div style={{ color: parchment, fontFamily: 'Playfair Display, serif', fontSize: '24px', lineHeight: 1.15, overflowWrap: 'anywhere' }}>
+      <div style={{ color: parchment, fontFamily: 'Cormorant Garamond, serif', fontSize: '24px', lineHeight: 1.15, overflowWrap: 'anywhere' }}>
         {value}
       </div>
     </div>

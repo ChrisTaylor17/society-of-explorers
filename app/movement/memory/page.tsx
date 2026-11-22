@@ -323,7 +323,7 @@ export default function MovementMemoryPage() {
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>
             MEMORY CONSENT
           </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 54px)', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.12, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(32px, 6vw, 54px)', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.12, margin: '0 0 1rem' }}>
             Review what your guide may remember.
           </h1>
           <p style={{ fontSize: '18px', lineHeight: 1.7, color: ivory85, maxWidth: '720px', margin: 0 }}>
@@ -536,7 +536,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ background: card, border, padding: '1.15rem', minHeight: '112px' }}>
       <div style={eyebrowStyle}>{label}</div>
-      <div style={{ color: parchment, fontFamily: 'Playfair Display, serif', fontSize: '22px', lineHeight: 1.2 }}>
+      <div style={{ color: parchment, fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', lineHeight: 1.2 }}>
         {value}
       </div>
     </div>
@@ -624,7 +624,7 @@ const factActionStyle: CSSProperties = {
 
 const factTitleStyle: CSSProperties = {
   color: parchment,
-  fontFamily: 'Playfair Display, serif',
+  fontFamily: 'Cormorant Garamond, serif',
   fontSize: '21px',
   fontWeight: 400,
   lineHeight: 1.2,

@@ -237,7 +237,7 @@ function CommunityDashboardView({ slug }: { slug: string }) {
         <PublicNav />
         <div style={{ padding: '10rem 2rem', textAlign: 'center' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>COMMUNITY UNAVAILABLE</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '1rem' }}>This community is unavailable.</h1>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', fontWeight: 400, color: parchment, marginBottom: '1rem' }}>This community is unavailable.</h1>
           <a href="/explore" style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold, border: `1px solid ${gold}`, padding: '12px 28px', textDecoration: 'none' }}>EXPLORE DAOs</a>
         </div>
         <PublicFooter />
@@ -293,7 +293,7 @@ function CommunityDashboardView({ slug }: { slug: string }) {
             </span>
           </div>
 
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem', lineHeight: 1.2 }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem', lineHeight: 1.2 }}>
             {community.name}
           </h1>
 
@@ -366,7 +366,7 @@ function CommunityDashboardView({ slug }: { slug: string }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginBottom: '1.25rem' }}>
               <div style={{ background: '#111', border: `1px solid ${gold}15`, padding: '1rem' }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '0.5rem' }}>REPUTATION TOKEN</div>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', color: gold, marginBottom: '0.5rem' }}>${repSymbol}</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', color: gold, marginBottom: '0.5rem' }}>${repSymbol}</div>
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                   <span style={badgeStyle}>SOULBOUND</span>
                   <span style={badgeStyle}>NON-TRANSFERABLE</span>
@@ -374,7 +374,7 @@ function CommunityDashboardView({ slug }: { slug: string }) {
               </div>
               <div style={{ background: '#111', border: `1px solid ${gold}15`, padding: '1rem' }}>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted, marginBottom: '0.5rem' }}>GOVERNANCE TOKEN</div>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', color: gold, marginBottom: '0.5rem' }}>${govSymbol}</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', color: gold, marginBottom: '0.5rem' }}>${govSymbol}</div>
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                   <span style={badgeStyle}>VOTING</span>
                   <span style={badgeStyle}>TREASURY</span>
@@ -385,7 +385,7 @@ function CommunityDashboardView({ slug }: { slug: string }) {
             <div style={{ padding: '12px 14px', background: '#111', border: `1px solid ${gold}15`, marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.15em', color: muted }}>INITIAL TREASURY</span>
-                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: parchment }}>
+                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '18px', color: parchment }}>
                   {initialTreasury.toLocaleString()} <span style={{ fontSize: '12px', color: gold }}>${repSymbol}</span>
                 </span>
               </div>
@@ -482,7 +482,7 @@ function CommunityDashboardView({ slug }: { slug: string }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', marginBottom: '12px', background: `${gold}08`, border: `1px solid ${gold}22` }}>
                 <div>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted }}>YOUR BALANCE</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '20px', color: gold, lineHeight: 1.1, marginTop: '2px' }}>
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: gold, lineHeight: 1.1, marginTop: '2px' }}>
                     {repBalance.toLocaleString()} <span style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', color: muted }}>${repSymbol}</span>
                   </div>
                 </div>
@@ -572,7 +572,7 @@ function CommunityDashboardView({ slug }: { slug: string }) {
                         {p.description && <p style={{ fontSize: '12px', color: muted, lineHeight: 1.4, margin: 0, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.description}</p>}
                         <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                            <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '18px', color: gold }}>{price.toLocaleString()}</span>
+                            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '18px', color: gold }}>{price.toLocaleString()}</span>
                             <span style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', color: muted }}>${repSymbol}</span>
                           </div>
                           {!memberId ? (

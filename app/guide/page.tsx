@@ -117,7 +117,7 @@ export default function GuidePage() {
       <section style={{ padding: '8rem 2rem 2rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>GUIDE DASHBOARD</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 400, color: parchment, marginBottom: '0.5rem' }}>
             {GUIDE_LEVELS[currentLevel] || 'Guide'}
           </h1>
 
@@ -144,7 +144,7 @@ export default function GuidePage() {
               { label: 'LEVEL', value: currentLevel },
             ].map(s => (
               <div key={s.label} style={{ background: `${gold}0a`, border: `1px solid ${gold}15`, padding: '14px 22px', textAlign: 'center', minWidth: '90px' }}>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '26px', color: gold }}>{s.value}</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '26px', color: gold }}>{s.value}</div>
                 <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{s.label}</div>
               </div>
             ))}

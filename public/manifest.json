@@ -5,7 +5,7 @@
   "start_url": "/salon",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#c9a84c",
+  "theme_color": "#0a0a0a",
   "orientation": "portrait-primary",
   "icons": [
     {

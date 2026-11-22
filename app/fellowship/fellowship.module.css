@@ -4,7 +4,7 @@
 .page button,.page select,.page textarea { font:inherit; }
 .page :is(a,button,select,textarea,summary):focus-visible { outline:3px solid #edcf83; outline-offset:4px; }
 .page h1,.page h2,.page h3 { font-weight:400; line-height:1.18; text-wrap:balance; }
-.page h1 { font-family:'Playfair Display',Georgia,serif; font-size:clamp(2.4rem,6vw,4.6rem); margin:.6rem 0 1.5rem; }
+.page h1 { font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(2.4rem,6vw,4.6rem); margin:.6rem 0 1.5rem; }
 .page h2 { font-size:clamp(1.8rem,3vw,2.6rem); margin:.3rem 0 1.1rem; }
 .page h3 { font-size:1.55rem; margin:.3rem 0 .8rem; }
 .page p { margin:.6rem 0 1.1rem; }
@@ -55,7 +55,7 @@
 .table caption { text-align:left; padding:1rem; font-size:1.15rem; }
 .footer { border-top:1px solid #5c5037; padding:2rem 1.5rem; }
 .invitation { max-width:1040px; margin:0 auto; border:1px solid #6b5b38; border-top:3px solid #c9a84c; padding:clamp(1.5rem,4vw,3rem); background:#12160f; color:#f0e7d7; }
-.invitation h2 { font-family:'Playfair Display',Georgia,serif; font-size:clamp(28px,4vw,42px); font-weight:400; line-height:1.2; margin:.75rem 0 1rem; }
+.invitation h2 { font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(28px,4vw,42px); font-weight:400; line-height:1.2; margin:.75rem 0 1rem; }
 .invitation p { font-size:1.3rem; line-height:1.6; max-width:760px; }
 .invitation a { color:#e0c47d; min-height:44px; display:inline-flex; align-items:center; text-underline-offset:.2em; }
 .invitation a:focus-visible { outline:3px solid #edcf83; outline-offset:4px; }

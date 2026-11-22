@@ -143,7 +143,7 @@ export default function CapitalScenariosPage() {
 
         <header style={{ margin: '1.5rem 0 2rem' }}>
           <div style={eyebrowStyle}>PRIVATE CAPITAL SCENARIOS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
             Patron math for the 92B push.
           </h1>
           <p style={{ color: ivory85, fontSize: '19px', lineHeight: 1.8, maxWidth: '780px', margin: 0 }}>
@@ -312,7 +312,7 @@ const eyebrowStyle: CSSProperties = {
 
 const h2Style: CSSProperties = {
   color: parchment,
-  fontFamily: 'Playfair Display, serif',
+  fontFamily: 'Cormorant Garamond, serif',
   fontSize: '26px',
   fontWeight: 400,
   lineHeight: 1.18,

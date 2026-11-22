@@ -115,7 +115,7 @@ export default function SalonPage() {
         <section style={{ padding: '8rem 2rem 2rem', textAlign: 'center' }}>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>YOUR SEVEN-WEEK SALON</div>
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>{mySalon.title}</h1>
+            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>{mySalon.title}</h1>
             {guide && (
               <p style={{ fontSize: '14px', color: muted }}>
                 Guide: {guide.display_name}
@@ -147,15 +147,15 @@ export default function SalonPage() {
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.3em', color: gold, marginBottom: '1rem' }}>GRADUATION PROGRESS</div>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', color: sessionsAttended > 0 ? parchment : muted }}>{sessionsAttended}</div>
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', color: sessionsAttended > 0 ? parchment : muted }}>{sessionsAttended}</div>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>ATTENDED</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', color: sessionsLed >= graduationReq ? gold : sessionsLed > 0 ? parchment : muted }}>{sessionsLed}/{graduationReq}</div>
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', color: sessionsLed >= graduationReq ? gold : sessionsLed > 0 ? parchment : muted }}>{sessionsLed}/{graduationReq}</div>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>SESSIONS LED</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', color: isGuideCandidate ? gold : muted }}>{isGuideCandidate ? '\u2713' : '\u2014'}</div>
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', color: isGuideCandidate ? gold : muted }}>{isGuideCandidate ? '\u2713' : '\u2014'}</div>
                   <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted }}>GUIDE CANDIDATE</div>
                 </div>
               </div>
@@ -247,7 +247,7 @@ export default function SalonPage() {
       <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.2em', color: gold, marginBottom: '1.5rem' }}>SEVEN-WEEK GUIDE PROGRAM</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.75rem' }}>
             Learn to lead a conversation.
           </h1>
           <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, maxWidth: '520px', margin: '0 auto' }}>
@@ -267,7 +267,7 @@ export default function SalonPage() {
             { num: '03', title: 'REVIEW PROGRESS', desc: 'Guide eligibility depends on recorded attendance and sessions led; seven weeks alone does not grant the role.' },
           ].map(step => (
             <div key={step.num} style={{ flex: '1 1 180px', background: '#0d0d0d', padding: '1.5rem 1.25rem', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', color: gold, marginBottom: '0.5rem' }}>{step.num}</div>
+              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '24px', color: gold, marginBottom: '0.5rem' }}>{step.num}</div>
               <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: parchment, marginBottom: '0.5rem' }}>{step.title}</div>
               <p style={{ fontSize: '13px', color: muted, lineHeight: 1.5 }}>{step.desc}</p>
             </div>

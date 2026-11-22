@@ -255,7 +255,7 @@ export default function CapitalPipelinePage() {
         <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
           <Link href="/capital" style={{ color: muted, fontSize: '14px', textDecoration: 'none' }}>Back to command center</Link>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, margin: '1.5rem 0 1rem' }}>PRIVATE CAPITAL PIPELINE</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
             Outreach without accidental outreach
           </h1>
           <p style={{ fontSize: '19px', color: ivory85, lineHeight: 1.8, maxWidth: '760px' }}>

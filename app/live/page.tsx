@@ -167,7 +167,7 @@ export default function LivePage() {
       <section style={{ padding: '8rem 2rem 2rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>LIVE COUNCIL</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 400, fontStyle: 'italic', color: parchment, marginBottom: '0.5rem' }}>
             A place to think together.
           </h1>
           <p style={{ fontSize: '18px', color: ivory85 }}>See scheduled online sessions and return here when your host opens the room.</p>
@@ -208,7 +208,7 @@ export default function LivePage() {
                   { val: countdown.seconds, label: 'SEC' },
                 ].map(b => (
                   <div key={b.label} style={boxStyle}>
-                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(18px, 6vw, 28px)', color: gold }}>{b.val}</div>
+                    <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(18px, 6vw, 28px)', color: gold }}>{b.val}</div>
                     <div style={{ fontFamily: 'Cinzel, serif', fontSize: '7px', letterSpacing: '0.1em', color: muted, marginTop: '2px' }}>{b.label}</div>
                   </div>
                 ))}

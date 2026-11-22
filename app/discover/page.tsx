@@ -84,7 +84,7 @@ export default function DiscoverPage() {
       <PublicNav />
       <section style={{ padding: '8rem 2rem 3rem', textAlign: 'center' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>DISCOVER</div>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>Find collaborators. Build together.</h1>
+        <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, color: parchment, marginBottom: '0.75rem' }}>Find collaborators. Build together.</h1>
         <p style={{ fontSize: '18px', color: ivory85, maxWidth: '500px', margin: '0 auto' }}>Explorers building meaningful things.</p>
       </section>
 

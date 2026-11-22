@@ -50,7 +50,7 @@ export default function ActivityPage() {
       <PublicNav />
       <section style={{ padding: '8rem 2rem 2rem', textAlign: 'center' }}>
         <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>ACTIVITY</div>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment }}>What&apos;s happening</h1>
+        <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400, color: parchment }}>What&apos;s happening</h1>
       </section>
 
       <section style={{ padding: '0 2rem 4rem' }}>

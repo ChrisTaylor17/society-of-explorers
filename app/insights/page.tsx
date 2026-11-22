@@ -141,7 +141,7 @@ export default function InsightsPage() {
         <PublicNav />
         <main style={{ maxWidth: '520px', margin: '0 auto', padding: '10rem 2rem 6rem', textAlign: 'center' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.4em', color: gold, marginBottom: '1.25rem' }}>INSIGHTS</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 4vw, 34px)', fontStyle: 'italic', fontWeight: 400, color: parchment, lineHeight: 1.25, marginBottom: '1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(26px, 4vw, 34px)', fontStyle: 'italic', fontWeight: 400, color: parchment, lineHeight: 1.25, marginBottom: '1rem' }}>
             This is your private wisdom profile.
           </h1>
           <p style={{ fontSize: '16px', color: ivory85, lineHeight: 1.7, marginBottom: '2rem' }}>
@@ -193,7 +193,7 @@ export default function InsightsPage() {
             FOR {displayName.toUpperCase()}
           </div>
           <div style={{ width: '60px', height: '1px', background: `${gold}66`, margin: '0 auto 1.75rem' }} />
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.1, color: parchment, margin: 0, letterSpacing: '-0.005em' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(32px, 6vw, 52px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.1, color: parchment, margin: 0, letterSpacing: '-0.005em' }}>
             {openingHeadline}
           </h1>
           <div style={{ width: '60px', height: '1px', background: `${gold}66`, margin: '1.75rem auto 1.25rem' }} />
@@ -279,7 +279,7 @@ export default function InsightsPage() {
                                 margin: 0,
                               }}>
                                 <span style={{
-                                  fontFamily: 'Playfair Display, serif',
+                                  fontFamily: 'Cormorant Garamond, serif',
                                   fontStyle: 'italic',
                                   color: `${gold}88`,
                                   marginRight: '10px',

@@ -40,7 +40,7 @@ export default async function ExplorerProfilePage({ params }: { params: Promise<
       <PublicNav />
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '8rem 1.5rem 4rem', overflowWrap: 'anywhere' }}>
         <p style={{ color: gold, fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.15em' }}>PUBLIC EXPLORER PROFILE</p>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 400 }}>{name}</h1>
+        <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 400 }}>{name}</h1>
         <p style={{ color: muted, fontSize: '1.1rem', lineHeight: 1.6 }}>Profile details this explorer chose to publish.</p>
         {sections.map(([heading, text]) => (
           <section key={heading} style={{ borderTop: `1px solid ${gold}33`, padding: '1rem 0' }}>

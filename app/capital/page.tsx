@@ -191,7 +191,7 @@ export default function CapitalCommandCenterPage() {
       <section style={{ padding: '8rem 2rem 4rem' }}>
         <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.4em', color: gold, marginBottom: '1rem' }}>PRIVATE COMMAND CENTER</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(34px, 6vw, 58px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 1rem' }}>
             Capital engine
           </h1>
           <p style={{ fontSize: '19px', color: ivory85, lineHeight: 1.8, maxWidth: '720px' }}>

@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 const CINZEL = 'Cinzel, serif';
 const CORMORANT = 'Cormorant Garamond, serif';
-const PLAYFAIR = 'Playfair Display, serif';
+const PLAYFAIR = 'Cormorant Garamond, serif';
 
 const gold = '#c9a84c';
 const parchment = '#f5f0e8';
