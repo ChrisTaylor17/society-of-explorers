@@ -373,6 +373,10 @@ export async function POST(req: NextRequest) {
                 } catch { reportThinkerRouteFailure('reviewed memory retrieval'); }
               }
               attemptSystemPrompt += '\n\n' + GUIDE_RESPONSE_RULES;
+              if (isCouncilMode && councilContext.length > 0) {
+                const spoken = councilContext.map(c => c.thinker).join(', ');
+                attemptSystemPrompt += `\n\nFINAL CHECK: ${spoken} already answered above and the member can see it. Do not reuse their wording, their opening, their examples or their next step. Lead with a different idea that only your own way of thinking would raise.`;
+              }
               if (req.signal.aborted) throw new Error('Request cancelled');
               const claudeStartedAt = Date.now();
               const anthropicStream = anthropic.messages.stream({
