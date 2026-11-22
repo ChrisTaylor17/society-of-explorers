@@ -70,3 +70,55 @@ export function createSentenceCap(max: number) {
     },
   };
 }
+
+const SELF_NAMES: Record<string, string[]> = {
+  socrates: ['Socrates'],
+  plato: ['Plato'],
+  aurelius: ['Marcus Aurelius', 'Aurelius', 'Marcus'],
+  nietzsche: ['Friedrich Nietzsche', 'Nietzsche'],
+  einstein: ['Albert Einstein', 'Einstein'],
+  jobs: ['Steve Jobs', 'Jobs'],
+  'steve-jobs': ['Steve Jobs', 'Jobs'],
+  'marcus-aurelius': ['Marcus Aurelius', 'Aurelius', 'Marcus'],
+};
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Turns a guide's talk about its own thinker in the third person
+// ("Nietzsche would ask", "Einstein's habit") into the first person
+// ("I would ask", "my habit"). Other thinkers' names are left alone.
+export function rewriteSelfReference(text: string, thinkerId: string): string {
+  const names = SELF_NAMES[thinkerId];
+  if (!names) return text;
+  const alt = names.map(escapeRegExp).join('|');
+  const atStart = (offset: number, whole: string) => offset === 0 || /[.!?]["'”’)\]]*\s+$|\n\s*$/.test(whole.slice(Math.max(0, offset - 4), offset));
+  return text
+    .replace(new RegExp(`\\b(?:${alt})(?:['’]s|['’])(?=\\s)`, 'g'), (_m, offset: number, whole: string) => (atStart(offset, whole) ? 'My' : 'my'))
+    .replace(new RegExp(`\\b(?:${alt})(?=\\s+(?:would|might|could|will|wants|asks|says|thinks|sees|tends|believes|argues|insists|reminds|holds|warns|wonders)\\b)`, 'g'), 'I')
+    .replace(/\bI\s+(asks|says|thinks|sees|tends|believes|argues|insists|reminds|holds|warns|wonders|wants)\b/g, (_m, verb: string) => `I ${verb.replace(/s$/, '')}`);
+}
+
+// Streaming wrapper: holds back a short tail so a name split across chunks is
+// still rewritten before it reaches the member.
+export function createSelfReferenceRewriter(thinkerId: string, holdBack = 28) {
+  let pending = '';
+  return {
+    push(chunk: string): string {
+      pending = rewriteSelfReference(pending + chunk, thinkerId);
+      if (pending.length <= holdBack) return '';
+      let cut = pending.length - holdBack;
+      const code = pending.charCodeAt(cut);
+      if (code >= 0xdc00 && code <= 0xdfff) cut -= 1;
+      const out = pending.slice(0, cut);
+      pending = pending.slice(cut);
+      return out;
+    },
+    finish(): string {
+      const out = rewriteSelfReference(pending, thinkerId);
+      pending = '';
+      return out;
+    },
+  };
+}
