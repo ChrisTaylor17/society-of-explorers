@@ -122,3 +122,48 @@ export function createSelfReferenceRewriter(thinkerId: string, holdBack = 28) {
     },
   };
 }
+
+const DISCLAIMER_OPENER = /^\s*(?:(?:Since|Because|Without|Given that)\s+I\s+(?:can['’]t|cannot|don['’]t|do not)|Without\s+(?:knowing|seeing|more)|I\s+(?:can['’]t|cannot|don['’]t|do not)\s+(?:see|know|have|tell|name)|I\s+have\s+no\s+(?:view|way|visibility))\b[^.!?]*[.!?]["'”’)\]]*\s+/;
+
+function tidyNewOpening(text: string): string {
+  let out = text
+    .replace(/^(?:Instead|Still|But|So|That said|Even so),?\s+/i, '')
+    .replace(/^(?:A different angle|One angle|Another angle)\s*:\s*/i, '');
+  out = out.replace(/^([^.!?:]*?)\s+instead(?=\s*[:.,])/, '$1');
+  return out.charAt(0).toUpperCase() + out.slice(1);
+}
+
+// Drops a reply's opening sentence when it only says what the guide can't see
+// ("I can't see your goals, so I can't name..."), so every council voice
+// opens with its own point instead of the same disclaimer.
+export function stripLeadingDisclaimer(text: string): string {
+  const match = DISCLAIMER_OPENER.exec(text);
+  if (!match) return text;
+  const rest = text.slice(match[0].length);
+  return rest.trim() ? tidyNewOpening(rest) : text;
+}
+
+export function createLeadingDisclaimerFilter(enabled: boolean, maxHold = 320) {
+  let decided = !enabled;
+  let pending = '';
+  return {
+    push(chunk: string): string {
+      if (decided) return chunk;
+      pending += chunk;
+      const firstEnd = /[.!?]["'”’)\]]*\s+\S/.exec(pending);
+      // Wait for a little of the next sentence too, so its connector can be tidied.
+      if ((!firstEnd || pending.length - firstEnd.index < 48) && pending.length < maxHold) return '';
+      decided = true;
+      const out = stripLeadingDisclaimer(pending);
+      pending = '';
+      return out;
+    },
+    finish(): string {
+      if (decided) return '';
+      decided = true;
+      const out = stripLeadingDisclaimer(pending);
+      pending = '';
+      return out;
+    },
+  };
+}

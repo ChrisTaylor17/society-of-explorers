@@ -3,7 +3,7 @@ import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getReviewedGuideContext } from '@/lib/memory/reviewRuntime';
 import { GUIDE_ACTION_NOTICE, GUIDE_RESPONSE_RULES } from '@/lib/claude/guidePolicy';
-import { createSentenceCap, createSelfReferenceRewriter, rewriteSelfReference, createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
+import { createSentenceCap, createSelfReferenceRewriter, rewriteSelfReference, createLeadingDisclaimerFilter, stripLeadingDisclaimer, createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { limitModelCall } from '@/lib/rateLimit';
 import { memberCanUseSharedSalon } from '@/lib/salons/access';
@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
 
     if (isCouncilMode) {
       // Council: just the current user message. Council context is already in the system prompt.
-      conversationHistory = [{ role: 'user', content: message }];
+      conversationHistory = [{ role: 'user', content: `${message}\n\n(Council note: the member knows you can't see their goals, calendar or work. Don't say so. Open with your own point.)` }];
     } else {
       const { data: history, error: historyError } = await supabaseAdmin()
         .from('salon_messages')
@@ -354,6 +354,7 @@ export async function POST(req: NextRequest) {
           const guideText = createGuideTextStream();
           const sentenceCap = createSentenceCap(maxSentences);
           const selfName = createSelfReferenceRewriter(thinkerId);
+          const opener = createLeadingDisclaimerFilter(isCouncilMode);
           const sendText = (text: string) => {
             if (text) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
           };
@@ -390,7 +391,7 @@ export async function POST(req: NextRequest) {
               anthropicStream.on('text', (text) => {
                 if (sentenceCap.done) return;
                 fullText += text;
-                sendText(sentenceCap.push(selfName.push(guideText.push(text))));
+                sendText(sentenceCap.push(selfName.push(opener.push(guideText.push(text)))));
                 if (sentenceCap.done) anthropicStream.abort();
               });
 
@@ -415,7 +416,7 @@ export async function POST(req: NextRequest) {
             }
           }
           if (lastErr) throw lastErr;
-          if (!sentenceCap.done) sendText(sentenceCap.push(selfName.push(guideText.finish()) + selfName.finish()));
+          if (!sentenceCap.done) sendText(sentenceCap.push(selfName.push(opener.push(guideText.finish()) + opener.finish()) + selfName.finish()));
           if (sentenceCap.done) fullText = sentenceCap.text;
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
@@ -435,6 +436,7 @@ export async function POST(req: NextRequest) {
             .replace(/^\[[\w-]+\]\s*/i, '')
             .replace(/^(socrates|plato|nietzsche|aurelius|einstein|jobs|steve-jobs):\s*/i, '')
             .trim();
+          if (isCouncilMode) cleanText = stripLeadingDisclaimer(cleanText);
           cleanText = rewriteSelfReference(cleanText, thinkerId);
 
           if (actionReviewRequired) cleanText = [cleanText, GUIDE_ACTION_NOTICE].filter(Boolean).join('\n\n');
