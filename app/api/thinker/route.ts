@@ -282,13 +282,13 @@ export async function POST(req: NextRequest) {
           // The complete compact default remains available.
         }
       }
-      systemPrompt += '\n\nCOUNCIL MODE: Reply in 2 or 3 short sentences, at most 60 words in all, and finish on a complete sentence. Offer one practical next step and engage fairly with other perspectives.';
+      systemPrompt += '\n\nCOUNCIL MODE: Reply in 2 or 3 short sentences, at most 50 words in all, and finish on a complete sentence. Give the angle only this thinker would bring, with one practical next step, and engage fairly with other perspectives.';
 
       // Inject what other thinkers said
       if (councilContext && councilContext.length > 0) {
         systemPrompt += '\n\nOther thinkers already said:\n' +
           councilContext.map(c => c.thinker + ': ' + c.response).join('\n') +
-          "\n\nDon't repeat them. Build on them or disagree.";
+          "\n\nDon't restate their points or their next steps. Add one thing none of them said, or disagree with one of them by name.";
       }
     }
 
