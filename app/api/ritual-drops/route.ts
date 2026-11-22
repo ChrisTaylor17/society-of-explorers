@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAnthropicClient, resolveClaudeModel } from '@/lib/ai/anthropic';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
@@ -8,7 +8,12 @@ const THINKER_NAMES: Record<string, string> = {
   aurelius: 'Marcus Aurelius', einstein: 'Einstein', jobs: 'Steve Jobs',
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || req.headers.get('authorization') !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const thinkerId = DROP_THINKERS[dayOfYear % DROP_THINKERS.length];
 
