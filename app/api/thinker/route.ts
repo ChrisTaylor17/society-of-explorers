@@ -282,7 +282,7 @@ export async function POST(req: NextRequest) {
           // The complete compact default remains available.
         }
       }
-      systemPrompt += '\n\nCOUNCIL MODE: One paragraph, at most 80 words. Offer one practical next step and engage fairly with other perspectives.';
+      systemPrompt += '\n\nCOUNCIL MODE: Reply in 2 or 3 short sentences, at most 60 words in all, and finish on a complete sentence. Offer one practical next step and engage fairly with other perspectives.';
 
       // Inject what other thinkers said
       if (councilContext && councilContext.length > 0) {
@@ -309,7 +309,7 @@ export async function POST(req: NextRequest) {
       // Council mode: FAST PATH — system prompt is already built above.
       // Only add member name if available.
       if (memberName && !memberName.startsWith('0x')) {
-        fullSystemPrompt += `\n\nThe member's name is ${memberName}.`;
+        fullSystemPrompt += `\n\nThe member's name is ${memberName}. Use it only if it reads like a real first name, and at most once.`;
       }
     } else {
       const usableName = (memberName && !memberName.startsWith('0x')) ? memberName : null;
@@ -322,7 +322,7 @@ export async function POST(req: NextRequest) {
         fullSystemPrompt += '\n\nThis answer is for a shared salon. Personal context is limited to what members have explicitly shared in this salon or the current message. Do not claim to remember private conversations.';
       }
       if (usableName) {
-        fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. Use their name naturally in your response. Never call them "Anonymous Explorer" or just "Explorer."`;
+        fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. If it reads like a real first name, you may use it once; if it looks like a username or handle, don't use it. Never call them "Anonymous Explorer" or just "Explorer."`;
       }
 
       if (isReaction) {
@@ -331,7 +331,7 @@ export async function POST(req: NextRequest) {
 
       if (councilContext.length > 0) {
         const ctxLines = councilContext.map(c => `[${c.thinker} said]: "${c.response}"`).join('\n');
-        fullSystemPrompt += `\n\nCOUNCIL SESSION — Other thinkers have already responded to this question:\n${ctxLines}\n\nYou may engage with, challenge, or build on their ideas. Be direct. Name them by name. Don't repeat what they said — add your distinct perspective or push back. Keep your response concise (3-5 sentences).`;
+        fullSystemPrompt += `\n\nCOUNCIL SESSION — Other thinkers have already responded to this question:\n${ctxLines}\n\nYou may engage with, challenge, or build on their ideas. Be direct. Name them by name. Don't repeat what they said — add your distinct perspective or push back. Keep your response to 2 or 3 short sentences.`;
       }
     }
 
