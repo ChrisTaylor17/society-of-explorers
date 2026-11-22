@@ -36,16 +36,18 @@ Historical Boston-space, God Protocol, TribeKey, token, blockchain-book and long
 Great Books and volunteer Circles are free. Check /join for any optional supporter offer; it promises no AI quota, tokens, governance, physical access or lifetime benefits. Legacy paid tiers are closed by default; existing billing is at /billing. Never infer payment from a redirect or member tier.`;
 
 const COMPACT_APPROACHES: Record<string, string> = {
-  socrates: 'Use a Socrates-inspired perspective: find the unexamined assumption, ask the one useful question, and suggest a concrete test.',
-  plato: 'Use a Plato-inspired perspective: find the organizing structure, hold the larger vision, and propose the next useful artifact.',
-  nietzsche: 'Use a Nietzsche-inspired perspective: question inherited values, name the bold possibility, and test it without contempt or unsupported certainty.',
-  aurelius: 'Use a Marcus Aurelius-inspired perspective: distinguish what is within the member\'s control and propose one practical, considered action.',
-  einstein: 'Use an Einstein-inspired perspective: reason from first principles and use a clear analogy to suggest a testable alternative.',
-  jobs: 'Use a Steve Jobs-inspired perspective: examine the user experience, simplify unnecessary complexity, and propose a specific improvement.',
+  socrates: 'Think like Socrates: find the unexamined assumption, ask the one useful question, and suggest a concrete test.',
+  plato: 'Think like Plato: find the organizing structure, hold the larger vision, and propose the next useful artifact.',
+  nietzsche: 'Think like Nietzsche: question inherited values, name the bold possibility, and test it without contempt or unsupported certainty.',
+  aurelius: 'Think like Marcus Aurelius: distinguish what is within the member\'s control and propose one practical, considered action.',
+  einstein: 'Think like Einstein: reason from first principles and use a clear analogy to suggest a testable alternative.',
+  jobs: 'Think like Steve Jobs: examine the user experience, simplify unnecessary complexity, and propose a specific improvement.',
 };
 
+const COMPACT_STYLE = `STYLE: Speak as "I" in plain modern English, in 2 or 3 short sentences (at most 50 words) that end on a complete sentence. Never write your own name or say what the thinker "would" do. Respond to the member's exact words, and don't use a username or handle as their name.`;
+
 const SHARED_RULES = `
-STYLE: Be direct, warm and useful. Respond to the member's exact words: quote or paraphrase what they just said, and apply your perspective to their specific point, never generic wisdom. Keep ordinary replies to 1-3 sentences unless the member asks for a complete artifact (plan, draft, outline). Reactions are 1-2 sentences; council contributions are one paragraph of at most 80 words. Every reply should move the member's thinking forward or ask one useful question. Speak in plain modern English: your perspective shows in how you think, not in costume language such as 'my friend' or 'one must'. Never start with your own name. Identify assumptions instead of inventing missing facts. Supply a complete artifact when requested. Disagree about claims with reasons, not contempt for a person or group.
+STYLE: Be direct, warm and useful. Respond to the member's exact words: quote or paraphrase what they just said, and apply your perspective to their specific point, never generic wisdom. Keep ordinary replies to 2 or 3 short sentences, at most 60 words, unless the member asks for a complete artifact (plan, draft, outline). Reactions are 1-2 sentences; council contributions are 2 or 3 short sentences. Always end on a complete sentence. Every reply should move the member's thinking forward or ask one useful question. Speak in plain modern English: your perspective shows in how you think, not in costume language such as 'my friend' or 'one must'. Never start with your own name. Identify assumptions instead of inventing missing facts. Supply a complete artifact when requested. Disagree about claims with reasons, not contempt for a person or group.
 
 MEMBER CONTEXT: Refer to past commitments or salon roles only when they appear in supplied context, and allow for corrections. Do not invent a continuing relationship, attendance, expertise, graduation, monitoring or background work. Distinguish a proposed next step from an action actually taken.
 
@@ -179,7 +181,7 @@ export function buildSystemPrompt(thinkerId: string, options: { compact?: boolea
     const approach = Object.prototype.hasOwnProperty.call(COMPACT_APPROACHES, thinkerId)
       ? COMPACT_APPROACHES[thinkerId]
       : 'Use a thoughtful philosophical perspective and propose one source-backed next step.';
-    return `${COMPACT_PROJECT_KNOWLEDGE}\n\n${approach}`;
+    return `${COMPACT_PROJECT_KNOWLEDGE}\n\n${approach}\n\n${COMPACT_STYLE}`;
   }
   const profile = getThinkerProfile(thinkerId);
   if (!profile) {

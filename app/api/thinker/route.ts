@@ -3,7 +3,7 @@ import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib
 import { buildSystemPrompt } from '@/lib/claude/thinkers';
 import { getReviewedGuideContext } from '@/lib/memory/reviewRuntime';
 import { GUIDE_ACTION_NOTICE, GUIDE_RESPONSE_RULES } from '@/lib/claude/guidePolicy';
-import { createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
+import { createSentenceCap, createGuideTextStream, GUIDE_ACTION_MARKER } from '@/lib/claude/guideTextStream';
 import { getAuthenticatedMember } from '@/lib/getAuthenticatedMember';
 import { limitModelCall } from '@/lib/rateLimit';
 import { memberCanUseSharedSalon } from '@/lib/salons/access';
@@ -282,17 +282,20 @@ export async function POST(req: NextRequest) {
           // The complete compact default remains available.
         }
       }
-      systemPrompt += '\n\nCOUNCIL MODE: One paragraph, at most 80 words. Offer one practical next step and engage fairly with other perspectives.';
+      systemPrompt += '\n\nCOUNCIL MODE: Reply in 2 or 3 short sentences, at most 50 words in all, and finish on a complete sentence. Give the angle only this thinker would bring, with one practical next step, and engage fairly with other perspectives.';
 
       // Inject what other thinkers said
       if (councilContext && councilContext.length > 0) {
         systemPrompt += '\n\nOther thinkers already said:\n' +
           councilContext.map(c => c.thinker + ': ' + c.response).join('\n') +
-          "\n\nDon't repeat them. Build on them or disagree.";
+          "\n\nDon't restate their points or their next steps. Add one thing none of them said, or disagree with one of them by name.";
       }
     }
 
     let maxTokens: number;
+    // Hard cap on length, applied while streaming, so replies stay short even
+    // when the model runs long. Artifacts (plans, drafts) are not capped.
+    const maxSentences = isReaction ? 2 : isArtifactRequest(message) ? Infinity : 3;
     if (isReaction) {
       maxTokens = REACTION_MAX_TOKENS;
     } else if (isArtifactRequest(message)) {
@@ -309,7 +312,7 @@ export async function POST(req: NextRequest) {
       // Council mode: FAST PATH — system prompt is already built above.
       // Only add member name if available.
       if (memberName && !memberName.startsWith('0x')) {
-        fullSystemPrompt += `\n\nThe member's name is ${memberName}.`;
+        fullSystemPrompt += `\n\nThe member's name is ${memberName}. Use it only if it reads like a real first name, and at most once.`;
       }
     } else {
       const usableName = (memberName && !memberName.startsWith('0x')) ? memberName : null;
@@ -322,7 +325,7 @@ export async function POST(req: NextRequest) {
         fullSystemPrompt += '\n\nThis answer is for a shared salon. Personal context is limited to what members have explicitly shared in this salon or the current message. Do not claim to remember private conversations.';
       }
       if (usableName) {
-        fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. Use their name naturally in your response. Never call them "Anonymous Explorer" or just "Explorer."`;
+        fullSystemPrompt += `\n\nIMPORTANT: The member's name is ${usableName}. If it reads like a real first name, you may use it once; if it looks like a username or handle, don't use it. Never call them "Anonymous Explorer" or just "Explorer."`;
       }
 
       if (isReaction) {
@@ -331,7 +334,7 @@ export async function POST(req: NextRequest) {
 
       if (councilContext.length > 0) {
         const ctxLines = councilContext.map(c => `[${c.thinker} said]: "${c.response}"`).join('\n');
-        fullSystemPrompt += `\n\nCOUNCIL SESSION — Other thinkers have already responded to this question:\n${ctxLines}\n\nYou may engage with, challenge, or build on their ideas. Be direct. Name them by name. Don't repeat what they said — add your distinct perspective or push back. Keep your response concise (3-5 sentences).`;
+        fullSystemPrompt += `\n\nCOUNCIL SESSION — Other thinkers have already responded to this question:\n${ctxLines}\n\nYou may engage with, challenge, or build on their ideas. Be direct. Name them by name. Don't repeat what they said — add your distinct perspective or push back. Keep your response to 2 or 3 short sentences.`;
       }
     }
 
@@ -349,6 +352,7 @@ export async function POST(req: NextRequest) {
           let fullText = '';
           let rewardReceipt: ThinkerRewardReceipt | null = null;
           const guideText = createGuideTextStream();
+          const sentenceCap = createSentenceCap(maxSentences);
           const sendText = (text: string) => {
             if (text) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
           };
@@ -369,6 +373,10 @@ export async function POST(req: NextRequest) {
                 } catch { reportThinkerRouteFailure('reviewed memory retrieval'); }
               }
               attemptSystemPrompt += '\n\n' + GUIDE_RESPONSE_RULES;
+              if (isCouncilMode && councilContext.length > 0) {
+                const spoken = councilContext.map(c => c.thinker).join(', ');
+                attemptSystemPrompt += `\n\nFINAL CHECK: ${spoken} already answered above and the member can see it. Do not reuse their wording, their opening, their examples or their next step. Lead with a different idea that only your own way of thinking would raise.`;
+              }
               if (req.signal.aborted) throw new Error('Request cancelled');
               const claudeStartedAt = Date.now();
               const anthropicStream = anthropic.messages.stream({
@@ -379,8 +387,10 @@ export async function POST(req: NextRequest) {
               }, { maxRetries: 0, signal: req.signal });
 
               anthropicStream.on('text', (text) => {
+                if (sentenceCap.done) return;
                 fullText += text;
-                sendText(guideText.push(text));
+                sendText(sentenceCap.push(guideText.push(text)));
+                if (sentenceCap.done) anthropicStream.abort();
               });
 
               const finalMessage = await anthropicStream.finalMessage();
@@ -394,6 +404,8 @@ export async function POST(req: NextRequest) {
               lastErr = null;
               break; // success
             } catch (apiErr: unknown) {
+              // Stopping at the sentence cap ends the stream on purpose.
+              if (sentenceCap.done && !req.signal.aborted) { lastErr = null; break; }
               lastErr = apiErr;
               reportThinkerRouteFailure('provider stream attempt');
               // A new attempt would append a different answer to partial output.
@@ -402,7 +414,8 @@ export async function POST(req: NextRequest) {
             }
           }
           if (lastErr) throw lastErr;
-          sendText(guideText.finish());
+          if (!sentenceCap.done) sendText(sentenceCap.push(guideText.finish()));
+          if (sentenceCap.done) fullText = sentenceCap.text;
 
           if (fullText.trim().toUpperCase().startsWith('SILENT')) {
             const doneData = JSON.stringify({ done: true, response: '', silent: true });
