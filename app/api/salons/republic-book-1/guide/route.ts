@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
-import { createAnthropicClient, logClaudeUsage, resolveClaudeModel } from '@/lib/ai/anthropic';
+import { createAnthropicClient, isAIGatewayEnabled, logClaudeUsage } from '@/lib/ai/anthropic';
 import { privateJson } from '@/lib/http/routeError';
 import { limitModelCall } from '@/lib/rateLimit';
-import { createSentenceCap, rewriteSelfReference } from '@/lib/claude/guideTextStream';
+import { createSentenceCap } from '@/lib/claude/guideTextStream';
 import { SOCRATES_BOOK1_PROMPT } from '@/lib/claude/socratesBook1';
 import { getLibrarySession } from '@/lib/library/sessions';
 import { findQuotes, trimToSentence } from '@/lib/library/text';
@@ -34,16 +34,6 @@ function readTurns(value: unknown): Turn[] | null {
   return turns[turns.length - 1].role === 'user' ? turns : null;
 }
 
-// The app turns a guide's talk about itself in the third person into "I".
-// Quotations are left exactly as written, so a line from the book that names
-// Socrates is never changed.
-function rewriteOutsideQuotes(text: string): string {
-  return text
-    .split(/([“"][^“”"]*[”"])/)
-    .map((part, i) => (i % 2 === 1 ? part : rewriteSelfReference(part, 'socrates')))
-    .join('');
-}
-
 export async function POST(req: NextRequest) {
   try {
     let body: { turns?: unknown };
@@ -54,7 +44,9 @@ export async function POST(req: NextRequest) {
     const limited = limitModelCall(req, null, 'salon-guide');
     if (limited) return privateJson({ error: 'Too many requests, please slow down' }, { status: 429, headers: { 'Retry-After': limited.headers.get('Retry-After') || '1' } });
 
-    const model = resolveClaudeModel('content');
+    // The small default model ran past three sentences in 11 of 26 test replies,
+    // so the cap cut off the closing question. This one evening uses a larger model.
+    const model = process.env.SALON_GUIDE_MODEL || (isAIGatewayEnabled() ? 'anthropic/claude-sonnet-5.5' : 'claude-sonnet-5-5');
     const started = Date.now();
     const message = await createAnthropicClient().messages.create({ model, max_tokens: 320, system: SOCRATES_BOOK1_PROMPT, messages: turns });
     logClaudeUsage({ purpose: 'content', model, operation: 'salon-republic-1-guide', latencyMs: Date.now() - started, usage: message.usage });
@@ -64,7 +56,10 @@ export async function POST(req: NextRequest) {
     const cap = createSentenceCap(SENTENCE_LIMIT);
     cap.push(reply);
     const capped = cap.done;
-    reply = rewriteOutsideQuotes(cap.text.trim());
+    // No self-name rewrite here: the prompt already speaks in the first person,
+    // and the rewrite turned "as Socrates says he knows nothing" into "as I say
+    // he knows nothing" in testing.
+    reply = cap.text.trim();
     if (!reply) return privateJson({ error: 'No reply' }, { status: 502 });
 
     // Every quotation is checked against the Book I text the site serves; a
