@@ -63,18 +63,18 @@ export default function HomePage() {
             Read together. Meet online.
           </h1>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: ivory85, lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 2.5rem' }}>
-            Small weekly salons rooted in Christian faith. Read Scripture and the Great Books, make room for prayer, and welcome people who disagree in good faith.
+            Monthly online salons on the great books, open to any belief or none. We read one book, put its hardest question to an AI guide drawn from the text, then argue it out ourselves. Members also meet twice a month.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
-            <Link href="/try" prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
+            <a href="https://www.societyofexplorers.com/salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
+              NEXT: PLATO&rsquo;S REPUBLIC, DEC 3
+            </a>
+            <Link href="/try" prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
               TRY SOCIETY OF EXPLORERS
-            </Link>
-            <Link href={ONLINE_CIRCLES_HREF} prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
-              BROWSE ONLINE CIRCLES
             </Link>
           </div>
           <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: muted, lineHeight: 1.8, margin: '1.25rem auto 0', maxWidth: '620px' }}>
-            Start with free readings, Scripture studies and a salon plan. No account or payment is needed to explore them.
+            Start with free readings and a salon plan. No account or payment is needed to explore them. A separate Christian fellowship meets here too, for those who want it.
           </p>
         </div>
       </section>
@@ -104,15 +104,6 @@ export default function HomePage() {
           </div>
         </section>
       )}
-
-      <section aria-labelledby="building-together" style={{ padding: '3rem 2rem 5rem' }}>
-        <div style={{ maxWidth: '760px', margin: '0 auto', border: `1px solid ${gold}33`, padding: '2rem' }}>
-          <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: gold }}>THE WIDER SOCIETY</p>
-          <h2 id="building-together" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 400, color: parchment }}>Ideas worth building together.</h2>
-          <p style={{ fontSize: '19px', color: ivory85, lineHeight: 1.7 }}>Alongside fellowship, we are exploring how people can develop useful projects with AI tools, mentors and collaborators. The venture-building model is a proposal, with ownership and contributor terms still to be established.</p>
-          <Link href="/structure" prefetch={false} style={{ color: gold, display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>Explore the proposed venture model</Link>
-        </div>
-      </section>
 
       <section aria-labelledby="apology-guide" style={{ padding: '3rem 2rem 5rem' }}>
         <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
