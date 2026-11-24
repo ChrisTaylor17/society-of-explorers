@@ -32,6 +32,7 @@ export default function LibraryPage() {
           <p className={styles.muted} style={{ margin: 0 }}>{salon.salon?.label} · read with {COMPANIONS[salon.companion].name} · {salon.readingTime}</p>
           <span className={styles.primary} style={{ alignSelf: 'start', marginTop: '.5rem' }}>Start reading</span>
         </Link>
+        {salon.salon?.href && <p className={styles.muted}>{salon.salon.detail} <a href={salon.salon.href}>Reserve a seat</a> · <a href="/great-books/republic/seminar">Ask the AI Socrates, free</a></p>}
       </section>
 
       <section className={styles.section} aria-labelledby="term-one">

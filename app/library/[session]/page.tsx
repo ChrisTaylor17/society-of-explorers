@@ -38,7 +38,7 @@ export default async function LibrarySessionPage({ params }: Props) {
         <p className={styles.lead}>{session.question}</p>
         <p className={styles.meta}><span>{session.author}, <em>{session.work}</em></span><span>{session.translator} translation, public domain</span><span>{session.readingTime}</span></p>
         <p style={{ maxWidth: '40rem', margin: 0 }}>{session.summary}</p>
-        {session.salon && <p className={styles.salonNote}><strong>Salon: {session.salon.label}.</strong> {session.salon.detail}</p>}
+        {session.salon && <p className={styles.salonNote}><strong>Salon: {session.salon.label}.</strong> {session.salon.detail}{session.salon.href && <> <a href={session.salon.href}>Reserve a seat</a>.</>}</p>}
         <nav className={styles.actions} aria-label="On this page">
           <a className={styles.primary} href="#read">Read with {companion}</a>
           <a className={styles.secondary} href="#salon-guide">Salon guide</a>

@@ -77,7 +77,7 @@ export default function SeminarPage() {
           <a href={`/great-books/${bookId}`} style={{ fontFamily: 'Cinzel, serif', fontSize: '9px', letterSpacing: '0.15em', color: gold, textDecoration: 'none', opacity: 0.6 }}>← BACK TO READER</a>
           <div style={{ fontFamily: 'Cinzel, serif', fontSize: '12px', letterSpacing: '0.1em', color: '#f5f0e8', marginTop: '2px' }}>SEMINAR: {book.title}</div>
         </div>
-        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted }}>GROUP DISCUSSION</div>
+        <div style={{ fontFamily: 'Cinzel, serif', fontSize: '8px', letterSpacing: '0.2em', color: muted }}>AI VOICES · CAN BE WRONG · DON&rsquo;T SHARE PRIVATE DETAILS</div>
       </div>
 
       {/* Passage input */}

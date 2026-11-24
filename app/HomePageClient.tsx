@@ -63,14 +63,14 @@ export default function HomePage() {
             Read together. Meet online.
           </h1>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: ivory85, lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 2.5rem' }}>
-            Monthly online salons on the great books, open to any belief or none. We read one book, put its hardest question to an AI guide drawn from the text, then argue it out ourselves. Members also meet twice a month.
+            Monthly online salons on the great books, open to any belief or none. We read one book, put its hardest question to an AI Socrates, with Mira Vale, our AI tutor, asking the questions, then argue it out ourselves. December 3, 7 PM Eastern, 12 seats, three 20-minute rounds. Members also meet twice a month.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
             <a href="https://www.societyofexplorers.com/salons" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
               NEXT: PLATO&rsquo;S REPUBLIC, DEC 3
             </a>
-            <Link href="/try" prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
-              TRY SOCIETY OF EXPLORERS
+            <Link href="/great-books/republic/seminar" prefetch={false} style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '0 24px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '52px' }}>
+              ASK THE AI SOCRATES · FREE
             </Link>
           </div>
           <p style={{ fontFamily: 'Cinzel, serif', fontSize: '10px', letterSpacing: '0.18em', color: muted, lineHeight: 1.8, margin: '1.25rem auto 0', maxWidth: '620px' }}>

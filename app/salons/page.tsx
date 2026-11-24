@@ -7,7 +7,7 @@ import styles from '@/components/ProjectDirection.module.css';
 
 export const metadata: Metadata = {
   title: 'Ways to Gather — Society of Explorers',
-  description: 'Explore the proposed online salon pilot, reading circles and future local gathering places.',
+  description: 'Plato’s Republic, Book I, on Thursday, December 3, 7 PM Eastern: 12 seats, led by Mira Vale, an AI tutor, with an AI Socrates.',
 };
 
 export default function SalonsPage() {
@@ -19,8 +19,8 @@ export default function SalonsPage() {
         <p className={styles.eyebrow}>Salons · online, local and eventually immersive</p>
         <h1>The same people.<br /><em>A conversation that continues.</em></h1>
         <p className={styles.lead}>A salon begins with a host, a shared question and room to listen. People can meet from anywhere before a local community has a place of its own.</p>
-        <p className={styles.note}>Our proposed first pilot is four weekly online meetings for 6–8 adults. Host and dates are still to be confirmed. Christian fellowship is part of the invitation; prayer is optional and respectful disagreement is welcome.</p>
-        <div className={styles.actions}><Link className={styles.primary} href="/salons/pilot" prefetch={false}>Read the four-week plan <span aria-hidden="true">↗</span></Link><Link className={styles.secondary} href={ONLINE_CIRCLES_HREF} prefetch={false}>Browse online circles <span aria-hidden="true">↗</span></Link></div>
+        <p className={styles.note}><strong>Next salon:</strong> Plato&rsquo;s Republic, Book I, &ldquo;Is justice just whatever serves the stronger?&rdquo; Thursday, December 3, 7 to 8:30 PM Eastern, on Google Meet. 12 seats. Mira Vale, our AI tutor, leads three 20-minute rounds with short breaks, and brings in an AI Socrates for one of them. Open to any belief or none.</p>
+        <div className={styles.actions}><a className={styles.primary} href="https://www.societyofexplorers.com/salons">Reserve a seat <span aria-hidden="true">↗</span></a><Link className={styles.secondary} href="/great-books/republic/seminar" prefetch={false}>Ask the AI Socrates, free <span aria-hidden="true">↗</span></Link><Link className={styles.secondary} href={ONLINE_CIRCLES_HREF} prefetch={false}>Browse online circles <span aria-hidden="true">↗</span></Link></div>
       </header>
       <section className={styles.section} aria-labelledby="gather-paths"><p className={styles.eyebrow}>Find your way into the conversation</p><h2 id="gather-paths">Begin with a reading or a question.</h2>
         <div className={styles.cards}>

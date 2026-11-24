@@ -13,9 +13,10 @@ type NavLink = { l: string; h: string };
 
 const PRIMARY_LINKS = [
   { l: 'Explore', h: '/explore' },
-  { l: 'Salons', h: '/salons/pilot', note: 'Proposed plan' },
+  { l: 'Salons', h: '/salons', note: 'Dec 3 · 7 PM ET' },
+  { l: 'Ask Socrates', h: '/great-books/republic/seminar', note: 'Free, no account' },
+  { l: 'Library', h: '/library' },
   { l: 'Christian fellowship', h: '/fellowship' },
-  { l: 'Library', h: '/great-books' },
 ];
 
 const NAV_LINKS: NavLink[] = [
@@ -130,11 +131,9 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
   const authLabel = selectedName || 'Sign In';
   const authHref = selectedName ? '/dashboard' : '/login';
 
-  // Insights link surfaces only when the viewer is signed in.
+  // Council and Insights need an account, so they show only when signed in.
   const visibleLinks = NAV_LINKS.flatMap(lk => {
-    if (lk.l === 'Council' && selectedName) {
-      return [{ l: 'Insights', h: '/insights' }, lk];
-    }
+    if (lk.l === 'Council') return selectedName ? [{ l: 'Insights', h: '/insights' }, lk] : [];
     return [lk];
   });
 
@@ -226,7 +225,7 @@ export default function PublicNav({ checkSession = true }: { checkSession?: bool
             <summary>Site navigation</summary>
             <nav aria-label="Site links without JavaScript">
               <PrimaryLinks />
-              <MoreLinks links={NAV_LINKS} />
+              <MoreLinks links={NAV_LINKS.filter(lk => lk.l !== 'Council')} />
             </nav>
           </details>
         </div>

@@ -61,7 +61,7 @@ export default function TrySoEPage() {
 
       <section className={styles.panel} aria-labelledby="expect-title">
         <h2 id="expect-title">What to expect</h2>
-        <p>The readings and plans above are public. Private Circle and account features are being prepared for a pilot. The four-week salon has no confirmed host or dates; exploring its plan does not book a meeting or reserve a place.</p>
+        <p>The readings and plans above are public. Private Circle and account features are being prepared for a pilot. The four-week plan is a guide for running your own group; it does not book a meeting. Our next live salon is Plato’s Republic, Book I, on Thursday, December 3, 7 PM Eastern, with 12 seats: <a href="https://www.societyofexplorers.com/salons">reserve a seat</a>.</p>
         <p>Root Kernel remains a distinct study project. Its named faith perspective and AI-assisted analysis can be questioned; the study pages separate source text, interpretations and uncertainties.</p>
         <details>
           <summary>If a page does not work</summary>
