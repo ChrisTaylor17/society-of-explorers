@@ -48,9 +48,9 @@ export default function RepublicBookOneGuide() {
           <h1>Plato’s Republic,<br />Book I.</h1>
           <p className={styles.lead}>What is justice? And is the just person actually better off?</p>
           <p>Book I takes about an hour to read. Three people give three answers, and Socrates takes each one apart. It ends without an answer, which is why the rest of the Republic exists.</p>
-          <p className={styles.status}><strong>First salon planned:</strong> Thursday, December 3, online. We are not here to recruit anyone to a conclusion.</p>
+          <p className={styles.status}><strong>Salon:</strong> Thursday, December 3, 7 to 8:30 PM Eastern, online, 12 seats, led by Mira Vale, our AI tutor. <a href="https://www.societyofexplorers.com/salons">Reserve a seat</a>. We are not here to recruit anyone to a conclusion.</p>
           <nav className={styles.actions} aria-label="Guide sections">
-            <Link className={styles.primary} href="/library/republic-book-1">Read it with Plato in the margin</Link>
+            <Link className={styles.primary} href="/library/republic-book-1">Read it with Socrates in the margin</Link>
             <a href={href(422, 914)}>Read Book I free</a>
             <a href="#three-answers">The three answers</a>
             <a href="#agenda">The hour</a>

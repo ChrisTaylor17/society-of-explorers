@@ -89,6 +89,7 @@ export default function CouncilPage() {
   const [obSuccess, setObSuccess] = useState('');
   const [obBackground, setObBackground] = useState('');
   const [sessionNotice, setSessionNotice] = useState('');
+  const [authChecked, setAuthChecked] = useState(false);
   const retireGuide = useCallback(() => {
     setMessages([]); setActionResults({}); setCurrentThinker(null); setIsStreaming(false);
     setMemberId(null); setAuthToken(null); setLastVerdictUrl(null);
@@ -136,6 +137,7 @@ export default function CouncilPage() {
         const accessToken = await getSupabaseAccessToken();
         if (active && accessToken) setAuthToken(accessToken);
       } catch {}
+      if (active) setAuthChecked(true);
     }
     loadAuth();
     return () => { active = false; unsubscribe(); };
@@ -343,6 +345,24 @@ export default function CouncilPage() {
   const lastQuestion = messages.findLastIndex(m => m.role === 'user');
   const thinkerResponseCount = messages.slice(lastQuestion + 1).filter(m => m.role === 'thinker' && m.status === 'complete' && m.content).length;
   const showSignInBanner = !memberId && exchangeCount >= 3;
+
+  // The council needs a member account. Signed-out visitors get the free
+  // Socrates seminar instead of a page that fails on every question.
+  if (authChecked && !memberId) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>
+        <PublicNav />
+        <main style={{ maxWidth: '620px', margin: '0 auto', padding: '120px 24px 64px', textAlign: 'center' }}>
+          <h1 style={{ fontWeight: 400, fontStyle: 'italic', fontSize: '40px', margin: '0 0 1rem' }}>The council is for members.</h1>
+          <p style={{ fontSize: '20px', lineHeight: 1.6, color: ivory85 }}>Want to try an AI voice now? Ask the AI Socrates about Plato&rsquo;s Republic, Book I. It&rsquo;s free and needs no account. It is an AI, not the real Socrates, and it can be wrong.</p>
+          <p style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2rem' }}>
+            <a href="/great-books/republic/seminar" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: '#0a0a0a', background: gold, padding: '16px 24px', textDecoration: 'none' }}>ASK SOCRATES</a>
+            <a href="/login?next=/council" style={{ fontFamily: 'Cinzel, serif', fontSize: '11px', letterSpacing: '0.2em', color: gold, border: `1px solid ${gold}66`, padding: '16px 24px', textDecoration: 'none' }}>SIGN IN</a>
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0a0a0a', color: parchment, fontFamily: 'Cormorant Garamond, serif' }}>

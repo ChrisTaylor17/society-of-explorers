@@ -33,7 +33,7 @@ export type LibrarySession = {
   question: string;
   summary: string;
   readingTime: string;
-  salon?: { label: string; detail: string };
+  salon?: { label: string; detail: string; href?: string };
   parts: SalonPart[];
   agenda: AgendaItem[];
 };
@@ -52,11 +52,11 @@ const REPUBLIC = 'pg-1497-c0bf2b223089459d9868aaeb69f295b307734ec9c232a9dabc8c1f
 export const LIBRARY_SESSIONS: LibrarySession[] = [
   {
     slug: 'republic-book-1', path: 'December 3 salon', title: 'What is justice?', work: 'Republic, Book I', author: 'Plato', translator: 'Benjamin Jowett',
-    bookId: 'republic', editionId: REPUBLIC, ranges: [{ label: 'Book I', from: 423, to: 914 }], companion: 'plato',
+    bookId: 'republic', editionId: REPUBLIC, ranges: [{ label: 'Book I', from: 423, to: 914 }], companion: 'socrates',
     question: 'What is justice, and is the just person actually better off?',
     summary: 'Three people give three answers, and Socrates takes each one apart. Book I ends without an answer, which is why the rest of the Republic exists.',
     readingTime: 'About an hour',
-    salon: { label: 'Thursday, December 3 · online', detail: 'Read Book I, or at least the Thrasymachus part, before the salon.' },
+    salon: { label: 'Thursday, December 3 · 7 PM Eastern · online', detail: 'Mira Vale, our AI tutor, leads three 20-minute rounds with an AI Socrates. 12 seats. Read Book I, or at least the Thrasymachus part, before the salon.', href: 'https://www.societyofexplorers.com/salons' },
     parts: [
       { title: 'Cephalus: justice as honesty and paying what you owe', from: 423, to: 459, quote: 'to speak the truth and to pay your debts',
         detail: 'An old, wealthy man says money matters most because it lets a person die without owing anyone. Socrates asks whether that is all justice is.',
