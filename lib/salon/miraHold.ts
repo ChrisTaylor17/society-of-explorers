@@ -24,3 +24,17 @@ export function roomIsStopped(turns: Turn[]): boolean {
   if (!STOPPED.some(pattern => pattern.test(previous.content.trim()))) return false;
   return !last.content.split('\n').some(line => line.trimStart().startsWith('[room]'));
 }
+
+// The fixed LAST line says "in this order, and you may pass: {names}". In live
+// checks the model sometimes dropped "and you may pass", or moved it after the
+// names. Put it back in its fixed place, so every guest hears they may pass.
+const LAST_OPEN = 'Last word, one sentence each, in this order';
+
+export function fixLastWord(reply: string): string {
+  if (!reply.startsWith(LAST_OPEN)) return reply;
+  const colon = reply.indexOf(':', LAST_OPEN.length);
+  const end = reply.indexOf('.', colon);
+  if (colon < 0 || end < 0) return reply;
+  const names = reply.slice(colon + 1, end).replace(/,?\s*and you may pass\s*$/, '').trim();
+  return `${LAST_OPEN}, and you may pass: ${names}${reply.slice(end)}`;
+}

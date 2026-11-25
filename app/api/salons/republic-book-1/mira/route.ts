@@ -5,7 +5,7 @@ import { privateJson } from '@/lib/http/routeError';
 import { limitModelCall } from '@/lib/rateLimit';
 import { MIRA_TUTOR_PROMPT } from '@/lib/claude/miraTutor';
 import { capKeepingQuestion } from '@/lib/salon/guideReply';
-import { roomIsStopped, WAITING_FOR_CHRIS } from '@/lib/salon/miraHold';
+import { fixLastWord, roomIsStopped, WAITING_FOR_CHRIS } from '@/lib/salon/miraHold';
 import { getLibrarySession } from '@/lib/library/sessions';
 import { findQuotes, trimToSentence } from '@/lib/library/text';
 import { loadSessionBlocks } from '@/lib/library/text-server';
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     // No name rewrite on this route, ever: Mira names Socrates and Thrasymachus
     // in nearly every reply and labels voices with their names, so turning a
     // name into "I" would make her claim to be them.
-    const reply = cap.text.trim();
+    const reply = fixLastWord(cap.text.trim());
     // An empty reply says why, so the host page shows an error instead of a blank
     // and testing can tell a used-up budget from a blank answer.
     if (!reply) return privateJson({ error: `Mira did not answer (${message.stop_reason === 'max_tokens' ? 'she ran out of room' : 'the reply was empty'}).`, stop: message.stop_reason, blocks, model }, { status: 502 });

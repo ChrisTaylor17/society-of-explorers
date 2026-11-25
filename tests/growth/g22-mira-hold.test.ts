@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { roomIsStopped } from '../../lib/salon/miraHold';
+import { fixLastWord, roomIsStopped } from '../../lib/salon/miraHold';
 import { capKeepingQuestion } from '../../lib/salon/guideReply';
 
 const u = (content: string) => ({ role: 'user' as const, content });
@@ -28,4 +28,13 @@ test('G22 ordinary replies and the single-reader question are not held', () => {
 
 test('G22 the fixed trouble replies survive the three-sentence cap whole', () => {
   for (const line of [TROUBLE, HOLDING]) expect(capKeepingQuestion(line, 3)).toEqual({ text: line, capped: false });
+});
+
+test('G22 the last word line always tells guests they may pass, in its fixed place', () => {
+  const fixed = 'Last word, one sentence each, in this order, and you may pass: Ana, Ben, Cal, Dee. What do you think now that you did not think at seven?';
+  expect(fixLastWord(fixed)).toBe(fixed);
+  expect(fixLastWord('Last word, one sentence each, in this order: Ana, Ben, Cal, Dee. What do you think now that you did not think at seven?')).toBe(fixed);
+  expect(fixLastWord('Last word, one sentence each, in this order: Ana, Ben, Cal, Dee, and you may pass. What do you think now that you did not think at seven?')).toBe(fixed);
+  const other = 'Ana, is he right?';
+  expect(fixLastWord(other)).toBe(other);
 });
