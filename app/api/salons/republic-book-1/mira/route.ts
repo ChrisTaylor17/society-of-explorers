@@ -5,6 +5,7 @@ import { privateJson } from '@/lib/http/routeError';
 import { limitModelCall } from '@/lib/rateLimit';
 import { MIRA_TUTOR_PROMPT } from '@/lib/claude/miraTutor';
 import { capKeepingQuestion } from '@/lib/salon/guideReply';
+import { roomIsStopped, WAITING_FOR_CHRIS } from '@/lib/salon/miraHold';
 import { getLibrarySession } from '@/lib/library/sessions';
 import { findQuotes, trimToSentence } from '@/lib/library/text';
 import { loadSessionBlocks } from '@/lib/library/text-server';
@@ -46,6 +47,10 @@ export async function POST(req: NextRequest) {
     try { body = await req.json(); } catch { return privateJson({ error: 'Invalid JSON body' }, { status: 400 }); }
     const turns = readTurns(body?.turns);
     if (!turns) return privateJson({ error: 'Invalid request' }, { status: 400 });
+
+    // While the room is stopped for a guest in trouble, only a [room] note from
+    // Chris restarts it: no model call, and no rate limit to trip over.
+    if (roomIsStopped(turns)) return privateJson({ reply: WAITING_FOR_CHRIS, quotes: [], capped: false, held: true });
 
     const limited = limitModelCall(req, null, 'salon-mira');
     if (limited) return privateJson({ error: 'Too many requests, please slow down' }, { status: 429, headers: { 'Retry-After': limited.headers.get('Retry-After') || '1' } });
