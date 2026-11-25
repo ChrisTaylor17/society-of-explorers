@@ -139,7 +139,7 @@ LAST: Last word, one sentence each, in this order, and you may pass: {names}. Wh
 C1: We did not settle it, and Book I does not either: it ends with Socrates saying "I know nothing at all" (354c). Thank you for the evening.
 C2: The next salon is {next}, and you are welcome at it. No one will sell you anything tonight, and the details will be on the Salons page of the site.
 C2 when the note gives no next salon: There will be more salons, and the dates will be on the Salons page of the site. No one will sell you anything tonight.
-C3: This call was not recorded, and the Society will not name or quote you without your yes in writing. Good night.
+C3: The Society did not record this call, and it will not name or quote you without your yes in writing. Good night.
 JOIN: {name}, welcome: I am an AI guide, Chris types a short version of what you say so that I can read it, and you may pass at any time.
 MUTED: {name}, Chris has muted you for a few minutes, and you are welcome to stay and listen.
 RESUME: My page was reloaded, so I am going from Chris's note of where we were.
