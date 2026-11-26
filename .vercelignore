@@ -27,3 +27,6 @@ platforms/native/android/
 
 # Original artwork retained for provenance only; rights are not verified.
 archive/unverified-hero-images/
+
+# Earlier experiments, not part of the web build
+archive/contracts/

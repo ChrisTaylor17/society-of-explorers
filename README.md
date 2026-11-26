@@ -1,88 +1,75 @@
 # Society of Explorers
 
-A community and reading app for Christian-rooted fellowship, Scripture, Great Books and respectful disagreement. The free public trial starts at `/try`; private Circles, account services, AI, payments and native/Quest releases have separate acceptance requirements.
+Society of Explorers (SoE) is a members club that reads Plato, Scripture and the Great Books together in live online salons. Each salon is led by Mira Vale, an AI tutor who asks questions and keeps the conversation moving, so the members do the thinking. Any belief is welcome, and the aim is careful reading and respectful disagreement.
 
-## What to open
+This repository is the SoE web app, built with Next.js 16 and deployed on Vercel.
 
-**Try and share the [live reading preview](https://soe-reading-room.societyofexplorers.chatgpt.site).** It includes the complete Apology, Scripture comparison with sources and links to the existing fellowship/salon guide. This is a separate public static Site on included Pro hosting, not a release of member accounts. [Publication and verification](docs/integration/public-reading-sites-2026-11-11.md).
+## What is in this repo
 
-The existing public exhibition is a **different deployment and repository** from this app. These pages are currently reachable without an account:
+Pages (under `app/`):
 
-- [Christian fellowship and the Good Samaritan](https://www.societyofexplorers.com/fellowship)
-- [The complete letter to Philemon](https://www.societyofexplorers.com/readings/philemon)
-- [Salon planner](https://www.societyofexplorers.com/salon-plan)
+- `/try`: the free public trial of the reading experience.
+- `/great-books`, `/library`: Great Books reader, passages and seminar notes. `/great-books/scripture` and `/fellowship` cover Scripture readings.
+- `/council`: the council and figure chat, where members talk with Great Thinker personas.
+- `/salons`: salon listings, including the Mira tutor page at `/salons/republic-book-1/mira`.
+- `/circles`: small reading circles, with invitations, discussion threads and safety and reporting tools.
+- `/practice`: a short daily reading practice.
+- `/account`, `/billing`, `/login`: sign-in, profile, supporter billing and account deletion.
+- `/capital`, `/92b`: private admin pages.
 
-The canonical app's public trial includes `/try`, `/great-books/apology`, `/fellowship/scripture`, `/salons/pilot` and `/travel`. A local build does not put these paths on the public domain. [Verified destination and release options](docs/integration/public-phone-release-options-2026-11-11.md).
+API routes live under `app/api/` (about 200 route handlers). Main groups: `thinker`, `message` and `council` for figure chat, `salons` and `salon-message` for salons and the Mira route, `great-books` and `library` for texts and passages, `circles`, `practice`, `auth`, `stripe` and `supporter` for payments, `cron` for scheduled jobs (see `vercel.json`).
 
-## Current work and recovery
-
-- [DONE.md](DONE.md): ordered completion checklist, results and exact unresolved dependencies.
-- [DECISIONS.md](DECISIONS.md): decisions made during this finish pass.
-- [Completion audit](docs/integration/finish-audit-2026-11-11.md): implemented features, limitations and prior evidence.
-- [RELEASE_STATUS.md](RELEASE_STATUS.md): dated release reconciliation; its historical test counts are not fresh acceptance of later work.
-
-Canonical checkout: `/Users/christaylor/Documents/Codex/soe-release`, branch `codex/soe-first-release`. Restore commit `7020eb5` preserves the state before the November 11 finish pass. Later scoped commits preserve each correction. No reset or force-push is needed to inspect or recover an earlier version.
-
-## Run a local public preview
-
-Use a clean, materialized checkout with the existing locked dependencies. Do not put issued credentials or `.env` files into an offline preview. The app uses local font packages, so the build needs no remote font download.
-
-From the checkout root:
+## Run it locally
 
 ```sh
-mkdir -p verification/web/evidence
-python3 verification/web/scripts/build-offline.py --webpack --fixture-public-config
+npm install
+npm run dev
 ```
 
-This performs the production build/type check with invalid public placeholders, a clean environment and blocked outbound app networking. It refuses runtime dotenv files and cloud-only source placeholders. A failure is written to `verification/web/evidence/next-build.json`; inspect its log instead of treating a partial build as success.
+Open http://localhost:3000/try. Copy `.env.example` to `.env.local` and fill in only what you need; features without their settings report themselves as unavailable. Public reading pages work without any account.
 
-For development in a separately configured checkout, the standard scripts remain:
+Environment variable names (values are never committed; see `.env.example` for the full list):
 
-```sh
-npm run dev -- --hostname 127.0.0.1
-# After a successful build:
-npm run start -- --hostname 127.0.0.1
-```
+- Site: `SITE_URL`, `NEXT_PUBLIC_SITE_URL`, `CRON_SECRET`
+- Database and sign-in: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXTAUTH_SECRET`, `WALLET_SESSION_SECRET`, `WALLET_ENCRYPTION_KEY`
+- AI: `ANTHROPIC_API_KEY`, `AI_GATEWAY_API_KEY`, `AI_GATEWAY_ENABLED`, `AI_GATEWAY_ANTHROPIC_BASE_URL`, `AI_GATEWAY_ANTHROPIC_MODEL`, `SALON_MIRA_MODEL`, `SALON_GUIDE_MODEL`, `MOVEMENT_CLAUDE_MODEL`, `OPENAI_API_KEY`, `OPENAI_REALTIME_MODEL`, `OPENAI_SAFETY_SALT`, `SOE_MESSAGE_AI_ENABLED`
+- Voice, images, video: `ELEVENLABS_API_KEY`, `FAL_API_KEY`, `DAILY_API_KEY`
+- Payments: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET_MERCH`, `STRIPE_PRICE_SEEKER`, `STRIPE_PRICE_SCHOLAR`, `STRIPE_PRICE_PHILOSOPHER`, `STRIPE_PRICE_ORACLE`, `PRINTFUL_API_KEY`
+- Email: `RESEND_API_KEY`, plus several `*_EMAIL_NOTIFICATIONS_ENABLED` switches
+- Admin and account deletion: `SOE_ADMIN_EMAILS`, `SOE_ACCOUNT_DELETION_REQUESTS_ENABLED`, `SOE_ACCOUNT_DELETION_REVIEW_DAYS`, `SOE_ACCOUNT_ERASURE_ACCESS_ENABLED`
+- Other feature switches and legacy settings are listed in `.env.example`.
 
-Open `http://127.0.0.1:3000/try`. These standard scripts load the checkout's normal environment; they are not an isolated recovery or provider test. Public readings work without member credentials. Member-dependent actions should report unavailable in an unconfigured environment. Do not point a test at production merely to remove that message.
-
-The verified November 11 app preview is served on this Mac, while its launcher is running, at [the local trial](http://127.0.0.1:41780/try). Its source is commit `8bb9f12`; the production build/type check passed with all 1,266 recorded inputs unchanged and matched to Git. This address is local to the Mac, not a shareable phone URL; use the public reading Site above on a phone. To restart the same verified preview after it is stopped:
-
-```sh
-python3 '/Users/christaylor/Documents/Mewest/RESEARCH/soe-public-finish-2026-11-11/start_verified_preview.py'
-```
-
-That launcher checks the successful build receipt and all recorded source hashes, refuses runtime environment files, supplies only invalid public placeholders, denies outbound application requests and binds to the Mac alone. Stop its own process with Control-C. It does not create an account, restore a database or deploy the app.
-
-Neither local preview keeps running by itself; when checked on November 15 the address above was not being served. A newer verified build of commit `d9c3071`, which adds the native Circle and deletion-progress corrections, is kept in a separate folder so the November 11 build stays intact. Start it at `http://127.0.0.1:41790/try` with the same safeguards:
+Checks:
 
 ```sh
-python3 '/Users/christaylor/Library/Application Support/Society of Explorers/Verification/2026-11-15-handoff-web-build/start_handoff_preview.py'
-```
-
-The separate [static public-site candidate](http://127.0.0.1:8786/try) is also available on this Mac. It is the proposed update for `www.societyofexplorers.com`, with the complete Apology and Scripture comparison. [Review, source and restart instructions](docs/integration/static-public-reading-candidate-2026-11-11.md). It has not been published; new metered hosting usage remains an owner decision.
-
-Dependencies are governed by the existing lockfiles; do not upgrade them to reproduce a result. The cloud-managed canonical checkout contains offloaded source files, so use the verified materialized snapshot for testing. A stalled cloud read is not a passing test.
-
-## Verification
-
-```sh
+npm run build   # production build and type check
 npm run lint
-npm test                  # isolated security and growth suites
-npm run test:web          # web/component/disposable database suites
-npm run test:platforms    # shared native and Quest contracts
+npm test        # security and growth suites
 ```
 
-The test runner uses one bounded process per suite, a clean environment and startup network denial. Results and per-file logs live in `verification/web/evidence/test-run/`; use a distinct `--output` argument to preserve earlier runs. Missing tools fail explicitly and are never installed automatically. For example:
+## Project layout
 
-```sh
-npm run test:growth -- --output=growth-review
-```
+- `app/`: Next.js App Router pages and API routes
+- `components/`: shared React components
+- `lib/`: server and shared logic (AI prompts in `lib/claude/`, books and passages, circles, payments, auth)
+- `content/`: Great Books texts, clips and editions served by the app
+- `public/`: static assets
+- `supabase/`: database migrations and schema
+- `tests/`: security and growth test suites
+- `scripts/`: smoke tests and content import tools
+- `platforms/`: shared code and tests for the native apps
+- `verification/`: offline build and test harness
+- `docs/`: design notes, contracts and integration records
+- `archive/`: earlier experiments, kept for reference and not used by the app
 
-See [the verification guide](verification/web/README.md) for the locked Bun/JSDOM tools, host requirements, database fixtures and exact browser scope. Fixtures and local simulations do not establish real member privacy, customer use, delivery, payments or physical-device acceptance.
+## Related projects
 
-## Boundaries that remain real
+The iOS, Android and Quest app shells and the marketing site live elsewhere, in a separate site and separate projects. This repo holds the web app and the code shared with those shells.
 
-The public reading path needs no account or payment. Private member intake still depends on a verified hosted backup/restore, applied access controls and real-account sign-in/recovery tests. Deletion intake and paid/provider capabilities must remain unavailable where the promised outcome cannot yet be fulfilled. A prepared salon has no host or dates until those are actually confirmed.
+## Mira is an AI
 
-Keep the separate static exhibition, this app, Root Kernel, Northstar and historical prototypes distinct. Preserve uncommitted work and archived source. Do not deploy the whole private app over the public exhibition to expose a few readings. Spending, missing credentials and irreversible operations require Chris under the current instruction.
+Mira Vale is always presented as an AI. She says so in her welcome, answers plainly if anyone asks whether she is human, and the salon page states that she is software and can be wrong about the text.
+
+## Safety
+
+If a guest in a salon seems to be in distress or speaks of self-harm, Mira stops the discussion and shows a fixed message that points to 988 (call or text, United States) or the local emergency number elsewhere, and the host follows up privately. The wording is in `lib/claude/miraTutor.ts` and is used by `app/api/salons/republic-book-1/mira/route.ts`.

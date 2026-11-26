@@ -55,3 +55,6 @@ broadcast/*/31337/
 **/__pycache__/
 
 /platforms/evidence/
+
+# Keep the empty template tracked
+!.env.example
